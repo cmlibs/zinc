@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.cpp
 //
-// LAST MODIFIED : 4 June 2004
+// LAST MODIFIED : 14 June 2004
 //
 // DESCRIPTION :
 //???DB.
@@ -586,7 +586,7 @@ static bool Function_variable_prolate_spheroidal_set_scalar_function(
 
 class Function_variable_prolate_spheroidal : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 3 June 2004
+// LAST MODIFIED : 14 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -644,30 +644,30 @@ class Function_variable_prolate_spheroidal : public Function_variable
 					out << "lambda";
 					comma=true;
 				}
-				if (comma)
-				{
-					out << ",";
-				}
 				if (mu)
 				{
+					if (comma)
+					{
+						out << ",";
+					}
 					out << "mu";
 					comma=true;
 				}
-				if (comma)
-				{
-					out << ",";
-				}
 				if (theta)
 				{
+					if (comma)
+					{
+						out << ",";
+					}
 					out << "theta";
 					comma=true;
 				}
-				if (comma)
-				{
-					out << ",";
-				}
 				if (focus)
 				{
+					if (comma)
+					{
+						out << ",";
+					}
 					out << "focus";
 					comma=true;
 				}

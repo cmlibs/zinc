@@ -1,10 +1,24 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 3 June 2004
+// LAST MODIFIED : 16 June 2004
 //
 // DESCRIPTION :
-// Finite element types - element/xi and finite element field.
+// Finite element types - element, element/xi and finite element field.
+//
+//???DB.  How to do element/xi for set_value and rset_value when the element
+//  dimension changes?
+// 1.  Always have element as part of an element/xi (if no element then no xi)
+//   - currently an element/xi function has all xi
+// 2.  Make element/xi atomic
+// 3.  Don't have an element/xi function.  No, means that need an element input.
+//   - if can set element by itself then can "lose" (won't be saved for rset) xi
+//     values
+// 4.  Don't have an element input
+// 5.  Don't reset specified values as part of evaluate and evaluate_derivative
+//   No, worried that if a function is reused within an evaluation then it will
+//   have the wrong values
+// 6.  When change element dimension, what happens to iterators?
 //==============================================================================
 
 #include <new>
@@ -873,7 +887,7 @@ class Function_variable_iterator_representation_atomic_element_xi:
 
 class Function_variable_element_xi : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 25 March 2004
+// LAST MODIFIED : 14 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -896,7 +910,15 @@ class Function_variable_element_xi : public Function_variable
 			const ublas::vector<Function_size_type>& indices=
 			ublas::vector<Function_size_type>(0)):element(element),xi(xi),
 			indices(indices),function_element_xi(),
-			function_finite_element(function_finite_element){};
+			function_finite_element(function_finite_element)
+		{
+#if defined (NEW_CODE)
+			if (!xi)
+			{
+				this->element=true;
+			}
+#endif // defined (NEW_CODE)
+		};
 		Function_variable_element_xi(
 			const Function_finite_element_handle& function_finite_element,
 			Function_size_type index):element(false),xi(true),indices(1),
@@ -943,7 +965,15 @@ class Function_variable_element_xi : public Function_variable
 			bool xi=true,const ublas::vector<Function_size_type>& indices=
 			ublas::vector<Function_size_type>(0)):element(element),xi(xi),
 			indices(indices),function_element_xi(function_element_xi),
-			function_finite_element(){};
+			function_finite_element()
+		{
+#if defined (NEW_CODE)
+			if (!xi)
+			{
+				this->element=true;
+			}
+#endif // defined (NEW_CODE)
+		};
 		Function_variable_element_xi(
 			const Function_element_xi_handle& function_element_xi,
 			Function_size_type index):element(false),xi(true),indices(1),
@@ -3053,7 +3083,7 @@ Function_element::~Function_element()
 
 string_handle Function_element::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 15 May 2004
+// LAST MODIFIED : 14 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -3066,6 +3096,10 @@ string_handle Function_element::get_string_representation()
 		if (element_private)
 		{
 			out << "element=" << FE_element_get_cm_number(element_private);
+		}
+		else
+		{
+			out << "no element";
 		}
 		*return_string=out.str();
 	}
@@ -3268,7 +3302,7 @@ Function_element_xi::~Function_element_xi()
 
 string_handle Function_element_xi::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 31 March 2004
+// LAST MODIFIED : 14 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -3280,9 +3314,13 @@ string_handle Function_element_xi::get_string_representation()
 	{
 		if (element_private)
 		{
-			out << "element=" << FE_element_get_cm_number(element_private) << " ";
+			out << "element=" << FE_element_get_cm_number(element_private) <<
+				" xi=" << xi_private;
 		}
-		out << "xi=" << xi_private;
+		else
+		{
+			out << "no element_xi";
+		}
 		*return_string=out.str();
 	}
 
@@ -3409,17 +3447,7 @@ Function_handle Function_element_xi::evaluate(
 		Function_variable_element_xi,Function_variable>(atomic_variable))&&
 		(Function_handle(this)==atomic_variable_element_xi->function_element_xi))
 	{
-		if (atomic_variable_element_xi->element)
-		{
-			struct FE_element* element;
-
-			if (Function_variable_element_xi_set_element_function(element,
-				atomic_variable_element_xi))
-			{
-				result=Function_handle(new Function_element(element));
-			}
-		}
-		else
+		if (atomic_variable_element_xi->xi)
 		{
 			Matrix result_matrix(1,1);
 
@@ -3427,6 +3455,16 @@ Function_handle Function_element_xi::evaluate(
 				atomic_variable_element_xi))
 			{
 				result=Function_handle(new Function_matrix(result_matrix));
+			}
+		}
+		else
+		{
+			struct FE_element* element;
+
+			if (Function_variable_element_xi_set_element_function(element,
+				atomic_variable_element_xi))
+			{
+				result=Function_handle(new Function_element(element));
 			}
 		}
 	}
@@ -5815,7 +5853,7 @@ bool Function_finite_element::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 18 May 2004
+// LAST MODIFIED : 14 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -5832,7 +5870,7 @@ bool Function_finite_element::set_value(
 		Function_variable_value_element_handle value_element;
 		Function_variable_value_scalar_handle value_scalar;
 
-		if ((atomic_variable_element_xi->element)&&
+		if ((atomic_variable_element_xi->element)&&(atomic_value->value())&&
 			(std::string("Element")==(atomic_value->value())->type())&&
 			(value_element=boost::dynamic_pointer_cast<
 			Function_variable_value_element,Function_variable_value>(atomic_value->

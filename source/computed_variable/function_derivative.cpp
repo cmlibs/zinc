@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative.cpp
 //
-// LAST MODIFIED : 10 June 2004
+// LAST MODIFIED : 11 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -569,7 +569,6 @@ bool is_atomic(Function_variable_derivative_handle variable)
 		std::list<Function_variable_handle>::iterator variable_iterator,
 			variable_iterator_end;
 
-		result=true;
 		variable_iterator=(variable->atomic_independent_variables).begin();
 		variable_iterator_end=(variable->atomic_independent_variables).end();
 		while ((variable_iterator!=variable_iterator_end)&&(*variable_iterator))
@@ -597,7 +596,7 @@ Function_variable_iterator_representation_atomic_derivative::
 	atomic_independent_iterators(0),atomic_independent_iterators_begin(0),
 	atomic_independent_iterators_end(0)
 //******************************************************************************
-// LAST MODIFIED : 9 June 2004
+// LAST MODIFIED : 11 June 2004
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
@@ -624,7 +623,7 @@ Function_variable_iterator_representation_atomic_derivative::
 				Function_variable_handle dependent_variable_local;
 
 				if (dependent_variable_local=
-					variable->function_derivative->dependent_variable())
+					variable->function_derivative->dependent_variable_private)
 				{
 					atomic_dependent_iterator_begin=
 						dependent_variable_local->begin_atomic();
@@ -650,7 +649,7 @@ Function_variable_iterator_representation_atomic_derivative::
 				{
 					Function_size_type order;
 					std::list<Function_variable_handle> independent_variables_local=
-						variable->function_derivative->independent_variables();
+						variable->function_derivative->independent_variables_private;
 
 					atomic_variable->atomic_dependent_variable=
 						*atomic_dependent_iterator;
@@ -941,7 +940,7 @@ void Function_variable_iterator_representation_atomic_derivative::increment()
 
 void Function_variable_iterator_representation_atomic_derivative::decrement()
 //******************************************************************************
-// LAST MODIFIED : 10 June 2004
+// LAST MODIFIED : 11 June 2004
 //
 // DESCRIPTION :
 // Decrements the iterator to the next atomic variable.  NULL <atomic_variable>
@@ -1031,7 +1030,7 @@ void Function_variable_iterator_representation_atomic_derivative::decrement()
 					Function_variable_handle dependent_variable_local;
 
 					if (dependent_variable_local=
-						variable->function_derivative->dependent_variable())
+						variable->function_derivative->dependent_variable_private)
 					{
 						atomic_dependent_iterator_begin=
 							dependent_variable_local->begin_atomic();
@@ -1061,7 +1060,7 @@ void Function_variable_iterator_representation_atomic_derivative::decrement()
 					{
 						Function_size_type order;
 						std::list<Function_variable_handle> independent_variables_local=
-							variable->function_derivative->independent_variables();
+							variable->function_derivative->independent_variables_private;
 
 						atomic_variable->atomic_dependent_variable=
 							*atomic_dependent_iterator;
@@ -1424,26 +1423,6 @@ Function_variable_handle Function_derivative::output()
 {
 	return (Function_variable_handle(new Function_variable_derivative(
 		Function_derivative_handle(this))));
-}
-
-std::list<Function_variable_handle> Function_derivative::independent_variables()
-//******************************************************************************
-// LAST MODIFIED : 9 June 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	return (independent_variables_private);
-}
-
-Function_variable_handle Function_derivative::dependent_variable()
-//******************************************************************************
-// LAST MODIFIED : 9 June 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	return (dependent_variable_private);
 }
 
 Function_handle Function_derivative::evaluate(

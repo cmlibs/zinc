@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 10 June 2004
+// LAST MODIFIED : 16 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2400,7 +2400,10 @@ Function_derivative_matrix::Function_derivative_matrix(
 						{
 							no_derivative=true;
 						}
-						new_matrix_independent_variables_iterator++;
+						else
+						{
+							new_matrix_independent_variables_iterator++;
+						}
 						i++;
 					}
 					if (new_matrix_independent_variables_iterator==
@@ -2432,6 +2435,13 @@ Function_derivative_matrix::Function_derivative_matrix(
 								i--;
 								new_matrix_independent_variables_iterator--;
 								atomic_independent_variable_iterators[i]++;
+								while ((atomic_independent_variable_iterators[i]!=
+									(*new_matrix_independent_variables_iterator)->end_atomic())&&
+									(1!=(*(atomic_independent_variable_iterators[i]))->
+									number_differentiable()))
+								{
+									atomic_independent_variable_iterators[i]++;
+								}
 								while ((i>0)&&
 									((*new_matrix_independent_variables_iterator)->end_atomic()==
 									atomic_independent_variable_iterators[i]))
@@ -2439,9 +2449,25 @@ Function_derivative_matrix::Function_derivative_matrix(
 									atomic_independent_variable_iterators[i]=
 										(*new_matrix_independent_variables_iterator)->
 										begin_atomic();
+									while ((atomic_independent_variable_iterators[i]!=
+										(*new_matrix_independent_variables_iterator)->
+										end_atomic())&&
+										(1!=(*(atomic_independent_variable_iterators[i]))->
+										number_differentiable()))
+									{
+										atomic_independent_variable_iterators[i]++;
+									}
 									i--;
 									atomic_independent_variable_iterators[i]++;
 									new_matrix_independent_variables_iterator--;
+									while ((atomic_independent_variable_iterators[i]!=
+										(*new_matrix_independent_variables_iterator)->
+										end_atomic())&&
+										(1!=(*(atomic_independent_variable_iterators[i]))->
+										number_differentiable()))
+									{
+										atomic_independent_variable_iterators[i]++;
+									}
 								}
 							}
 							column++;

@@ -166,6 +166,9 @@
 //   function taking a const reference argument or a non-reference argument.
 //==============================================================================
 
+//???debug.  See t/37.com
+//#define CHANGE_ELEMENT_DIMENSION
+
 #include "computed_variable/function_derivative_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
 #include "computed_variable/function_composite.hpp"
@@ -577,6 +580,18 @@ bool Function_variable::set_value(Function_handle value)
 				((*atomic_variable_iterator)->function()),std::logic_error(
 				"Function_variable::set_value().  "
 				"Atomic variable missing function()"));
+#if defined (CHANGE_ELEMENT_DIMENSION)
+			//???DB.  To handle when changing to an element with a different
+			// dimension
+			//???DB.  Won't work in general
+			if (((*atomic_variable_iterator)->function())->set_value(
+				*atomic_variable_iterator,*atomic_value_iterator))
+			{
+				result=true;
+				atomic_value_iterator++;
+			}
+			atomic_variable_iterator++;
+#else // defined (CHANGE_ELEMENT_DIMENSION)
 			if (((*atomic_variable_iterator)->function())->set_value(
 				*atomic_variable_iterator,*atomic_value_iterator))
 			{
@@ -584,6 +599,7 @@ bool Function_variable::set_value(Function_handle value)
 			}
 			atomic_variable_iterator++;
 			atomic_value_iterator++;
+#endif // defined (CHANGE_ELEMENT_DIMENSION)
 		}
 	}
 
@@ -619,6 +635,18 @@ bool Function_variable::rset_value(Function_handle value)
 				((*atomic_variable_iterator)->function()),std::logic_error(
 				"Function_variable::rset_value().  "
 				"Atomic variable missing function()"));
+#if defined (CHANGE_ELEMENT_DIMENSION)
+			//???DB.  To handle when changing to an element with a different
+			// dimension
+			//???DB.  Won't work in general
+			if (((*atomic_variable_iterator)->function())->set_value(
+				*atomic_variable_iterator,*atomic_value_iterator))
+			{
+				atomic_value_iterator++;
+				result=true;
+			}
+			atomic_variable_iterator++;
+#else // defined (CHANGE_ELEMENT_DIMENSION)
 			if (((*atomic_variable_iterator)->function())->set_value(
 				*atomic_variable_iterator,*atomic_value_iterator))
 			{
@@ -626,6 +654,7 @@ bool Function_variable::rset_value(Function_handle value)
 			}
 			atomic_variable_iterator++;
 			atomic_value_iterator++;
+#endif // defined (CHANGE_ELEMENT_DIMENSION)
 		}
 	}
 

@@ -58,6 +58,25 @@ Cmiss::require_library('cmgui_computed_variable');
 
 sub new
 {
+	my ($class, @functions) = @_;
+	my ($objref);
+
+	if (@functions)
+	{
+		$objref=new_xs(\@functions);
+		if (defined($objref)&&($objref))
+		{
+			bless $objref,$class;
+		}
+		else
+		{
+			croak "Could not create $class";
+		}
+	}
+	else
+	{
+		croak "Missing functions";
+	}
 }
 
 require XSLoader;

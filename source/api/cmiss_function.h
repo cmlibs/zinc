@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function.h
 
-LAST MODIFIED : 10 March 2004
+LAST MODIFIED : 14 June 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function object.
@@ -10,6 +10,18 @@ The public interface to the Cmiss_function object.
 #define __API_CMISS_FUNCTION_H__
 
 #include "api/cmiss_function_base.h"
+
+/*
+Global types
+------------
+*/
+typedef struct Cmiss_function_list * Cmiss_function_list_id;
+/*******************************************************************************
+LAST MODIFIED : 14 June 2004
+
+DESCRIPTION :
+An identifier for a list of functions.
+==============================================================================*/
 
 /*
 Global functions
@@ -62,6 +74,31 @@ LAST MODIFIED : 23 February 2004
 
 DESCRIPTION :
 Returns all the outputs of the <function> as a variable.
+==============================================================================*/
+
+Cmiss_function_list_id Cmiss_function_list_create(void);
+/*******************************************************************************
+LAST MODIFIED : 14 June 2004
+
+DESCRIPTION :
+Creates a function list.
+==============================================================================*/
+
+int Cmiss_function_list_destroy(Cmiss_function_list_id *list_address);
+/*******************************************************************************
+LAST MODIFIED : 14 June 2004
+
+DESCRIPTION :
+Destroys a function list.
+==============================================================================*/
+
+int Cmiss_function_list_add(Cmiss_function_list_id list,
+	Cmiss_function_id function);
+/*******************************************************************************
+LAST MODIFIED : 14 June 2004
+
+DESCRIPTION :
+Adds a <function> to a <list>.
 ==============================================================================*/
 
 #ifdef __cplusplus

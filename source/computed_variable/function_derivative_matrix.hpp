@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.hpp
 //
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 11 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -20,12 +20,13 @@ typedef boost::intrusive_ptr<Function_derivative_matrix>
 
 class Function_derivative_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 11 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	friend class Function_variable_derivative_matrix;
+	friend class Function_variable_composition;
 	friend class
 		Function_variable_iterator_representation_atomic_derivative_matrix;
 	friend Function_handle Function_variable::evaluate_derivative(

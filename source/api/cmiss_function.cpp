@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function.cpp
 
-LAST MODIFIED : 10 March 2004
+LAST MODIFIED : 14 June 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function object.
@@ -171,4 +171,66 @@ Returns all the outputs of the <function> as a variable.
 	}
 
 	return (result);
+}
+
+Cmiss_function_list_id Cmiss_function_list_create(void)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2004
+
+DESCRIPTION :
+Creates an function list.
+==============================================================================*/
+{
+	return (reinterpret_cast<Cmiss_function_list_id>(
+		new std::list<Function_handle>));
+}
+
+int Cmiss_function_list_destroy(Cmiss_function_list_id *list_address)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2004
+
+DESCRIPTION :
+Destroys an function list.
+==============================================================================*/
+{
+	int return_code;
+	std::list<Function_handle> **handle_list_address_address;
+
+	return_code=0;
+	if (handle_list_address_address=
+		reinterpret_cast<std::list<Function_handle> **>(list_address))
+	{
+		// call the destructor for the object pointed to by
+		//   *handle_list_address_address (a Function_handle list) and then
+		//   free the memory pointed to by *handle_list_address_address
+		delete *handle_list_address_address;
+		*handle_list_address_address=0;
+		return_code=1;
+	}
+
+	return (return_code);
+}
+
+int Cmiss_function_list_add(Cmiss_function_list_id list,
+	Cmiss_function_id function)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2004
+
+DESCRIPTION :
+Adds a <function> to a <list>.
+==============================================================================*/
+{
+	int return_code;
+	std::list<Function_handle> *list_address;
+	Function_handle *function_handle_address;
+
+	return_code=0;
+	if ((list_address=reinterpret_cast<std::list<Function_handle> *>(list))&&
+		(function_handle_address=reinterpret_cast<Function_handle *>(function)))
+	{
+		(list_address->push_back)(*function_handle_address);
+		return_code=1;
+	}
+
+	return (return_code);
 }

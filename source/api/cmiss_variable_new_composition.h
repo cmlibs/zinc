@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : api/cmiss_variable_new_composite.h
+FILE : api/cmiss_variable_new_composition.h
 
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 11 June 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new composition object.
@@ -23,10 +23,10 @@ Cmiss_variable_new_id Cmiss_variable_new_composition_create(
 	Cmiss_variable_new_id dependent_variable,
 	Cmiss_variable_new_input_value_list_id input_source_list);
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 11 June 2004
 
 DESCRIPTION :
-Creates a Cmiss_variable_new composite with the supplied <dependent_variable>
+Creates a Cmiss_variable_new composition with the supplied <dependent_variable>
 and inputs <input_source_list>.
 ==============================================================================*/
 
