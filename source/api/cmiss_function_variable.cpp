@@ -185,7 +185,6 @@ See the include file.
 #else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
-#if defined (NOT_DEBUG)
 Cmiss_function_id Cmiss_function_variable_evaluate_derivative(
 	Cmiss_function_variable_id variable,
 	Cmiss_function_variable_list_id independent_variables,
@@ -227,7 +226,7 @@ See the include file.
 
 	return (result);
 }
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 Cmiss_function_id Cmiss_function_variable_evaluate_derivative(
 	Cmiss_function_variable_id,
 	Cmiss_function_variable_list_id,
@@ -245,6 +244,7 @@ See the include file.
 
 	return (result);
 }
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
 #if defined (NOT_DEBUG)
