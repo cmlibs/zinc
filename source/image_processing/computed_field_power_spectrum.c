@@ -544,7 +544,6 @@ DESCRIPTION : Implement FFT on image cache.
 	char *storage;
 	FE_value *data_index, *result_index, *re, *im, *max;
 	int i, return_code, storage_size, k;
-	int xsize, ysize;
 
 	ENTER(Image_cache_power_spectrum);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -556,8 +555,6 @@ DESCRIPTION : Implement FFT on image cache.
 		{
 			storage_size *= image->sizes[i];
 		}
-		xsize = image->sizes[0];
-		ysize = image->sizes[1];
 		if (ALLOCATE(storage, char, storage_size * sizeof(FE_value))&&
 			 ALLOCATE(re, FE_value, storage_size/image->depth) &&
 			 ALLOCATE(im, FE_value, storage_size/image->depth) &&
