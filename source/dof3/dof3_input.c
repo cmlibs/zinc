@@ -179,9 +179,11 @@ Callback for the input widget - tidies up all details - mem etc
 	USE_PARAMETER(call_data);
 	/* Get the pointer to the data for the input widget */
 	XtVaGetValues(w,XmNuserData,&temp_input,NULL);
+#if defined (DEBUG)
 /*???debug */
 printf("input_destroy_CB %p %p %p %p\n",w,temp_input,
 	temp_input->position_widget,temp_input->direction_widget);
+#endif /* defined (DEBUG) */
 #if defined (EXT_INPUT)
 	/* Deregister the input module callbacks */
 	for (i=0;i<INPUT_MODULE_NUM_DEVICES;i++)
@@ -209,7 +211,6 @@ printf("input_destroy_CB %p %p %p %p\n",w,temp_input,
 		control_set_data(temp_input->dirctrl_widget,CONTROL_INPUT_WIDGET,NULL);
 	}
 	/* deallocate the memory for the user data */
-	printf("De-allocating memory.\n");
 	DEALLOCATE(temp_input);
 /*??? this will have to tie in with a controller for any external input */
 	LEAVE;
@@ -411,9 +412,11 @@ item.
 						temp_input->widget_parent,&(temp_input->widget),
 						&input_dialog_class))
 					{
+#if defined (DEBUG)
 /*???debug */
 printf("create_input_widget %p %p %p\n",temp_input,temp_input->widget,
 	temp_input->position_widget);
+#endif /* defined (DEBUG) */
 						XtManageChild(temp_input->widget);
 						return_widget=temp_input->widget;
 					}
@@ -480,8 +483,10 @@ Changes a data item of the input widget.
 		case INPUT_POSITION_WIDGET:
 		{
 			temp_input->position_widget=(Widget)data;
+#if defined (DEBUG)
 /*???debug */
 printf("input_set_data %p %p\n",temp_input,temp_input->position_widget);
+#endif /* defined (DEBUG) */
 			if (data)
 			{
 				XtVaGetValues((Widget)data,XmNuserData,&(temp_input->position),NULL);
