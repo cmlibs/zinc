@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -3200,6 +3200,29 @@ DESCRIPTION :
 Returns true if <element_group> contains any elements in <element_list>.
 ==============================================================================*/
 
+int theta_closest_in_xi1(struct FE_element_field_component *component,
+	struct FE_element *element,struct FE_field *field,FE_value time,
+	int number_of_values,FE_value *values);
+/*******************************************************************************
+LAST MODIFIED : 1 February 2002
+
+DESCRIPTION :
+Calls modify_theta_in_xi1 with mode MODIFY_THETA_CLOSEST_IN_XI1.
+???RC.  Needs to be global to allow writing function in export_finite_element.
+==============================================================================*/
+
+int theta_decreasing_in_xi1(struct FE_element_field_component *component,
+	struct FE_element *element,struct FE_field *field,FE_value time,
+	int number_of_values,FE_value *values);
+/*******************************************************************************
+LAST MODIFIED : 3 December 2001
+
+DESCRIPTION :
+Modifies the already calculated <values>.
+???DB.  Only for certain bases
+???RC.  Needs to be global to allow writing function in export_finite_element.
+==============================================================================*/
+
 int theta_increasing_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,FE_value time,
 	int number_of_values,FE_value *values);
@@ -3215,18 +3238,6 @@ Modifies the already calculated <values>.
 int theta_non_decreasing_in_xi1(
 	struct FE_element_field_component *component,struct FE_element *element,
 	struct FE_field *field,FE_value time,int number_of_values,FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Modifies the already calculated <values>.
-???DB.  Only for certain bases
-???RC.  Needs to be global to allow writing function in export_finite_element.
-==============================================================================*/
-
-int theta_decreasing_in_xi1(struct FE_element_field_component *component,
-	struct FE_element *element,struct FE_field *field,FE_value time,
-	int number_of_values,FE_value *values);
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
 

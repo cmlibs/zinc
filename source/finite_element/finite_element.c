@@ -31667,6 +31667,7 @@ Returns true if <element_group> contains any elements in <element_list>.
 
 enum Modify_theta_in_xi1_mode
 {
+	MODIFY_THETA_CLOSEST_IN_XI1,
 	MODIFY_THETA_DECREASING_IN_XI1,
 	MODIFY_THETA_INCREASING_IN_XI1,
 	MODIFY_THETA_NON_DECREASING_IN_XI1,
@@ -32110,6 +32111,7 @@ Modifies the already calculated <values>.
 					node_to_element_maps;
 				offset_xi1_xi2=0;
 				offset_xi2_xi3=0;
+				/* apply condition on xi1 and make sure smooth in xi2 & xi3 */
 				for (k=number_of_nodes_in_xi3;k>0;k--)
 				{
 					value_xi3= *element_value;
@@ -32125,9 +32127,19 @@ Modifies the already calculated <values>.
 								problems for heart */
 							switch (mode)
 							{
+								case MODIFY_THETA_CLOSEST_IN_XI1:
+								{
+									if (value_xi1 < (*element_value - PI))
+									{
+										*element_value -= 2*PI;
+									}
+									else if (value_xi1 > (*element_value + PI))
+									{
+										*element_value += 2*PI;
+									}
+								} break;
 								case MODIFY_THETA_DECREASING_IN_XI1:
 								{
-									/* make sure decreasing in xi1 and smooth in xi2 & xi3 */
 									if (value_xi1 <= *element_value)
 									{
 										*element_value -= 2*PI;
@@ -32135,7 +32147,6 @@ Modifies the already calculated <values>.
 								} break;
 								case MODIFY_THETA_INCREASING_IN_XI1:
 								{
-									/* make sure increasing in xi1 and smooth in xi2 & xi3 */
 									if (value_xi1 >= *element_value)
 									{
 										*element_value += 2*PI;
@@ -32143,7 +32154,6 @@ Modifies the already calculated <values>.
 								} break;
 								case MODIFY_THETA_NON_DECREASING_IN_XI1:
 								{
-									/* make sure non-decreasing in xi1 and smooth in xi2 & xi3 */
 									if (value_xi1 > *element_value)
 									{
 										*element_value += 2*PI;
@@ -32151,7 +32161,6 @@ Modifies the already calculated <values>.
 								} break;
 								case MODIFY_THETA_NON_INCREASING_IN_XI1:
 								{
-									/* make sure non-increasing in xi1 and smooth in xi2 & xi3 */
 									if (value_xi1 < *element_value)
 									{
 										*element_value -= 2*PI;
@@ -32221,6 +32230,27 @@ Modifies the already calculated <values>.
 
 	return (return_code);
 } /* modify_theta_in_xi1 */
+
+int theta_closest_in_xi1(struct FE_element_field_component *component,
+	struct FE_element *element,struct FE_field *field,FE_value time,
+	int number_of_values,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 1 February 2002
+
+DESCRIPTION :
+Calls modify_theta_in_xi1 with mode MODIFY_THETA_CLOSEST_IN_XI1.
+???RC.  Needs to be global to allow writing function in export_finite_element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(theta_closest_in_xi1);
+	return_code = modify_theta_in_xi1(component, element, field, time,
+		number_of_values, values, MODIFY_THETA_CLOSEST_IN_XI1);
+	LEAVE;
+
+	return (return_code);
+} /* theta_closest_in_xi1 */
 
 int theta_decreasing_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,FE_value time,

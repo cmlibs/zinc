@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -2549,10 +2549,18 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													if (strcmp("non-decreasing in xi1",
 														modify_function_name))
 													{
-														display_message(ERROR_MESSAGE,
-															"Invalid modify function from file.  Line %d",
-															get_line_number(input_file));
-														return_code=0;
+														if (strcmp("closest in xi1",
+															modify_function_name))
+														{
+															display_message(ERROR_MESSAGE,
+																"Invalid modify function from file.  Line %d",
+																get_line_number(input_file));
+															return_code=0;
+														}
+														else
+														{
+															modify=theta_closest_in_xi1;
+														}
 													}
 													else
 													{
