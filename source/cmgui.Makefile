@@ -418,9 +418,21 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          USER_INTERFACE_INC += -I/usr/X11R6/include
       endif # SYSNAME != IRIX%=
       ifeq ($(SYSNAME),Linux)
-         USER_INTERFACE_LIB += -lMrm -lXmu -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
+         #Mandrake 8.2 static libs are incompatible, this works around it by
+         #comparing the size of the symbols and forcing Xmu to preload its
+         #version if they differ in size.  Older greps don't have -o option.
+         Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         ifneq ($(Xm_XeditRes),)
+            ifneq ($(Xmu_XeditRes),)
+               ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
+                  USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
+               endif
+            endif
+         endif
+         USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       else # SYSNAME == Linux
-         USER_INTERFACE_LIB += -lMrm -lXmu -lXm -lXt -lX11 -lXmu -lXext
+         USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
          ifeq ($(SYSNAME:IRIX%=),)
             USER_INTERFACE_LIB += -lSgm
          endif # SYSNAME == IRIX%=
@@ -433,6 +445,20 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       endif
       USER_INTERFACE_INC += -I/usr/X11R6/include
       X_LIB = /usr/X11R6/lib
+      ifeq ($(SYSNAME),Linux)
+         #Mandrake 8.2 static libs are incompatible, this works around it by
+         #comparing the size of the symbols and forcing Xmu to preload its
+         #version if they differ in size.  Older greps don't have -o option.
+         Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         ifneq ($(Xm_XeditRes),)
+            ifneq ($(Xmu_XeditRes),)
+               ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
+                  USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a 
+               endif
+            endif
+         endif
+      endif # $(SYSNAME) == Linux
       USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
    endif # $(DYNAMIC_GL_LINUX) != true
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
@@ -684,8 +710,12 @@ IO_DEVICES_INTERFACE_SRCS = \
 	io_devices/input_module.c \
 	io_devices/input_module_dialog.c \
 	io_devices/input_module_widget.c
-LINK_INTERFACE_SRCS =  \
-	link/cmiss.c
+ifdef LINK_CMISS
+   LINK_INTERFACE_SRCS =  \
+	   link/cmiss.c
+else # LINK_CMISS
+   LINK_INTERFACE_SRCS =
+endif # LINK_CMISS
 MATERIAL_INTERFACE_SRCS =  \
 	material/material_editor.c \
 	material/material_editor_dialog.c
@@ -986,7 +1016,7 @@ endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifeq ($(DYNAMIC_GL_LINUX),true)
       ifneq ($(EXPORT_EVERYTHING),true)
-         ifndef NEW_BINUTILS
+         ifdef NEW_BINUTILS
             # In Linux this requires an ld from binutils 2.12 or later 
             #   but is much better code so hopefully what I do here will
             #   replace the alternative when this version is ubiquitous */
