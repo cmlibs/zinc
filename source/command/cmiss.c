@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 10 June 2002
+LAST MODIFIED : 13 June 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -13578,19 +13578,21 @@ DESCRIPTION :
 static int get_iges_entity_info(struct FE_element *element,
 	void *get_data_void)
 /******************************************************************************
-LAST MODIFIED : 7 June 2002
+LAST MODIFIED : 13 June 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	int clear_values,*faces,i,j,k,material_curve_directory_pointer,
-		number_of_faces,outer_boundary_directory_pointer,return_code,
+	float *destination,*source;
+	int clear_values,*faces_material,*faces_world,i,j,k,
+		material_curve_directory_pointer,*monomial_x,*monomial_y,*monomial_z,
+		number_of_faces,outer_boundary_directory_pointer,*reorder_faces,return_code,
 		surface_directory_pointer,world_curve_directory_pointer;
 	struct FE_element *face;
 	struct FE_field *coordinate_field;
 	struct FE_element_field_values coordinate_element_field_values;
 	struct Get_iges_entity_info_data *get_data;
-	struct IGES_entity_info *entity;
+	struct IGES_entity_info *entity,*surface_entity;
 
 	ENTER(get_iges_entity_info);
 	return_code=0;
@@ -13606,129 +13608,216 @@ DESCRIPTION :
 			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(clear_values=calculate_FE_element_field_values(element,coordinate_field,
 			(FE_value)0,(char)0,&coordinate_element_field_values,
-			(struct FE_element *)NULL))&&
-			standard_basis_function_is_bicubic(
-			(coordinate_element_field_values.component_standard_basis_functions)[0],
-			((void **)(coordinate_element_field_values.
+			(struct FE_element *)NULL))&&(coordinate_element_field_values.
+			component_standard_basis_function_arguments)&&
+			(monomial_x=((int **)(coordinate_element_field_values.
 			component_standard_basis_function_arguments))[0])&&
-			standard_basis_function_is_bicubic(
-			(coordinate_element_field_values.component_standard_basis_functions)[1],
-			((void **)(coordinate_element_field_values.
-			component_standard_basis_function_arguments))[1])&&
-			standard_basis_function_is_bicubic(
-			(coordinate_element_field_values.component_standard_basis_functions)[2],
-			((void **)(coordinate_element_field_values.
-			component_standard_basis_function_arguments))[2]))
+			standard_basis_function_is_monomial((coordinate_element_field_values.
+			component_standard_basis_functions)[0],(void *)monomial_x)&&
+			(2==monomial_x[0])&&(monomial_x[1]<=3)&&(monomial_x[2]<=3)&&
+			(monomial_y=((int **)(coordinate_element_field_values.
+			component_standard_basis_function_arguments))[0])&&
+			standard_basis_function_is_monomial((coordinate_element_field_values.
+			component_standard_basis_functions)[0],(void *)monomial_y)&&
+			(2==monomial_y[0])&&(monomial_y[1]<=3)&&(monomial_y[2]<=3)&&
+			(monomial_z=((int **)(coordinate_element_field_values.
+			component_standard_basis_function_arguments))[0])&&
+			standard_basis_function_is_monomial((coordinate_element_field_values.
+			component_standard_basis_functions)[0],(void *)monomial_z)&&
+			(2==monomial_z[0])&&(monomial_z[1]<=3)&&(monomial_z[2]<=3))
 		{
-			if (entity=create_iges_entity_info(element,&(get_data->head),
+			if (surface_entity=create_iges_entity_info(element,&(get_data->head),
 				&(get_data->tail)))
 			{
-				surface_directory_pointer=entity->directory_pointer;
+				surface_directory_pointer=surface_entity->directory_pointer;
 				/* blanked */
-				(entity->directory).status.blank_status=1;
+				(surface_entity->directory).status.blank_status=1;
 				/* physically dependent */
-				(entity->directory).status.subordinate_entity_switch=1;
+				(surface_entity->directory).status.subordinate_entity_switch=1;
 				/* parametric spline surface entity */
-				entity->type=114;
+				surface_entity->type=114;
 				/* use one line for integer flags, one line for the breakpoints and
 					4 values per line for coefficients */
-				(entity->directory).parameter_line_count=14;
+				(surface_entity->directory).parameter_line_count=14;
 				/* cubic */
-				(entity->parameter).type_114.spline_boundary_type=3;
+				(surface_entity->parameter).type_114.spline_boundary_type=3;
 				/* cartesian product */
-				(entity->parameter).type_114.patch_type=1;
-				(entity->parameter).type_114.m=1;
-				(entity->parameter).type_114.n=1;
-				((entity->parameter).type_114.tu)[0]=0.;
-				((entity->parameter).type_114.tu)[1]=1.;
-				((entity->parameter).type_114.tv)[0]=0.;
-				((entity->parameter).type_114.tv)[1]=1.;
-				for (i=0;i<16;i++)
+				(surface_entity->parameter).type_114.patch_type=1;
+				(surface_entity->parameter).type_114.m=1;
+				(surface_entity->parameter).type_114.n=1;
+				((surface_entity->parameter).type_114.tu)[0]=0.;
+				((surface_entity->parameter).type_114.tu)[1]=1.;
+				((surface_entity->parameter).type_114.tv)[0]=0.;
+				((surface_entity->parameter).type_114.tv)[1]=1.;
+				source=(coordinate_element_field_values.component_values)[0];
+				destination=(surface_entity->parameter).type_114.x;
+				k=0;
+				for (j=0;j<=monomial_x[2];j++)
 				{
-					((entity->parameter).type_114.x)[i]=
-						((coordinate_element_field_values.component_values)[0])[i];
-					((entity->parameter).type_114.y)[i]=
-						((coordinate_element_field_values.component_values)[1])[i];
-					((entity->parameter).type_114.z)[i]=
-						((coordinate_element_field_values.component_values)[2])[i];
+					for (i=0;i<=monomial_x[1];i++)
+					{
+						*destination= *source;
+						destination++;
+						source++;
+						k++;
+					}
+					while (i<=3)
+					{
+						*destination=(float)0;
+						destination++;
+						k++;
+						i++;
+					}
+				}
+				while (k<16)
+				{
+					*destination=(float)0;
+					destination++;
+					k++;
+				}
+				source=(coordinate_element_field_values.component_values)[1];
+				destination=(surface_entity->parameter).type_114.y;
+				k=0;
+				for (j=0;j<=monomial_y[2];j++)
+				{
+					for (i=0;i<=monomial_y[1];i++)
+					{
+						*destination= *source;
+						destination++;
+						source++;
+						k++;
+					}
+					while (i<=3)
+					{
+						*destination=(float)0;
+						destination++;
+						k++;
+						i++;
+					}
+				}
+				while (k<16)
+				{
+					*destination=(float)0;
+					destination++;
+					k++;
+				}
+				source=(coordinate_element_field_values.component_values)[2];
+				destination=(surface_entity->parameter).type_114.z;
+				k=0;
+				for (j=0;j<=monomial_z[2];j++)
+				{
+					for (i=0;i<=monomial_z[1];i++)
+					{
+						*destination= *source;
+						destination++;
+						source++;
+						k++;
+					}
+					while (i<=3)
+					{
+						*destination=(float)0;
+						destination++;
+						k++;
+						i++;
+					}
+				}
+				while (k<16)
+				{
+					*destination=(float)0;
+					destination++;
+					k++;
 				}
 				/* add information for edges so that can be joined together */
 				if (4==(number_of_faces=element->shape->number_of_faces))
 /*				if (0<(number_of_faces=element->shape->number_of_faces))*/
 				{
-					if (ALLOCATE(faces,int,number_of_faces))
+					ALLOCATE(faces_material,int,number_of_faces);
+					ALLOCATE(faces_world,int,number_of_faces);
+					ALLOCATE(reorder_faces,int,number_of_faces);
+					if (faces_material&&faces_world)
 					{
+						/* reorder the faces to go around the surface (not cmiss way) */
+						reorder_faces[0]=0;
+						reorder_faces[1]=2;
+						reorder_faces[2]=3;
+						reorder_faces[3]=1;
 						i=0;
 						while (return_code&&(i<number_of_faces))
 						{
 							if (face=(element->faces)[i])
 							{
-								entity=get_data->head;
-								while (entity&&!(((face->cm).type==(entity->cm).type)&&
-									((face->cm).number==(entity->cm).number)&&
-									(112==entity->type)))
+								/* create an entity for the edge in material coordinates */
+								if (entity=create_iges_entity_info(face,&(get_data->head),
+									&(get_data->tail)))
 								{
-									entity=entity->next;
-								}
-								if (entity)
-								{
-									faces[i]=entity->directory_pointer;
-								}
-								else
-								{
-									/* create an entity for the edge in material coordinates */
-									if (entity=create_iges_entity_info(face,&(get_data->head),
-										&(get_data->tail)))
+									faces_material[reorder_faces[i]]=entity->directory_pointer;
+									/* blanked */
+									(entity->directory).status.blank_status=1;
+									/* physically dependent */
+									(entity->directory).status.subordinate_entity_switch=1;
+									/* 2d parametric.  In xi coordinates */
+									(entity->directory).status.entity_use_flag=5;
+									/* line entity */
+									entity->type=110;
+									/* use one line for type, one line for start and one line
+										for end */
+									(entity->directory).parameter_line_count=3;
+									/* cmiss order is xi1=0, xi1=1, xi2=0, xi2=1 */
+									switch (i)
 									{
-										faces[i]=entity->directory_pointer;
-										/* blanked */
-										(entity->directory).status.blank_status=1;
-										/* physically dependent */
-										(entity->directory).status.subordinate_entity_switch=1;
-										/* 2d parametric.  In xi coordinates */
-										(entity->directory).status.entity_use_flag=5;
-										/* line entity */
-										entity->type=110;
-										/* use one line for type, one line for start and one line
-											for end */
-										(entity->directory).parameter_line_count=3;
-										switch (i)
+										case 0:
 										{
-											case 0:
-											{
-												((entity->parameter).type_110.start)[0]=0.;
-												((entity->parameter).type_110.start)[1]=0.;
-												((entity->parameter).type_110.end)[0]=1.;
-												((entity->parameter).type_110.end)[1]=0.;
-											} break;
-											case 1:
-											{
-												((entity->parameter).type_110.start)[0]=0.;
-												((entity->parameter).type_110.start)[1]=1.;
-												((entity->parameter).type_110.end)[0]=1.;
-												((entity->parameter).type_110.end)[1]=1.;
-											} break;
-											case 2:
-											{
-												((entity->parameter).type_110.start)[0]=0.;
-												((entity->parameter).type_110.start)[1]=0.;
-												((entity->parameter).type_110.end)[0]=0.;
-												((entity->parameter).type_110.end)[1]=1.;
-											} break;
-											case 3:
-											{
-												((entity->parameter).type_110.start)[0]=1.;
-												((entity->parameter).type_110.start)[1]=0.;
-												((entity->parameter).type_110.end)[0]=1.;
-												((entity->parameter).type_110.end)[1]=1.;
-											} break;
-										}
-										((entity->parameter).type_110.start)[2]=0.;
-										((entity->parameter).type_110.end)[2]=0.;
+											/* xi1=0 */
+											((entity->parameter).type_110.start)[0]=0.;
+											((entity->parameter).type_110.start)[1]=0.;
+											((entity->parameter).type_110.end)[0]=0.;
+											((entity->parameter).type_110.end)[1]=1.;
+										} break;
+										case 1:
+										{
+											/* xi1=1 */
+											((entity->parameter).type_110.start)[0]=1.;
+											((entity->parameter).type_110.start)[1]=0.;
+											((entity->parameter).type_110.end)[0]=1.;
+											((entity->parameter).type_110.end)[1]=1.;
+										} break;
+										case 2:
+										{
+											/* xi2=0 */
+											((entity->parameter).type_110.start)[0]=0.;
+											((entity->parameter).type_110.start)[1]=0.;
+											((entity->parameter).type_110.end)[0]=1.;
+											((entity->parameter).type_110.end)[1]=0.;
+										} break;
+										case 3:
+										{
+											/* xi2=1 */
+											((entity->parameter).type_110.start)[0]=0.;
+											((entity->parameter).type_110.start)[1]=1.;
+											((entity->parameter).type_110.end)[0]=1.;
+											((entity->parameter).type_110.end)[1]=1.;
+										} break;
+									}
+									((entity->parameter).type_110.start)[2]=0.;
+									((entity->parameter).type_110.end)[2]=0.;
+									entity=get_data->head;
+									while (entity&&!(((face->cm).type==(entity->cm).type)&&
+										((face->cm).number==(entity->cm).number)&&
+										(112==entity->type)))
+									{
+										entity=entity->next;
+									}
+									if (entity)
+									{
+										faces_world[reorder_faces[i]]=entity->directory_pointer;
+									}
+									else
+									{
 										/* create an entity for the edge in material coordinates */
 										if (entity=create_iges_entity_info(face,&(get_data->head),
 											&(get_data->tail)))
 										{
+											faces_world[reorder_faces[i]]=entity->directory_pointer;
 											/* blanked */
 											(entity->directory).status.blank_status=1;
 											/* physically dependent */
@@ -13750,85 +13839,71 @@ DESCRIPTION :
 											{
 												case 0:
 												{
+													/* xi1=0 */
 													for (j=0;j<4;j++)
 													{
 														((entity->parameter).type_112.x)[j]=
-															((coordinate_element_field_values.
-															component_values)[0])[j];
+															((surface_entity->parameter).type_114.x)[4*j];
 														((entity->parameter).type_112.y)[j]=
-															((coordinate_element_field_values.
-															component_values)[1])[j];
+															((surface_entity->parameter).type_114.y)[4*j];
 														((entity->parameter).type_112.z)[j]=
-															((coordinate_element_field_values.
-															component_values)[2])[j];
+															((surface_entity->parameter).type_114.z)[4*j];
 													}
 												} break;
 												case 1:
 												{
+													/* xi1=1 */
 													for (j=0;j<4;j++)
 													{
 														((entity->parameter).type_112.x)[j]=
-															((coordinate_element_field_values.
-															component_values)[0])[j];
+															((surface_entity->parameter).type_114.x)[4*j];
 														((entity->parameter).type_112.y)[j]=
-															((coordinate_element_field_values.
-															component_values)[1])[j];
+															((surface_entity->parameter).type_114.y)[4*j];
 														((entity->parameter).type_112.z)[j]=
-															((coordinate_element_field_values.
-															component_values)[2])[j];
-														for (k=4;k<16;k += 4)
+															((surface_entity->parameter).type_114.z)[4*j];
+														for (k=1;k<4;k++)
 														{
 															((entity->parameter).type_112.x)[j] +=
-																((coordinate_element_field_values.
-																component_values)[0])[j+k];
+																((surface_entity->parameter).type_114.x)[4*j+k];
 															((entity->parameter).type_112.y)[j] +=
-																((coordinate_element_field_values.
-																component_values)[1])[j+k];
+																((surface_entity->parameter).type_114.y)[4*j+k];
 															((entity->parameter).type_112.z)[j] +=
-																((coordinate_element_field_values.
-																component_values)[2])[j+k];
+																((surface_entity->parameter).type_114.z)[4*j+k];
 														}
 													}
 												} break;
 												case 2:
 												{
+													/* xi2=0 */
 													for (j=0;j<4;j++)
 													{
 														((entity->parameter).type_112.x)[j]=
-															((coordinate_element_field_values.
-															component_values)[0])[4*j];
+															((surface_entity->parameter).type_114.x)[j];
 														((entity->parameter).type_112.y)[j]=
-															((coordinate_element_field_values.
-															component_values)[1])[4*j];
+															((surface_entity->parameter).type_114.y)[j];
 														((entity->parameter).type_112.z)[j]=
-															((coordinate_element_field_values.
-															component_values)[2])[4*j];
+															((surface_entity->parameter).type_114.z)[j];
 													}
 												} break;
 												case 3:
 												{
+													/* xi2=1 */
 													for (j=0;j<4;j++)
 													{
 														((entity->parameter).type_112.x)[j]=
-															((coordinate_element_field_values.
-															component_values)[0])[4*j];
+															((surface_entity->parameter).type_114.x)[j];
 														((entity->parameter).type_112.y)[j]=
-															((coordinate_element_field_values.
-															component_values)[1])[4*j];
+															((surface_entity->parameter).type_114.y)[j];
 														((entity->parameter).type_112.z)[j]=
-															((coordinate_element_field_values.
-															component_values)[2])[4*j];
-														for (k=1;k<4;k++)
+															((surface_entity->parameter).type_114.z)[j];
+														for (k=4;k<16;k += 4)
 														{
 															((entity->parameter).type_112.x)[j] +=
-																((coordinate_element_field_values.
-																component_values)[0])[4*j+k];
+																((surface_entity->parameter).type_114.x)[j+k];
 															((entity->parameter).type_112.y)[j] +=
-																((coordinate_element_field_values.
-																component_values)[1])[4*j+k];
+																((surface_entity->parameter).type_114.y)[j+k];
 															((entity->parameter).type_112.z)[j] +=
-																((coordinate_element_field_values.
-																component_values)[2])[4*j+k];
+																((surface_entity->parameter).type_114.z)[j+k];
 														}
 													}
 												} break;
@@ -13839,10 +13914,10 @@ DESCRIPTION :
 											return_code=0;
 										}
 									}
-									else
-									{
-										return_code=0;
-									}
+								}
+								else
+								{
+									return_code=0;
 								}
 							}
 							i++;
@@ -13868,7 +13943,8 @@ DESCRIPTION :
 								(entity->parameter).type_102.number_of_entities=number_of_faces;
 								for (j=0;j<number_of_faces;j++)
 								{
-									((entity->parameter).type_102.directory_pointers)[j]=faces[j];
+									((entity->parameter).type_102.directory_pointers)[j]=
+										faces_material[j];
 								}
 								/* create a composite curve entity to describe the boundary of
 									the element in world coordinates */
@@ -13889,7 +13965,7 @@ DESCRIPTION :
 									for (j=0;j<number_of_faces;j++)
 									{
 										((entity->parameter).type_102.directory_pointers)[j]=
-											faces[j]+2;
+											faces_world[j];
 									}
 									/* combine the world and material boundary descriptions */
 									if (entity=create_iges_entity_info(element,&(get_data->head),
@@ -13957,12 +14033,14 @@ DESCRIPTION :
 								return_code=0;
 							}
 						}
-						DEALLOCATE(faces);
 					}
 					else
 					{
 						return_code=0;
 					}
+					DEALLOCATE(reorder_faces);
+					DEALLOCATE(faces_world);
+					DEALLOCATE(faces_material);
 				}
 			}
 			else
@@ -13988,7 +14066,7 @@ struct Write_iges_parameter_data_data
 
 int export_to_iges(char *file_name,void *element_group_void)
 /******************************************************************************
-LAST MODIFIED : 10 June 2002
+LAST MODIFIED : 12 June 2002
 
 DESCRIPTION :
 Write bicubic elements to an IGES file.
@@ -14012,6 +14090,7 @@ Write bicubic elements to an IGES file.
 	{
 		if (iges=fopen(file_name,"w"))
 		{
+			return_code=1;
 			/* write IGES header */
 			/* start section */
 			fprintf(iges,"%-72sS      1\n","cmgui");
