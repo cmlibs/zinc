@@ -2340,6 +2340,8 @@ signal type file
 #if defined (UNEMAP_USE_3D)
 				if (map->drawing_information)
 				{
+					set_map_drawing_information_electrodes_accepted_or_rejected(
+						map->drawing_information,1);
 					set_map_drawing_information_viewed_scene(map->drawing_information,0);
 				}
 #endif /* defined (UNEMAP_USE_NODES)*/
@@ -11451,8 +11453,7 @@ c.f. analysis_set_range_frm_win.
 	float maximum,minimum;
 	struct Analysis_work_area *analysis;
 	struct FE_node *rig_node;
-	struct FE_field *channel_gain_field,*channel_offset_field,
-		*display_start_time_field,*display_end_time_field,*signal_field,
+	struct FE_field	*display_start_time_field,*display_end_time_field,
 		*signal_minimum_field,*signal_maximum_field;
 	struct FE_field_component component;
 	struct Signal_drawing_package *signal_drawing_package;
@@ -11461,9 +11462,6 @@ c.f. analysis_set_range_frm_win.
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	rig_node=(struct FE_node *)NULL;
-	channel_gain_field=(struct FE_field *)NULL;
-	channel_offset_field=(struct FE_field *)NULL;
-	signal_field=(struct FE_field *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
 	display_start_time_field=(struct FE_field *)NULL;
@@ -11471,28 +11469,21 @@ c.f. analysis_set_range_frm_win.
 	signal_drawing_package=(struct Signal_drawing_package *)NULL;
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
-		signal_drawing_package=analysis->signal_drawing_package;
-		signal_field=get_Signal_drawing_package_signal_field(
-			signal_drawing_package);
+		signal_drawing_package=analysis->signal_drawing_package;	
 		display_start_time_field=
 			get_Signal_drawing_package_display_start_time_field(
 			signal_drawing_package);
 		display_end_time_field=get_Signal_drawing_package_display_end_time_field(
-			signal_drawing_package);
-		channel_gain_field=get_Signal_drawing_package_channel_gain_field(
-			signal_drawing_package);
-		channel_offset_field=get_Signal_drawing_package_channel_offset_field(
-			signal_drawing_package);
+			signal_drawing_package);		
 		signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
 			signal_drawing_package);
 		signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
 			signal_drawing_package);
 		rig_node=analysis->highlight_rig_node;
 		/*get the signal min,max for this node */
-		get_rig_node_signal_min_max(rig_node,signal_field,display_start_time_field,
-			display_end_time_field,(struct FE_field *)NULL,channel_gain_field,
-			channel_offset_field,&minimum,&maximum,(enum Event_signal_status *)NULL,
-			1/*time_range*/);
+		get_rig_node_signal_min_max(rig_node,display_start_time_field,
+			display_end_time_field,(struct FE_field *)NULL,&minimum,&maximum,
+			(enum Event_signal_status *)NULL,	1/*time_range*/);
 		/* set the new signal_minimum,signal_maximum*/
 		component.field = signal_minimum_field;	
 		/*??JW should be copying out of and into node with MANAGER_MODIFY */
@@ -11584,10 +11575,8 @@ own min/max
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis;
-	struct FE_field *channel_gain_field,*channel_offset_field,
-		*display_start_time_field,*display_end_time_field,*signal_field,
+	struct FE_field *display_start_time_field,*display_end_time_field,
 		*signal_minimum_field,*signal_maximum_field;
-	struct FE_field_component component;
 	struct GROUP(FE_node) *rig_node_group;
 	struct Min_max_iterator *min_max_iterator;
 	struct Region *current_region;
@@ -11596,10 +11585,7 @@ own min/max
 
 	ENTER(analysis_unrange_all);
 	USE_PARAMETER(call_data);
-	USE_PARAMETER(widget);
-	channel_gain_field=(struct FE_field *)NULL;
-	channel_offset_field=(struct FE_field *)NULL;
-	signal_field=(struct FE_field *)NULL;
+	USE_PARAMETER(widget);	
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
 	display_start_time_field=(struct FE_field *)NULL;
@@ -11616,19 +11602,13 @@ own min/max
 		{
 			if (min_max_iterator=CREATE(Min_max_iterator)())
 			{
-				signal_drawing_package=analysis->signal_drawing_package;
-				signal_field=get_Signal_drawing_package_signal_field(
-					signal_drawing_package);
+				signal_drawing_package=analysis->signal_drawing_package;				
 				display_start_time_field=
 					get_Signal_drawing_package_display_start_time_field(
 					signal_drawing_package);
 				display_end_time_field=
 					get_Signal_drawing_package_display_end_time_field(
-					signal_drawing_package);
-				channel_gain_field=get_Signal_drawing_package_channel_gain_field(
-					signal_drawing_package);
-				channel_offset_field=get_Signal_drawing_package_channel_offset_field(
-					signal_drawing_package);
+					signal_drawing_package);			
 				signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
 					signal_drawing_package);
 				signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
@@ -11640,12 +11620,7 @@ own min/max
 				else
 				{
 					rig_node_group=get_Rig_all_devices_rig_node_group(rig);
-				}
-				component.number=0;
-				component.field=signal_field;
-				set_Min_max_iterator_signal_component(min_max_iterator,&component);
-				set_Min_max_iterator_channel_gain_field(min_max_iterator,channel_gain_field);
-				set_Min_max_iterator_channel_offset_field(min_max_iterator,channel_offset_field);
+				}				
 				set_Min_max_iterator_signal_minimum_field(min_max_iterator,signal_minimum_field);
 				set_Min_max_iterator_signal_maximum_field(min_max_iterator,signal_maximum_field);
 				set_Min_max_iterator_display_start_time_field(min_max_iterator,
@@ -11753,10 +11728,8 @@ then sets all signals to this range.
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis;
-	struct FE_field *channel_gain_field,*channel_offset_field,
-		*display_start_time_field,*display_end_time_field,*signal_field,
+	struct FE_field *display_start_time_field,*display_end_time_field,
 		*signal_minimum_field,*signal_maximum_field,*signal_status_field;
-	struct FE_field_component component;
 	struct GROUP(FE_node) *rig_node_group;
 	struct Min_max_iterator *min_max_iterator;
 	struct Region *current_region;
@@ -11767,9 +11740,6 @@ then sets all signals to this range.
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	signal_status_field=(struct FE_field *)NULL;
-	channel_gain_field=(struct FE_field *)NULL;
-	channel_offset_field=(struct FE_field *)NULL;
-	signal_field=(struct FE_field *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
 	display_start_time_field=(struct FE_field *)NULL;
@@ -11786,19 +11756,13 @@ then sets all signals to this range.
 		{
 			if (min_max_iterator=CREATE(Min_max_iterator)())
 			{
-				signal_drawing_package=analysis->signal_drawing_package;
-				signal_field=get_Signal_drawing_package_signal_field(
-					signal_drawing_package);
+				signal_drawing_package=analysis->signal_drawing_package;			
 				display_start_time_field=
 					get_Signal_drawing_package_display_start_time_field(
 					signal_drawing_package);
 				display_end_time_field=
 					get_Signal_drawing_package_display_end_time_field(
-					signal_drawing_package);
-				channel_gain_field=get_Signal_drawing_package_channel_gain_field(
-					signal_drawing_package);
-				channel_offset_field=get_Signal_drawing_package_channel_offset_field(
-					signal_drawing_package);
+					signal_drawing_package);			
 				signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
 					signal_drawing_package);
 				signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
@@ -11814,17 +11778,12 @@ then sets all signals to this range.
 					rig_node_group=get_Rig_all_devices_rig_node_group(rig);
 				}
 				set_Min_max_iterator_count(min_max_iterator,0);
-				set_Min_max_iterator_started(min_max_iterator,0);
-				component.number=0;
-				component.field=signal_field;
-				set_Min_max_iterator_signal_component(min_max_iterator,&component);
+				set_Min_max_iterator_started(min_max_iterator,0);		
 				set_Min_max_iterator_signal_status_field(min_max_iterator,signal_status_field);
 				set_Min_max_iterator_display_start_time_field(min_max_iterator,
 					display_start_time_field);
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
-					display_end_time_field);
-				set_Min_max_iterator_channel_gain_field(min_max_iterator,channel_gain_field);
-				set_Min_max_iterator_channel_offset_field(min_max_iterator,channel_offset_field);
+					display_end_time_field);			
 				/* run through all the nodes to get accepted,undecided signal's min, max */
 				FOR_EACH_OBJECT_IN_GROUP(FE_node)
 					(iterative_get_rig_node_accepted_undecided_signal_min_max,

@@ -1124,7 +1124,7 @@ Gets  electrode_position_field  of <region>
 	}
 	LEAVE;
 	return (electrode_position_field);
-}/* set_Region_electrode_position_field*/
+}/* get_Region_electrode_position_field*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
