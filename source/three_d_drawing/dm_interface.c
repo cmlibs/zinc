@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : dm_interface.c
 
-LAST MODIFIED : 28 October 1998
+LAST MODIFIED : 27 December 2002
 
 DESCRIPTION :
 This provides a Cmgui interface to the Digital Media libraries on the SGI
@@ -57,7 +57,11 @@ typedef struct USTMSCpair
 	with grabbing frames off the screen.  Hopefully this will settle down at
 	some point.
 	The code should still run on an older GLX even if it is compiled on a GLX 1.3.  */
-#if defined (GLX_VERSION_1_3)
+/*???DB.  The old version of GLX (glx.h 1999/12/11), has GLX_VERSION_1_3
+	defined, but doesn't define GLX_PBUFFER_WIDTH, GLX_PBUFFER_HEIGHT and
+	GLX_RGBA_BIT */
+#if defined (GLX_VERSION_1_3) && defined (GLX_PBUFFER_WIDTH) && \
+	defined (GLX_PBUFFER_HEIGHT) && defined (GLX_RGBA_BIT)
 #define GLX_pbuffer 1
 #define GLX_fbconfig 1
 #endif /* defined (GLX_VERSION_1_3) */
