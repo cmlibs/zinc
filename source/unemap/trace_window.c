@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 17 September 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -24,6 +24,7 @@ DESCRIPTION :
 #include <Mrm/MrmDecls.h>
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "unemap/analysis.h"
 #include "unemap/analysis_drawing.h"
 #include "unemap/eimaging_time_dialog.h"
@@ -10260,7 +10261,7 @@ Global functions
 
 int trace_process_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Calculates the processed device.
@@ -10839,6 +10840,15 @@ Calculates the processed device.
 					(trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(trace->real_device_1))
 				{
+					if (processed_device->description)
+					{
+						DEALLOCATE(processed_device->description->name);
+						if (device->description)
+						{
+							processed_device->description->name=duplicate_string(device->
+								description->name);
+						}
+					}
 					if (processed_device->signal->next)
 					{
 						destroy_Signal(&(processed_device->signal->next));
@@ -10891,6 +10901,15 @@ Calculates the processed device.
 					(trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(trace->real_device_1))
 				{
+					if (processed_device->description)
+					{
+						DEALLOCATE(processed_device->description->name);
+						if (device->description)
+						{
+							processed_device->description->name=duplicate_string(device->
+								description->name);
+						}
+					}
 					if (processed_device->signal->next)
 					{
 						destroy_Signal(&(processed_device->signal->next));
