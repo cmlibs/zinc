@@ -452,33 +452,75 @@ endif
 	$(UID2UIDH_BIN) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
+ifeq ($(SYSNAME:IRIX%=),)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list) ;
+endif # SYSNAME == IRIX%=
+ifeq ($(SYSNAME),Linux)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list) ;
+endif # SYSNAME == Linux
+ifeq ($(SYSNAME:CYGWIN%=),)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+endif # SYSNAME == CYGWIN%=
+ifeq ($(SYSNAME),AIX)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+endif # SYSNAME == AIX
+ifeq ($(SYSNAME),win32)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+endif # SYSNAME == win32
+
 define BuildNormalTarget
 	echo 'Building $(2)/$(1)'
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi
-	if [ ! -d $(dir $(2)/$(1)) ]; then \
-		mkdir -p $(dir $(2)/$(1)) ; \
+	if [ ! -d $(2) ]; then \
+		mkdir -p $(2) ; \
 	fi
+	$(BUILD_OBJECT_LIST)
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	(ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \
-	$(LINK) -o $(2)/$(1) $(ALL_FLAGS) `cat object.list` $(4)
+	$(LINK) -o $(1) $(ALL_FLAGS) `cat object.list` $(4) ; \
+	if [ -f $(2)/$(1) ]; then \
+		rm $(2)/$(1) ; \
+	fi ; \
+	cp $(1) $(2)/$(1) ;
 endef
 
-define BuildLibraryTarget
-	echo 'Building library $(2)/$(1)'
+define BuildStaticLibraryTarget
+	echo 'Building static library $(2)/$(1)'
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi
 	if [ ! -d $(dir $(2)/$(1)) ]; then \
 		mkdir -p $(dir $(2)/$(1)) ; \
 	fi
+	$(BUILD_OBJECT_LIST)
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	(ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \
-	rm -f $(2)/$(1) ; \
-	ar $(AR_FLAGS) cr $(2)/$(1) `cat object.list`
+	ar $(AR_FLAGS) cr $(1) `cat object.list` ; \
+	if [ -f $(2)/$(1) ]; then \
+		rm $(2)/$(1) ; \
+	fi ; \
+	cp $(1) $(2)/$(1) ;
+endef
+
+define BuildSharedLibraryTarget
+	echo 'Building shared library $(2)/$(1)'
+	if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi
+	if [ ! -d $(dir $(2)/$(1)) ]; then \
+		mkdir -p $(dir $(2)/$(1)) ; \
+	fi
+	$(BUILD_OBJECT_LIST)
+	cd $(OBJECT_PATH) ; \
+	rm -f product_object ; \
+	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
+	$(LINK) -shared -o $(1) $(ALL_FLAGS) `cat object.list` $(4) ; \
+	if [ -f $(2)/$(1) ]; then \
+		rm $(2)/$(1) ; \
+	fi ; \
+	cp $(1) $(2)/$(1) ;
 endef

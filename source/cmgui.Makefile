@@ -460,19 +460,19 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       #Mandrake 8.2 static libs are incompatible, this works around it by
       #comparing the size of the symbols and forcing Xmu to preload its
       #version if they differ in size.  Older greps don't have -o option.
-      Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
-      Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
-#      ifneq ($(Xm_XeditRes),)
-#         ifneq ($(Xmu_XeditRes),)
-#            ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
+      Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
+      Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
+      ifneq ($(Xm_XeditRes),)
+         ifneq ($(Xmu_XeditRes),)
+            ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
                ifneq ($(STATIC_LINK),true)
                   USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a
                else # STATIC_LINK != true
                   USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
                endif # STATIC_LINK != true
-#            endif
-#         endif
-#      endif
+            endif
+         endif
+      endif
       ifneq ($(STATIC_LINK),true)
          USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
       else # STATIC_LINK != true
@@ -502,13 +502,13 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       USER_INTERFACE_LIB += -L$(X_LIB)
    endif
    ifneq ($(SYSNAME),win32)
-      #USE_GTK2 = true
+      USE_GTK2 = true
       ifeq ($(USE_GTK2),true)
-         USER_INTERFACE_INC += $(shell "/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --cflags")
+         USER_INTERFACE_INC += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --cflags)
          ifneq ($(STATIC_LINK),true)
-            USER_INTERFACE_LIB += $(shell "/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --libs")
+            USER_INTERFACE_LIB += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --libs)
          else # $(STATIC_LINK) != true
-            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L/usr/local/Mesa-5.0/lib -lGLU -lGL
+            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L/usr/local/Mesa-5.0/lib -lGLU -lGL
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
@@ -545,9 +545,9 @@ ifeq ($(SYSNAME),Linux)
    ifneq ($(STATIC_LINK),true)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
-      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a `ls -1 /usr/lib/libstdc++*.a | tail -1`
+      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a
    else # $(STATIC_LINK) != true
-      LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
+      LIB = -lg2c -lm -ldl -lpthread -lcrypt
    endif # $(STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
@@ -1179,63 +1179,14 @@ ifeq ($(SYSNAME),win32)
    endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
-
 $(BIN_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
-	@if [ ! -d $(BIN_PATH) ]; then \
-		mkdir -p $(BIN_PATH); \
-	fi
-ifeq ($(SYSNAME:IRIX%=),)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list)
-endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
-endif # SYSNAME == Linux
-ifeq ($(SYSNAME:CYGWIN%=),)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
-endif # SYSNAME == CYGWIN%=
-ifeq ($(SYSNAME),AIX)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
-endif # SYSNAME == AIX
-ifeq ($(SYSNAME),win32)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
-endif # SYSNAME == win32
-   # Link in the OBJECT_PATH and copy to the BIN_PATH as often the OBJECT_PATH is kept locally.
-   # Need to remove the $(BIN_PATH)/$(BIN_TARGET) before copying it over as AIX blocks if someone is running the old version.
-	cd $(OBJECT_PATH) ; \
-	rm -f product_object ; \
-	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(BIN_TARGET) $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
-	if [ -f $(BIN_PATH)/$(BIN_TARGET) ]; then \
-		rm $(BIN_PATH)/$(BIN_TARGET) ; \
-	fi ; \
-	cp $(BIN_TARGET) $(BIN_PATH)/$(BIN_TARGET)
+	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(MAIN_OBJ),$(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
 
-$(SO_LIB_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
-	@if [ ! -d $(BIN_PATH) ]; then \
-		mkdir -p $(BIN_PATH); \
-	fi
-ifeq ($(SYSNAME:IRIX%=),)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list)
-endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
-endif # SYSNAME == Linux
-ifeq ($(SYSNAME),AIX)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
-endif # SYSNAME == AIX
-ifeq ($(SYSNAME),win32)
-	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
-endif # SYSNAME == win32
-   # Link in the OBJECT_PATH and copy to the BIN_PATH as often the OBJECT_PATH is kept locally.
-   # Need to remove the $(BIN_PATH)/$(BIN_TARGET) before copying it over as AIX blocks if someone is running the old version.
-	cd $(OBJECT_PATH) ; \
-	rm -f product_object ; \
-	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -shared -o $(SO_LIB_TARGET) $(ALL_FLAGS) `cat object.list` $(SO_ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
-	if [ -f $(BIN_PATH)/$(SO_LIB_TARGET) ]; then \
-		rm $(BIN_PATH)/$(SO_LIB_TARGET) ; \
-	fi ; \
-	cp $(SO_LIB_TARGET) $(BIN_PATH)/$(SO_LIB_TARGET)
+$(SO_LIB_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE)
+	$(call BuildSharedLibraryTarget,$(SO_LIB_TARGET),$(BIN_PATH),$(OBJS),$(SO_ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
+
+$(STATIC_LIB_TARGET) : $(OBJS)
+	$(call BuildStaticLibraryTarget,$(STATIC_LIB_TARGET),$(BIN_PATH),$(OBJS))
 
 # Force is a dummy rule used to ensure some objects are made every time as the
 # target 'force' doesnt exist */
@@ -1287,7 +1238,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       UID2UIDH_OBJSA = $(UID2UIDH_SRCS:.c=.o)
       UID2UIDH_OBJSB = $(UID2UIDH_OBJSA:.cpp=.o)
       UID2UIDH_OBJS = $(UID2UIDH_OBJSB:.f=.o)
-      BUILD_UID2UIDH = $(call BuildNormalTarget,$(UID2UIDH),$(UTILITIES_PATH),UID2UIDH_OBJS,$(UID2UIDH_LIB))
+      BUILD_UID2UIDH = $(call BuildNormalTarget,$(UID2UIDH),$(UTILITIES_PATH),$(UID2UIDH_OBJS),$(UID2UIDH_LIB))
 
       $(UID2UIDH_BIN): $(UID2UIDH_OBJS)
 			$(BUILD_UID2UIDH)
@@ -1302,7 +1253,7 @@ SPACES_TO_TABS_SRCS = \
 SPACES_TO_TABS_OBJSA = $(SPACES_TO_TABS_SRCS:.c=.o)
 SPACES_TO_TABS_OBJSB = $(SPACES_TO_TABS_OBJSA:.cpp=.o)
 SPACES_TO_TABS_OBJS = $(SPACES_TO_TABS_OBJSB:.f=.o)
-BUILD_SPACES_TO_TABS = $(call BuildNormalTarget,SpacesToTabs,$(UTILITIES_PATH),SPACES_TO_TABS_OBJS,-lm) 
+BUILD_SPACES_TO_TABS = $(call BuildNormalTarget,SpacesToTabs,$(UTILITIES_PATH),$(SPACES_TO_TABS_OBJS),-lm) 
 
 SpacesToTabs: $(SPACES_TO_TABS_OBJS)
 	$(BUILD_SPACES_TO_TABS)
@@ -1313,7 +1264,7 @@ TABS_TO_SPACES_SRCS = \
 TABS_TO_SPACES_OBJSA = $(TABS_TO_SPACES_SRCS:.c=.o)
 TABS_TO_SPACES_OBJSB = $(TABS_TO_SPACES_OBJSA:.cpp=.o)
 TABS_TO_SPACES_OBJS = $(TABS_TO_SPACES_OBJSB:.f=.o)
-BUILD_TABS_TO_SPACES = $(call BuildNormalTarget,TabsToSpaces,$(UTILITIES_PATH),TABS_TO_SPACES_OBJS,-lm) 
+BUILD_TABS_TO_SPACES = $(call BuildNormalTarget,TabsToSpaces,$(UTILITIES_PATH),$(TABS_TO_SPACES_OBJS),-lm) 
 
 TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 	$(BUILD_TABS_TO_SPACES)
