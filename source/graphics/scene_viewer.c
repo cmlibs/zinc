@@ -1027,6 +1027,7 @@ DESCRIPTION :
 			bottom to top in the largest square that fits inside the
 			viewer. Also has -1 to +1 range from far to near_plane */
 		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
 		glLoadIdentity();
 		if (rendering_data->viewport_width > rendering_data->viewport_height)
 		{
@@ -1084,6 +1085,9 @@ DESCRIPTION :
 			glStencilFunc(GL_NOTEQUAL,1,1);
 			glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
 		}
+
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
 
 		/* Render everything else */
 		Scene_viewer_call_next_renderer(rendering_data);
@@ -2304,12 +2308,6 @@ access this function.
 				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 					rendering_data.render_callstack);
 
-				/* Apply the modelview matrix, lights and clip planes */
-				render_object = CREATE(Scene_viewer_render_object)(
-					Scene_viewer_apply_modelview_lights_and_clip_planes);
-				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-					rendering_data.render_callstack);
-
 				if (scene_viewer->overlay_scene)
 				{
 					/*???RC property functions should be obtained once, elsewhere */
@@ -2326,6 +2324,12 @@ access this function.
 					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 						rendering_data.render_callstack);
 				}
+
+				/* Apply the modelview matrix, lights and clip planes */
+				render_object = CREATE(Scene_viewer_render_object)(
+					Scene_viewer_apply_modelview_lights_and_clip_planes);
+				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+					rendering_data.render_callstack);
 
 				if (SCENE_VIEWER_STEREO == scene_viewer->stereo_mode)
 				{
