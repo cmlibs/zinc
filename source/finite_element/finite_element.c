@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -13131,18 +13131,13 @@ Used in command parsing to translate a node name into an node.
 #if !defined (WINDOWS_DEV_FLAG)
 int list_FE_node(struct FE_node *node,void *list_node_information)
 /*******************************************************************************
-LAST MODIFIED : 10 February 1999
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Outputs the information contained at the node.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (OLD_CODE)
-	char line[81];
-	FE_value *value;
-	int i,line_length,number_of_characters,return_code;
-#endif /* defined (OLD_CODE) */
 
 	ENTER(list_FE_node);
 	if (node)
@@ -13158,42 +13153,12 @@ Outputs the information contained at the node.
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(list_FE_node_field,(void *)node,
 					node->fields->node_field_list);
 			}
+#if defined (DEBUG)
+			/*???debug*/
+			display_message(INFORMATION_MESSAGE,"  access count = %d\n",
+				node->access_count);
+#endif /* defined (DEBUG) */
 		}
-#if defined (OLD_CODE)
-		sprintf(line,"node : %d\n",node->cm_node_identifier);
-		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  access count=%d\n",node->access_count);
-		display_message(INFORMATION_MESSAGE,line);
-		if ((node->fields)&&(value=node->values))
-		{
-			i=node->fields->number_of_values;
-			sprintf(line,"  #values=%d\n",i);
-			display_message(INFORMATION_MESSAGE,line);
-			line_length=1;
-			while (i>0)
-			{
-				sprintf(line+line_length," %10g%n",*value,&number_of_characters);
-				line_length += number_of_characters;
-				if (70<=line_length)
-				{
-					sprintf(line+line_length,"\n");
-					display_message(INFORMATION_MESSAGE,line);
-					line_length=1;
-				}
-				value++;
-				i--;
-			}
-			if (1<line_length)
-			{
-				sprintf(line+line_length,"\n");
-				display_message(INFORMATION_MESSAGE,line);
-			}
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE,"  No fields defined\n");
-		}
-#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
