@@ -1200,10 +1200,6 @@ Wrapper function for send.
 			return_code=buffer_length;
 		}
 	}
-	/*???debug */
-	printf("socket_send %d %d\n",buffer_length,return_code);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
 
 	return (return_code);
 } /* socket_send */
@@ -2690,9 +2686,9 @@ See <unemap_configure> for more details.
 #endif /* defined (UNIX) */
 
 	ENTER(crate_configure_start);
+#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,"enter crate_configure_start %p\n",crate);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
@@ -2790,11 +2786,6 @@ See <unemap_configure> for more details.
 								buffer[0]=UNEMAP_CONFIGURE_CODE;
 								buffer[1]=BIG_ENDIAN_CODE;
 								buffer_size=2+sizeof(message_size);
-								/*???debug */
-								display_message(INFORMATION_MESSAGE,
-									"crate->software_version %d\n",crate->software_version);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
 								if (4<=crate->software_version)
 								{
 									if (0==crate->number_of_configured_channels)
@@ -3223,9 +3214,9 @@ See <unemap_configure> for more details.
 			);
 		return_code=0;
 	}
+#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,"leave crate_configure_start\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
