@@ -6583,7 +6583,6 @@ What needs to be done when the analysis interval (buffer range) is changed.
 	char event_interval_changed,search_interval_changed;
 	int i,return_code,temp;
 	struct Device *highlight_device;
-	struct Interval_area *interval;
 	struct Map *map;
 	struct Signal_buffer *buffer;
 	struct Trace_window *trace;
@@ -6602,7 +6601,6 @@ What needs to be done when the analysis interval (buffer range) is changed.
 		(buffer=get_Device_signal_buffer(highlight_device)))
 	{
 		return_code=1;
-		interval= &(analysis->window->interval);
 #if defined (UNEMAP_USE_NODES)
 		signal_drawing_package=analysis->signal_drawing_package;
 		display_start_time_field=
