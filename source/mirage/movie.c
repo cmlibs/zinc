@@ -1385,6 +1385,8 @@ Regenerates the GFE but does not update the scene.
 			if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))
 			{
 				GT_element_settings_set_material(settings,material);
+				/*???RC temporary */
+				GT_element_settings_set_selected_material(settings,material);
 				GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);
 				glyph_centre[0]=0.0;
 				glyph_centre[1]=0.0;
@@ -1454,6 +1456,8 @@ Adds lines in the given <material> to the graphical finite element for
 			if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_LINES))
 			{
 				GT_element_settings_set_material(settings,material);
+				/*???RC temporary */
+				GT_element_settings_set_selected_material(settings,material);
 				if (GT_element_group_add_settings(gt_element_group,settings,2))
 				{
 					GT_element_group_build_graphics_objects(gt_element_group,
@@ -1509,6 +1513,8 @@ Adds surfaces in the given <material> to the graphical finite element for
 			if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
 			{
 				GT_element_settings_set_material(settings,material);
+				/*???RC temporary */
+				GT_element_settings_set_selected_material(settings,material);
 				if (GT_element_group_add_settings(gt_element_group,settings,0))
 				{
 					GT_element_group_build_graphics_objects(gt_element_group,
