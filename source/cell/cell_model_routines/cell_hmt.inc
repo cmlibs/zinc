@@ -32,7 +32,7 @@ c      PARAMETER(ODE=1) !cell_reserved.inc
 C *** PARAMETERS array
       INTEGER Ca_max,Ca_min,Ca_tau,Rho0,Rho1,Tm_n_0,Tm_p50_0,beta1,
      '  beta2,beta0,Tref,gamma,Cab_max,alfa0,a,alpha1,alpha2,alpha3,A1,
-     '  A2,A3,PHI1,PHI2,PHI3,MaxExtRatio,MinExtRatio
+     '  A2,A3,MaxExtRatio,MinExtRatio
       PARAMETER(Rho0=1) !Ca++ binding to Tn-C on rate constant (ms^-1.mM^-1)
       PARAMETER(Rho1=2) !Ca++ binding to Tn-C off rate constant (ms^-1)
       PARAMETER(Cab_max=3) !Max conc of Ca++ initially bound to Tn-C (mM)
