@@ -439,8 +439,6 @@ Perform MIL analysis on the image cache.
 	FE_value x3, y3, z3;
 
 	FE_value 	pixsize;		/* size of one side of voxel		*/
-
-        FE_value	tline_sp;		/* spacing between test lines in mm	*/
         FE_value	tline_ln;		/* length of all test lines in mm	*/
         int	num_tlines;		/* number of test lines in grid		*/
         int	tintrsctn;		/* total # of intersections		*/
@@ -576,8 +574,6 @@ Perform MIL analysis on the image cache.
 			{
 			        iline_sp = 1;
 			}
-                	tline_sp = (FE_value)(iline_sp * pixsize);
-
 		        dradius = (FE_value)radius;
 		        xsize = image->sizes[0];
 		        ysize = image->sizes[1];
@@ -604,7 +600,6 @@ Perform MIL analysis on the image cache.
 			tpd = vf / tb;		/* Tb.N, [mm^-1] */
 			tps = (1.0/tpd) - tb;	/* Tb.Sp, [mm] */
 			SMI = 2.025 * 12.0 * mean_curvature *vf / (sd * sd) ;
-			num_tlines /= number_of_dirs;	/* # of test lines for a single rotation */
                 	tintrsctn = 0;
 			num_tlines = 0;
 
@@ -653,7 +648,7 @@ Perform MIL analysis on the image cache.
 			x3 = eigvecs[2];
 			y3 = eigvecs[5];
 			z3 = eigvecs[8];
-
+                        vf *= 100.0;
 			fp = fopen(filename,"wa");
 			fprintf(fp, "Bone Image Analysis Results (3D)\n");
 			fprintf(fp,"\n");
@@ -665,7 +660,7 @@ Perform MIL analysis on the image cache.
 			fprintf(fp,"BV(mm^3)         : %.8f\n",bv);
 			fprintf(fp,"TV(mm^3)         : %.8f\n",tv);
 			fprintf(fp,"BS(mm^2)         : %.8f\n",bs);
-			fprintf(fp,"BV/TV(%)         : %.8f\n", bvtv * 100.0);
+			fprintf(fp,"BV/TV(%)         : %.8f\n", vf);
 			fprintf(fp,"BS/BV(mm^2 mm^-3): %.8f\n", sv);
 			fprintf(fp,"Tb.Th(mm)        : %.8f\n", tb);
 			fprintf(fp,"Tb.N(mm^-1)      : %.8f\n", tpd);
