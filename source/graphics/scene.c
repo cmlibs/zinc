@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 8 June 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -3835,7 +3835,7 @@ longer in <node_group_manager>.
 int Scene_object_get_range(struct Scene_object *scene_object,
 	void *graphics_object_range_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 8 June 2001
 
 DESCRIPTION :
 Scene_object list iterator function. If <scene_object> is visible, expands
@@ -3852,9 +3852,11 @@ graphics objects in scene_object.
 	void *use_range_void;
 
 	ENTER(Scene_object_get_range);
-	if (scene_object&&(graphics_object_range=
+	if (scene_object && (graphics_object_range =
 		(struct Graphics_object_range_struct *)graphics_object_range_void))
 	{
+		/* must first build graphics objects */
+		build_Scene_object(scene_object, (void *)NULL);
 		if (transformation=scene_object->transformation)
 		{
 			temp_graphics_object_range.first=1;
