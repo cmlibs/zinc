@@ -14086,7 +14086,7 @@ Executes a GFX EXPORT ALIAS command.
 			write_sdl=0;
 			destroy_when_saved=1;
 #endif /* defined (NEW_ALIAS) */
-			scene=command_data->default_scene;
+			scene=ACCESS(Scene)(command_data->default_scene);
 #if defined (NEW_ALIAS)
 			(option_table[0]).to_be_modified= &save_now;
 			(option_table[1]).to_be_modified= &frame_in;
@@ -14128,6 +14128,10 @@ Executes a GFX EXPORT ALIAS command.
 #endif /* defined (NEW_ALIAS) */
 				}
 			} /* parse error,help */
+			if (scene)
+			{
+				DEACCESS(Scene)(scene);
+			}
 		}
 		else
 		{
@@ -22252,7 +22256,7 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 			/* initialize defaults */
 			name=(char *)NULL;
 			position=0;
-			scene=command_data->default_scene;
+			scene=ACCESS(Scene)(command_data->default_scene);
 			(option_table[0]).to_be_modified= &name;
 			(option_table[1]).to_be_modified= &position;
 			(option_table[2]).to_be_modified= &scene;
@@ -22285,6 +22289,10 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 			if (name)
 			{
 				DEALLOCATE(name);
+			}
+			if (scene)
+			{
+				DEACCESS(scene);
 			}
 		}
 		else
@@ -27757,6 +27765,11 @@ Execute a <command_string>. If there is a command
 				else
 				{
 					option_table = CREATE(Option_table)();
+#if defined (SELECT_DESCRIPTORS)
+					/* attach */
+					Option_table_add_entry(option_table, "attach", NULL, command_data_void,
+						execute_command_attach);
+#endif /* !defined (SELECT_DESCRIPTORS) */
 #if defined (CELL)
 					/* cell */
 					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
@@ -27770,6 +27783,11 @@ Execute a <command_string>. If there is a command
 					/* create */
 					Option_table_add_entry(option_table, "create", NULL, command_data_void,
 						execute_command_create);
+#if defined (SELECT_DESCRIPTORS)
+					/* detach */
+					Option_table_add_entry(option_table, "detach", NULL, command_data_void,
+						execute_command_detach);
+#endif /* !defined (SELECT_DESCRIPTORS) */
 					/* fem */
 					Option_table_add_entry(option_table, "fem", NULL, command_data_void,
 						execute_command_cm);
@@ -29453,7 +29471,10 @@ DESCRIPTION :
 Clean up the command_data, deallocating all the associated memory and resources.
 ==============================================================================*/
 {
-	int return_code, status;
+	int return_code;
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+	int status;
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 	struct Cmiss_command_data *command_data;
 
 	ENTER(DESTROY(Cmiss_command_data));
