@@ -353,7 +353,6 @@ Destroys an variable list.
 #else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
-#if defined (NOT_DEBUG)
 int Cmiss_function_variable_list_add(Cmiss_function_variable_list_id list,
 	Cmiss_function_variable_id variable)
 /*******************************************************************************
@@ -379,7 +378,7 @@ Adds a <variable> to a <list>.
 
 	return (return_code);
 }
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_list_add(Cmiss_function_variable_list_id,
 	Cmiss_function_variable_id)
 /*******************************************************************************
@@ -395,4 +394,5 @@ Adds a <variable> to a <list>.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
