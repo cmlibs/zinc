@@ -6,8 +6,8 @@ LAST MODIFIED : 31 March 2004
 DESCRIPTION :
 The public interface to the Cmiss computed_fields.
 ==============================================================================*/
-#ifndef __CMISS_REGION_H__
-#define __CMISS_REGION_H__
+#ifndef __CMISS_COMPUTED_FIELD_H__
+#define __CMISS_COMPUTED_FIELD_H__
 
 #include "api/cmiss_finite_element.h"
 #include "general/object.h"
@@ -108,4 +108,4 @@ values and derivatives for this field in the given element, ie. values is
 number_of_components in size, derivatives has the element dimension times the
 number_of_components
 ==============================================================================*/
-#endif /* __CMISS_REGION_H__ */
+#endif /* __CMISS_COMPUTED_FIELD_H__ */
