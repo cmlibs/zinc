@@ -218,9 +218,15 @@ necessary.
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
 	Widget option_widget;
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 
 	ENTER(update_map_from_dialog);
 	USE_PARAMETER(call_data);
+#if !defined (UNEMAP_USE_NODES)
+	USE_PARAMETER(spectrum_manager);
+#endif/* defined (UNEMAP_USE_NODES)*/
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
 		(map_dialog=mapping->map_dialog))
 	{
@@ -273,46 +279,84 @@ necessary.
 				map_settings_changed=1;
 				map->colour_option=SHOW_COLOUR;
 			}
-			if (option_widget==map_dialog->spectrum.type_option.blue_red)
+			spectrum=map->drawing_information->spectrum;
+#if defined (UNEMAP_USE_NODES)				
+			if(spectrum_manager=get_unemap_package_spectrum_manager(map->unemap_package))
 			{
-					if (BLUE_TO_RED_SPECTRUM != Spectrum_get_simple_type(
-						map->drawing_information->spectrum))
+				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+				{
+					if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+						("spectrum_modify_temp"))
 					{
-						Spectrum_set_simple_type(map->drawing_information->spectrum,
-							BLUE_TO_RED_SPECTRUM);
-						map_settings_changed = 1;						
+						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+							(spectrum_to_be_modified_copy,spectrum);
+#else
+						spectrum_to_be_modified_copy=spectrum;
+#endif /* defined (UNEMAP_USE_NODES) */
+						if (option_widget==map_dialog->spectrum.type_option.blue_red)
+						{
+							if (BLUE_TO_RED_SPECTRUM != Spectrum_get_simple_type(
+								spectrum_to_be_modified_copy))
+							{
+								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+									BLUE_TO_RED_SPECTRUM);
+								map_settings_changed = 1;						
+							}
+						}
+						else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)
+						{
+							if (LOG_BLUE_TO_RED_SPECTRUM != Spectrum_get_simple_type(
+								spectrum_to_be_modified_copy))
+							{
+								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+									LOG_BLUE_TO_RED_SPECTRUM);
+								map_settings_changed = 1;					
+							}
+						}
+						else if (option_widget==map_dialog->spectrum.type_option.log_red_blue)
+						{
+							if (LOG_RED_TO_BLUE_SPECTRUM != Spectrum_get_simple_type(
+								spectrum_to_be_modified_copy))
+							{
+								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+									LOG_RED_TO_BLUE_SPECTRUM);
+								map_settings_changed = 1;						
+							}
+						}
+						else
+						{
+							if (RED_TO_BLUE_SPECTRUM != Spectrum_get_simple_type(
+								spectrum_to_be_modified_copy))
+							{
+								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+									RED_TO_BLUE_SPECTRUM);
+								map_settings_changed = 1;					
+							}
+						}
+
+#if defined (UNEMAP_USE_NODES)	
+						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+							spectrum_to_be_modified_copy,spectrum_manager);
+						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
 					}
-			}
-			else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)
-			{
-					if (LOG_BLUE_TO_RED_SPECTRUM != Spectrum_get_simple_type(
-						map->drawing_information->spectrum))
+					else
 					{
-						Spectrum_set_simple_type(map->drawing_information->spectrum,
-							LOG_BLUE_TO_RED_SPECTRUM);
-						map_settings_changed = 1;					
+						display_message(ERROR_MESSAGE,
+							" update_map_from_dialog. Could not create spectrum copy.");				
 					}
-			}
-			else if (option_widget==map_dialog->spectrum.type_option.log_red_blue)
-			{
-					if (LOG_RED_TO_BLUE_SPECTRUM != Spectrum_get_simple_type(
-						map->drawing_information->spectrum))
-					{
-						Spectrum_set_simple_type(map->drawing_information->spectrum,
-							LOG_RED_TO_BLUE_SPECTRUM);
-						map_settings_changed = 1;						
-					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						" update_map_from_dialog. Spectrum is not in manager!");		
+				}
 			}
 			else
 			{
-					if (RED_TO_BLUE_SPECTRUM != Spectrum_get_simple_type(
-						map->drawing_information->spectrum))
-					{
-						Spectrum_set_simple_type(map->drawing_information->spectrum,
-							RED_TO_BLUE_SPECTRUM);
-						map_settings_changed = 1;					
-					}
+				display_message(ERROR_MESSAGE,
+					" update_map_from_dialog. Spectrum_manager not present");
 			}
+#endif /* defined (UNEMAP_USE_NODES) */		
 		}
 		XtVaGetValues(map_dialog->interpolation.option_menu,
 			XmNmenuHistory,&option_widget,

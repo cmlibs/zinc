@@ -911,8 +911,16 @@ Updates the colour map being used for map.
 	unsigned short blue_short,green_short,red_short;
 	XColor colour,*spectrum_rgb;
 	XImage *map_image;
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 
 	ENTER(update_colour_map_unemap);
+#if !defined (UNEMAP_USE_NODES)
+	USE_PARAMETER(spectrum);
+	USE_PARAMETER(spectrum_to_be_modified_copy);
+	USE_PARAMETER(spectrum_manager);
+#endif/* defined (UNEMAP_USE_NODES)*/
 	if (map&&(map->type)&&(drawing_information=map->drawing_information)&&
 		(drawing_information->user_interface)&&drawing&&(0<=map->frame_number)&&
 		(map_frame=map->frames))
@@ -955,8 +963,46 @@ Updates the colour map being used for map.
 			!((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
 			(map->activation_front<number_of_spectrum_colours)))
 		{
+
+#if defined (UNEMAP_USE_NODES)	
+			spectrum=map->drawing_information->spectrum;
+			if(spectrum_manager=get_unemap_package_spectrum_manager(map->unemap_package))
+			{
+				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+				{
+					if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+						("spectrum_modify_temp"))
+					{
+						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+							(spectrum_to_be_modified_copy,spectrum);			
+						Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,0.0,
+							6.0);		
+						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+							spectrum_to_be_modified_copy,spectrum_manager);
+						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							" update_colour_map_unemap. Could not create spectrum copy.");				
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						" update_colour_map_unemap. Spectrum is not in manager!");		
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					" update_colour_map_unemap. Spectrum_manager not present");
+			}
+#else
 			Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,0.0,
 				6.0);
+#endif /* defined (UNEMAP_USE_NODES) */
+
 			for (i=0;i<=start_cell;i++)
 			{
 				spectrum_rgb[i].pixel=spectrum_pixels[i];

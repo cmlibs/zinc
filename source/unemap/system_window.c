@@ -129,12 +129,20 @@ Associate the mapping window with the acquisition work area
 ==============================================================================*/
 {
 	int maintain_aspect_ratio;
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct System_window *system;
 	struct User_interface *user_interface;
 
 	ENTER(associate_mapping_acquisition);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
+#if !defined (UNEMAP_USE_NODES)
+	USE_PARAMETER(spectrum);
+	USE_PARAMETER(spectrum_to_be_modified_copy);
+	USE_PARAMETER(spectrum_manager);
+#endif /* defined (UNEMAP_USE_NODES) */
 	if ((system=(struct System_window *)system_window)&&
 		(user_interface=system->user_interface))
 	{
@@ -149,8 +157,45 @@ Associate the mapping window with the acquisition work area
 			{
 				maintain_aspect_ratio=0;
 			}
+
+#if defined (UNEMAP_USE_NODES)	
+			spectrum=system->map_drawing_information->spectrum;			
+			if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
+			{
+				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+				{
+					if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+						("spectrum_modify_temp"))
+					{
+						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+							(spectrum_to_be_modified_copy,spectrum);										
+						Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+							BLUE_TO_RED_SPECTRUM);	
+						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+							spectrum_to_be_modified_copy,spectrum_manager);
+						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"associate_mapping_acquisition. Could not create spectrum copy.");				
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"associate_mapping_acquisition. Spectrum is not in manager!");		
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"associate_mapping_acquisition. Spectrum_manager not present");
+			}
+#else
 			Spectrum_set_simple_type(system->map_drawing_information->spectrum,
 				BLUE_TO_RED_SPECTRUM);
+#endif /* defined (UNEMAP_USE_NODES) */
 			open_mapping_window(&(system->acquisition.mapping_window),
 				system->mapping_button,system->window_shell,
 				&(system->mapping.window_shell),&(system->mapping.outer_form),
@@ -498,10 +543,17 @@ Associate the mapping window with the analysis work area
 	int maintain_aspect_ratio;
 	struct System_window *system;
 	struct User_interface *user_interface;
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 
 	ENTER(associate_mapping_analysis);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
+#if !defined (UNEMAP_USE_NODES)
+	USE_PARAMETER(spectrum_to_be_modified_copy);
+	USE_PARAMETER(spectrum_manager);
+#endif /* !defined (UNEMAP_USE_NODES) */
 	if ((system=(struct System_window *)system_window)&&
 		(user_interface=system->user_interface))
 	{
@@ -519,20 +571,59 @@ Associate the mapping window with the analysis work area
 			/* Don't want to reset the spectrum when using the analysis window */
 			if(system->mapping.associate!=ANALYSIS_ASSOCIATE)
 			{
-				switch (system->analysis.map_type)
+
+				spectrum=system->map_drawing_information->spectrum;
+#if defined (UNEMAP_USE_NODES)				
+				if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
 				{
-					case SINGLE_ACTIVATION:
-					case MULTIPLE_ACTIVATION:
+					if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 					{
-						Spectrum_set_simple_type(system->map_drawing_information->spectrum,
-							RED_TO_BLUE_SPECTRUM);
-					} break;
-					default:
+						if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+							("spectrum_modify_temp"))
+						{
+							MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+								(spectrum_to_be_modified_copy,spectrum);
+#else
+							spectrum_to_be_modified_copy=spectrum;
+#endif /* defined (UNEMAP_USE_NODES) */
+
+							switch (system->analysis.map_type)
+							{
+								case SINGLE_ACTIVATION:
+								case MULTIPLE_ACTIVATION:
+								{
+									Spectrum_set_simple_type(spectrum,
+										RED_TO_BLUE_SPECTRUM);
+								} break;
+								default:
+								{
+									Spectrum_set_simple_type(spectrum,
+										BLUE_TO_RED_SPECTRUM);
+								} break;
+							}
+#if defined (UNEMAP_USE_NODES)	
+							MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+								spectrum_to_be_modified_copy,spectrum_manager);
+							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"associate_mapping_analysis. Could not create spectrum copy.");				
+						}
+					}
+					else
 					{
-						Spectrum_set_simple_type(system->map_drawing_information->spectrum,
-							BLUE_TO_RED_SPECTRUM);
-					} break;
+						display_message(ERROR_MESSAGE,
+							"associate_mapping_analysis. Spectrum is not in manager!");		
+					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"associate_mapping_analysis. Spectrum_manager not present");
+				}
+#endif /* defined (UNEMAP_USE_NODES) */		
 			}
 			open_mapping_window(&(system->analysis.mapping_window),
 				system->mapping_button,system->window_shell,
@@ -672,13 +763,19 @@ Opens the windows associated with the mapping work area.
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"system_window_structure",(XtPointer)NULL}
-	};
+	};	
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct System_window *system;
 	struct User_interface *user_interface;
 
 	ENTER(open_mapping_work_area);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
+#if !defined (UNEMAP_USE_NODES)
+	USE_PARAMETER(spectrum_manager);
+#endif /*defined (UNEMAP_USE_NODES) */
 	if ((system=(struct System_window *)system_window)&&
 		(user_interface=system->user_interface))
 	{
@@ -723,8 +820,45 @@ Opens the windows associated with the mapping work area.
 								}
 							}
 						}
+#if defined (UNEMAP_USE_NODES)	
+						spectrum=system->map_drawing_information->spectrum;
+						if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
+						{
+							if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+							{
+								if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+									("spectrum_modify_temp"))
+								{
+									MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+										(spectrum_to_be_modified_copy,spectrum);
+									Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+										BLUE_TO_RED_SPECTRUM);	
+									MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+										spectrum_to_be_modified_copy,spectrum_manager);
+									DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"open_mapping_work_area . Could not create spectrum copy.");				
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"open_mapping_work_area . Spectrum is not in manager!");		
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"open_mapping_work_area . Spectrum_manager not present");
+						}
+#else
 						Spectrum_set_simple_type(system->map_drawing_information->spectrum,
 							BLUE_TO_RED_SPECTRUM);
+#endif /* defined (UNEMAP_USE_NODES) */
+
 						/*???system->window_shell as parent ? */
 						open_mapping_window(&(system->acquisition.mapping_window),
 							system->mapping_button,system->window_shell,
@@ -769,23 +903,61 @@ Opens the windows associated with the mapping work area.
 								}
 							}
 						}
-						/*???system->window_shell as parent ? */
-						switch (system->analysis.map_type)
+						spectrum=system->map_drawing_information->spectrum;
+#if defined (UNEMAP_USE_NODES)				
+						if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
 						{
-							case SINGLE_ACTIVATION:
-							case MULTIPLE_ACTIVATION:
+							if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 							{
-								Spectrum_set_simple_type(
-									system->map_drawing_information->spectrum,
-									RED_TO_BLUE_SPECTRUM);
-							} break;
-							default:
+								if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+									("spectrum_modify_temp"))
+								{
+									MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+										(spectrum_to_be_modified_copy,spectrum);
+#else
+									spectrum_to_be_modified_copy=spectrum;
+#endif /* defined (UNEMAP_USE_NODES) */
+
+									/*???system->window_shell as parent ? */
+									switch (system->analysis.map_type)
+									{
+										case SINGLE_ACTIVATION:
+										case MULTIPLE_ACTIVATION:
+										{
+											Spectrum_set_simple_type(
+												spectrum_to_be_modified_copy,
+												RED_TO_BLUE_SPECTRUM);
+										} break;
+										default:
+										{
+											Spectrum_set_simple_type(
+												spectrum_to_be_modified_copy,
+												BLUE_TO_RED_SPECTRUM);
+										} break;
+									}
+#if defined (UNEMAP_USE_NODES)	
+									MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+										spectrum_to_be_modified_copy,spectrum_manager);
+									DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"open_mapping_work_area. Could not create spectrum copy.");				
+								}
+							}
+							else
 							{
-								Spectrum_set_simple_type(
-									system->map_drawing_information->spectrum,
-									BLUE_TO_RED_SPECTRUM);
-							} break;
+								display_message(ERROR_MESSAGE,
+									"open_mapping_work_area. Spectrum is not in manager!");		
+							}
 						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"open_mapping_work_area. Spectrum_manager not present");
+						}
+#endif /* defined (UNEMAP_USE_NODES) */	
 						open_mapping_window(&(system->analysis.mapping_window),
 							system->mapping_button,system->window_shell,
 							&(system->mapping.window_shell),&(system->mapping.outer_form),

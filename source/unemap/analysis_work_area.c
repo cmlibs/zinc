@@ -196,6 +196,9 @@ DESCRIPTION :
 	struct Map_frame *frame;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct User_interface *user_interface;
 
 	ENTER(display_map);
@@ -203,6 +206,11 @@ DESCRIPTION :
 		(analysis_window=analysis->window)&&
 		(user_interface=analysis->user_interface))
 	{
+		/* need map to do unemap version. See below*/
+#if !defined (UNEMAP_USE_NODES)
+		USE_PARAMETER(spectrum);
+		USE_PARAMETER(spectrum_to_be_modified_copy);
+		USE_PARAMETER(spectrum_manager);
 		switch (analysis->map_type)
 		{
 			case SINGLE_ACTIVATION:
@@ -216,7 +224,9 @@ DESCRIPTION :
 				Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
 					BLUE_TO_RED_SPECTRUM);
 			} break;
-		}
+		}		
+#endif /* defined (UNEMAP_USE_NODES) */
+
 		if (widget==analysis_window->display_map_warning_box)
 		{
 			busy_cursor_off(analysis_window->display_map_warning_box_shell,
@@ -254,6 +264,53 @@ DESCRIPTION :
 		{
 			mapping=analysis->mapping_window;
 			map=mapping->map;
+#if defined (UNEMAP_USE_NODES)	
+		spectrum=analysis->map_drawing_information->spectrum;
+		if(spectrum_manager=get_unemap_package_spectrum_manager(map->unemap_package))
+		{
+		if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+		{
+			if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+				("spectrum_modify_temp"))
+			{
+				MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+					(spectrum_to_be_modified_copy,spectrum);			
+				switch (analysis->map_type)
+				{
+					case SINGLE_ACTIVATION:
+					case MULTIPLE_ACTIVATION:
+					{
+						Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+							RED_TO_BLUE_SPECTRUM);
+					} break;
+					default:
+					{
+						Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+							BLUE_TO_RED_SPECTRUM);
+					} break;
+				}				
+				MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+					spectrum_to_be_modified_copy,spectrum_manager);
+				DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"display_map. Could not create spectrum copy.");				
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"display_map. Spectrum is not in manager!");		
+		}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"display_map. Spectrum_manager not present");
+		}
+#endif/* defined (UNEMAP_USE_NODES)	*/
 			Mapping_window_set_potential_time_object(mapping,
 				analysis->potential_time_object);
 			/* determine if undecided events are accepted or rejected */
@@ -12292,6 +12349,10 @@ Responds to update callbacks from the time object.
 
 	ENTER(analysis_potential_time_update_callback);
 	USE_PARAMETER(time_object);
+#if defined (UNEMAP_USE_NODES)
+	interpolation=NO_INTERPOLATION;
+	USE_PARAMETER(interpolation);
+#endif /* defined (UNEMAP_USE_NODES)*/
 	return_code=0;
 	if ((analysis=(struct Analysis_work_area *)analysis_void)&&
 		(analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
