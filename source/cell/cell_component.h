@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_component.h
 
-LAST MODIFIED : 09 September 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Functions and structures for using the Cell_component structure.
@@ -14,6 +14,7 @@ Functions and structures for using the Cell_component structure.
 #endif /* defined (MOTIF) */
 #include "cell/cell_window.h"
 #include "cell/cell_3d.h"
+#include "general/any_object_prototype.h"
 
 /*
 Global types
@@ -69,7 +70,7 @@ The different components allowed.
 
 struct Cell_component
 /*******************************************************************************
-LAST MODIFIED : 08 Septemebr 1999
+LAST MODIFIED : 8 September 1999
 
 DESCRIPTION :
 Stores information for a cell component (i.e. channel, pump, etc...)
@@ -92,6 +93,9 @@ Stores information for a cell component (i.e. channel, pump, etc...)
 Global functions
 ================
 */
+
+PROTOTYPE_ANY_OBJECT(Cell_component);
+
 enum Cell_components get_cell_component_from_string(char *component_string);
 /*******************************************************************************
 LAST MODIFIED : 18 February 1999

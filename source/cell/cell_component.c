@@ -1,11 +1,12 @@
 /*******************************************************************************
 FILE : cell_component.c
 
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions and structures for using the Cell_component structure.
 ==============================================================================*/
+#include <string.h>
 #include <stdio.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
@@ -16,6 +17,7 @@ Functions and structures for using the Cell_component structure.
 #include "cell/cell_component.h"
 #include "cell/cell_parameter.h"
 #include "cell/parameter_dialog.h"
+#include "general/any_object_definition.h"
 #include "graphics/scene.h"
 
 /*
@@ -34,7 +36,7 @@ Module functions
 */
 static char *set_component_name(char *component)
 /*******************************************************************************
-LAST MODIFIED : 08 September 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Returns the component name corresponding to the <component> type.
@@ -43,16 +45,20 @@ Returns the component name corresponding to the <component> type.
   char *name;
 
   ENTER(set_component_name);
-  if (ALLOCATE(name,char,strlen(component)+1))
-  {
-    sprintf(name,"%s\0",component);
-  }
+	if (component)
+	{
+		if (ALLOCATE(name,char,strlen(component)+1))
+		{
+			strcpy(name,component);
+		}
+	}
   else
   {
     name = (char *)NULL;
   }
   LEAVE;
-  return(name);
+
+  return (name);
 } /* END set_component_name() */
 
 static int create_cell_component(struct Cell_window *cell,char *component)
@@ -223,6 +229,9 @@ Adds the <parameter> to the cell component which corresponds to the
 Global functions
 ================
 */
+
+DEFINE_ANY_OBJECT(Cell_component)
+
 enum Cell_components get_cell_component_from_string(char *component_string)
 /*******************************************************************************
 LAST MODIFIED : 18 February 1999
