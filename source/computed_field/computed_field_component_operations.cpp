@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 16 August 2000
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -2535,7 +2535,7 @@ If the field is of type COMPUTED_FIELD_SCALE, the
 static int define_Computed_field_type_scale(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_SCALE (if it is not 
@@ -2544,7 +2544,7 @@ already) and allows its contents to be modified.
 {
 	char *current_token;
 	FE_value *scale_factors, *temp_scale_factors;
-	int i, number_of_scale_factors,return_code;
+	int i, number_of_scale_factors, previous_number_of_scale_factors, return_code;
 	struct Computed_field *field,*source_field;
 	struct Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
@@ -2552,109 +2552,82 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_scale);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
-		computed_field_component_operations_package_void))
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_component_operations_package =
+			(struct Computed_field_component_operations_package *)
+			computed_field_component_operations_package_void))
 	{
-		return_code=1;
+		return_code = 1;
 		/* get valid parameters for projection field */
-		set_source_field_data.computed_field_manager=
+		set_source_field_data.computed_field_manager =
 			computed_field_component_operations_package->computed_field_manager;
-		set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-		set_source_field_data.conditional_function_user_data=(void *)NULL;
+		set_source_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		source_field = (struct Computed_field *)NULL;
-		scale_factors=(FE_value *)NULL;
+		scale_factors = (FE_value *)NULL;
+		previous_number_of_scale_factors = 0;
 		if (computed_field_scale_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_scale(field,
-				&source_field,&scale_factors);
-		}
-		else
-		{
-			/* get first available field, and set scale_factors for it to 0.0 */
-			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))
-			{
-				number_of_scale_factors=source_field->number_of_components;
-			}
-			else
-			{
-				number_of_scale_factors=1;
-			}
-			if (ALLOCATE(scale_factors,FE_value,number_of_scale_factors))
-			{
-				for (i=0;i<number_of_scale_factors;i++)
-				{
-					scale_factors[i]=0.0;
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
+			return_code =
+				Computed_field_get_type_scale(field, &source_field, &scale_factors);
 		}
 		if (return_code)
 		{
 			if (source_field)
 			{
+				previous_number_of_scale_factors = source_field->number_of_components;
 				ACCESS(Computed_field)(source_field);
 			}
 			if ((current_token=state->current_token) &&
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
-				number_of_scale_factors=source_field->number_of_components;
 				option_table = CREATE(Option_table)();					
-				Option_table_add_entry(option_table,"field",&source_field,
-					&set_source_field_data,set_Computed_field_conditional);
-				Option_table_add_entry(option_table,"scale_factors",scale_factors,
-					&number_of_scale_factors,set_FE_value_array);
-				return_code=Option_table_multi_parse(option_table,state);
+				Option_table_add_entry(option_table, "field", &source_field,
+					&set_source_field_data, set_Computed_field_conditional);
+				Option_table_add_entry(option_table, "scale_factors", scale_factors,
+					&previous_number_of_scale_factors, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
 			/* parse the field ... */
-			if (return_code&&(current_token=state->current_token))
+			if (return_code && (current_token = state->current_token))
 			{
 				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token,"field"))
+				if (fuzzy_string_compare(current_token, "field"))
 				{
-					number_of_scale_factors=source_field->number_of_components;
 					option_table = CREATE(Option_table)();
-					/* fields */
-					set_source_field_data.computed_field_manager=
-						computed_field_component_operations_package->computed_field_manager;
-					set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-					set_source_field_data.conditional_function_user_data=(void *)NULL;
-					Option_table_add_entry(option_table,"field",&source_field,
-						&set_source_field_data,set_Computed_field_conditional);
-					if (return_code=Option_table_parse(option_table,state))
+					/* field */
+					Option_table_add_entry(option_table, "field", &source_field,
+						&set_source_field_data, set_Computed_field_conditional);
+					if (return_code = Option_table_parse(option_table, state))
 					{
 						if (source_field)
 						{
-							if (REALLOCATE(temp_scale_factors,scale_factors,FE_value,
-								source_field->number_of_components))
+							number_of_scale_factors = source_field->number_of_components;
+							if (REALLOCATE(temp_scale_factors, scale_factors, FE_value,
+								number_of_scale_factors))
 							{
-								scale_factors=temp_scale_factors;
+								scale_factors = temp_scale_factors;
 								/* make any new scale_factors equal to 1.0 */
-								for (i=number_of_scale_factors;
-									i<source_field->number_of_components;i++)
+								for (i = previous_number_of_scale_factors;
+									i < number_of_scale_factors; i++)
 								{
-									scale_factors[i]=1.0;
+									scale_factors[i] = 1.0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"define_Computed_field_type_scale.  Invalid field");
-							return_code=0;
+							return_code = 0;
 						}
 					}
 					DESTROY(Option_table)(&option_table);
@@ -4973,7 +4946,7 @@ already) and allows its contents to be modified.
 {
 	char *current_token;
 	FE_value *offsets, *temp_offsets;
-	int i, number_of_offsets,return_code;
+	int i, number_of_offsets, previous_number_of_offsets, return_code;
 	struct Computed_field *field,*source_field;
 	struct Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
@@ -4981,54 +4954,32 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_offset);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_component_operations_package=
-		(struct Computed_field_component_operations_package *)
-		computed_field_component_operations_package_void))
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_component_operations_package =
+			(struct Computed_field_component_operations_package *)
+			computed_field_component_operations_package_void))
 	{
-		return_code=1;
+		return_code = 1;
 		/* get valid parameters for projection field */
-		set_source_field_data.computed_field_manager=
+		set_source_field_data.computed_field_manager =
 			computed_field_component_operations_package->computed_field_manager;
-		set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-		set_source_field_data.conditional_function_user_data=(void *)NULL;
+		set_source_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		source_field = (struct Computed_field *)NULL;
-		offsets=(FE_value *)NULL;
+		offsets = (FE_value *)NULL;
+		previous_number_of_offsets = 0;
 		if (computed_field_offset_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_offset(field,
-				&source_field,&offsets);
-		}
-		else
-		{
-			/* get first available field, and set offsets for it to 0.0 */
-			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))
-			{
-				number_of_offsets=source_field->number_of_components;
-			}
-			else
-			{
-				number_of_offsets=1;
-			}
-			if (ALLOCATE(offsets,FE_value,number_of_offsets))
-			{
-				for (i=0;i<number_of_offsets;i++)
-				{
-					offsets[i]=0.0;
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
+			return_code =
+				Computed_field_get_type_offset(field, &source_field, &offsets);
 		}
 		if (return_code)
 		{
 			if (source_field)
 			{
+				previous_number_of_offsets = source_field->number_of_components;
 				ACCESS(Computed_field)(source_field);
 			}
 			if ((current_token=state->current_token) &&
@@ -5037,58 +4988,56 @@ already) and allows its contents to be modified.
 			{
 				option_table = CREATE(Option_table)();					
 				/* field */
-				Option_table_add_entry(option_table,"field",&source_field,
-					&set_source_field_data,set_Computed_field_conditional);
+				Option_table_add_entry(option_table, "field", &source_field,
+					&set_source_field_data, set_Computed_field_conditional);
 				/* offsets */
-				number_of_offsets=source_field->number_of_components;
-				Option_table_add_entry(option_table,"offsets",offsets,
-					&number_of_offsets,set_FE_value_array);
-				return_code=Option_table_multi_parse(option_table,state);
+				Option_table_add_entry(option_table, "offsets", offsets,
+					&previous_number_of_offsets, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
 			/* parse the field ... */
-			if (return_code&&(current_token=state->current_token))
+			if (return_code && (current_token = state->current_token))
 			{
 				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token,"field"))
+				if (fuzzy_string_compare(current_token, "field"))
 				{
-					number_of_offsets=source_field->number_of_components;
 					option_table = CREATE(Option_table)();
 					/* field */
-					Option_table_add_entry(option_table,"field",&source_field,
-						&set_source_field_data,set_Computed_field_conditional);
-					if (return_code=Option_table_parse(option_table,state))
+					Option_table_add_entry(option_table, "field", &source_field,
+						&set_source_field_data, set_Computed_field_conditional);
+					if (return_code = Option_table_parse(option_table,state))
 					{
 						if (source_field)
 						{
-							if (REALLOCATE(temp_offsets,offsets,FE_value,
-								source_field->number_of_components))
+							number_of_offsets = source_field->number_of_components;
+							if (REALLOCATE(temp_offsets, offsets, FE_value,
+								number_of_offsets))
 							{
-								offsets=temp_offsets;
-								/* make any new offsets equal to 1.0 */
-								for (i=number_of_offsets;
-									i<source_field->number_of_components;i++)
+								offsets = temp_offsets;
+								/* set new offsets to 0.0 */
+								for (i = previous_number_of_offsets; i < number_of_offsets; i++)
 								{
-									offsets[i]=1.0;
+									offsets[i] = 0.0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"define_Computed_field_type_offset.  Invalid field");
-							return_code=0;
+							return_code = 0;
 						}
 					}
 					DESTROY(Option_table)(&option_table);
 				}
 			}
 			/* parse the offsets */
-			if (return_code&&state->current_token)
+			if (return_code && state->current_token)
 			{
 				option_table = CREATE(Option_table)();
 				/* offsets */
