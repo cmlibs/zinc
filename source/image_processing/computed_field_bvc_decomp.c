@@ -960,8 +960,8 @@ DESCRIPTION :
 	struct Computed_field_bvc_decomp_type_specific_data *data;
 
 	ENTER(List_Computed_field_bvc_decomp);
-	if (field && (field->type_string==computed_field_edge_detection_type_string)
-		&& (data = (struct Computed_field_edge_detection_type_specific_data *)
+	if (field && (field->type_string==computed_field_bvc_decomp_type_string)
+		&& (data = (struct Computed_field_bvc_decomp_type_specific_data *)
 		field->type_specific_data))
 	{
 		display_message(INFORMATION_MESSAGE,
