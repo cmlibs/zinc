@@ -78,9 +78,6 @@ Module variables
 static int material_editor_hierarchy_open=0;
 static MrmHierarchy material_editor_hierarchy;
 #endif /* defined (MOTIF) */
-#if defined (GL_API) || defined (OPENGL_API)
-static int material_editor_display_list=0;
-#endif /* defined (GL_API) || defined (OPENGL_API) */
 #if defined (GL_API)
 static Matrix Identity=
 {
@@ -124,448 +121,173 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 	LEAVE;
 } /* material_editor_update */
 
-static void material_editor_graphics_init_CB(Widget widget,XtPointer user_data,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 4 November 1995
-
-DESCRIPTION :
-Sets up any color entries if necessary.
-???GH.  I dont think we need this if we are using RGB values in all the calls.
-==============================================================================*/
-{
-#define sphere_horiz 40
-#define sphere_vert 60
-#define sphere_view_dist 1.5
-#define sphere_panel_size 1000
-#define sphere_panel_dist 5
-#define sphere_fov 90
-	int i,j;
-#if defined (GL_API)
-	float temp,temp_vector[2][3],actual_vector[3];
-#if defined (IBM)
-	float actual_vector_2[3];
-#endif /* defined (IBM) */
-#endif /* defined (GL_API) */
-#if defined (OPENGL_API)
-	GLdouble temp,temp_vector[2][3],actual_vector[3];
-#endif /* defined (OPENGL_API) */
-
-	ENTER(material_editor_graphics_init_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(user_data);
-	USE_PARAMETER(call_data);
-#if defined (GL_API)
-	if(!material_editor_display_list)
-	{
-		material_editor_display_list=genobj();
-		makeobj(material_editor_display_list);
-		temp_vector[1][0]=1.0;
-		temp_vector[1][2]=0.0;
-		for(i=0;i<sphere_horiz;i++) /* this is going around the y axis */
-		{
-			temp_vector[0][0]=temp_vector[1][0];
-			temp_vector[0][2]=temp_vector[1][2];
-			temp_vector[1][0]=(float)cos((double)360.0/((double)sphere_horiz/
-				(double)(i+1))*(double)PI_180);
-			temp_vector[1][2]=(float)sin((float)360.0/((double)sphere_horiz/
-				(double)(i+1))*(double)PI_180);
-			bgntmesh();
-			actual_vector[0]=0.0;
-			actual_vector[2]=0.0;
-			actual_vector[1]=1.0;
-			n3f(actual_vector);
-			v3f(actual_vector);
-			/* do the first triangle as it is a special case... */
-			temp=(float)sin((double)180.0/(double)(sphere_vert+2)*(double)PI_180);
-			actual_vector[0]=temp_vector[1][0]*temp;
-			actual_vector[2]=temp_vector[1][2]*temp;
-			actual_vector[1]=(float)cos((double)180.0/(double)(sphere_vert+2)*
-				(double)PI_180);
-			n3f(actual_vector);
-			v3f(actual_vector);
-#if defined (IBM)
-			/*???DB.  qstrip not defined for IBM */
-			actual_vector_2[0]=temp_vector[0][0]*temp;
-			actual_vector_2[1]=actual_vector[1];
-			actual_vector_2[2]=temp_vector[0][2]*temp;
-			n3f(actual_vector_2);
-			v3f(actual_vector_2);
-			endtmesh();
-			/* the rest of them can be done to formulae */
-			for(j=1;j<=(sphere_vert/2)+1;j++)
-			{
-				bgnpolygon();
-				/*???DB.  Is the vertex order correct ? */
-				n3f(actual_vector);
-				v3f(actual_vector);
-				n3f(actual_vector_2);
-				v3f(actual_vector_2);
-				temp=(float)sin((double)180.0/((double)(sphere_vert+2)/(double)j)*
-					(double)PI_180);
-				actual_vector[0]=temp_vector[0][0]*temp;
-				actual_vector[2]=temp_vector[0][2]*temp;
-				actual_vector[1]=(float)cos((double)180.0/((double)(sphere_vert+2)/
-					(double)j)*(double)PI_180);
-				actual_vector_2[0]=temp_vector[1][0]*temp;
-				actual_vector_2[1]=actual_vector[1];
-				actual_vector_2[2]=temp_vector[1][2]*temp;
-				n3f(actual_vector_2);
-				v3f(actual_vector_2);
-				n3f(actual_vector);
-				v3f(actual_vector);
-				endpolygon();
-			}
-#else
-			actual_vector[0]=temp_vector[0][0]*temp;
-			actual_vector[2]=temp_vector[0][2]*temp;
-			n3f(actual_vector);
-			v3f(actual_vector);
-			endtmesh();
-			bgnqstrip();
-			/* the rest of them can be done to formulae */
-			for(j=1;j<=(sphere_vert/2)+1;j++)
-			{
-				temp=(float)sin((double)180.0/((double)(sphere_vert+2)/(double)j)*
-					(double)PI_180);
-				actual_vector[0]=temp_vector[0][0]*temp;
-				actual_vector[2]=temp_vector[0][2]*temp;
-				actual_vector[1]=(float)cos((double)180.0/((double)(sphere_vert+2)/
-					(double)j)*(double)PI_180);
-				n3f(actual_vector);
-				v3f(actual_vector);
-				actual_vector[0]=temp_vector[1][0]*temp;
-				actual_vector[2]=temp_vector[1][2]*temp;
-				n3f(actual_vector);
-				v3f(actual_vector);
-			}
-			endqstrip();
-#endif /* defined (IBM) */
-		}
-		closeobj();
-	}
-#endif /* defined (GL_API) */
-#if defined (OPENGL_API)
-	if(!material_editor_display_list)
-	{
-		material_editor_display_list=glGenLists(1);
-		if(material_editor_display_list)
-		{
-			glNewList(material_editor_display_list,GL_COMPILE);
-			/* now do the sphere using the glu routines */
-			glEnable(GL_LIGHTING);
-			temp_vector[1][0]=1.0;
-			temp_vector[1][2]=0.0;
-			for(i=0;i<sphere_horiz;i++) /* this is going around the y axis */
-			{
-				temp_vector[0][0]=temp_vector[1][0];
-				temp_vector[0][2]=temp_vector[1][2];
-				temp_vector[1][0]=cos((double)360.0/((double)sphere_horiz/
-					(double)(i+1))*(double)PI_180);
-				temp_vector[1][2]=sin((double)360.0/((double)sphere_horiz/
-					(double)(i+1))*(double)PI_180);
-				glBegin(GL_POLYGON);
-				actual_vector[0]=0.0;
-				actual_vector[2]=0.0;
-				actual_vector[1]=1.0;
-				glNormal3dv(actual_vector);
-				glVertex3dv(actual_vector);
-				/* do the first triangle as it is a special case... */
-				temp=sin((double)180.0/(double)(sphere_vert+2)*(double)PI_180);
-				actual_vector[0]=temp_vector[1][0]*temp;
-				actual_vector[2]=temp_vector[1][2]*temp;
-				actual_vector[1]=cos((double)180.0/(double)(sphere_vert+2)*
-					(double)PI_180);
-				glNormal3dv(actual_vector);
-				glVertex3dv(actual_vector);
-				actual_vector[0]=temp_vector[0][0]*temp;
-				actual_vector[2]=temp_vector[0][2]*temp;
-				glNormal3dv(actual_vector);
-				glVertex3dv(actual_vector);
-				glEnd();
-				glBegin(GL_QUAD_STRIP);
-				/* the rest of them can be done to formulae */
-				for(j=1;j<=(sphere_vert/2)+1;j++)
-				{
-					temp=sin((double)180.0/((double)(sphere_vert+2)/(double)j)*
-						(double)PI_180);
-					actual_vector[0]=temp_vector[0][0]*temp;
-					actual_vector[2]=temp_vector[0][2]*temp;
-					actual_vector[1]=cos((double)180.0/((double)(sphere_vert+2)/
-						(double)j)*(double)PI_180);
-					glNormal3dv(actual_vector);
-					glVertex3dv(actual_vector);
-					actual_vector[0]=temp_vector[1][0]*temp;
-					actual_vector[2]=temp_vector[1][2]*temp;
-					glNormal3dv(actual_vector);
-					glVertex3dv(actual_vector);
-				}
-				glEnd();
-			}
-			glEndList();
-		}
-	}
-#endif /* defined (OPENGL_API) */
-	LEAVE;
-} /* initialize_callback */
-
 static void material_editor_draw_sphere(Widget w,XtPointer tag,XtPointer reason)
 /*******************************************************************************
-LAST MODIFIED : 1 May 1995
+LAST MODIFIED : 5 April 2000
 
 DESCRIPTION :
 Uses gl to draw a sphere with a lighting source.
 ==============================================================================*/
 {
-	int i;
+#define sphere_horiz 40
+#define sphere_vert 40
+#define sphere_view_dist 1.5
+#define sphere_panel_size 1000
+#define sphere_panel_dist 5
+#define sphere_view_spacing 1.2
+	int i,j;
 	struct Material_editor *material_editor=
 		(struct Material_editor *)tag;
-#if defined (GL_API)
-	float aspect,actual_vector[3];
-	long xsize,ysize;
-	static float light[]=
-	{
-		POSITION, 5.0, 4.0, 0.0, 0.0,
-		LMNULL
-	};
-	static float light_model[]=
-	{
-#if defined (TWOSIDE)
-		TWOSIDE, 0.0,
-#endif /* defined (TWOSIDE) */
-		LMNULL
-	};
-#endif /* defined (GL_API) */
 #if defined (OPENGL_API)
-	GLdouble aspect,viewport_size[4],actual_vector[3];
+	float texture_height,texture_width;
+	GLdouble angle,aspect,coordinates[3],cos_angle,horiz_factor,horiz_offset,
+		lower_coordinate,lower_radius,sin_angle,texture_coordinates[2],
+		upper_coordinate,upper_radius,vert_factor,vert_offset,viewport_size[4];
 	GLfloat light_position[]=
 	{
-		5.0, 4.0, 0.0, 0.0
+		0.0, 5.0, 4.0, 0.0
 	};
 	GLfloat light_model_twoside=1.0;
+	struct Texture *texture;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(material_editor_draw_sphere);
 	USE_PARAMETER(w);
 	USE_PARAMETER(reason);
-	/* make sure the Graphical material display list is up-to-date */
+	/* make sure the Graphical material display list is up-to-date, which
+		 in turn, requires any textures it uses to be compiled */
 	compile_Graphical_material(material_editor->edit_material,NULL);
-#if defined (GL_API)
-	getsize(&xsize,&ysize);
-	aspect=(float)xsize/(float)ysize;
-	lsetdepth(getgdesc(GD_ZMIN),getgdesc(GD_ZMAX));
-	zbuffer(1);
-	mmode(MVIEWING);
-	loadmatrix(Identity);
-	/* set up the view trans */
-	perspective(sphere_fov*10,aspect,0.1,20.0);
-	lookat(0.0,sphere_view_dist,0.0,0.0,0.0,0.0,-900);
-	/* clear the window */
-	czclear(0x000000,getgdesc(GD_ZMAX));
-	blendfunction(BF_SA,BF_MSA);
-	/* set up the material and lights etc */
-	lmdef(DEFLIGHT,1,0,light);
-	lmdef(DEFLMODEL,1,0,NULL);
-	lmbind(LMODEL,1);
-	lmbind(LIGHT0,1);
-	if (material_editor->background==0)
-	{
-		/* draw the backing panels */
-		/* yz plane */
-		bgnpolygon();
-		actual_vector[0]=0.0;
-		actual_vector[1]=1.0;
-		actual_vector[2]=0.0;
-		n3f(actual_vector);
-		actual_vector[0]=1.0;
-		actual_vector[1]=0.0;
-		actual_vector[2]=0.0;
-		c3f(actual_vector);
-		actual_vector[0]=0.0;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		v3f(actual_vector);
-		actual_vector[0]=sphere_panel_size;
-		v3f(actual_vector);
-		actual_vector[2]=sphere_panel_size*0.866;
-		v3f(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		v3f(actual_vector);
-		endpolygon();
-		/* yz plane */
-		bgnpolygon();
-		actual_vector[0]=0.0;
-		actual_vector[1]=1.0;
-		actual_vector[2]=0.0;
-		c3f(actual_vector);
-		actual_vector[0]=0.0;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		v3f(actual_vector);
-		actual_vector[0]=sphere_panel_size;
-		v3f(actual_vector);
-		actual_vector[2]=-sphere_panel_size*0.866;
-		v3f(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		v3f(actual_vector);
-		endpolygon();
-		/* yz plane */
-		bgnpolygon();
-		actual_vector[0]=0.0;
-		actual_vector[1]=0.0;
-		actual_vector[2]=1.0;
-		c3f(actual_vector);
-		actual_vector[0]=0.0;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		v3f(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		actual_vector[2]=-sphere_panel_size*0.866;
-		v3f(actual_vector);
-		actual_vector[0]=-sphere_panel_size;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		v3f(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		actual_vector[2]=sphere_panel_size*0.866;
-		v3f(actual_vector);
-		endpolygon();
-	}
-	else
-	{
-		switch(material_editor->background)
-		{
-			case 1:
-			{
-				for (i=0;i<3;i++)
-				{
-					actual_vector[i]=0.0;
-				}
-			} break;
-			case 2:
-			{
-				for (i=0;i<3;i++)
-				{
-					actual_vector[i]=1.0;
-				}
-			} break;
-		}
-		c3f(actual_vector);
-		clear();
-	}
-	execute_Graphical_material(material_editor->edit_material);
-	callobj(material_editor_display_list);
-#endif /* defined (GL_API) */
 #if defined (OPENGL_API)
 	glGetDoublev(GL_VIEWPORT,viewport_size);
-	aspect=viewport_size[2]/viewport_size[3];
 	glClearColor(0.0,0.0,0.0,0.0);
 	glClearDepth(1.0);
 	glEnable(GL_BLEND);
+	glLightModelf(GL_LIGHT_MODEL_TWO_SIDE,light_model_twoside);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	/* set up the view trans */
-	gluPerspective(sphere_fov,aspect,0.1,20.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(0.0,sphere_view_dist,0.0,0.0,0.0,0.0,1.0,0.0,0.0);
-	/* clear the window */
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	/* set up the material and lights etc */
-	glLightfv(GL_LIGHT0,GL_POSITION,light_position);
-	glLightModelf(GL_LIGHT_MODEL_TWO_SIDE,light_model_twoside);
-	glEnable(GL_LIGHT0);
-	glDepthFunc(GL_LESS);
-	glEnable(GL_DEPTH_TEST);
-	if (material_editor->background==0)
+	if (viewport_size[3] > viewport_size[2])
 	{
-		glDisable(GL_LIGHTING);
-		/* draw the backing panels */
-		/* yz plane */
-		glBegin(GL_POLYGON);
-		actual_vector[0]=0.0;
-		actual_vector[1]=1.0;
-		actual_vector[2]=0.0;
-		glNormal3dv(actual_vector);
-		actual_vector[0]=1.0;
-		actual_vector[1]=0.0;
-		actual_vector[2]=0.0;
-		glColor3dv(actual_vector);
-		actual_vector[0]=0.0;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		glVertex3dv(actual_vector);
-		actual_vector[0]=sphere_panel_size;
-		glVertex3dv(actual_vector);
-		actual_vector[2]=sphere_panel_size*0.866;
-		glVertex3dv(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		glVertex3dv(actual_vector);
-		glEnd();
-		/* yz plane */
-		glBegin(GL_POLYGON);
-		actual_vector[0]=0.0;
-		actual_vector[1]=1.0;
-		actual_vector[2]=0.0;
-		glColor3dv(actual_vector);
-		actual_vector[0]=0.0;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		glVertex3dv(actual_vector);
-		actual_vector[0]=sphere_panel_size;
-		glVertex3dv(actual_vector);
-		actual_vector[2]=-sphere_panel_size*0.866;
-		glVertex3dv(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		glVertex3dv(actual_vector);
-		glEnd();
-		/* yz plane */
-		glBegin(GL_POLYGON);
-		actual_vector[0]=0.0;
-		actual_vector[1]=0.0;
-		actual_vector[2]=1.0;
-		glColor3dv(actual_vector);
-		actual_vector[0]=0.0;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		glVertex3dv(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		actual_vector[2]=-sphere_panel_size*0.866;
-		glVertex3dv(actual_vector);
-		actual_vector[0]=-sphere_panel_size;
-		actual_vector[1]=-sphere_panel_dist;
-		actual_vector[2]=0.0;
-		glVertex3dv(actual_vector);
-		actual_vector[0]=-sphere_panel_size*0.5;
-		actual_vector[2]=sphere_panel_size*0.866;
-		glVertex3dv(actual_vector);
-		glEnd();
+		if (0 != viewport_size[2])
+		{
+			aspect=viewport_size[3]/viewport_size[2];
+		}
+		else
+		{
+			aspect=1.0;
+		}
+		glOrtho(-sphere_view_spacing,sphere_view_spacing,
+			-aspect*sphere_view_spacing,aspect*sphere_view_spacing,0.1,20.0);
 	}
 	else
 	{
-		switch(material_editor->background)
+		if (0 != viewport_size[3])
 		{
-			case 1:
-			{
-				for (i=0;i<3;i++)
-				{
-					actual_vector[i]=0.0;
-				}
-			} break;
-			case 2:
-			{
-				for (i=0;i<3;i++)
-				{
-					actual_vector[i]=1.0;
-				}
-			} break;
+			aspect=viewport_size[2]/viewport_size[3];
 		}
-		glClearColor(actual_vector[0],actual_vector[1],actual_vector[2],1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
+		else
+		{
+			aspect=1.0;
+		}
+		glOrtho(-aspect*sphere_view_spacing,aspect*sphere_view_spacing,
+			-sphere_view_spacing,sphere_view_spacing,0.1,20.0);
+	}
+	/* set up the material and lights etc */
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glLightfv(GL_LIGHT0,GL_POSITION,light_position);
+	glEnable(GL_LIGHT0);
+	gluLookAt(0.0,0.0,sphere_view_dist,0.0,0.0,0.0,0.0,1.0,0.0);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_DEPTH_TEST);
+	if (2==material_editor->background)
+	{
+		glClearColor(1.0,1.0,1.0,1.0);
+	}
+	else
+	{
+		glClearColor(0.0,0.0,0.0,1.0);
+	}
+	/* clear the window */
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if (material_editor->background==0)
+	{
+		/* no textures on the RGB background */
+		execute_Texture((struct Texture *)NULL);
+		glDisable(GL_LIGHTING);
+		glBegin(GL_TRIANGLES);
+		/* red */
+		glColor3d(1.0,0.0,0.0);
+		glVertex3d(0.0,0.0,-sphere_panel_dist);
+		glVertex3d(sphere_panel_size*0.866,-sphere_panel_size*0.5,
+			-sphere_panel_dist);
+		glVertex3d(0.0,sphere_panel_size,-sphere_panel_dist);
+		/* green */
+		glColor3d(0.0,1.0,0.0);
+		glVertex3d(0.0,0.0,-sphere_panel_dist);
+		glVertex3d(0.0,sphere_panel_size,-sphere_panel_dist);
+		glVertex3d(-sphere_panel_size*0.866,-sphere_panel_size*0.5,
+			-sphere_panel_dist);
+		/* blue */
+		glColor3d(0.0,0.0,1.0);
+		glVertex3d(0.0,0.0,-sphere_panel_dist);
+		glVertex3d(-sphere_panel_size*0.866,-sphere_panel_size*0.5,
+			-sphere_panel_dist);
+		glVertex3d(sphere_panel_size*0.866,-sphere_panel_size*0.5,
+			-sphere_panel_dist);
+		glEnd();
 	}
 	execute_Graphical_material(material_editor->edit_material);
-	glCallList(material_editor_display_list);
+	/* draw the sphere */
+	glEnable(GL_LIGHTING);
+	if (texture=Graphical_material_get_texture(material_editor->edit_material))
+	{
+		Texture_get_physical_size(texture,&texture_width,&texture_height);
+		horiz_factor=2.0*texture_width/sphere_horiz;
+		horiz_offset=-0.5*texture_width;
+		vert_factor=2.0*texture_height/sphere_vert;
+		vert_offset=-0.5*texture_height;
+	}
+	/* loop from bottom to top */
+	for(j=0;j<sphere_vert;j++)
+	{
+		angle = (double)j * (PI/(double)sphere_vert);
+		lower_coordinate=-cos(angle);
+		lower_radius=sin(angle);
+		angle = ((double)j+1.0) * (PI/(double)sphere_vert);
+		upper_coordinate=-cos(angle);
+		upper_radius=sin(angle);
+		glBegin(GL_QUAD_STRIP);
+		for(i=0;i<=sphere_horiz;i++)
+		{
+			angle = (double)i * (PI/(double)sphere_horiz);
+			cos_angle=cos(angle);
+			sin_angle=sin(angle);
+			coordinates[0] = -cos_angle*upper_radius;
+			coordinates[1] = upper_coordinate;
+			coordinates[2] = sin_angle*upper_radius;
+			if (texture)
+			{
+				texture_coordinates[0]=horiz_offset+(double)i*horiz_factor;
+				texture_coordinates[1]=vert_offset+((double)j+1.0)*vert_factor;
+				glTexCoord2dv(texture_coordinates);
+			}
+			glNormal3dv(coordinates);
+			glVertex3dv(coordinates);
+			coordinates[0] = -cos_angle*lower_radius;
+			coordinates[1] = lower_coordinate;
+			coordinates[2] = sin_angle*lower_radius;
+			if (texture)
+			{
+				texture_coordinates[1]=vert_offset+(double)j*vert_factor;
+				glTexCoord2dv(texture_coordinates);
+			}
+			glNormal3dv(coordinates);
+			glVertex3dv(coordinates);
+		}
+		glEnd();
+	}
 #endif /* defined (OPENGL_API) */
 	LEAVE;
 } /* material_editor_draw_sphere */
@@ -1307,9 +1029,6 @@ Creates a material_editor widget.
 									material);
 								/*???RC should do following in ~set_material */
 								/* add a callback to the 3d widget */
-								XtAddCallback(material_editor->a3d_widget,
-									X3dNinitializeCallback,material_editor_graphics_init_CB,
-									material_editor);
 								XtAddCallback(material_editor->a3d_widget,
 									X3dNexposeCallback,material_editor_draw_sphere,
 									material_editor);
