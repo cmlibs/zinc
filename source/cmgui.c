@@ -29,7 +29,7 @@ DESCRIPTION :
 #include "element/element_creator.h"
 #include "element/element_point_tool.h"
 #include "element/element_point_viewer.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "finite_element/grid_field_calculator.h"

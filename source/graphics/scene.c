@@ -28,7 +28,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "view/coord.h"
 */
 #include "command/parser.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 /*#include "finite_element/finite_element_to_streamlines.h"*/
 #include "general/compare.h"

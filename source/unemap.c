@@ -19,7 +19,7 @@ Main program for unemap.  Based on cmgui.
 #include "general/error_handler.h"
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_NODES)
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "graphics/glyph.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"

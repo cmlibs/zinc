@@ -8,7 +8,7 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"

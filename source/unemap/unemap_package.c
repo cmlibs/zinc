@@ -10,7 +10,7 @@ Contains function definitions for unemap package.
 #include <string.h>
 #include <math.h>
 #include "finite_element/finite_element.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "general/debug.h"
 #include "graphics/colour.h"
 #include "graphics/graphical_element.h"
