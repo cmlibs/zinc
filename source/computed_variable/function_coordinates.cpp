@@ -285,7 +285,7 @@ bool is_atomic(Function_variable_rectangular_cartesian_handle variable)
 
 
 // class Function_variable_iterator_representation_atomic_rectangular_cartesian
-// ---------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 Function_variable_iterator_representation_atomic_rectangular_cartesian::
 	Function_variable_iterator_representation_atomic_rectangular_cartesian(

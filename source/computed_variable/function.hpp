@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.hpp
 //
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 9 June 2004
 //
 // DESCRIPTION :
 // Functions are expressions that are constructed for:
@@ -22,7 +22,7 @@
 
 class Function
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 9 June 2004
 //
 // DESCRIPTION :
 // ???DB.  A function maintains storage for all its inputs and outputs.
@@ -32,6 +32,7 @@ class Function
 //==============================================================================
 {
 	friend class Function_composite;
+	friend class Function_derivative;
 	friend class Function_derivative_matrix;
 	friend class Function_variable;
 	public:

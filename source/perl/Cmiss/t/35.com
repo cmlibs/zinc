@@ -8,7 +8,6 @@ if (!defined $path)
 use Cmiss::Function;
 use Cmiss::Function::Prolate_spheroidal_to_rectangular_cartesian;
 use Cmiss::Function::Matrix;
-use Cmiss::Function::Derivative_matrix;
 use Cmiss::Function_variable;
 use Cmiss::Function_variable::Composite;
 use Cmiss::Function::Composite;

@@ -4482,8 +4482,6 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 	struct FE_node **element_field_nodes;
 
 	ENTER(nodal_value_calculate_component_values);
-	//???debug
-	std::cout << "enter nodal_value_calculate_component_values.  " << element << std::endl;
 	return_code=0;
 	/* check arguments */
 	fe_region=FE_field_get_FE_region(fe_field);
@@ -4603,8 +4601,6 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 			count_nodal_values_data.node_offsets=element_field_nodal_value_offsets;
 			count_nodal_values_data.number_of_node_values=
 				element_field_number_of_specified_nodal_values;
-			//???debug
-			std::cout << "  node=" << node << std::endl;
 			if (node)
 			{
 				return_code=count_nodal_values(node,(void *)&count_nodal_values_data);
@@ -4631,8 +4627,6 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 					/* save and zero all the nodal values for the <fe_field> on the
 						element */
 					number_of_saved_element_field_nodes=0;
-					//???debug
-					std::cout << "  number_of_element_field_nodes=" << number_of_element_field_nodes << std::endl;
 					while (return_code&&(number_of_saved_element_field_nodes<
 						number_of_element_field_nodes))
 					{
@@ -4671,8 +4665,6 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 					i=0;
 					while (return_code&&(i<number_of_element_field_nodes))
 					{
-						//???debug
-						std::cout << "  " << i << " " << element_field_nodal_value_offsets[i] << " " << element_field_number_of_specified_nodal_values[i] << std::endl;
 						if ((element_field_nodal_value_offsets[i]>=0)&&
 							(element_field_number_of_specified_nodal_values[i]>0))
 						{
@@ -4709,14 +4701,10 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 									fe_time,(char)0,element_field_values,
 									(struct FE_element *)NULL))
 								{
-									//???debug
-									std::cout << "  " << j << " " << number_of_values << " " << element << " " << element_field_values->element << std::endl;
 									return_code=extract_component_values(
 										element_field_values,number_of_components,
 										component_number,numbers_of_component_values_address,
 										nodal_value_component_values);
-									//???debug
-									std::cout << "    " << element_field_values->element << std::endl;
 								}
 								else
 								{
@@ -4843,8 +4831,6 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 		*number_of_element_field_nodes_address=number_of_element_field_nodes;
 		*element_field_nodes_address=element_field_nodes;
 	}
-	//???debug
-	std::cout << "leave nodal_value_calculate_component_values.  " << element_field_values->element << " " << return_code << std::endl;
 	LEAVE;
 
 	return (return_code);
@@ -4880,8 +4866,6 @@ assigned to <*monomial_values_address>.
 		number_of_component_values,*numbers_of_component_values,return_code;
 
 	ENTER(extract_component_monomial_info);
-	//???debug
-	std::cout << "enter extract_component_monomial_info.  " << element_field_values->element << std::endl;
 	return_code=0;
 	Assert(element_field_values&&
 		(0<number_of_components)&&((0==component_number)||
@@ -4928,8 +4912,6 @@ assigned to <*monomial_values_address>.
 			{
 				if (ALLOCATE(component_monomial_info[i],int,number_of_xi+1))
 				{
-					//???debug
-					std::cout << "  " << i << ".  " << element_field_values->element << std::endl;
 					return_code=FE_element_field_values_get_monomial_component_info(
 						element_field_values,(int)i,component_monomial_info[i]);
 					if (return_code)
@@ -5068,8 +5050,6 @@ assigned to <*monomial_values_address>.
 			DEALLOCATE(numbers_of_component_values);
 		}
 	}
-	//???debug
-	std::cout << "leave extract_component_monomial_info" << std::endl;
 	LEAVE;
 
 	return (return_code);

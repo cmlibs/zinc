@@ -180,6 +180,7 @@ Cmiss_variable_new_scalar_create
 Cmiss_variable_new_set_input_value
 Cmiss_variable_new_vector_create
 
+Cmiss_function_derivative_create
 Cmiss_function_destroy
 Cmiss_function_element_create
 Cmiss_function_element_dimension

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 31 May 2004
+// LAST MODIFIED : 10 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -966,7 +966,7 @@ Function_variable_handle Function_derivative_matrix::matrix(
 Function_handle Function_derivative_matrix::matrix(
 	std::list<Function_variable_handle>& partial_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 10 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -976,7 +976,8 @@ Function_handle Function_derivative_matrix::matrix(
 		new Function_variable_derivative_matrix(
 		Function_derivative_matrix_handle(this),partial_independent_variables));
 
-	if (matrix_variable)
+	if (matrix_variable&&(matrix_variable->matrix_reverse_iterator!=
+		(matrix_variable->function_derivative_matrix->matrices).rend()))
 	{
 		result=Function_handle(new Function_matrix(
 			*(matrix_variable->matrix_reverse_iterator)));

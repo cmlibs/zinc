@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 4 June 2004
+# LAST MODIFIED : 9 June 2004
 #
 # DESCRIPTION :
 #
@@ -594,6 +594,7 @@ API_SRCS = \
 	api/cmiss_core.c \
 	api/cmiss_function.cpp \
 	api/cmiss_function_coordinates.cpp \
+	api/cmiss_function_derivative.cpp \
 	api/cmiss_function_finite_element.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_variable.cpp \
@@ -699,6 +700,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_variable_identity.c \
 	computed_variable/computed_variable_standard_operations.c \
 	computed_variable/function.cpp \
+	computed_variable/function_derivative.cpp \
 	computed_variable/function_derivative_matrix.cpp \
 	computed_variable/function_composite.cpp \
 	computed_variable/function_coordinates.cpp \
@@ -1336,6 +1338,7 @@ SO_LIB_COMPUTED_VARIABLE_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
 LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_function.cpp \
 	api/cmiss_function_coordinates.cpp \
+	api/cmiss_function_derivative.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_variable.cpp \
 	api/cmiss_function_variable_composite.cpp \

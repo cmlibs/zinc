@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 3 June 2004
+// LAST MODIFIED : 9 June 2004
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -783,7 +783,7 @@ Function_matrix_handle Function_matrix::solve(const Function_matrix_handle& rhs)
 Function_handle Function_matrix::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 20 February 2004
+// LAST MODIFIED : 9 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -791,7 +791,7 @@ Function_handle Function_matrix::evaluate(
 	Function_handle result(0);
 	Matrix result_matrix(1,1);
 
-	if ((Function_handle(this)==(atomic_variable->function)())&&
+	if (atomic_variable&&(Function_handle(this)==(atomic_variable->function)())&&
 		Function_variable_matrix_set_scalar_function(
 		result_matrix(0,0),atomic_variable))
 	{
