@@ -1047,9 +1047,9 @@ DESCRIPTION :
 	int i,j,return_code;
 	Triple *surface_point_1,*surface_point_2, *normal_point_1, *normal_point_2,
 		*texture_point_1, *texture_point_2;
-#if defined GL_VERSION_1_3
+#if defined GL_ARB_multitexture
 	Triple *tangent_point_1, *tangent_point_2;
-#endif /* defined GL_VERSION_1_3 */
+#endif /* defined GL_ARB_multitexture */
 	struct Spectrum_render_data *render_data;
 
 	ENTER(draw_surfaceGL);
