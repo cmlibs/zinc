@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendergl.h
 
-LAST MODIFIED : 14 July 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Header file for rendergl.c, GL rendering calls (API specific)
@@ -10,6 +10,7 @@ Header file for rendergl.c, GL rendering calls (API specific)
 #define RENDERGL_H
 
 #include "graphics/graphics_object.h"
+#include "general/multi_range.h"
 
 /*
 Global functions
@@ -18,9 +19,10 @@ Global functions
 int draw_glyphsetGL(int number_of_points,Triple *point_list,Triple *axis1_list,
 	Triple *axis2_list,Triple *axis3_list,struct GT_object *glyph,char **labels,
 	int number_of_data_components,GTDATA *data,int *names,
-	struct Graphical_material *material,struct Spectrum *spectrum);
+	struct Graphical_material *material,struct Spectrum *spectrum,
+	int draw_selected,struct Multi_range *selected_name_ranges);
 /*******************************************************************************
-LAST MODIFIED : 14 July 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Draws graphics object <glyph> at <number_of_points> points given by the
@@ -29,6 +31,9 @@ and <axis3_list>. If the glyph is part of a linked list through its nextobject
 member, these attached glyphs are also executed.
 Writes the <labels> array strings, if supplied, beside each glyph point.
 If <names> are supplied these identify each point/glyph for OpenGL picking.
+If <draw_selected> is set, then only those <names> in <selected_name_ranges>
+are drawn, otherwise only those names not there are drawn. A NULL pointer for
+<selected_name_ranges> indicates no points are selected.
 ==============================================================================*/
 
 int draw_pointsetGL(int n_pts,Triple *point_list,char **text,

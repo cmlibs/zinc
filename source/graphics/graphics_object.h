@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Graphical object data structures.
@@ -42,6 +42,7 @@ Used to be gtypes.h
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
+#include "graphics/selected_graphic.h"
 #include "graphics/volume_texture.h"
 
 /*
@@ -248,9 +249,7 @@ by the axis vectors. Data may also be stored with this object so that the entire
 glyph may be coloured by a spectrum. Hence, glyphs should not have any data
 themselves. An optional label may also be drawn beside each glyph.
 The optional <names> array allows individual items in the glyph_set to be
-identified in picking for node position/vector editing. The glyph_edit_mode
-controls where the pickable point is relative to the glyph and how it should
-be understood in editing.
+identified in picking for node position/vector editing.
 ==============================================================================*/
 {
 	int number_of_points;
@@ -261,8 +260,6 @@ be understood in editing.
 	GTDATA *data;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
-	/* type of per-point naming - for node/vector editing */
-	enum Glyph_edit_mode glyph_edit_mode;
 	/* names recorded per point in the set, eg. node or grid point numbers */
 	int *names;
 	struct GT_glyph_set *ptrnext;
@@ -453,27 +450,27 @@ struct Graphics_object_callback_data
 
 typedef struct GT_object
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Graphical object data structure.
 ==============================================================================*/
 {
 	char *name;
-	/*???DB.  Need to save so that can remove from Motif lists */
-	XmString list_name;
 	enum GT_object_type object_type;
 	/* for linked object */
 	struct GT_object *nextobject;
 	/* for inheritance */
 	struct GT_object *parentobject;
+	/* for selected primitives and subobjects */
+	struct LIST(Selected_graphic) *selected_graphic_list;
 	/* default attributes */
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
 			colour */
 	/* either colour or material */
 	gtAttributeType default_att;
 	int default_colourindex;
-	struct Graphical_material *default_material;
+	struct Graphical_material *default_material,*selected_material;
 	struct Graphics_object_callback_data *update_callback_list;
 	/* spectrum */
 	struct Spectrum *spectrum;
@@ -699,9 +696,9 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_object,name,char *);
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list,Triple *axis1_list,Triple *axis2_list,Triple *axis3_list,
 	struct GT_object *glyph,char **labels,int n_data_components,GTDATA *data,
-	int object_name,enum Glyph_edit_mode glyph_edit_mode,int *names);
+	int object_name,int *names);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -713,8 +710,7 @@ The optional <labels> parameter is an array of strings to be written beside each
 glyph, while the optional <data> of number <n_data_components> per glyph allows
 colouring of the glyphs by a spectrum.
 The glyph_set will be marked as coming from the <object_name>, and integer
-identifier, while the optional <names> contains an integer identifier per point
-to be interpreted according to the <glyph_edit_mode> when picking/editing.
+identifier, while the optional <names> contains an integer identifier per point.
 
 ???RC All arrays passed to this routine are owned by the new GT_glyph_set
 and are deallocated by its DESTROY function.
@@ -1164,6 +1160,49 @@ PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_polyline);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_surface);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex);
 
+int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Clears the list of selected primitives and subobjects in <graphics_object>.
+==============================================================================*/
+
+int GT_object_select_graphic(struct GT_object *graphics_object,int number,
+	struct Multi_range *subranges);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Selects graphics with the object_name <number> in <graphics_object>, with
+optional <subranges> narrowing down the selection. Selected objects will be
+rendered with the selected/highlight material.
+Replaces any current selection with the same <number>.
+Iff the function is successful the <subranges> will be owned by the
+graphics_object.
+==============================================================================*/
+
+int GT_object_is_graphic_selected(struct GT_object *graphics_object,int number,
+	struct Multi_range **subranges);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Returns true if graphics with the given <number> are selected in
+<graphics_object>, and if so, its selected subranges are returned with it. The
+returned subranges (which can be NULL if there are none) are for short-term
+viewing only as they belong the the Selected_graphic containing them.
+==============================================================================*/
+
+struct Graphical_material *get_GT_object_default_material(
+	struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 4 June 1999
+
+DESCRIPTION :
+Gets the default_material of a GT_object.
+==============================================================================*/
+
 int set_GT_object_default_material(struct GT_object *graphics_object,
 	struct Graphical_material *material);
 /*******************************************************************************
@@ -1173,13 +1212,22 @@ DESCRIPTION :
 Sets the default_material of a GT_object.
 ==============================================================================*/
 
-struct Graphical_material *get_GT_object_default_material
-	(struct GT_object *graphics_object);
+struct Graphical_material *get_GT_object_selected_material(
+	struct GT_object *graphics_object);
 /*******************************************************************************
-LAST MODIFIED : 4 June 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
-Gets the default_material of a GT_object.
+Gets the selected_material of a GT_object.
+==============================================================================*/
+
+int set_GT_object_selected_material(struct GT_object *graphics_object,
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Sets the selected_material of a GT_object.
 ==============================================================================*/
 
 int set_GT_object_Spectrum(struct GT_object *graphics_object,

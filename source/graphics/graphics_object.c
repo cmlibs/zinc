@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 20 February 2000
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -693,7 +693,7 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 struct GT_glyph_set *morph_GT_glyph_set(float proportion,
 	struct GT_glyph_set *initial,struct GT_glyph_set *final)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Creates a new GT_glyph_set which is the interpolation of two GT_glyph_sets.
@@ -817,8 +817,7 @@ otherwise from <final>.
 				if (glyph_set=CREATE(GT_glyph_set)(number_of_points,point_list,
 					axis1_list,axis2_list,axis3_list,initial->glyph,labels,
 					initial->n_data_components,data,
-					nearest_glyph_set->object_name,
-					nearest_glyph_set->glyph_edit_mode,names))
+					nearest_glyph_set->object_name,names))
 				{
 #if defined (OLD_CODE)
 /*???DB.  Have to be recursive on destroy_ and morph_ or neither */
@@ -1818,9 +1817,9 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,char *, \
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list,Triple *axis1_list,Triple *axis2_list,Triple *axis3_list,
 	struct GT_object *glyph,char **labels,int n_data_components,GTDATA *data,
-	int object_name,enum Glyph_edit_mode glyph_edit_mode,int *names)
+	int object_name,int *names)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
@@ -1832,8 +1831,7 @@ The optional <labels> parameter is an array of strings to be written beside each
 glyph, while the optional <data> of number <n_data_components> per glyph allows
 colouring of the glyphs by a spectrum.
 The glyph_set will be marked as coming from the <object_name>, and integer
-identifier, while the optional <names> contains an integer identifier per point
-to be interpreted according to the <glyph_edit_mode> when picking/editing.
+identifier, while the optional <names> contains an integer identifier per point.
 
 ???RC All arrays passed to this routine are owned by the new GT_glyph_set
 and are deallocated by its DESTROY function.
@@ -1843,7 +1841,7 @@ and are deallocated by its DESTROY function.
 
 	ENTER(CREATE(GT_glyph_set));
 	if ((0<number_of_points)&&point_list&&axis1_list&&axis2_list&&axis3_list&&
-		glyph&&((GLYPH_EDIT_OFF==glyph_edit_mode)||names))
+		glyph)
 	{
 		if (ALLOCATE(glyph_set,struct GT_glyph_set,1))
 		{
@@ -1857,7 +1855,6 @@ and are deallocated by its DESTROY function.
 			glyph_set->n_data_components=n_data_components;
 			glyph_set->data=data;
 			glyph_set->object_name=object_name;
-			glyph_set->glyph_edit_mode=glyph_edit_mode;
 			glyph_set->names=names;
 			glyph_set->ptrnext=(struct GT_glyph_set *)NULL;
 		}
@@ -2788,7 +2785,7 @@ from <graphics_object> to the iso_poly_material array in the voltex. Of course,
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 20 February 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics object.
@@ -2798,16 +2795,14 @@ Allocates memory and assigns fields for a graphics object.
 	int return_code;
 
 	ENTER(CREATE(GT_object));
-	/* check arguments */
 	if (name)
 	{
-		if (ALLOCATE(object,gtObject,1)&&ALLOCATE(object->name,char,strlen(name)+1))
+		if (ALLOCATE(object,gtObject,1)&&ALLOCATE(object->name,char,strlen(name)+1)
+			&&(object->selected_graphic_list=CREATE(LIST(Selected_graphic))()))
 		{
 			object->times=(float *)NULL;
 			object->access_count=0;
 			strcpy(object->name,name);
-			/*???RC I don't think the list name is needed any more */
-			object->list_name=XmStringCreateSimple(name);
 			object->update_callback_list=(struct Graphics_object_callback_data *)NULL;
 			return_code=1;
 			switch (object_type)
@@ -2866,6 +2861,7 @@ Allocates memory and assigns fields for a graphics object.
 				{
 					object->default_material=(struct Graphical_material *)NULL;
 				}
+				object->selected_material=(struct Graphical_material *)NULL;
 				object->nextobject=(gtObject *)NULL;
 				object->spectrum=(struct Spectrum *)NULL;
 				object->number_of_times=0;
@@ -2877,6 +2873,7 @@ Allocates memory and assigns fields for a graphics object.
 					display_message(ERROR_MESSAGE,
 						"CREATE(GT_object).  Insufficient memory");
 				}
+				DESTROY(LIST(Selected_graphic))(&(object->selected_graphic_list));
 				DEALLOCATE(object->name);
 				DEALLOCATE(object);
 			}
@@ -2886,6 +2883,10 @@ Allocates memory and assigns fields for a graphics object.
 			display_message(ERROR_MESSAGE,"CREATE(GT_object).  Insufficient memory");
 			if (object)
 			{
+				if (object->name)
+				{
+					DEALLOCATE(object->name);
+				}
 				DEALLOCATE(object);
 			}
 		}
@@ -2902,7 +2903,7 @@ Allocates memory and assigns fields for a graphics object.
 
 int DESTROY(GT_object)(struct GT_object **object_ptr)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Frees the memory for the fields of <**object>, frees the memory for <**object>
@@ -2925,6 +2926,7 @@ and sets <*object> to NULL.
 		else
 		{
 			/* clean up times and primitives */
+			DESTROY(LIST(Selected_graphic))(&(object->selected_graphic_list));
 			for (i=object->number_of_times;0<i;i--)
 			{
 				GT_object_delete_time_number(object,i);
@@ -2932,7 +2934,6 @@ and sets <*object> to NULL.
 			DEALLOCATE(object->name);
 			DEACCESS(Graphical_material)(&(object->default_material));
 			DEACCESS(Spectrum)(&(object->spectrum));
-			XmStringFree(object->list_name);
 			callback_data = object->update_callback_list;
 			while(callback_data)
 			{
@@ -2968,7 +2969,7 @@ and sets <*object> to NULL.
 
 int compile_GT_object(struct GT_object *graphics_object_list,void *time_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
@@ -2993,21 +2994,36 @@ pointed to by <time_void>.
 					(graphics_object->display_list=glGenLists(1)))
 				{
 					glNewList(graphics_object->display_list,GL_COMPILE);
+					if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
+						(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,(void *)NULL,
+						graphics_object->selected_graphic_list))
+					{
+						/* child objects have no material or transformation */
+						if (graphics_object->selected_material)
+						{
+							execute_Graphical_material(graphics_object->selected_material);
+							makegtobject(graphics_object,*time,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"compile_GT_object.  "
+								"Graphics object %s has selected graphics but no selected "
+								"material",graphics_object->name);
+						}
+					}
 					/* child objects have no material or transformation */
 					if (graphics_object->default_material)
 					{
 						execute_Graphical_material(graphics_object->default_material);
 					}
-				
-					makegtobject(graphics_object,*time);
-
+					makegtobject(graphics_object,*time,0);
 					glEndList();
-				
 					graphics_object->display_list_current = 1;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"compile_GT_object.  Unable to get display list");
+					display_message(ERROR_MESSAGE,
+						"compile_GT_object.  Unable to get display list");
 					return_code=0;
 				}
 			}
@@ -4555,51 +4571,136 @@ DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_surface, \
 DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex, \
 	g_VOLTEX,gt_voltex,DESTROY(GT_voltex))
 
-int set_GT_object_default_material(struct GT_object *graphics_object,
-	struct Graphical_material *material)
+int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
-Sets the default_material of a GT_object.
+Clears the list of selected primitives and subobjects in <graphics_object>.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_GT_object_default_material);
+	ENTER(GT_object_clear_selected_graphic_list);
 	if (graphics_object)
 	{
-		if (material)
-		{
-			if (material != graphics_object->default_material)
-			{
-				ACCESS(Graphical_material)(material);
-				if (graphics_object->default_material)
-				{
-					DEACCESS(Graphical_material)(&graphics_object->default_material);
-				}
-				graphics_object->default_material=material;
-				GT_object_changed(graphics_object);
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_GT_object_default_material.  Invalid material object");
-			return_code=0;
-		}
+		return_code=REMOVE_ALL_OBJECTS_FROM_LIST(Selected_graphic)(
+			graphics_object->selected_graphic_list);
+		GT_object_changed(graphics_object);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_GT_object_default_material.  Invalid graphics object");
+			"GT_object_clear_selected_graphic_list.  Invalid graphics object");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* set_GT_object_default_material */
+} /* GT_object_clear_selected_graphic_list */
+
+int GT_object_select_graphic(struct GT_object *graphics_object,int number,
+	struct Multi_range *subranges)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Selects graphics with the object_name <number> in <graphics_object>, with
+optional <subranges> narrowing down the selection. Selected objects will be
+rendered with the selected/highlight material.
+Replaces any current selection with the same <number>.
+Iff the function is successful the <subranges> will be owned by the
+graphics_object.
+==============================================================================*/
+{
+	int return_code;
+	struct Selected_graphic *selected_graphic;
+
+	ENTER(GT_object_select_graphic);
+	return_code=0;
+	if (graphics_object)
+	{
+		/* clear current selected_graphic for number */
+		if (selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
+			number,graphics_object->selected_graphic_list))
+		{
+			REMOVE_OBJECT_FROM_LIST(Selected_graphic)(selected_graphic,
+				graphics_object->selected_graphic_list);
+		}
+		if (selected_graphic=CREATE(Selected_graphic)(number))
+		{
+			if (((!subranges)||Selected_graphic_set_subranges(selected_graphic,
+				subranges))&&ADD_OBJECT_TO_LIST(Selected_graphic)(selected_graphic,
+					graphics_object->selected_graphic_list))
+			{
+				GT_object_changed(graphics_object);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_object_select_graphic.  Error selecting graphic");
+				DESTROY(Selected_graphic)(&selected_graphic);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_object_select_graphic.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_select_graphic.  Invalid graphics object");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_select_graphic */
+
+int GT_object_is_graphic_selected(struct GT_object *graphics_object,int number,
+	struct Multi_range **subranges)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Returns true if graphics with the given <number> are selected in
+<graphics_object>, and if so, its selected subranges are returned with it. The
+returned subranges (which can be NULL if there are none) are for short-term
+viewing only as they belong the the Selected_graphic containing them.
+==============================================================================*/
+{
+	int return_code;
+	struct Selected_graphic *selected_graphic;
+
+	ENTER(GT_object_is_graphic_selected);
+	if (graphics_object&&subranges)
+	{
+		/* clear current selected_graphic for number */
+		if (selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
+			number,graphics_object->selected_graphic_list))
+		{
+			return_code=1;
+			*subranges=Selected_graphic_get_subranges(selected_graphic);
+		}
+		else
+		{
+			return_code=0;
+			*subranges=(struct Multi_range *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_is_graphic_selected.  Invalid argument(s)");
+		return_code=0;
+		*subranges=(struct Multi_range *)NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_is_graphic_selected */
 
 struct Graphical_material *get_GT_object_default_material
 	(struct GT_object *graphics_object)
@@ -4627,6 +4728,117 @@ Gets the default_material of a GT_object.
 
 	return (material);
 } /* get_GT_object_default_material */
+
+int set_GT_object_default_material(struct GT_object *graphics_object,
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2000
+
+DESCRIPTION :
+Sets the default_material of a GT_object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_GT_object_default_material);
+	if (graphics_object)
+	{
+		if (material)
+		{
+			if (material != graphics_object->default_material)
+			{
+				REACCESS(Graphical_material)(&(graphics_object->default_material),
+					material);
+				GT_object_changed(graphics_object);
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_GT_object_default_material.  Invalid material object");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_GT_object_default_material.  Invalid graphics object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_GT_object_default_material */
+
+struct Graphical_material *get_GT_object_selected_material
+	(struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Gets the selected_material of a GT_object.
+==============================================================================*/
+{
+	struct Graphical_material *material;
+
+	ENTER(get_GT_object_selected_material);
+	if (graphics_object)
+	{
+		material = graphics_object->selected_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_GT_object_selected_material.  Invalid graphics object");
+		material = (struct Graphical_material *)NULL;
+	}
+	LEAVE;
+
+	return (material);
+} /* get_GT_object_selected_material */
+
+int set_GT_object_selected_material(struct GT_object *graphics_object,
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2000
+
+DESCRIPTION :
+Sets the selected_material of a GT_object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_GT_object_selected_material);
+	if (graphics_object)
+	{
+		if (material)
+		{
+			if (material != graphics_object->selected_material)
+			{
+				REACCESS(Graphical_material)(&(graphics_object->selected_material),
+					material);
+				GT_object_changed(graphics_object);
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_GT_object_selected_material.  Invalid material object");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_GT_object_selected_material.  Invalid graphics object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_GT_object_selected_material */
 
 int set_GT_object_Spectrum(struct GT_object *graphics_object,
 	void *spectrum_void)

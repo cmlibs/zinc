@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -20,16 +20,18 @@ Call graphics routines in the API.
 #include "graphics/rendergl.h"
 #include "user_interface/message.h"
 
-int makegtobject(gtObject *object,float time)
+int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Convert graphical object into API object.
+If <draw_selected> is set, only selected graphics are drawn, otherwise only
+un-selected graphics are drawn.
 ==============================================================================*/
 {
 	float proportion,*times;
-	int itime,return_code,strip;
+	int itime,name_selected,return_code,strip;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_nurbs *nurbs;
 	struct GT_point *point;
@@ -38,6 +40,7 @@ Convert graphical object into API object.
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
 	struct GT_userdef *userdef;
 	struct GT_voltex *voltex;
+	struct Multi_range *selected_name_ranges;
 
 	ENTER(makegtobject);
 /*???debug */
@@ -115,6 +118,10 @@ Convert graphical object into API object.
 								{
 									/* put out name for picking */
 									glLoadName(interpolate_glyph_set->object_name);
+									/* work out if subobjects selected */
+									selected_name_ranges=(struct Multi_range *)NULL;
+									name_selected=GT_object_is_graphic_selected(object,
+										glyph_set->object_name,&selected_name_ranges);
 									draw_glyphsetGL(interpolate_glyph_set->number_of_points,
 										interpolate_glyph_set->point_list,
 										interpolate_glyph_set->axis1_list,
@@ -125,7 +132,8 @@ Convert graphical object into API object.
 										interpolate_glyph_set->n_data_components,
 										interpolate_glyph_set->data,
 										interpolate_glyph_set->names,
-										object->default_material,object->spectrum);
+										object->default_material,object->spectrum,
+										draw_selected,selected_name_ranges);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
 								glyph_set=glyph_set->ptrnext;
@@ -138,12 +146,17 @@ Convert graphical object into API object.
 							{
 								/* put out name for picking */
 								glLoadName(glyph_set->object_name);
+								/* work out if subobjects selected */
+								selected_name_ranges=(struct Multi_range *)NULL;
+								name_selected=GT_object_is_graphic_selected(object,
+									glyph_set->object_name,&selected_name_ranges);
 								draw_glyphsetGL(glyph_set->number_of_points,
 									glyph_set->point_list,glyph_set->axis1_list,
 									glyph_set->axis2_list,glyph_set->axis3_list,glyph_set->glyph,
 									glyph_set->labels,glyph_set->n_data_components,
 									glyph_set->data,glyph_set->names,
-									object->default_material,object->spectrum);
+									object->default_material,object->spectrum,
+									draw_selected,selected_name_ranges);
 								glyph_set=glyph_set->ptrnext;
 							}
 						}

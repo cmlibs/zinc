@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendergl.c
 
-LAST MODIFIED : 18 July 1999
+LAST MODIFIED : 20 February 2000
 
 DESCRIPTION :
 GL rendering calls (API specific).
@@ -30,9 +30,10 @@ Global functions
 int draw_glyphsetGL(int number_of_points,Triple *point_list,Triple *axis1_list,
 	Triple *axis2_list,Triple *axis3_list,struct GT_object *glyph,char **labels,
 	int number_of_data_components,GTDATA *data,int *names,
-	struct Graphical_material *material,struct Spectrum *spectrum)
+	struct Graphical_material *material,struct Spectrum *spectrum,
+	int draw_selected,struct Multi_range *selected_name_ranges)
 /*******************************************************************************
-LAST MODIFIED : 18 July 1999
+LAST MODIFIED : 20 February 2000
 
 DESCRIPTION :
 Draws graphics object <glyph> at <number_of_points> points given by the
@@ -41,12 +42,15 @@ and <axis3_list>. If the glyph is part of a linked list through its nextobject
 member, these attached glyphs are also executed.
 Writes the <labels> array strings, if supplied, beside each glyph point.
 If <names> are supplied these identify each point/glyph for OpenGL picking.
+If <draw_selected> is set, then only those <names> in <selected_name_ranges>
+are drawn, otherwise only those names not there are drawn. A NULL pointer for
+<selected_name_ranges> indicates no points are selected.
 ==============================================================================*/
 {
 	char **label;
 	GLfloat transformation[16],x,y,z;
 	GTDATA *datum;
-	int i,*name,return_code;
+	int draw_all,i,*name,name_selected,return_code;
 	struct GT_object *temp_glyph;
 	struct Spectrum_render_data *render_data;
 	Triple *point,*axis1,*axis2,*axis3;
@@ -56,392 +60,460 @@ If <names> are supplied these identify each point/glyph for OpenGL picking.
 #endif /* defined (DEBUG) */
 
 	ENTER(draw_glyphsetGL);
-	/* default return code */
-	return_code=0;
-	/* checking arguments */
-	if ((0<number_of_points)&&point_list&&axis1_list&&axis2_list&&axis3_list&&
-		glyph)
+	if (((0==number_of_points)||(0<number_of_points)&&point_list&&axis1_list&&
+		axis2_list&&axis3_list)&&glyph&&((!selected_name_ranges)||names))
 	{
-#if defined (OPENGL_API)
-		if ((!data)||(render_data=spectrum_start_renderGL
-			(spectrum,material,number_of_data_components)))
+		if ((0==number_of_points)||(draw_selected&&(!selected_name_ranges)))
 		{
-			point=point_list;
-			axis1=axis1_list;
-			axis2=axis2_list;
-			axis3=axis3_list;
-			/* if there is data to plot, start the spectrum rendering */
-			if (data)
+			/* nothing to draw */
+			return_code=1;
+		}
+		else
+		{
+#if defined (OPENGL_API)
+			if ((!data)||(render_data=spectrum_start_renderGL
+				(spectrum,material,number_of_data_components)))
 			{
-				datum=data;
-			}
-			if (name=names)
-			{
-				/* make space for picking name on name stack */
-				glPushName(-1);
-			}
-			label=labels;
-			/* try to draw points and lines faster */
-			if (0==strcmp(glyph->name,"point"))
-			{
-				/* disable lighting so rendered in flat diffuse colour */
-				/*???RC glPushAttrib and glPopAttrib are *very* slow */
-				glPushAttrib(GL_ENABLE_BIT);
-				glDisable(GL_LIGHTING);
-				if (names||labels)
+				draw_all=(!names)||((!draw_selected)&&(!selected_name_ranges));
+				point=point_list;
+				axis1=axis1_list;
+				axis2=axis2_list;
+				axis3=axis3_list;
+				/* if there is data to plot, start the spectrum rendering */
+				if (data)
 				{
-					/* cannot put glLoadName between glBegin and glEnd */
-					for (i=0;i<number_of_points;i++)
-					{
-						/* set the spectrum for this datum, if any */
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,datum);
-							datum+=number_of_data_components;
-						}
-						x=(*point)[0];
-						y=(*point)[1];
-						z=(*point)[2];
-						point++;
-						if (names)
-						{
-							glLoadName(*name);
-							name++;
-						}
-						glBegin(GL_POINTS);
-						glVertex3f(x,y,z);
-						glEnd();
-						if (labels)
-						{
-							glRasterPos3f(x,y,z);
-							wrapperPrintText(*label);
-							label++;
-						}
-					}
+					datum=data;
 				}
-				else
+				if (name=names)
 				{
-					/* more efficient if all points put out between glBegin and glEnd */
-					glBegin(GL_POINTS);
-					for (i=0;i<number_of_points;i++)
-					{
-						/* set the spectrum for this datum, if any */
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,datum);
-							datum+=number_of_data_components;
-						}
-						x=(*point)[0];
-						y=(*point)[1];
-						z=(*point)[2];
-						point++;
-						glVertex3f(x,y,z);
-					}
-					glEnd();
+					/* make space for picking name on name stack */
+					glPushName(-1);
 				}
-				/* restore previous lighting state */
-				glPopAttrib();
-			}
-			else if (0==strcmp(glyph->name,"line"))
-			{
-				/* disable lighting so rendered in flat diffuse colour */
-				/*???RC glPushAttrib and glPopAttrib are *very* slow */
-				glPushAttrib(GL_ENABLE_BIT);
-				glDisable(GL_LIGHTING);
-				if (names||labels)
+				label=labels;
+				/* try to draw points and lines faster */
+				if (0==strcmp(glyph->name,"point"))
 				{
-					/* cannot put glLoadName between glBegin and glEnd */
-					for (i=0;i<number_of_points;i++)
-					{
-						/* set the spectrum for this datum, if any */
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,datum);
-							datum+=number_of_data_components;
-						}
-						if (names)
-						{
-							glLoadName(*name);
-							name++;
-						}
-						x=(*point)[0];
-						y=(*point)[1];
-						z=(*point)[2];
-						if (labels)
-						{
-							glRasterPos3f(x,y,z);
-							wrapperPrintText(*label);
-							label++;
-						}
-						glBegin(GL_LINES);
-						glVertex3f(x,y,z);
-						x+=(*axis1)[0];
-						y+=(*axis1)[1];
-						z+=(*axis1)[2];
-						glVertex3f(x,y,z);
-						glEnd();
-						point++;
-						axis1++;
-					}
-				}
-				else
-				{
-					/* more efficient if all lines put out between glBegin and glEnd */
-					glBegin(GL_LINES);
-					for (i=0;i<number_of_points;i++)
-					{
-						/* set the spectrum for this datum, if any */
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,datum);
-							datum+=number_of_data_components;
-						}
-						x=(*point)[0];
-						y=(*point)[1];
-						z=(*point)[2];
-						glVertex3f(x,y,z);
-						x+=(*axis1)[0];
-						y+=(*axis1)[1];
-						z+=(*axis1)[2];
-						glVertex3f(x,y,z);
-						point++;
-						axis1++;
-					}
-					glEnd();
-				}
-				/* restore previous lighting state */
-				glPopAttrib();
-			}
-			else if (0==strcmp(glyph->name,"cross"))
-			{
-				/* disable lighting so rendered in flat diffuse colour */
-				/*???RC glPushAttrib and glPopAttrib are *very* slow */
-				glPushAttrib(GL_ENABLE_BIT);
-				glDisable(GL_LIGHTING);
-				if (names||labels)
-				{
-					/* cannot put glLoadName between glBegin and glEnd */
-					for (i=0;i<number_of_points;i++)
-					{
-						/* set the spectrum for this datum, if any */
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,datum);
-							datum+=number_of_data_components;
-						}
-						if (names)
-						{
-							glLoadName(*name);
-							name++;
-						}
-						x=(*point)[0];
-						y=(*point)[1];
-						z=(*point)[2];
-						if (labels)
-						{
-							glRasterPos3f(x,y,z);
-							wrapperPrintText(*label);
-							label++;
-						}
-						glBegin(GL_LINES);
-						/* x-line */
-						x=(*point)[0]-0.5*(*axis1)[0];
-						y=(*point)[1]-0.5*(*axis1)[1];
-						z=(*point)[2]-0.5*(*axis1)[2];
-						glVertex3f(x,y,z);
-						x+=(*axis1)[0];
-						y+=(*axis1)[1];
-						z+=(*axis1)[2];
-						glVertex3f(x,y,z);
-						/* y-line */
-						x=(*point)[0]-0.5*(*axis2)[0];
-						y=(*point)[1]-0.5*(*axis2)[1];
-						z=(*point)[2]-0.5*(*axis2)[2];
-						glVertex3f(x,y,z);
-						x+=(*axis2)[0];
-						y+=(*axis2)[1];
-						z+=(*axis2)[2];
-						glVertex3f(x,y,z);
-						/* z-line */
-						x=(*point)[0]-0.5*(*axis3)[0];
-						y=(*point)[1]-0.5*(*axis3)[1];
-						z=(*point)[2]-0.5*(*axis3)[2];
-						glVertex3f(x,y,z);
-						x+=(*axis3)[0];
-						y+=(*axis3)[1];
-						z+=(*axis3)[2];
-						glVertex3f(x,y,z);
-						glEnd();
-						point++;
-						axis1++;
-						axis2++;
-						axis3++;
-					}
-				}
-				else
-				{
-					/* more efficient if all lines put out between glBegin and glEnd */
-					glBegin(GL_LINES);
-					for (i=0;i<number_of_points;i++)
-					{
-						/* set the spectrum for this datum, if any */
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,datum);
-							datum+=number_of_data_components;
-						}
-						/* x-line */
-						x=(*point)[0]-0.5*(*axis1)[0];
-						y=(*point)[1]-0.5*(*axis1)[1];
-						z=(*point)[2]-0.5*(*axis1)[2];
-						glVertex3f(x,y,z);
-						x+=(*axis1)[0];
-						y+=(*axis1)[1];
-						z+=(*axis1)[2];
-						glVertex3f(x,y,z);
-						/* y-line */
-						x=(*point)[0]-0.5*(*axis2)[0];
-						y=(*point)[1]-0.5*(*axis2)[1];
-						z=(*point)[2]-0.5*(*axis2)[2];
-						glVertex3f(x,y,z);
-						x+=(*axis2)[0];
-						y+=(*axis2)[1];
-						z+=(*axis2)[2];
-						glVertex3f(x,y,z);
-						/* z-line */
-						x=(*point)[0]-0.5*(*axis3)[0];
-						y=(*point)[1]-0.5*(*axis3)[1];
-						z=(*point)[2]-0.5*(*axis3)[2];
-						glVertex3f(x,y,z);
-						x+=(*axis3)[0];
-						y+=(*axis3)[1];
-						z+=(*axis3)[2];
-						glVertex3f(x,y,z);
-						point++;
-						axis1++;
-						axis2++;
-						axis3++;
-					}
-					glEnd();
-				}
-				/* restore previous lighting state */
-				glPopAttrib();
-			}
-			else
-			{
-				/* must push and pop the modelview matrix */
-				glMatrixMode(GL_MODELVIEW);
-				for (i=0;i<number_of_points;i++)
-				{
-					if (names)
-					{
-						glLoadName(*name);
-						name++;
-					}
-					/* store the current modelview matrix */
-					glPushMatrix();
-					/* make transformation matrix for manipulating glyph */
-					transformation[ 0] = (*axis1)[0];
-					transformation[ 1] = (*axis1)[1];
-					transformation[ 2] = (*axis1)[2];
-					axis1++;
-					transformation[ 4] = (*axis2)[0];
-					transformation[ 5] = (*axis2)[1];
-					transformation[ 6] = (*axis2)[2];
-					axis2++;
-					transformation[ 8] = (*axis3)[0];
-					transformation[ 9] = (*axis3)[1];
-					transformation[10] = (*axis3)[2];
-					axis3++;
-					transformation[12] = (*point)[0];
-					transformation[13] = (*point)[1];
-					transformation[14] = (*point)[2];
-					point++;
-					transformation[ 3] = 0.0;
-					transformation[ 7] = 0.0;
-					transformation[11] = 0.0;
-					transformation[15] = 1.0;
-					glMultMatrixf(transformation);
-					/* set the spectrum for this datum, if any */
-					if (data)
-					{
-						spectrum_renderGL_value(spectrum,material,render_data,datum);
-						datum+=number_of_data_components;
-					}
-					/* call the glyph display lists of the linked-list of glyphs */
-					for (temp_glyph=glyph;temp_glyph != NULL;
-							 temp_glyph=temp_glyph->nextobject)
-					{
-						glCallList(temp_glyph->display_list);
-					}
-					/* restore the original modelview matrix */
-					glPopMatrix();
-				}
-				/* output label at each point, if supplied */
-				if (label=labels)
-				{
-					name=names;
 					/* disable lighting so rendered in flat diffuse colour */
 					/*???RC glPushAttrib and glPopAttrib are *very* slow */
 					glPushAttrib(GL_ENABLE_BIT);
 					glDisable(GL_LIGHTING);
-					point=point_list;
-					datum=data;
-					for (i=0;i<number_of_points;i++)
+					if (names||labels||selected_name_ranges)
 					{
-						if (names)
+						/* cannot put glLoadName between glBegin and glEnd */
+						for (i=0;i<number_of_points;i++)
 						{
-							glLoadName(*name);
-							name++;
+							if (draw_all||((name_selected=Multi_range_is_value_in_range(
+								selected_name_ranges,*name))&&draw_selected)||
+								((!name_selected)&&(!draw_selected)))
+							{
+								/* set the spectrum for this datum, if any */
+								if (data)
+								{
+									spectrum_renderGL_value(spectrum,material,render_data,datum);
+								}
+								x=(*point)[0];
+								y=(*point)[1];
+								z=(*point)[2];
+								if (names)
+								{
+									glLoadName(*name);
+								}
+								glBegin(GL_POINTS);
+								glVertex3f(x,y,z);
+								glEnd();
+								if (labels)
+								{
+									glRasterPos3f(x,y,z);
+									wrapperPrintText(*label);
+								}
+							}
+							/* advance pointers */
+							point++;
+							if (data)
+							{
+								datum+=number_of_data_components;
+							}
+							if (names)
+							{
+								name++;
+							}
+							if (labels)
+							{
+								label++;
+							}
 						}
-						x=(*point)[0];
-						y=(*point)[1];
-						z=(*point)[2];
-						point++;
-						/* set the spectrum for this datum, if any */
-						if (data)
+					}
+					else
+					{
+						/* more efficient if all points put out between glBegin and glEnd */
+						glBegin(GL_POINTS);
+						for (i=0;i<number_of_points;i++)
 						{
-							spectrum_renderGL_value(spectrum,material,render_data,datum);
-							datum += number_of_data_components;
+							/* set the spectrum for this datum, if any */
+							if (data)
+							{
+								spectrum_renderGL_value(spectrum,material,render_data,datum);
+								datum+=number_of_data_components;
+							}
+							x=(*point)[0];
+							y=(*point)[1];
+							z=(*point)[2];
+							point++;
+							glVertex3f(x,y,z);
 						}
-						glRasterPos3f(x,y,z);
-						wrapperPrintText(*label);
-						label++;
+						glEnd();
 					}
 					/* restore previous lighting state */
 					glPopAttrib();
 				}
+				else if (0==strcmp(glyph->name,"line"))
+				{
+					/* disable lighting so rendered in flat diffuse colour */
+					/*???RC glPushAttrib and glPopAttrib are *very* slow */
+					glPushAttrib(GL_ENABLE_BIT);
+					glDisable(GL_LIGHTING);
+					if (names||labels||selected_name_ranges)
+					{
+						/* cannot put glLoadName between glBegin and glEnd */
+						for (i=0;i<number_of_points;i++)
+						{
+							if (draw_all||((name_selected=Multi_range_is_value_in_range(
+								selected_name_ranges,*name))&&draw_selected)||
+								((!name_selected)&&(!draw_selected)))
+							{
+								/* set the spectrum for this datum, if any */
+								if (data)
+								{
+									spectrum_renderGL_value(spectrum,material,render_data,datum);
+								}
+								if (names)
+								{
+									glLoadName(*name);
+								}
+								x=(*point)[0];
+								y=(*point)[1];
+								z=(*point)[2];
+								if (labels)
+								{
+									glRasterPos3f(x,y,z);
+									wrapperPrintText(*label);
+								}
+								glBegin(GL_LINES);
+								glVertex3f(x,y,z);
+								x+=(*axis1)[0];
+								y+=(*axis1)[1];
+								z+=(*axis1)[2];
+								glVertex3f(x,y,z);
+								glEnd();
+							}
+							/* advance pointers */
+							point++;
+							axis1++;
+							if (data)
+							{
+								datum+=number_of_data_components;
+							}
+							if (names)
+							{
+								name++;
+							}
+							if (labels)
+							{
+								label++;
+							}
+						}
+					}
+					else
+					{
+						/* more efficient if all lines put out between glBegin and glEnd */
+						glBegin(GL_LINES);
+						for (i=0;i<number_of_points;i++)
+						{
+							/* set the spectrum for this datum, if any */
+							if (data)
+							{
+								spectrum_renderGL_value(spectrum,material,render_data,datum);
+								datum+=number_of_data_components;
+							}
+							x=(*point)[0];
+							y=(*point)[1];
+							z=(*point)[2];
+							glVertex3f(x,y,z);
+							x+=(*axis1)[0];
+							y+=(*axis1)[1];
+							z+=(*axis1)[2];
+							glVertex3f(x,y,z);
+							point++;
+							axis1++;
+						}
+						glEnd();
+					}
+					/* restore previous lighting state */
+					glPopAttrib();
+				}
+				else if (0==strcmp(glyph->name,"cross"))
+				{
+					/* disable lighting so rendered in flat diffuse colour */
+					/*???RC glPushAttrib and glPopAttrib are *very* slow */
+					glPushAttrib(GL_ENABLE_BIT);
+					glDisable(GL_LIGHTING);
+					if (names||labels||selected_name_ranges)
+					{
+						/* cannot put glLoadName between glBegin and glEnd */
+						for (i=0;i<number_of_points;i++)
+						{
+							if (draw_all||((name_selected=Multi_range_is_value_in_range(
+								selected_name_ranges,*name))&&draw_selected)||
+								((!name_selected)&&(!draw_selected)))
+							{
+								/* set the spectrum for this datum, if any */
+								if (data)
+								{
+									spectrum_renderGL_value(spectrum,material,render_data,datum);
+								}
+								if (names)
+								{
+									glLoadName(*name);
+								}
+								x=(*point)[0];
+								y=(*point)[1];
+								z=(*point)[2];
+								if (labels)
+								{
+									glRasterPos3f(x,y,z);
+									wrapperPrintText(*label);
+								}
+								glBegin(GL_LINES);
+								/* x-line */
+								x=(*point)[0]-0.5*(*axis1)[0];
+								y=(*point)[1]-0.5*(*axis1)[1];
+								z=(*point)[2]-0.5*(*axis1)[2];
+								glVertex3f(x,y,z);
+								x+=(*axis1)[0];
+								y+=(*axis1)[1];
+								z+=(*axis1)[2];
+								glVertex3f(x,y,z);
+								/* y-line */
+								x=(*point)[0]-0.5*(*axis2)[0];
+								y=(*point)[1]-0.5*(*axis2)[1];
+								z=(*point)[2]-0.5*(*axis2)[2];
+								glVertex3f(x,y,z);
+								x+=(*axis2)[0];
+								y+=(*axis2)[1];
+								z+=(*axis2)[2];
+								glVertex3f(x,y,z);
+								/* z-line */
+								x=(*point)[0]-0.5*(*axis3)[0];
+								y=(*point)[1]-0.5*(*axis3)[1];
+								z=(*point)[2]-0.5*(*axis3)[2];
+								glVertex3f(x,y,z);
+								x+=(*axis3)[0];
+								y+=(*axis3)[1];
+								z+=(*axis3)[2];
+								glVertex3f(x,y,z);
+								glEnd();
+							}
+							/* advance pointers */
+							point++;
+							axis1++;
+							axis2++;
+							axis3++;
+							if (data)
+							{
+								datum+=number_of_data_components;
+							}
+							if (names)
+							{
+								name++;
+							}
+							if (labels)
+							{
+								label++;
+							}
+						}
+					}
+					else
+					{
+						/* more efficient if all lines put out between glBegin and glEnd */
+						glBegin(GL_LINES);
+						for (i=0;i<number_of_points;i++)
+						{
+							/* set the spectrum for this datum, if any */
+							if (data)
+							{
+								spectrum_renderGL_value(spectrum,material,render_data,datum);
+								datum+=number_of_data_components;
+							}
+							/* x-line */
+							x=(*point)[0]-0.5*(*axis1)[0];
+							y=(*point)[1]-0.5*(*axis1)[1];
+							z=(*point)[2]-0.5*(*axis1)[2];
+							glVertex3f(x,y,z);
+							x+=(*axis1)[0];
+							y+=(*axis1)[1];
+							z+=(*axis1)[2];
+							glVertex3f(x,y,z);
+							/* y-line */
+							x=(*point)[0]-0.5*(*axis2)[0];
+							y=(*point)[1]-0.5*(*axis2)[1];
+							z=(*point)[2]-0.5*(*axis2)[2];
+							glVertex3f(x,y,z);
+							x+=(*axis2)[0];
+							y+=(*axis2)[1];
+							z+=(*axis2)[2];
+							glVertex3f(x,y,z);
+							/* z-line */
+							x=(*point)[0]-0.5*(*axis3)[0];
+							y=(*point)[1]-0.5*(*axis3)[1];
+							z=(*point)[2]-0.5*(*axis3)[2];
+							glVertex3f(x,y,z);
+							x+=(*axis3)[0];
+							y+=(*axis3)[1];
+							z+=(*axis3)[2];
+							glVertex3f(x,y,z);
+							point++;
+							axis1++;
+							axis2++;
+							axis3++;
+						}
+						glEnd();
+					}
+					/* restore previous lighting state */
+					glPopAttrib();
+				}
+				else
+				{
+					/* must push and pop the modelview matrix */
+					glMatrixMode(GL_MODELVIEW);
+					for (i=0;i<number_of_points;i++)
+					{
+						if (draw_all||((name_selected=Multi_range_is_value_in_range(
+							selected_name_ranges,*name))&&draw_selected)||
+							((!name_selected)&&(!draw_selected)))
+						{
+							if (names)
+							{
+								glLoadName(*name);
+							}
+							/* store the current modelview matrix */
+							glPushMatrix();
+							/* make transformation matrix for manipulating glyph */
+							transformation[ 0] = (*axis1)[0];
+							transformation[ 1] = (*axis1)[1];
+							transformation[ 2] = (*axis1)[2];
+							transformation[ 3] = 0.0;
+							transformation[ 4] = (*axis2)[0];
+							transformation[ 5] = (*axis2)[1];
+							transformation[ 6] = (*axis2)[2];
+							transformation[ 7] = 0.0;
+							transformation[ 8] = (*axis3)[0];
+							transformation[ 9] = (*axis3)[1];
+							transformation[10] = (*axis3)[2];
+							transformation[11] = 0.0;
+							transformation[12] = (*point)[0];
+							transformation[13] = (*point)[1];
+							transformation[14] = (*point)[2];
+							transformation[15] = 1.0;
+							glMultMatrixf(transformation);
+							/* set the spectrum for this datum, if any */
+							if (data)
+							{
+								spectrum_renderGL_value(spectrum,material,render_data,datum);
+							}
+							/* call the glyph display lists of the linked-list of glyphs */
+							for (temp_glyph=glyph;temp_glyph != NULL;
+								temp_glyph=temp_glyph->nextobject)
+							{
+								glCallList(temp_glyph->display_list);
+							}
+							/* restore the original modelview matrix */
+							glPopMatrix();
+						}
+						/* advance pointers */
+						point++;
+						axis1++;
+						axis2++;
+						axis3++;
+						if (data)
+						{
+							datum+=number_of_data_components;
+						}
+						if (names)
+						{
+							name++;
+						}
+					}
+					/* output label at each point, if supplied */
+					if (label=labels)
+					{
+						name=names;
+						/* disable lighting so rendered in flat diffuse colour */
+						/*???RC glPushAttrib and glPopAttrib are *very* slow */
+						glPushAttrib(GL_ENABLE_BIT);
+						glDisable(GL_LIGHTING);
+						point=point_list;
+						datum=data;
+						for (i=0;i<number_of_points;i++)
+						{
+							if (draw_all||((name_selected=Multi_range_is_value_in_range(
+								selected_name_ranges,*name))&&draw_selected)||
+								((!name_selected)&&(!draw_selected)))
+							{
+								if (names)
+								{
+									glLoadName(*name);
+								}
+								x=(*point)[0];
+								y=(*point)[1];
+								z=(*point)[2];
+								/* set the spectrum for this datum, if any */
+								if (data)
+								{
+									spectrum_renderGL_value(spectrum,material,render_data,datum);
+								}
+								glRasterPos3f(x,y,z);
+								wrapperPrintText(*label);
+							}
+							/* advance pointers */
+							point++;
+							if (data)
+							{
+								datum+=number_of_data_components;
+							}
+							if (names)
+							{
+								name++;
+							}
+							label++;
+						}
+						/* restore previous lighting state */
+						glPopAttrib();
+					}
+				}
+				if (names)
+				{
+					/* free space for point number on picking name stack */
+					glPopName();
+				}
+				if (data)
+				{
+					spectrum_end_renderGL(spectrum,render_data);
+				}
+				return_code=1;
 			}
-			if (names)
+			else
 			{
-				/* free space for point number on picking name stack */
-				glPopName();
+				display_message(ERROR_MESSAGE,
+					"draw_glyphsetGL.  Unable to start data rendering");
+				return_code=0;
 			}
-			if (data)
-			{
-				spectrum_end_renderGL(spectrum,render_data);
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"draw_glyphsetGL.  Unable to start data rendering");
-			return_code=0;
-		}
 #endif /* defined (OPENGL_API) */
+		}
 	}
 	else
 	{
-		if (0 == number_of_points)
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"draw_glyphsetGL. Invalid argument(s)");
-			return_code=0;
-		}
+		display_message(ERROR_MESSAGE,"draw_glyphsetGL. Invalid argument(s)");
+		return_code=0;
 	}
 	LEAVE;
 
