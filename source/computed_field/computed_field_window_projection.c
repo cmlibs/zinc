@@ -1218,13 +1218,13 @@ already) and allows its contents to be modified.
 		{
 			pane_number = 1;
 			projection_type = TEXTURE_PROJECTION;
-			if (!((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			if (!(((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_has_3_components,(void *)NULL,
 				computed_field_window_projection_package->computed_field_manager))) &&
 				(graphics_window = FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
 				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
 				(void *)NULL,
-				computed_field_window_projection_package->graphics_window_manager)))
+				computed_field_window_projection_package->graphics_window_manager))))
 			{
 				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
