@@ -1,9 +1,11 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.h
 
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
+Implements computed_fields for calculating various derivative quantities such
+as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 ==============================================================================*/
 #if !defined (COMPUTED_FIELD_DERIVATIVES_H)
 #define COMPUTED_FIELD_DERIVATIVES_H

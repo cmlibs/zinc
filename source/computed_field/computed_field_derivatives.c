@@ -1,11 +1,11 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 2 November 2000
 
 DESCRIPTION :
-Implements a computed_field which maintains a graphics transformation 
-equivalent to the scene_viewer assigned to it.
+Implements computed_fields for calculating various derivative quantities such
+as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 ==============================================================================*/
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
@@ -2117,7 +2117,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_gradient_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2145,7 +2145,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_gradient_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		destination = NULL;
 	}
 	LEAVE;
@@ -2199,7 +2199,7 @@ Check the source fields using the default.
 static int Computed_field_gradient_is_defined_at_node(
 	struct Computed_field *field, struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
 Gradient can only be calculated in elements
@@ -2207,7 +2207,7 @@ Gradient can only be calculated in elements
 {
 	int return_code;
 
-	ENTER(Computed_field_gradient_evaluate_cache_at_node);
+	ENTER(Computed_field_gradient_is_defined_at_node);
 	if (field && node)
 	{
 		/* Gradient can only be calculated in elements */
@@ -2217,13 +2217,13 @@ Gradient can only be calculated in elements
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_gradient_is_defined_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_gradient_evaluate_cache_at_node */
+} /* Computed_field_gradient_is_defined_at_node */
 
 #define Computed_field_gradient_has_numerical_components \
 	Computed_field_default_has_numerical_components
@@ -2243,103 +2243,6 @@ DESCRIPTION :
 No special criteria on the destroy
 ==============================================================================*/
 
-static int Computed_field_evaluate_gradient(struct Computed_field *field,
-	int element_dimension)
-/*******************************************************************************
-LAST MODIFIED : 23 March 2000
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_in_element to compute the gradient.
-NOTE: Assumes that values and derivatives arrays are already allocated in
-<field>, and that its source_fields are already computed (incl. derivatives)
-for the same element, with the given <element_dimension> = number of Xi coords.
-Derivatives are always calculated and set since they are always zero.
-If function fails to invert the coordinate derivatives then the gradient is
-returned as the 0 vector with a warning - as may happen at certain locations of
-the mesh.
-==============================================================================*/
-{
-	FE_value *destination,dx_dxi[9],dxi_dx[9],x[3],*source;
-	int coordinate_components,i,j,return_code;
-	
-	ENTER(Computed_field_evaluate_gradient);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_gradient_type_string))
-	{
-		coordinate_components=field->source_fields[1]->number_of_components;
-		/* Following asks: can dx_dxi be inverted? */
-		if (((3==element_dimension)&&(3==coordinate_components))||
-			((RECTANGULAR_CARTESIAN==field->source_fields[1]->coordinate_system.type)
-				&&(coordinate_components==element_dimension))||
-			((CYLINDRICAL_POLAR==field->source_fields[1]->coordinate_system.type)&&
-				(2==element_dimension)&&(2==coordinate_components)))
-		{
-			if (return_code=Computed_field_extract_rc(field->source_fields[1],
-				element_dimension,x,dx_dxi))
-			{
-				/* if the element_dimension is less than 3, put ones on the main
-					 diagonal to allow inversion of dx_dxi */
-				if (3>element_dimension)
-				{
-					dx_dxi[8]=1.0;
-					if (2>element_dimension)
-					{
-						dx_dxi[4]=1.0;
-					}
-				}
-				if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
-				{
-					destination=field->values;
-					for (i=0;i<field->number_of_components;i++)
-					{
-						*destination=0.0;
-						if (i<element_dimension)
-						{
-							source=field->source_fields[0]->derivatives;
-							for (j=0;j<element_dimension;j++)
-							{
-								*destination += (*source) * dxi_dx[3*j+i];
-								source++;
-							}
-						}
-						destination++;
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,
-						"Could not invert coordinate derivatives; setting gradient to 0");
-					for (i=0;i<field->number_of_components;i++)
-					{
-						field->values[i]=0.0;
-					}
-				}
-				/* cannot calculate derivatives for gradient yet */
-				field->derivatives_valid=0;
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_gradient.  Failed");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_gradient.  Elements of wrong dimension");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_gradient.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_gradient */
-
 #define Computed_field_gradient_evaluate_cache_at_node \
    (Computed_field_evaluate_cache_at_node_function)NULL
 /*******************************************************************************
@@ -2353,39 +2256,119 @@ static int Computed_field_gradient_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 2 November 2000
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache in the element.
 ==============================================================================*/
 {
-	FE_value top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int element_dimension, return_code, top_level_element_dimension;
+	double a[9], b[3], d;
+	FE_value *destination, *source, top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int coordinate_components, element_dimension, i, indx[3], j, return_code,
+		source_components, top_level_element_dimension;
+	struct Computed_field *coordinate_field, *source_field;
 
 	ENTER(Computed_field_gradient_evaluate_cache_in_element);
-	USE_PARAMETER(calculate_derivatives);
+	return_code = 0;
 	if (field && element && xi)
 	{
-		element_dimension = get_FE_element_dimension(element);
-		/* 1. Precalculate any source fields that this field depends on,
-			we always want the derivatives and want to use the top_level element */
-		Computed_field_get_top_level_element_and_xi(element, xi, element_dimension,
-			&top_level_element, top_level_xi, &top_level_element_dimension);
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
-				top_level_xi, top_level_element, /*calculate_derivatives*/1))
-		{
-			/* 2. Calculate the field */
-			return_code=Computed_field_evaluate_gradient(field, top_level_element_dimension);
-		}
+		/* cannot calculate derivatives for gradient yet */
 		field->derivatives_valid = 0;
+		if (!calculate_derivatives)
+		{
+			element_dimension = get_FE_element_dimension(element);
+			/* 1. Precalculate any source fields that this field depends on,
+				 we always want the derivatives and want to use the top_level element */
+			if (Computed_field_get_top_level_element_and_xi(element, xi,
+				element_dimension, &top_level_element, top_level_xi,
+				&top_level_element_dimension) &&
+				Computed_field_evaluate_source_fields_cache_in_element(
+					field, top_level_element, top_level_xi, top_level_element,
+					/*calculate_derivatives*/1))
+			{
+				/* 2. Calculate the field. First verify we can invert the derivatives of
+					 the coordinate field, which we can if dx_dxi is square */
+				source_field = field->source_fields[0];
+				source_components = source_field->number_of_components;
+				coordinate_field = field->source_fields[1];
+				coordinate_components = coordinate_field->number_of_components;
+				if (top_level_element_dimension == coordinate_components)
+				{
+					/* fill square matrix a with coordinate field derivatives w.r.t. xi */
+					for (i = 0; i < coordinate_components; i++)
+					{
+						for (j = 0; j < coordinate_components; j++)
+						{
+							a[i*coordinate_components + j] =
+								coordinate_field->derivatives[j*coordinate_components+i];
+						}
+					}
+					/* invert to get derivatives of xi w.r.t. coordinates */
+					if (LU_decompose(coordinate_components,a,indx,&d))
+					{
+						return_code = 1;
+						destination = field->values;
+						source = source_field->derivatives;
+						for (i = 0; (i < source_components) && return_code; i++)
+						{
+							for (j = 0; j < coordinate_components; j++)
+							{
+								b[j] = (double)(*source);
+								source++;
+							}
+							if (LU_backsubstitute(coordinate_components,a,indx,b))
+							{
+								for (j = 0; j < coordinate_components; j++)
+								{
+									*destination = (FE_value)b[j];
+									destination++;
+								}
+							}
+							else
+							{
+								return_code = 0;
+							}
+						}
+					}
+					if (!return_code)
+					{
+						/* cannot invert at apex of heart, so set to zero to allow values
+							 to be viewed elsewhere in mesh */
+						display_message(WARNING_MESSAGE,
+							"Computed_field_gradient_evaluate_cache_in_element.  "
+							"Could not invert coordinate derivatives; setting gradient to 0");
+						for (i = 0; i < field->number_of_components; i++)
+						{
+							field->values[i] = 0.0;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_gradient_evaluate_cache_in_element.  "
+						"Cannot invert coordinate derivatives");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_gradient_evaluate_cache_in_element.  "
+					"Cannot evaluate source fields");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_gradient_evaluate_cache_in_element.  "
+				"Derivatives not available for gradient field");
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_gradient_evaluate_cache_in_element.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -2446,10 +2429,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-static int list_Computed_field_gradient(
-	struct Computed_field *field)
+static int list_Computed_field_gradient(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2462,14 +2444,13 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    scalar field : %s\n",field->source_fields[0]->name);
+			"    source field : %s\n",field->source_fields[0]->name);
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_gradient.  "
-			"Invalid arguments.");
+			"list_Computed_field_gradient.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2477,10 +2458,9 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_gradient */
 
-static int list_Computed_field_gradient_commands(
-	struct Computed_field *field)
+static int list_Computed_field_gradient_commands(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2490,16 +2470,14 @@ DESCRIPTION :
 	ENTER(list_Computed_field_gradient_commands);
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" coordinate %s scalar %s",field->source_fields[1]->name,
-			field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE," coordinate %s field %s",
+			field->source_fields[1]->name,field->source_fields[0]->name);
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_gradient_commands.  "
-			"Invalid arguments.");
+			"list_Computed_field_gradient_commands.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2508,98 +2486,91 @@ DESCRIPTION :
 } /* list_Computed_field_gradient_commands */
 
 int Computed_field_set_type_gradient(struct Computed_field *field,
-	struct Computed_field *scalar_field,struct Computed_field *coordinate_field)
+	struct Computed_field *source_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_GRADIENT, combining a vector and
-coordinate field to return the gradient scalar.
-Sets the number of components to 1.
+Converts <field> to type 'gradient' which returns the gradient of <source_field>
+w.r.t. <coordinate_field>. Calculation will only succeed in any element with
+xi-dimension equal to the number of components in the <coordinate_field>.
+Sets the number of components to the product of the number of components in the
+<source_field> and <coordinate_field>.
+Note the <source_field> does not have to be a scalar. If it has more than 1
+component, all the derivatives of its first component w.r.t. the components of
+<coordinate_field> will be returned first, followed by those of the second
+component, etc. Hence, this function can return the standard gradient of a
+scalar source_field, and the deformation gradient if a deformed coordinate field
+is passed as the source_field.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
-The number of components of <scalar_field> and <coordinate_field> must be the
-same and less than or equal to 3
-The vector field must also be RECTANGULAR_CARTESIAN.
-Note that an error will be reported on calculation if the xi-dimension of the
-element and the number of components in coordinate_field & scalar_field differ.
 ==============================================================================*/
 {
 	int number_of_source_fields,return_code;
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_gradient);
-	if (field&&scalar_field&&(1==scalar_field->number_of_components)&&
-		coordinate_field&&(3>=coordinate_field->number_of_components))
+	if (field && source_field && coordinate_field &&
+		(3 >= coordinate_field->number_of_components))
 	{
-		/* only support RC vector fields */
-		if (RECTANGULAR_CARTESIAN==scalar_field->coordinate_system.type)
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=2;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			return_code=1;
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields=2;
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_NEW_TYPES;
-				field->type_string = computed_field_gradient_type_string;
-				field->number_of_components=3;
-				source_fields[0]=ACCESS(Computed_field)(scalar_field);
-				source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;			
-				field->type_specific_data = (void *)1;
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_gradient_type_string;
+			field->number_of_components = source_field->number_of_components *
+				coordinate_field->number_of_components;
+			source_fields[0]=ACCESS(Computed_field)(source_field);
+			source_fields[1]=ACCESS(Computed_field)(coordinate_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)1;
 
-				/* Set all the methods */
-				field->computed_field_clear_type_specific_function =
-					Computed_field_gradient_clear_type_specific;
-				field->computed_field_copy_type_specific_function =
-					Computed_field_gradient_copy_type_specific;
-				field->computed_field_clear_cache_type_specific_function =
-					Computed_field_gradient_clear_cache_type_specific;
-				field->computed_field_type_specific_contents_match_function =
-					Computed_field_gradient_type_specific_contents_match;
-				field->computed_field_is_defined_in_element_function =
-					Computed_field_gradient_is_defined_in_element;
-				field->computed_field_is_defined_at_node_function =
-					Computed_field_gradient_is_defined_at_node;
-				field->computed_field_has_numerical_components_function =
-					Computed_field_gradient_has_numerical_components;
-				field->computed_field_can_be_destroyed_function =
-					Computed_field_gradient_can_be_destroyed;
-				field->computed_field_evaluate_cache_at_node_function =
-					Computed_field_gradient_evaluate_cache_at_node;
-				field->computed_field_evaluate_cache_in_element_function =
-					Computed_field_gradient_evaluate_cache_in_element;
-				field->computed_field_evaluate_as_string_at_node_function =
-					Computed_field_gradient_evaluate_as_string_at_node;
-				field->computed_field_evaluate_as_string_in_element_function =
-					Computed_field_gradient_evaluate_as_string_in_element;
-				field->computed_field_set_values_at_node_function =
-					Computed_field_gradient_set_values_at_node;
-				field->computed_field_set_values_in_element_function =
-					Computed_field_gradient_set_values_in_element;
-				field->computed_field_get_native_discretization_in_element_function =
-					Computed_field_gradient_get_native_discretization_in_element;
-				field->computed_field_find_element_xi_function =
-					Computed_field_gradient_find_element_xi;
-				field->list_Computed_field_function = 
-					list_Computed_field_gradient;
-				field->list_Computed_field_commands_function = 
-					list_Computed_field_gradient_commands;
-			}
-			else
-			{
-				DEALLOCATE(source_fields);
-				return_code=0;
-			}
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_gradient_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_gradient_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_gradient_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_gradient_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_gradient_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_gradient_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_gradient_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_gradient_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_gradient_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_gradient_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_gradient_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_gradient_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_gradient_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_gradient_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_gradient_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_gradient_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_gradient;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_gradient_commands;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_gradient.  Vector field must be RC");
 			return_code=0;
 		}
 	}
@@ -2615,24 +2586,24 @@ element and the number of components in coordinate_field & scalar_field differ.
 } /* Computed_field_set_type_gradient */
 
 int Computed_field_get_type_gradient(struct Computed_field *field,
-	struct Computed_field **scalar_field,struct Computed_field **coordinate_field)
+	struct Computed_field **source_field,struct Computed_field **coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_GRADIENT, the 
-<source_field> and <coordinate_field> used by it are returned.
+If the field is of type 'gradient', the <source_field> and <coordinate_field>
+used by it are returned.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Computed_field_get_type_gradient);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_gradient_type_string)
-		&&scalar_field&&coordinate_field)
+	if (field && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
+		(field->type_string == computed_field_gradient_type_string) &&
+		source_field && coordinate_field)
 	{
-		/* source_fields: 0=scalar, 1=coordinate */
-		*scalar_field = field->source_fields[0];
+		/* source_fields: 0=source, 1=coordinate */
+		*source_field = field->source_fields[0];
 		*coordinate_field=field->source_fields[1];
 		return_code=1;
 	}
@@ -2650,20 +2621,19 @@ If the field is of type COMPUTED_FIELD_GRADIENT, the
 static int define_Computed_field_type_gradient(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_GRADIENT (if it is not 
-already) and allows its contents to be modified.
+Converts <field> into type 'gradient', if not already, and allows its contents
+to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *coordinate_field,*field,*scalar_field;
-	struct Computed_field_derivatives_package 
-		*computed_field_derivatives_package;
+	struct Computed_field *coordinate_field,*field,*source_field;
+	struct Computed_field_derivatives_package *computed_field_derivatives_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_scalar_field_data;
+		set_source_field_data;
 
 	ENTER(define_Computed_field_type_gradient);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -2674,25 +2644,12 @@ already) and allows its contents to be modified.
 		return_code=1;
 		/* get valid parameters for projection field */
 		coordinate_field=(struct Computed_field *)NULL;
-		scalar_field=(struct Computed_field *)NULL;
+		source_field=(struct Computed_field *)NULL;
 		if (computed_field_gradient_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_gradient(field,
-				&scalar_field,&coordinate_field);
-		}
-		else
-		{
-			if (!(coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_derivatives_package->computed_field_manager)))
-			{
-				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_derivatives_package->computed_field_manager);
-			}
-			scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_scalar,(void *)NULL,
-				computed_field_derivatives_package->computed_field_manager);
+			return_code = Computed_field_get_type_gradient(field,
+				&source_field, &coordinate_field);
 		}
 		if (return_code)
 		{
@@ -2701,35 +2658,35 @@ already) and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(coordinate_field);
 			}
-			if (scalar_field)
+			if (source_field)
 			{
-				ACCESS(Computed_field)(scalar_field);
+				ACCESS(Computed_field)(source_field);
 			}
 
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-            computed_field_derivatives_package->computed_field_manager;
+				computed_field_derivatives_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
-			/* scalar */
-			set_scalar_field_data.computed_field_manager=
-            computed_field_derivatives_package->computed_field_manager;
-			set_scalar_field_data.conditional_function=
-				Computed_field_is_scalar;
-			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"scalar",&scalar_field,
-				(void *)&set_scalar_field_data,set_Computed_field_conditional);
-			return_code=Option_table_multi_parse(option_table,state);
+			/* field */
+			set_source_field_data.computed_field_manager=
+				computed_field_derivatives_package->computed_field_manager;
+			set_source_field_data.conditional_function=
+				Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"field",&source_field,
+				(void *)&set_source_field_data,set_Computed_field_conditional);
+			return_code = Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
 			/* no errors,not asking for help */
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_gradient(field,
-					scalar_field,coordinate_field);
+					source_field,coordinate_field);
 			}
 			if (!return_code)
 			{
@@ -2746,9 +2703,9 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
 			}
-			if (scalar_field)
+			if (source_field)
 			{
-				DEACCESS(Computed_field)(&scalar_field);
+				DEACCESS(Computed_field)(&source_field);
 			}
 		}
 	}
