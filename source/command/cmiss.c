@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 27 September 2000
+LAST MODIFIED : 3 October 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -13975,7 +13975,7 @@ use node_manager and node_selection.
 static int gfx_list_group_FE_node(struct Parse_state *state,
 	void *dummy_to_be_modified,void *node_group_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 16 December 1997
+LAST MODIFIED : 3 October 2000
 
 DESCRIPTION :
 Executes a GFX LIST NGROUP.
@@ -14001,7 +14001,19 @@ Executes a GFX LIST NGROUP.
 					if (node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
 						current_token,node_group_manager))
 					{
-						return_code=list_group_FE_node(node_group,(void *)1);
+						/* check there are no further tokens */
+						shift_Parse_state(state,1);
+						if (state->current_token)
+						{
+							display_message(ERROR_MESSAGE,"Unexpected token: %s",
+								state->current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+						else
+						{
+							return_code=list_group_FE_node(node_group,(void *)1);
+						}
 					}
 					else
 					{
@@ -15872,6 +15884,7 @@ use node_manager and node_selection.
 		{
 			/* initialise defaults */
 			add_flag=0;
+			remove_flag=0;
 			all_flag=0;
 			selected_flag=0;
 			node_range=CREATE(Multi_range)();
@@ -15932,8 +15945,8 @@ use node_manager and node_selection.
 				if (all_flag)
 				{
 					selected_range=CREATE(Multi_range)();
-					FOR_EACH_OBJECT_IN_MANAGER(FE_node)(add_FE_node_number_to_Multi_range,
-						selected_range, node_manager);
+					FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+						add_FE_node_number_to_Multi_range,selected_range, node_manager);
 					if (Multi_range_get_number_of_ranges(node_range))
 					{
 						Multi_range_intersect(node_range, selected_range);
@@ -15984,23 +15997,21 @@ use node_manager and node_selection.
 				{
 					MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 					number_of_ranges = Multi_range_get_number_of_ranges(node_range);
+					for (i=0;i<number_of_ranges;i++)
 					{
-						for (i=0;i<number_of_ranges;i++)
+						Multi_range_get_range(node_range,i,&start,&stop);
+						for (j=start;j<=stop;j++)
 						{
-							Multi_range_get_range(node_range,i,&start,&stop);
-							for (j=start;j<=stop;j++)
+							if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
+								cm_node_identifier)(j,node_manager))
 							{
-								if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-									cm_node_identifier)(j,node_manager))
+								if (add_flag)
 								{
-									if (add_flag)
-									{
-										ensure_FE_node_is_in_group(node, node_group);
-									}
-									else /* remove_flag */
-									{
-										ensure_FE_node_is_not_in_group(node, node_group);
-									}
+									ensure_FE_node_is_in_group(node, node_group);
+								}
+								else /* remove_flag */
+								{
+									ensure_FE_node_is_not_in_group(node, node_group);
 								}
 							}
 						}
