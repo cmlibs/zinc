@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 9 October 2001
+LAST MODIFIED : 11 October 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -34,6 +34,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_matrix_operations.h"
+#include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "data/data_grabber_dialog.h"
 #include "data/node_transform.h"
@@ -13296,146 +13297,150 @@ Executes a GFX EXPORT command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
-int gfx_evaluate(struct Parse_state *state,void *dummy_to_be_modified,
+int gfx_evaluate(struct Parse_state *state, void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 November 1999
+LAST MODIFIED : 11 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i,return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"destination",NULL,NULL,set_Computed_field_conditional},
-		{"dgroup",NULL,NULL,set_FE_node_group},
-		{"egroup",NULL,NULL,set_FE_element_group},
-		{"ngroup",NULL,NULL,set_FE_node_group},
-		{"source",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
+	char selected_flag;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Computed_field *destination_computed_field,
-		*source_computed_field;
-	struct Set_Computed_field_conditional_data set_destination_field_data,
-		set_source_field_data;
+	struct Computed_field *destination_field, *source_field;
+	struct Element_point_ranges_selection *element_point_ranges_selection;
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *data_selection, *node_selection;
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *data_group, *node_group;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_destination_field_data,
+		set_source_field_data;
 
 	ENTER(gfx_evaluate);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		data_group = (struct GROUP(FE_node) *) NULL;
+		element_group = (struct GROUP(FE_element) *) NULL;
+		node_group = (struct GROUP(FE_node) *) NULL;
+		selected_flag = 0;
+		destination_field = (struct Computed_field *)NULL;
+		source_field = (struct Computed_field *)NULL;
+
+		option_table = CREATE(Option_table)();
+
+		/* destination */
+		set_destination_field_data.conditional_function =
+			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+		set_destination_field_data.conditional_function_user_data = (void *)NULL;
+		set_destination_field_data.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		Option_table_add_entry(option_table, "destination", &destination_field,
+			&set_destination_field_data, set_Computed_field_conditional);
+		/* dgroup */
+		Option_table_add_entry(option_table, "dgroup", &data_group,
+			command_data->data_group_manager, set_FE_node_group);
+		/* egroup */
+		Option_table_add_entry(option_table, "egroup", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
+		/* ngroup */
+		Option_table_add_entry(option_table, "ngroup", &node_group,
+			command_data->node_group_manager, set_FE_node_group);
+		/* selected */
+		Option_table_add_entry(option_table, "selected", &selected_flag,
+			NULL, set_char_flag);
+		/* source */
+		set_source_field_data.conditional_function =
+			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
+		set_source_field_data.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		Option_table_add_entry(option_table, "source", &source_field,
+			&set_source_field_data, set_Computed_field_conditional);
+
+		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			data_group = (struct GROUP(FE_node) *) NULL;
-			element_group = (struct GROUP(FE_element) *) NULL;
-			node_group = (struct GROUP(FE_node) *) NULL;
-			i=0;
-			/* destination */
-			/* Could have better conditional functions */
-			destination_computed_field=(struct Computed_field *)NULL;
-			set_destination_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-			set_destination_field_data.conditional_function_user_data=(void *)NULL;
-			set_destination_field_data.computed_field_manager =
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			(option_table[i]).to_be_modified= &destination_computed_field;
-			(option_table[i]).user_data= &set_destination_field_data;
-			i++;
-			/* dgroup */
-			(option_table[i]).to_be_modified= &data_group;
-			(option_table[i]).user_data=command_data->data_group_manager;
-			i++;
-			/* egroup */
-			(option_table[i]).to_be_modified= &element_group;
-			(option_table[i]).user_data=command_data->element_group_manager;
-			i++;
-			/* ngroup */
-			(option_table[i]).to_be_modified= &node_group;
-			(option_table[i]).user_data=command_data->node_group_manager;
-			i++;
-			/* source */
-			/* Could have better conditional functions */
-			source_computed_field=(struct Computed_field *)NULL;
-			set_source_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-			set_source_field_data.conditional_function_user_data=(void *)NULL;
-			set_source_field_data.computed_field_manager =
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			(option_table[i]).to_be_modified= &source_computed_field;
-			(option_table[i]).user_data= &set_source_field_data;
-			i++;
-			if (return_code=process_multiple_options(state,option_table))
+			if (destination_field && source_field)
 			{
-				if (destination_computed_field&&source_computed_field)
+				if (selected_flag)
 				{
-					if (data_group&&(!element_group)&&(!node_group))
-					{
-						Computed_field_update_nodal_values_from_source(
-							destination_computed_field,source_computed_field,
-							data_group,command_data->data_manager);
-					}
-					else if (element_group&&(!data_group)&&(!node_group))
-					{
-						Computed_field_update_element_values_from_source(
-							destination_computed_field,source_computed_field,
-							element_group,command_data->element_manager);
-					}
-					else if (node_group&&(!data_group)&&(!element_group))
-					{
-						Computed_field_update_nodal_values_from_source(
-							destination_computed_field,source_computed_field,
-							node_group,command_data->node_manager);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_evaluate.  Must specify one of dgroup/egroup/ngroup");
-						return_code=0;
-					}
+					data_selection = command_data->data_selection;
+					element_point_ranges_selection =
+						command_data->element_point_ranges_selection;
+					element_selection = command_data->element_selection;
+					node_selection = command_data->node_selection;
+				}
+				else
+				{
+					data_selection = (struct FE_node_selection *)NULL;
+					element_point_ranges_selection =
+						(struct Element_point_ranges_selection *)NULL;
+					element_selection = (struct FE_element_selection *)NULL;
+					node_selection = (struct FE_node_selection *)NULL;
+				}
+
+				if (data_group && (!element_group) && (!node_group))
+				{
+					Computed_field_update_nodal_values_from_source(
+						destination_field, source_field,
+						data_group, command_data->data_manager, data_selection);
+				}
+				else if (element_group && (!data_group) && (!node_group))
+				{
+					Computed_field_update_element_values_from_source(
+						destination_field, source_field,
+						element_group, command_data->element_manager,
+						element_point_ranges_selection, element_selection);
+				}
+				else if (node_group && (!data_group) && (!element_group))
+				{
+					Computed_field_update_nodal_values_from_source(
+						destination_field, source_field,
+						node_group, command_data->node_manager, node_selection);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_evaluate.  Must specify destination and source fields");
-					return_code=0;
+						"gfx_evaluate.  Must specify one of dgroup/egroup/ngroup");
+					return_code = 0;
 				}
 			}
-			if (data_group)
+			else
 			{
-				DEACCESS(GROUP(FE_node))(&data_group);
-			}				
-			if (element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&element_group);
-			}				
-			if (node_group)
-			{
-				DEACCESS(GROUP(FE_node))(&node_group);
-			}				
-			if (source_computed_field)
-			{
-				DEACCESS(Computed_field)(&source_computed_field);
-			}
-			if (destination_computed_field)
-			{
-				DEACCESS(Computed_field)(&destination_computed_field);
+				display_message(ERROR_MESSAGE,
+					"gfx_evaluate.  Must specify destination and source fields");
+				return_code = 0;
 			}
 		}
-		else
+		if (data_group)
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_evaluate.  Missing command data");
-			return_code=0;
+			DEACCESS(GROUP(FE_node))(&data_group);
+		}				
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}				
+		if (node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&node_group);
+		}				
+		if (source_field)
+		{
+			DEACCESS(Computed_field)(&source_field);
+		}
+		if (destination_field)
+		{
+			DEACCESS(Computed_field)(&destination_field);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_evaluate.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "gfx_evaluate.  Invalid argument(s)");
+		return_code = 0;
 	}
 
 	LEAVE;
