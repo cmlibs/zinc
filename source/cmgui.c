@@ -67,6 +67,7 @@ DESCRIPTION :
 #include "interaction/interactive_tool.h"
 #include "interaction/select_tool.h"
 #include "io_devices/conversion.h"
+#include "io_devices/io_device.h"
 #include "node/node_tool.h"
 #include "node/node_viewer.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
@@ -723,6 +724,9 @@ Main program for the CMISS Graphical User Interface
 	command_data.data_group_manager=(struct MANAGER(GROUP(FE_node) *))NULL;
 	command_data.interactive_streamline_manager=(struct MANAGER(Interactive_streamline) *)NULL;
 	command_data.streampoint_list=(struct Streampoint *)NULL;
+#if defined (SELECT_DESCRIPTORS)
+	command_data.device_list=(struct LIST(Io_device) *)NULL;
+#endif /* defined (SELECT_DESCRIPTORS) */
 	command_data.graphics_object_list=(struct LIST(GT_object) *)NULL;
 	command_data.glyph_list=(struct LIST(GT_object) *)NULL;	
 	command_data.any_object_selection=(struct Any_object_selection *)NULL;
@@ -963,6 +967,12 @@ Main program for the CMISS Graphical User Interface
 	/* create graphics object list */
 		/*???RC.  Eventually want graphics object manager */
 	command_data.graphics_object_list=CREATE(LIST(GT_object))();
+
+#if defined (SELECT_DESCRIPTORS)
+	/* create device list */
+		/*SAB.  Eventually want device manager */
+	command_data.device_list=CREATE(LIST(Io_device))();
+#endif /* defined (SELECT_DESCRIPTORS) */
 
 	/* create glyph list */
 		/*???RC.  Eventually want glyph manager */
@@ -2043,6 +2053,10 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(FE_element_selection)(&(command_data.element_selection));
 				DESTROY(Element_point_ranges_selection)(
 					&(command_data.element_point_ranges_selection));
+
+#if defined (SELECT_DESCRIPTORS)
+				DESTROY(LIST(Io_device))(&command_data.device_list);
+#endif /* defined (SELECT_DESCRIPTORS) */
 
 				DESTROY(LIST(GT_object))(&command_data.graphics_object_list);
 				DESTROY(LIST(GT_object))(&command_data.glyph_list);

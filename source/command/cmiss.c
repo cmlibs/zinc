@@ -87,6 +87,9 @@ Functions for executing cmiss commands.
 #include "graphics/volume_texture_editor.h"
 #include "graphics/write_to_video.h"
 #include "help/help_interface.h"
+#if defined (SELECT_DESCRIPTORS)
+#include "io_devices/io_device.h"
+#endif /* !defined (SELECT_DESCRIPTORS) */
 #if defined (HAPTIC)
 #include "io_devices/haptic_input_module.h"
 #endif /* defined (HAPTIC) */
@@ -9894,6 +9897,210 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 	return (return_code);
 } /* gfx_create_cmiss */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+
+#if defined (SELECT_DESCRIPTORS)
+static int execute_command_attach(struct Parse_state *state,
+	void *prompt_void,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 May 2001
+
+DESCRIPTION :
+Executes an ATTACH command.
+==============================================================================*/
+{
+	char *current_token, end_detection, *perl_action, start_detection;
+	int return_code;
+	struct Io_device *device;
+	static struct Option_table *option_table;
+	struct Cmiss_command_data *command_data;
+	
+	ENTER(execute_command_attach);
+	USE_PARAMETER(prompt_void);
+	/* check argument */
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		device = (struct Io_device *)NULL;
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (command_data->device_list)
+				{
+					if (device=FIND_BY_IDENTIFIER_IN_LIST(Io_device, name)
+						(current_token,command_data->device_list))
+					{
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						if (device = CREATE(Io_device)(current_token))
+						{
+							if (ADD_OBJECT_TO_LIST(Io_device)(device, command_data->device_list))
+							{
+								return_code=shift_Parse_state(state,1);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"execute_command_attach.  Unable to create device struture.");
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"execute_command_attach.  Missing device list");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,
+					" DEVICE_NAME");
+				return_code = 1;
+				/* By not shifting the parse state the rest of the help should come out */
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_command_attach.  Missing device name");
+			return_code=0;
+		}
+		if (return_code)
+		{
+			end_detection = 0;
+			perl_action = (char *)NULL;
+			start_detection = 0;
+			
+			option_table = CREATE(Option_table)();
+			Option_table_add_entry(option_table,"end_detection", &end_detection, 
+				NULL, set_char_flag);
+			Option_table_add_entry(option_table,"perl_action", &perl_action, NULL,
+				set_name);
+			Option_table_add_entry(option_table,"start_detection", &start_detection,
+				NULL, set_char_flag);
+			return_code = Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
+			{
+				if (start_detection && end_detection)
+				{
+					display_message(ERROR_MESSAGE,"execute_command_attach.  "
+						"Specify only one of start_detection and end_detection.");
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				if (start_detection)
+				{
+					Io_device_start_detection(device, command_data->user_interface);
+				}
+				if (end_detection)
+				{
+					Io_device_end_detection(device);
+				}
+				if (perl_action)
+				{
+					Io_device_set_perl_action(device, perl_action);
+				}
+			}
+			if (perl_action)
+			{
+				DEALLOCATE(perl_action);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_attach.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_attach */
+
+static int execute_command_detach(struct Parse_state *state,
+	void *prompt_void,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 May 2001
+
+DESCRIPTION :
+Executes a DETACH command.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+	struct Io_device *device;
+	struct Cmiss_command_data *command_data;
+	
+	ENTER(execute_command_detach);
+	USE_PARAMETER(prompt_void);
+	/* check argument */
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		device = (struct Io_device *)NULL;
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (command_data->device_list)
+				{
+					if (device=FIND_BY_IDENTIFIER_IN_LIST(Io_device, name)
+						(current_token,command_data->device_list))
+					{
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"execute_command_detach.  Io_device %s not found.", current_token);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"execute_command_detach.  Missing device list");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,
+					" DEVICE_NAME");
+				return_code = 1;
+				/* By not shifting the parse state the rest of the help should come out */
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_command_detach.  Missing device name");
+			return_code=0;
+		}
+		if (return_code)
+		{
+			REMOVE_OBJECT_FROM_LIST(Io_device)(device, command_data->device_list);
+			DESTROY(Io_device)(&device);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_detach.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_detach */
+#endif /* defined (SELECT_DESCRIPTORS) */
 
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -22567,6 +22774,11 @@ Executes a GFX command.
 				/* change_identifier */
 				(option_table[i]).user_data=command_data_void;
 				i++;
+#if defined (SELECT_DESCRIPTORS)
+				/* connect */
+				(option_table[i]).user_data=command_data_void;
+				i++;
+#endif /* defined (SELECT_DESCRIPTORS) */
 				/* create */
 				(option_table[i]).user_data=command_data_void;
 				i++;
@@ -26123,11 +26335,17 @@ DESCRIPTION:
 	static struct Modifier_entry option_table[]=
 	{
 		{"assign","assign",NULL,execute_command_assign},
+#if defined (SELECT_DESCRIPTORS)
+		{"attach",NULL,NULL,execute_command_attach},
+#endif /* !defined (SELECT_DESCRIPTORS) */
 #if defined (CELL)
 		{"cell","cell",NULL,execute_command_cell},
 #endif /* defined (CELL) */
 		{"command_window","command_window",NULL,modify_Command_window},
 		{"create","create",NULL,execute_command_create},
+#if defined (SELECT_DESCRIPTORS)
+		{"detach",NULL,NULL,execute_command_detach},
+#endif /* !defined (SELECT_DESCRIPTORS) */
 		{"fem","fem",NULL,execute_command_cm},
 		{"gen","gen",NULL,execute_command_cm},
 		{"gfx",NULL,NULL,execute_command_gfx},
@@ -26184,6 +26402,11 @@ DESCRIPTION:
 					/* assign */
 					(option_table[i]).user_data=command_data_void;
 					i++;
+#if defined (SELECT_DESCRIPTORS)
+					/* attach */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+#endif /* !defined (SELECT_DESCRIPTORS) */
 #if defined (CELL)
 					/* cell */
 					(option_table[i]).user_data=command_data_void;
@@ -26195,6 +26418,11 @@ DESCRIPTION:
 					/* create */
 					(option_table[i]).user_data=command_data_void;
 					i++;
+#if defined (SELECT_DESCRIPTORS)
+					/* detach */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+#endif /* !defined (SELECT_DESCRIPTORS) */
 					/* fem */
 					(option_table[i]).user_data=command_data_void;
 					i++;

@@ -46,6 +46,9 @@ DESCRIPTION :
 	struct Node_tool *data_tool,*node_tool;
 	struct Select_tool *select_tool;
 	struct Interactive_tool *transform_tool;
+#if defined (SELECT_DESCRIPTORS)
+	struct LIST(Io_device) *device_list;
+#endif /* defined (SELECT_DESCRIPTORS) */
 	/*???RC.  Single list of graphics objects - eventually set up manager ? */
 	struct LIST(GT_object) *graphics_object_list;
 	/* list of glyphs = simple graphics objects with only geometry */

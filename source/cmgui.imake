@@ -624,7 +624,6 @@ NAME_DEFINES = -DFULL_NAMES
 XCOMM  Temporary flags that are used during development
 TEMPORARY_DEVELOPMENT_FLAGS =
 #if defined (OLD_CODE)
-TEMPORARY_DEVELOPMENT_FLAGS = -DSELECT_DESCRIPTORS
 TEMPORARY_DEVELOPMENT_FLAGS = -DINTERNAL_UIDS -DPHANTOM_FARO
 TEMPORARY_DEVELOPMENT_FLAGS = -DINTERPOLATE_TEXELS -DOTHER_FIBRE_DIR -DREPORT_GL_ERRORS
 TEMPORARY_DEVELOPMENT_FLAGS = -DDO_NOT_ADD_DETAIL
@@ -890,6 +889,7 @@ IO_DEVICES_SRCS = \
 	io_devices/input_module.c \
 	io_devices/input_module_dialog.c \
 	io_devices/input_module_widget.c \
+	io_devices/io_device.c \
 	io_devices/matrix.c 
 LINK_SRCS = \
 	link/cmiss.c
