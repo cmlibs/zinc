@@ -2638,9 +2638,9 @@ DESCRIPTION :
 			}
 			*attribute_ptr = GDK_GL_NONE;
 			attribute_ptr++;
-			if (share_glarea)
+			if (graphics_buffer_package->share_glarea)
 			{
-				share = GTK_GL_AREA(share_glarea);
+				share = GTK_GL_AREA(graphics_buffer_package->share_glarea);
 			}
 			else
 			{
@@ -2648,9 +2648,9 @@ DESCRIPTION :
 			}
 			if (buffer->glarea = gtk_gl_area_share_new(attribute_list, share))
 			{
-				if (!share_glarea)
+				if (!graphics_buffer_package->share_glarea)
 				{
-					share_glarea = buffer->glarea;
+					graphics_buffer_package->share_glarea = buffer->glarea;
 				}
 				buffer->type = GRAPHICS_BUFFER_GTKGLAREA_TYPE;
 				gtk_widget_set_events(GTK_WIDGET(buffer->glarea),
