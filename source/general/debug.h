@@ -17,7 +17,7 @@ Macros
 */
 #define ALLOCATE( result , type , number ) \
 ( result = ( type *) allocate( ( number ) * sizeof( type ) , __FILE__ , \
-	__LINE__ ))
+	__LINE__, #type ))
 
 #define DEALLOCATE( ptr ) \
 { deallocate((char *) ptr , __FILE__ , __LINE__ ); ( ptr )=NULL;}
@@ -28,7 +28,7 @@ Macros
 
 #define REALLOCATE( final , initial , type , number ) \
 ( final = ( type *) reallocate( (char *)( initial ) , \
-	( number ) * sizeof( type ) , __FILE__ , __LINE__ ))
+	( number ) * sizeof( type ) , __FILE__ , __LINE__, #type ))
 
 /*
 Global variables
@@ -58,7 +58,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #define USE_PARAMETER(dummy)
 #endif /* defined (USE_PARAMETER_ON) */
 
-char *allocate(unsigned size,char *file_name,int line_number);
+char *allocate(unsigned size,char *file_name,int line_number, char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -74,7 +74,7 @@ DESCRIPTION :
 Wrapper for free.
 ==============================================================================*/
 
-char *reallocate(char *ptr,unsigned size,char *file_name,int line_number);
+char *reallocate(char *ptr,unsigned size,char *file_name,int line_number, char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 

@@ -29,7 +29,7 @@ DESCRIPTION :
 Keeps a record of where a block of memory was allocated
 ==============================================================================*/
 {
-	char *filename_line;
+	char *filename_line, *type;
 	int count,size;
 	struct Memory_block *next;
 	void *ptr;
@@ -71,7 +71,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 } /* use_parameter */
 #endif /* defined (USE_PARAMETER_ON) */
 
-char *allocate(unsigned size,char *filename,int line)
+char *allocate(unsigned size,char *filename,int line, char *type)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1998
 
@@ -81,7 +81,7 @@ Wrapper for allocate which keeps track of allocated memory.
 {
 	char *result;
 #if defined (MEMORY_CHECKING)
-	char *filename_line;
+	char *filename_line, *type_string;
 	struct Memory_block *new_block;
 #endif /* defined (MEMORY_CHECKING) */
 
@@ -100,20 +100,30 @@ Wrapper for allocate which keeps track of allocated memory.
 			if (filename_line=(char *)malloc(sizeof(char)*(strlen(filename)+20)))
 			{
 				sprintf(filename_line,"%s : %10d",filename,line);
-				if (new_block=
-					(struct Memory_block *)malloc(sizeof(struct Memory_block)))
+				if (type_string=(char *)malloc(sizeof(char)*(strlen(type)+1)))
 				{
-					new_block->ptr=(void *)result;
-					new_block->filename_line=filename_line;
-					new_block->size=size;
-					new_block->count=maximum_count;
-					new_block->next=memory_list;
-					memory_list=new_block;
+					strcpy(type_string, type);
+					if (new_block=
+						(struct Memory_block *)malloc(sizeof(struct Memory_block)))
+					{
+						new_block->ptr=(void *)result;
+						new_block->filename_line=filename_line;
+						new_block->type=type_string;
+						new_block->size=size;
+						new_block->count=maximum_count;
+						new_block->next=memory_list;
+						memory_list=new_block;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"allocate.  Unable to allocate memory for memory_block list structure");
+					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-				"allocate.  Unable to allocate memory for memory_block list structure");
+						"allocate.  Unable to allocate memory for memory_block type string identifier");
 				}
 			}
 			else
@@ -167,6 +177,7 @@ Wrapper for deallocate which keeps track of allocated memory.
 			{
 				memory_list=list->next;
 			}
+			free(list->type);
 			free(list->filename_line);
 			free((char *)list);
 		}
@@ -185,7 +196,7 @@ Wrapper for deallocate which keeps track of allocated memory.
 	LEAVE;
 } /* deallocate */
 
-char *reallocate(char *ptr,unsigned size,char *filename,int line)
+char *reallocate(char *ptr,unsigned size,char *filename,int line, char *type)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1998
 
@@ -195,7 +206,7 @@ Wrapper for reallocate which keeps track of allocated memory.
 {
 	char *result;
 #if defined (MEMORY_CHECKING)
-	char *filename_line;
+	char *filename_line, *type_string;
 	struct Memory_block *list,*new_block;
 #endif /* defined (MEMORY_CHECKING) */
 
@@ -236,6 +247,12 @@ Wrapper for reallocate which keeps track of allocated memory.
 		{
 			if (list)
 			{
+				if (strcmp(type, list->type))
+				{
+					display_message(ERROR_MESSAGE,
+						"reallocate.  Allocation types don't match %s realloced at %s : %10d",
+						list->filename_line, filename, line);
+				}
 				if (filename_line=(char *)realloc(list->filename_line,
 					sizeof(char)*(strlen(filename)+20)))
 				{
@@ -255,26 +272,36 @@ Wrapper for reallocate which keeps track of allocated memory.
 				if (filename_line=(char *)malloc(sizeof(char)*(strlen(filename)+20)))
 				{
 					sprintf(filename_line,"%s : %10d",filename,line);
-					if (new_block=
-						(struct Memory_block *)malloc(sizeof(struct Memory_block)))
+					if (type_string=(char *)malloc(sizeof(char)*(strlen(type)+1)))
 					{
-						new_block->ptr=(void *)result;
-						new_block->filename_line=filename_line;
-						new_block->size=size;
-						new_block->count=1;
-						new_block->next=memory_list;
-						memory_list=new_block;
+						strcpy(type_string, type);
+						if (new_block=
+							(struct Memory_block *)malloc(sizeof(struct Memory_block)))
+						{
+							new_block->ptr=(void *)result;
+							new_block->filename_line=filename_line;
+							new_block->type=type_string;
+							new_block->size=size;
+							new_block->count=1;
+							new_block->next=memory_list;
+							memory_list=new_block;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"reallocate.  Unable to allocate memory for memory_block list structure");
+						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-			"reallocate.  Unable to allocate memory for memory_block list structure");
+							"reallocate.  Unable to allocate memory for memory_block type string identifier");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-	"reallocate.  Unable to allocate memory for memory_block string identifier");
+						"reallocate.  Unable to allocate memory for memory_block string identifier");
 				}
 			}
 		}
@@ -339,7 +366,8 @@ addresses).
 			{
 				if (!count||(list->count==count))
 				{
-					printf("%s @ %x size %d\n",list->filename_line,list->ptr,list->size);
+					printf("%s @ %x size %d type %s\n",list->filename_line,list->ptr,list->size,
+						list->type);
 				}
 				count_total[list->count] += list->size;
 				total += list->size;
@@ -352,7 +380,7 @@ addresses).
 			{
 				if (!count||(list->count==count))
 				{
-					printf("%s size %d\n",list->filename_line,list->size);
+					printf("%s size %d type %s\n",list->filename_line,list->size,list->type);
 				}
 				count_total[list->count] += list->size;
 				total += list->size;
