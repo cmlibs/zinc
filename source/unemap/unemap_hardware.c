@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 18 March 2002
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -159,6 +159,19 @@ unemap.*.numberOfSamples: 100000
 			- tried USE_ACPI, but still crashs/locks and doesn't get any messages
 1.2.18 Windows NT
 			Installed Windows NT on the D: partition with FAT
+1.2.18.1 EITHER
+					Started with NT on C: and parallel port CD drive (PPCD) installed
+				OR
+					Boot from Windows98 startup floppy disk (modified to have DOS PPCD
+						driver - dosepatc.exe from www.scmmicro.com)
+					If want to reformat the partition (in same filesystem) will need to
+						reformat now
+						e:
+						format c:
+1.2.18.2 Put NI NT4 recovery disk in PPCD and ran
+				F:\os\nt40\i386\winnt_32.exe
+				where F is the CD drive.  Prompted for and wrote 3 NT setup floppies.
+				Format D: as FAT
 ???DB.  Give details
 1.2.18.1 NIDAQ 5.1
 				- doesn't support 6071E cards
@@ -192,6 +205,15 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 1 Asynchronous signal file saving.  Needs to be made thread safe for this
 2 Synchronous stimulation
 	see SYNCHRONOUS_STIMULATION
+
+???DB.  Adding mixing 12-bit and 16-bit cards.  Restrict sampling rate to
+16 bit rate
+1 Remove restriction from search_for_NI_cards.  DONE
+2 Check all cards for 16 bit in unemap_configure.  DONE
+3 How to do across crates?
+3.1 Add unemap_get_maximum_sampling_frequency (or have
+		unemap_get_sampling_frequency return maximum when not configured)?  NO
+3.2 Just deconfigure and configure again if different?  DONE
 ==============================================================================*/
 
 #define SYNCHRONOUS_STIMULATION 1
@@ -650,7 +672,7 @@ word[i]='\0';
 
 static int search_for_NI_cards(void)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1109,6 +1131,9 @@ DESCRIPTION :
 							fscanf(digital_io_lines," = %hd ",&sampling_interval);
 							READ_WORD(digital_io_lines,word);
 						}
+						/* disable setting sampling_interval to prevent confusion when
+							mixing 12 and 16 bit cards */
+						sampling_interval=0;
 						if (0==strcmp("max settling steps",word))
 						{
 							fscanf(digital_io_lines," = %d ",&settling_step_max);
@@ -1300,6 +1325,7 @@ DESCRIPTION :
 							(PXI6031E_DEVICE_CODE==card_code)||
 							(PXI6071E_DEVICE_CODE==card_code))
 						{
+#if defined (OLD_CODE)
 							/* make sure that not mixing 12-bit and 16-bit */
 							if ((0==module_number_of_NI_CARDS)||
 								((PXI6071E_DEVICE_CODE==card_code)&&
@@ -1307,6 +1333,7 @@ DESCRIPTION :
 								((PXI6071E_DEVICE_CODE!=card_code)&&
 								(PXI6071E_AD_DA!=(module_NI_CARDS[0]).type)))
 							{
+#endif /* defined (OLD_CODE) */
 								if (REALLOCATE(ni_card,module_NI_CARDS,struct NI_card,
 									module_number_of_NI_CARDS+1))
 								{
@@ -1876,6 +1903,7 @@ DESCRIPTION :
 									DEALLOCATE(module_NI_CARDS);
 									return_code=0;
 								}
+#if defined (OLD_CODE)
 							}
 							else
 							{
@@ -1892,8 +1920,13 @@ DESCRIPTION :
 										card_number);
 								}
 							}
+#endif /* defined (OLD_CODE) */
 						}
 						card_number++;
+					}
+					if (!(module_NI_CARDS&&(module_number_of_NI_CARDS>0)))
+					{
+						return_code=0;
 					}
 					if (return_code)
 					{
@@ -7061,7 +7094,7 @@ int unemap_configure(float sampling_frequency_slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 2 January 2002
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified
@@ -7113,14 +7146,13 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 	float sampling_frequency;
 	int return_code;
 #if defined (NI_DAQ)
-	int i,j,local_synchronization_card;
+	int all_12_bit_ADs,i,j,local_synchronization_card;
 	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
 		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status,
 		time_base;
 	u16 sampling_interval;
 	u32 available_physical_memory,desired_physical_memory,hardware_buffer_size,
 		physical_memory_tolerance;
-#endif /* defined (NI_DAQ) */
 #if defined (WINDOWS)
 	/* for getting the total physical memory */
 	MEMORYSTATUS memory_status;
@@ -7128,6 +7160,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 	SIZE_T working_set_size;
 #endif /* defined (USE_VIRTUAL_LOCK) */
 #endif /* defined (WINDOWS) */
+#endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_configure);
 #if defined (DEBUG)
@@ -7188,7 +7221,17 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 				sampling_interval=module_NI_CARDS->sampling_interval;
 				if (sampling_interval<=0)
 				{
-					if (PXI6071E_AD_DA==module_NI_CARDS->type)
+					all_12_bit_ADs=1;
+					i=0;
+					while (all_12_bit_ADs&&(i<module_number_of_NI_CARDS))
+					{
+						if (PXI6071E_AD_DA==module_NI_CARDS[i].type)
+						{
+							all_12_bit_ADs=0;
+						}
+						i++;
+					}
+					if (all_12_bit_ADs)
 					{
 						/* 1.25 MS/s */
 						/* do a A/D conversion every 800 nano-seconds = 16 * 50 ns */
@@ -10721,7 +10764,7 @@ int unemap_transfer_samples_acquired(int channel_number,int number_of_samples,
 	Unemap_transfer_samples_function *transfer_samples_function,
 	void *transfer_samples_function_data,int *number_of_samples_transferred)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 11 April 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10742,9 +10785,9 @@ with samples (short int *), number_of_samples (int) and
 transferred.
 ==============================================================================*/
 {
-	int number_transferred,return_code;
+	int number_of_channels,number_transferred,return_code;
 #if defined (NI_DAQ)
-	int end,end2,i,j,k,number_of_channels,start,transfer_samples_function_result;
+	int end,end2,i,j,k,start,transfer_samples_function_result;
 	short int sample,samples[NUMBER_OF_CHANNELS_ON_NI_CARD],*source;
 	struct NI_card *ni_card;
 	unsigned long maximum_number_of_samples,local_number_of_samples;
