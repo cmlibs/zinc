@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 21 March 2001
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -11008,10 +11008,112 @@ element groups are destroyed together.
 } /* gfx_destroy_node_group */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+static struct LIST(FE_node) *FE_node_list_from_all_selected_group_ranges(
+	struct MANAGER(FE_node) *node_manager, int all_flag,
+	struct FE_node_selection *node_selection, int selected_flag,
+	struct GROUP(FE_node) *node_group,
+	struct Multi_range *node_ranges)
+/*******************************************************************************
+LAST MODIFIED : 26 March 2001
+
+DESCRIPTION :
+Creates and returns a node group that is the intersection of:
+- all nodes in the <node_manager> if <all_flag> is set;
+- all nodes in the <node_selection> if <selected_flag> is set;
+- all nodes in the <node_group>, if supplied;
+- all nodes in the given <node_ranges>, if any.
+Up to the calling function to destroy the returned node list.
+==============================================================================*/
+{
+	int ranges_flag, return_code;
+	struct FE_node_list_conditional_data list_conditional_data;
+	struct LIST(FE_node) *node_list;
+
+	ENTER(FE_node_list_from_all_selected_group_ranges);
+	node_list = (struct LIST(FE_node) *)NULL;
+	if (node_manager && ((!selected_flag) || node_selection))
+	{
+		if (node_list = CREATE(LIST(FE_node))())
+		{
+			return_code = 1;
+			ranges_flag = node_ranges &&
+				(0 < Multi_range_get_number_of_ranges(node_ranges));
+			if (selected_flag)
+			{
+				/* add the selected nodes to node_list, and if node_ranges
+					 given, intersect with them */
+				if (return_code = COPY_LIST(FE_node)(node_list,
+					FE_node_selection_get_node_list(node_selection)))
+				{
+					if (return_code && node_group)
+					{
+						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+							FE_node_is_not_in_group, (void *)node_group, node_list);
+					}
+					if (return_code && ranges_flag)
+					{
+						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+							FE_node_is_not_in_Multi_range, (void *)node_ranges, node_list);
+					}
+				}
+			}
+			else if (ranges_flag)
+			{
+				/* add nodes with numbers in node_ranges to node_list */
+				list_conditional_data.node_list = node_list;
+				list_conditional_data.function = FE_node_is_in_Multi_range;
+				list_conditional_data.user_data = node_ranges;
+				if (node_group)
+				{
+					return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+						ensure_FE_node_is_in_list_conditional,
+						(void *)&list_conditional_data, node_group);
+				}
+				else
+				{
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+						ensure_FE_node_is_in_list_conditional,
+						(void *)&list_conditional_data, node_manager);
+				}
+			}
+			else if (node_group)
+			{
+				return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+					ensure_FE_node_is_in_list, (void *)node_list, node_group);
+			}
+			else if (all_flag)
+			{
+				/* add all nodes to node_list */
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+					ensure_FE_node_is_in_list, (void *)node_list, node_manager);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_list_from_all_selected_group_ranges.  Could not fill list");
+				DESTROY(LIST(FE_node))(&node_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_list_from_all_selected_group_ranges.  Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_list_from_all_selected_group_ranges.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (node_list);
+} /* FE_node_list_from_all_selected_group_ranges */
+
 static int gfx_destroy_nodes(struct Parse_state *state,
 	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 August 2000
+LAST MODIFIED : 26 March 2001
 
 DESCRIPTION :
 Executes a GFX DESTROY NODES/DATA command.
@@ -11019,11 +11121,11 @@ If <used_data_flag> is set, use data_manager and data_selection, otherwise
 use node_manager and node_selection.
 ==============================================================================*/
 {
-	char all_flag,ranges_flag,selected_flag;
+	char all_flag, selected_flag;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_node_list_conditional_data list_conditional_data;
 	struct FE_node_selection *node_selection;
+	struct GROUP(FE_node) *node_group;
 	struct LIST(FE_node) *destroy_node_list;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_node) *node_manager;
@@ -11032,74 +11134,57 @@ use node_manager and node_selection.
 	struct Option_table *option_table;
 
 	ENTER(gfx_destroy_nodes);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		if (use_data)
 		{
-			element_manager=(struct MANAGER(FE_element) *)NULL;
-			node_manager=command_data->data_manager;
-			node_group_manager=command_data->data_group_manager;
-			node_selection=command_data->data_selection;
+			element_manager = (struct MANAGER(FE_element) *)NULL;
+			node_manager = command_data->data_manager;
+			node_group_manager = command_data->data_group_manager;
+			node_selection = command_data->data_selection;
 		}
 		else
 		{
-			element_manager=command_data->element_manager;
-			node_manager=command_data->node_manager;
-			node_group_manager=command_data->node_group_manager;
-			node_selection=command_data->node_selection;
+			element_manager = command_data->element_manager;
+			node_manager = command_data->node_manager;
+			node_group_manager = command_data->node_group_manager;
+			node_selection = command_data->node_selection;
 		}
 		/* initialise defaults */
-		all_flag=0;
-		selected_flag=0;
-		node_ranges=CREATE(Multi_range)();
+		all_flag = 0;
+		selected_flag = 0;
+		node_group = (struct GROUP(FE_node) *)NULL;
+		node_ranges = CREATE(Multi_range)();
 
-		option_table=CREATE(Option_table)();
+		option_table = CREATE(Option_table)();
 		/* all */
-		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
+		/* group */
+		Option_table_add_entry(option_table, "group", &node_group,
+			node_group_manager, set_FE_node_group);
 		/* selected */
-		Option_table_add_entry(option_table,"selected",&selected_flag,
-			NULL,set_char_flag);
+		Option_table_add_entry(option_table, "selected", &selected_flag,
+			NULL, set_char_flag);
 		/* default option: node number ranges */
-		Option_table_add_entry(option_table,(char *)NULL,(void *)node_ranges,
-			NULL,set_Multi_range);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
+			NULL, set_Multi_range);
+		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (destroy_node_list=CREATE(LIST(FE_node))())
+			if (destroy_node_list = FE_node_list_from_all_selected_group_ranges(
+				node_manager, all_flag, node_selection, selected_flag,
+				node_group, node_ranges))
 			{
-				ranges_flag=(0<Multi_range_get_number_of_ranges(node_ranges));
-				if (selected_flag)
+				if (0 < NUMBER_IN_LIST(FE_node)(destroy_node_list))
 				{
-					/* add the selected nodes to destroy_node_list, and if node_ranges
-						 given, intersect with them */
-					return_code=COPY_LIST(FE_node)(destroy_node_list,
-						FE_node_selection_get_node_list(node_selection))&&
-						((!ranges_flag)||REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-							FE_node_is_not_in_Multi_range,node_ranges,destroy_node_list));
+					return_code = destroy_listed_nodes(destroy_node_list,
+						node_manager, node_group_manager, element_manager, node_selection);
 				}
-				else if (ranges_flag)
+				else
 				{
-					/* add nodes with numbers in node_ranges to destroy_node_list */
-					list_conditional_data.node_list=destroy_node_list;
-					list_conditional_data.function=FE_node_is_in_Multi_range;
-					list_conditional_data.user_data=node_ranges;
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-						ensure_FE_node_is_in_list_conditional,
-						(void *)&list_conditional_data,node_manager);
-				}
-				else if (all_flag)
-				{
-					/* add all nodes to destroy_node_list */
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-						ensure_FE_node_is_in_list,(void *)destroy_node_list,
-						node_manager);
-				}
-				if (return_code)
-				{
-					if (0<NUMBER_IN_LIST(FE_node)(destroy_node_list))
+					if (use_data)
 					{
-						return_code=destroy_listed_nodes(destroy_node_list,
-							node_manager,node_group_manager,
-							element_manager,node_selection);
+						display_message(WARNING_MESSAGE,
+							"gfx destroy data:  No data specified");
 					}
 					else
 					{
@@ -11107,27 +11192,26 @@ use node_manager and node_selection.
 							"gfx destroy nodes:  No nodes specified");
 					}
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_destroy_nodes.  Could not fill destroy_node_list");
-				}
 				DESTROY(LIST(FE_node))(&destroy_node_list);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"gfx_destroy_nodes.  Could not make destroy_node_list");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		DESTROY(Option_table)(&option_table);
+		if (node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&node_group);
+		}
 		DESTROY(Multi_range)(&node_ranges);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"gfx_destroy_nodes.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -13477,7 +13561,7 @@ Executes a GFX LIST ELEMENT.
 static int gfx_list_FE_node(struct Parse_state *state,
 	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2000
+LAST MODIFIED : 26 March 2001
 
 DESCRIPTION :
 Executes a GFX LIST NODES.
@@ -13485,148 +13569,107 @@ If <use_data> is set, use data_manager and data_selection, otherwise
 use node_manager and node_selection.
 ==============================================================================*/
 {
-	char all_flag,ranges_flag,selected_flag,verbose_flag;
+	char all_flag, selected_flag, verbose_flag;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_node_list_conditional_data list_conditional_data;
 	struct FE_node_selection *node_selection;
+	struct GROUP(FE_node) *node_group;
 	struct LIST(FE_node) *node_list;
 	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Multi_range *node_ranges;
 	struct Option_table *option_table;
 
 	ENTER(gfx_list_FE_node);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		if (use_data)
 		{
-			node_manager=command_data->data_manager;
-			node_selection=command_data->data_selection;
+			node_manager = command_data->data_manager;
+			node_group_manager = command_data->data_group_manager;
+			node_selection = command_data->data_selection;
 		}
 		else
 		{
-			node_manager=command_data->node_manager;
-			node_selection=command_data->node_selection;
+			node_manager = command_data->node_manager;
+			node_group_manager = command_data->node_group_manager;
+			node_selection = command_data->node_selection;
 		}
 		/* initialise defaults */
-		all_flag=0;
-		selected_flag=0;
-		verbose_flag=0;
-		node_ranges=CREATE(Multi_range)();
+		all_flag = 0;
+		selected_flag = 0;
+		verbose_flag = 0;
+		node_group = (struct GROUP(FE_node) *)NULL;
+		node_ranges = CREATE(Multi_range)();
 
-		option_table=CREATE(Option_table)();
+		option_table = CREATE(Option_table)();
 		/* all */
-		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
+		/* group */
+		Option_table_add_entry(option_table, "group", &node_group,
+			node_group_manager, set_FE_node_group);
 		/* selected */
-		Option_table_add_entry(option_table,"selected",&selected_flag,
-			NULL,set_char_flag);
+		Option_table_add_entry(option_table, "selected", &selected_flag,
+			NULL, set_char_flag);
 		/* verbose */
-		Option_table_add_entry(option_table,"verbose",&verbose_flag,
-			NULL,set_char_flag);
+		Option_table_add_entry(option_table, "verbose", &verbose_flag,
+			NULL, set_char_flag);
 		/* default option: node number ranges */
-		Option_table_add_entry(option_table,(char *)NULL,(void *)node_ranges,
-			NULL,set_Multi_range);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
+			NULL, set_Multi_range);
+		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (node_list=CREATE(LIST(FE_node))())
+			if (node_list = FE_node_list_from_all_selected_group_ranges(
+				node_manager, all_flag, node_selection, selected_flag,
+				node_group, node_ranges))
 			{
-				ranges_flag=(0<Multi_range_get_number_of_ranges(node_ranges));
-				if (selected_flag)
+				if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 				{
-					/* add the selected nodes to node_list, and if node_ranges
-						 given, intersect with them */
-					return_code=COPY_LIST(FE_node)(node_list,
-						FE_node_selection_get_node_list(node_selection))&&
-						((!ranges_flag)||REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-							FE_node_is_not_in_Multi_range,node_ranges,node_list));
-				}
-				else if (ranges_flag)
-				{
-					/* add nodes with numbers in node_ranges to node_list */
-					list_conditional_data.node_list=node_list;
-					list_conditional_data.function=FE_node_is_in_Multi_range;
-					list_conditional_data.user_data=node_ranges;
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-						ensure_FE_node_is_in_list_conditional,
-						(void *)&list_conditional_data,node_manager);
-				}
-				else if (all_flag)
-				{
-					/* add all nodes to node_list */
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-						ensure_FE_node_is_in_list,(void *)node_list,
-						node_manager);
-				}
-				if (return_code)
-				{
-					if (0 < NUMBER_IN_LIST(FE_node)(node_list))
+					/* always write verbose details if just 1 node */
+					if (verbose_flag || (1 == NUMBER_IN_LIST(FE_node)(node_list)))
 					{
-						/* always write verbose details if just 1 node */
-						if (verbose_flag || (1 == NUMBER_IN_LIST(FE_node)(node_list)))
-						{
-							return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
-								(void *)1, node_list);
-						}
-						else
-						{
-							if (use_data)
-							{
-								display_message(INFORMATION_MESSAGE,"Data:\n");
-							}
-							else
-							{
-								display_message(INFORMATION_MESSAGE,"Nodes:\n");
-							}
-							/* write comma separated list of ranges - use existing node
-								 ranges structure */
-							Multi_range_clear(node_ranges);
-							if (FOR_EACH_OBJECT_IN_LIST(FE_node)(
-								add_FE_node_number_to_Multi_range,(void *)node_ranges,
-								node_list))
-							{
-								return_code=Multi_range_display_ranges(node_ranges);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"gfx_list_FE_node.  Could not get node ranges");
-								return_code=0;
-							}
-						}
+						return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
+							(void *)1, node_list);
 					}
 					else
 					{
 						if (use_data)
 						{
-							display_message(INFORMATION_MESSAGE,"No data");
+							display_message(INFORMATION_MESSAGE,"Data:\n");
 						}
 						else
 						{
-							display_message(INFORMATION_MESSAGE,"No nodes");
+							display_message(INFORMATION_MESSAGE,"Nodes:\n");
 						}
-						if (selected_flag)
+						/* write comma separated list of ranges - use existing node
+							 ranges structure */
+						Multi_range_clear(node_ranges);
+						if (FOR_EACH_OBJECT_IN_LIST(FE_node)(
+							add_FE_node_number_to_Multi_range,(void *)node_ranges,
+							node_list))
 						{
-							display_message(INFORMATION_MESSAGE," selected");
-							if (ranges_flag)
-							{
-								display_message(INFORMATION_MESSAGE," and in given ranges");
-							}
+							return_code=Multi_range_display_ranges(node_ranges);
 						}
-						else if (ranges_flag)
+						else
 						{
-							display_message(INFORMATION_MESSAGE," in given ranges");
+							display_message(ERROR_MESSAGE,
+								"gfx_list_FE_node.  Could not get node ranges");
+							return_code=0;
 						}
-						else if (!all_flag)
-						{
-							display_message(INFORMATION_MESSAGE," chosen");
-						}
-						display_message(INFORMATION_MESSAGE,"\n");
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"gfx_list_FE_node.  Could not fill node_list");
+					if (use_data)
+					{
+						display_message(INFORMATION_MESSAGE,
+							"gfx list data:  No data specified\n");
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE,
+							"gfx list nodes:  No nodes specified\n");
+					}
 				}
 				DESTROY(LIST(FE_node))(&node_list);
 			}
@@ -13634,16 +13677,20 @@ use node_manager and node_selection.
 			{
 				display_message(ERROR_MESSAGE,
 					"gfx_list_FE_node.  Could not make node_list");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		DESTROY(Option_table)(&option_table);
+		if (node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&node_group);
+		}
 		DESTROY(Multi_range)(&node_ranges);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"gfx_list_FE_node.  Missing state");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -15665,11 +15712,10 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 } /* gfx_modify_graphics_object */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_node_group(struct Parse_state *state,
 	void *use_data, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 26 March 2001
 
 DESCRIPTION :
 Modifies the membership of a group.  Only one of <add> or <remove> can
@@ -15679,62 +15725,63 @@ use node_manager and node_selection.
 ==============================================================================*/
 {
 	char add_flag, all_flag, remove_flag, selected_flag;
-	int i,j,number_of_ranges,return_code,start,stop;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_node *node;
 	struct FE_node_selection *node_selection;
-	struct GROUP(FE_node) *from_node_group,*node_group;
+	struct GROUP(FE_node) *modify_node_group, *node_group;
+	struct LIST(FE_node) *node_list;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	struct Multi_range *node_range, *selected_range;
+	struct Multi_range *node_ranges;
 	struct Option_table *option_table;
 
 	ENTER(gfx_modify_node_group);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		node_group=(struct GROUP(FE_node) *)NULL;
+		modify_node_group = (struct GROUP(FE_node) *)NULL;
 		if (use_data)
 		{
-			node_manager=command_data->data_manager;
-			node_group_manager=command_data->data_group_manager;
-			node_selection=command_data->data_selection;
+			node_manager = command_data->data_manager;
+			node_group_manager = command_data->data_group_manager;
+			node_selection = command_data->data_selection;
 		}
 		else
 		{
-			node_manager=command_data->node_manager;
-			node_group_manager=command_data->node_group_manager;
-			node_selection=command_data->node_selection;
+			node_manager = command_data->node_manager;
+			node_group_manager = command_data->node_group_manager;
+			node_selection = command_data->node_selection;
 		}
-		if (set_FE_node_group(state,(void *)&node_group,
+		if (set_FE_node_group(state, (void *)&modify_node_group,
 			(void *)node_group_manager))
 		{
 			/* initialise defaults */
-			add_flag=0;
-			remove_flag=0;
-			all_flag=0;
-			selected_flag=0;
-			node_range=CREATE(Multi_range)();
-			from_node_group=(struct GROUP(FE_node) *)NULL;
+			add_flag = 0;
+			remove_flag = 0;
+			all_flag = 0;
+			selected_flag = 0;
+			node_ranges = CREATE(Multi_range)();
+			node_group = (struct GROUP(FE_node) *)NULL;
 
 			option_table=CREATE(Option_table)();
 			/* add */
-			Option_table_add_entry(option_table,"add",&add_flag,NULL,set_char_flag);
+			Option_table_add_entry(option_table, "add", &add_flag,
+				NULL, set_char_flag);
 			/* all */
-			Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+			Option_table_add_entry(option_table, "all", &all_flag,
+				NULL, set_char_flag);
 			/* group */
-			Option_table_add_entry(option_table,"group",&from_node_group,
+			Option_table_add_entry(option_table, "group", &node_group,
 				node_group_manager, set_FE_node_group);
 			/* remove */
-			Option_table_add_entry(option_table,"remove",&remove_flag,NULL,
-				set_char_flag);
+			Option_table_add_entry(option_table, "remove", &remove_flag,
+				NULL, set_char_flag);
 			/* selected */
-			Option_table_add_entry(option_table,"selected",&selected_flag,
-				NULL,set_char_flag);
+			Option_table_add_entry(option_table, "selected", &selected_flag,
+				NULL, set_char_flag);
 			/* default option: node number ranges */
-			Option_table_add_entry(option_table,(char *)NULL,(void *)node_range,
-				NULL,set_Multi_range);
-			return_code=Option_table_multi_parse(option_table,state);
-			if (return_code)
+			Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
+				NULL, set_Multi_range);
+			if (return_code = Option_table_multi_parse(option_table, state))
 			{
 				if (add_flag && remove_flag)
 				{
@@ -15768,125 +15815,711 @@ use node_manager and node_selection.
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (all_flag)
+				/* make list of nodes to add/remove from modify_node_group */
+				if (node_list = FE_node_list_from_all_selected_group_ranges(
+					node_manager, all_flag, node_selection, selected_flag,
+					node_group, node_ranges))
 				{
-					selected_range=CREATE(Multi_range)();
-					FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-						add_FE_node_number_to_Multi_range,selected_range, node_manager);
-					if (Multi_range_get_number_of_ranges(node_range))
+					if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 					{
-						Multi_range_intersect(node_range, selected_range);
-						DESTROY(Multi_range)(&selected_range);
-					}
-					else
-					{
-						DESTROY(Multi_range)(&node_range);
-						node_range = selected_range;
-						selected_range = (struct Multi_range *)NULL;
-					}						
-				}
-				if (selected_flag)
-				{
-					selected_range=CREATE(Multi_range)();
-					FOR_EACH_OBJECT_IN_LIST(FE_node)(add_FE_node_number_to_Multi_range,
-						selected_range, FE_node_selection_get_node_list(node_selection));
-					if (Multi_range_get_number_of_ranges(node_range))
-					{
-						Multi_range_intersect(node_range, selected_range);
-						DESTROY(Multi_range)(&selected_range);
-					}
-					else
-					{
-						DESTROY(Multi_range)(&node_range);
-						node_range = selected_range;
-						selected_range = (struct Multi_range *)NULL;
-					}
-				}
-				if (from_node_group)
-				{
-					selected_range=CREATE(Multi_range)();
-					FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_number_to_Multi_range,
-						selected_range, from_node_group);
-					if (Multi_range_get_number_of_ranges(node_range))
-					{
-						Multi_range_intersect(node_range, selected_range);
-						DESTROY(Multi_range)(&selected_range);
-					}
-					else
-					{
-						DESTROY(Multi_range)(&node_range);
-						node_range = selected_range;
-						selected_range = (struct Multi_range *)NULL;
-					}
-				}
-				if (Multi_range_get_number_of_ranges(node_range))
-				{
-					MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-					number_of_ranges = Multi_range_get_number_of_ranges(node_range);
-					for (i=0;i<number_of_ranges;i++)
-					{
-						Multi_range_get_range(node_range,i,&start,&stop);
-						for (j=start;j<=stop;j++)
+						MANAGED_GROUP_BEGIN_CACHE(FE_node)(modify_node_group);
+						if (add_flag)
 						{
-							if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-								cm_node_identifier)(j,node_manager))
-							{
-								if (add_flag)
-								{
-									ensure_FE_node_is_in_group(node, node_group);
-								}
-								else /* remove_flag */
-								{
-									ensure_FE_node_is_not_in_group(node, node_group);
-								}
-							}
+							return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
+								ensure_FE_node_is_in_group, (void *)node_group, node_list);
+						}
+						else /* remove_flag */
+						{
+							return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
+								ensure_FE_node_is_not_in_group, (void *)node_group, node_list);
 						}
 					}
-					MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+					else
+					{
+						if (use_data)
+						{
+							display_message(WARNING_MESSAGE,
+								"gfx modify dgroup:  No data specified");
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"gfx modify ngroup:  No nodes specified");
+						}
+					}
 				}
 				else
 				{
-					if (use_data)
-					{
-						display_message(WARNING_MESSAGE,
-							"gfx modify dgroup:  No data specified");
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"gfx modify ngroup:  No nodes specified");
-					}
+					display_message(ERROR_MESSAGE,
+						"gfx_modify_node_group.  Could not make node_list");
+					return_code = 0;
 				}
 			}
 			DESTROY(Option_table)(&option_table);
-			DESTROY(Multi_range)(&node_range);
-			if (from_node_group)
+			if (node_group)
 			{
-				DEACCESS(GROUP(FE_node))(&from_node_group);
+				DEACCESS(GROUP(FE_node))(&node_group);
 			}
+			DESTROY(Multi_range)(&node_ranges);
 		}
-		if (node_group)
+		if (modify_node_group)
 		{
-			DEACCESS(GROUP(FE_node))(&node_group);
+			DEACCESS(GROUP(FE_node))(&modify_node_group);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"gfx_modify_node_group.  Missing command_data");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* gfx_modify_node_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+struct FE_node_field_component_derivatives_data
+{
+	int *components_number_of_derivatives, number_of_components;
+	enum FE_nodal_value_type **components_nodal_value_types;
+};
+
+int set_FE_node_field_component_derivatives(struct Parse_state *state,
+	void *component_derivatives_data_void, void *field_address_void)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2001
+
+DESCRIPTION :
+Modifier function for entering the number of derivatives and their names
+(d/d2, d2/ds1ds3 etc.) for each component of field to be defined at nodes.
+Note requires field to be specified prior to entering this function, unless in
+help mode.
+==============================================================================*/
+{
+	char *current_token;
+	enum FE_nodal_value_type *nodal_value_types;
+	int i, j, number_of_components, number_of_derivatives, return_code;
+	struct FE_field *field, **field_address;
+	struct FE_node_field_component_derivatives_data *component_derivatives_data;
+
+	ENTER(set_FE_node_field_component_derivatives);
+	component_derivatives_data =
+		(struct FE_node_field_component_derivatives_data *)NULL;
+	if (state && (component_derivatives_data =
+		(struct FE_node_field_component_derivatives_data *)
+		component_derivatives_data_void) &&
+		(0 == component_derivatives_data->number_of_components) &&
+		(field_address = (struct FE_field **)field_address_void))
+	{
+		return_code = 1;
+		if (field = *field_address)
+		{
+			number_of_components = get_FE_field_number_of_components(field);
+		}
+		else
+		{
+			/* following used for help */
+			number_of_components = 3;
+		}
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (field)
+				{
+					ALLOCATE(component_derivatives_data->components_number_of_derivatives,
+						int, number_of_components);
+					if (ALLOCATE(component_derivatives_data->components_nodal_value_types,
+						enum FE_nodal_value_type *, number_of_components))
+					{
+						for (i = 0; i < number_of_components; i++)
+						{
+							component_derivatives_data->components_nodal_value_types[i] =
+								(enum FE_nodal_value_type *)NULL;
+						}
+					}
+					if (component_derivatives_data->components_number_of_derivatives &&
+						component_derivatives_data->components_nodal_value_types)
+					{
+						/* remember number_of_components so arrays can be deallocated by
+							 themselves */
+						component_derivatives_data->number_of_components =
+							number_of_components;
+						for (i = 0; return_code && (i < number_of_components); i++)
+						{
+							if ((current_token = state->current_token) &&
+								(1 == sscanf(current_token, " %d ", &number_of_derivatives)) &&
+								(0 <= number_of_derivatives) && shift_Parse_state(state, 1))
+							{
+								component_derivatives_data->components_number_of_derivatives[i]
+									= number_of_derivatives;
+								if (ALLOCATE(nodal_value_types, enum FE_nodal_value_type,
+									1 + number_of_derivatives))
+								{
+									component_derivatives_data->components_nodal_value_types[i] =
+										nodal_value_types;
+									/* first FE_NODAL_VALUE, then derivatives */
+									nodal_value_types[0] = FE_NODAL_VALUE;
+									for (j = 0; return_code && (j < number_of_derivatives); j++)
+									{
+										if (!((current_token = state->current_token) &&
+											STRING_TO_ENUMERATOR(FE_nodal_value_type)(current_token,
+												&(nodal_value_types[j+1])) &&
+											shift_Parse_state(state, 1)))
+										{
+											display_message(ERROR_MESSAGE,
+												"Missing or invalid nodal value type: %s",
+												current_token);
+											display_parse_state_location(state);
+											return_code = 0;
+										}
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"set_FE_node_field_component_derivatives.  "
+										"Not enough memory for nodal_value_types");
+									return_code = 0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Missing or invalid number of derivatives: %s",
+									current_token);
+								display_parse_state_location(state);
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_FE_node_field_component_derivatives.  "
+							"Not enough memory for derivatives");
+						return_code = 0;
+					}
+					if (!return_code)
+					{
+						DEALLOCATE(
+							component_derivatives_data->components_number_of_derivatives);
+						if (component_derivatives_data->components_nodal_value_types)
+						{
+							for (i = 0; i < number_of_components; i++)
+							{
+								if (component_derivatives_data->components_nodal_value_types[i])
+								{
+									DEALLOCATE(component_derivatives_data->
+										components_nodal_value_types[i]);
+								}
+							}
+							DEALLOCATE(
+								component_derivatives_data->components_nodal_value_types);
+						}
+						component_derivatives_data->number_of_components = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Must have a field before setting component derivatives");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				for (i = 0; i < number_of_components; i++)
+				{
+					display_message(INFORMATION_MESSAGE," NUMBER_IN_COMPONENT_%d "
+						"DERIVATIVE_NAMES(d/ds1 d2/ds1ds2 etc.) ...", i + 1);
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing component derivatives");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		if (component_derivatives_data &&
+			(0 != component_derivatives_data->number_of_components))
+		{
+			display_message(ERROR_MESSAGE,
+				"Component derivatives have already been set");
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_FE_node_field_component_derivatives.  Invalid argument(s)");
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_node_field_component_derivatives */
+
+struct FE_node_field_component_versions_data
+{
+	int *components_number_of_versions, number_of_components;
+};
+
+int set_FE_node_field_component_versions(struct Parse_state *state,
+	void *component_versions_data_void, void *field_address_void)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2001
+
+DESCRIPTION :
+Modifier function for entering the number of versions for each component of
+field to be defined at nodes. Note requires field to be specified prior to
+entering this function, unless in help mode.
+==============================================================================*/
+{
+	char *current_token;
+	int i, number_of_components, number_of_versions, return_code;
+	struct FE_field *field, **field_address;
+	struct FE_node_field_component_versions_data *component_versions_data;
+
+	ENTER(set_FE_node_field_component_versions);
+	component_versions_data =
+		(struct FE_node_field_component_versions_data *)NULL;
+	if (state && (component_versions_data =
+		(struct FE_node_field_component_versions_data *)
+		component_versions_data_void) &&
+		(0 == component_versions_data->number_of_components) &&
+		(field_address = (struct FE_field **)field_address_void))
+	{
+		return_code = 1;
+		if (field = *field_address)
+		{
+			number_of_components = get_FE_field_number_of_components(field);
+		}
+		else
+		{
+			/* following used for help */
+			number_of_components = 3;
+		}
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (field)
+				{
+					if (ALLOCATE(component_versions_data->components_number_of_versions,
+						int, number_of_components))
+					{
+						/* remember number_of_components so arrays can be deallocated by
+							 themselves */
+						component_versions_data->number_of_components =
+							number_of_components;
+						for (i = 0; return_code && (i < number_of_components); i++)
+						{
+							if ((current_token = state->current_token) &&
+								(1 == sscanf(current_token, " %d ", &number_of_versions)) &&
+								(0 < number_of_versions) &&
+								shift_Parse_state(state, 1))
+							{
+								component_versions_data->components_number_of_versions[i] =
+									number_of_versions;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Missing or invalid number of versions: %s",current_token);
+								display_parse_state_location(state);
+								return_code = 0;
+							}
+						}
+						if (!return_code)
+						{
+							DEALLOCATE(
+								component_versions_data->components_number_of_versions);
+							component_versions_data->number_of_components = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_FE_node_field_component_versions.  "
+							"Not enough memory for versions");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Must have a field before setting component versions");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				for (i = 0; i < number_of_components; i++)
+				{
+					display_message(INFORMATION_MESSAGE,
+						" NUMBER_IN_COMPONENT_%d", i + 1);
+				}
+				if (!field)
+				{
+					display_message(INFORMATION_MESSAGE, " ...");
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing component versions");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		if (component_versions_data &&
+			(0 != component_versions_data->number_of_components))
+		{
+			display_message(ERROR_MESSAGE,
+				"Component versions have already been set");
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_FE_node_field_component_versions.  Invalid argument(s)");
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_node_field_component_versions */
+
+static int gfx_modify_nodes(struct Parse_state *state,
+	void *use_data,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2001
+
+DESCRIPTION :
+Executes a GFX DESTROY NODES/DATA command.
+If <used_data_flag> is set, use data_manager and data_selection, otherwise
+use node_manager and node_selection.
+==============================================================================*/
+{
+	char all_flag, selected_flag;
+	enum FE_nodal_value_type *nodal_value_types;
+	int i, number_of_components, return_code;
+	struct Cmiss_command_data *command_data;
+	struct FE_field *define_field, *undefine_field;
+	struct FE_node *node, *temp_node;
+	struct FE_node_field_component_derivatives_data component_derivatives_data;
+	struct FE_node_field_component_versions_data component_versions_data;
+	struct FE_node_selection *node_selection;
+	struct GROUP(FE_node) *node_group;
+	struct LIST(FE_node) *define_node_list, *node_list;
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct Multi_range *node_ranges;
+	struct Option_table *option_table;
+
+	ENTER(gfx_modify_nodes);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		if (use_data)
+		{
+			element_manager = (struct MANAGER(FE_element) *)NULL;
+			node_manager = command_data->data_manager;
+			node_group_manager = command_data->data_group_manager;
+			node_selection = command_data->data_selection;
+		}
+		else
+		{
+			element_manager = command_data->element_manager;
+			node_manager = command_data->node_manager;
+			node_group_manager = command_data->node_group_manager;
+			node_selection = command_data->node_selection;
+		}
+		/* initialise defaults */
+		all_flag = 0;
+		selected_flag = 0;
+		node_group = (struct GROUP(FE_node) *)NULL;
+		node_ranges = CREATE(Multi_range)();
+		define_field = (struct FE_field *)NULL;
+		component_derivatives_data.number_of_components = 0;
+		component_derivatives_data.components_number_of_derivatives = (int *)NULL;
+		component_derivatives_data.components_nodal_value_types =
+			(enum FE_nodal_value_type **)NULL;
+		component_versions_data.number_of_components = 0;
+		component_versions_data.components_number_of_versions = (int *)NULL;
+		undefine_field = (struct FE_field *)NULL;
+
+		option_table = CREATE(Option_table)();
+		/* all */
+		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
+		/* component_derivatives */
+		Option_table_add_entry(option_table, "component_derivatives",
+			(void *)&component_derivatives_data, (void *)&define_field,
+			set_FE_node_field_component_derivatives);
+		/* component_versions */
+		Option_table_add_entry(option_table, "component_versions",
+			(void *)&component_versions_data, (void *)&define_field,
+			set_FE_node_field_component_versions);
+		/* define */
+		Option_table_add_entry(option_table, "define",
+			&define_field, command_data->fe_field_manager, set_FE_field);
+		/* group */
+		Option_table_add_entry(option_table, "group", &node_group,
+			node_group_manager, set_FE_node_group);
+		/* selected */
+		Option_table_add_entry(option_table, "selected", &selected_flag,
+			NULL, set_char_flag);
+		/* undefine */
+		Option_table_add_entry(option_table, "undefine",
+			&undefine_field, command_data->fe_field_manager, set_FE_field);
+		/* default option: node number ranges */
+		Option_table_add_entry(option_table, (char *)NULL, (void *)node_ranges,
+			NULL, set_Multi_range);
+		if (return_code = Option_table_multi_parse(option_table, state))
+		{
+			if ((!define_field) && (!undefine_field))
+			{
+				display_message(WARNING_MESSAGE,
+					"gfx modify data:  Must specify define or undefine field");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			if (node_list = FE_node_list_from_all_selected_group_ranges(
+				node_manager, all_flag, node_selection, selected_flag,
+				node_group, node_ranges))
+			{
+				if (0 < NUMBER_IN_LIST(FE_node)(node_list))
+				{
+					if (define_field)
+					{
+						number_of_components =
+							get_FE_field_number_of_components(define_field);
+						if (0 == component_derivatives_data.number_of_components)
+						{
+							if (ALLOCATE(
+								component_derivatives_data.components_number_of_derivatives,
+								int, number_of_components))
+							{
+								for (i = 0; i < number_of_components; i++)
+								{
+									component_derivatives_data.
+										components_number_of_derivatives[i] = 0;
+								}
+							}
+							else
+							{
+								return_code = 0;
+							}
+							if (ALLOCATE(
+								component_derivatives_data.components_nodal_value_types,
+								enum FE_nodal_value_type *, number_of_components))
+							{
+								for (i = 0; i < number_of_components; i++)
+								{
+									component_derivatives_data.components_nodal_value_types[i] =
+										(enum FE_nodal_value_type *)NULL;
+								}
+								for (i = 0; return_code && (i < number_of_components); i++)
+								{
+									if (ALLOCATE(nodal_value_types, enum FE_nodal_value_type, 1))
+									{
+										nodal_value_types[0] = FE_NODAL_VALUE;
+										component_derivatives_data.components_nodal_value_types[i]
+											= nodal_value_types;
+									}
+									else
+									{
+										return_code = 0;
+									}
+								}
+							}
+							else
+							{
+								return_code = 0;
+							}
+							if (return_code)
+							{
+								component_derivatives_data.number_of_components =
+									number_of_components;
+							}
+						}
+						if (0 == component_versions_data.number_of_components)
+						{
+							if (ALLOCATE(
+								component_versions_data.components_number_of_versions,
+								int, number_of_components))
+							{
+								for (i = 0; i < number_of_components; i++)
+								{
+									component_versions_data.
+										components_number_of_versions[i] = 1;
+								}
+							}
+							else
+							{
+								return_code = 0;
+							}
+							if (return_code)
+							{
+								component_versions_data.number_of_components =
+									number_of_components;
+							}
+						}
+						if (return_code)
+						{
+							if ((number_of_components ==
+								component_derivatives_data.number_of_components) &&
+								(number_of_components ==
+									component_versions_data.number_of_components))
+							{
+								MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+								define_node_list = CREATE(LIST(FE_node))();
+								if (COPY_LIST(FE_node)(define_node_list, node_list))
+								{
+									while (return_code &&
+										(node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+											(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
+											define_node_list)))
+									{
+										if (!FE_field_is_defined_at_node(define_field, node))
+										{
+											if (temp_node = CREATE(FE_node)(0, node))
+											{
+												return_code = define_FE_field_at_node(temp_node,
+													define_field,
+													component_derivatives_data.
+													components_number_of_derivatives,
+													component_versions_data.components_number_of_versions,
+													component_derivatives_data.
+													components_nodal_value_types) &&
+													MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+														cm_node_identifier)(node,	temp_node, node_manager);
+												DESTROY(FE_node)(&temp_node);
+											}
+											else
+											{
+												return_code = 0;
+											}
+										}
+										if (!REMOVE_OBJECT_FROM_LIST(FE_node)(node,
+											define_node_list))
+										{
+											return_code = 0;
+										}
+									}
+								}
+								else
+								{
+									return_code = 0;
+								}
+								DESTROY(LIST(FE_node))(&define_node_list);
+								MANAGER_END_CACHE(FE_node)(node_manager);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "gfx_modify_nodes.  "
+									"Derivative/version information does not match field");
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "gfx_modify_nodes.  "
+								"Could not create derivative/version information");
+						}
+					}
+					if (undefine_field)
+					{
+						if (!undefine_field_at_listed_nodes(node_list, undefine_field,
+							node_manager, element_manager))
+						{
+							return_code = 0;
+						}
+					}
+				}
+				else
+				{
+					if (use_data)
+					{
+						display_message(WARNING_MESSAGE,
+							"gfx modify data:  No data specified");
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"gfx modify nodes:  No nodes specified");
+					}
+				}
+				DESTROY(LIST(FE_node))(&node_list);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_nodes.  Could not make node_list");
+				return_code = 0;
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&node_group);
+		}
+		DESTROY(Multi_range)(&node_ranges);
+		if (define_field)
+		{
+			DEACCESS(FE_field)(&define_field);
+		}
+		if (undefine_field)
+		{
+			DEACCESS(FE_field)(&undefine_field);
+		}
+		if (component_derivatives_data.components_number_of_derivatives)
+		{
+			DEALLOCATE(component_derivatives_data.components_number_of_derivatives);
+		}
+		if (component_derivatives_data.components_nodal_value_types)
+		{
+			for (i = 0; i < component_derivatives_data.number_of_components; i++)
+			{
+				if (component_derivatives_data.components_nodal_value_types[i])
+				{
+					DEALLOCATE(
+						component_derivatives_data.components_nodal_value_types[i]);
+				}
+			}
+			DEALLOCATE(component_derivatives_data.components_nodal_value_types);
+		}
+		if (component_versions_data.components_number_of_versions)
+		{
+			DEALLOCATE(component_versions_data.components_number_of_versions);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_modify_nodes.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_nodes */
+
 static int execute_command_gfx_modify(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 26 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY command.
@@ -15914,6 +16547,9 @@ Executes a GFX MODIFY command.
 			if (state->current_token)
 			{
 				option_table=CREATE(Option_table)();
+				/* data */
+				Option_table_add_entry(option_table, "data", /*use_data*/(void *)1, 
+					(void *)command_data, gfx_modify_nodes);
 				/* dgroup */
 				Option_table_add_entry(option_table,"dgroup",(void *)1/*data*/, 
 					(void *)command_data, gfx_modify_node_group);
@@ -15966,6 +16602,9 @@ Executes a GFX MODIFY command.
 				/* ngroup */
 				Option_table_add_entry(option_table,"ngroup",NULL, 
 					(void *)command_data, gfx_modify_node_group);
+				/* nodes */
+				Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0, 
+					(void *)command_data, gfx_modify_nodes);
 				/* scene */
 				modify_scene_data.light_manager=command_data->light_manager;
 				modify_scene_data.scene_manager=command_data->scene_manager;
@@ -16046,7 +16685,6 @@ Executes a GFX MODIFY command.
 
 	return (return_code);
 } /* execute_command_gfx_modify */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 int gfx_movie(struct Parse_state *state,void *dummy_to_be_modified,
@@ -22552,7 +23190,7 @@ Executes a UNEMAP command.
 static int execute_command_cell_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 26 March 2001
 
 DESCRIPTION :
 Executes a CELL OPEN command.
@@ -22562,11 +23200,9 @@ Executes a CELL OPEN command.
 	int return_code;
 	struct Cell_interface *cell_interface;
 	struct Cmiss_command_data *command_data;
-	struct Execute_command *execute_command;
 	
 	ENTER(execute_command_cell_open);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
 	if (state)
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
@@ -22577,53 +23213,44 @@ Executes a CELL OPEN command.
 			{
 				if (!(cell_interface=command_data->cell_interface))
 				{
-					if (execute_command = CREATE(Execute_command)(cmiss_execute_command,
-						(void *)(command_data)))
-					{
-            /* add Cell 3D */
-            if (cell_interface = CREATE(Cell_interface)(
-              command_data->any_object_selection,
-              &(command_data->background_colour),
-              command_data->default_graphical_material,
-              command_data->default_light,
-              command_data->default_light_model,
-              command_data->default_scene,
-              command_data->default_spectrum,
-              command_data->default_time_keeper,
-              command_data->graphics_object_list,
-              command_data->glyph_list,
-              command_data->interactive_tool_manager,
-              command_data->light_manager,
-              command_data->light_model_manager,
-              command_data->graphical_material_manager,
-              command_data->scene_manager,
-              command_data->spectrum_manager,
-              command_data->texture_manager,
-              command_data->user_interface,
-              close_cell_window
+					/* add Cell 3D */
+					if (cell_interface = CREATE(Cell_interface)(
+						command_data->any_object_selection,
+						&(command_data->background_colour),
+						command_data->default_graphical_material,
+						command_data->default_light,
+						command_data->default_light_model,
+						command_data->default_scene,
+						command_data->default_spectrum,
+						command_data->default_time_keeper,
+						command_data->graphics_object_list,
+						command_data->glyph_list,
+						command_data->interactive_tool_manager,
+						command_data->light_manager,
+						command_data->light_model_manager,
+						command_data->graphical_material_manager,
+						command_data->scene_manager,
+						command_data->spectrum_manager,
+						command_data->texture_manager,
+						command_data->user_interface,
+						close_cell_window
 #if defined (CELL_DISTRIBUTED)
-              ,command_data->element_point_ranges_selection,
-              command_data->computed_field_package,
-              command_data->element_manager,
-              command_data->element_group_manager,
-              command_data->fe_field_manager
+						,command_data->element_point_ranges_selection,
+						command_data->computed_field_package,
+						command_data->element_manager,
+						command_data->element_group_manager,
+						command_data->fe_field_manager
 #endif /* defined (CELL_DISTRIBUTED) */
-              ))
-            {
-              command_data->cell_interface=cell_interface;
-              return_code = 1;
-            }
-            else
-            {
-              display_message(ERROR_MESSAGE,"execute_command_cell_open.  "
-                "Could not create the cell_interface");
-            }
+						))
+					{
+						command_data->cell_interface=cell_interface;
+						return_code = 1;
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,"execute_command_cell_open.  "
-              "Could not ALLOCATE Execute_command structure");
-					}	
+							"Could not create the cell_interface");
+					}
 				}
         else
         {
