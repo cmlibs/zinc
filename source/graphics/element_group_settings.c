@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -3682,7 +3682,7 @@ Returns the <GT_element_settings_type> described by
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -3854,7 +3854,7 @@ if no coordinate field. Currently only write if we have a field.
 			{
 				append_string(&settings_string," glyph ",&error);
 				append_string(&settings_string,settings->glyph->name,&error);
-				sprintf(temp_string," size %g*%g*%g",settings->glyph_size[0],
+				sprintf(temp_string," size \"%g*%g*%g\"",settings->glyph_size[0],
 					settings->glyph_size[1],settings->glyph_size[2]);
 				append_string(&settings_string,temp_string,&error);
 				sprintf(temp_string," centre %g,%g,%g",settings->glyph_centre[0],
@@ -3880,7 +3880,7 @@ if no coordinate field. Currently only write if we have a field.
 						append_string(&settings_string," orientation ",&error);
 						append_string(&settings_string,name,&error);
 						DEALLOCATE(name);
-						sprintf(temp_string," scale_factors %g*%g*%g",
+						sprintf(temp_string," scale_factors \"%g*%g*%g\"",
 							settings->glyph_scale_factors[0],
 							settings->glyph_scale_factors[1],
 							settings->glyph_scale_factors[2]);
@@ -3917,7 +3917,8 @@ if no coordinate field. Currently only write if we have a field.
 				Xi_discretization_mode_string(settings->xi_discretization_mode),&error);
 			if (XI_DISCRETIZATION_EXACT_XI != settings->xi_discretization_mode)
 			{
-				sprintf(temp_string," discretization %d*%d*%d native_discretization ",
+				sprintf(temp_string,
+					" discretization \"%d*%d*%d\" native_discretization ",
 					settings->discretization.number_in_xi1,
 					settings->discretization.number_in_xi2,
 					settings->discretization.number_in_xi3);
