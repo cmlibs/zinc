@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.c
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Source code for the tracking editor dialog box.
@@ -146,11 +146,13 @@ DESCRIPTION :
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
+	struct FE_node_selection *data_selection;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Texture) *texture_manager;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct User_interface *user_interface;
 
 	/* bar chart display parameters: */
@@ -2537,6 +2539,7 @@ Reads a movie file into the tracking editor.
 				track_ed->data_manager,track_ed->data_group_manager,
 				track_ed->element_point_ranges_selection,
 				track_ed->element_selection,track_ed->node_selection,
+				track_ed->data_selection,
 				track_ed->scene_manager,track_ed->default_scene,
 				track_ed->spectrum_manager,track_ed->default_spectrum,
 				track_ed->texture_manager,track_ed->user_interface)&&
@@ -3034,7 +3037,7 @@ Creates a new digitiser window.
 static void tracking_editor_3d_window_cb(Widget w,XtPointer track_ed_void,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 16 October 1998
+LAST MODIFIED : 11 April 2000
 
 DESCRIPTION :
 Creates a new 3-D window.
@@ -3057,7 +3060,8 @@ Creates a new 3-D window.
 				track_ed->light_manager,track_ed->default_light,
 				track_ed->light_model_manager,track_ed->default_light_model,
 				track_ed->scene_manager,track_ed->default_scene,
-				track_ed->texture_manager,track_ed->user_interface))
+				track_ed->texture_manager,track_ed->interactive_tool_manager,
+				track_ed->user_interface))
 			{
 				if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
 					track_ed->graphics_window_manager))
@@ -4953,14 +4957,16 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
 	struct MANAGER(Scene) *scene_manager,
 	struct Scene *default_scene,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5045,8 +5051,9 @@ DESCRIPTION :
 		light_model_manager&&default_light_model&&
 		node_manager&&node_group_manager&&data_manager&&data_group_manager&&
 		element_point_ranges_selection&&element_selection&&node_selection&&
+		data_selection&&
 		scene_manager&&default_scene&&spectrum_manager&&default_spectrum&&
-		texture_manager&&user_interface)
+		texture_manager&&interactive_tool_manager&&user_interface)
 	{
 		if (!(track_ed = *address))
 		{
@@ -5093,12 +5100,14 @@ DESCRIPTION :
 						element_point_ranges_selection;
 					track_ed->element_selection=element_selection;
 					track_ed->node_selection=node_selection;
+					track_ed->data_selection=data_selection;
 					track_ed->scene_manager=scene_manager;
 					track_ed->default_scene=ACCESS(Scene)(default_scene);
 					track_ed->spectrum_manager=spectrum_manager;
 					track_ed->default_spectrum=
 						ACCESS(Spectrum)(default_spectrum);
 					track_ed->texture_manager=texture_manager;
+					track_ed->interactive_tool_manager=interactive_tool_manager;
 					track_ed->user_interface = user_interface;
 					track_ed->process_ID=0;
 					track_ed->processing=0;

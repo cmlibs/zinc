@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.h
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Structures and functions prototypes for the tracking editor dialog.
@@ -12,6 +12,7 @@ Structures and functions prototypes for the tracking editor dialog.
 
 #include "general/managed_group.h"
 #include "general/manager.h"
+#include "interaction/interactive_tool.h"
 #include "mirage/tracking_editor_data.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
@@ -83,15 +84,18 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
 	struct MANAGER(Scene) *scene_manager,
 	struct Scene *default_scene,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
+
 #endif /* !defined (TRACKING_EDITOR_DIALOG_H) */
