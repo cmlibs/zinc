@@ -113,6 +113,7 @@ endif # SYSNAME == CYGWIN%=
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin/$(BIN_ARCH_DIR)
 
 BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_ABI_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
+LIB_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_ABI_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_DEBUG_SUFFIX)
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_DEBUG_SUFFIX)
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
@@ -121,6 +122,16 @@ ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 $(BIN_TARGET) :
+
+#Add the two file extensions
+SO_LIB_TARGET = $(LIB_TARGET).so
+STATIC_LIB_TARGET = $(LIB_TARGET).a
+
+#Make so_lib to be a shorthand for the fully qualified file
+so_lib : $(SO_LIB_TARGET)
+
+#Make static_lib to be a shorthand for the fully qualified file
+static_lib : $(STATIC_LIB_TARGET)
 
 ifdef MAKECMDGOALS
    define BUILDING_MESSAGE
@@ -565,6 +576,11 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 
 ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
+	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
+	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
+	$(LIB)
+SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
+	$(WORMHOLE_LIB) $(IMAGEMAGICK_LIB) \
 	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
 	$(LIB)
@@ -1163,8 +1179,9 @@ ifeq ($(SYSNAME),win32)
    endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
+
 $(BIN_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
-	if [ ! -d $(BIN_PATH) ]; then \
+	@if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
 ifeq ($(SYSNAME:IRIX%=),)
@@ -1192,6 +1209,33 @@ endif # SYSNAME == win32
 		rm $(BIN_PATH)/$(BIN_TARGET) ; \
 	fi ; \
 	cp $(BIN_TARGET) $(BIN_PATH)/$(BIN_TARGET)
+
+$(SO_LIB_TARGET) : $(OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(OBJECT_PATH)/$(EXPORTS_FILE)
+	@if [ ! -d $(BIN_PATH) ]; then \
+		mkdir -p $(BIN_PATH); \
+	fi
+ifeq ($(SYSNAME:IRIX%=),)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list)
+endif # SYSNAME == IRIX%=
+ifeq ($(SYSNAME),Linux)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+endif # SYSNAME == Linux
+ifeq ($(SYSNAME),AIX)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+endif # SYSNAME == AIX
+ifeq ($(SYSNAME),win32)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+endif # SYSNAME == win32
+   # Link in the OBJECT_PATH and copy to the BIN_PATH as often the OBJECT_PATH is kept locally.
+   # Need to remove the $(BIN_PATH)/$(BIN_TARGET) before copying it over as AIX blocks if someone is running the old version.
+	cd $(OBJECT_PATH) ; \
+	rm -f product_object ; \
+	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
+	$(LINK) -shared -o $(SO_LIB_TARGET) $(ALL_FLAGS) `cat object.list` $(SO_ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
+	if [ -f $(BIN_PATH)/$(SO_LIB_TARGET) ]; then \
+		rm $(BIN_PATH)/$(SO_LIB_TARGET) ; \
+	fi ; \
+	cp $(SO_LIB_TARGET) $(BIN_PATH)/$(SO_LIB_TARGET)
 
 # Force is a dummy rule used to ensure some objects are made every time as the
 # target 'force' doesnt exist */
