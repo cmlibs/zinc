@@ -343,7 +343,7 @@ endif # CMISS_ROOT_DEFINED
 	sed -e 's%^.*\.o%$*.o $*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # Fix up the uidh references
-	sed "s%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g" $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
+	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
 	mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
@@ -355,7 +355,7 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 	sed -e 's%^.*\.o%$*.o $*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # Fix up the uidh references
-	sed "s%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g" $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
+	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
 	mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
