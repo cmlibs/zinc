@@ -2089,6 +2089,7 @@ Evaluate the fields cache in the element.
 						{
 							field->values[i] = 0.0;
 						}
+						return_code = 1;
 					}
 				}
 				else
