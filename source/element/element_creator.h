@@ -73,10 +73,8 @@ DESCRIPTION :
 Sets the <element_dimension> of any subsequent elements to be created.
 ==============================================================================*/
 
-int Element_creator_get_groups(
-	struct Element_creator *element_creator,
-	struct GROUP(FE_element) **element_group,
-	struct GROUP(FE_node) **node_group);
+int Element_creator_get_groups(struct Element_creator *element_creator,
+	struct GROUP(FE_element) **element_group,struct GROUP(FE_node) **node_group);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
@@ -86,10 +84,8 @@ created by the <element_creator> are placed.
 ???RC Eventually this will get the Region.
 ==============================================================================*/
 
-int Element_creator_set_groups(
-	struct Element_creator *element_creator,
-	struct GROUP(FE_element) *element_group,
-	struct GROUP(FE_node) *node_group);
+int Element_creator_set_groups(struct Element_creator *element_creator,
+	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
@@ -110,6 +106,26 @@ LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 Pops the window for <element_creator> to the front of those visible.
+==============================================================================*/
+
+struct FE_field *Element_creator_get_coordinate_field(
+	struct Element_creator *element_creator);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Returns the coordinate field interpolated by elements created with
+<element_creator>.
+==============================================================================*/
+
+int Element_creator_set_coordinate_field(
+	struct Element_creator *element_creator,struct FE_field *coordinate_field);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Sets the coordinate field interpolated by elements created with
+<element_creator>.
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_CREATOR_H) */
