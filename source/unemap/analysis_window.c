@@ -2420,59 +2420,6 @@ Finds the id of the analysis drawing area.
 	LEAVE;
 } /* identify_signals_drawing_area */
 
-struct Interval_area *get_Analysis_window_interval_area(
-	struct Analysis_window *analysis_window)
-/*******************************************************************************
-LAST MODIFIED : 24 August 200
-
-DESCRIPTION :
-Returns the interval_area used by the <analysis_window>.
-==============================================================================*/
-{
-	struct Interval_area *interval_area;
-
-	ENTER(get_Analysis_window_interval_area);
-	interval_area=(struct Interval_area *)NULL;
-	if(analysis_window)
-	{
-		interval_area=&(analysis_window->interval);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Analysis_window_interval_area. Invalid argument");
-	}
-	LEAVE;
-	return(interval_area);
-}/* get_Analysis_window_interval_area */
-
-#if defined (UNEMAP_USE_NODES)
-struct FE_node_order_info *get_Analysis_window_rig_node_order_info(
-	struct Analysis_window *analysis_window)
-/*******************************************************************************
-LAST MODIFIED : 10 August 2000
-
-DESCRIPTION : returns the rig_node_order_info of <analysis_window>
-==============================================================================*/
-{
-	struct FE_node_order_info *rig_node_order_info;
-
-	ENTER(get_Analysis_window_rig_node_order_info);
-	rig_node_order_info=(struct FE_node_order_info *)NULL;
-	if(analysis_window)
-	{
-		rig_node_order_info=analysis_window->rig_node_order_info;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Analysis_window_rig_node_order_info. invalid arguments");
-	}
-	LEAVE;
-	return(rig_node_order_info);
-}
-#endif /* defined (UNEMAP_USE_NODES) */
-
 #if defined (UNEMAP_USE_NODES)
 static int node_order_info_make_first_highlighted_node_current_node(
 	struct FE_node_order_info *node_order_info,struct FE_field *highlight_field)	
@@ -2525,161 +2472,6 @@ make it the current node of <node_order_info>
 	return(return_code);
 }/* node_order_info_make_first_highlighted_node_current_node */
 #endif /* defined (UNEMAP_USE_NODES)*/
-
-#if defined (UNEMAP_USE_NODES)
-struct FE_node_order_info *create_and_sort_FE_node_order_info_from_rig_node_group(
-	struct GROUP(FE_node) *rig_node_group,enum Signal_order signal_order,
-	struct Signal_drawing_package *signal_drawing_package)
-/*******************************************************************************
-LAST MODIFIED : 10 August 2000
-
-DESCRIPTION :
-Given <rig_node_group> <signal_drawing_package>, and <signal_order>
-creates (and returns) an FE_node_order_info containing the nodes of 
-<rig_node_group>, sorted by <signal_order>
-==============================================================================*/
-{
-	int count,number_of_nodes,success;
-	struct FE_field_component component;
-	struct FE_node_order_info *node_order_info;
-	struct Rig_node_sort **rig_node_sort_array;
-	struct Rig_node_sort *rig_node_sort;
-	struct FE_field *highlight_field;
-
-	ENTER(create_and_sort_FE_node_order_info_from_rig_node_group);
-	node_order_info=(struct FE_node_order_info *)NULL;	
-	rig_node_sort_array=(struct Rig_node_sort **)NULL;
-	rig_node_sort=(struct Rig_node_sort *)NULL;
-	highlight_field=(struct FE_field *)NULL;
-	if(rig_node_group&&signal_drawing_package)
-	{
-		if (node_order_info=CREATE(FE_node_order_info)(0))
-		{	
-			if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-				fill_FE_node_order_info,(void *)node_order_info,
-				rig_node_group))
-			{												
-				number_of_nodes= get_FE_node_order_info_number_of_nodes(node_order_info);
-				/* create and fill an array of Rig_node_sort pointers to sort*/
-				if(ALLOCATE(rig_node_sort_array,struct Rig_node_sort *,number_of_nodes))
-				{
-					component.number=0;	
-					switch(signal_order)
-					{	
-						case CHANNEL_ORDER:
-						default:
-						{								
-							component.field=
-								get_Signal_drawing_package_read_order_field(signal_drawing_package);
-						}break;
-						case EVENT_ORDER:
-						{							
-							/*??JW will have to extract this properly, when we have the field Set NULL for now */
-							component.field=(struct FE_field *)NULL;
-						}break;
-					}/* switch(signal_order) */
-					count=0;
-					while((count<number_of_nodes)&&(success))
-					{
-						/*create and fill a rig_node_sort */
-						if(ALLOCATE(rig_node_sort,struct Rig_node_sort,1))
-						{
-							rig_node_sort->node=get_FE_node_order_info_node(node_order_info,count);
-							switch(signal_order)
-							{
-								case CHANNEL_ORDER:
-								default:
-								{
-									success=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
-										FE_NODAL_VALUE,&(rig_node_sort->read_order));
-									rig_node_sort->event_time=0;
-								}break;
-								case EVENT_ORDER:
-								{
-									rig_node_sort->read_order=0;
-									/*??JW will have to extract this properly, when have a field*/
-									/* Set to a dummy for now */
-									rig_node_sort->event_time=count;
-								}break;
-							}/* switch(signal_order) */
-							rig_node_sort_array[count]=rig_node_sort;
-							count++;
-						}/* if(ALLOCATE(rig_node_sort */
-						else
-						{						
-							display_message(ERROR_MESSAGE,
-								"create_and_sort_FE_node_order_info_from_rig_node_group. "
-								"ALLOCATE(node_sorter failed");
-							success=0;
-						}
-					}/* while(( */
-					/*sort the array*/	
-					switch(signal_order)
-					{	
-						case CHANNEL_ORDER:
-						default:
-						{
-							heapsort((void *)(rig_node_sort_array),number_of_nodes,
-								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_read_order);
-						}break;
-						case EVENT_ORDER:
-						{
-							heapsort((void *)(rig_node_sort_array),number_of_nodes,
-								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_event_time);
-						}break;
-					}/* switch(signal_order) */
-#if defined (DEBUG) 
-					for(count=0;count<number_of_nodes;count++)
-					{								
-						printf("%d\n",rig_node_sort_array[count]->read_order);
-					}
-#endif /*  defined (DEBUG) */				
-					/*reset the sorted array into the node_order_info*/
-					for(count=0;count<number_of_nodes;count++)
-					{								
-						set_FE_node_order_info_node(node_order_info,count,
-							rig_node_sort_array[count]->node);
-						DEALLOCATE(rig_node_sort_array[count]);
-					}
-					DEALLOCATE(rig_node_sort_array);
-					highlight_field=get_Signal_drawing_package_highlight_field(
-							signal_drawing_package);
-					node_order_info_make_first_highlighted_node_current_node(node_order_info,
-						highlight_field);
-				}/* if(ALLOCATE(node_sort */
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"create_and_sort_FE_node_order_info_from_rig_node_group. "
-						"ALLOCATE(node_sorter_array failed");
-					success=0;
-				}			
-			}/* if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)( */
-		}/* if (node_order_info=CREATE(FE_node_order_info)(0)) */
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_and_sort_FE_node_order_info_from_rig_node_group. "
-				"CREATE(FE_node_order_info) failed");
-			success=0;
-		}
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"create_and_sort_FE_node_order_info_from_rig_node_group. "
-			"invalid arguments");	
-		success=0;	
-	}
-	if((!success)&&node_order_info)
-	{
-		DESTROY(FE_node_order_info)(&node_order_info);
-		node_order_info=(struct FE_node_order_info *)NULL;
-	}
-	LEAVE;
-	return(node_order_info);
-}/* create_and_sort_FE_node_order_info_from_rig_node_group */
-#endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
 static int Analysis_window_set_and_sort_rig_node_order_info
@@ -2749,82 +2541,6 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 	return (return_code);
 } /* Analysis_window_set_and_sort_rig_node_order_info */
 #endif /* defined (UNEMAP_USE_NODES) */
-
-int update_signal_range_widget_from_highlight_signal(
-	struct Interval_area *interval_area,
-#if defined (UNEMAP_USE_NODES)
-	struct FE_node *device_rig_node,
-	struct Signal_drawing_package *signal_drawing_package
-#else
-	struct Device *device
-#endif /* defined (UNEMAP_USE_NODES)*/
-	)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2000
-
-DESCRIPTION :
-Updates the range maximum, minimum widget numbers, from the highlighted signal
-c.f analysis_set_highlight_max, analysis_set_highlight_min
-==============================================================================*/
-{
-		char max_string[20];
-		char min_string[20];
-		float maximum,minimum;
-		int return_code;
-
-		ENTER(update_signal_range_widget_from_highlight_signal);		
-		return_code=0;
-		if(interval_area&&
-#if defined (UNEMAP_USE_NODES)
-			device_rig_node&&signal_drawing_package
-#else
-			device
-#endif /* defined (UNEMAP_USE_NODES)*/
-	    )
-		{
-#if defined (UNEMAP_USE_NODES)				
-			struct FE_field_component component;
-			struct FE_field *signal_minimum_field,*signal_maximum_field;
-		
-			signal_minimum_field=(struct FE_field *)NULL;
-			signal_maximum_field=(struct FE_field *)NULL;				
-			return_code=
-				((signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
-				signal_drawing_package))&&(
-				(signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
-				signal_drawing_package))));			
-			if(return_code)
-			{
-				component.number=0;
-				component.field=signal_minimum_field;
-				return_code=get_FE_nodal_FE_value_value(device_rig_node,&component,
-					0,FE_NODAL_VALUE,
-					&minimum);
-			}
-			if(return_code)
-			{
-				component.field=signal_maximum_field;
-				get_FE_nodal_FE_value_value(device_rig_node,&component,0,FE_NODAL_VALUE,
-					&maximum);
-			}		
-#else
-			return_code=1;
-			minimum=device->signal_minimum;
-			maximum=device->signal_maximum;
-#endif /*	defined (UNEMAP_USE_NODES) */
-			sprintf(min_string,"%.3g",minimum);
-			sprintf(max_string,"%.3g",maximum);		
-			XtVaSetValues(interval_area->minimum_value,XmNvalue,min_string,NULL);
-			XtVaSetValues(interval_area->maximum_value,XmNvalue,max_string,NULL);
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,"update_signal_range_widget_from_highlight_signal"
-											" invalid arguments");
-		}
-		LEAVE;
-		return(return_code);
-}/* update_signal_range_widget_from_highlight_signal */
 
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
@@ -5390,3 +5106,287 @@ Highlights/dehighlights the <device> in the <signals> area.
 
 	return (return_code);
 } /* highlight_signal */
+
+struct Interval_area *get_Analysis_window_interval_area(
+	struct Analysis_window *analysis_window)
+/*******************************************************************************
+LAST MODIFIED : 24 August 200
+
+DESCRIPTION :
+Returns the interval_area used by the <analysis_window>.
+==============================================================================*/
+{
+	struct Interval_area *interval_area;
+
+	ENTER(get_Analysis_window_interval_area);
+	interval_area=(struct Interval_area *)NULL;
+	if(analysis_window)
+	{
+		interval_area=&(analysis_window->interval);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Analysis_window_interval_area. Invalid argument");
+	}
+	LEAVE;
+	return(interval_area);
+}/* get_Analysis_window_interval_area */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_node_order_info *get_Analysis_window_rig_node_order_info(
+	struct Analysis_window *analysis_window)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2000
+
+DESCRIPTION : returns the rig_node_order_info of <analysis_window>
+==============================================================================*/
+{
+	struct FE_node_order_info *rig_node_order_info;
+
+	ENTER(get_Analysis_window_rig_node_order_info);
+	rig_node_order_info=(struct FE_node_order_info *)NULL;
+	if(analysis_window)
+	{
+		rig_node_order_info=analysis_window->rig_node_order_info;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Analysis_window_rig_node_order_info. invalid arguments");
+	}
+	LEAVE;
+	return(rig_node_order_info);
+}
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_node_order_info *create_and_sort_FE_node_order_info_from_rig_node_group(
+	struct GROUP(FE_node) *rig_node_group,enum Signal_order signal_order,
+	struct Signal_drawing_package *signal_drawing_package)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2000
+
+DESCRIPTION :
+Given <rig_node_group> <signal_drawing_package>, and <signal_order>
+creates (and returns) an FE_node_order_info containing the nodes of 
+<rig_node_group>, sorted by <signal_order>
+==============================================================================*/
+{
+	int count,number_of_nodes,success;
+	struct FE_field_component component;
+	struct FE_node_order_info *node_order_info;
+	struct Rig_node_sort **rig_node_sort_array;
+	struct Rig_node_sort *rig_node_sort;
+	struct FE_field *highlight_field;
+
+	ENTER(create_and_sort_FE_node_order_info_from_rig_node_group);
+	node_order_info=(struct FE_node_order_info *)NULL;	
+	rig_node_sort_array=(struct Rig_node_sort **)NULL;
+	rig_node_sort=(struct Rig_node_sort *)NULL;
+	highlight_field=(struct FE_field *)NULL;
+	if(rig_node_group&&signal_drawing_package)
+	{
+		if (node_order_info=CREATE(FE_node_order_info)(0))
+		{	
+			if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+				fill_FE_node_order_info,(void *)node_order_info,
+				rig_node_group))
+			{												
+				number_of_nodes= get_FE_node_order_info_number_of_nodes(node_order_info);
+				/* create and fill an array of Rig_node_sort pointers to sort*/
+				if(ALLOCATE(rig_node_sort_array,struct Rig_node_sort *,number_of_nodes))
+				{
+					component.number=0;	
+					switch(signal_order)
+					{	
+						case CHANNEL_ORDER:
+						default:
+						{								
+							component.field=
+								get_Signal_drawing_package_read_order_field(signal_drawing_package);
+						}break;
+						case EVENT_ORDER:
+						{							
+							/*??JW will have to extract this properly, when we have the field Set NULL for now */
+							component.field=(struct FE_field *)NULL;
+						}break;
+					}/* switch(signal_order) */
+					count=0;
+					while((count<number_of_nodes)&&(success))
+					{
+						/*create and fill a rig_node_sort */
+						if(ALLOCATE(rig_node_sort,struct Rig_node_sort,1))
+						{
+							rig_node_sort->node=get_FE_node_order_info_node(node_order_info,count);
+							switch(signal_order)
+							{
+								case CHANNEL_ORDER:
+								default:
+								{
+									success=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
+										FE_NODAL_VALUE,&(rig_node_sort->read_order));
+									rig_node_sort->event_time=0;
+								}break;
+								case EVENT_ORDER:
+								{
+									rig_node_sort->read_order=0;
+									/*??JW will have to extract this properly, when have a field*/
+									/* Set to a dummy for now */
+									rig_node_sort->event_time=count;
+								}break;
+							}/* switch(signal_order) */
+							rig_node_sort_array[count]=rig_node_sort;
+							count++;
+						}/* if(ALLOCATE(rig_node_sort */
+						else
+						{						
+							display_message(ERROR_MESSAGE,
+								"create_and_sort_FE_node_order_info_from_rig_node_group. "
+								"ALLOCATE(node_sorter failed");
+							success=0;
+						}
+					}/* while(( */
+					/*sort the array*/	
+					switch(signal_order)
+					{	
+						case CHANNEL_ORDER:
+						default:
+						{
+							heapsort((void *)(rig_node_sort_array),number_of_nodes,
+								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_read_order);
+						}break;
+						case EVENT_ORDER:
+						{
+							heapsort((void *)(rig_node_sort_array),number_of_nodes,
+								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_event_time);
+						}break;
+					}/* switch(signal_order) */
+#if defined (DEBUG) 
+					for(count=0;count<number_of_nodes;count++)
+					{								
+						printf("%d\n",rig_node_sort_array[count]->read_order);
+					}
+#endif /*  defined (DEBUG) */				
+					/*reset the sorted array into the node_order_info*/
+					for(count=0;count<number_of_nodes;count++)
+					{								
+						set_FE_node_order_info_node(node_order_info,count,
+							rig_node_sort_array[count]->node);
+						DEALLOCATE(rig_node_sort_array[count]);
+					}
+					DEALLOCATE(rig_node_sort_array);
+					highlight_field=get_Signal_drawing_package_highlight_field(
+							signal_drawing_package);
+					node_order_info_make_first_highlighted_node_current_node(node_order_info,
+						highlight_field);
+				}/* if(ALLOCATE(node_sort */
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"create_and_sort_FE_node_order_info_from_rig_node_group. "
+						"ALLOCATE(node_sorter_array failed");
+					success=0;
+				}			
+			}/* if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)( */
+		}/* if (node_order_info=CREATE(FE_node_order_info)(0)) */
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_and_sort_FE_node_order_info_from_rig_node_group. "
+				"CREATE(FE_node_order_info) failed");
+			success=0;
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"create_and_sort_FE_node_order_info_from_rig_node_group. "
+			"invalid arguments");	
+		success=0;	
+	}
+	if((!success)&&node_order_info)
+	{
+		DESTROY(FE_node_order_info)(&node_order_info);
+		node_order_info=(struct FE_node_order_info *)NULL;
+	}
+	LEAVE;
+	return(node_order_info);
+}/* create_and_sort_FE_node_order_info_from_rig_node_group */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+int update_signal_range_widget_from_highlight_signal(
+	struct Interval_area *interval_area,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *device_rig_node,
+	struct Signal_drawing_package *signal_drawing_package
+#else
+	struct Device *device
+#endif /* defined (UNEMAP_USE_NODES)*/
+	)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Updates the range maximum, minimum widget numbers, from the highlighted signal
+c.f analysis_set_highlight_max, analysis_set_highlight_min
+==============================================================================*/
+{
+		char max_string[20];
+		char min_string[20];
+		float maximum,minimum;
+		int return_code;
+
+		ENTER(update_signal_range_widget_from_highlight_signal);		
+		return_code=0;
+		if(interval_area&&
+#if defined (UNEMAP_USE_NODES)
+			device_rig_node&&signal_drawing_package
+#else
+			device
+#endif /* defined (UNEMAP_USE_NODES)*/
+	    )
+		{
+#if defined (UNEMAP_USE_NODES)				
+			struct FE_field_component component;
+			struct FE_field *signal_minimum_field,*signal_maximum_field;
+		
+			signal_minimum_field=(struct FE_field *)NULL;
+			signal_maximum_field=(struct FE_field *)NULL;				
+			return_code=
+				((signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
+				signal_drawing_package))&&(
+				(signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
+				signal_drawing_package))));			
+			if(return_code)
+			{
+				component.number=0;
+				component.field=signal_minimum_field;
+				return_code=get_FE_nodal_FE_value_value(device_rig_node,&component,
+					0,FE_NODAL_VALUE,
+					&minimum);
+			}
+			if(return_code)
+			{
+				component.field=signal_maximum_field;
+				get_FE_nodal_FE_value_value(device_rig_node,&component,0,FE_NODAL_VALUE,
+					&maximum);
+			}		
+#else
+			return_code=1;
+			minimum=device->signal_minimum;
+			maximum=device->signal_maximum;
+#endif /*	defined (UNEMAP_USE_NODES) */
+			sprintf(min_string,"%.3g",minimum);
+			sprintf(max_string,"%.3g",maximum);		
+			XtVaSetValues(interval_area->minimum_value,XmNvalue,min_string,NULL);
+			XtVaSetValues(interval_area->maximum_value,XmNvalue,max_string,NULL);
+		}
+		else
+		{	
+			display_message(ERROR_MESSAGE,"update_signal_range_widget_from_highlight_signal"
+											" invalid arguments");
+		}
+		LEAVE;
+		return(return_code);
+}/* update_signal_range_widget_from_highlight_signal */

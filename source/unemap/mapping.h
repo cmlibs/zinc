@@ -419,12 +419,12 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 ==============================================================================*/
 
 #if defined (UNEMAP_USE_3D)
-int map_remove_torso_arms(struct Map_drawing_information *drawing_information);
+int map_remove_torso_arm_labels(struct Map_drawing_information *drawing_information);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Removes the torso arms from the scene.
+Removes the torso arm labels from the scene.
 ??JW perhaps should have a scene and scene_viewer in each Map_3d_package,
 and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 ==============================================================================*/
@@ -1209,15 +1209,6 @@ cf Scene_viewer_view_all.
 Should be in Scene_viewer? RC doesn't think so.
 ==============================================================================*/
 
-struct FE_field *create_1_comp_fe_value_field(char *field_name,
-	struct MANAGER(FE_field) *fe_field_manager);
-/*******************************************************************************
-LAST MODIFIED : 6 October 2000
-
-DESCRIPTION :
-creates the map fit field, the name <field_name>
-==============================================================================*/
-
 int define_fit_field_at_quad_elements_and_nodes(
 	struct GROUP(FE_element) *torso_element_group,
 	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
@@ -1230,14 +1221,16 @@ DESCRIPTION :
 Finds all the elements in <torso_element_group> with 4 nodes, 
 for these elements defines <fit_field> at the element, and it's nodes.
 ===============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-int set_torso_fit_field_values(struct Map_3d_package *map_3d_package);
+#if defined (UNEMAP_USE_3D) 
+struct FE_field *create_mapping_type_fe_field(char *field_name,
+	struct MANAGER(FE_field) *fe_field_manager);
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
-set the nodeal values of the fit field at the nodes of the elements in
-<map_3d_package->mapped_torso_element_group>
+creates a 1 component  <field_name>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 

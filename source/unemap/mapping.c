@@ -660,1174 +660,208 @@ static float landmark_points[3*NUMBER_OF_LANDMARK_POINTS]=
 	};
 
 /*
-Global functions
+Module functions
 ----------------
 */
-struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
-	enum Contours_option contours_option,enum Electrodes_option electrodes_option,
-	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
-	enum Extrema_option extrema_option,int maintain_aspect_ratio,
-	int print_spectrum,enum Projection_type projection_type,
-	enum Contour_thickness contour_thickness,struct Rig **rig_pointer,
-	int *event_number_address,int *potential_time_address,int *datum_address,
-	int *start_search_interval_address,int *end_search_interval_address,
-	struct Map_drawing_information *map_drawing_information,
-	struct User_interface *user_interface,struct Unemap_package *unemap_package)
-/*******************************************************************************
-LAST MODIFIED : 31 August 2000
-
-DESCRIPTION :
-This function allocates memory for a map and initializes the fields to the
-specified values.  It returns a pointer to the created map if successful and
-NULL if not successful.
-==============================================================================*/
-{
-	char *electrodes_marker_type,*finite_element_interpolation,
-		*fixed_automatic_range;
-	int membrane_smoothing_ten_thous,plate_bending_smoothing_ten_tho;
-#define XmNfiniteElementInterpolation "finiteElementInterpolation"
-#define XmCFiniteElementInterpolation "FiniteElementInterpolation"
-#define XmNfiniteElementMeshRows "finiteElementMeshRows"
-#define XmCFiniteElementMeshRows "FiniteElementMeshRows"
-#define XmNfiniteElementMeshRows "finiteElementMeshRows"
-#define XmCFiniteElementMeshRows "FiniteElementMeshRows"
-#define XmNfiniteElementMeshColumns "finiteElementMeshColumns"
-#define XmCFiniteElementMeshColumns "FiniteElementMeshColumns"
-#define XmNmembraneSmoothingTenThous "membraneSmoothingTenThous"
-#define XmCMembraneSmoothingTenThous "MembraneSmoothingTenThous"
-#define XmNplateBendingSmoothingTenThous "plateBendingSmoothingTenThous"
-#define XmCPlateBendingSmoothingTenThous "PlateBendingSmoothingTenThous"
-#define XmNelectrodeMarker "electrodeMarker"
-#define XmCElectrodeMarker "ElectrodeMarker"
-#define XmNelectrodeSize "electrodeSize"
-#define XmCElectrodeSize "ElectrodeSize"
-#define XmNmapRange "mapRange"
-#define XmCMapRange "MapRange"
-#define XmNmapRangeMinimum "mapRangeMinimum"
-#define XmCMapRangeMinimum "MapRangeMinimum"
-#define XmNmapRangeMaximum "mapRangeMaximum"
-#define XmCMapRangeMaximum "MapRangeMaximum"
-	static XtResource
-		resources_1[]=
-		{
-			{
-				XmNfiniteElementMeshRows,
-				XmCFiniteElementMeshRows,
-				XmRInt,
-				sizeof(int),
-				XtOffsetOf(Map_settings,finite_element_mesh_rows),
-				XmRString,
-				"3"
-			},
-			{
-				XmNfiniteElementMeshColumns,
-				XmCFiniteElementMeshColumns,
-				XmRInt,
-				sizeof(int),
-				XtOffsetOf(Map_settings,finite_element_mesh_columns),
-				XmRString,
-				"4"
-			}
-		},
-		resources_2[]=
-		{
-			{
-				XmNmembraneSmoothingTenThous,
-				XmCMembraneSmoothingTenThous,
-				XmRInt,
-				sizeof(int),
-				0,
-				XmRString,
-				"100"
-			}
-		},
-		resources_3[]=
-		{
-			{
-				XmNplateBendingSmoothingTenThous,
-				XmCPlateBendingSmoothingTenThous,
-				XmRInt,
-				sizeof(int),
-				0,
-				XmRString,
-				"10"
-			}
-		},
-		resources_4[]=
-		{
-			{
-				XmNfiniteElementInterpolation,
-				XmCFiniteElementInterpolation,
-				XmRString,
-				sizeof(char *),
-				0,
-				XmRString,
-				"bicubic"
-			}
-		},
-		resources_5[]=
-		{
-			{
-				XmNelectrodeMarker,
-				XmCElectrodeMarker,
-				XmRString,
-				sizeof(char *),
-				0,
-				XmRString,
-				"plus"
-			}
-		},
-		resources_6[]=
-		{
-			{
-				XmNelectrodeSize,
-				XmCElectrodeSize,
-				XmRInt,
-				sizeof(int),
-				0,
-				XmRString,
-				"2"
-			}
-		},
-		resources_7[]=
-		{
-			{
-				XmNmapRange,
-				XmCMapRange,
-				XmRString,
-				sizeof(char *),
-				0,
-				XmRString,
-				"automatic"
-			}
-		},
-		resources_8[]=
-		{
-			{
-				XmNmapRangeMinimum,
-				XmCMapRangeMinimum,
-				XmRFloat,
-				sizeof(float),
-				0,
-				XmRString,
-				"1"
-			}
-		},
-		resources_9[]=
-		{
-			{
-				XmNmapRangeMaximum,
-				XmCMapRangeMaximum,
-				XmRFloat,
-				sizeof(float),
-				0,
-				XmRString,
-				"0"
-			}
-		};
-	struct Map *map;
-
-	ENTER(create_Map);
-	USE_PARAMETER(unemap_package);
-	/* check arguments */
-	if (user_interface&&map_drawing_information
 #if defined (UNEMAP_USE_3D)
-		&&unemap_package
-#endif /* defined (UNEMAP_USE_3D) */
-			)
-	{
-		/* allocate memory */
-		if (ALLOCATE(map,struct Map,1)&&ALLOCATE(map->frames,struct Map_frame,1))
-		{
-			/* assign fields */
-			map->type=map_type;
-			map->event_number=event_number_address;
-			map->potential_time=potential_time_address;
-			map->datum=datum_address;
-			map->start_search_interval=start_search_interval_address;
-			map->end_search_interval=end_search_interval_address;
-			map->contours_option=contours_option;
-			map->colour_option=colour_option;
-			map->electrodes_option=electrodes_option;
-			map->fibres_option=fibres_option;
-			map->landmarks_option=landmarks_option;
-			map->extrema_option=extrema_option;
-			map->maintain_aspect_ratio=maintain_aspect_ratio;
-			map->print_spectrum=print_spectrum;
-			map->projection_type=projection_type;
-			map->contour_thickness=contour_thickness;
-			map->undecided_accepted=0;
-			map->rig_pointer=rig_pointer;
-			XtVaGetApplicationResources(user_interface->application_shell,map,
-				resources_1,XtNumber(resources_1),NULL);
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&membrane_smoothing_ten_thous,resources_2,XtNumber(resources_2),NULL);
-			map->membrane_smoothing=(float)membrane_smoothing_ten_thous/10000;
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&plate_bending_smoothing_ten_tho,resources_3,XtNumber(resources_3),
-				NULL);
-			map->plate_bending_smoothing=(float)plate_bending_smoothing_ten_tho/10000;
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&finite_element_interpolation,resources_4,XtNumber(resources_4),
-				NULL);
-			if (fuzzy_string_compare(finite_element_interpolation,"bicubic"))
-			{
-				map->interpolation_type=BICUBIC_INTERPOLATION;
-			}
-			else
-			{
-				map->interpolation_type=NO_INTERPOLATION;
-			}
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&electrodes_marker_type,resources_5,XtNumber(resources_5),
-				NULL);
-			if (fuzzy_string_compare(electrodes_marker_type,"square"))
-			{
-				map->electrodes_marker_type=SQUARE_ELECTRODE_MARKER;
-			}
-			else
-			{
-				if (fuzzy_string_compare(electrodes_marker_type,"circle"))
-				{
-					map->electrodes_marker_type=CIRCLE_ELECTRODE_MARKER;
-				}
-				else
-				{
-					map->electrodes_marker_type=PLUS_ELECTRODE_MARKER;
-				}
-			}
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&(map->electrodes_marker_size),resources_6,XtNumber(resources_6),
-				NULL);
-			if (map->electrodes_marker_size<1)
-			{
-				map->electrodes_marker_size=1;
-			}
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&fixed_automatic_range,resources_7,XtNumber(resources_7),
-				NULL);
-			if (fuzzy_string_compare(fixed_automatic_range,"automatic"))
-			{
-				map->fixed_range=0;
-			}
-			else
-			{
-				map->fixed_range=1;
-			}
-			map->range_changed=0;
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&(map->minimum_value),resources_8,XtNumber(resources_8),
-				NULL);
-			XtVaGetApplicationResources(user_interface->application_shell,
-				&(map->maximum_value),resources_9,XtNumber(resources_9),
-				NULL);
-			map->colour_electrodes_with_signal=1;
-			/*??? calculate from rig ? */
-			map->number_of_electrodes=0;
-			map->electrodes=(struct Device **)NULL;
-			map->electrode_x=(int *)NULL;
-			map->electrode_y=(int *)NULL;
-			map->electrode_value=(float *)NULL;
-			map->electrode_drawn=(char *)NULL;
-			map->number_of_auxiliary=0;
-			map->auxiliary=(struct Device **)NULL;
-			map->auxiliary_x=(int *)NULL;
-			map->auxiliary_y=(int *)NULL;
-			map->contour_minimum=map->minimum_value;
-			map->contour_maximum=map->maximum_value;
-			map->number_of_contours=2;
-			map->activation_front= -1;
-			map->print=0;
-			map->frame_number=0;
-			map->number_of_frames=1;
-			map->frames->maximum=0;
-			map->frames->maximum_x= -1;
-			map->frames->maximum_y= -1;
-			map->frames->minimum=0;
-			map->frames->minimum_x= -1;
-			map->frames->minimum_y= -1;
-			map->frames->pixel_values=(float *)NULL;
-			map->frames->image=(XImage *)NULL;
-			map->frames->contour_x=(short int *)NULL;
-			map->frames->contour_y=(short int *)NULL;
-			map->drawing_information=map_drawing_information;
-#if defined (OLD_CODE)
-			map->user_interface=user_interface;
-#endif /* defined (OLD_CODE) */
-#if defined (UNEMAP_USE_3D)
-			map->unemap_package = unemap_package;			
-#else
-			map->unemap_package = (struct Unemap_package *)NULL;		
-#endif /* defined (UNEMAP_USE_3D) */
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"create_Map.  Could not allocate map");
-			DEALLOCATE(map);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Map.  Invalid argument(s)");
-		map=(struct Map *)NULL;
-	}
-	LEAVE;
-
-	return (map);
-} /* create_Map */
-
-int destroy_Map(struct Map **map)
+static int set_mapping_FE_node_coord_values(struct FE_node *node,
+	struct FE_field *position_field,
+	int coords_comp_0_num_versions,int coords_comp_1_num_versions,
+	int coords_comp_2_num_versions,FE_value *coords_comp_0,FE_value *coords_comp_1,
+	FE_value *coords_comp_2,enum Region_type	region_type)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 3 September 1999
 
 DESCRIPTION :
-This function deallocates the memory asociated with fields of <**map> (except
-the <rig_pointer>  and Unemap_package fields  ) , 
-deallocates the memory for <**map> and sets <*map> to NULL.
-==============================================================================*/
+sets a node's values storage with the coordinate system component versions and values, 
+<coords_comp_X_num_versions>,<coords_comp_X>,  using <field_order_info>
+==============================================================================*/	
 {
-	int i,return_code;
-	struct Map_frame *frame;
+	enum FE_nodal_value_type *component_value_types;
+	FE_value *value;
+	int i,j,number_of_derivatives,return_code;
+	struct FE_field_component component;
 
-	ENTER(destroy_Map);
-	return_code=1;
-	if (map&&(*map))
-	{
-		DEALLOCATE((*map)->electrodes);
-		DEALLOCATE((*map)->electrode_x);
-		DEALLOCATE((*map)->electrode_y);
-		DEALLOCATE((*map)->electrode_value);
-		DEALLOCATE((*map)->electrode_drawn);
-		DEALLOCATE((*map)->auxiliary);
-		DEALLOCATE((*map)->auxiliary_x);
-		DEALLOCATE((*map)->auxiliary_y);
-		if ((0<(*map)->number_of_frames)&&(frame=(*map)->frames))
-		{
-			for (i=(*map)->number_of_frames;i>0;i--)
-			{			
-				DEALLOCATE(frame->contour_x);
-				DEALLOCATE(frame->contour_y);
-				DEALLOCATE(frame->pixel_values);
-				if(frame->image)
-				{
-					DEALLOCATE(frame->image->data);
-					XFree((char *)(frame->image));
-				}
-			}
-			DEALLOCATE((*map)->frames);
-		}
-		DEALLOCATE(*map);
-	}
-	LEAVE;
-
-	return (return_code);
-} /* destroy_Map */
-
-int update_colour_map_unemap(struct Map *map,struct Drawing_2d *drawing)
-/*******************************************************************************
-LAST MODIFIED : 3 August 1998
-
-DESCRIPTION :
-Updates the colour map being used for map.
-???DB.  <drawing> added because of read only colour maps.
-==============================================================================*/
-{
-	Colormap colour_map;
-	Display *display;
-	float background_pixel_value,blue,boundary_pixel_value,contour_maximum,
-		contour_minimum,f_approx,green,max_f,maximum_value,min_f,minimum_value,
-		*pixel_value,range_f,red,theta;
-	int cell_number,cell_range,drawing_height,drawing_width,end_cell,i,
-		number_of_contours,number_of_spectrum_colours,return_code,start_cell,
-		update_pixel[MAX_SPECTRUM_COLOURS],update_pixel_assignment,x_pixel,y_pixel;
-	Pixel background_pixel,boundary_pixel,*spectrum_pixels;
-	struct Map_drawing_information *drawing_information;
-	struct Map_frame *map_frame;
-	unsigned short blue_short,green_short,red_short;
-	XColor colour,*spectrum_rgb;
-	XImage *map_image;
-	struct Spectrum *spectrum=(struct Spectrum *)NULL;
-	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
-	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-
-	ENTER(update_colour_map_unemap);
-#if !defined (UNEMAP_USE_3D)
-	USE_PARAMETER(spectrum);
-	USE_PARAMETER(spectrum_to_be_modified_copy);
-	USE_PARAMETER(spectrum_manager);
-#endif/* defined (UNEMAP_USE_3D)*/
-	if (map&&(map->type)&&(drawing_information=map->drawing_information)&&
-		(drawing_information->user_interface)&&drawing&&(0<=map->frame_number)&&
-		(map_frame=map->frames))
+	ENTER(set_mapping_FE_node_coord_values)
+	if(node&&position_field&&coords_comp_0&&coords_comp_1&&
+		coords_comp_2)
 	{
 		return_code=1;
-		map_image=(map_frame += map->frame_number)->image;
-		display=drawing_information->user_interface->display;
-		minimum_value=map->minimum_value;
-		maximum_value=map->maximum_value;
-		contour_minimum=map->contour_minimum;
-		contour_maximum=map->contour_maximum;
-		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
-		colour_map=drawing_information->colour_map;
-		boundary_pixel=drawing_information->boundary_colour;
-		spectrum_pixels=drawing_information->spectrum_colours;
-		spectrum_rgb=drawing_information->spectrum_rgb;
-		/* for read only colour maps */
-		update_pixel_assignment=0;
-		for (i=0;i<MAX_SPECTRUM_COLOURS;i++)
+		switch(region_type)
 		{
-			update_pixel[i]=0;
-		}
-		if (maximum_value==minimum_value)
-		{
-			start_cell=0;
-			end_cell=number_of_spectrum_colours;
-		}
-		else
-		{
-			start_cell=(int)((contour_minimum-minimum_value)/
-				(maximum_value-minimum_value)*(float)(number_of_spectrum_colours-1)+
-				0.5);
-			end_cell=(int)((contour_maximum-minimum_value)/
-				(maximum_value-minimum_value)*(float)(number_of_spectrum_colours-1)+
-				0.5);
-		}
-		cell_range=end_cell-start_cell;
-		/* adjust the computer colour map for colour map */
-		if ((SHOW_COLOUR==map->colour_option)&&
-			!((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
-			(map->activation_front<number_of_spectrum_colours)))
-		{
-#if defined (UNEMAP_USE_3D)	
-			spectrum=map->drawing_information->spectrum;
-			if(spectrum_manager=
-				get_map_drawing_information_spectrum_manager(drawing_information))
-			{
-				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+			case SOCK:/*lambda,mu,theta */ 
+			case TORSO:/*theta,r , z */		
+			{					
+				/* 1st field contains coords, possibly more than one version */
+				component.field=position_field;
+				component.number = 0;
+				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(node,
+					position_field,0);
+				component_value_types=get_FE_node_field_component_nodal_value_types(node,
+					position_field,0);
+				value=coords_comp_0;
+				for(i=0;i<coords_comp_0_num_versions;i++)
 				{
-					if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-						("spectrum_modify_temp"))
+					/*derivatives+1 as value then derivatives */
+					for(j=0;j<number_of_derivatives+1;j++)
 					{
-						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-							(spectrum_to_be_modified_copy,spectrum);			
-						Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,0.0,
-							6.0);		
-						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-							spectrum_to_be_modified_copy,spectrum_manager);
-						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							" update_colour_map_unemap. Could not create spectrum copy.");				
+						return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
+							component_value_types[j],*value)); /*lambda,theta,x*/
+						value++;
 					}
 				}
-				else
+				DEALLOCATE(component_value_types);
+				component.number = 1;		
+				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
-					display_message(ERROR_MESSAGE,
-						" update_colour_map_unemap. Spectrum is not in manager!");		
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
+						FE_NODAL_VALUE,coords_comp_1[i])); /*mu,r,y*/
+				}				
+				component.number = 2;	
+				for(i=0;i<coords_comp_2_num_versions;i++)
+				{
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
+						FE_NODAL_VALUE,coords_comp_2[i])); /*theta,z,z */
+				}					
+			}break;
+			case PATCH: /* x,y */
+			{					
+				/* 1st field contains coords, possibly more than one version */
+				component.field=position_field;
+				component.number = 0;	
+				for(i=0;i<coords_comp_0_num_versions;i++)
+				{
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
+						FE_NODAL_VALUE,coords_comp_0[i])); /*x*/
 				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					" update_colour_map_unemap. Spectrum_manager not present");
-			}
-#else
-			Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,0.0,
-				6.0);
-#endif /* defined (UNEMAP_USE_3D) */
-
-			for (i=0;i<=start_cell;i++)
-			{
-				spectrum_rgb[i].pixel=spectrum_pixels[i];
-				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-				theta = 0.0;
-				spectrum_value_to_rgb(map->drawing_information->spectrum,
-					/* number_of_data_components */1, &theta,&red,&green,&blue);
-				red_short=(unsigned short)(65535*red); 
-				green_short=(unsigned short)(65535*green); 
-				blue_short=(unsigned short)(65535*blue); 
-				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=red_short)||
-					(spectrum_rgb[i].green!=green_short)||
-					(spectrum_rgb[i].blue!=blue_short))
+				component.number = 1;		
+				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
-					spectrum_rgb[i].red=red_short;
-					spectrum_rgb[i].green=green_short;
-					spectrum_rgb[i].blue=blue_short;
-					update_pixel[i]=1;
-				}
-			}
-			for (i=start_cell+1;i<end_cell;i++)
-			{
-				theta=(float)(i-start_cell)/(float)(cell_range)*6;
-				spectrum_rgb[i].pixel=spectrum_pixels[i];
-				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-				spectrum_value_to_rgb(map->drawing_information->spectrum,
-					/* number_of_data_components */1, &theta,&red,&green,&blue);
-				red_short=(unsigned short)(65535*red); 
-				green_short=(unsigned short)(65535*green); 
-				blue_short=(unsigned short)(65535*blue); 
-				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=red_short)||
-					(spectrum_rgb[i].green!=green_short)||
-					(spectrum_rgb[i].blue!=blue_short))
-				{
-					spectrum_rgb[i].red=red_short;
-					spectrum_rgb[i].green=green_short;
-					spectrum_rgb[i].blue=blue_short;
-					update_pixel[i]=1;
-				}
-			}
-			for (i=end_cell;i<number_of_spectrum_colours;i++)
-			{
-				theta = 6.0;
-				spectrum_rgb[i].pixel=spectrum_pixels[i];
-				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-				spectrum_value_to_rgb(map->drawing_information->spectrum,
-					/* number_of_data_components */1, &theta,&red,&green,&blue);
-				red_short=(unsigned short)(65535*red); 
-				green_short=(unsigned short)(65535*green); 
-				blue_short=(unsigned short)(65535*blue); 
-				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=red_short)||
-					(spectrum_rgb[i].green!=green_short)||
-					(spectrum_rgb[i].blue!=blue_short))
-				{
-					spectrum_rgb[i].red=red_short;
-					spectrum_rgb[i].green=green_short;
-					spectrum_rgb[i].blue=blue_short;
-					update_pixel[i]=1;
-				}
-			}
-#if defined (OLD_CODE)
-			switch (map->spectrum_type)
-			{
-				case RED_TO_BLUE_SPECTRUM:
-				{
-					/* create a spectrum from red (early) to blue (late) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=(float)(i-start_cell)/(float)(cell_range)*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-				case BLUE_TO_RED_SPECTRUM:
-				{
-					/* create a spectrum from blue (low) to red (high) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=(float)(end_cell-i)/(float)(cell_range)*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-				case LOG_BLUE_TO_RED_SPECTRUM:
-				{
-					float negative_scaling,positive_scaling;
-
-					negative_scaling=1;
-					positive_scaling=1;
-					/* create a log spectrum from blue (low) to red (high) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=contour_minimum+(float)(i-start_cell)*
-							(contour_maximum-contour_minimum)/(float)(cell_range);
-						if ((contour_minimum<0)&&(0<contour_maximum))
-						{
-							if (theta<0)
-							{
-								theta=(1-log((contour_minimum+negative_scaling*theta)/
-									contour_minimum)/log(1+negative_scaling))/2;
-							}
-							else
-							{
-								theta=(1+log((contour_maximum+negative_scaling*theta)/
-									contour_maximum)/log(1+positive_scaling))/2;
-							}
-						}
-						else
-						{
-							if (theta<0)
-							{
-								theta=log(1+negative_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+negative_scaling);
-							}
-							else
-							{
-								theta=log(1+positive_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+positive_scaling);
-							}
-						}
-						theta=(1-theta)*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-				case LOG_RED_TO_BLUE_SPECTRUM:
-				{
-					float negative_scaling,positive_scaling;
-
-					negative_scaling=1;
-					positive_scaling=1;
-					/* create a log spectrum from red (low) to blue (high) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=contour_minimum+(float)(i-start_cell)*
-							(contour_maximum-contour_minimum)/(float)(cell_range);
-						if ((contour_minimum<0)&&(0<contour_maximum))
-						{
-							if (theta<0)
-							{
-								theta=(1-log((contour_minimum+negative_scaling*theta)/
-									contour_minimum)/log(1+negative_scaling))/2;
-							}
-							else
-							{
-								theta=(1+log((contour_maximum+negative_scaling*theta)/
-									contour_maximum)/log(1+positive_scaling))/2;
-							}
-						}
-						else
-						{
-							if (theta<0)
-							{
-								theta=log(1+negative_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+negative_scaling);
-							}
-							else
-							{
-								theta=log(1+positive_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+positive_scaling);
-							}
-						}
-						theta=theta*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-			}
-#endif /* defined (OLD_CODE) */
-			/* hide the map boundary */
-#if defined (OLD_CODE)
-			if (map_image&&(drawing_information->read_only_colour_map))
-#endif /* defined (OLD_CODE) */
-			if (drawing_information->read_only_colour_map)
-			{
-				if (drawing_information->boundary_colour!=
-					drawing_information->background_drawing_colour)
-				{
-					update_pixel_assignment=1;
-					drawing_information->boundary_colour=
-						drawing_information->background_drawing_colour;
-				}
-			}
-			else
-			{
-				if ((Pixel)NULL!=boundary_pixel)
-				{
-					colour.pixel=drawing_information->background_drawing_colour;
-					XQueryColor(display,colour_map,&colour);
-					colour.pixel=boundary_pixel;
-					colour.flags=DoRed|DoGreen|DoBlue;
-					XStoreColor(display,colour_map,&colour);
-				}
-			}
-		}
-		else
-		{
-			/* use background drawing colour for the whole spectrum */
-			colour.pixel=drawing_information->background_drawing_colour;
-			XQueryColor(display,colour_map,&colour);
-			for (i=0;i<number_of_spectrum_colours;i++)
-			{
-				spectrum_rgb[i].pixel=spectrum_pixels[i];
-				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-				if (!(spectrum_rgb[i].pixel)||(spectrum_rgb[i].red!=colour.red)||
-					(spectrum_rgb[i].green!=colour.green)||
-					(spectrum_rgb[i].blue!=colour.blue))
-				{
-					spectrum_rgb[i].red=colour.red;
-					spectrum_rgb[i].blue=colour.blue;
-					spectrum_rgb[i].green=colour.green;
-					update_pixel[i]=1;
-				}
-			}
-			/* show the map boundary */
-#if defined (OLD_CODE)
-			if (map_image&&(drawing_information->read_only_colour_map))
-#endif /* defined (OLD_CODE) */
-			if (drawing_information->read_only_colour_map)
-			{
-				if (drawing_information->boundary_colour!=
-					drawing_information->contour_colour)
-				{
-					update_pixel_assignment=1;
-					drawing_information->boundary_colour=
-						drawing_information->contour_colour;
-				}
-			}
-			else
-			{
-				if ((Pixel)NULL!=boundary_pixel)
-				{
-					colour.pixel=drawing_information->contour_colour;
-					XQueryColor(display,colour_map,&colour);
-					colour.pixel=boundary_pixel;
-					colour.flags=DoRed|DoGreen|DoBlue;
-					XStoreColor(display,colour_map,&colour);
-				}
-			}
-			if ((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
-				(map->activation_front<number_of_spectrum_colours))
-			{
-				/* show the activation front */
-				colour.pixel=drawing_information->contour_colour;
-				XQueryColor(display,colour_map,&colour);
-				i=map->activation_front;
-				spectrum_rgb[i].pixel=spectrum_pixels[i];
-				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=colour.red)||
-					(spectrum_rgb[i].green!=colour.green)||
-					(spectrum_rgb[i].blue!=colour.blue))
-				{
-					spectrum_rgb[i].red=colour.red;
-					spectrum_rgb[i].blue=colour.blue;
-					spectrum_rgb[i].green=colour.green;
-					update_pixel[i]=1;
-				}
-			}
-		}
-		/* adjust the computer colour map for contours */
-		if (SHOW_CONTOURS==map->contours_option)
-		{
-			if ((VARIABLE_THICKNESS==map->contour_thickness)||
-				!(map_frame->pixel_values))
-			{
-				colour.pixel=drawing_information->contour_colour;
-				XQueryColor(display,colour_map,&colour);
-				number_of_contours=map->number_of_contours;
-				for (i=0;i<number_of_contours;i++)
-				{
-					cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
-						(float)(number_of_contours-1-i))/(float)(number_of_contours-1)-
-						minimum_value)/(maximum_value-minimum_value)*
-						(float)(number_of_spectrum_colours-1)+0.5);
-					spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
-					spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
-					if (!(spectrum_pixels[cell_number])||
-						(spectrum_rgb[cell_number].red!=colour.red)||
-						(spectrum_rgb[cell_number].green!=colour.green)||
-						(spectrum_rgb[cell_number].blue!=colour.blue))
-					{
-						spectrum_rgb[cell_number].red=colour.red;
-						spectrum_rgb[cell_number].blue=colour.blue;
-						spectrum_rgb[cell_number].green=colour.green;
-						update_pixel[cell_number]=1;
-					}
-				}
-			}
-		}
-		if (drawing_information->read_only_colour_map)
-		{
-			for (i=0;i<number_of_spectrum_colours;i++)
-			{
-				if (update_pixel[i])
-				{
-					colour.pixel=spectrum_rgb[i].pixel;
-					colour.flags=spectrum_rgb[i].flags;
-					colour.red=spectrum_rgb[i].red;
-					colour.blue=spectrum_rgb[i].blue;
-					colour.green=spectrum_rgb[i].green;
-					XAllocColor(display,colour_map,&colour);
-					if (spectrum_pixels[i]!=colour.pixel)
-					{
-						update_pixel_assignment=1;
-						spectrum_pixels[i]=colour.pixel;
-					}
-				}
-			}
-			if (update_pixel_assignment&&map_image)
-			{
-				min_f=map->minimum_value;
-				max_f=map->maximum_value;
-				background_pixel_value=map_frame->minimum;
-				boundary_pixel_value=map_frame->maximum;
-				pixel_value=map_frame->pixel_values;
-				background_pixel=drawing_information->background_drawing_colour;
-				boundary_pixel=drawing_information->boundary_colour;
-				drawing_height=drawing->height;
-				drawing_width=drawing->width;
-				/* calculate range of values */
-				range_f=max_f-min_f;
-				if (range_f<=0)
-				{
-					range_f=1;
-				}
-				for (y_pixel=0;y_pixel<drawing_height;y_pixel++)
-				{
-					for (x_pixel=0;x_pixel<drawing_width;x_pixel++)
-					{
-						f_approx= *pixel_value;
-						if (f_approx>=background_pixel_value)
-						{
-							if (f_approx<=boundary_pixel_value)
-							{
-								if (f_approx<min_f)
-								{
-									f_approx=min_f;
-								}
-								else
-								{
-									if (f_approx>max_f)
-									{
-										f_approx=max_f;
-									}
-								}
-								cell_number=(int)((f_approx-min_f)*
-									(float)(number_of_spectrum_colours-1)/
-									range_f+0.5);
-								XPutPixel(map_image,x_pixel,y_pixel,
-									spectrum_pixels[cell_number]);
-							}
-							else
-							{
-								XPutPixel(map_image,x_pixel,y_pixel,
-									boundary_pixel);
-							}
-						}
-						else
-						{
-							XPutPixel(map_image,x_pixel,y_pixel,
-								background_pixel);
-						}
-						pixel_value++;
-					}
-				}
-			}
-		}
-		else
-		{
-			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
-		}
-#if defined (UNEMAP_USE_3D)	
-		spectrum=map->drawing_information->spectrum;
-		if(spectrum_manager=
-			get_map_drawing_information_spectrum_manager(drawing_information))
-		{
-			if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
-			{
-				if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-					("spectrum_modify_temp"))
-				{
-					MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-						(spectrum_to_be_modified_copy,spectrum);		
-					/*Ensure spectrum is set correctly */
-					Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
-						map->minimum_value,map->maximum_value);		
-					
-					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-						spectrum_to_be_modified_copy,spectrum_manager);
-					DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						" update_colour_map_unemap. Could not create spectrum copy.");				
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					" update_colour_map_unemap. Spectrum is not in manager!");		
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				" update_colour_map_unemap. Spectrum_manager not present");
-		}
-#else			
-		/*Ensure spectrum is set correctly */
-		Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,
-			map->minimum_value,map->maximum_value);
-#endif /* defined (UNEMAP_USE_3D) */	
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,"update_colour_map.  Missing map");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* update_colour_map */
-
-#if defined (UNEMAP_USE_3D)
-struct FE_field *create_1_comp_fe_value_field(char *field_name,
-	struct MANAGER(FE_field) *fe_field_manager)
-/*******************************************************************************
-LAST MODIFIED : 6 October 2000
-
-DESCRIPTION :
-creates the map fit field, the name <field_name>
-==============================================================================*/
-{	
-	struct FE_field *map_fit_field;
-	struct CM_field_information field_info;
-	struct Coordinate_system coordinate_system;
-
-	ENTER(create_1_comp_fe_value_field);
-	map_fit_field=(struct FE_field *)NULL;	
-	if(field_name&&fe_field_manager)
-	{
-		/* set up the info needed to create the potential field */			
-		set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
-		coordinate_system.type=NOT_APPLICABLE;				
-		/* create the potential  field, add it to the node */			
-		if (!(map_fit_field=get_FE_field_manager_matched_field(fe_field_manager,field_name,
-			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-			/*number_of_indexed_values*/0,&field_info,
-			&coordinate_system,FE_VALUE_VALUE,
-			/*number_of_components*/1,fit_comp_name,
-			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
-		{
-			display_message(ERROR_MESSAGE,
-				"create_1_comp_fe_value_field. Could not retrieve potential_value field");
-		}
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
+						FE_NODAL_VALUE,coords_comp_1[i])); /*y*/
+				}				
+				component.number = 2;							
+			}break;
+			default:
+			{					
+				display_message(ERROR_MESSAGE,"set_mapping_FE_node_coord_values."
+					"  Invalid region_type");
+				node=(struct FE_node *)NULL;
+			}break;				
+		}	/* switch() */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-				"create_1_comp_fe_value_field. invalid argument");
+			"set_mapping_FE_node_coord_values. Invalid arguments");
+		return_code=0;
 	}
 	LEAVE;
-	return(map_fit_field);
-}/* create_1_comp_fe_value_field */
-#endif /* defined (UNEMAP_USE_3D) */
+	return(return_code);
+}/* set_mapping_FE_node_coord_values */
+
+#endif /* #if defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int set_mapping_FE_node_fit_values(struct FE_node *node,
+	struct FE_field *fit_field,int component_number,
+	FE_value f,FE_value dfdx,FE_value dfdy,FE_value d2fdxdy)
+/*******************************************************************************
+LAST MODIFIED : 3 September 1999
+
+DESCRIPTION :
+Sets a node's values storage with the values  potential<f> and derivatives
+<dfdx>, <dfdy>,<d2fdxdy> using  <field_order_info.>
+==============================================================================*/		 
+{	
+	int return_code;
+	struct FE_field_component component;
+
+	ENTER(set_mapping_FE_node_fit_values);
+	return_code =1;
+	if(node&&fit_field)
+	{
+		component.field=fit_field;
+		component.number=component_number;
+		return_code=(
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,f)&&
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS1,dfdx)&&
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS2,dfdy)&&
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D2_DS1DS2,d2fdxdy));
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_mapping_FE_node_fit_values. Invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_mapping_FE_node_fit_values */
+#endif /* #if defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D) 
+static struct FE_node *create_and_set_mapping_FE_node(struct FE_node *template_node,
+	struct MANAGER(FE_node) *node_manager,
+	enum Region_type	region_type,int node_number,
+	struct FE_field_order_info *field_order_info,
+	int coords_comp_0_num_versions,int coords_comp_1_num_versions,
+	int coords_comp_2_num_versions,FE_value *coords_comp_0,FE_value *coords_comp_1,
+	FE_value *coords_comp_2,FE_value f,FE_value dfdx,FE_value dfdy,FE_value d2fdxdy)
+/*******************************************************************************
+LAST MODIFIED : 30 July 1999
+
+DESCRIPTION :
+sets a node's values storage with the coordinate system component versions and values, 
+<coords_comp_X_num_versions>,<coords_comp_X>, potential<f> and derivatives <dfdx>,
+<dfdy>,<d2fdxdy> using the template node created in create_mapping_template_node, 
+and the field_order_info.
+==============================================================================*/
+{	
+	struct FE_node *node;
+	struct FE_field *field;
+
+	ENTER(create_and_set_mapping_FE_node);
+	if (template_node&&node_manager&&field_order_info&&coords_comp_0&&
+		coords_comp_1&&coords_comp_2)
+	{			
+		node=(struct FE_node *)NULL;
+		field=(struct FE_field *)NULL;
+		if (node=CREATE(FE_node)(node_number,template_node))
+		{	
+			/*	set up the type dependent values	*/
+			/* 1st field is position field*/
+			field=get_FE_field_order_info_field(field_order_info,0);
+			set_mapping_FE_node_coord_values(node,field,
+				coords_comp_0_num_versions,coords_comp_1_num_versions,
+				coords_comp_2_num_versions,coords_comp_0,coords_comp_1,coords_comp_2,
+				region_type);
+			/*Set fields which are identical in all nodes*/
+			/* 2nd field contains fit */	
+			field=get_FE_field_order_info_field(field_order_info,1);
+			set_mapping_FE_node_fit_values(node,field,0/*component_number*/,f,dfdx,dfdy,d2fdxdy);
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
+				cm_node_identifier)(node_number,node_manager))
+			{									
+				display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node. Node already exists!");
+				node=(struct FE_node *)NULL;
+			}				
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node.  Error creating node");	
+			node=(struct FE_node *)NULL;
+		}					
+	}	
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node.  Invalid argument(s)");
+		node=(struct FE_node *)NULL;
+	}
+	LEAVE;
+	return (node);
+}/* create_and_set_mapping_FE_node*/
+#endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_field_order_info *create_mapping_fields(enum Region_type 
@@ -2047,7 +1081,6 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 	return(the_field_order_info);
 }/* create_mapping_fields */
 #endif /* #if defined (UNEMAP_USE_3D) */
-
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *create_mapping_template_node(enum Region_type region_type,
 	struct FE_field_order_info *field_order_info,
@@ -2169,206 +1202,6 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 	LEAVE;
 	return(node);
 }/* create_mapping_template_node */
-#endif /* #if defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-static int set_mapping_FE_node_coord_values(struct FE_node *node,
-	struct FE_field *position_field,
-	int coords_comp_0_num_versions,int coords_comp_1_num_versions,
-	int coords_comp_2_num_versions,FE_value *coords_comp_0,FE_value *coords_comp_1,
-	FE_value *coords_comp_2,enum Region_type	region_type)
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-sets a node's values storage with the coordinate system component versions and values, 
-<coords_comp_X_num_versions>,<coords_comp_X>,  using <field_order_info>
-==============================================================================*/	
-{
-	enum FE_nodal_value_type *component_value_types;
-	FE_value *value;
-	int i,j,number_of_derivatives,return_code;
-	struct FE_field_component component;
-
-	ENTER(set_mapping_FE_node_coord_values)
-	if(node&&position_field&&coords_comp_0&&coords_comp_1&&
-		coords_comp_2)
-	{
-		return_code=1;
-		switch(region_type)
-		{
-			case SOCK:/*lambda,mu,theta */ 
-			case TORSO:/*theta,r , z */		
-			{					
-				/* 1st field contains coords, possibly more than one version */
-				component.field=position_field;
-				component.number = 0;
-				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(node,
-					position_field,0);
-				component_value_types=get_FE_node_field_component_nodal_value_types(node,
-					position_field,0);
-				value=coords_comp_0;
-				for(i=0;i<coords_comp_0_num_versions;i++)
-				{
-					/*derivatives+1 as value then derivatives */
-					for(j=0;j<number_of_derivatives+1;j++)
-					{
-						return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-							component_value_types[j],*value)); /*lambda,theta,x*/
-						value++;
-					}
-				}
-				DEALLOCATE(component_value_types);
-				component.number = 1;		
-				for(i=0;i<coords_comp_1_num_versions;i++)
-				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_1[i])); /*mu,r,y*/
-				}				
-				component.number = 2;	
-				for(i=0;i<coords_comp_2_num_versions;i++)
-				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_2[i])); /*theta,z,z */
-				}					
-			}break;
-			case PATCH: /* x,y */
-			{					
-				/* 1st field contains coords, possibly more than one version */
-				component.field=position_field;
-				component.number = 0;	
-				for(i=0;i<coords_comp_0_num_versions;i++)
-				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_0[i])); /*x*/
-				}
-				component.number = 1;		
-				for(i=0;i<coords_comp_1_num_versions;i++)
-				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_1[i])); /*y*/
-				}				
-				component.number = 2;							
-			}break;
-			default:
-			{					
-				display_message(ERROR_MESSAGE,"set_mapping_FE_node_coord_values."
-					"  Invalid region_type");
-				node=(struct FE_node *)NULL;
-			}break;				
-		}	/* switch() */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_mapping_FE_node_coord_values. Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_mapping_FE_node_coord_values */
-
-#endif /* #if defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-static int set_mapping_FE_node_fit_values(struct FE_node *node,
-	struct FE_field *fit_field,int component_number,
-	FE_value f,FE_value dfdx,FE_value dfdy,FE_value d2fdxdy)
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Sets a node's values storage with the values  potential<f> and derivatives
-<dfdx>, <dfdy>,<d2fdxdy> using  <field_order_info.>
-==============================================================================*/		 
-{	
-	int return_code;
-	struct FE_field_component component;
-
-	ENTER(set_mapping_FE_node_fit_values);
-	return_code =1;
-	if(node&&fit_field)
-	{
-		component.field=fit_field;
-		component.number=component_number;
-		return_code=(
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,f)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS1,dfdx)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS2,dfdy)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D2_DS1DS2,d2fdxdy));
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_mapping_FE_node_fit_values. Invalid arguments");
-		return_code =0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_mapping_FE_node_fit_values */
-#endif /* #if defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D) 
-static struct FE_node *create_and_set_mapping_FE_node(struct FE_node *template_node,
-	struct MANAGER(FE_node) *node_manager,
-	enum Region_type	region_type,int node_number,
-	struct FE_field_order_info *field_order_info,
-	int coords_comp_0_num_versions,int coords_comp_1_num_versions,
-	int coords_comp_2_num_versions,FE_value *coords_comp_0,FE_value *coords_comp_1,
-	FE_value *coords_comp_2,FE_value f,FE_value dfdx,FE_value dfdy,FE_value d2fdxdy)
-/*******************************************************************************
-LAST MODIFIED : 30 July 1999
-
-DESCRIPTION :
-sets a node's values storage with the coordinate system component versions and values, 
-<coords_comp_X_num_versions>,<coords_comp_X>, potential<f> and derivatives <dfdx>,
-<dfdy>,<d2fdxdy> using the template node created in create_mapping_template_node, 
-and the field_order_info.
-==============================================================================*/
-{	
-	struct FE_node *node;
-	struct FE_field *field;
-
-	ENTER(create_and_set_mapping_FE_node);
-	if (template_node&&node_manager&&field_order_info&&coords_comp_0&&
-		coords_comp_1&&coords_comp_2)
-	{			
-		node=(struct FE_node *)NULL;
-		field=(struct FE_field *)NULL;
-		if (node=CREATE(FE_node)(node_number,template_node))
-		{	
-			/*	set up the type dependent values	*/
-			/* 1st field is position field*/
-			field=get_FE_field_order_info_field(field_order_info,0);
-			set_mapping_FE_node_coord_values(node,field,
-				coords_comp_0_num_versions,coords_comp_1_num_versions,
-				coords_comp_2_num_versions,coords_comp_0,coords_comp_1,coords_comp_2,
-				region_type);
-			/*Set fields which are identical in all nodes*/
-			/* 2nd field contains fit */	
-			field=get_FE_field_order_info_field(field_order_info,1);
-			set_mapping_FE_node_fit_values(node,field,0/*component_number*/,f,dfdx,dfdy,d2fdxdy);
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-				cm_node_identifier)(node_number,node_manager))
-			{									
-				display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node. Node already exists!");
-				node=(struct FE_node *)NULL;
-			}				
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node.  Error creating node");	
-			node=(struct FE_node *)NULL;
-		}					
-	}	
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node.  Invalid argument(s)");
-		node=(struct FE_node *)NULL;
-	}
-	LEAVE;
-	return (node);
-}/* create_and_set_mapping_FE_node*/
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
@@ -3739,7 +2572,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-int torso_node_is_in_z_range(struct FE_node *torso_node,void *z_value_data_void)
+static int torso_node_is_in_z_range(struct FE_node *torso_node,void *z_value_data_void)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
 
@@ -3958,6 +2791,361 @@ nodes z values are defined by the electrodes.
 	LEAVE;
 	return(return_code);
 }/* make_mapped_torso_node_and_element_groups */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int set_map_fit_field_at_torso_node(struct FE_node *torso_node,
+	struct FE_element *torso_element,struct Map_3d_package *map_3d_package,
+	int first_torso_element_number)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2000
+
+DESCRIPTION :
+Defines and sets the value of the fit field at <torso_node>.
+===============================================================================*/
+{	
+	FE_value cylinder_jacobian[2],cylinder_xi_coords[2],df_ds1,df_ds2,d2f_ds1ds2,
+		df_du1,df_du2,df_dxi1,df_dxi2,d2f_dxi1dxi2,dx_dxi1,dx_dxi2,dy_dxi1,dy_dxi2,
+		dz_dxi1,dz_dxi2,fit,map_theta,map_z,minusY_div_X2plusY2,Ntheta_div_2PI,
+		Ntheta_plus_xi,Nz_div_Zrange,Nz_plus_xi,scale_factor,torso_jacobian[6],
+		torso_xi_coords[2],torso_node_x,torso_node_y,torso_node_z,torso_pos[3],
+		X2plusY2,	X_div_X2plusY2,z_range;
+	FE_value map_min_z,map_max_z,num_z_elements,num_theta_elements;
+
+	int element_number,Nz,Ntheta,return_code;
+	struct CM_element_information element_information;
+	struct FE_element *cylinder_element;
+	struct FE_element_field_values element_field_values;
+	struct FE_field_component component;
+	struct FE_field *map_fit_field,*torso_position_field;		
+	struct FE_node *node;
+	struct MANAGER(FE_node) *node_manager;
+
+	ENTER(set_map_fit_field_at_torso_node);
+	return_code=1;
+	cylinder_element=(struct FE_element *)NULL;	
+	map_fit_field=(struct FE_field *)NULL;
+	torso_position_field=(struct FE_field *)NULL;
+	node=(struct FE_node *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
+	if(torso_node&&(torso_position_field=
+		get_FE_node_default_coordinate_field(torso_node))&&map_3d_package&&torso_element&&
+		(node_manager=map_3d_package->node_manager))
+	{
+		map_min_z=get_map_3d_package_electrodes_min_z(map_3d_package);
+		map_max_z=get_map_3d_package_electrodes_max_z(map_3d_package);
+		num_z_elements=get_map_3d_package_number_of_map_rows(map_3d_package);
+		num_theta_elements=get_map_3d_package_number_of_map_columns(map_3d_package);
+		map_fit_field=get_map_3d_package_fit_field(map_3d_package); 
+		/* field should already defined at node */
+		if (FE_field_is_defined_at_node(map_fit_field,torso_node))
+		{
+			component.field=torso_position_field;
+			component.number=0;
+			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+				&torso_node_x);
+			component.number=1;
+			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+				&torso_node_y);		
+			component.number=2;
+			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+				&torso_node_z);
+			/*now have torso x,y,z determine map theta,z (don't need r)*/
+			/* add PI as want map_theta in range 0->2PI,atan2 returns -PI->PI */
+			map_theta=atan2(torso_node_y,torso_node_x) +PI;
+			/*map r is arbitary and not used*/		
+			map_z=torso_node_z;
+			/* now determine element number and Xi values */
+			Ntheta_plus_xi=num_theta_elements*(map_theta/(2*PI));
+			/* Ntheta is the theta element number, i.e the column number */
+			Ntheta=(int)(Ntheta_plus_xi);
+			/* handle case with theta point exactly on 2PI*/
+			if(Ntheta>=num_theta_elements)
+			{				
+				Ntheta=num_theta_elements-1;
+			}
+			/* cylinder_xi_coords[0] is Xi in the theta direction*/
+			cylinder_xi_coords[0]=Ntheta_plus_xi-Ntheta;
+			z_range=map_max_z-map_min_z;
+			Nz_plus_xi=num_z_elements*((map_z-map_min_z)/(z_range));
+			/* Nz is the z element number, i.e the row number */
+			Nz=(int)(Nz_plus_xi);
+			/* handle case with z point exactly on cylinder edge*/
+			if(Nz>=num_z_elements)
+			{
+				Nz=num_z_elements-1;
+			}
+			/* cylinder_xi_coords[1] is Xi in the z direction*/
+			cylinder_xi_coords[1]=Nz_plus_xi-Nz;
+			element_number=Nz*num_theta_elements+Ntheta+1;	
+			/* get map element, and value at element */		
+			element_information.type=CM_ELEMENT;
+			element_information.number=element_number+first_torso_element_number-1;
+			cylinder_element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)
+				(&element_information,map_3d_package->element_group);
+			if(cylinder_element)
+			{				
+				/* get the cylinder fit value and jacobian */				
+				if (calculate_FE_element_field_values(cylinder_element,map_fit_field,
+					/*calculate_derivatives */1,&element_field_values,
+					/*top_level_element*/(struct FE_element *)NULL))
+				{
+					/* calculate the value for the element field */
+					return_code=calculate_FE_element_field(0,/*component_number*/
+						&element_field_values,cylinder_xi_coords,&fit,cylinder_jacobian);
+					df_du1=cylinder_jacobian[0];
+					df_du2=cylinder_jacobian[1];
+					clear_FE_element_field_values(&element_field_values);
+				}
+				/* get the torso position and jacobian */	
+				torso_xi_coords[0]=0;
+				torso_xi_coords[1]=0;
+				if (calculate_FE_element_field_values(torso_element,torso_position_field,
+					/*calculate_derivatives */1,&element_field_values,
+					/*top_level_element*/(struct FE_element *)NULL))
+				{
+					/* calculate the value for the element field */
+					return_code=calculate_FE_element_field(/*component_number*/-1,
+					&element_field_values,torso_xi_coords,torso_pos,torso_jacobian);
+					dx_dxi1=torso_jacobian[0];
+					dx_dxi2=torso_jacobian[1];
+					dy_dxi1=torso_jacobian[2];
+					dy_dxi2=torso_jacobian[3];
+					dz_dxi1=torso_jacobian[4];
+					dz_dxi2=torso_jacobian[5];
+					clear_FE_element_field_values(&element_field_values);
+				}
+				X2plusY2=(torso_node_x*torso_node_x)+(torso_node_y*torso_node_y);
+				minusY_div_X2plusY2=-torso_node_y/X2plusY2;
+				X_div_X2plusY2=torso_node_x/X2plusY2;
+				Ntheta_div_2PI=Ntheta/(2*PI);
+				Nz_div_Zrange=Nz/z_range;
+				df_dxi1=df_du1*(minusY_div_X2plusY2*Ntheta_div_2PI*dx_dxi1 + 
+					X_div_X2plusY2*Ntheta_div_2PI*dy_dxi1) +df_du2*(Nz_div_Zrange*dz_dxi1);
+				df_dxi2=df_du2*(minusY_div_X2plusY2*Ntheta_div_2PI*dx_dxi2 + 
+					X_div_X2plusY2*Ntheta_div_2PI*dy_dxi2) +df_du2*(Nz_div_Zrange*dz_dxi2);
+				d2f_dxi1dxi2=df_dxi1*df_dxi2;
+#if defined (DEBUG)
+				printf(" Component %d \n",0);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_VALUE,&scale_factor);
+#if defined (DEBUG)
+				printf("   FE_NODAL_VALUE scale factor  = %f ",scale_factor);
+				printf(" fit = %f ",fit);
+#endif /* defined (DEBUG)*/
+				fit=fit/scale_factor;
+#if defined (DEBUG)
+				printf(" fit/scale factor = %f \n",fit);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_D_DS1,&scale_factor);
+				df_ds1=df_dxi1/scale_factor;
+#if defined (DEBUG)
+				printf("   FE_NODAL_D_DS1 scale factor  = %f ",scale_factor);
+				printf(" df_dxi1 = %f ",df_dxi1);
+				printf(" df_ds1 = %f \n",df_ds1);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_D_DS2,&scale_factor);
+				df_ds2=df_dxi2/scale_factor;
+#if defined (DEBUG)
+				printf("   FE_NODAL_D_DS2 scale factor  = %f ",scale_factor);
+				printf(" df_dxi1 = %f ",df_dxi1);
+				printf(" df_ds1 = %f \n",df_ds1);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_D2_DS1DS2,
+					&scale_factor);
+				d2f_ds1ds2=d2f_dxi1dxi2/scale_factor;
+#if defined (DEBUG)
+				printf("   FE_NODAL_D2_DS1DS2 scale factor  = %f ",scale_factor);
+				printf(" d2f_dxi1dxi2 = %f ",d2f_dxi1dxi2);
+				printf(" d2f_ds1ds2 = %f \n",d2f_ds1ds2);			
+#endif /* defined (DEBUG)*/			
+				/* and set the nodal values  */
+
+				/* create a node to work with */
+				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
+				/* copy it from the manager */
+				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+					(node,torso_node))
+				{
+					set_mapping_FE_node_fit_values(node,map_fit_field,0/*component_number*/,
+					fit,df_ds1,df_ds2,d2f_ds1ds2);
+					/* copy it back into the manager */
+					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+						(torso_node,node,node_manager);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_map_fit_field_at_torso_node. MANAGER_COPY_WITH_IDENTIFIER failed ");
+					return_code=0;
+				}
+				/* destroy the working copy */
+				DESTROY(FE_node)(&node);	
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node."
+					" can't find element");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node."
+				" field undefined at node");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* set_map_fit_field_at_torso_node */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int set_map_fit_field_if_required(struct FE_node *torso_node,
+	void *map_value_torso_data_void)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+Set the  nodal values of the fit field at the <torso_node>, if haven't already 
+done so. Maintains a list of processed nodes, so can tell which nodes have 
+already set.
+==============================================================================*/
+{
+	int return_code;	
+	struct Map_value_torso_data *map_value_torso_data;
+
+	ENTER(set_map_fit_field_if_required);
+	map_value_torso_data=(struct Map_value_torso_data *)NULL;
+	if(torso_node&&map_value_torso_data_void&&
+		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
+	{	
+		/* if object is already in processed list, have nothing to do*/
+		if(!(IS_OBJECT_IN_LIST(FE_node)(torso_node,map_value_torso_data->processed_nodes)))
+		{	
+			/* set the fit field at the node */		
+			if(return_code=set_map_fit_field_at_torso_node(torso_node,
+				map_value_torso_data->torso_element,map_value_torso_data->map_3d_package,
+				map_value_torso_data->first_torso_element_number))
+			{
+				/* add to the list of processed nodes */
+				return_code=ADD_OBJECT_TO_LIST(FE_node)
+					(torso_node,map_value_torso_data->processed_nodes);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_fit_field_if_required. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_fit_field_if_required */
+
+static int set_map_fit_field_at_torso_element_nodes(
+	struct FE_element *torso_element,void *map_value_torso_data_void)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+Set the  nodal values of the fit field at the <torso_element> nodes
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_node) *element_nodes;
+	struct Map_value_torso_data *map_value_torso_data;
+
+	ENTER(set_map_fit_field_at_torso_element_nodes);
+	element_nodes=(struct LIST(FE_node) *)NULL;
+	map_value_torso_data=(struct Map_value_torso_data *)NULL;
+	if(torso_element&&map_value_torso_data_void&&
+		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
+	{
+		element_nodes=CREATE_LIST(FE_node)();
+		/*get all nodes in element */
+		calculate_FE_element_field_nodes(torso_element,
+			(struct FE_field *)NULL,element_nodes);
+		/* for each node, set fit field value, if haven't done so already */
+		map_value_torso_data->torso_element=torso_element;
+		FOR_EACH_OBJECT_IN_LIST(FE_node)(set_map_fit_field_if_required,
+			(void *)map_value_torso_data,element_nodes);
+		DESTROY_LIST(FE_node)(&element_nodes);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_element_nodes. "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_fit_field_at_torso_element_nodes */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int set_torso_fit_field_values(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2000
+
+DESCRIPTION :
+set the nodal values of the fit field at the nodes of the elements in
+<map_3d_package->mapped_torso_element_group>
+==============================================================================*/
+{	
+	int first_element_number,return_code;
+	struct CM_element_information element_information;
+	struct FE_element *first_element;
+	struct GROUP(FE_element) *mapped_torso_element_group,*element_group;
+	struct Map_value_torso_data map_value_torso_data;		
+
+	ENTER(set_torso_fit_field_values);
+	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	element_group=(struct GROUP(FE_element) *)NULL;
+	first_element=(struct FE_element *)NULL;
+	if(map_3d_package)
+	{
+		return_code=1;
+		/* find the identifier of the first element */
+		element_group=get_map_3d_package_element_group(map_3d_package);
+		first_element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(FE_element_is_top_level,
+				NULL,element_group);
+		element_information=first_element->cm;
+		first_element_number=element_information.number;
+
+		mapped_torso_element_group=
+			get_map_3d_package_mapped_torso_element_group(map_3d_package);		
+		/*  set the element's nodal values  */					
+		map_value_torso_data.map_3d_package=map_3d_package;
+		map_value_torso_data.first_torso_element_number=first_element_number;
+		/* torso_element set up later, in set_map_fit_field_at_torso_element_nodes */
+		map_value_torso_data.torso_element=(struct FE_element *)NULL;
+		map_value_torso_data.processed_nodes=CREATE_LIST(FE_node)();	
+		MANAGER_BEGIN_CACHE(FE_node)(map_3d_package->node_manager);
+		FOR_EACH_OBJECT_IN_GROUP(FE_element)(set_map_fit_field_at_torso_element_nodes,
+			(void *)&map_value_torso_data,mapped_torso_element_group);
+		MANAGER_END_CACHE(FE_node)(map_3d_package->node_manager);
+		DESTROY_LIST(FE_node)(&map_value_torso_data.processed_nodes);	
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,"set_torso_fit_field_values. "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_torso_fit_field_values*/
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
@@ -5620,256 +4808,9 @@ time computed fields used by the glyphs.
 }/* map_remove_all_electrodes */
 #endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_3D)
-int map_remove_torso_arms(struct Map_drawing_information *drawing_information)/*FOR AJP*/	
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Removes the torso arms from the scene.
-??JW perhaps should have a scene and scene_viewer in each Map_3d_package,
-and do Scene_remove_graphics_object in the DESTROY Map_3d_package
-==============================================================================*/
-{
-	int return_code;	
-	ENTER(map_remove_torso_arms);
-	if(drawing_information)
-	{
-		if(drawing_information->torso_arm_labels)
-		{
-			Scene_remove_graphics_object(drawing_information->scene,
-				drawing_information->torso_arm_labels);
-			DEACCESS(GT_object)(&(drawing_information->torso_arm_labels));
-		}
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,"map_remove_torso_arms. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* map_remove_torso_arms */
-#endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int set_map_fit_field_at_torso_node(struct FE_node *torso_node,
-	struct FE_element *torso_element,struct Map_3d_package *map_3d_package,
-	int first_torso_element_number)
-/*******************************************************************************
-LAST MODIFIED : 16 October 2000
-
-DESCRIPTION :
-Defines and sets the value of the fit field at <torso_node>.
-===============================================================================*/
-{	
-	FE_value cylinder_jacobian[2],cylinder_xi_coords[2],df_ds1,df_ds2,d2f_ds1ds2,
-		df_du1,df_du2,df_dxi1,df_dxi2,d2f_dxi1dxi2,dx_dxi1,dx_dxi2,dy_dxi1,dy_dxi2,
-		dz_dxi1,dz_dxi2,fit,map_theta,map_z,minusY_div_X2plusY2,Ntheta_div_2PI,
-		Ntheta_plus_xi,Nz_div_Zrange,Nz_plus_xi,scale_factor,torso_jacobian[6],
-		torso_xi_coords[2],torso_node_x,torso_node_y,torso_node_z,torso_pos[3],
-		X2plusY2,	X_div_X2plusY2,z_range;
-	FE_value map_min_z,map_max_z,num_z_elements,num_theta_elements;
-
-	int element_number,Nz,Ntheta,return_code;
-	struct CM_element_information element_information;
-	struct FE_element *cylinder_element;
-	struct FE_element_field_values element_field_values;
-	struct FE_field_component component;
-	struct FE_field *map_fit_field,*torso_position_field;		
-	struct FE_node *node;
-	struct MANAGER(FE_node) *node_manager;
-
-	ENTER(set_map_fit_field_at_torso_node);
-	return_code=1;
-	cylinder_element=(struct FE_element *)NULL;	
-	map_fit_field=(struct FE_field *)NULL;
-	torso_position_field=(struct FE_field *)NULL;
-	node=(struct FE_node *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	if(torso_node&&(torso_position_field=
-		get_FE_node_default_coordinate_field(torso_node))&&map_3d_package&&torso_element&&
-		(node_manager=map_3d_package->node_manager))
-	{
-		map_min_z=get_map_3d_package_electrodes_min_z(map_3d_package);
-		map_max_z=get_map_3d_package_electrodes_max_z(map_3d_package);
-		num_z_elements=get_map_3d_package_number_of_map_rows(map_3d_package);
-		num_theta_elements=get_map_3d_package_number_of_map_columns(map_3d_package);
-		map_fit_field=get_map_3d_package_fit_field(map_3d_package); 
-		/* field should already defined at node */
-		if (FE_field_is_defined_at_node(map_fit_field,torso_node))
-		{
-			component.field=torso_position_field;
-			component.number=0;
-			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
-				&torso_node_x);
-			component.number=1;
-			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
-				&torso_node_y);		
-			component.number=2;
-			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
-				&torso_node_z);
-			/*now have torso x,y,z determine map theta,z (don't need r)*/
-			/* add PI as want map_theta in range 0->2PI,atan2 returns -PI->PI */
-			map_theta=atan2(torso_node_y,torso_node_x) +PI;
-			/*map r is arbitary and not used*/		
-			map_z=torso_node_z;
-			/* now determine element number and Xi values */
-			Ntheta_plus_xi=num_theta_elements*(map_theta/(2*PI));
-			/* Ntheta is the theta element number, i.e the column number */
-			Ntheta=(int)(Ntheta_plus_xi);
-			/* handle case with theta point exactly on 2PI*/
-			if(Ntheta>=num_theta_elements)
-			{				
-				Ntheta=num_theta_elements-1;
-			}
-			/* cylinder_xi_coords[0] is Xi in the theta direction*/
-			cylinder_xi_coords[0]=Ntheta_plus_xi-Ntheta;
-			z_range=map_max_z-map_min_z;
-			Nz_plus_xi=num_z_elements*((map_z-map_min_z)/(z_range));
-			/* Nz is the z element number, i.e the row number */
-			Nz=(int)(Nz_plus_xi);
-			/* handle case with z point exactly on cylinder edge*/
-			if(Nz>=num_z_elements)
-			{
-				Nz=num_z_elements-1;
-			}
-			/* cylinder_xi_coords[1] is Xi in the z direction*/
-			cylinder_xi_coords[1]=Nz_plus_xi-Nz;
-			element_number=Nz*num_theta_elements+Ntheta+1;	
-			/* get map element, and value at element */		
-			element_information.type=CM_ELEMENT;
-			element_information.number=element_number+first_torso_element_number-1;
-			cylinder_element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)
-				(&element_information,map_3d_package->element_group);
-			if(cylinder_element)
-			{				
-				/* get the cylinder fit value and jacobian */				
-				if (calculate_FE_element_field_values(cylinder_element,map_fit_field,
-					/*calculate_derivatives */1,&element_field_values,
-					/*top_level_element*/(struct FE_element *)NULL))
-				{
-					/* calculate the value for the element field */
-					return_code=calculate_FE_element_field(0,/*component_number*/
-						&element_field_values,cylinder_xi_coords,&fit,cylinder_jacobian);
-					df_du1=cylinder_jacobian[0];
-					df_du2=cylinder_jacobian[1];
-					clear_FE_element_field_values(&element_field_values);
-				}
-				/* get the torso position and jacobian */	
-				torso_xi_coords[0]=0;
-				torso_xi_coords[1]=0;
-				if (calculate_FE_element_field_values(torso_element,torso_position_field,
-					/*calculate_derivatives */1,&element_field_values,
-					/*top_level_element*/(struct FE_element *)NULL))
-				{
-					/* calculate the value for the element field */
-					return_code=calculate_FE_element_field(/*component_number*/-1,
-					&element_field_values,torso_xi_coords,torso_pos,torso_jacobian);
-					dx_dxi1=torso_jacobian[0];
-					dx_dxi2=torso_jacobian[1];
-					dy_dxi1=torso_jacobian[2];
-					dy_dxi2=torso_jacobian[3];
-					dz_dxi1=torso_jacobian[4];
-					dz_dxi2=torso_jacobian[5];
-					clear_FE_element_field_values(&element_field_values);
-				}
-				X2plusY2=(torso_node_x*torso_node_x)+(torso_node_y*torso_node_y);
-				minusY_div_X2plusY2=-torso_node_y/X2plusY2;
-				X_div_X2plusY2=torso_node_x/X2plusY2;
-				Ntheta_div_2PI=Ntheta/(2*PI);
-				Nz_div_Zrange=Nz/z_range;
-				df_dxi1=df_du1*(minusY_div_X2plusY2*Ntheta_div_2PI*dx_dxi1 + 
-					X_div_X2plusY2*Ntheta_div_2PI*dy_dxi1) +df_du2*(Nz_div_Zrange*dz_dxi1);
-				df_dxi2=df_du2*(minusY_div_X2plusY2*Ntheta_div_2PI*dx_dxi2 + 
-					X_div_X2plusY2*Ntheta_div_2PI*dy_dxi2) +df_du2*(Nz_div_Zrange*dz_dxi2);
-				d2f_dxi1dxi2=df_dxi1*df_dxi2;
-#if defined (DEBUG)
-				printf(" Component %d \n",0);
-#endif /* defined (DEBUG)*/
-				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
-					torso_position_field,0/*component_number*/,FE_NODAL_VALUE,&scale_factor);
-#if defined (DEBUG)
-				printf("   FE_NODAL_VALUE scale factor  = %f ",scale_factor);
-				printf(" fit = %f ",fit);
-#endif /* defined (DEBUG)*/
-				fit=fit/scale_factor;
-#if defined (DEBUG)
-				printf(" fit/scale factor = %f \n",fit);
-#endif /* defined (DEBUG)*/
-				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
-					torso_position_field,0/*component_number*/,FE_NODAL_D_DS1,&scale_factor);
-				df_ds1=df_dxi1/scale_factor;
-#if defined (DEBUG)
-				printf("   FE_NODAL_D_DS1 scale factor  = %f ",scale_factor);
-				printf(" df_dxi1 = %f ",df_dxi1);
-				printf(" df_ds1 = %f \n",df_ds1);
-#endif /* defined (DEBUG)*/
-				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
-					torso_position_field,0/*component_number*/,FE_NODAL_D_DS2,&scale_factor);
-				df_ds2=df_dxi2/scale_factor;
-#if defined (DEBUG)
-				printf("   FE_NODAL_D_DS2 scale factor  = %f ",scale_factor);
-				printf(" df_dxi1 = %f ",df_dxi1);
-				printf(" df_ds1 = %f \n",df_ds1);
-#endif /* defined (DEBUG)*/
-				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
-					torso_position_field,0/*component_number*/,FE_NODAL_D2_DS1DS2,
-					&scale_factor);
-				d2f_ds1ds2=d2f_dxi1dxi2/scale_factor;
-#if defined (DEBUG)
-				printf("   FE_NODAL_D2_DS1DS2 scale factor  = %f ",scale_factor);
-				printf(" d2f_dxi1dxi2 = %f ",d2f_dxi1dxi2);
-				printf(" d2f_ds1ds2 = %f \n",d2f_ds1ds2);			
-#endif /* defined (DEBUG)*/			
-				/* and set the nodal values  */
-
-				/* create a node to work with */
-				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-				/* copy it from the manager */
-				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-					(node,torso_node))
-				{
-					set_mapping_FE_node_fit_values(node,map_fit_field,0/*component_number*/,
-					fit,df_ds1,df_ds2,d2f_ds1ds2);
-					/* copy it back into the manager */
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-						(torso_node,node,node_manager);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_map_fit_field_at_torso_node. MANAGER_COPY_WITH_IDENTIFIER failed ");
-					return_code=0;
-				}
-				/* destroy the working copy */
-				DESTROY(FE_node)(&node);	
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node."
-					" can't find element");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node."
-				" field undefined at node");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int merge_fit_field_template_element(struct FE_element *element,
+static int merge_fit_field_template_element(struct FE_element *element,
 	void *merge_fit_field_template_element_void)
 /*******************************************************************************
 LAST MODIFIED : 25 October 2000
@@ -5952,7 +4893,7 @@ Merges the template_element containing the fit field in
 	return (return_code);
 } /* merge_fit_field_template_element */
 
-int set_up_fitted_potential_on_torso(struct GROUP(FE_element) *torso_group,
+static int set_up_fitted_potential_on_torso(struct GROUP(FE_element) *torso_group,
 	struct FE_field *potential_field,struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager)
 /*******************************************************************************
@@ -6230,226 +5171,7 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 } /* define_fit_field_at_torso_element_nodes*/
 #endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_3D)
-int define_fit_field_at_quad_elements_and_nodes(
-	struct GROUP(FE_element) *torso_element_group,
-	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *node_manager)
-/*******************************************************************************
-LAST MODIFIED : 7 December 2000
 
-DESCRIPTION :
-Finds all the elements in <torso_element_group> with 4 nodes, 
-for these elements defines <fit_field> at the element, and it's nodes.
-===============================================================================*/
-{
-	int return_code;
-	struct Define_fit_field_at_torso_element_nodes_data 
-		define_fit_field_at_torso_element_nodes_data;
-
-	ENTER(define_fit_field_at_quad_elements_and_nodes);
-	if(torso_element_group&&fit_field)
-	{
-		define_fit_field_at_torso_element_nodes_data.quad_element_group=
-			CREATE(GROUP(FE_element))("quad");
-		define_fit_field_at_torso_element_nodes_data.fit_field=fit_field;
-		define_fit_field_at_torso_element_nodes_data.node_manager=node_manager;
-		/* set up the quad element group, and add the fit field to the nodes*/
-		FOR_EACH_OBJECT_IN_GROUP(FE_element)(define_fit_field_at_torso_element_nodes,
-			(void *)(&define_fit_field_at_torso_element_nodes_data),torso_element_group);
-		/* put the fit field on the quad group elements */
-		return_code=set_up_fitted_potential_on_torso(
-			define_fit_field_at_torso_element_nodes_data.quad_element_group,
-			fit_field,basis_manager,element_manager);
-		/* have altered the elements, but no longer need the group */
-		DESTROY(GROUP(FE_element))
-			(&define_fit_field_at_torso_element_nodes_data.quad_element_group);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"define_fit_field_at_quad_elements_and_nodes."
-			" Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* define_fit_field_at_quad_elements_and_nodes */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-static int set_map_fit_field_if_required(struct FE_node *torso_node,
-	void *map_value_torso_data_void)
-/*******************************************************************************
-LAST MODIFIED : 9 November 2000
-
-DESCRIPTION :
-Set the  nodal values of the fit field at the <torso_node>, if haven't already 
-done so. Maintains a list of processed nodes, so can tell which nodes have 
-already set.
-==============================================================================*/
-{
-	int return_code;	
-	struct Map_value_torso_data *map_value_torso_data;
-
-	ENTER(set_map_fit_field_if_required);
-	map_value_torso_data=(struct Map_value_torso_data *)NULL;
-	if(torso_node&&map_value_torso_data_void&&
-		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
-	{	
-		/* if object is already in processed list, have nothing to do*/
-		if(!(IS_OBJECT_IN_LIST(FE_node)(torso_node,map_value_torso_data->processed_nodes)))
-		{	
-			/* set the fit field at the node */		
-			if(return_code=set_map_fit_field_at_torso_node(torso_node,
-				map_value_torso_data->torso_element,map_value_torso_data->map_3d_package,
-				map_value_torso_data->first_torso_element_number))
-			{
-				/* add to the list of processed nodes */
-				return_code=ADD_OBJECT_TO_LIST(FE_node)
-					(torso_node,map_value_torso_data->processed_nodes);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_map_fit_field_if_required. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_map_fit_field_if_required */
-
-static int set_map_fit_field_at_torso_element_nodes(
-	struct FE_element *torso_element,void *map_value_torso_data_void)
-/*******************************************************************************
-LAST MODIFIED : 9 November 2000
-
-DESCRIPTION :
-Set the  nodal values of the fit field at the <torso_element> nodes
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_node) *element_nodes;
-	struct Map_value_torso_data *map_value_torso_data;
-
-	ENTER(set_map_fit_field_at_torso_element_nodes);
-	element_nodes=(struct LIST(FE_node) *)NULL;
-	map_value_torso_data=(struct Map_value_torso_data *)NULL;
-	if(torso_element&&map_value_torso_data_void&&
-		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
-	{
-		element_nodes=CREATE_LIST(FE_node)();
-		/*get all nodes in element */
-		calculate_FE_element_field_nodes(torso_element,
-			(struct FE_field *)NULL,element_nodes);
-		/* for each node, set fit field value, if haven't done so already */
-		map_value_torso_data->torso_element=torso_element;
-		FOR_EACH_OBJECT_IN_LIST(FE_node)(set_map_fit_field_if_required,
-			(void *)map_value_torso_data,element_nodes);
-		DESTROY_LIST(FE_node)(&element_nodes);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_element_nodes. "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_map_fit_field_at_torso_element_nodes */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_torso_fit_field_values(struct Map_3d_package *map_3d_package)
-/*******************************************************************************
-LAST MODIFIED : 10 November 2000
-
-DESCRIPTION :
-set the nodal values of the fit field at the nodes of the elements in
-<map_3d_package->mapped_torso_element_group>
-==============================================================================*/
-{	
-	int first_element_number,return_code;
-	struct CM_element_information element_information;
-	struct FE_element *first_element;
-	struct GROUP(FE_element) *mapped_torso_element_group,*element_group;
-	struct Map_value_torso_data map_value_torso_data;		
-
-	ENTER(set_torso_fit_field_values);
-	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	element_group=(struct GROUP(FE_element) *)NULL;
-	first_element=(struct FE_element *)NULL;
-	if(map_3d_package)
-	{
-		return_code=1;
-		/* find the identifier of the first element */
-		element_group=get_map_3d_package_element_group(map_3d_package);
-		first_element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(FE_element_is_top_level,
-				NULL,element_group);
-		element_information=first_element->cm;
-		first_element_number=element_information.number;
-
-		mapped_torso_element_group=
-			get_map_3d_package_mapped_torso_element_group(map_3d_package);		
-		/*  set the element's nodal values  */					
-		map_value_torso_data.map_3d_package=map_3d_package;
-		map_value_torso_data.first_torso_element_number=first_element_number;
-		/* torso_element set up later, in set_map_fit_field_at_torso_element_nodes */
-		map_value_torso_data.torso_element=(struct FE_element *)NULL;
-		map_value_torso_data.processed_nodes=CREATE_LIST(FE_node)();	
-		MANAGER_BEGIN_CACHE(FE_node)(map_3d_package->node_manager);
-		FOR_EACH_OBJECT_IN_GROUP(FE_element)(set_map_fit_field_at_torso_element_nodes,
-			(void *)&map_value_torso_data,mapped_torso_element_group);
-		MANAGER_END_CACHE(FE_node)(map_3d_package->node_manager);
-		DESTROY_LIST(FE_node)(&map_value_torso_data.processed_nodes);	
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,"set_torso_fit_field_values. "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_torso_fit_field_values*/
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int do_torso_mesh(struct Unemap_package *unemap_package,struct Region *region)
-/*******************************************************************************
-LAST MODIFIED : 10 November 2000
-
-DESCRIPTION :
-Makes the mapped torso node and element_groups, and sets the field values for 
-them. 
-Really a test function, as want to do these at different times
-==============================================================================*/
-{
-	int return_code;
-
-	struct Map_3d_package *map_3d_package;
-	ENTER(do_torso_mesh);
-	map_3d_package=(struct Map_3d_package *)NULL;
-	return_code=0;
-	if(region&&unemap_package)
-	{	
-		return_code=make_mapped_torso_node_and_element_groups(region,unemap_package);
-		map_3d_package=get_Region_map_3d_package(region);		
-		set_torso_fit_field_values(map_3d_package);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"do_torso_mesh. Can't find element group");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-} /* do_torso_mesh */
-#endif /* defined (UNEMAP_USE_3D) */
-	
 #if defined (UNEMAP_USE_3D)
 struct Vertices_data
 {
@@ -6514,7 +5236,7 @@ vertices_data->vertices we've filled in.
 	return(return_code);
 }/* put_electrode_pos_into_vertices */
 
-struct FE_element *make_delauney_template_element(
+static struct FE_element *make_delauney_template_element(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,struct FE_field *data_field,
 	struct FE_field *coordinate_field)
@@ -6759,55 +5481,7 @@ Therefore must deaccess the returned element outside this function
 	return(template_element);
 }/* make_delauney_template_element */
 
-int node_signal_is_unrejected(struct FE_node *node,void *signal_status_field_void)
-/*******************************************************************************
-LAST MODIFIED : 5 December 2000 
-
-DESCRIPTION : 
-An iterator function.
-Returns 1 if the <signal_status_field> at the <node> does NOT return the string
-"REJECTED".
-==============================================================================*/
-{
-	char *signal_status_string;		
-	int return_code;
-	struct FE_field *signal_status_field;
-
-	ENTER(node_signal_is_unrejected);
-	return_code=0;
-	if (node&&(signal_status_field=(struct FE_field *)signal_status_field_void))
-	{
-		if (get_FE_nodal_string_value(node,signal_status_field,/*component_number*/0,
-			/*version*/0,FE_NODAL_VALUE,&signal_status_string))
-		{
-			if(!strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
-			{
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-			DEALLOCATE(signal_status_string);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"node_signal_is_unrejected. failed to get signal status");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"node_signal_is_unrejected.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-} /* node_signal_is_unrejected  */
-
-int make_delauney_node_and_element_group(struct GROUP(FE_node) *source_nodes,
+static int make_delauney_node_and_element_group(struct GROUP(FE_node) *source_nodes,
 	struct FE_field *electrode_postion_field,
 	struct FE_field *delauney_signal_field,
 	struct Unemap_package *unemap_package,struct Region *region)
@@ -7114,7 +5788,7 @@ Used by iterative_set_delauney_signal_nodal_value
 	struct MANAGER(FE_node) *node_manager;
 }; /* Set_delauney_signal_data */
 
-int iterative_set_delauney_signal_nodal_value(struct FE_node *node,
+static int iterative_set_delauney_signal_nodal_value(struct FE_node *node,
 	void *set_delauney_signal_data_void)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2000
@@ -7284,7 +5958,7 @@ Makes and/or sets the nodal values in the delauney node and element groups
 		if(!(delauney_signal_field=
 			get_unemap_package_delauney_signal_field(unemap_package)))
 		{
-			delauney_signal_field=create_1_comp_fe_value_field
+			delauney_signal_field=create_mapping_type_fe_field
 				("delauney_signal",
 					get_unemap_package_FE_field_manager(unemap_package));
 			set_unemap_package_delauney_signal_field(unemap_package,
@@ -7406,6 +6080,1165 @@ Makes and/or sets the nodal values in the delauney node and element groups
 	return(return_code);
 }/* make_and_set_delauney */
 #endif /*defined (UNEMAP_USE_3D) */
+
+/*
+Global functions
+----------------
+*/
+struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
+	enum Contours_option contours_option,enum Electrodes_option electrodes_option,
+	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
+	enum Extrema_option extrema_option,int maintain_aspect_ratio,
+	int print_spectrum,enum Projection_type projection_type,
+	enum Contour_thickness contour_thickness,struct Rig **rig_pointer,
+	int *event_number_address,int *potential_time_address,int *datum_address,
+	int *start_search_interval_address,int *end_search_interval_address,
+	struct Map_drawing_information *map_drawing_information,
+	struct User_interface *user_interface,struct Unemap_package *unemap_package)
+/*******************************************************************************
+LAST MODIFIED : 31 August 2000
+
+DESCRIPTION :
+This function allocates memory for a map and initializes the fields to the
+specified values.  It returns a pointer to the created map if successful and
+NULL if not successful.
+==============================================================================*/
+{
+	char *electrodes_marker_type,*finite_element_interpolation,
+		*fixed_automatic_range;
+	int membrane_smoothing_ten_thous,plate_bending_smoothing_ten_tho;
+#define XmNfiniteElementInterpolation "finiteElementInterpolation"
+#define XmCFiniteElementInterpolation "FiniteElementInterpolation"
+#define XmNfiniteElementMeshRows "finiteElementMeshRows"
+#define XmCFiniteElementMeshRows "FiniteElementMeshRows"
+#define XmNfiniteElementMeshRows "finiteElementMeshRows"
+#define XmCFiniteElementMeshRows "FiniteElementMeshRows"
+#define XmNfiniteElementMeshColumns "finiteElementMeshColumns"
+#define XmCFiniteElementMeshColumns "FiniteElementMeshColumns"
+#define XmNmembraneSmoothingTenThous "membraneSmoothingTenThous"
+#define XmCMembraneSmoothingTenThous "MembraneSmoothingTenThous"
+#define XmNplateBendingSmoothingTenThous "plateBendingSmoothingTenThous"
+#define XmCPlateBendingSmoothingTenThous "PlateBendingSmoothingTenThous"
+#define XmNelectrodeMarker "electrodeMarker"
+#define XmCElectrodeMarker "ElectrodeMarker"
+#define XmNelectrodeSize "electrodeSize"
+#define XmCElectrodeSize "ElectrodeSize"
+#define XmNmapRange "mapRange"
+#define XmCMapRange "MapRange"
+#define XmNmapRangeMinimum "mapRangeMinimum"
+#define XmCMapRangeMinimum "MapRangeMinimum"
+#define XmNmapRangeMaximum "mapRangeMaximum"
+#define XmCMapRangeMaximum "MapRangeMaximum"
+	static XtResource
+		resources_1[]=
+		{
+			{
+				XmNfiniteElementMeshRows,
+				XmCFiniteElementMeshRows,
+				XmRInt,
+				sizeof(int),
+				XtOffsetOf(Map_settings,finite_element_mesh_rows),
+				XmRString,
+				"3"
+			},
+			{
+				XmNfiniteElementMeshColumns,
+				XmCFiniteElementMeshColumns,
+				XmRInt,
+				sizeof(int),
+				XtOffsetOf(Map_settings,finite_element_mesh_columns),
+				XmRString,
+				"4"
+			}
+		},
+		resources_2[]=
+		{
+			{
+				XmNmembraneSmoothingTenThous,
+				XmCMembraneSmoothingTenThous,
+				XmRInt,
+				sizeof(int),
+				0,
+				XmRString,
+				"100"
+			}
+		},
+		resources_3[]=
+		{
+			{
+				XmNplateBendingSmoothingTenThous,
+				XmCPlateBendingSmoothingTenThous,
+				XmRInt,
+				sizeof(int),
+				0,
+				XmRString,
+				"10"
+			}
+		},
+		resources_4[]=
+		{
+			{
+				XmNfiniteElementInterpolation,
+				XmCFiniteElementInterpolation,
+				XmRString,
+				sizeof(char *),
+				0,
+				XmRString,
+				"bicubic"
+			}
+		},
+		resources_5[]=
+		{
+			{
+				XmNelectrodeMarker,
+				XmCElectrodeMarker,
+				XmRString,
+				sizeof(char *),
+				0,
+				XmRString,
+				"plus"
+			}
+		},
+		resources_6[]=
+		{
+			{
+				XmNelectrodeSize,
+				XmCElectrodeSize,
+				XmRInt,
+				sizeof(int),
+				0,
+				XmRString,
+				"2"
+			}
+		},
+		resources_7[]=
+		{
+			{
+				XmNmapRange,
+				XmCMapRange,
+				XmRString,
+				sizeof(char *),
+				0,
+				XmRString,
+				"automatic"
+			}
+		},
+		resources_8[]=
+		{
+			{
+				XmNmapRangeMinimum,
+				XmCMapRangeMinimum,
+				XmRFloat,
+				sizeof(float),
+				0,
+				XmRString,
+				"1"
+			}
+		},
+		resources_9[]=
+		{
+			{
+				XmNmapRangeMaximum,
+				XmCMapRangeMaximum,
+				XmRFloat,
+				sizeof(float),
+				0,
+				XmRString,
+				"0"
+			}
+		};
+	struct Map *map;
+
+	ENTER(create_Map);
+	USE_PARAMETER(unemap_package);
+	/* check arguments */
+	if (user_interface&&map_drawing_information
+#if defined (UNEMAP_USE_3D)
+		&&unemap_package
+#endif /* defined (UNEMAP_USE_3D) */
+			)
+	{
+		/* allocate memory */
+		if (ALLOCATE(map,struct Map,1)&&ALLOCATE(map->frames,struct Map_frame,1))
+		{
+			/* assign fields */
+			map->type=map_type;
+			map->event_number=event_number_address;
+			map->potential_time=potential_time_address;
+			map->datum=datum_address;
+			map->start_search_interval=start_search_interval_address;
+			map->end_search_interval=end_search_interval_address;
+			map->contours_option=contours_option;
+			map->colour_option=colour_option;
+			map->electrodes_option=electrodes_option;
+			map->fibres_option=fibres_option;
+			map->landmarks_option=landmarks_option;
+			map->extrema_option=extrema_option;
+			map->maintain_aspect_ratio=maintain_aspect_ratio;
+			map->print_spectrum=print_spectrum;
+			map->projection_type=projection_type;
+			map->contour_thickness=contour_thickness;
+			map->undecided_accepted=0;
+			map->rig_pointer=rig_pointer;
+			XtVaGetApplicationResources(user_interface->application_shell,map,
+				resources_1,XtNumber(resources_1),NULL);
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&membrane_smoothing_ten_thous,resources_2,XtNumber(resources_2),NULL);
+			map->membrane_smoothing=(float)membrane_smoothing_ten_thous/10000;
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&plate_bending_smoothing_ten_tho,resources_3,XtNumber(resources_3),
+				NULL);
+			map->plate_bending_smoothing=(float)plate_bending_smoothing_ten_tho/10000;
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&finite_element_interpolation,resources_4,XtNumber(resources_4),
+				NULL);
+			if (fuzzy_string_compare(finite_element_interpolation,"bicubic"))
+			{
+				map->interpolation_type=BICUBIC_INTERPOLATION;
+			}
+			else
+			{
+				map->interpolation_type=NO_INTERPOLATION;
+			}
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&electrodes_marker_type,resources_5,XtNumber(resources_5),
+				NULL);
+			if (fuzzy_string_compare(electrodes_marker_type,"square"))
+			{
+				map->electrodes_marker_type=SQUARE_ELECTRODE_MARKER;
+			}
+			else
+			{
+				if (fuzzy_string_compare(electrodes_marker_type,"circle"))
+				{
+					map->electrodes_marker_type=CIRCLE_ELECTRODE_MARKER;
+				}
+				else
+				{
+					map->electrodes_marker_type=PLUS_ELECTRODE_MARKER;
+				}
+			}
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&(map->electrodes_marker_size),resources_6,XtNumber(resources_6),
+				NULL);
+			if (map->electrodes_marker_size<1)
+			{
+				map->electrodes_marker_size=1;
+			}
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&fixed_automatic_range,resources_7,XtNumber(resources_7),
+				NULL);
+			if (fuzzy_string_compare(fixed_automatic_range,"automatic"))
+			{
+				map->fixed_range=0;
+			}
+			else
+			{
+				map->fixed_range=1;
+			}
+			map->range_changed=0;
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&(map->minimum_value),resources_8,XtNumber(resources_8),
+				NULL);
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&(map->maximum_value),resources_9,XtNumber(resources_9),
+				NULL);
+			map->colour_electrodes_with_signal=1;
+			/*??? calculate from rig ? */
+			map->number_of_electrodes=0;
+			map->electrodes=(struct Device **)NULL;
+			map->electrode_x=(int *)NULL;
+			map->electrode_y=(int *)NULL;
+			map->electrode_value=(float *)NULL;
+			map->electrode_drawn=(char *)NULL;
+			map->number_of_auxiliary=0;
+			map->auxiliary=(struct Device **)NULL;
+			map->auxiliary_x=(int *)NULL;
+			map->auxiliary_y=(int *)NULL;
+			map->contour_minimum=map->minimum_value;
+			map->contour_maximum=map->maximum_value;
+			map->number_of_contours=2;
+			map->activation_front= -1;
+			map->print=0;
+			map->frame_number=0;
+			map->number_of_frames=1;
+			map->frames->maximum=0;
+			map->frames->maximum_x= -1;
+			map->frames->maximum_y= -1;
+			map->frames->minimum=0;
+			map->frames->minimum_x= -1;
+			map->frames->minimum_y= -1;
+			map->frames->pixel_values=(float *)NULL;
+			map->frames->image=(XImage *)NULL;
+			map->frames->contour_x=(short int *)NULL;
+			map->frames->contour_y=(short int *)NULL;
+			map->drawing_information=map_drawing_information;
+#if defined (OLD_CODE)
+			map->user_interface=user_interface;
+#endif /* defined (OLD_CODE) */
+#if defined (UNEMAP_USE_3D)
+			map->unemap_package = unemap_package;			
+#else
+			map->unemap_package = (struct Unemap_package *)NULL;		
+#endif /* defined (UNEMAP_USE_3D) */
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"create_Map.  Could not allocate map");
+			DEALLOCATE(map);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Map.  Invalid argument(s)");
+		map=(struct Map *)NULL;
+	}
+	LEAVE;
+
+	return (map);
+} /* create_Map */
+
+int destroy_Map(struct Map **map)
+/*******************************************************************************
+LAST MODIFIED : 19 June 1998
+
+DESCRIPTION :
+This function deallocates the memory asociated with fields of <**map> (except
+the <rig_pointer>  and Unemap_package fields  ) , 
+deallocates the memory for <**map> and sets <*map> to NULL.
+==============================================================================*/
+{
+	int i,return_code;
+	struct Map_frame *frame;
+
+	ENTER(destroy_Map);
+	return_code=1;
+	if (map&&(*map))
+	{
+		DEALLOCATE((*map)->electrodes);
+		DEALLOCATE((*map)->electrode_x);
+		DEALLOCATE((*map)->electrode_y);
+		DEALLOCATE((*map)->electrode_value);
+		DEALLOCATE((*map)->electrode_drawn);
+		DEALLOCATE((*map)->auxiliary);
+		DEALLOCATE((*map)->auxiliary_x);
+		DEALLOCATE((*map)->auxiliary_y);
+		if ((0<(*map)->number_of_frames)&&(frame=(*map)->frames))
+		{
+			for (i=(*map)->number_of_frames;i>0;i--)
+			{			
+				DEALLOCATE(frame->contour_x);
+				DEALLOCATE(frame->contour_y);
+				DEALLOCATE(frame->pixel_values);
+				if(frame->image)
+				{
+					DEALLOCATE(frame->image->data);
+					XFree((char *)(frame->image));
+				}
+			}
+			DEALLOCATE((*map)->frames);
+		}
+		DEALLOCATE(*map);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_Map */
+
+int update_colour_map_unemap(struct Map *map,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 3 August 1998
+
+DESCRIPTION :
+Updates the colour map being used for map.
+???DB.  <drawing> added because of read only colour maps.
+==============================================================================*/
+{
+	Colormap colour_map;
+	Display *display;
+	float background_pixel_value,blue,boundary_pixel_value,contour_maximum,
+		contour_minimum,f_approx,green,max_f,maximum_value,min_f,minimum_value,
+		*pixel_value,range_f,red,theta;
+	int cell_number,cell_range,drawing_height,drawing_width,end_cell,i,
+		number_of_contours,number_of_spectrum_colours,return_code,start_cell,
+		update_pixel[MAX_SPECTRUM_COLOURS],update_pixel_assignment,x_pixel,y_pixel;
+	Pixel background_pixel,boundary_pixel,*spectrum_pixels;
+	struct Map_drawing_information *drawing_information;
+	struct Map_frame *map_frame;
+	unsigned short blue_short,green_short,red_short;
+	XColor colour,*spectrum_rgb;
+	XImage *map_image;
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+
+	ENTER(update_colour_map_unemap);
+#if !defined (UNEMAP_USE_3D)
+	USE_PARAMETER(spectrum);
+	USE_PARAMETER(spectrum_to_be_modified_copy);
+	USE_PARAMETER(spectrum_manager);
+#endif/* defined (UNEMAP_USE_3D)*/
+	if (map&&(map->type)&&(drawing_information=map->drawing_information)&&
+		(drawing_information->user_interface)&&drawing&&(0<=map->frame_number)&&
+		(map_frame=map->frames))
+	{
+		return_code=1;
+		map_image=(map_frame += map->frame_number)->image;
+		display=drawing_information->user_interface->display;
+		minimum_value=map->minimum_value;
+		maximum_value=map->maximum_value;
+		contour_minimum=map->contour_minimum;
+		contour_maximum=map->contour_maximum;
+		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
+		colour_map=drawing_information->colour_map;
+		boundary_pixel=drawing_information->boundary_colour;
+		spectrum_pixels=drawing_information->spectrum_colours;
+		spectrum_rgb=drawing_information->spectrum_rgb;
+		/* for read only colour maps */
+		update_pixel_assignment=0;
+		for (i=0;i<MAX_SPECTRUM_COLOURS;i++)
+		{
+			update_pixel[i]=0;
+		}
+		if (maximum_value==minimum_value)
+		{
+			start_cell=0;
+			end_cell=number_of_spectrum_colours;
+		}
+		else
+		{
+			start_cell=(int)((contour_minimum-minimum_value)/
+				(maximum_value-minimum_value)*(float)(number_of_spectrum_colours-1)+
+				0.5);
+			end_cell=(int)((contour_maximum-minimum_value)/
+				(maximum_value-minimum_value)*(float)(number_of_spectrum_colours-1)+
+				0.5);
+		}
+		cell_range=end_cell-start_cell;
+		/* adjust the computer colour map for colour map */
+		if ((SHOW_COLOUR==map->colour_option)&&
+			!((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
+			(map->activation_front<number_of_spectrum_colours)))
+		{
+#if defined (UNEMAP_USE_3D)	
+			spectrum=map->drawing_information->spectrum;
+			if(spectrum_manager=
+				get_map_drawing_information_spectrum_manager(drawing_information))
+			{
+				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+				{
+					if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+						("spectrum_modify_temp"))
+					{
+						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+							(spectrum_to_be_modified_copy,spectrum);			
+						Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,0.0,
+							6.0);		
+						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+							spectrum_to_be_modified_copy,spectrum_manager);
+						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							" update_colour_map_unemap. Could not create spectrum copy.");				
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						" update_colour_map_unemap. Spectrum is not in manager!");		
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					" update_colour_map_unemap. Spectrum_manager not present");
+			}
+#else
+			Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,0.0,
+				6.0);
+#endif /* defined (UNEMAP_USE_3D) */
+
+			for (i=0;i<=start_cell;i++)
+			{
+				spectrum_rgb[i].pixel=spectrum_pixels[i];
+				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+				theta = 0.0;
+				spectrum_value_to_rgb(map->drawing_information->spectrum,
+					/* number_of_data_components */1, &theta,&red,&green,&blue);
+				red_short=(unsigned short)(65535*red); 
+				green_short=(unsigned short)(65535*green); 
+				blue_short=(unsigned short)(65535*blue); 
+				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=red_short)||
+					(spectrum_rgb[i].green!=green_short)||
+					(spectrum_rgb[i].blue!=blue_short))
+				{
+					spectrum_rgb[i].red=red_short;
+					spectrum_rgb[i].green=green_short;
+					spectrum_rgb[i].blue=blue_short;
+					update_pixel[i]=1;
+				}
+			}
+			for (i=start_cell+1;i<end_cell;i++)
+			{
+				theta=(float)(i-start_cell)/(float)(cell_range)*6;
+				spectrum_rgb[i].pixel=spectrum_pixels[i];
+				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+				spectrum_value_to_rgb(map->drawing_information->spectrum,
+					/* number_of_data_components */1, &theta,&red,&green,&blue);
+				red_short=(unsigned short)(65535*red); 
+				green_short=(unsigned short)(65535*green); 
+				blue_short=(unsigned short)(65535*blue); 
+				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=red_short)||
+					(spectrum_rgb[i].green!=green_short)||
+					(spectrum_rgb[i].blue!=blue_short))
+				{
+					spectrum_rgb[i].red=red_short;
+					spectrum_rgb[i].green=green_short;
+					spectrum_rgb[i].blue=blue_short;
+					update_pixel[i]=1;
+				}
+			}
+			for (i=end_cell;i<number_of_spectrum_colours;i++)
+			{
+				theta = 6.0;
+				spectrum_rgb[i].pixel=spectrum_pixels[i];
+				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+				spectrum_value_to_rgb(map->drawing_information->spectrum,
+					/* number_of_data_components */1, &theta,&red,&green,&blue);
+				red_short=(unsigned short)(65535*red); 
+				green_short=(unsigned short)(65535*green); 
+				blue_short=(unsigned short)(65535*blue); 
+				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=red_short)||
+					(spectrum_rgb[i].green!=green_short)||
+					(spectrum_rgb[i].blue!=blue_short))
+				{
+					spectrum_rgb[i].red=red_short;
+					spectrum_rgb[i].green=green_short;
+					spectrum_rgb[i].blue=blue_short;
+					update_pixel[i]=1;
+				}
+			}
+#if defined (OLD_CODE)
+			switch (map->spectrum_type)
+			{
+				case RED_TO_BLUE_SPECTRUM:
+				{
+					/* create a spectrum from red (early) to blue (late) */
+					for (i=0;i<=start_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=65535;
+						spectrum_rgb[i].blue=0;
+						spectrum_rgb[i].green=0;
+					}
+					for (i=start_cell+1;i<end_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						theta=(float)(i-start_cell)/(float)(cell_range)*6;
+						if (theta<2)
+						{
+							spectrum_rgb[i].red=65535;
+							spectrum_rgb[i].blue=0;
+							if (theta<1)
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((theta*0.75)*65535);
+							}
+							else
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((0.75+(theta-1)*0.25)*65535);
+							}
+						}
+						else
+						{
+							if (theta<4)
+							{
+								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
+								spectrum_rgb[i].green=65535;
+								spectrum_rgb[i].blue=
+									(unsigned int)((theta-2)*32767);
+							}
+							else
+							{
+								spectrum_rgb[i].red=0;
+								spectrum_rgb[i].blue=65535;
+								if (theta<5)
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((1-(theta-4)*0.25)*65535);
+								}
+								else
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((0.75-(theta-5)*0.75)*65535);
+								}
+							}
+						}
+					}
+					for (i=end_cell;i<number_of_spectrum_colours;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=0;
+						spectrum_rgb[i].blue=65535;
+						spectrum_rgb[i].green=0;
+					}
+				} break;
+				case BLUE_TO_RED_SPECTRUM:
+				{
+					/* create a spectrum from blue (low) to red (high) */
+					for (i=0;i<=start_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=0;
+						spectrum_rgb[i].blue=65535;
+						spectrum_rgb[i].green=0;
+					}
+					for (i=start_cell+1;i<end_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						theta=(float)(end_cell-i)/(float)(cell_range)*6;
+						if (theta<2)
+						{
+							spectrum_rgb[i].red=65535;
+							spectrum_rgb[i].blue=0;
+							if (theta<1)
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((theta*0.75)*65535);
+							}
+							else
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((0.75+(theta-1)*0.25)*65535);
+							}
+						}
+						else
+						{
+							if (theta<4)
+							{
+								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
+								spectrum_rgb[i].green=65535;
+								spectrum_rgb[i].blue=
+									(unsigned int)((theta-2)*32767);
+							}
+							else
+							{
+								spectrum_rgb[i].red=0;
+								spectrum_rgb[i].blue=65535;
+								if (theta<5)
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((1-(theta-4)*0.25)*65535);
+								}
+								else
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((0.75-(theta-5)*0.75)*65535);
+								}
+							}
+						}
+					}
+					for (i=end_cell;i<number_of_spectrum_colours;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=65535;
+						spectrum_rgb[i].blue=0;
+						spectrum_rgb[i].green=0;
+					}
+				} break;
+				case LOG_BLUE_TO_RED_SPECTRUM:
+				{
+					float negative_scaling,positive_scaling;
+
+					negative_scaling=1;
+					positive_scaling=1;
+					/* create a log spectrum from blue (low) to red (high) */
+					for (i=0;i<=start_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=0;
+						spectrum_rgb[i].blue=65535;
+						spectrum_rgb[i].green=0;
+					}
+					for (i=start_cell+1;i<end_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						theta=contour_minimum+(float)(i-start_cell)*
+							(contour_maximum-contour_minimum)/(float)(cell_range);
+						if ((contour_minimum<0)&&(0<contour_maximum))
+						{
+							if (theta<0)
+							{
+								theta=(1-log((contour_minimum+negative_scaling*theta)/
+									contour_minimum)/log(1+negative_scaling))/2;
+							}
+							else
+							{
+								theta=(1+log((contour_maximum+negative_scaling*theta)/
+									contour_maximum)/log(1+positive_scaling))/2;
+							}
+						}
+						else
+						{
+							if (theta<0)
+							{
+								theta=log(1+negative_scaling*(theta-contour_minimum)/
+									(contour_maximum-contour_minimum))/log(1+negative_scaling);
+							}
+							else
+							{
+								theta=log(1+positive_scaling*(theta-contour_minimum)/
+									(contour_maximum-contour_minimum))/log(1+positive_scaling);
+							}
+						}
+						theta=(1-theta)*6;
+						if (theta<2)
+						{
+							spectrum_rgb[i].red=65535;
+							spectrum_rgb[i].blue=0;
+							if (theta<1)
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((theta*0.75)*65535);
+							}
+							else
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((0.75+(theta-1)*0.25)*65535);
+							}
+						}
+						else
+						{
+							if (theta<4)
+							{
+								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
+								spectrum_rgb[i].green=65535;
+								spectrum_rgb[i].blue=
+									(unsigned int)((theta-2)*32767);
+							}
+							else
+							{
+								spectrum_rgb[i].red=0;
+								spectrum_rgb[i].blue=65535;
+								if (theta<5)
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((1-(theta-4)*0.25)*65535);
+								}
+								else
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((0.75-(theta-5)*0.75)*65535);
+								}
+							}
+						}
+					}
+					for (i=end_cell;i<number_of_spectrum_colours;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=65535;
+						spectrum_rgb[i].blue=0;
+						spectrum_rgb[i].green=0;
+					}
+				} break;
+				case LOG_RED_TO_BLUE_SPECTRUM:
+				{
+					float negative_scaling,positive_scaling;
+
+					negative_scaling=1;
+					positive_scaling=1;
+					/* create a log spectrum from red (low) to blue (high) */
+					for (i=0;i<=start_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=65535;
+						spectrum_rgb[i].blue=0;
+						spectrum_rgb[i].green=0;
+					}
+					for (i=start_cell+1;i<end_cell;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						theta=contour_minimum+(float)(i-start_cell)*
+							(contour_maximum-contour_minimum)/(float)(cell_range);
+						if ((contour_minimum<0)&&(0<contour_maximum))
+						{
+							if (theta<0)
+							{
+								theta=(1-log((contour_minimum+negative_scaling*theta)/
+									contour_minimum)/log(1+negative_scaling))/2;
+							}
+							else
+							{
+								theta=(1+log((contour_maximum+negative_scaling*theta)/
+									contour_maximum)/log(1+positive_scaling))/2;
+							}
+						}
+						else
+						{
+							if (theta<0)
+							{
+								theta=log(1+negative_scaling*(theta-contour_minimum)/
+									(contour_maximum-contour_minimum))/log(1+negative_scaling);
+							}
+							else
+							{
+								theta=log(1+positive_scaling*(theta-contour_minimum)/
+									(contour_maximum-contour_minimum))/log(1+positive_scaling);
+							}
+						}
+						theta=theta*6;
+						if (theta<2)
+						{
+							spectrum_rgb[i].red=65535;
+							spectrum_rgb[i].blue=0;
+							if (theta<1)
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((theta*0.75)*65535);
+							}
+							else
+							{
+								spectrum_rgb[i].green=
+									(unsigned int)((0.75+(theta-1)*0.25)*65535);
+							}
+						}
+						else
+						{
+							if (theta<4)
+							{
+								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
+								spectrum_rgb[i].green=65535;
+								spectrum_rgb[i].blue=
+									(unsigned int)((theta-2)*32767);
+							}
+							else
+							{
+								spectrum_rgb[i].red=0;
+								spectrum_rgb[i].blue=65535;
+								if (theta<5)
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((1-(theta-4)*0.25)*65535);
+								}
+								else
+								{
+									spectrum_rgb[i].green=
+										(unsigned int)((0.75-(theta-5)*0.75)*65535);
+								}
+							}
+						}
+					}
+					for (i=end_cell;i<number_of_spectrum_colours;i++)
+					{
+						spectrum_rgb[i].pixel=spectrum_pixels[i];
+						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+						spectrum_rgb[i].red=0;
+						spectrum_rgb[i].blue=65535;
+						spectrum_rgb[i].green=0;
+					}
+				} break;
+			}
+#endif /* defined (OLD_CODE) */
+			/* hide the map boundary */
+#if defined (OLD_CODE)
+			if (map_image&&(drawing_information->read_only_colour_map))
+#endif /* defined (OLD_CODE) */
+			if (drawing_information->read_only_colour_map)
+			{
+				if (drawing_information->boundary_colour!=
+					drawing_information->background_drawing_colour)
+				{
+					update_pixel_assignment=1;
+					drawing_information->boundary_colour=
+						drawing_information->background_drawing_colour;
+				}
+			}
+			else
+			{
+				if ((Pixel)NULL!=boundary_pixel)
+				{
+					colour.pixel=drawing_information->background_drawing_colour;
+					XQueryColor(display,colour_map,&colour);
+					colour.pixel=boundary_pixel;
+					colour.flags=DoRed|DoGreen|DoBlue;
+					XStoreColor(display,colour_map,&colour);
+				}
+			}
+		}
+		else
+		{
+			/* use background drawing colour for the whole spectrum */
+			colour.pixel=drawing_information->background_drawing_colour;
+			XQueryColor(display,colour_map,&colour);
+			for (i=0;i<number_of_spectrum_colours;i++)
+			{
+				spectrum_rgb[i].pixel=spectrum_pixels[i];
+				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+				if (!(spectrum_rgb[i].pixel)||(spectrum_rgb[i].red!=colour.red)||
+					(spectrum_rgb[i].green!=colour.green)||
+					(spectrum_rgb[i].blue!=colour.blue))
+				{
+					spectrum_rgb[i].red=colour.red;
+					spectrum_rgb[i].blue=colour.blue;
+					spectrum_rgb[i].green=colour.green;
+					update_pixel[i]=1;
+				}
+			}
+			/* show the map boundary */
+#if defined (OLD_CODE)
+			if (map_image&&(drawing_information->read_only_colour_map))
+#endif /* defined (OLD_CODE) */
+			if (drawing_information->read_only_colour_map)
+			{
+				if (drawing_information->boundary_colour!=
+					drawing_information->contour_colour)
+				{
+					update_pixel_assignment=1;
+					drawing_information->boundary_colour=
+						drawing_information->contour_colour;
+				}
+			}
+			else
+			{
+				if ((Pixel)NULL!=boundary_pixel)
+				{
+					colour.pixel=drawing_information->contour_colour;
+					XQueryColor(display,colour_map,&colour);
+					colour.pixel=boundary_pixel;
+					colour.flags=DoRed|DoGreen|DoBlue;
+					XStoreColor(display,colour_map,&colour);
+				}
+			}
+			if ((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
+				(map->activation_front<number_of_spectrum_colours))
+			{
+				/* show the activation front */
+				colour.pixel=drawing_information->contour_colour;
+				XQueryColor(display,colour_map,&colour);
+				i=map->activation_front;
+				spectrum_rgb[i].pixel=spectrum_pixels[i];
+				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+				if (!(spectrum_pixels[i])||(spectrum_rgb[i].red!=colour.red)||
+					(spectrum_rgb[i].green!=colour.green)||
+					(spectrum_rgb[i].blue!=colour.blue))
+				{
+					spectrum_rgb[i].red=colour.red;
+					spectrum_rgb[i].blue=colour.blue;
+					spectrum_rgb[i].green=colour.green;
+					update_pixel[i]=1;
+				}
+			}
+		}
+		/* adjust the computer colour map for contours */
+		if (SHOW_CONTOURS==map->contours_option)
+		{
+			if ((VARIABLE_THICKNESS==map->contour_thickness)||
+				!(map_frame->pixel_values))
+			{
+				colour.pixel=drawing_information->contour_colour;
+				XQueryColor(display,colour_map,&colour);
+				number_of_contours=map->number_of_contours;
+				for (i=0;i<number_of_contours;i++)
+				{
+					cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
+						(float)(number_of_contours-1-i))/(float)(number_of_contours-1)-
+						minimum_value)/(maximum_value-minimum_value)*
+						(float)(number_of_spectrum_colours-1)+0.5);
+					spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
+					spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
+					if (!(spectrum_pixels[cell_number])||
+						(spectrum_rgb[cell_number].red!=colour.red)||
+						(spectrum_rgb[cell_number].green!=colour.green)||
+						(spectrum_rgb[cell_number].blue!=colour.blue))
+					{
+						spectrum_rgb[cell_number].red=colour.red;
+						spectrum_rgb[cell_number].blue=colour.blue;
+						spectrum_rgb[cell_number].green=colour.green;
+						update_pixel[cell_number]=1;
+					}
+				}
+			}
+		}
+		if (drawing_information->read_only_colour_map)
+		{
+			for (i=0;i<number_of_spectrum_colours;i++)
+			{
+				if (update_pixel[i])
+				{
+					colour.pixel=spectrum_rgb[i].pixel;
+					colour.flags=spectrum_rgb[i].flags;
+					colour.red=spectrum_rgb[i].red;
+					colour.blue=spectrum_rgb[i].blue;
+					colour.green=spectrum_rgb[i].green;
+					XAllocColor(display,colour_map,&colour);
+					if (spectrum_pixels[i]!=colour.pixel)
+					{
+						update_pixel_assignment=1;
+						spectrum_pixels[i]=colour.pixel;
+					}
+				}
+			}
+			if (update_pixel_assignment&&map_image)
+			{
+				min_f=map->minimum_value;
+				max_f=map->maximum_value;
+				background_pixel_value=map_frame->minimum;
+				boundary_pixel_value=map_frame->maximum;
+				pixel_value=map_frame->pixel_values;
+				background_pixel=drawing_information->background_drawing_colour;
+				boundary_pixel=drawing_information->boundary_colour;
+				drawing_height=drawing->height;
+				drawing_width=drawing->width;
+				/* calculate range of values */
+				range_f=max_f-min_f;
+				if (range_f<=0)
+				{
+					range_f=1;
+				}
+				for (y_pixel=0;y_pixel<drawing_height;y_pixel++)
+				{
+					for (x_pixel=0;x_pixel<drawing_width;x_pixel++)
+					{
+						f_approx= *pixel_value;
+						if (f_approx>=background_pixel_value)
+						{
+							if (f_approx<=boundary_pixel_value)
+							{
+								if (f_approx<min_f)
+								{
+									f_approx=min_f;
+								}
+								else
+								{
+									if (f_approx>max_f)
+									{
+										f_approx=max_f;
+									}
+								}
+								cell_number=(int)((f_approx-min_f)*
+									(float)(number_of_spectrum_colours-1)/
+									range_f+0.5);
+								XPutPixel(map_image,x_pixel,y_pixel,
+									spectrum_pixels[cell_number]);
+							}
+							else
+							{
+								XPutPixel(map_image,x_pixel,y_pixel,
+									boundary_pixel);
+							}
+						}
+						else
+						{
+							XPutPixel(map_image,x_pixel,y_pixel,
+								background_pixel);
+						}
+						pixel_value++;
+					}
+				}
+			}
+		}
+		else
+		{
+			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
+		}
+#if defined (UNEMAP_USE_3D)	
+		spectrum=map->drawing_information->spectrum;
+		if(spectrum_manager=
+			get_map_drawing_information_spectrum_manager(drawing_information))
+		{
+			if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+			{
+				if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+					("spectrum_modify_temp"))
+				{
+					MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+						(spectrum_to_be_modified_copy,spectrum);		
+					/*Ensure spectrum is set correctly */
+					Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
+						map->minimum_value,map->maximum_value);		
+					
+					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+						spectrum_to_be_modified_copy,spectrum_manager);
+					DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						" update_colour_map_unemap. Could not create spectrum copy.");				
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					" update_colour_map_unemap. Spectrum is not in manager!");		
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				" update_colour_map_unemap. Spectrum_manager not present");
+		}
+#else			
+		/*Ensure spectrum is set correctly */
+		Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,
+			map->minimum_value,map->maximum_value);
+#endif /* defined (UNEMAP_USE_3D) */	
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,"update_colour_map.  Missing map");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* update_colour_map */
+
+#if defined (UNEMAP_USE_3D)
+int map_remove_torso_arm_labels(struct Map_drawing_information *drawing_information)/*FOR AJP*/	
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Removes the torso arms labels from the scene.
+??JW perhaps should have a scene and scene_viewer in each Map_3d_package,
+and do Scene_remove_graphics_object in the DESTROY Map_3d_package
+==============================================================================*/
+{
+	int return_code;	
+	ENTER(map_remove_torso_arm_labels);
+	if(drawing_information)
+	{
+		if(drawing_information->torso_arm_labels)
+		{
+			Scene_remove_graphics_object(drawing_information->scene,
+				drawing_information->torso_arm_labels);
+			DEACCESS(GT_object)(&(drawing_information->torso_arm_labels));
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,"map_remove_torso_arm_labels. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_remove_torso_arm_labels */
+#endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map)
@@ -7634,7 +7467,7 @@ Removes 3d drawing for non-current region(s).
 						}
 						else
 						{ 
-							map_remove_torso_arms(drawing_information);																			
+							map_remove_torso_arm_labels(drawing_information);																			
 						}
 					}/* if(unemap_package_rig_node_group_has_electrodes */					
 					region_item=get_Region_list_item_next(region_item);
@@ -14556,4 +14389,94 @@ Should be in Scene_viewer? RC doesn't think so.
 
 	return (return_code);
 } /*map_drawing_information_align_scene  */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int define_fit_field_at_quad_elements_and_nodes(
+	struct GROUP(FE_element) *torso_element_group,
+	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(FE_node) *node_manager)
+/*******************************************************************************
+LAST MODIFIED : 7 December 2000
+
+DESCRIPTION :
+Finds all the elements in <torso_element_group> with 4 nodes, 
+for these elements defines <fit_field> at the element, and it's nodes.
+===============================================================================*/
+{
+	int return_code;
+	struct Define_fit_field_at_torso_element_nodes_data 
+		define_fit_field_at_torso_element_nodes_data;
+
+	ENTER(define_fit_field_at_quad_elements_and_nodes);
+	if(torso_element_group&&fit_field)
+	{
+		define_fit_field_at_torso_element_nodes_data.quad_element_group=
+			CREATE(GROUP(FE_element))("quad");
+		define_fit_field_at_torso_element_nodes_data.fit_field=fit_field;
+		define_fit_field_at_torso_element_nodes_data.node_manager=node_manager;
+		/* set up the quad element group, and add the fit field to the nodes*/
+		FOR_EACH_OBJECT_IN_GROUP(FE_element)(define_fit_field_at_torso_element_nodes,
+			(void *)(&define_fit_field_at_torso_element_nodes_data),torso_element_group);
+		/* put the fit field on the quad group elements */
+		return_code=set_up_fitted_potential_on_torso(
+			define_fit_field_at_torso_element_nodes_data.quad_element_group,
+			fit_field,basis_manager,element_manager);
+		/* have altered the elements, but no longer need the group */
+		DESTROY(GROUP(FE_element))
+			(&define_fit_field_at_torso_element_nodes_data.quad_element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"define_fit_field_at_quad_elements_and_nodes."
+			" Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* define_fit_field_at_quad_elements_and_nodes */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D) 
+struct FE_field *create_mapping_type_fe_field(char *field_name,
+	struct MANAGER(FE_field) *fe_field_manager)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+creates a 1 component  <field_name>
+==============================================================================*/
+{	
+	struct FE_field *map_fit_field;
+	struct CM_field_information field_info;
+	struct Coordinate_system coordinate_system;
+
+	ENTER(create_mapping_type_fe_field);
+	map_fit_field=(struct FE_field *)NULL;	
+	if(field_name&&fe_field_manager)
+	{
+		/* set up the info needed to create the potential field */			
+		set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
+		coordinate_system.type=NOT_APPLICABLE;				
+		/* create the potential  field, add it to the node */			
+		if (!(map_fit_field=get_FE_field_manager_matched_field(fe_field_manager,field_name,
+			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+			/*number_of_indexed_values*/0,&field_info,
+			&coordinate_system,FE_VALUE_VALUE,
+			/*number_of_components*/1,fit_comp_name,
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+		{
+			display_message(ERROR_MESSAGE,
+				"create_mapping_type_fe_field. Could not retrieve potential_value field");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"create_mapping_type_fe_field. invalid argument");
+	}
+	LEAVE;
+	return(map_fit_field);
+}/* create_mapping_type_fe_field */
 #endif /* defined (UNEMAP_USE_3D) */

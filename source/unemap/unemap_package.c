@@ -21,8 +21,57 @@ Contains function definitions for unemap package.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
+/*
+Module functions
+------------
+*/
 #if defined (UNEMAP_USE_3D)
+static int rig_node_has_electrode_defined(struct FE_node *node,
+	void *package_void)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
 
+DESCRIPTION :
+Determines if the <node> (assumed to be a member of a unemap_package rig_node_group)
+contains a device_type field with the value ELECTRODE.
+Called  by (see also) unemap_package_rig_node_group_has_electrodes.
+==============================================================================*/
+{
+	int return_code;
+	char *device_type_string=(char *)NULL;
+	struct Unemap_package *package=(struct Unemap_package *)NULL;
+
+	ENTER(rig_node_has_electrode_defined);
+	return_code=0;
+	if (node&&(package=(struct Unemap_package *)package_void))
+	{
+		if(FE_field_is_defined_at_node(package->device_type_field,node))
+		{
+			get_FE_nodal_string_value(node,package->device_type_field,
+				0,0,FE_NODAL_VALUE,&device_type_string);
+			if(!strcmp(device_type_string,"ELECTRODE"))
+			{
+				/*success!*/
+				return_code=1;
+			}
+			DEALLOCATE(device_type_string);			
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"rig_node_has_electrode_defined. invalid arguments");		
+	}
+	LEAVE;
+	return (return_code);
+}/* rig_node_has_electrode_defined */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+/*
+Global functions
+------------
+*/
+#if defined (UNEMAP_USE_3D)
 DECLARE_OBJECT_FUNCTIONS(Unemap_package)
 
 struct Unemap_package *CREATE(Unemap_package)(
@@ -1531,48 +1580,6 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(node_group_manager);
 }/* get_unemap_package_node_group_manager */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-static int rig_node_has_electrode_defined(struct FE_node *node,
-	void *package_void)
-/*******************************************************************************
-LAST MODIFIED : 13 June 2000
-
-DESCRIPTION :
-Determines if the <node> (assumed to be a member of a unemap_package rig_node_group)
-contains a device_type field with the value ELECTRODE.
-Called  by (see also) unemap_package_rig_node_group_has_electrodes.
-==============================================================================*/
-{
-	int return_code;
-	char *device_type_string=(char *)NULL;
-	struct Unemap_package *package=(struct Unemap_package *)NULL;
-
-	ENTER(rig_node_has_electrode_defined);
-	return_code=0;
-	if (node&&(package=(struct Unemap_package *)package_void))
-	{
-		if(FE_field_is_defined_at_node(package->device_type_field,node))
-		{
-			get_FE_nodal_string_value(node,package->device_type_field,
-				0,0,FE_NODAL_VALUE,&device_type_string);
-			if(!strcmp(device_type_string,"ELECTRODE"))
-			{
-				/*success!*/
-				return_code=1;
-			}
-			DEALLOCATE(device_type_string);			
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"rig_node_has_electrode_defined. invalid arguments");		
-	}
-	LEAVE;
-	return (return_code);
-}/* rig_node_has_electrode_defined */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)

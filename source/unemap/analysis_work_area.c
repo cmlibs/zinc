@@ -2090,7 +2090,7 @@ Sets up the analysis work area for analysing a set of signals.
 			if ((analysis->mapping_window)&&(analysis->mapping_window->map&&
 				(analysis->mapping_window->map->drawing_information)))
 			{
-				map_remove_torso_arms(analysis->mapping_window->map->drawing_information);
+				map_remove_torso_arm_labels(analysis->mapping_window->map->drawing_information);
 				/*SIMPLEX_INTERPOLATION will cause problems with no TORSOs*/
 				analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
 			}
@@ -13633,12 +13633,7 @@ DESCRIPTION :
 }/* iterative_set_highlight_field */
 #endif /* defined (UNEMAP_USE_NODES) */
 
-/*
-Global functions
-----------------
-*/
-
-int analysis_get_numbers_from_device(struct Analysis_work_area *analysis,
+static int analysis_get_numbers_from_device(struct Analysis_work_area *analysis,
 	struct Device **device,int *the_new_device_number,int *the_new_electrode_number,
 	int *the_new_auxiliary_number)
 /*******************************************************************************
@@ -13725,7 +13720,7 @@ arithmetic on it.
 	return(return_code);
 }/*analysis_get_numbers_from_device*/
 
-int analysis_get_device_and_numbers_from_number(
+static int analysis_get_device_and_numbers_from_number(
 	struct Analysis_work_area *analysis,struct Device ***the_new_device,
 	int *device_number,int *the_new_device_number,int *electrode_number,
 	int *the_new_electrode_number,int *auxiliary_number,
@@ -13917,7 +13912,7 @@ remain unchanged.
 	return(return_code);
 }/*analysis_get_device_and_numbers_from_number*/
 
-int analysis_get_device_and_numbers(struct Analysis_work_area *analysis,
+static int analysis_get_device_and_numbers(struct Analysis_work_area *analysis,
 	struct Device **device,struct Device ***the_new_device,
 	int *device_number,int *the_new_device_number,
 	int *electrode_number,int *the_new_electrode_number,
@@ -13980,7 +13975,7 @@ remain unchanged.
 	return(return_code);
 }/*analysis_get_device_and_numbers*/
 
-int highlight_analysis_perform_highlighting(struct Analysis_work_area *analysis,
+static int highlight_analysis_perform_highlighting(struct Analysis_work_area *analysis,
 	unsigned int multiple_selection,struct Device **new_highlight,
 	int new_device_number,int new_electrode_number,int new_auxiliary_number)
 /*******************************************************************************
@@ -14229,6 +14224,400 @@ else
 	LEAVE;
 	return(return_code);
 } /*highlight_analysis_perform_highlighting */
+
+#if defined (UNEMAP_USE_3D)
+static int rig_node_selection_change(struct FE_node *node,
+	void *change_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+If the selected node is a rig device node ( in all_devices_rig_node_group),
+  if highlight is 1, highlights it via highlight_analysis_perform_highlighting
+  else unhighlightsal current hghlighted via  highlight_analysis_perform_highlighting
+==============================================================================*/
+{
+	int auxiliary_number,device_number,electrode_number,multiple_selection,highlight,
+		return_code;
+	struct Analysis_work_area *analysis;
+	struct Device **device;
+	struct FE_field *device_name_field;
+	struct GROUP(FE_node) *all_devices_rig_node_group;
+	struct Rig *rig;
+	struct rig_node_selection_change_data *data;
+
+	ENTER(rig_node_selection_change);
+	device_name_field=(struct FE_field *)NULL;
+	device=(struct Device **)NULL;
+	if (node&&(data=(struct rig_node_selection_change_data *)change_data_void)
+		&&(analysis=data->analysis_work_area)
+		&&(rig=analysis->rig)&&(all_devices_rig_node_group=
+			get_Rig_all_devices_rig_node_group(rig)))
+	{
+		return_code=1;
+		multiple_selection=data->multiple_selection;
+		highlight=data->highlight;
+		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
+		{
+			if (!highlight)
+			{
+				/* don't highlight, just unhighlight any existing highlighted devices/nodes */
+				device=(struct Device **)NULL;
+			}
+			else
+			{
+				/* find the device corresponding to the node */
+				device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+				device=find_device_given_rig_node(node,device_name_field,analysis->rig);
+				analysis_get_numbers_from_device(analysis,device,&device_number,&electrode_number,
+					&auxiliary_number);
+			}
+			/* (un)highlight the device */
+			highlight_analysis_perform_highlighting(analysis,multiple_selection,
+				device,device_number,electrode_number,auxiliary_number);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"rig_node_selection_change. node not in rig_node_group");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"rig_node_selection_change.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* rig_node_selection_change */
+#endif /* defined (UNEMAP_USE_3D) */
+
+
+#if defined (UNEMAP_USE_3D)
+static int rig_node_highlight_change(struct FE_node *node,void *change_data_void)
+/*******************************************************************************
+LAST MODIFIED : 3 October 2000
+
+DESCRIPTION :
+Change the highlight status of the node/device
+==============================================================================*/
+{
+	int auxiliary_number,device_number,electrode_number,return_code;
+	struct Analysis_work_area *analysis;
+	struct Device **device;
+	struct FE_field *device_name_field;
+	struct GROUP(FE_node) *all_devices_rig_node_group;
+	struct Rig *rig;
+	struct rig_node_selection_change_data *data;
+	struct Map *map;
+	struct Mapping_window *mapping;
+
+	ENTER(rig_node_highlight_change);
+	device_name_field=(struct FE_field *)NULL;
+	device=(struct Device **)NULL;
+	map=(struct Map *)NULL;
+	mapping=(struct Mapping_window *)NULL;
+	if (node&&(data=(struct rig_node_selection_change_data *)change_data_void)
+		&&(analysis=data->analysis_work_area)
+		&&(rig=analysis->rig)&&(all_devices_rig_node_group=
+			get_Rig_all_devices_rig_node_group(rig)))
+	{
+		return_code=1;
+
+		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
+		{
+			/* find the device corresponding to the node */
+			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+			device=find_device_given_rig_node(node,device_name_field,analysis->rig);
+			/*set the highlight*/
+			(*device)->highlight=data->highlight;
+			/* highlight the electrode on 2D map */
+			if ((mapping=analysis->mapping_window)&&(map=mapping->map))
+			{
+				analysis_get_numbers_from_device(analysis,device,&device_number,
+					&electrode_number,&auxiliary_number);
+				highlight_electrode_or_auxiliar(*device,
+#if defined (UNEMAP_USE_NODES)
+					(struct FE_node *)NULL,
+#endif
+					electrode_number,auxiliary_number,map,mapping);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"rig_node_highlight_change. node not in rig_node_group");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"rig_node_highlight_change.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* rig_node_highlight_change */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static void rig_node_group_node_selection_change(struct FE_node_selection *node_selection,
+	struct FE_node_selection_changes *changes,void *analysis_work_area_void)
+/*******************************************************************************
+LAST MODIFIED : 3 October 2000
+
+DESCRIPTION :
+Callback for change in the  node selection. Checks to see if nodes  are in
+the rig_node group. If are highlights them.
+==============================================================================*/
+{
+#if defined (UNEMAP_USE_NODES)
+	/*Need to update the code to work entirely with nodes i.e to use highlight field*/
+	/* of nodes and noty use devices at all */
+	/* See also  highlight_analysis_device_node (needs updating too) */
+	ENTER(rig_node_group_node_selection_change);
+	USE_PARAMETER(node_selection);
+	USE_PARAMETER(changes);
+	USE_PARAMETER(analysis_work_area_void);
+	display_message(ERROR_MESSAGE,
+			"rig_node_group_node_selection_change. Update to work with nodes! ");
+	LEAVE;
+#else /* if defined(UNEMAP_USE_NODES) */
+	struct rig_node_selection_change_data data;
+	struct Analysis_work_area *analysis;
+	struct LIST(FE_node) *node_list;
+	struct FE_node *node;
+	struct FE_field *device_name_field;
+	struct Device **device;
+
+	ENTER(rig_node_group_node_selection_change);
+	node_list=(struct LIST(FE_node) *)NULL;
+	device=(struct Device **)NULL;
+	node=(struct FE_node *)NULL;
+	device_name_field=(struct FE_field *)NULL;
+	node_list=(struct LIST(FE_node) *)NULL;
+
+	if (node_selection&&changes&&(analysis=(struct Analysis_work_area *)
+		analysis_work_area_void))
+	{
+		data.analysis_work_area=analysis;
+		/* determine multiple_selection flag */
+		node_list=FE_node_selection_get_node_list(node_selection);
+		if ((NUMBER_IN_LIST(FE_node)(node_list))>1)
+		{
+			data.multiple_selection=1;
+		}
+		else
+		{
+			data.multiple_selection=0;
+		}
+		if (((NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))>1)||
+			((NUMBER_IN_LIST(FE_node)(changes->newly_unselected_node_list))>1))
+		{
+			/* this method is more efficient if many nodes are (un)selected
+				unhighlight the unselected nodes/devices */
+			data.highlight=0;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
+				changes->newly_unselected_node_list);
+			/* highlight the selected nodes/devices */
+			data.highlight=1;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
+				changes->newly_selected_node_list);
+			/* get the first (un)selected node */
+			if (!(node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+				changes->newly_selected_node_list)))
+			{
+				node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+					(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+					changes->newly_unselected_node_list);
+			}
+			/* find the device corresponding to the node */
+			device_name_field=
+				get_unemap_package_device_name_field(analysis->unemap_package);
+			device=find_device_given_rig_node(node,device_name_field,analysis->rig);
+			/*make it THE highlighted device */
+			analysis->highlight=device;
+			/* update the  windows*/
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);
+		}
+		else
+		{
+			/* this method is more efficient if just one node is (un)selected
+				change unselected nodes. Don't highlight anything, just unhighlight
+				unselected  */
+			data.highlight=0;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
+				changes->newly_unselected_node_list);
+			/* change selected nodes. Highlight them! */
+			data.highlight=1;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
+				changes->newly_selected_node_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"rig_node_group_node_selection_change.  Invalid argument(s)");
+	}
+	LEAVE;
+#endif /* defined (UNEMAP_USE_NODES)*/
+} /* rig_node_group_node_selection_change */
+#endif /* defined (UNEMAP_USE_3D) */
+
+static void analysis_set_highlight_min(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2000
+
+DESCRIPTION :
+Sets the analysis_work_area's highlighted signal's mimimum, from the
+contents of the analysis_window->interval.maximum_value XmTextField widget
+c.f update_signal_range_widget_from_highlight_signal
+==============================================================================*/
+{
+	struct Analysis_work_area *analysis;
+	char *value_string;
+	float minimum;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_field *signal_minimum_field;
+	struct FE_field_component component;
+	struct FE_node *rig_node;
+	struct Signal_drawing_package *signal_drawing_package;
+#else
+	struct Device *device;
+#endif /*	defined (UNEMAP_USE_NODES) */
+	ENTER(analysis_set_highlight_min);
+#if defined (UNEMAP_USE_NODES)
+	rig_node=(struct FE_node *)NULL;
+	signal_minimum_field=(struct FE_field *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+#else
+	device=(struct Device *)NULL;
+#endif /*	defined (UNEMAP_USE_NODES) */
+	value_string=(char *)NULL;
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{
+#if defined (UNEMAP_USE_NODES)
+		rig_node=analysis->highlight_rig_node;
+		signal_drawing_package=analysis->signal_drawing_package;
+#else
+		device=*(analysis->highlight);
+#endif /*	defined (UNEMAP_USE_NODES) */
+		/* extract the value from the widget*/
+		XtVaGetValues((analysis->window->interval.minimum_value),
+			XmNvalue,&value_string,NULL);
+		if (1==sscanf(value_string,"%f",&minimum))
+		{
+			/* now have the value to set */
+#if defined (UNEMAP_USE_NODES)
+			signal_drawing_package=analysis->signal_drawing_package;
+			signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
+				signal_drawing_package);
+			/* set the new signal_minimum */
+			component.number=0;
+			component.field = signal_minimum_field;
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
+#else
+			device->signal_minimum=minimum;
+#endif /*	defined (UNEMAP_USE_NODES) */
+			/* update the display */
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);
+		}
+		XtFree(value_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_set_highlight_min.  Missing analysis_work_area");
+	}
+	LEAVE;
+}/* analysis_set_highlight_min */
+
+static void analysis_set_highlight_max(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2000
+
+DESCRIPTION :
+Sets the analysis_work_area's highlighted signal's maximum, from the
+contents of the analysis_window->interval.maximum_value XmTextField widget
+c.f update_signal_range_widget_from_highlight_signal
+==============================================================================*/
+{
+	struct Analysis_work_area *analysis;
+	char *value_string;
+	float maximum;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_field *signal_maximum_field;
+	struct FE_field_component component;
+	struct FE_node *rig_node;
+	struct Signal_drawing_package *signal_drawing_package;
+#else
+	struct Device *device;
+#endif /*	defined (UNEMAP_USE_NODES) */
+	ENTER(analysis_set_highlight_max);
+#if defined (UNEMAP_USE_NODES)
+	rig_node=(struct FE_node *)NULL;
+	signal_maximum_field=(struct FE_field *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+#else
+	device=(struct Device *)NULL;
+#endif /*	defined (UNEMAP_USE_NODES) */
+	value_string=(char *)NULL;
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{
+#if defined (UNEMAP_USE_NODES)
+		rig_node=analysis->highlight_rig_node;
+		signal_drawing_package=analysis->signal_drawing_package;
+#else
+		device=*(analysis->highlight);
+#endif /*	defined (UNEMAP_USE_NODES) */
+		/* extract the value from the widget*/
+		XtVaGetValues((analysis->window->interval.maximum_value),
+			XmNvalue,&value_string,NULL);
+		if (1==sscanf(value_string,"%f",&maximum))
+		{
+			/* now have the value to set */
+#if defined (UNEMAP_USE_NODES)
+			signal_drawing_package=analysis->signal_drawing_package;
+			signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
+				signal_drawing_package);
+			/* set the new signal_maximum*/
+			component.number=0;
+			component.field = signal_maximum_field;
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
+#else
+			device->signal_maximum=maximum;
+#endif /*	defined (UNEMAP_USE_NODES) */
+			/* update the display */
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);
+		}
+		XtFree(value_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_set_highlight_max.  Missing analysis_work_area");
+	}
+	LEAVE;
+}/* analysis_set_highlight_max */
+
+/*
+Global functions
+----------------
+*/
 
 int highlight_analysis_device(unsigned int multiple_selection,
 	struct Device **device,	int *device_number,int *electrode_number,
@@ -15587,395 +15976,6 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 	}
 	LEAVE;
 } /* analysis_select_map_drawing_are */
-
-#if defined (UNEMAP_USE_3D)
-static int rig_node_selection_change(struct FE_node *node,
-	void *change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 29 September 2000
-
-DESCRIPTION :
-If the selected node is a rig device node ( in all_devices_rig_node_group),
-  if highlight is 1, highlights it via highlight_analysis_perform_highlighting
-  else unhighlightsal current hghlighted via  highlight_analysis_perform_highlighting
-==============================================================================*/
-{
-	int auxiliary_number,device_number,electrode_number,multiple_selection,highlight,
-		return_code;
-	struct Analysis_work_area *analysis;
-	struct Device **device;
-	struct FE_field *device_name_field;
-	struct GROUP(FE_node) *all_devices_rig_node_group;
-	struct Rig *rig;
-	struct rig_node_selection_change_data *data;
-
-	ENTER(rig_node_selection_change);
-	device_name_field=(struct FE_field *)NULL;
-	device=(struct Device **)NULL;
-	if (node&&(data=(struct rig_node_selection_change_data *)change_data_void)
-		&&(analysis=data->analysis_work_area)
-		&&(rig=analysis->rig)&&(all_devices_rig_node_group=
-			get_Rig_all_devices_rig_node_group(rig)))
-	{
-		return_code=1;
-		multiple_selection=data->multiple_selection;
-		highlight=data->highlight;
-		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
-		{
-			if (!highlight)
-			{
-				/* don't highlight, just unhighlight any existing highlighted devices/nodes */
-				device=(struct Device **)NULL;
-			}
-			else
-			{
-				/* find the device corresponding to the node */
-				device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-				device=find_device_given_rig_node(node,device_name_field,analysis->rig);
-				analysis_get_numbers_from_device(analysis,device,&device_number,&electrode_number,
-					&auxiliary_number);
-			}
-			/* (un)highlight the device */
-			highlight_analysis_perform_highlighting(analysis,multiple_selection,
-				device,device_number,electrode_number,auxiliary_number);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"rig_node_selection_change. node not in rig_node_group");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"rig_node_selection_change.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-} /* rig_node_selection_change */
-#endif /* defined (UNEMAP_USE_3D) */
-
-
-#if defined (UNEMAP_USE_3D)
-static int rig_node_highlight_change(struct FE_node *node,void *change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 3 October 2000
-
-DESCRIPTION :
-Change the highlight status of the node/device
-==============================================================================*/
-{
-	int auxiliary_number,device_number,electrode_number,return_code;
-	struct Analysis_work_area *analysis;
-	struct Device **device;
-	struct FE_field *device_name_field;
-	struct GROUP(FE_node) *all_devices_rig_node_group;
-	struct Rig *rig;
-	struct rig_node_selection_change_data *data;
-	struct Map *map;
-	struct Mapping_window *mapping;
-
-	ENTER(rig_node_highlight_change);
-	device_name_field=(struct FE_field *)NULL;
-	device=(struct Device **)NULL;
-	map=(struct Map *)NULL;
-	mapping=(struct Mapping_window *)NULL;
-	if (node&&(data=(struct rig_node_selection_change_data *)change_data_void)
-		&&(analysis=data->analysis_work_area)
-		&&(rig=analysis->rig)&&(all_devices_rig_node_group=
-			get_Rig_all_devices_rig_node_group(rig)))
-	{
-		return_code=1;
-
-		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
-		{
-			/* find the device corresponding to the node */
-			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-			device=find_device_given_rig_node(node,device_name_field,analysis->rig);
-			/*set the highlight*/
-			(*device)->highlight=data->highlight;
-			/* highlight the electrode on 2D map */
-			if ((mapping=analysis->mapping_window)&&(map=mapping->map))
-			{
-				analysis_get_numbers_from_device(analysis,device,&device_number,
-					&electrode_number,&auxiliary_number);
-				highlight_electrode_or_auxiliar(*device,
-#if defined (UNEMAP_USE_NODES)
-					(struct FE_node *)NULL,
-#endif
-					electrode_number,auxiliary_number,map,mapping);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"rig_node_highlight_change. node not in rig_node_group");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"rig_node_highlight_change.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-} /* rig_node_highlight_change */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-void rig_node_group_node_selection_change(struct FE_node_selection *node_selection,
-	struct FE_node_selection_changes *changes,void *analysis_work_area_void)
-/*******************************************************************************
-LAST MODIFIED : 3 October 2000
-
-DESCRIPTION :
-Callback for change in the  node selection. Checks to see if nodes  are in
-the rig_node group. If are highlights them.
-==============================================================================*/
-{
-#if defined (UNEMAP_USE_NODES)
-	/*Need to update the code to work entirely with nodes i.e to use highlight field*/
-	/* of nodes and noty use devices at all */
-	/* See also  highlight_analysis_device_node (needs updating too) */
-	ENTER(rig_node_group_node_selection_change);
-	USE_PARAMETER(node_selection);
-	USE_PARAMETER(changes);
-	USE_PARAMETER(analysis_work_area_void);
-	display_message(ERROR_MESSAGE,
-			"rig_node_group_node_selection_change. Update to work with nodes! ");
-	LEAVE;
-#else /* if defined(UNEMAP_USE_NODES) */
-	struct rig_node_selection_change_data data;
-	struct Analysis_work_area *analysis;
-	struct LIST(FE_node) *node_list;
-	struct FE_node *node;
-	struct FE_field *device_name_field;
-	struct Device **device;
-
-	ENTER(rig_node_group_node_selection_change);
-	node_list=(struct LIST(FE_node) *)NULL;
-	device=(struct Device **)NULL;
-	node=(struct FE_node *)NULL;
-	device_name_field=(struct FE_field *)NULL;
-	node_list=(struct LIST(FE_node) *)NULL;
-
-	if (node_selection&&changes&&(analysis=(struct Analysis_work_area *)
-		analysis_work_area_void))
-	{
-		data.analysis_work_area=analysis;
-		/* determine multiple_selection flag */
-		node_list=FE_node_selection_get_node_list(node_selection);
-		if ((NUMBER_IN_LIST(FE_node)(node_list))>1)
-		{
-			data.multiple_selection=1;
-		}
-		else
-		{
-			data.multiple_selection=0;
-		}
-		if (((NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))>1)||
-			((NUMBER_IN_LIST(FE_node)(changes->newly_unselected_node_list))>1))
-		{
-			/* this method is more efficient if many nodes are (un)selected
-				unhighlight the unselected nodes/devices */
-			data.highlight=0;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
-				changes->newly_unselected_node_list);
-			/* highlight the selected nodes/devices */
-			data.highlight=1;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
-				changes->newly_selected_node_list);
-			/* get the first (un)selected node */
-			if (!(node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-				changes->newly_selected_node_list)))
-			{
-				node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-					(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-					changes->newly_unselected_node_list);
-			}
-			/* find the device corresponding to the node */
-			device_name_field=
-				get_unemap_package_device_name_field(analysis->unemap_package);
-			device=find_device_given_rig_node(node,device_name_field,analysis->rig);
-			/*make it THE highlighted device */
-			analysis->highlight=device;
-			/* update the  windows*/
-			update_signals_drawing_area(analysis->window);
-			update_interval_drawing_area(analysis->window);
-			trace_change_signal(analysis->trace);
-		}
-		else
-		{
-			/* this method is more efficient if just one node is (un)selected
-				change unselected nodes. Don't highlight anything, just unhighlight
-				unselected  */
-			data.highlight=0;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
-				changes->newly_unselected_node_list);
-			/* change selected nodes. Highlight them! */
-			data.highlight=1;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
-				changes->newly_selected_node_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"rig_node_group_node_selection_change.  Invalid argument(s)");
-	}
-	LEAVE;
-#endif /* defined (UNEMAP_USE_NODES)*/
-} /* rig_node_group_node_selection_change */
-#endif /* defined (UNEMAP_USE_3D) */
-
-static void analysis_set_highlight_min(Widget widget,XtPointer analysis_work_area,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2000
-
-DESCRIPTION :
-Sets the analysis_work_area's highlighted signal's mimimum, from the
-contents of the analysis_window->interval.maximum_value XmTextField widget
-c.f update_signal_range_widget_from_highlight_signal
-==============================================================================*/
-{
-	struct Analysis_work_area *analysis;
-	char *value_string;
-	float minimum;
-#if defined (UNEMAP_USE_NODES)
-	struct FE_field *signal_minimum_field;
-	struct FE_field_component component;
-	struct FE_node *rig_node;
-	struct Signal_drawing_package *signal_drawing_package;
-#else
-	struct Device *device;
-#endif /*	defined (UNEMAP_USE_NODES) */
-	ENTER(analysis_set_highlight_min);
-#if defined (UNEMAP_USE_NODES)
-	rig_node=(struct FE_node *)NULL;
-	signal_minimum_field=(struct FE_field *)NULL;
-	signal_drawing_package=(struct Signal_drawing_package *)NULL;
-#else
-	device=(struct Device *)NULL;
-#endif /*	defined (UNEMAP_USE_NODES) */
-	value_string=(char *)NULL;
-	USE_PARAMETER(call_data);
-	USE_PARAMETER(widget);
-
-	if (analysis=(struct Analysis_work_area *)analysis_work_area)
-	{
-#if defined (UNEMAP_USE_NODES)
-		rig_node=analysis->highlight_rig_node;
-		signal_drawing_package=analysis->signal_drawing_package;
-#else
-		device=*(analysis->highlight);
-#endif /*	defined (UNEMAP_USE_NODES) */
-		/* extract the value from the widget*/
-		XtVaGetValues((analysis->window->interval.minimum_value),
-			XmNvalue,&value_string,NULL);
-		if (1==sscanf(value_string,"%f",&minimum))
-		{
-			/* now have the value to set */
-#if defined (UNEMAP_USE_NODES)
-			signal_drawing_package=analysis->signal_drawing_package;
-			signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
-				signal_drawing_package);
-			/* set the new signal_minimum */
-			component.number=0;
-			component.field = signal_minimum_field;
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
-#else
-			device->signal_minimum=minimum;
-#endif /*	defined (UNEMAP_USE_NODES) */
-			/* update the display */
-			update_signals_drawing_area(analysis->window);
-			update_interval_drawing_area(analysis->window);
-			trace_change_signal(analysis->trace);
-		}
-		XtFree(value_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"analysis_set_highlight_min.  Missing analysis_work_area");
-	}
-	LEAVE;
-}/* analysis_set_highlight_min */
-
-static void analysis_set_highlight_max(Widget widget,XtPointer analysis_work_area,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2000
-
-DESCRIPTION :
-Sets the analysis_work_area's highlighted signal's maximum, from the
-contents of the analysis_window->interval.maximum_value XmTextField widget
-c.f update_signal_range_widget_from_highlight_signal
-==============================================================================*/
-{
-	struct Analysis_work_area *analysis;
-	char *value_string;
-	float maximum;
-#if defined (UNEMAP_USE_NODES)
-	struct FE_field *signal_maximum_field;
-	struct FE_field_component component;
-	struct FE_node *rig_node;
-	struct Signal_drawing_package *signal_drawing_package;
-#else
-	struct Device *device;
-#endif /*	defined (UNEMAP_USE_NODES) */
-	ENTER(analysis_set_highlight_max);
-#if defined (UNEMAP_USE_NODES)
-	rig_node=(struct FE_node *)NULL;
-	signal_maximum_field=(struct FE_field *)NULL;
-	signal_drawing_package=(struct Signal_drawing_package *)NULL;
-#else
-	device=(struct Device *)NULL;
-#endif /*	defined (UNEMAP_USE_NODES) */
-	value_string=(char *)NULL;
-	USE_PARAMETER(call_data);
-	USE_PARAMETER(widget);
-
-	if (analysis=(struct Analysis_work_area *)analysis_work_area)
-	{
-#if defined (UNEMAP_USE_NODES)
-		rig_node=analysis->highlight_rig_node;
-		signal_drawing_package=analysis->signal_drawing_package;
-#else
-		device=*(analysis->highlight);
-#endif /*	defined (UNEMAP_USE_NODES) */
-		/* extract the value from the widget*/
-		XtVaGetValues((analysis->window->interval.maximum_value),
-			XmNvalue,&value_string,NULL);
-		if (1==sscanf(value_string,"%f",&maximum))
-		{
-			/* now have the value to set */
-#if defined (UNEMAP_USE_NODES)
-			signal_drawing_package=analysis->signal_drawing_package;
-			signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
-				signal_drawing_package);
-			/* set the new signal_maximum*/
-			component.number=0;
-			component.field = signal_maximum_field;
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
-#else
-			device->signal_maximum=maximum;
-#endif /*	defined (UNEMAP_USE_NODES) */
-			/* update the display */
-			update_signals_drawing_area(analysis->window);
-			update_interval_drawing_area(analysis->window);
-			trace_change_signal(analysis->trace);
-		}
-		XtFree(value_string);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"analysis_set_highlight_max.  Missing analysis_work_area");
-	}
-	LEAVE;
-}/* analysis_set_highlight_max */
 
 int create_analysis_work_area(struct Analysis_work_area *analysis,
 	Widget activation,Widget parent,int pointer_sensitivity,

@@ -21731,7 +21731,7 @@ Executes a UNEMAP OPEN command.
 									command_data->data_selection,
 									command_data->user_interface);								
 								/* create and store the map fit field  */
-								map_fit_field=create_1_comp_fe_value_field("fit",
+								map_fit_field=create_mapping_type_fe_field("fit",
 									command_data->fe_field_manager);
 								set_unemap_package_map_fit_field(command_data->unemap_package,
 									map_fit_field);

@@ -117,793 +117,7 @@ Module variables
 Module functions
 ----------------
 */
-#if defined (UNEMAP_USE_3D)
-struct Min_max_iterator *CREATE(Min_max_iterator)(void)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
 
-DESCRIPTION:
-Create a Min_max_iterator, set fields to NULL/0.
-==============================================================================*/
-{	
-	struct  Min_max_iterator *min_max_iterator;
-
-	ENTER(CREATE(Min_max_iterator));
-	min_max_iterator=(struct  Min_max_iterator *)NULL;
-	if (ALLOCATE(min_max_iterator,struct Min_max_iterator,1))
-	{
-		min_max_iterator->max=0;
-		min_max_iterator->min=0;
-		min_max_iterator->time=0;
-		min_max_iterator->count=0;
-		min_max_iterator->started=0; /*have we started accumulating info yet? */
-		min_max_iterator->channel_gain_field=(struct FE_field *)NULL;
-		min_max_iterator->channel_offset_field=(struct FE_field *)NULL;
-#if defined (UNEMAP_USE_NODES)
-		min_max_iterator->display_start_time_field=(struct FE_field *)NULL;
-		min_max_iterator->display_end_time_field=(struct FE_field *)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
-		min_max_iterator->signal_minimum_field=(struct FE_field *)NULL;
-		min_max_iterator->signal_maximum_field=(struct FE_field *)NULL;
-		min_max_iterator->signal_status_field=(struct FE_field *)NULL;	
-		min_max_iterator->signal_component=(struct FE_field_component *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Unemap_package).  Could not allocate memory ");
-		DEALLOCATE(min_max_iterator);
-	}
-	LEAVE;
-	return(min_max_iterator);
-}
-
-int DESTROY(Min_max_iterator)(struct Min_max_iterator **iterator_address)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000 
-
-DESCRIPTION :
-Destroy a Min_max_iterator. Don't DEACCESS fields, 'cos never accessed them.
-This is only temp references for iteration.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(DESTROY(Min_max_iterator));
-	if (iterator_address)
-	{				
-		DEALLOCATE(*iterator_address);		
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Min_max_iterator) */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
-	int *started)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the started of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&started)
-	{
-		return_code=1;
-		*started=min_max_iterator->started;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_started. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_started */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, int started)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the started of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->started=started;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_started. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_started */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
-	int *count)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the count of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&count)
-	{
-		return_code=1;
-		*count=min_max_iterator->count;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_count. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_count */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, int count)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the count of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->count=count;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_count. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_count */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, 
-	FE_value *time)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the time of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&time)
-	{
-		return_code=1;
-		*time=min_max_iterator->time;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_time. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_time */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the time of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->time=time;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_time. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_time */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, 
-	FE_value *min)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the min of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&min)
-	{
-		return_code=1;
-		*min=min_max_iterator->min;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_min. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_min */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, FE_value min)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the min of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->min=min;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_min. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_min */
-
-int get_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, 
-	FE_value *max)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the max of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&max)
-	{
-		return_code=1;
-		*max=min_max_iterator->max;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_max. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_max */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, FE_value max)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the max of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->max=max;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_max. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_max */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_gain_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the channel_gain_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&channel_gain_field)
-	{
-		return_code=1;
-		channel_gain_field=min_max_iterator->channel_gain_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_channel_gain_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_channel_gain_field */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_gain_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the channel_gain_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->channel_gain_field=channel_gain_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_channel_gain_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_channel_gain_field */
-
-int get_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_offset_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the channel_offset_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&channel_offset_field)
-	{
-		return_code=1;
-		channel_offset_field=min_max_iterator->channel_offset_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_channel_offset_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_channel_offset_field */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_offset_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the channel_offset_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->channel_offset_field=channel_offset_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_channel_offset_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_channel_offset_field */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_NODES)
-int get_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *display_start_time_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the display_start_time_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&display_start_time_field)
-	{
-		return_code=1;
-		display_start_time_field=min_max_iterator->display_start_time_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_display_start_time_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_display_start_time_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int set_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *display_start_time_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the display_start_time_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->display_start_time_field=display_start_time_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_display_start_time_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_display_start_time_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int get_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *display_end_time_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the display_end_time_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&display_end_time_field)
-	{
-		return_code=1;
-		display_end_time_field=min_max_iterator->display_end_time_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_display_end_time_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_display_end_time_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int set_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *display_end_time_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the display_end_time_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->display_end_time_field=display_end_time_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_display_end_time_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_display_end_time_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int get_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *signal_minimum_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the signal_minimum_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&signal_minimum_field)
-	{
-		return_code=1;
-		signal_minimum_field=min_max_iterator->signal_minimum_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_signal_minimum_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_signal_minimum_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int set_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *signal_minimum_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the signal_minimum_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->signal_minimum_field=signal_minimum_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_signal_minimum_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_signal_minimum_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int get_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *signal_maximum_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the signal_maximum_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&signal_maximum_field)
-	{
-		return_code=1;
-		signal_maximum_field=min_max_iterator->signal_maximum_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_signal_maximum_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_signal_maximum_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int set_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *signal_maximum_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the signal_maximum_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->signal_maximum_field=signal_maximum_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_signal_maximum_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_signal_maximum_field */
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *signal_status_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the signal_status_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&signal_status_field)
-	{
-		return_code=1;
-		signal_status_field=min_max_iterator->signal_status_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_signal_status_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_signal_status_field */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *signal_status_field)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the signal_status_field of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->signal_status_field=signal_status_field;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_signal_status_field. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_signal_status_field */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field_component *signal_component)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the signal_component of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator&&signal_component)
-	{
-		return_code=1;
-		signal_component=min_max_iterator->signal_component;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_Min_max_iterator_signal_component. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_Min_max_iterator_signal_component */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field_component *signal_component)
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the signal_component of Min_max_iterato
-==============================================================================*/
-{
-	int return_code;
-
-	if(min_max_iterator)
-	{
-		return_code=1;
-		min_max_iterator->signal_component=signal_component;
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"set_Min_max_iterator_signal_component. Invalid arguments");	
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_Min_max_iterator_signal_component */
-
-#endif /*defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *create_config_template_node(enum Config_node_type 
@@ -4184,10 +3398,1302 @@ Must call after read_signal_FE_node_group
 }/*read_event_settings_and_signal_status_FE_node_group. */
 #endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
+static int get_node_position_min_max(struct FE_node *node,
+	void *position_min_max_iterator_void)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Finds the min and max coordinates of the  <position_field>
+in the <node>.
+==============================================================================*/
+{	
+	struct FE_field_component component;
+	FE_value c0,c1,c2,dest_coordinates[3],source_coordinates[3],x_value,
+		y_value,z_value;
+	int return_code;			
+	struct Position_min_max_iterator *position_min_max_iterator;
+	struct Coordinate_system *source_coordinate_system,dest_coordinate_system;
+
+	return_code=1;
+	ENTER(get_node_position_min_max);
+	source_coordinate_system=(struct Coordinate_system *)NULL;
+	if((node)&&(position_min_max_iterator_void))
+	{
+		position_min_max_iterator=(struct Position_min_max_iterator *)
+			position_min_max_iterator_void;	
+		if(position_min_max_iterator&&position_min_max_iterator->position_field)
+		{													 
+			component.field=position_min_max_iterator->position_field;
+			component.number=0;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c0);
+			component.number=1;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c1);
+			component.number=2;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c2);			
+			source_coordinate_system=get_FE_field_coordinate_system(component.field);
+			dest_coordinate_system.type=RECTANGULAR_CARTESIAN;
+			source_coordinates[0]=c0;
+			source_coordinates[1]=c1;
+			source_coordinates[2]=c2;
+			convert_Coordinate_system(source_coordinate_system,source_coordinates,
+				&dest_coordinate_system,dest_coordinates,(float *)NULL);
+			x_value=dest_coordinates[0];
+			y_value=dest_coordinates[1];
+			z_value=dest_coordinates[2];
+
+			if(x_value>position_min_max_iterator->max_x)
+			{
+				position_min_max_iterator->max_x=x_value;
+			}
+			if(x_value<position_min_max_iterator->min_x)
+			{
+				position_min_max_iterator->min_x=x_value;
+			}									
+			if(y_value>position_min_max_iterator->max_y)
+			{
+				position_min_max_iterator->max_y=y_value;
+			}
+			if(y_value<position_min_max_iterator->min_y)
+			{
+				position_min_max_iterator->min_y=y_value;
+			}			
+			if(z_value>position_min_max_iterator->max_z)
+			{
+				position_min_max_iterator->max_z=z_value;
+			}
+			if(z_value<position_min_max_iterator->min_z)
+			{
+				position_min_max_iterator->min_z=z_value;
+			}			
+			position_min_max_iterator->count++;
+		}	/* if(min_max_iterator */
+		else
+		{
+			display_message(ERROR_MESSAGE,"get_node_position_min_max."
+				" min_max_iterator NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(position_min_max_iterator_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_node_position_min_max."
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_node_position_min_max*/
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int iterative_get_rig_node_signal_min_max_at_time(struct FE_node *node,
+	void *min_max_iterator_void)
+/*******************************************************************************
+LAST MODIFIED : 6 October 1999
+
+DESCRIPTION :
+Get the signal <value> stored at the <node>, <min_max_iterator->component->field>
+at time <min_max_iterator->time>.
+Compares this value to <min_max_iterator->max>,<min_max_iterator->min>, and adjusts 
+these accordingly.
+This function is called iteratively by get_rig_node_group_signal_min_max_at_time
+Does nothing with REJECTED signals.
+==============================================================================*/
+{	
+	char *signal_status_string;	
+	enum Value_type value_type;
+	FE_value fe_value,channel_gain,channel_offset;
+	int return_code;		
+	short short_value;	
+	struct FE_field_component component;
+	struct Min_max_iterator *min_max_iterator;
+	
+	return_code=1;
+	ENTER(iterative_get_rig_node_signal_min_max_at_time);
+	if((node)&&(min_max_iterator_void))
+	{
+		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
+		if(min_max_iterator&&min_max_iterator->signal_component&&
+			min_max_iterator->signal_status_field&&min_max_iterator->channel_gain_field
+			&&min_max_iterator->channel_offset_field)
+		{
+			/* need to check if signal is accepted/rejected/undecided */	
+			if(get_FE_nodal_string_value(node,min_max_iterator->signal_status_field,0,0,
+				FE_NODAL_VALUE,&signal_status_string))
+			{
+				/* do nothing if signal is rejected */
+				if(strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
+				{
+					value_type=get_FE_field_value_type(min_max_iterator->signal_component->field);
+					switch(value_type)
+					{
+						case FE_VALUE_ARRAY_VALUE:
+						{
+							return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
+								min_max_iterator->signal_component,0,
+								FE_NODAL_VALUE,min_max_iterator->time,&fe_value);
+						}break;
+						case SHORT_ARRAY_VALUE:
+						{
+							return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
+								min_max_iterator->signal_component,0,FE_NODAL_VALUE,
+								min_max_iterator->time,&short_value);
+							fe_value=short_value;
+						}break;
+						default :
+						{
+							display_message(ERROR_MESSAGE,
+								"iterative_get_rig_node_signal_min_max_at_time."
+								" Incorrect signal field value type");
+							return_code=0;
+						}break;
+					}
+					/*get the channel gain and offset */
+					component.number=0;
+					component.field=min_max_iterator->channel_gain_field;
+					get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+						&channel_gain);
+					component.field=min_max_iterator->channel_offset_field;
+					get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+						&channel_offset);
+					fe_value=channel_gain*(fe_value-channel_offset);
+					if(return_code)
+					{
+						min_max_iterator->count++;
+						if(fe_value>min_max_iterator->max)
+						{
+							min_max_iterator->max=fe_value;
+						}
+						if(fe_value<min_max_iterator->min)
+						{
+							min_max_iterator->min=fe_value;
+						}			
+					}/* if(return_code) */
+				} /* if(strcmp(signal_status_string,*/
+				DEALLOCATE(signal_status_string);
+			}	/* if(get_FE_nodal_string_value */
+			else
+			{
+				display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
+					"Failed to get signal_status");
+				return_code=0;	
+			}				
+		}	/* if(min_max_iterator */
+		else
+		{
+			display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
+			" min_max_iterator NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(min_max_iterator_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* iterative_get_rig_node_signal_min_max_at_time*/
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int iterative_rig_node_set_map_electrode_position_lambda_r(struct FE_node *node,
+	void *set_map_electrode_position_info_void)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2000
+
+DESCRIPTION :
+Sets the node's nodal map_electrode_postions from the nodal electrode_positions, 
+and changes the node's map_electrode_postions lambda or r  values
+
+This function is called iteratively by 
+rig_node_group_set_map_electrode_position_lambda_r
+==============================================================================*/
+{
+	FE_value lambda,mu,theta,r,x,y,z_cp,z_rc;	
+	int return_code;	
+	struct FE_field_component component;	
+	struct FE_field *electrode_position_field,*map_electrode_position_field;
+	struct FE_node *node_unmanaged;	
+	struct MANAGER(FE_field) *field_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct Set_map_electrode_position_info *set_map_electrode_position_info;
+	/* ROUND_TORSO defined in rig_node.h */
+#if !defined (ROUND_TORSO) /*FOR AJP*/
+	FE_value c,torso_x,s,t,torso_major_r,torso_minor_r,torso_y;
+#endif /* defined (ROUND_TORSO)*/
+	ENTER(iterative_rig_node_set_map_electrode_position_lambda_r);
+	return_code=1;
+	node_unmanaged=(struct FE_node *)NULL;
+	if((node)&&(set_map_electrode_position_info_void))
+	{
+		set_map_electrode_position_info=
+			(struct Set_map_electrode_position_info *)set_map_electrode_position_info_void;
+		if(set_map_electrode_position_info&&(field_manager=
+			set_map_electrode_position_info->field_manager)&&
+			(node_manager=set_map_electrode_position_info->node_manager)&&
+			(map_electrode_position_field=
+				set_map_electrode_position_info->map_electrode_position_field))
+		{						
+			if ((electrode_position_field=
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
+				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
+				(electrode_position_field=
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
+				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
+				(electrode_position_field=
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
+				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
+				/* if we don't have an electrode_position_field, it's an auxilliary node-do 
+					 nothing */
+			{				
+				node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
+				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+					(node_unmanaged,node))
+				{												
+					switch(set_map_electrode_position_info->region_type)
+					{
+						case SOCK:
+						{	
+							/* get the source data*/
+							component.field=electrode_position_field;
+							component.number=0;/* lambda */
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&lambda);
+							component.number=1;/* mu */
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&mu);
+							component.number=2;/* theta */
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&theta);
+							/* change lambda*/
+							lambda=set_map_electrode_position_info->value1;
+							/* set the dest data*/
+							component.field=map_electrode_position_field;
+							component.number=0;/* lambda */
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,lambda);
+							component.number=1;/* mu */
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,mu);
+							component.number=2;/* theta */
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,theta);							
+						}break;	
+						case TORSO:
+						{				
+							/* Note that the torso map is in cp coords, but the torso */
+							/* electrode_positions are in rc, so torso map_electrode_positions are in cp */
+							/* get the source data stored as cartesian */
+							component.field=electrode_position_field;
+							component.number=0;/* x*/
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&x);	
+							component.number=1;/* y */
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&y);
+							component.number=2;/* z */
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&z_rc);
+							/* convert coords to cylindrical polar */
+							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
+							/* change the r */
+							/* ROUND_TORSO defined in rig_node.h */
+#if defined (ROUND_TORSO) /*FOR AJP*/
+							r=set_map_electrode_position_info->value1;/* r_major */
+#else		
+							torso_major_r=set_map_electrode_position_info->value1;	
+							torso_minor_r=set_map_electrode_position_info->value2;
+							t=theta; /*parametric T*/
+							c=cos(t);
+							s=sin(t);								
+							torso_x=torso_major_r*c;
+							torso_y=torso_minor_r*s;	
+#if defined (NEW_CODE2)
+							theta=atan2(torso_y,torso_x); /*new theta*/
+#else /* defined (NEW_CODE2) */
+							theta=t;
+#endif /* defined (NEW_CODE2) */
+							r=sqrt((torso_x*torso_x)+(torso_y*torso_y));
+#endif /* defined (ROUND_TORSO) */
+							/* set the dest data,stored as cylindrical polar  */
+							component.field=map_electrode_position_field;
+							component.number=0;/* r */	
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,r); 
+							component.number=1;/* theta */	
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,theta);
+							component.number=2;/* z_cp */	
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,z_cp);							
+						}break;
+						case PATCH:
+						{		
+							/* Data to copy, but none to change */
+							/* get the source data*/
+							component.field=electrode_position_field;
+							component.number=0;/* x */
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&x);
+							component.number=1;/* y */
+							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,&y);						
+							/* set the dest data*/
+							component.field=map_electrode_position_field;
+							component.number=0;/* x */
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,x);
+							component.number=1;/* y */
+							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
+								FE_NODAL_VALUE,y);															
+						}break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"iterative_rig_node_set_map_electrode_position_lambda_r"
+								"  invalid region_type");
+							return_code=0;
+						}break;
+					}
+					/* copy node back into the manager */
+					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+						(node,node_unmanaged,node_manager);
+				}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"iterative_rig_node_set_map_electrode_position_lambda_r"
+						"  MANAGER_COPY_WITH_IDENTIFIER failed");
+					return_code=0;
+				}
+				DESTROY(FE_node)(&node_unmanaged);
+			}
+		}	/* if(set_map_electrode_position_info */
+		else
+		{
+			display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
+				" set_map_electrode_position_info NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(set_map_electrode_position_info_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* rig_node_set_map_electrode_position_lambda_r */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int rig_node_add_map_electrode_position_field(struct FE_node *node,
+	void *add_map_electrode_position_info_void)
+/*******************************************************************************
+LAST MODIFIED : 13 October 1999
+
+DESCRIPTION :
+Add a map  electrode_position_field  to the rig_node.
+
+Called by rig_node_group_add_map_electrode_position_field
+==============================================================================*/
+{	
+	enum FE_nodal_value_type *map_electrode_components_nodal_value_types[3]=
+	{
+		{
+			FE_NODAL_VALUE
+		},
+		{
+			FE_NODAL_VALUE
+		},
+		{
+			FE_NODAL_VALUE
+		}
+	};
+	int  map_electrode_components_number_of_derivatives[3]={0,0,0},
+		 map_electrode_components_number_of_versions[3]={1,1,1},return_code;	
+	struct Add_map_electrode_position_info *add_map_electrode_position_info;	
+	struct FE_field *map_electrode_position_field,*electrode_position_field;
+	struct FE_node *node_unmanaged;
+	struct MANAGER(FE_field) *field_manager;
+	struct MANAGER(FE_node) *node_manager;
+
+	ENTER(rig_node_add_map_electrode_position_field);
+	return_code=1;
+	node_unmanaged=(struct FE_node *)NULL;
+	electrode_position_field=(struct FE_field *)NULL;
+	map_electrode_position_field=(struct FE_field *)NULL;	
+	node_manager=(struct MANAGER(FE_node) *)NULL;
+	field_manager=(struct MANAGER(FE_field) *)NULL;
+	if((node)&&(add_map_electrode_position_info_void))
+	{
+		add_map_electrode_position_info=
+			(struct Add_map_electrode_position_info *)add_map_electrode_position_info_void;
+		if(add_map_electrode_position_info&&(map_electrode_position_field=
+			add_map_electrode_position_info->map_electrode_position_field)&&
+			(node_manager=add_map_electrode_position_info->node_manager)&&		
+			(field_manager=add_map_electrode_position_info->field_manager))
+		{					
+			/* if we have a electrode_position_field, want a map_electrode_position_field */
+			/* if we don't it's an auxilliary node-do nothing. */
+			if ((electrode_position_field=
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
+				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
+				(electrode_position_field=
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
+				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
+				(electrode_position_field=
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
+				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
+			{	
+				/* if its already deined, have nothing to do */
+				if(!FE_field_is_defined_at_node(map_electrode_position_field,node))
+				{
+					node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
+					if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+						(node_unmanaged,node))
+					{						
+						if(!define_FE_field_at_node(node_unmanaged,map_electrode_position_field,
+							map_electrode_components_number_of_derivatives
+							,map_electrode_components_number_of_versions,
+							map_electrode_components_nodal_value_types))					
+						{
+							display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field."
+								"error defining electrode_position_field");	
+							return_code =0;
+						}	
+						/* copy node back into the manager */
+						MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+							(node,node_unmanaged,node_manager);
+					}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"rig_node_add_map_electrode_position_field"
+							"  MANAGER_COPY_WITH_IDENTIFIER failed");
+						return_code=0;
+					}
+					DESTROY(FE_node)(&node_unmanaged);
+				}
+			}/* if ((electrode_position_field= */
+		}	/* if(add_map_electrode_position_info */
+		else
+		{
+			display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field"
+				" add_map_electrode_position_info NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(add_map_electrode_position_info_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field"
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* rig_node_add_map_electrode_position_field */
+#endif /* defined (UNEMAP_USE_3D) */
+
+
 /*
 Global functions
 ----------------
 */
+
+#if defined (UNEMAP_USE_3D)
+struct Min_max_iterator *CREATE(Min_max_iterator)(void)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION:
+Create a Min_max_iterator, set fields to NULL/0.
+==============================================================================*/
+{	
+	struct  Min_max_iterator *min_max_iterator;
+
+	ENTER(CREATE(Min_max_iterator));
+	min_max_iterator=(struct  Min_max_iterator *)NULL;
+	if (ALLOCATE(min_max_iterator,struct Min_max_iterator,1))
+	{
+		min_max_iterator->max=0;
+		min_max_iterator->min=0;
+		min_max_iterator->time=0;
+		min_max_iterator->count=0;
+		min_max_iterator->started=0; /*have we started accumulating info yet? */
+		min_max_iterator->channel_gain_field=(struct FE_field *)NULL;
+		min_max_iterator->channel_offset_field=(struct FE_field *)NULL;
+#if defined (UNEMAP_USE_NODES)
+		min_max_iterator->display_start_time_field=(struct FE_field *)NULL;
+		min_max_iterator->display_end_time_field=(struct FE_field *)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
+		min_max_iterator->signal_minimum_field=(struct FE_field *)NULL;
+		min_max_iterator->signal_maximum_field=(struct FE_field *)NULL;
+		min_max_iterator->signal_status_field=(struct FE_field *)NULL;	
+		min_max_iterator->signal_component=(struct FE_field_component *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Unemap_package).  Could not allocate memory ");
+		DEALLOCATE(min_max_iterator);
+	}
+	LEAVE;
+	return(min_max_iterator);
+}
+
+int DESTROY(Min_max_iterator)(struct Min_max_iterator **iterator_address)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000 
+
+DESCRIPTION :
+Destroy a Min_max_iterator. Don't DEACCESS fields, 'cos never accessed them.
+This is only temp references for iteration.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(DESTROY(Min_max_iterator));
+	if (iterator_address)
+	{				
+		DEALLOCATE(*iterator_address);		
+		return_code=1;
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Min_max_iterator) */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
+	int *started)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the started of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&started)
+	{
+		return_code=1;
+		*started=min_max_iterator->started;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_started. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_started */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, int started)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the started of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->started=started;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_started. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_started */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
+	int *count)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the count of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&count)
+	{
+		return_code=1;
+		*count=min_max_iterator->count;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_count. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_count */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, int count)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the count of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->count=count;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_count. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_count */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, 
+	FE_value *time)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the time of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&time)
+	{
+		return_code=1;
+		*time=min_max_iterator->time;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_time. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_time */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the time of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->time=time;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_time. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_time */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, 
+	FE_value *min)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the min of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&min)
+	{
+		return_code=1;
+		*min=min_max_iterator->min;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_min. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_min */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, FE_value min)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the min of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->min=min;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_min. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_min */
+
+int get_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, 
+	FE_value *max)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the max of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&max)
+	{
+		return_code=1;
+		*max=min_max_iterator->max;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_max. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_max */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, FE_value max)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the max of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->max=max;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_max. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_max */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_gain_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the channel_gain_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&channel_gain_field)
+	{
+		return_code=1;
+		channel_gain_field=min_max_iterator->channel_gain_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_channel_gain_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_channel_gain_field */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_gain_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the channel_gain_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->channel_gain_field=channel_gain_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_channel_gain_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_channel_gain_field */
+
+int get_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_offset_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the channel_offset_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&channel_offset_field)
+	{
+		return_code=1;
+		channel_offset_field=min_max_iterator->channel_offset_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_channel_offset_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_channel_offset_field */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_offset_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the channel_offset_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->channel_offset_field=channel_offset_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_channel_offset_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_channel_offset_field */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_NODES)
+int get_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_start_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the display_start_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&display_start_time_field)
+	{
+		return_code=1;
+		display_start_time_field=min_max_iterator->display_start_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_display_start_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_display_start_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_start_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the display_start_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->display_start_time_field=display_start_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_display_start_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_display_start_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int get_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_end_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the display_end_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&display_end_time_field)
+	{
+		return_code=1;
+		display_end_time_field=min_max_iterator->display_end_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_display_end_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_display_end_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_end_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the display_end_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->display_end_time_field=display_end_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_display_end_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_display_end_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int get_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_minimum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_minimum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_minimum_field)
+	{
+		return_code=1;
+		signal_minimum_field=min_max_iterator->signal_minimum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_minimum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_minimum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_minimum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_minimum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_minimum_field=signal_minimum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_minimum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_minimum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int get_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_maximum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_maximum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_maximum_field)
+	{
+		return_code=1;
+		signal_maximum_field=min_max_iterator->signal_maximum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_maximum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_maximum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_maximum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_maximum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_maximum_field=signal_maximum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_maximum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_maximum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_status_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_status_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_status_field)
+	{
+		return_code=1;
+		signal_status_field=min_max_iterator->signal_status_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_status_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_status_field */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_status_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_status_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_status_field=signal_status_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_status_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_status_field */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field_component *signal_component)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_component of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_component)
+	{
+		return_code=1;
+		signal_component=min_max_iterator->signal_component;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_component. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_component */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field_component *signal_component)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_component of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_component=signal_component;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_component. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_component */
+
+#endif /*defined (UNEMAP_USE_3D)*/
+
 #if defined (UNEMAP_USE_NODES)
 DECLARE_OBJECT_FUNCTIONS(Signal_drawing_package)
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -6105,95 +6611,6 @@ cf file_read_FE_node_group() in import_finite_element.c
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int get_node_position_min_max(struct FE_node *node,
-	void *position_min_max_iterator_void)
-/*******************************************************************************
-LAST MODIFIED : 15 June 2000
-
-DESCRIPTION :
-Finds the min and max coordinates of the  <position_field>
-in the <node>.
-==============================================================================*/
-{	
-	struct FE_field_component component;
-	FE_value c0,c1,c2,dest_coordinates[3],source_coordinates[3],x_value,
-		y_value,z_value;
-	int return_code;			
-	struct Position_min_max_iterator *position_min_max_iterator;
-	struct Coordinate_system *source_coordinate_system,dest_coordinate_system;
-
-	return_code=1;
-	ENTER(get_node_position_min_max);
-	source_coordinate_system=(struct Coordinate_system *)NULL;
-	if((node)&&(position_min_max_iterator_void))
-	{
-		position_min_max_iterator=(struct Position_min_max_iterator *)
-			position_min_max_iterator_void;	
-		if(position_min_max_iterator&&position_min_max_iterator->position_field)
-		{													 
-			component.field=position_min_max_iterator->position_field;
-			component.number=0;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c0);
-			component.number=1;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c1);
-			component.number=2;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c2);			
-			source_coordinate_system=get_FE_field_coordinate_system(component.field);
-			dest_coordinate_system.type=RECTANGULAR_CARTESIAN;
-			source_coordinates[0]=c0;
-			source_coordinates[1]=c1;
-			source_coordinates[2]=c2;
-			convert_Coordinate_system(source_coordinate_system,source_coordinates,
-				&dest_coordinate_system,dest_coordinates,(float *)NULL);
-			x_value=dest_coordinates[0];
-			y_value=dest_coordinates[1];
-			z_value=dest_coordinates[2];
-
-			if(x_value>position_min_max_iterator->max_x)
-			{
-				position_min_max_iterator->max_x=x_value;
-			}
-			if(x_value<position_min_max_iterator->min_x)
-			{
-				position_min_max_iterator->min_x=x_value;
-			}									
-			if(y_value>position_min_max_iterator->max_y)
-			{
-				position_min_max_iterator->max_y=y_value;
-			}
-			if(y_value<position_min_max_iterator->min_y)
-			{
-				position_min_max_iterator->min_y=y_value;
-			}			
-			if(z_value>position_min_max_iterator->max_z)
-			{
-				position_min_max_iterator->max_z=z_value;
-			}
-			if(z_value<position_min_max_iterator->min_z)
-			{
-				position_min_max_iterator->min_z=z_value;
-			}			
-			position_min_max_iterator->count++;
-		}	/* if(min_max_iterator */
-		else
-		{
-			display_message(ERROR_MESSAGE,"get_node_position_min_max."
-				" min_max_iterator NULL ");
-			return_code=0;
-		}	
-	}/* if((node)&&(position_min_max_iterator_void)) */
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_node_position_min_max."
-			" Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* get_node_position_min_max*/
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
 int get_node_group_position_min_max(struct GROUP(FE_node) *node_group,
 	struct FE_field *position_field,FE_value *min_x,FE_value *max_x,
   FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z)
@@ -6694,118 +7111,6 @@ This function is called iteratively by analysis_set_range
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_3D)
-static int iterative_get_rig_node_signal_min_max_at_time(struct FE_node *node,
-	void *min_max_iterator_void)
-/*******************************************************************************
-LAST MODIFIED : 6 October 1999
-
-DESCRIPTION :
-Get the signal <value> stored at the <node>, <min_max_iterator->component->field>
-at time <min_max_iterator->time>.
-Compares this value to <min_max_iterator->max>,<min_max_iterator->min>, and adjusts 
-these accordingly.
-This function is called iteratively by get_rig_node_group_signal_min_max_at_time
-Does nothing with REJECTED signals.
-==============================================================================*/
-{	
-	char *signal_status_string;	
-	enum Value_type value_type;
-	FE_value fe_value,channel_gain,channel_offset;
-	int return_code;		
-	short short_value;	
-	struct FE_field_component component;
-	struct Min_max_iterator *min_max_iterator;
-	
-	return_code=1;
-	ENTER(iterative_get_rig_node_signal_min_max_at_time);
-	if((node)&&(min_max_iterator_void))
-	{
-		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
-		if(min_max_iterator&&min_max_iterator->signal_component&&
-			min_max_iterator->signal_status_field&&min_max_iterator->channel_gain_field
-			&&min_max_iterator->channel_offset_field)
-		{
-			/* need to check if signal is accepted/rejected/undecided */	
-			if(get_FE_nodal_string_value(node,min_max_iterator->signal_status_field,0,0,
-				FE_NODAL_VALUE,&signal_status_string))
-			{
-				/* do nothing if signal is rejected */
-				if(strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
-				{
-					value_type=get_FE_field_value_type(min_max_iterator->signal_component->field);
-					switch(value_type)
-					{
-						case FE_VALUE_ARRAY_VALUE:
-						{
-							return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
-								min_max_iterator->signal_component,0,
-								FE_NODAL_VALUE,min_max_iterator->time,&fe_value);
-						}break;
-						case SHORT_ARRAY_VALUE:
-						{
-							return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
-								min_max_iterator->signal_component,0,FE_NODAL_VALUE,
-								min_max_iterator->time,&short_value);
-							fe_value=short_value;
-						}break;
-						default :
-						{
-							display_message(ERROR_MESSAGE,
-								"iterative_get_rig_node_signal_min_max_at_time."
-								" Incorrect signal field value type");
-							return_code=0;
-						}break;
-					}
-					/*get the channel gain and offset */
-					component.number=0;
-					component.field=min_max_iterator->channel_gain_field;
-					get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-						&channel_gain);
-					component.field=min_max_iterator->channel_offset_field;
-					get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-						&channel_offset);
-					fe_value=channel_gain*(fe_value-channel_offset);
-					if(return_code)
-					{
-						min_max_iterator->count++;
-						if(fe_value>min_max_iterator->max)
-						{
-							min_max_iterator->max=fe_value;
-						}
-						if(fe_value<min_max_iterator->min)
-						{
-							min_max_iterator->min=fe_value;
-						}			
-					}/* if(return_code) */
-				} /* if(strcmp(signal_status_string,*/
-				DEALLOCATE(signal_status_string);
-			}	/* if(get_FE_nodal_string_value */
-			else
-			{
-				display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
-					"Failed to get signal_status");
-				return_code=0;	
-			}				
-		}	/* if(min_max_iterator */
-		else
-		{
-			display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
-			" min_max_iterator NULL ");
-			return_code=0;
-		}	
-	}/* if((node)&&(min_max_iterator_void)) */
-	else
-	{
-		display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
-			" Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* iterative_get_rig_node_signal_min_max_at_time*/
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
 	struct FE_field *signal_field,struct FE_field *signal_status_field,
 	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
@@ -6909,198 +7214,6 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int iterative_rig_node_set_map_electrode_position_lambda_r(struct FE_node *node,
-	void *set_map_electrode_position_info_void)
-/*******************************************************************************
-LAST MODIFIED : 14 June 2000
-
-DESCRIPTION :
-Sets the node's nodal map_electrode_postions from the nodal electrode_positions, 
-and changes the node's map_electrode_postions lambda or r  values
-
-This function is called iteratively by 
-rig_node_group_set_map_electrode_position_lambda_r
-==============================================================================*/
-{
-	FE_value lambda,mu,theta,r,x,y,z_cp,z_rc;	
-	int return_code;	
-	struct FE_field_component component;	
-	struct FE_field *electrode_position_field,*map_electrode_position_field;
-	struct FE_node *node_unmanaged;	
-	struct MANAGER(FE_field) *field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct Set_map_electrode_position_info *set_map_electrode_position_info;
-	/* ROUND_TORSO defined in rig_node.h */
-#if !defined (ROUND_TORSO) /*FOR AJP*/
-	FE_value c,torso_x,s,t,torso_major_r,torso_minor_r,torso_y;
-#endif /* defined (ROUND_TORSO)*/
-	ENTER(iterative_rig_node_set_map_electrode_position_lambda_r);
-	return_code=1;
-	node_unmanaged=(struct FE_node *)NULL;
-	if((node)&&(set_map_electrode_position_info_void))
-	{
-		set_map_electrode_position_info=
-			(struct Set_map_electrode_position_info *)set_map_electrode_position_info_void;
-		if(set_map_electrode_position_info&&(field_manager=
-			set_map_electrode_position_info->field_manager)&&
-			(node_manager=set_map_electrode_position_info->node_manager)&&
-			(map_electrode_position_field=
-				set_map_electrode_position_info->map_electrode_position_field))
-		{						
-			if ((electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
-				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
-				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
-				/* if we don't have an electrode_position_field, it's an auxilliary node-do 
-					 nothing */
-			{				
-				node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
-				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-					(node_unmanaged,node))
-				{												
-					switch(set_map_electrode_position_info->region_type)
-					{
-						case SOCK:
-						{	
-							/* get the source data*/
-							component.field=electrode_position_field;
-							component.number=0;/* lambda */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&lambda);
-							component.number=1;/* mu */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&mu);
-							component.number=2;/* theta */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&theta);
-							/* change lambda*/
-							lambda=set_map_electrode_position_info->value1;
-							/* set the dest data*/
-							component.field=map_electrode_position_field;
-							component.number=0;/* lambda */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,lambda);
-							component.number=1;/* mu */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,mu);
-							component.number=2;/* theta */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,theta);							
-						}break;	
-						case TORSO:
-						{				
-							/* Note that the torso map is in cp coords, but the torso */
-							/* electrode_positions are in rc, so torso map_electrode_positions are in cp */
-							/* get the source data stored as cartesian */
-							component.field=electrode_position_field;
-							component.number=0;/* x*/
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&x);	
-							component.number=1;/* y */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&y);
-							component.number=2;/* z */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&z_rc);
-							/* convert coords to cylindrical polar */
-							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
-							/* change the r */
-							/* ROUND_TORSO defined in rig_node.h */
-#if defined (ROUND_TORSO) /*FOR AJP*/
-							r=set_map_electrode_position_info->value1;/* r_major */
-#else		
-							torso_major_r=set_map_electrode_position_info->value1;	
-							torso_minor_r=set_map_electrode_position_info->value2;
-							t=theta; /*parametric T*/
-							c=cos(t);
-							s=sin(t);								
-							torso_x=torso_major_r*c;
-							torso_y=torso_minor_r*s;	
-#if defined (NEW_CODE2)
-							theta=atan2(torso_y,torso_x); /*new theta*/
-#else /* defined (NEW_CODE2) */
-							theta=t;
-#endif /* defined (NEW_CODE2) */
-							r=sqrt((torso_x*torso_x)+(torso_y*torso_y));
-#endif /* defined (ROUND_TORSO) */
-							/* set the dest data,stored as cylindrical polar  */
-							component.field=map_electrode_position_field;
-							component.number=0;/* r */	
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,r); 
-							component.number=1;/* theta */	
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,theta);
-							component.number=2;/* z_cp */	
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,z_cp);							
-						}break;
-						case PATCH:
-						{		
-							/* Data to copy, but none to change */
-							/* get the source data*/
-							component.field=electrode_position_field;
-							component.number=0;/* x */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&x);
-							component.number=1;/* y */
-							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,&y);						
-							/* set the dest data*/
-							component.field=map_electrode_position_field;
-							component.number=0;/* x */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,x);
-							component.number=1;/* y */
-							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,y);															
-						}break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"iterative_rig_node_set_map_electrode_position_lambda_r"
-								"  invalid region_type");
-							return_code=0;
-						}break;
-					}
-					/* copy node back into the manager */
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-						(node,node_unmanaged,node_manager);
-				}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"iterative_rig_node_set_map_electrode_position_lambda_r"
-						"  MANAGER_COPY_WITH_IDENTIFIER failed");
-					return_code=0;
-				}
-				DESTROY(FE_node)(&node_unmanaged);
-			}
-		}	/* if(set_map_electrode_position_info */
-		else
-		{
-			display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
-				" set_map_electrode_position_info NULL ");
-			return_code=0;
-		}	
-	}/* if((node)&&(set_map_electrode_position_info_void)) */
-	else
-	{
-		display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
-			" Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* rig_node_set_map_electrode_position_lambda_r */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
 int rig_node_group_set_map_electrode_position_lambda_r(
 	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
 	struct Region *region,FE_value sock_lambda,FE_value torso_major_r,
@@ -7190,115 +7303,6 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 	LEAVE;
 	return (return_code);
 } /* rig_node_group_set_map_electrode_position_lambda_r */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-static int rig_node_add_map_electrode_position_field(struct FE_node *node,
-	void *add_map_electrode_position_info_void)
-/*******************************************************************************
-LAST MODIFIED : 13 October 1999
-
-DESCRIPTION :
-Add a map  electrode_position_field  to the rig_node.
-
-Called by rig_node_group_add_map_electrode_position_field
-==============================================================================*/
-{	
-	enum FE_nodal_value_type *map_electrode_components_nodal_value_types[3]=
-	{
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	int  map_electrode_components_number_of_derivatives[3]={0,0,0},
-		 map_electrode_components_number_of_versions[3]={1,1,1},return_code;	
-	struct Add_map_electrode_position_info *add_map_electrode_position_info;	
-	struct FE_field *map_electrode_position_field,*electrode_position_field;
-	struct FE_node *node_unmanaged;
-	struct MANAGER(FE_field) *field_manager;
-	struct MANAGER(FE_node) *node_manager;
-
-	ENTER(rig_node_add_map_electrode_position_field);
-	return_code=1;
-	node_unmanaged=(struct FE_node *)NULL;
-	electrode_position_field=(struct FE_field *)NULL;
-	map_electrode_position_field=(struct FE_field *)NULL;	
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	field_manager=(struct MANAGER(FE_field) *)NULL;
-	if((node)&&(add_map_electrode_position_info_void))
-	{
-		add_map_electrode_position_info=
-			(struct Add_map_electrode_position_info *)add_map_electrode_position_info_void;
-		if(add_map_electrode_position_info&&(map_electrode_position_field=
-			add_map_electrode_position_info->map_electrode_position_field)&&
-			(node_manager=add_map_electrode_position_info->node_manager)&&		
-			(field_manager=add_map_electrode_position_info->field_manager))
-		{					
-			/* if we have a electrode_position_field, want a map_electrode_position_field */
-			/* if we don't it's an auxilliary node-do nothing. */
-			if ((electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
-				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
-				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
-			{	
-				/* if its already deined, have nothing to do */
-				if(!FE_field_is_defined_at_node(map_electrode_position_field,node))
-				{
-					node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
-					if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-						(node_unmanaged,node))
-					{						
-						if(!define_FE_field_at_node(node_unmanaged,map_electrode_position_field,
-							map_electrode_components_number_of_derivatives
-							,map_electrode_components_number_of_versions,
-							map_electrode_components_nodal_value_types))					
-						{
-							display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field."
-								"error defining electrode_position_field");	
-							return_code =0;
-						}	
-						/* copy node back into the manager */
-						MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-							(node,node_unmanaged,node_manager);
-					}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"rig_node_add_map_electrode_position_field"
-							"  MANAGER_COPY_WITH_IDENTIFIER failed");
-						return_code=0;
-					}
-					DESTROY(FE_node)(&node_unmanaged);
-				}
-			}/* if ((electrode_position_field= */
-		}	/* if(add_map_electrode_position_info */
-		else
-		{
-			display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field"
-				" add_map_electrode_position_info NULL ");
-			return_code=0;
-		}	
-	}/* if((node)&&(add_map_electrode_position_info_void)) */
-	else
-	{
-		display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field"
-			" Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* rig_node_add_map_electrode_position_field */
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
@@ -7532,4 +7536,52 @@ If they're not, you'll get the first match.
 }/* find_device_given_rig_node */
 #endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
+int node_signal_is_unrejected(struct FE_node *node,void *signal_status_field_void)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2000 
 
+DESCRIPTION : 
+An iterator function.
+Returns 1 if the <signal_status_field> at the <node> does NOT return the string
+"REJECTED".
+==============================================================================*/
+{
+	char *signal_status_string;		
+	int return_code;
+	struct FE_field *signal_status_field;
+
+	ENTER(node_signal_is_unrejected);
+	return_code=0;
+	if (node&&(signal_status_field=(struct FE_field *)signal_status_field_void))
+	{
+		if (get_FE_nodal_string_value(node,signal_status_field,/*component_number*/0,
+			/*version*/0,FE_NODAL_VALUE,&signal_status_string))
+		{
+			if(!strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
+			{
+				return_code=0;
+			}
+			else
+			{
+				return_code=1;
+			}
+			DEALLOCATE(signal_status_string);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"node_signal_is_unrejected. failed to get signal status");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_signal_is_unrejected.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* node_signal_is_unrejected  */
+#endif /* defined (UNEMAP_USE_3D) */

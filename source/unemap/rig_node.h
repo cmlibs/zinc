@@ -973,4 +973,16 @@ If they're not, you'll get the first match.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
+int node_signal_is_unrejected(struct FE_node *node,void *signal_status_field_void); 
+/*******************************************************************************
+LAST MODIFIED : 5 December 2000 
+
+DESCRIPTION : 
+An iterator function.
+Returns 1 if the <signal_status_field> at the <node> does NOT return the string
+"REJECTED".
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
 #endif /* #if !defined (RIG_NODE_H) */

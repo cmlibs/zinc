@@ -3179,6 +3179,15 @@ specified component is calculated, otherwise all components are calculated.  The
 storage for the <value> should have been allocated outside the function.
 ==============================================================================*/
 
+struct FE_field *create_1_comp_fe_value_field(char *field_name,
+	struct MANAGER(FE_field) *fe_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+creates a 1 component fe_value field, the name <field_name>
+==============================================================================*/
+
 int FE_field_matches_description(struct FE_field *field,char *name,
 	enum FE_field_type fe_field_type,
 	struct FE_field *indexer_field,int number_of_indexed_values,
