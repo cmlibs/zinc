@@ -1742,7 +1742,7 @@ specifies a file to print messages to, if non-NULL.
         (cell->unemap).analysis.rig = (struct Rig *)NULL;
         (cell->unemap).analysis.highlight = (struct Device **)NULL;
         (cell->unemap).analysis.datum = 0;
-        (cell->unemap).analysis.detection = INTERVAL;
+        (cell->unemap).analysis.detection = EDA_INTERVAL;
         (cell->unemap).analysis.datum_type = AUTOMATIC_DATUM;
         (cell->unemap).analysis.edit_order = DEVICE_ORDER;
         (cell->unemap).analysis.signal_order = CHANNEL_ORDER;
