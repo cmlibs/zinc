@@ -2241,7 +2241,7 @@ to be consistant with it.
 
 static int clean_Analysis_work_area_before_load(struct Analysis_work_area *analysis)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2001
+LAST MODIFIED : 12 December 2001
 
 DESCRIPTION :
 cleans up <analysis> map and rig and node  things before loading a new 
@@ -2312,11 +2312,16 @@ signal type file
 			free_unemap_package_rig_fields(analysis->unemap_package);			
 #endif /* defined (UNEMAP_USE_NODES)*/
 		} 
-		/* might not have events for ACIVATION maps, so reset to potential*/
+		/* might not have events for ACIVATION maps, so reset to NO_MAP_FIELD*/
 		/*perhaps we should look for events after signal file is loaded?*/
 		if((analysis->map_type==SINGLE_ACTIVATION)||(analysis->map_type==MULTIPLE_ACTIVATION))
 		{
-			analysis->map_type=POTENTIAL;
+			analysis->map_type=NO_MAP_FIELD;
+			if((analysis->mapping_window)&&(map=analysis->mapping_window->map))
+			{
+				map->colour_option=HIDE_COLOUR;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
+			}
 		}
 		if (analysis->mapping_window)
 		{
