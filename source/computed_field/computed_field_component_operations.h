@@ -30,4 +30,32 @@ components equal to the source_fields.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
+
+int Computed_field_set_type_divide_components(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DIVIDE_COMPONENTS with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
+int Computed_field_set_type_offset(struct Computed_field *field,
+	struct Computed_field *source_field, FE_value *offsets);
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
+<source_field> plus the <offsets>.
+The <offsets> array must therefore contain as many FE_values as there are
+components in <source_field>; this is the number of components in the field.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_COMPONENT_OPERATIONS_H) */

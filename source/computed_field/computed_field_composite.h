@@ -65,4 +65,37 @@ LAST MODIFIED : 25 October 2000
 DESCRIPTION :
 ==============================================================================*/
 
+int Computed_field_set_type_composite(struct Computed_field *field,
+	int number_of_components,
+	int number_of_source_fields,struct Computed_field **source_fields,
+	int number_of_source_values,FE_value *source_values,
+	int *source_field_numbers,int *source_value_numbers);
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Converts <field> into a composite field which returns a combination of field
+components and constants in a given order.
+The <number_of_source_fields> <source_fields> may be zero if the field is
+purely constant, but fields may not be repeated.
+The <number_of_source_values> <source_values> may similarly be omitted.
+The <source_field_numbers> and <source_value_numbers> must each contain
+<number_of_components> integers. For each component the <source_field_number>
+says which <source_field> to use, and the <source_value_number> specifies the
+component number. If the <source_field_number> is -1 for any component, the
+<source_value_number> is the offset into the <source_values>.
+
+Note: rigorous checking is performed to ensure that no values are invalid and
+that the <source_fields> are presented in the order they are first used in the
+<source_field_numbers>, and also that <source_values> are used in the order
+they are given and that none are used more than once.
+
+Some of these restrictions are enforced to ensure type-specific contents can be
+compared easily -- otherwise there would be more than one way to describe the
+same source data.
+
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
 #endif /* !defined (COMPUTED_FIELD_COMPOSITE_H) */
