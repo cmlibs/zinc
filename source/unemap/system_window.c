@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -154,14 +154,15 @@ Associate the mapping window with the acquisition work area
 			open_mapping_window(&(system->acquisition.mapping_window),
 				system->mapping_button,system->window_shell,
 				&(system->mapping.window_shell),&(system->mapping.outer_form),
-				&(system->mapping.mapping_window),&(system->mapping.open),
-				&(system->mapping.associate),(enum Map_type *)NULL,HIDE_COLOUR,
-				HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,
-				HIDE_EXTREMA,maintain_aspect_ratio,1,HAMMER_PROJECTION,
-				VARIABLE_THICKNESS,&(system->acquisition.rig),(int *)NULL,(int *)NULL,
-				(int *)NULL,(int *)NULL,(int *)NULL,system->acquisition_colour,
-				ACQUISITION_ASSOCIATE,(XtPointer)set_mapping_acquisition_region,
-				(XtPointer)NULL,(XtPointer)NULL,(XtPointer)&(system->acquisition),
+				&(system->mapping.current_mapping_window),
+				&(system->mapping.open),&(system->mapping.associate),
+				(enum Map_type *)NULL,HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,
+				HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,1,
+				HAMMER_PROJECTION,VARIABLE_THICKNESS,&(system->acquisition.rig),
+				(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,
+				system->acquisition_colour,ACQUISITION_ASSOCIATE,
+				(XtPointer)set_mapping_acquisition_region,(XtPointer)NULL,
+				(XtPointer)NULL,(XtPointer)&(system->acquisition),
 				user_interface->screen_width,user_interface->screen_height,
 				system->configuration_file_extension,system->postscript_file_extension,
 				system->map_drawing_information,user_interface,
@@ -536,13 +537,14 @@ Associate the mapping window with the analysis work area
 			open_mapping_window(&(system->analysis.mapping_window),
 				system->mapping_button,system->window_shell,
 				&(system->mapping.window_shell),&(system->mapping.outer_form),
-				&(system->mapping.mapping_window),&(system->mapping.open),
-				&(system->mapping.associate),&(system->analysis.map_type),HIDE_COLOUR,
-				HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,
-				HIDE_EXTREMA,maintain_aspect_ratio,1,HAMMER_PROJECTION,
-				VARIABLE_THICKNESS,&(system->analysis.rig),
-				&(system->analysis.event_number),&(system->analysis.potential_time),
-				&(system->analysis.datum),&(system->analysis.start_search_interval),
+				&(system->mapping.current_mapping_window),
+				&(system->mapping.open),&(system->mapping.associate),
+				&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
+				SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
+				maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
+				&(system->analysis.rig),&(system->analysis.event_number),
+				&(system->analysis.potential_time),&(system->analysis.datum),
+				&(system->analysis.start_search_interval),
 				&(system->analysis.end_search_interval),system->analysis_colour,
 				ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
 				(XtPointer)analysis_select_map_drawing_are,
@@ -727,15 +729,15 @@ Opens the windows associated with the mapping work area.
 						open_mapping_window(&(system->acquisition.mapping_window),
 							system->mapping_button,system->window_shell,
 							&(system->mapping.window_shell),&(system->mapping.outer_form),
-							&(system->mapping.mapping_window),&(system->mapping.open),
-							&(system->mapping.associate),(enum Map_type *)NULL,HIDE_COLOUR,
-							HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,
-							HIDE_EXTREMA,maintain_aspect_ratio,1,HAMMER_PROJECTION,
-							VARIABLE_THICKNESS,&(system->acquisition.rig),(int *)NULL,
-							(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,
-							system->acquisition_colour,ACQUISITION_ASSOCIATE,
-							(XtPointer)set_mapping_acquisition_region,(XtPointer)NULL,
-							(XtPointer)NULL,(XtPointer)&(system->acquisition),
+							&(system->mapping.current_mapping_window),
+							&(system->mapping.open),&(system->mapping.associate),
+							(enum Map_type *)NULL,HIDE_COLOUR,HIDE_CONTOURS,
+							SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
+							maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
+							&(system->acquisition.rig),(int *)NULL,(int *)NULL,(int *)NULL,
+							(int *)NULL,(int *)NULL,system->acquisition_colour,
+							ACQUISITION_ASSOCIATE,(XtPointer)set_mapping_acquisition_region,
+							(XtPointer)NULL,(XtPointer)NULL,(XtPointer)&(system->acquisition),
 							user_interface->screen_width,user_interface->screen_height,
 							system->configuration_file_extension,
 							system->postscript_file_extension,system->map_drawing_information,
@@ -787,12 +789,12 @@ Opens the windows associated with the mapping work area.
 						open_mapping_window(&(system->analysis.mapping_window),
 							system->mapping_button,system->window_shell,
 							&(system->mapping.window_shell),&(system->mapping.outer_form),
-							&(system->mapping.mapping_window),&(system->mapping.open),
-							&(system->mapping.associate),&(system->analysis.map_type),
-							HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,HIDE_FIBRES,
-							HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,1,
-							HAMMER_PROJECTION,VARIABLE_THICKNESS,&(system->analysis.rig),
-							&(system->analysis.event_number),
+							&(system->mapping.current_mapping_window),
+							&(system->mapping.open),&(system->mapping.associate),
+							&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
+							SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
+							maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
+							&(system->analysis.rig),&(system->analysis.event_number),
 							&(system->analysis.potential_time),&(system->analysis.datum),
 							&(system->analysis.start_search_interval),
 							&(system->analysis.end_search_interval),
@@ -1168,7 +1170,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->mapping.outer_form=(Widget)NULL;
 				system->mapping.parent= &(system->window_shell);
 				system->mapping.window_shell=(Widget)NULL;
-				system->mapping.mapping_window=(struct Mapping_window *)NULL;
+				system->mapping.current_mapping_window=(struct Mapping_window *)NULL;
 				system->mapping.open=0;
 				system->mapping.associate=ACQUISITION_ASSOCIATE;
 				if (time_keeper)

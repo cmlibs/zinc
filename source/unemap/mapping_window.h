@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.h
 
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -68,7 +68,7 @@ The menu associated with the print button.
 
 struct Mapping_window
 /*******************************************************************************
-LAST MODIFIED : 6 July 1997
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 The mapping window object.
@@ -114,7 +114,8 @@ The mapping window object.
 #if defined (MOTIF)
 	Widget colour_or_auxiliary_scroll_bar;
 #endif /* defined (MOTIF) */
-	struct Mapping_window **address;
+	struct Mapping_window **address,**current_mapping_window_address;
+	char *open;
 	struct Time_object *potential_time_object;
 #if defined (MOTIF)
 	Widget time_editor_dialog;
@@ -178,7 +179,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 #if defined (MOTIF)
 	Widget activation,Widget parent,Widget *shell,Widget *outer_form,
 #endif /* defined (MOTIF) */
-	struct Mapping_window **current_mapping_window,char *open,
+	struct Mapping_window **current_mapping_window_address,char *open,
 	enum Mapping_associate *current_associate,enum Map_type *map_type,
 	enum Colour_option colour_option,enum Contours_option contours_option,
 	enum Electrodes_option electrodes_option,enum Fibres_option fibres_option,
@@ -201,7 +202,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package);
 /*******************************************************************************
-LAST MODIFIED : 18 October 1997
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 If the mapping window does not exist then it is created with the specified

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 25 July 1999
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -2844,7 +2844,7 @@ Finds the id of the colour_or_auxiliary_scroll_bar.
 static void destroy_Mapping_window(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 28 December 1996
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 This function expects <client_data> to be a pointer to a mapping window.  If the
@@ -2869,6 +2869,15 @@ and frees the memory for the mapping window.
 		if (mapping->address)
 		{
 			*(mapping->address)=(struct Mapping_window *)NULL;
+		}
+		if ((mapping->current_mapping_window_address)&&
+			(mapping== *(mapping->current_mapping_window_address)))
+		{
+			*(mapping->current_mapping_window_address)=(struct Mapping_window *)NULL;
+			if (mapping->open)
+			{
+				*(mapping->open)=0;
+			}
 		}
 		/* unghost the activation widget */
 		if (mapping->activation)
@@ -3457,14 +3466,15 @@ the mapping_window.
 } /* write_map_animation_tiff_file */
 
 static struct Mapping_window *create_Mapping_window(
-	struct Mapping_window **address,Widget activation,Widget parent,
+	struct Mapping_window **address,char *open,
+	struct Mapping_window **current_address,Widget activation,Widget parent,
 	struct Map *map,struct Rig **rig_pointer,Pixel identifying_colour,
 	int screen_height,char *configuration_file_extension,
 	char *postscript_file_extension,
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 This function allocates the memory for a mapping_window and sets the fields to
@@ -3578,6 +3588,8 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				/* assign fields */
 				mapping->user_interface=user_interface;
 				mapping->address=address;
+				mapping->open=open;
+				mapping->current_mapping_window_address=current_address;
 				mapping->activation=activation;
 				mapping->map=map;
 				mapping->window=(Widget)NULL;
@@ -3833,7 +3845,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 #if defined (MOTIF)
 	Widget activation,Widget parent,Widget *shell,Widget *outer_form,
 #endif /* defined (MOTIF) */
-	struct Mapping_window **current_mapping_window,char *open,
+	struct Mapping_window **current_mapping_window_address,char *open,
 	enum Mapping_associate *current_associate,enum Map_type *map_type,
 	enum Colour_option colour_option,enum Contours_option contours_option,
 	enum Electrodes_option electrodes_option,enum Fibres_option fibres_option,
@@ -3856,7 +3868,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 27 April 1999
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 If the mapping window does not exist then it is created with the specified
@@ -3869,7 +3881,7 @@ properties.  Then the mapping window is opened.
 
 	ENTER(open_mapping_window);
 	if (mapping_address&&parent&&rig_address&&shell&&outer_form&&
-		current_mapping_window&&open&&current_associate&&user_interface
+		current_mapping_window_address&&open&&current_associate&&user_interface
 #if defined (UNEMAP_USE_NODES)
 		&&unemap_package
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -3925,7 +3937,8 @@ properties.  Then the mapping window is opened.
 			/* if there is a mapping window shell */
 			if (return_code)
 			{
-				if (create_Mapping_window(mapping_address,activation,*outer_form,
+				if (create_Mapping_window(mapping_address,open,
+					current_mapping_window_address,activation,*outer_form,
 					create_Map(map_type,colour_option,contours_option,electrodes_option,
 					fibres_option,landmarks_option,extrema_option,maintain_aspect_ratio,
 					print_spectrum,projection_type,contour_thickness,rig_address,
@@ -4035,16 +4048,16 @@ properties.  Then the mapping window is opened.
 		if (mapping&&return_code)
 		{
 			*current_associate=associate;
-			if (*current_mapping_window!=mapping)
+			if (*current_mapping_window_address!=mapping)
 			{
-				if (*current_mapping_window)
+				if (*current_mapping_window_address)
 				{
 					/* unmanage the current mapping window */
-					XtUnmanageChild((*current_mapping_window)->window);
+					XtUnmanageChild((*current_mapping_window_address)->window);
 				}
 				/* manage the new mapping window */
 				XtManageChild(mapping->window);
-				*current_mapping_window=mapping;
+				*current_mapping_window_address=mapping;
 			}
 			/* check if the mapping window shell has been popped up */
 			if (!(*open))

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 1 February 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -224,7 +224,7 @@ DESCRIPTION :
 			*(analysis->mapping_work_area->parent),
 			&(analysis->mapping_work_area->window_shell),
 			&(analysis->mapping_work_area->outer_form),
-			&(analysis->mapping_work_area->mapping_window),
+			&(analysis->mapping_work_area->current_mapping_window),
 			&(analysis->mapping_work_area->open),
 			&(analysis->mapping_work_area->associate),&(analysis->map_type),
 			HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,
