@@ -41,7 +41,7 @@ by  read_order or event_time using heapsort or quicksort
 #if defined (UNEMAP_USE_3D)
 struct Min_max_iterator
 /*******************************************************************************
-LAST MODIFIED : 7 August 2000
+LAST MODIFIED : 19 February 2002
 
 DESCRIPTION :
 Used by get_rig_node_group_signal_min_max_at_time, set_rig_node_signal_min_max etc
@@ -53,13 +53,13 @@ No ACCessing of feilds  as just temp reference for iteration.
 	FE_value max,min,time;
 	int count;
 	int started; /*have we started accumulating info yet? */
-	struct FE_field *channel_gain_field,*channel_offset_field
+	struct FE_field 
 #if  defined (UNEMAP_USE_NODES) 
-		,*display_start_time_field,*display_end_time_field
+		*display_start_time_field,*display_end_time_field,
 #endif /* defined (UNEMAP_USE_NODES) */
-		,*signal_minimum_field,*signal_maximum_field,
+		*signal_minimum_field,*signal_maximum_field,
 		*signal_status_field;	
-	struct FE_field_component *signal_component;
+	struct Computed_field *scaled_offset_signal_value_at_time_field;
 };
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -229,50 +229,6 @@ Sets the max of Min_max_iterato
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_NODES)
-int get_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_gain_field);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the channel_gain_field of Min_max_iterato
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int set_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_gain_field);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the channel_gain_field of Min_max_iterato
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int get_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_offset_field);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the channel_offset_field of Min_max_iterato
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
-int set_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field *channel_offset_field);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the channel_offset_field of Min_max_iterato
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES) */
-
-#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_start_time_field);
 /*******************************************************************************
@@ -362,6 +318,30 @@ Sets the signal_maximum_field of Min_max_iterato
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_3D)
+int get_Min_max_iterator_scaled_offset_signal_value_at_time_field(
+	struct Min_max_iterator *min_max_iterator, 
+	struct Computed_field *scaled_offset_signal_value_at_time_field);
+/*******************************************************************************
+LAST MODIFIED :19 February 2002
+
+DESCRIPTION :
+gets the scaled_offset_signal_value_at_time_field of Min_max_iterato
+==============================================================================*/
+#endif
+ 
+#if defined (UNEMAP_USE_3D)
+int set_Min_max_iterator_scaled_offset_signal_value_at_time_field(
+	struct Min_max_iterator *min_max_iterator, 
+	struct Computed_field *scaled_offset_signal_value_at_time_field);
+/*******************************************************************************
+LAST MODIFIED :19 February 2002
+
+DESCRIPTION :
+Sets the scaled_offset_signal_value_at_time_field of Min_max_iterato
+==============================================================================*/
+#endif
+
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_status_field);
 /*******************************************************************************
@@ -383,27 +363,6 @@ Sets the signal_status_field of Min_max_iterato
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_3D)
-int get_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field_component *signal_component);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-gets the signal_component of Min_max_iterato
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int set_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
-	struct FE_field_component *signal_component);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2000
-
-DESCRIPTION :
-Sets the signal_component of Min_max_iterato
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_NODES)
 struct Signal_drawing_package *CREATE(Signal_drawing_package)(void);
@@ -856,9 +815,8 @@ DESCRIPTION :
 
 #if defined (UNEMAP_USE_NODES)
 int get_rig_node_signal_min_max(struct FE_node *node,
-	struct FE_field *signal_field,struct FE_field *display_start_time_field,
-	struct FE_field *display_end_time_field,struct FE_field *signal_status_field,
-	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
+	struct FE_field *display_start_time_field,
+	struct FE_field *display_end_time_field,struct FE_field *signal_status_field,	
 	FE_value *min,FE_value *max,enum Event_signal_status *status,int time_range);
 /*******************************************************************************
 LAST MODIFIED : 20 September 2000
@@ -866,7 +824,7 @@ LAST MODIFIED : 20 September 2000
 DESCRIPTION : Determines and returns <min> and <max the minimum and maximum
 value of <signal_field> at <node>. If <time_range> >0 AND <display_start_time_field>,
 <display_end_time_field>  are set, then determines the min, max over this range.
-If <time_range> =0, determines the min, max over entire signal range.
+If <time_range> =0, determines the min, max over entire signal time  range.
 If <signal_status_field> and <status> set, return the node signal's 
 Event_signal_status in <status>
 ==============================================================================*/
@@ -899,11 +857,11 @@ This function is called iteratively by analysis_set_range
 
 #if defined (UNEMAP_USE_3D)
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
-	struct FE_field *signal_field,struct FE_field *signal_status_field,
-	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
+	struct Computed_field *scaled_offset_signal_value_at_time_field,
+	struct FE_field *signal_status_field,
 	FE_value time,FE_value *min,FE_value *max);
 /*******************************************************************************
-LAST MODIFIED :  20 September 2000
+LAST MODIFIED : 19 February 2002
 
 DESCRIPTION :
 Returns the <min> and <max>  signal values at the rig nodes in the rig_node_group
