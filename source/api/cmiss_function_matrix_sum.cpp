@@ -4,7 +4,7 @@ FILE : api/cmiss_function_matrix_sum.cpp
 LAST MODIFIED : 8 September 2004
 
 DESCRIPTION :
-The public interface to the Cmiss_function matrix object.
+The public interface to the Cmiss_function matrix sum object.
 ==============================================================================*/
 
 #include <new>
