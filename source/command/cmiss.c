@@ -6733,7 +6733,9 @@ Modifies the properties of a texture.
 			{"height",NULL,NULL,set_float_positive},
 			{"image",NULL,NULL,set_Texture_image},
 			{NULL,NULL,NULL,NULL},
+#if defined (SGI_MOVIE_FILE)
 			{"movie",NULL,NULL,set_Movie_graphics},
+#endif /* defined (SGI_MOVIE_FILE) */
 			{"source_field",NULL,NULL,set_Computed_field_conditional},
 			{"source_height_texels",NULL,NULL,set_int_positive},
 			{"source_spectrum",NULL,NULL,set_Spectrum},
@@ -6756,7 +6758,9 @@ Modifies the properties of a texture.
 	struct Cmiss_command_data *command_data;
 	struct Colour colour;
 	struct Computed_field *field, *texture_coordinates_field;
+#if defined (SGI_MOVIE_FILE)
 	struct Movie_graphics *movie,*old_movie;
+#endif /* defined (SGI_MOVIE_FILE) */
 	struct Set_Computed_field_conditional_data set_field_data,
 		set_texture_coordinates_field_data;
 	struct Spectrum *spectrum;
@@ -6764,7 +6768,9 @@ Modifies the properties of a texture.
 	/* do not make the following static as 'set' flag must start at 0 */
 	struct Set_vector_with_help_data texture_distortion_data=
 		{3," DISTORTION_CENTRE_X DISTORTION_CENTRE_Y DISTORTION_FACTOR_K1",0};
+#if defined (SGI_MOVIE_FILE)
 	struct X3d_movie *x3d_movie;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(gfx_modify_Texture);
 	if (state)
@@ -6861,6 +6867,7 @@ Modifies the properties of a texture.
 				}
 				if (process)
 				{
+#if defined (SGI_MOVIE_FILE)
 					if (x3d_movie=Texture_get_movie(texture_to_be_modified_copy))
 					{
 						if (movie=FIRST_OBJECT_IN_MANAGER_THAT(Movie_graphics)(
@@ -6880,6 +6887,7 @@ Modifies the properties of a texture.
 						movie = (struct Movie_graphics *)NULL;
 					}
 					old_movie=movie;
+#endif /* defined (SGI_MOVIE_FILE) */
 					Texture_get_combine_alpha(texture_to_be_modified_copy, &alpha);
 					Texture_get_combine_colour(texture_to_be_modified_copy, &colour);
 					Texture_get_physical_size(texture_to_be_modified_copy,&width,&height);
@@ -6929,10 +6937,12 @@ Modifies the properties of a texture.
 					(filter_option_table[1]).to_be_modified=texture_to_be_modified_copy;
 					(option_table[i]).user_data=filter_option_table;
 					i++;
+#if defined (SGI_MOVIE_FILE)
 					/* movie */
 					(option_table[i]).to_be_modified=&movie;
 					(option_table[i]).user_data=command_data->movie_graphics_manager;
 					i++;
+#endif /* defined (SGI_MOVIE_FILE) */
 					/* source_field */
 					set_field_data.computed_field_package=
 						command_data->computed_field_package;
@@ -7007,20 +7017,16 @@ Modifies the properties of a texture.
 						{
 							texture_to_be_modified=texture_to_be_modified_copy;
 						}
+#if defined (SGI_MOVIE_FILE)
 						if ( movie != old_movie )
 						{
-#if defined (SGI_MOVIE_FILE)
 							/* Movie is outside manager copy so that is updates
 								the correct texture based on movie events */
 							Texture_set_movie(texture_to_be_modified,
 								Movie_graphics_get_X3d_movie(movie),
 								command_data->user_interface, "movie");
-#else /* defined (SGI_MOVIE_FILE) */
-							display_message(ERROR_MESSAGE,
-								"gfx_modify_Texture.  movie support was not compiled in");
-							return_code=0;
-#endif /* defined (SGI_MOVIE_FILE) */
 						}
+#endif /* defined (SGI_MOVIE_FILE) */
 #if defined (GL_API)
 						texture_to_be_modified->index= -(texture_to_be_modified->index);
 #endif
@@ -7034,10 +7040,12 @@ Modifies the properties of a texture.
 #endif
 #endif /* defined (MS_22AUG96) */
 					}
+#if defined (SGI_MOVIE_FILE)
 					if (movie)
 					{
 						DEACCESS(Movie_graphics)(&movie);
 					}
+#endif /* defined (SGI_MOVIE_FILE) */
 					if (spectrum)
 					{
 						DEACCESS(Spectrum)(&spectrum);
@@ -13960,7 +13968,7 @@ Executes a GFX LIST WINDOW.
 static int execute_command_gfx_list(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Executes a GFX LIST command.
@@ -13984,7 +13992,9 @@ Executes a GFX LIST command.
 		{"light",NULL,NULL,gfx_list_light},
 		{"lmodel",NULL,NULL,gfx_list_light_model},
 		{"material",NULL,NULL,gfx_list_graphical_material},
+#if defined (SGI_MOVIE_FILE)
 		{"movie",NULL,NULL,gfx_list_movie_graphics},
+#endif /* defined (SGI_MOVIE_FILE) */
 		{"ngroup",NULL,NULL,gfx_list_group_FE_node},
 		{"node",NULL,NULL,gfx_list_FE_node},
 		{"slider",NULL,NULL,list_node_group_slider},
@@ -14051,9 +14061,11 @@ Executes a GFX LIST command.
 				/* material */
 				(option_table[i]).user_data=command_data->graphical_material_manager;
 				i++;
+#if defined (SGI_MOVIE_FILE)
 				/* movie */
 				(option_table[i]).user_data=command_data->movie_graphics_manager;
 				i++;
+#endif /* defined (SGI_MOVIE_FILE) */
 				/* ngroup */
 				(option_table[i]).user_data=command_data->node_group_manager;
 				i++;
