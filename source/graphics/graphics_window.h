@@ -88,7 +88,7 @@ Structure to pass to write_graphics_window_to_file.
 {
 	enum Image_file_format image_file_format;
 	enum Image_orientation image_orientation;
-	int force_onscreen; /* If this is non zero than the pixels are grabbed 
+	int force_onscreen; /* If this is non zero then the pixels are grabbed 
 								  directly off the screen */
 	int width;  /* The preferred size, if onscreen then these are ignored and */
 	int height; /* the window size used instead */

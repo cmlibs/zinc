@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 8 September 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -48,6 +48,7 @@ interest and set scene_viewer values directly.
 #include "general/image_utilities.h"
 #include "three_d_drawing/dm_interface.h"
 #include "time/time_keeper.h"
+#include "user_interface/confirmation.h"
 #include "user_interface/printer.h"
 
 /*
@@ -67,7 +68,7 @@ Module types
 */
 struct Graphics_window
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 8 September 2000
 
 DESCRIPTION :
 Contains information for a graphics window.
@@ -79,8 +80,9 @@ Contains information for a graphics window.
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 	/* widgets on the Graphics_window */
 	Widget viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
-		view_all_button,time_edit_form,time_edit_widget,perspective_button,
-		layout_mode_form,layout_mode_widget,orthographic_form,ortho_up_option,
+		view_all_button,print_button,time_edit_form,time_edit_widget,
+		perspective_button,layout_mode_form,layout_mode_widget,
+		orthographic_form,ortho_up_option,
 		ortho_up_menu,ortho_front_button,
 		interactive_toolbar_form,interactive_toolbar_widget;
 	Widget window_shell,main_window;
@@ -178,6 +180,8 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,viewing_area4)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,view_all_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
+        Graphics_window,print_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,time_edit_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
@@ -878,6 +882,46 @@ ranges and sets the view parameters so that everything can be seen.
 	}
 	LEAVE;
 } /* Graphics_window_view_all_button_CB */
+
+static void Graphics_window_print_button_CB(Widget caller,
+	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Callback for when the print_button is pressed.  Finds the x, y and z
+ranges and sets the view parameters so that everything can be seen.
+==============================================================================*/
+{
+	char *file_name;
+	struct Graphics_window *graphics_window;
+	struct Write_graphics_window_data write_graphics_window_data;
+
+	ENTER(Graphics_window_print_button_CB);
+	USE_PARAMETER(caller);
+	USE_PARAMETER(caller_data);
+	if (graphics_window=(struct Graphics_window *)graphics_window_void)
+	{
+		if (file_name=confirmation_get_write_filename((char *)NULL,
+			graphics_window->user_interface))
+		{
+			write_graphics_window_data.image_file_format=
+				Image_file_format_from_file_name(file_name);
+			write_graphics_window_data.image_orientation=PORTRAIT_ORIENTATION;
+			write_graphics_window_data.force_onscreen=0;
+			write_graphics_window_data.width = 0;
+			write_graphics_window_data.height = 0;
+			write_graphics_window_data.window = graphics_window;
+			write_Graphics_window_to_file(file_name,&write_graphics_window_data);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_print_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Graphics_window_print_button_CB */
 
 /*
 Manager Callback Module functions
@@ -2356,7 +2400,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 8 September 2000
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -2388,6 +2432,8 @@ will be printed on the windows title bar.
 			DIALOG_IDENTIFY(graphics_window,viewing_area4)},
 		{"gwin_id_view_all_btn",(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,view_all_button)},
+		{"gwin_id_print_btn",(XtPointer)
+			DIALOG_IDENTIFY(graphics_window,print_button)},
 		{"gwin_id_time_edit_form",(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,time_edit_form)},
 		{"gwin_id_perspective_btn",(XtPointer)
@@ -2407,6 +2453,8 @@ will be printed on the windows title bar.
 		{"gwin_destroy_CB",(XtPointer)Graphics_window_destroy_CB},
 		{"gwin_view_all_btn_CB",
 			(XtPointer)Graphics_window_view_all_button_CB},
+		{"gwin_print_btn_CB",
+			(XtPointer)Graphics_window_print_button_CB},
 		{"gwin_perspective_btn_CB",
 			(XtPointer)Graphics_window_perspective_button_CB},
 		{"gwin_ortho_up_menu_CB",
@@ -2488,6 +2536,7 @@ will be printed on the windows title bar.
 				graphics_window->viewing_area3=(Widget)NULL;
 				graphics_window->viewing_area4=(Widget)NULL;
 				graphics_window->view_all_button=(Widget)NULL;
+				graphics_window->print_button=(Widget)NULL;
 				graphics_window->time_edit_form=(Widget)NULL;
 				graphics_window->time_edit_widget=(Widget)NULL;
 				graphics_window->perspective_button=(Widget)NULL;
@@ -5368,18 +5417,24 @@ This writes the first scene viewer of the graphics window to a file.
 						/* bytes_per_component */1, height,width, 0,
 						TIFF_PACK_BITS_COMPRESSION, (unsigned long *)frame_data);
 				} break;
+				case YUV_FILE_FORMAT:
+				{
+					display_message(ERROR_MESSAGE,"Print graphics window: "
+						"Cannot write YUV file '%s'; file format not supported for writing",
+						file_name);
+				} break;
 				default:
 				{
-					display_message(ERROR_MESSAGE,
-						"File format is not currently supported");
+					display_message(ERROR_MESSAGE,"Print graphics window: "
+						"Unknown image file format for '%s'",file_name);
 				} break;
 			}
 			DEALLOCATE(frame_data);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-					"Movie_graphics_set_Graphics_window:  Could not allocate array for frame_data");
+			display_message(ERROR_MESSAGE,"write_Graphics_window_to_file.  "
+				"Could not allocate array for frame_data");
 			return_code = 0;
 		}
 	}

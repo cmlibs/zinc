@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : graphics_window.uil
 !
-!LAST MODIFIED : 18 July 2000
+!LAST MODIFIED : 8 September 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the 3-D graphics window
@@ -18,6 +18,7 @@ procedure
 	gwin_id_viewing_area3;
 	gwin_id_viewing_area4;
 	gwin_id_view_all_btn;
+	gwin_id_print_btn;
 	gwin_id_time_edit_form;
 	gwin_id_perspective_btn;
 	gwin_id_layout_mode_form;
@@ -29,6 +30,7 @@ procedure
 	gwin_destroy_CB;
 	gwin_selection_list_CB;
 	gwin_view_all_btn_CB;
+	gwin_print_btn_CB;
 	gwin_perspective_btn_CB;
 	gwin_ortho_up_menu_CB;
 	gwin_ortho_front_btn_CB;
@@ -78,6 +80,7 @@ object
 		controls
 			{
 			XmPushButtonGadget gwin_view_all_btn;
+			XmPushButtonGadget gwin_print_btn;
 			XmForm gwin_time_edit_form;
 			XmToggleButtonGadget gwin_perspective_btn;
 			XmSeparatorGadget gwin_separator1;
@@ -240,6 +243,26 @@ object
 			};
 		};
 !*******************************************************************************
+	gwin_print_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_view_all_btn;
+			XmNlabelString = compound_string("Print...");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_CENTER;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_print_btn(gwin_structure);
+			XmNactivateCallback = procedure gwin_print_btn_CB(gwin_structure);
+			};
+		};
+!*******************************************************************************
 	gwin_time_edit_form: XmForm
 		{
 		arguments
@@ -248,7 +271,7 @@ object
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNbottomAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = gwin_view_all_btn;
+			XmNtopWidget = gwin_print_btn;
 !      XmNsensitive = false;
 			XmNuserData = gwin_structure;
 			};
