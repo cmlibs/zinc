@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 19 December 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -5949,7 +5949,7 @@ is put out as a name to identify the object in OpenGL picking.
 int GT_element_settings_Computed_field_change(
 	struct GT_element_settings *settings, void *change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Iterator function telling the <settings> that the computed fields in the
@@ -5973,109 +5973,109 @@ we can sort out these dependencies before the manager message is sent out.
 		&& (changed_field_list = change_data->changed_field_list))
 	{
 		return_code = 1;
-		if (settings->graphics_object)
+		rebuild_graphics_object = 0;
+		/* determine if the changed_field affects these settings */
+		/* compare geometry settings */
+		/* for all graphic types */
+		/* settings can get default coordinate field from gt_element_group */
+		if (settings->coordinate_field)
 		{
-			rebuild_graphics_object = 0;
-			/* determine if the changed_field affects these settings */
-			/* compare geometry settings */
-			/* for all graphic types */
-			/* settings can get default coordinate field from gt_element_group */
-			if (settings->coordinate_field)
-			{
-				coordinate_field = settings->coordinate_field;
-			}
-			else
-			{
-				coordinate_field = change_data->default_coordinate_field;
-			}
+			coordinate_field = settings->coordinate_field;
+		}
+		else
+		{
+			coordinate_field = change_data->default_coordinate_field;
+		}
 
-			if (Computed_field_depends_on_Computed_field_in_list(coordinate_field,
-				changed_field_list))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* currently for surfaces only */
-			else if (settings->texture_coordinate_field &&
+		if (Computed_field_depends_on_Computed_field_in_list(coordinate_field,
+			changed_field_list))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* currently for surfaces only */
+		else if (settings->texture_coordinate_field &&
+			Computed_field_depends_on_Computed_field_in_list(
+				settings->texture_coordinate_field, changed_field_list))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* for cylinders only */
+		else if ((GT_ELEMENT_SETTINGS_CYLINDERS == settings->settings_type) &&
+			settings->radius_scalar_field &&
+			Computed_field_depends_on_Computed_field_in_list(
+				settings->radius_scalar_field, changed_field_list))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* for iso_surfaces only */
+		else if ((GT_ELEMENT_SETTINGS_ISO_SURFACES == settings->settings_type) &&
+			settings->iso_scalar_field &&
+			Computed_field_depends_on_Computed_field_in_list(
+				settings->iso_scalar_field, changed_field_list))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* for node_points, data_points and element_points only */
+		else if (((GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type) ||
+			(GT_ELEMENT_SETTINGS_DATA_POINTS == settings->settings_type) ||
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)) &&
+			(settings->orientation_scale_field &&
 				Computed_field_depends_on_Computed_field_in_list(
-					settings->texture_coordinate_field, changed_field_list))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* for cylinders only */
-			else if ((GT_ELEMENT_SETTINGS_CYLINDERS == settings->settings_type) &&
-				settings->radius_scalar_field &&
+					settings->orientation_scale_field, changed_field_list)) ||
+			(settings->variable_scale_field &&
 				Computed_field_depends_on_Computed_field_in_list(
-					settings->radius_scalar_field, changed_field_list))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* for iso_surfaces only */
-			else if ((GT_ELEMENT_SETTINGS_ISO_SURFACES == settings->settings_type) &&
-				settings->iso_scalar_field &&
+					settings->variable_scale_field, changed_field_list)) ||
+			(settings->label_field &&
 				Computed_field_depends_on_Computed_field_in_list(
-					settings->iso_scalar_field, changed_field_list))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* for node_points, data_points and element_points only */
-			else if (((GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type) ||
-				(GT_ELEMENT_SETTINGS_DATA_POINTS == settings->settings_type) ||
-				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)) &&
-				(settings->orientation_scale_field &&
-					Computed_field_depends_on_Computed_field_in_list(
-						settings->orientation_scale_field, changed_field_list)) ||
-				(settings->variable_scale_field &&
-					Computed_field_depends_on_Computed_field_in_list(
-						settings->variable_scale_field, changed_field_list)) ||
-				(settings->label_field &&
-					Computed_field_depends_on_Computed_field_in_list(
-						settings->label_field, changed_field_list)))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* for element_points with a density field only */
-			else if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)
-				&& ((XI_DISCRETIZATION_CELL_DENSITY ==
-					settings->xi_discretization_mode) ||
-					(XI_DISCRETIZATION_CELL_POISSON ==
-						settings->xi_discretization_mode)) &&
+					settings->label_field, changed_field_list)))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* for element_points with a density field only */
+		else if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)
+			&& ((XI_DISCRETIZATION_CELL_DENSITY ==
+				settings->xi_discretization_mode) ||
+				(XI_DISCRETIZATION_CELL_POISSON ==
+					settings->xi_discretization_mode)) &&
+			Computed_field_depends_on_Computed_field_in_list(
+				settings->xi_point_density_field, changed_field_list))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* for volumes only */
+		else if ((GT_ELEMENT_SETTINGS_VOLUMES == settings->settings_type)&&
+			(settings->displacement_map_field &&
 				Computed_field_depends_on_Computed_field_in_list(
-					settings->xi_point_density_field, changed_field_list))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* for volumes only */
-			else if ((GT_ELEMENT_SETTINGS_VOLUMES == settings->settings_type)&&
-				(settings->displacement_map_field &&
-					Computed_field_depends_on_Computed_field_in_list(
-						settings->displacement_map_field, changed_field_list))||
-				(settings->blur_field &&
-					Computed_field_depends_on_Computed_field_in_list(
-						settings->blur_field, changed_field_list)))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* for streamlines only */
-			else if ((GT_ELEMENT_SETTINGS_STREAMLINES == settings->settings_type) &&
-				settings->stream_vector_field &&
+					settings->displacement_map_field, changed_field_list))||
+			(settings->blur_field &&
 				Computed_field_depends_on_Computed_field_in_list(
-					settings->stream_vector_field, changed_field_list))
-			{
-				rebuild_graphics_object = 1;
-			}
-			/* appearance settings for all settings types */
-			else if (settings->data_field &&
-				Computed_field_depends_on_Computed_field_in_list(
-					settings->data_field, changed_field_list))
-			{
-				rebuild_graphics_object = 1;
-			}
-			if (rebuild_graphics_object)
+					settings->blur_field, changed_field_list)))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* for streamlines only */
+		else if ((GT_ELEMENT_SETTINGS_STREAMLINES == settings->settings_type) &&
+			settings->stream_vector_field &&
+			Computed_field_depends_on_Computed_field_in_list(
+				settings->stream_vector_field, changed_field_list))
+		{
+			rebuild_graphics_object = 1;
+		}
+		/* appearance settings for all settings types */
+		else if (settings->data_field &&
+			Computed_field_depends_on_Computed_field_in_list(
+				settings->data_field, changed_field_list))
+		{
+			rebuild_graphics_object = 1;
+		}
+		if (rebuild_graphics_object)
+		{
+			if (settings->graphics_object)
 			{
 				DEACCESS(GT_object)(&(settings->graphics_object));
 				settings->graphics_object = (struct GT_object *)NULL;
-				change_data->rebuild_graphics = 1;
 			}
+			change_data->rebuild_graphics = 1;
 		}
 	}
 	else
