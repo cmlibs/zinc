@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : value.h
 
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 A value type that knows what its type is.  So that can have a single function
@@ -10,6 +10,8 @@ checking.
 ==============================================================================*/
 #if !defined (VALUE_H)
 #define VALUE_H
+
+#include <values.h>
 
 /*
 Global types
