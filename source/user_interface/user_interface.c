@@ -14,6 +14,9 @@ Functions for opening and closing the user interface.
 #if defined (CONSOLE_USER_INTERFACE)
 #include <unistd.h>
 #endif /* defined (CONSOLE_USER_INTERFACE) */
+#if __GLIBC__ >= 2
+#include <gnu/libc-version.h>
+#endif
 #if defined (MOTIF)
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
@@ -195,6 +198,55 @@ extern struct CMISS_connection *CMISS;
 Module functions
 ----------------
 */
+
+static int glibc_version_greater_than_2_2_4(void)
+/*******************************************************************************
+LAST MODIFIED : 26 November 2002
+
+DESCRIPTION :
+Need to read the glibc version so that we can determine if we need to 
+swap the endianness of values going into a64l
+==============================================================================*/
+{
+	char *version_string;
+	int major_version, minor_version, minor_sub_version;
+	static int return_code = -1;
+
+	ENTER(get_glibc_version);
+
+	/* This gets called a lot so lets make it fast */
+	if (return_code == -1)
+	{
+#if __GLIBC__ >= 2
+		version_string = (char *)gnu_get_libc_version();
+		if (sscanf(version_string, "%d.%d.%d", &major_version, &minor_version, 
+			&minor_sub_version))
+		{
+			
+			if ((major_version > 2) ||
+				((major_version == 2) && (minor_version > 2)) ||
+				((major_version == 2) && (minor_version == 2) && (minor_sub_version > 4)))
+			{
+				return_code = 1;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+#else /* __GLIBC__ >= 2 */
+		return_code = 0;
+#endif/* __GLIBC__ >= 2 */
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* get_glibc_version */
+
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_X_query_callback(
@@ -2695,14 +2747,22 @@ success and 0 for failure.
 				{
 #if defined (BYTE_ORDER)
 #if (1234==BYTE_ORDER)
-				  char tmp_string[6];
-				  tmp_string[0]=base64_string[i + 5];
-				  tmp_string[1]=base64_string[i + 4];
-				  tmp_string[2]=base64_string[i + 3];
-				  tmp_string[3]=base64_string[i + 2];
-				  tmp_string[4]=base64_string[i + 1];
-				  tmp_string[5]=base64_string[i];
-					uid_long_data=a64l(tmp_string);
+					if (glibc_version_greater_than_2_2_4())
+					{
+						/* Don't need to swap now */
+						uid_long_data=a64l(base64_string + i);
+					}
+					else
+					{
+						char tmp_string[6];
+						tmp_string[0]=base64_string[i + 5];
+						tmp_string[1]=base64_string[i + 4];
+						tmp_string[2]=base64_string[i + 3];
+						tmp_string[3]=base64_string[i + 2];
+						tmp_string[4]=base64_string[i + 1];
+						tmp_string[5]=base64_string[i];
+						uid_long_data=a64l(tmp_string);
+					}
 #else /* (1234==BYTE_ORDER) */
 					uid_long_data=a64l(base64_string + i);
 #endif /* (1234==BYTE_ORDER) */
@@ -2825,14 +2885,22 @@ success and 0 for failure.
 								{
 #if defined (BYTE_ORDER)
 #if (1234==BYTE_ORDER)
-									char tmp_string[6];
-									tmp_string[0]=base64_strings[k][i + 5];
-									tmp_string[1]=base64_strings[k][i + 4];
-									tmp_string[2]=base64_strings[k][i + 3];
-									tmp_string[3]=base64_strings[k][i + 2];
-									tmp_string[4]=base64_strings[k][i + 1];
-									tmp_string[5]=base64_strings[k][i];
-									uid_long_data=a64l(tmp_string);
+									if (glibc_version_greater_than_2_2_4())
+									{
+										/* Don't need to swap now */
+										uid_long_data=a64l(base64_strings[k] + i);
+									}
+									else
+									{
+										char tmp_string[6];
+										tmp_string[0]=base64_strings[k][i + 5];
+										tmp_string[1]=base64_strings[k][i + 4];
+										tmp_string[2]=base64_strings[k][i + 3];
+										tmp_string[3]=base64_strings[k][i + 2];
+										tmp_string[4]=base64_strings[k][i + 1];
+										tmp_string[5]=base64_strings[k][i];
+										uid_long_data=a64l(tmp_string);
+									}
 #else /* (1234==BYTE_ORDER) */
 									uid_long_data=a64l(base64_strings[k] + i);
 #endif /* (1234==BYTE_ORDER) */
