@@ -252,9 +252,9 @@ Updates the node locations for the <emoter_slider>
 ==============================================================================*/
 {
 	char input_filename[200];
-	double temp_x, temp_two, temp_y, temp_z, temp_cos, temp_sin, *u,*weights;
+	double position[3], temp_two, temp_cos, temp_sin, *u,*weights;
 	FILE *input_file;
-	int i,k,offset,return_code;
+	int i,j,k,offset,return_code,versions;
 	struct FE_field_component coordinate_field_component;
 	struct FE_node *node,*temp_node;
 	struct EM_Object *em_object;
@@ -309,32 +309,16 @@ Updates the node locations for the <emoter_slider>
 						{
 							if (COPY(FE_node)(temp_node,node))
 							{
-								temp_x = 0;
+								position[0] = 0;
+ 								position[1] = 0;
+ 								position[2] = 0;
 								u=(em_object->u)+(3*i);
 								weights=shared_data->weights + SOLID_BODY_MODES;
 								for (k=shared_data->mode_limit;k>0;k--)
 								{
-									temp_x += (*u)*(*weights);
-									u += offset;
-									weights++;
-								}
-
-								temp_y = 0;
-								u=(em_object->u)+(3*i+1);
-								weights=shared_data->weights + SOLID_BODY_MODES;
-								for (k=shared_data->mode_limit;k>0;k--)
-								{
-									temp_y += (*u)*(*weights);
-									u += offset;
-									weights++;
-								}
-
-								temp_z = 0;
-								u=(em_object->u)+(3*i+2);
-								weights=shared_data->weights + SOLID_BODY_MODES;
-								for (k=shared_data->mode_limit;k>0;k--)
-								{
-									temp_z += (*u)*(*weights);
+									position[0] += u[0]*(*weights);
+									position[1] += u[1]*(*weights);
+									position[2] += u[2]*(*weights);
 									u += offset;
 									weights++;
 								}
@@ -345,46 +329,44 @@ Updates the node locations for the <emoter_slider>
 									weights = shared_data->weights + 5;
 									temp_sin = sin( -*weights );
 									temp_cos = cos( -*weights );
-									temp_two = temp_cos * temp_x - temp_sin * temp_y;
-									temp_y = temp_sin * temp_x + temp_cos * temp_y;
-									temp_x = temp_two;
+									temp_two = temp_cos * position[0] - temp_sin * position[1];
+									position[1] = temp_sin * position[0] + temp_cos * position[1];
+									position[0] = temp_two;
 									weights--;
 
 									temp_sin = sin( -*weights );
 									temp_cos = cos( -*weights );
-									temp_two = temp_cos * temp_z - temp_sin * temp_x;
-									temp_x = temp_sin * temp_z + temp_cos * temp_x;
-									temp_z = temp_two;
+									temp_two = temp_cos * position[2] - temp_sin * position[0];
+									position[0] = temp_sin * position[2] + temp_cos * position[0];
+									position[2] = temp_two;
 									weights--;
 
 									temp_sin = sin( -*weights );
 									temp_cos = cos( -*weights );
-									temp_two = temp_cos * temp_y - temp_sin * temp_z;
-									temp_z = temp_sin * temp_y + temp_cos * temp_z;
-									temp_y = temp_two;
+									temp_two = temp_cos * position[1] - temp_sin * position[2];
+									position[2] = temp_sin * position[1] + temp_cos * position[2];
+									position[1] = temp_two;
 									weights--;
 
-									temp_z -= *weights;
+									position[2] -= *weights;
 									weights--;
-									temp_y -= *weights;
+									position[1] -= *weights;
 									weights--;
-									temp_x -= *weights;
+									position[0] -= *weights;
 								}
 
-								coordinate_field_component.number=0;
-								return_code=set_FE_nodal_FE_value_value(temp_node,
-									&coordinate_field_component,0,FE_NODAL_VALUE,
-									/*time*/0, (FE_value)temp_x);
-
-								coordinate_field_component.number=1;
-								return_code=set_FE_nodal_FE_value_value(temp_node,
-									&coordinate_field_component,0,FE_NODAL_VALUE,
-									/*time*/0, (FE_value)temp_y);
-
-								coordinate_field_component.number=2;
-								return_code=set_FE_nodal_FE_value_value(temp_node,
-									&coordinate_field_component,0,FE_NODAL_VALUE,
-									/*time*/0, (FE_value)temp_z);
+								for (k = 0 ; k < 3 ; k++)
+								{
+									coordinate_field_component.number = k;
+									versions = get_FE_node_field_component_number_of_versions(
+										temp_node, coordinate_field_component.field, k);
+									for (j = 0 ; j < versions ; j++)
+									{
+										return_code=set_FE_nodal_FE_value_value(temp_node,
+											&coordinate_field_component, j, FE_NODAL_VALUE,
+											/*time*/0, (FE_value)position[k]);
+									}
+								}
 
 								if (return_code)
 								{
@@ -509,7 +491,7 @@ DESCRIPTION :
 					shape_vector[slider->solid_body_motion] -= EM_standard_mode_one( shared->em_object );
 					for ( i = 0 ; i < slider->solid_body_motion ; i++ )
 					{
-						total_shape_vector[i] += shape_vector[i];
+						total_shape_vector[i] += shape_vector[i] * slider->value;
 					}
 					for ( ; i < slider->solid_body_motion + shared->mode_limit ; i++ )
 					{
