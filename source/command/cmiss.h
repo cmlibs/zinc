@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 12 June 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -23,7 +23,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 12 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -43,6 +43,7 @@ DESCRIPTION :
 #if !defined (WINDOWS_DEV_FLAG)
 	struct Element_point_tool *element_point_tool;
 	struct Node_tool *data_tool,*node_tool;
+	struct Transform_tool *transform_tool;
 	/*???RC.  Single list of graphics objects - eventually set up manager ? */
 	struct LIST(GT_object) *graphics_object_list;
 	/* list of glyphs = simple graphics objects with only geometry */
