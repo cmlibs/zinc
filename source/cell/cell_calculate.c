@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_calculate.c
 
-LAST MODIFIED : 20 June 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Routines for model calculation
@@ -9,10 +9,14 @@ Routines for model calculation
 
 #include <dlfcn.h>
 #include <stdio.h>
+#if defined (OPTIMISED)
+#endif /* defined (OPTIMISED) */
+#include <stdlib.h>
 #include <string.h>
 
 #include "cell/cell_calculate.h"
 #include "cell/cell_calculate_dialog.h"
+#include "general/debug.h"
 
 /* Control array indices - from
  *   /product/cmiss/cm/source/integrator_reserved.inc
