@@ -63,8 +63,8 @@ object
 !      XmNy = command_box_position_y;
 			XmNborderWidth = 0;
 !      XmNwidth = command_box_width;
-			XmNdefaultPosition = false;
-			XmNresizePolicy = XmRESIZE_ANY;
+!			XmNdefaultPosition = false;
+!			XmNresizePolicy = XmRESIZE_ANY;
 			XmNdialogTitle = compound_string("CMISS Command Window");
 			};
 		controls

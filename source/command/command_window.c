@@ -1354,10 +1354,6 @@ Create the structures and retrieve the command window from the uil file.
 				/* create the command window shell */
 				if (command_window->shell=XtVaCreatePopupShell("command_window_shell",
 					xmDialogShellWidgetClass,user_interface->application_shell,
-					XmNmwmDecorations,MWM_DECOR_ALL,
-					XmNmwmFunctions,MWM_FUNC_ALL,
-/*          XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_MAXIMIZE,
-					XmNmwmFunctions,MWM_FUNC_ALL|MWM_FUNC_MAXIMIZE,*/
 					XmNtransient,FALSE,
 					NULL))
 				{
