@@ -875,6 +875,7 @@ although its cache may be lost.
 		data = (struct Computed_field_steerable_filter_type_specific_data *)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields) &&
 			ALLOCATE(data, struct Computed_field_steerable_filter_type_specific_data, 1) &&
+			ALLOCATE(data->direction, int, 2) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
 			data->image, dimension, depth, sizes, minimums, maximums) &&
