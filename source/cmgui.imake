@@ -1046,6 +1046,7 @@ GRAPHICS_SRCS = \
 	graphics/spectrum_settings.c \
 	graphics/texture.c \
 	graphics/texture_line.c \
+	graphics/transform_tool.c \
 	graphics/userdef_objects.c \
 	graphics/volume_texture.c
 GRAPHICS_INTERFACE_SRCS = \
@@ -1059,7 +1060,6 @@ GRAPHICS_INTERFACE_SRCS = \
 	graphics/spectrum_editor_settings.c \
 	graphics/texture_graphics.c \
 	graphics/texturemap.c \
-	graphics/transform_tool.c \
 	graphics/volume_texture_editor.c \
 	graphics/volume_texture_editor_dialog.c
 INTERACTION_SRCS = \
