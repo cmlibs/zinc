@@ -356,7 +356,7 @@ Perform a automatic thresholding operation on the image cache.
 {
         char *storage;
 	FE_value *data_index, *result_index, T, *gray_img, *gray1_img, *gray2_img;
-	int i, k, return_code, storage_size, counter, counter1;
+	int i, k, return_code, storage_size, counter;
 
 
 	ENTER(Image_cache_intensity_based_segment);
@@ -364,7 +364,6 @@ Perform a automatic thresholding operation on the image cache.
 	{
 		return_code = 1;
 		T = 0.0;
-		counter1 = 0; /*the size of the support set of segmented result1*/
 
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
@@ -405,9 +404,9 @@ Perform a automatic thresholding operation on the image cache.
 			{
                                 T += gray_img[i]/counter;
 			}
+#if defined (OLD_CODE)
 			T0 = T;
 			T3 = T;
-#if defined (OLD_CODE)
 			//printf("T3:%f\n",T3);
                         /* perform the initial thresholding by choosing the mean as threshold value*/
 			//for (i = 0; i < counter; i++)
