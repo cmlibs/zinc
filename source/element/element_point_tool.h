@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_tool.h
 
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Interactive tool for selecting element/grid points with mouse and other devices.
@@ -9,9 +9,6 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #if !defined (ELEMENT_POINT_TOOL_H)
 #define ELEMENT_POINT_TOOL_H
 
-#include "finite_element/finite_element.h"
-#include "graphics/element_point_ranges.h"
-#include "graphics/scene.h"
 #include "interaction/interactive_tool.h"
 #include "selection/element_point_ranges_selection.h"
 

@@ -1,11 +1,10 @@
 /*******************************************************************************
 FILE : element_point_tool.c
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Functions for mouse controlled node position and vector editing based on
-Scene input.
+Interactive tool for selecting element/grid points with mouse and other devices.
 ==============================================================================*/
 #include "command/command.h"
 #include "general/debug.h"
@@ -13,6 +12,7 @@ Scene input.
 #include "interaction/interactive_event.h"
 #include "element/element_point_tool.h"
 #include "element/element_point_tool.uidh"
+#include "graphics/scene.h"
 #include "user_interface/message.h"
 
 /*
