@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -3718,10 +3718,12 @@ for the coordinate_field used.
 
 int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
-Returns true if the field is a coordinate field.
+Returns true if the field is a coodinate field, as defined by having a
+CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE and from 1 to 3
+components.
 ==============================================================================*/
 
 int FE_field_is_anatomical_fibre_field(struct FE_field *field,void *dummy_void);

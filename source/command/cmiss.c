@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1111,7 +1111,7 @@ Executes a GFX CREATE CYLINDERS command.
 static int gfx_create_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_CREATOR command.
@@ -11092,7 +11092,7 @@ Executes a GFX EDIT command.
 static int execute_command_gfx_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Executes a GFX ELEMENT_CREATOR command.
@@ -11102,97 +11102,99 @@ Executes a GFX ELEMENT_CREATOR command.
 	int element_dimension,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Element_creator *element_creator;
+	struct FE_field *coordinate_field;
 	struct GROUP(FE_element) *element_group,*old_element_group;
 	struct GROUP(FE_node) *node_group,*old_node_group;
 	struct Option_table *option_table;
+	struct Set_FE_field_conditional_data set_coordinate_field_data;
 
 	ENTER(execute_command_gfx_element_creator);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		/* initialize defaults */
+		element_group=(struct GROUP(FE_element) *)NULL;
+		node_group=(struct GROUP(FE_node) *)NULL;
+		if (element_creator=command_data->element_creator)
 		{
-			/* initialize defaults */
-			element_group=(struct GROUP(FE_element) *)NULL;
-			node_group=(struct GROUP(FE_node) *)NULL;
-			if (element_creator=command_data->element_creator)
-			{
-				element_dimension=
-					Element_creator_get_element_dimension(element_creator);
-				Element_creator_get_groups(element_creator,
-					&element_group,&node_group);
-			}
-			else
-			{
-				element_dimension=2;
-			}
-			if (element_group)
-			{
-				ACCESS(GROUP(FE_element))(element_group);
-			}
-			old_element_group=element_group;
-			old_node_group=node_group;
-
-			option_table=CREATE(Option_table)();
-			/* dimension */
-			Option_table_add_entry(option_table,"dimension",
-				&element_dimension,NULL,set_int_non_negative);
-			/* egroup */
-			Option_table_add_entry(option_table,"egroup",&element_group,
-				command_data->element_group_manager,set_FE_element_group);
-			if (return_code=Option_table_multi_parse(option_table,state))
-			{
-				if (element_creator)
-				{
-					if (element_group)
-					{
-						if (element_group != old_element_group)
-						{
-							if (GET_NAME(GROUP(FE_element))(element_group,&group_name))
-							{
-								if (!(node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
-									name)(group_name,command_data->node_group_manager)))
-								{
-									node_group=old_node_group;
-								}
-								DEALLOCATE(group_name);
-							}
-						}
-						Element_creator_set_element_dimension(element_creator,
-							element_dimension);
-						Element_creator_set_groups(element_creator,
-							element_group,node_group);
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"Please specify an element group for the element_creator");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Must create element_creator before modifying it");
-					return_code=0;
-				}
-			} /* parse error,help */
-			DESTROY(Option_table)(&option_table);
-			if (element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&element_group);
-			}
+			coordinate_field=Element_creator_get_coordinate_field(element_creator);
+			element_dimension=Element_creator_get_element_dimension(element_creator);
+			Element_creator_get_groups(element_creator,&element_group,&node_group);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_element_creator.  Missing command_data");
-			return_code=0;
+			coordinate_field=(struct FE_field *)NULL;
+			element_dimension=2;
+		}
+		if (coordinate_field)
+		{
+			ACCESS(FE_field)(coordinate_field);
+		}
+		if (element_group)
+		{
+			ACCESS(GROUP(FE_element))(element_group);
+		}
+		old_element_group=element_group;
+		old_node_group=node_group;
+
+		option_table=CREATE(Option_table)();
+		/* coordinate_field */
+		set_coordinate_field_data.fe_field_manager=command_data->fe_field_manager;
+		set_coordinate_field_data.conditional_function=FE_field_is_coordinate_field;
+		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"coordinate_field",
+			&coordinate_field,&set_coordinate_field_data,set_FE_field_conditional);
+		/* dimension */
+		Option_table_add_entry(option_table,"dimension",
+			&element_dimension,NULL,set_int_non_negative);
+		/* group */
+		Option_table_add_entry(option_table,"group",&element_group,
+			command_data->element_group_manager,set_FE_element_group);
+		if (return_code=Option_table_multi_parse(option_table,state))
+		{
+			if (element_creator)
+			{
+				Element_creator_set_coordinate_field(element_creator,coordinate_field);
+				Element_creator_set_element_dimension(element_creator,
+					element_dimension);
+				if (element_group)
+				{
+					if (element_group != old_element_group)
+					{
+						if (GET_NAME(GROUP(FE_element))(element_group,&group_name))
+						{
+							if (!(node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
+								name)(group_name,command_data->node_group_manager)))
+							{
+								node_group=old_node_group;
+							}
+							DEALLOCATE(group_name);
+						}
+					}
+					Element_creator_set_groups(element_creator,element_group,node_group);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Must create element_creator before modifying it");
+				return_code=0;
+			}
+		} /* parse error,help */
+		DESTROY(Option_table)(&option_table);
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+		if (coordinate_field)
+		{
+			DEACCESS(FE_field)(&coordinate_field);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"execute_command_gfx_element_creator.  Missing state");
+			"execute_command_gfx_element_creator.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -15563,7 +15565,7 @@ movie is being created.
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
@@ -15579,6 +15581,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 	struct GROUP(FE_node) *node_group;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Option_table *option_table;
+	struct Set_FE_field_conditional_data set_coordinate_field_data;
 
 	ENTER(execute_command_gfx_node_tool);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
@@ -15624,8 +15627,11 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 		option_table=CREATE(Option_table)();
 		/* coordinate_field */
+		set_coordinate_field_data.fe_field_manager=command_data->fe_field_manager;
+		set_coordinate_field_data.conditional_function=FE_field_is_coordinate_field;
+		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 		Option_table_add_entry(option_table,"coordinate_field",
-			&coordinate_field,command_data->fe_field_manager,set_FE_field);
+			&coordinate_field,&set_coordinate_field_data,set_FE_field_conditional);
 		/* create/no_create */
 		Option_table_add_switch(option_table,"create","no_create",&create_enabled);
 		/* edit/no_edit */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -28648,7 +28648,7 @@ Modifier function to set the field from the command line.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Unknown field: %s\n",current_token);
+						display_message(ERROR_MESSAGE,"Unknown field: %s",current_token);
 						display_parse_state_location(state);
 						return_code=0;
 					}
@@ -28723,7 +28723,7 @@ the VALUE_TYPE of the <field>.
 int set_FE_field_conditional(struct Parse_state *state,
 	void *field_address_void,void *set_field_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 May 1999
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Modifier function to set the field from a command. <set_field_data_void> should
@@ -28784,8 +28784,7 @@ this function works just like set_FE_field.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Unknown field : %s",
-							current_token);
+						display_message(ERROR_MESSAGE,"Unknown field : %s",current_token);
 						return_code=0;
 					}
 				}
@@ -28793,8 +28792,7 @@ this function works just like set_FE_field.
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE,
-					" FIELD_NAME[.COMPONENT_NAME]|none");
+				display_message(INFORMATION_MESSAGE," FIELD_NAME|none");
 				/* if possible, then write the name */
 				if (temp_field= *field_address)
 				{
@@ -32666,10 +32664,12 @@ for the coordinate_field used.
 
 int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
-Returns true if the field is a coordinate field.
+Returns true if the field is a coodinate field, as defined by having a
+CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE and from 1 to 3
+components.
 ==============================================================================*/
 {
 	int return_code;
@@ -32677,7 +32677,11 @@ Returns true if the field is a coordinate field.
 	ENTER(FE_field_is_coordinate_field);
 	if (field&&!dummy_void)
 	{
-		return_code=(CM_COORDINATE_FIELD==field->cm.type);
+		return_code=
+			(CM_COORDINATE_FIELD==field->cm.type)&&
+			(FE_VALUE_VALUE==field->value_type)&&
+			(1<=field->number_of_components)&&
+			(3>=field->number_of_components);
 	}
 	else
 	{
