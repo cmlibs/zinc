@@ -413,7 +413,7 @@ Perform a image_contour extraction operation on the image cache.
 			{
                                 for (k = 0 ; k < image->depth ; k++)
 				{
-                                        maxcol[k] = 0;
+                                        maxcol[k] = 0.0;
 					pixcolor[k] = *(data_index + k);
 				}
 				for (k = 0 ; k < image->depth ; k++)
@@ -441,7 +441,7 @@ Perform a image_contour extraction operation on the image cache.
 							  maxcol[k] = kernel[j];
 					}
 
-						result_index[k] = 1.0-maxcol[k];
+					result_index[k] = 1.0 - maxcol[k];
 
 				}
 				data_index += image->depth;

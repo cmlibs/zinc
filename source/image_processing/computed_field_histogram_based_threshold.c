@@ -448,7 +448,7 @@ Perform a automatic thresholding operation on the image cache.
 				mu0 = mu/w0;
 				if (w1 == 0.0)
 				{
-				        sigB[j] = 0.0;
+				       sigB[j] = 0.0;
 				}
 				else
 				{
