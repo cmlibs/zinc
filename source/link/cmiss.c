@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -1205,154 +1205,189 @@ Something has changed globally about the objects this widget uses, so refresh.
 	return (return_code);
 } /* CMISS_connection_send_node */
 
-static void CMISS_connection_node_global_change(
-	struct MANAGER_MESSAGE(FE_node) *message,void *data)
+static int CMISS_connection_send_delete_node(struct FE_node *node,
+	void *connection_void)
 /*******************************************************************************
-LAST MODIFIED : 2 November 1998
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Sends a destroy message for <node> through the wormhole.
+==============================================================================*/
+{
+	int return_code;
+	struct CMISS_connection *connection;
+
+	ENTER(CMISS_connection_send_delete_node);
+	if (node && (connection = (struct CMISS_connection *)connection_void))
+	{
+		wh_input_open_message(connection->data_input,
+			connection->data_type, CMISS_DELETE);
+		wh_input_open_message(connection->data_input, 0,
+			get_FE_node_cm_node_identifier(node));
+		wh_input_close_message(connection->data_input);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CMISS_connection_send_delete_node.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* CMISS_connection_send_delete_node */
+
+static void CMISS_connection_node_global_change(
+	struct MANAGER_MESSAGE(FE_node) *message, void *connection_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Something has changed globally about the objects this widget uses, so refresh.
 ==============================================================================*/
 {
-	struct CMISS_connection *connection=(struct CMISS_connection *)data;
+	struct CMISS_connection *connection;
 	struct CMISS_connection_send_node_struct send_node_struct;
-
+	
 	ENTER(CMISS_connection_node_global_change);
-	if (message&&connection)
+	if (message && (connection = (struct CMISS_connection *)connection_void))
 	{
-		connection->data_type=CMISS_NODE_CODE;
-		send_node_struct.in_message=0;
-		send_node_struct.connection=connection;
-		send_node_struct.template_node=(struct FE_node *)NULL;
+		connection->data_type = CMISS_NODE_CODE;
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_node):
-			{
-				if (!FOR_EACH_OBJECT_IN_MANAGER(FE_node)(CMISS_connection_send_node,
-					&send_node_struct,connection->node_manager))
-				{
-					display_message(ERROR_MESSAGE,
-						"CMISS_connection_node_global_change.  %s","Could not send nodes");
-				}
-				if (send_node_struct.in_message)
-				{
-					wh_input_close_message(connection->data_input);
-				}
-			} break;
 			case MANAGER_CHANGE_ADD(FE_node):
 			case MANAGER_CHANGE_IDENTIFIER(FE_node):
 			case MANAGER_CHANGE_OBJECT(FE_node):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 			{
-				if (!CMISS_connection_send_node(message->object_changed,
-					&send_node_struct))
+				send_node_struct.in_message = 0;
+				send_node_struct.connection = connection;
+				send_node_struct.template_node = (struct FE_node *)NULL;
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(CMISS_connection_send_node,
+					&send_node_struct, message->changed_object_list))
 				{
 					display_message(ERROR_MESSAGE,
-						"CMISS_connection_node_global_change.  %s","Could not send node");
+						"CMISS_connection_node_global_change.  "
+						"Could not send modified or added nodes");
 				}
 				if (send_node_struct.in_message)
 				{
 					wh_input_close_message(connection->data_input);
 				}
 			} break;
-			case MANAGER_CHANGE_DELETE(FE_node):
+			case MANAGER_CHANGE_REMOVE(FE_node):
 			{
+				/* ???RC Without completely knowing how this works, I'm saving the old
+					 code for comparison with the new list iterator code. Certainly gives
+					 the same result when only one node removed. */
+#if defined (OLD_CODE)
 				wh_input_open_message(connection->data_input,
 					CMISS_NODE_CODE,CMISS_DELETE);
 				wh_input_open_message(connection->data_input,0,
 					get_FE_node_cm_node_identifier(message->object_changed));
 				wh_input_close_message(connection->data_input);
+#endif /* defined (OLD_CODE) */
+				/* Note we had to set connection->data_type to CMISS_NODE_CODE, as
+					 above to get the following to work */
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(CMISS_connection_send_delete_node,
+					(void *)&connection, message->changed_object_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"CMISS_connection_node_global_change.  "
+						"Could not send deleted nodes");
+				}
+				/*???RC old code always ended in 2 of the following lines: */
 				wh_input_close_message(connection->data_input);
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"CMISS_connection_node_global_change.  %s",
-					"Invalid manager message");
+					"CMISS_connection_node_global_change.  Invalid manager message");
 			} break;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CMISS_connection_node_global_change.  %s",
-			"Invalid arguments");
+			"CMISS_connection_node_global_change.  Invalid argument(s)");
 	}
 	LEAVE;
 } /* CMISS_connection_node_global_change */
 
 static void CMISS_connection_data_global_change(
-	struct MANAGER_MESSAGE(FE_node) *message,void *data)
+	struct MANAGER_MESSAGE(FE_node) *message, void *connection_void)
 /*******************************************************************************
-LAST MODIFIED : 2 November 1998
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Something has changed globally about the objects this widget uses, so refresh.
 ==============================================================================*/
 {
-	struct CMISS_connection *connection=(struct CMISS_connection *)data;
+	struct CMISS_connection *connection;
 	struct CMISS_connection_send_node_struct send_node_struct;
 
 	ENTER(CMISS_connection_data_global_change);
-	if (message&&connection)
+	if (message && (connection = (struct CMISS_connection *)connection_void))
 	{
-		connection->data_type=CMISS_DATA_CODE;
-		send_node_struct.in_message=0;
-		send_node_struct.connection=connection;
-		send_node_struct.template_node=(struct FE_node *)NULL;
+		connection->data_type = CMISS_DATA_CODE;
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_node):
-			{
-				if (!FOR_EACH_OBJECT_IN_MANAGER(FE_node)(CMISS_connection_send_node,
-					&send_node_struct,connection->data_manager))
-				{
-					display_message(ERROR_MESSAGE,
-						"CMISS_connection_data_global_change.  %s","Could not send nodes");
-				}
-				if (send_node_struct.in_message)
-				{
-					wh_input_close_message(connection->data_input);
-				}
-			} break;
 			case MANAGER_CHANGE_ADD(FE_node):
 			case MANAGER_CHANGE_IDENTIFIER(FE_node):
 			case MANAGER_CHANGE_OBJECT(FE_node):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 			{
-				if (!CMISS_connection_send_node(message->object_changed,
-					&send_node_struct))
+				send_node_struct.in_message = 0;
+				send_node_struct.connection = connection;
+				send_node_struct.template_node = (struct FE_node *)NULL;
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(CMISS_connection_send_node,
+					&send_node_struct, message->changed_object_list))
 				{
 					display_message(ERROR_MESSAGE,
-						"CMISS_connection_data_global_change.  %s","Could not send node");
+						"CMISS_connection_data_global_change.  "
+						"Could not send modified or added data");
 				}
 				if (send_node_struct.in_message)
 				{
 					wh_input_close_message(connection->data_input);
 				}
 			} break;
-			case MANAGER_CHANGE_DELETE(FE_node):
+			case MANAGER_CHANGE_REMOVE(FE_node):
 			{
+				/* ???RC Without completely knowing how this works, I'm saving the old
+					 code for comparison with the new list iterator code. Certainly gives
+					 the same result when only one node removed. */
+#if defined (OLD_CODE)
 				wh_input_open_message(connection->data_input,CMISS_DATA_CODE,
 					CMISS_DELETE);
 				wh_input_open_message(connection->data_input,0,
 					get_FE_node_cm_node_identifier(message->object_changed));
 				wh_input_close_message(connection->data_input);
+#endif /* defined (OLD_CODE) */
+				/* Note we had to set connection->data_type to CMISS_DATA_CODE, as
+					 above to get the following to work */
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(CMISS_connection_send_delete_node,
+					(void *)&connection, message->changed_object_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"CMISS_connection_data_global_change.  "
+						"Could not send deleted data");
+				}
+				/*???RC old code always ended in 2 of the following lines: */
 				wh_input_close_message(connection->data_input);
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"CMISS_connection_data_global_change.  %s",
-					"Invalid manager message");
+					"CMISS_connection_data_global_change.  Invalid manager message");
 			} break;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CMISS_connection_data_global_change.  %s",
-			"Invalid arguments");
+			"CMISS_connection_data_global_change.  Invalid argument(s)");
 	}
 	LEAVE;
 } /* CMISS_connection_data_global_change */
@@ -1687,61 +1722,88 @@ Something has changed globally about the objects this widget uses, so refresh.
 	return (return_code);
 } /* CMISS_connection_send_element */
 
-static void CMISS_connection_element_global_change(
-	struct MANAGER_MESSAGE(FE_element) *message,void *data)
+static int CMISS_connection_send_delete_element(struct FE_element *element,
+	void *connection_void)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+If <element> is top-level, sends a destroy message for it through the wormhole.
+==============================================================================*/
+{
+	int return_code;
+	struct CMISS_connection *connection;
+
+	ENTER(CMISS_connection_send_delete_element);
+	if (element && (connection = (struct CMISS_connection *)connection_void))
+	{
+		/* only deal with top-level elements (not faces or lines) */
+		if ((element->cm.type == CM_ELEMENT) && (0 < element->cm.number))
+		{
+			wh_input_open_message(connection->data_input, CMISS_ELEMENT_CODE,
+				CMISS_DELETE);
+			wh_input_open_message(connection->data_input, 0, element->cm.number);
+			wh_input_close_message(connection->data_input);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CMISS_connection_send_delete_element.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* CMISS_connection_send_delete_element */
+
+static void CMISS_connection_element_global_change(
+	struct MANAGER_MESSAGE(FE_element) *message, void *connection_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Something has changed globally about the objects this widget uses, so refresh.
 ==============================================================================*/
 {
-	struct CMISS_connection *connection=(struct CMISS_connection *)data;
+	struct CMISS_connection *connection;
 	struct CMISS_connection_send_element_struct send_element_struct;
 
 	ENTER(CMISS_connection_element_global_change);
-	if (message&&connection)
+	if (message && (connection = (struct CMISS_connection *)connection_void))
 	{
-		connection->data_type=CMISS_ELEMENT_CODE;
-		send_element_struct.in_message=0;
-		send_element_struct.connection=connection;
-		send_element_struct.element_field_info=(struct FE_element_field_info *)NULL;
+		connection->data_type = CMISS_ELEMENT_CODE;
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_element):
-			{
-				if (!FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-					CMISS_connection_send_element,&send_element_struct,
-					connection->element_manager))
-				{
-					display_message(ERROR_MESSAGE,
-						"CMISS_connection_element_global_change.  %s",
-						"Could not send elements");
-				}
-				if (send_element_struct.in_message)
-				{
-					wh_input_close_message(connection->data_input);
-				}
-			} break;
 			case MANAGER_CHANGE_ADD(FE_element):
 			case MANAGER_CHANGE_IDENTIFIER(FE_element):
 			case MANAGER_CHANGE_OBJECT(FE_element):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
 			{
-				if (!CMISS_connection_send_element(message->object_changed,
-					&send_element_struct))
+				send_element_struct.in_message = 0;
+				send_element_struct.connection = connection;
+				send_element_struct.element_field_info =
+					(struct FE_element_field_info *)NULL;
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
+					CMISS_connection_send_element, (void *)&send_element_struct,
+					message->changed_object_list))
 				{
 					display_message(ERROR_MESSAGE,
-						"CMISS_connection_element_global_change.  %s",
-						"Could not send element");
+						"CMISS_connection_element_global_change.  "
+						"Could not send modified or added elements");
 				}
 				if (send_element_struct.in_message)
 				{
 					wh_input_close_message(connection->data_input);
 				}
 			} break;
-			case MANAGER_CHANGE_DELETE(FE_element):
+			case MANAGER_CHANGE_REMOVE(FE_element):
 			{
+				/* ???RC Without completely knowing how this works, I'm saving the old
+					 code for comparison with the new list iterator code. Certainly gives
+					 the same result when only one element removed. */
+#if defined (OLD_CODE)
 				/* only deal with elements (not faces or lines) */
 				if ( (0<(message->object_changed->cm).number)&&
 					((message->object_changed->cm).type==CM_ELEMENT) )
@@ -1751,6 +1813,22 @@ Something has changed globally about the objects this widget uses, so refresh.
 					wh_input_open_message(connection->data_input,0,
 						(message->object_changed->cm).number);
 					wh_input_close_message(connection->data_input);
+					wh_input_close_message(connection->data_input);
+				}
+#endif /* defined (OLD_CODE) */
+				/* only deal with top-level elements (not faces or lines) */
+				if (FIRST_OBJECT_IN_LIST_THAT(FE_element)(
+					FE_element_is_top_level, (void *)NULL, message->changed_object_list))
+				{
+					if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
+						CMISS_connection_send_delete_element, (void *)&connection,
+						message->changed_object_list))
+					{
+						display_message(ERROR_MESSAGE,
+							"CMISS_connection_element_global_change.  "
+							"Could not send deleted elements");
+					}
+					/*???RC old code always ended in 2 of the following lines: */
 					wh_input_close_message(connection->data_input);
 				}
 			} break;
