@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 24 May 2002
+LAST MODIFIED : 10 June 2002
 
 DESCRIPTION :
 
@@ -1621,7 +1621,7 @@ static void scrolling_hardware_callback(int number_of_channels,
 	int *channel_numbers,int number_of_values_per_channel,short *signal_values,
 	void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 6 June 2002
 
 DESCRIPTION :
 ???DB.  Used to be in WM_USER.
@@ -1629,10 +1629,12 @@ DESCRIPTION :
 {
 #if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
 	float device_maximum,device_minimum,gain,offset,post_filter_gain,
-		pre_filter_gain,signal_value,temp_float[4];
+		pre_filter_gain,*scrolling_coefficient,signal_value,temp_float[4];
 	int i,j,j_start,k,height,number_of_channels_device,
 		number_of_scrolling_devices,width;
 	short int y_offset;
+	struct Device **scrolling_device;
+	struct Channel **scrolling_channel;
 	struct Page_window *page_window;
 #if defined (MOTIF)
 	Display *display;
@@ -1707,12 +1709,15 @@ DESCRIPTION :
 		j_start=0;
 		number_of_scrolling_devices=page_window->number_of_scrolling_devices;
 		height /= number_of_scrolling_devices;
+		scrolling_device=page_window->scrolling_devices;
+		scrolling_channel=page_window->scrolling_channels;
+		scrolling_coefficient=page_window->scrolling_coefficients;
 		for (k=0;k<number_of_scrolling_devices;k++)
 		{
 			number_of_channels_device=
 				(page_window->number_of_scrolling_channels_device)[k];
-			device_minimum=(page_window->scrolling_devices)[k]->signal_display_minimum;
-			device_maximum=(page_window->scrolling_devices)[k]->signal_display_maximum;
+			device_minimum=(*scrolling_device)->signal_display_minimum;
+			device_maximum=(*scrolling_device)->signal_display_maximum;
 			y_offset=(short)((number_of_scrolling_devices-k-1)*height);
 			temp_float[0]=(float)0;
 			temp_float[1]=(float)0;
@@ -1721,12 +1726,11 @@ DESCRIPTION :
 			j=j_start;
 			for (i=0;i<number_of_channels_device;i++)
 			{
-				unemap_get_gain(((page_window->scrolling_devices)[i])->channel->number,
-					&pre_filter_gain,&post_filter_gain);
-				gain=(page_window->scrolling_coefficients)[i]*
-					(((page_window->scrolling_devices)[i])->channel->gain_correction)/
+				unemap_get_gain((*scrolling_channel)->number,&pre_filter_gain,
+					&post_filter_gain);
+				gain=(*scrolling_coefficient)*((*scrolling_channel)->gain_correction)/
 					(pre_filter_gain*post_filter_gain);
-				offset=((page_window->scrolling_devices)[i])->channel->offset;
+				offset=(*scrolling_channel)->offset;
 				temp_float[0] += gain*((float)signal_values[j]-offset);
 				j++;
 				temp_float[1] += gain*((float)signal_values[j]-offset);
@@ -1735,6 +1739,8 @@ DESCRIPTION :
 				j++;
 				temp_float[3] += gain*((float)signal_values[j]-offset);
 				j++;
+				scrolling_channel++;
+				scrolling_coefficient++;
 			}
 			j_start += 4*number_of_channels_device;
 			signal_line[4].y=(page_window->last_scrolling_value_device)[k];
@@ -1742,7 +1748,8 @@ DESCRIPTION :
 			{
 				signal_value=temp_float[3-i];
 #if defined (OLD_CODE)
-				if (page_window->signal_display_maximum<page_window->signal_display_minimum)
+				if (page_window->signal_display_maximum<
+					page_window->signal_display_minimum)
 				{
 					page_window->signal_display_maximum=signal_value;
 					page_window->signal_display_minimum=signal_value;
@@ -1791,6 +1798,7 @@ DESCRIPTION :
 #endif /* defined (WINDOWS) */
 			}
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
+			scrolling_device++;
 		}
 #endif /* !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE) */
 		x_axis[0].x += 4;
@@ -8063,11 +8071,17 @@ DESCRIPTION :
 			checkbox_state=IsDlgButtonChecked(window,EXPERIMENT_CHECKBOX);
 			if (BST_CHECKED==checkbox_state)
 			{
-				start_experiment(page_window);
+				if (!start_experiment(page_window))
+				{
+					CheckDlgButton(page_window->window,EXPERIMENT_CHECKBOX,BST_UNCHECKED);
+				}
 			}
 			else
 			{
-				stop_experiment(page_window);
+				if (!stop_experiment(page_window))
+				{
+					CheckDlgButton(page_window->window,EXPERIMENT_CHECKBOX,BST_CHECKED);
+				}
 			}
 		} break;
 		case FULL_RANGE_BUTTON:
@@ -8095,11 +8109,17 @@ DESCRIPTION :
 			checkbox_state=IsDlgButtonChecked(window,ISOLATE_CHECKBOX);
 			if (BST_CHECKED==checkbox_state)
 			{
-				start_isolating(page_window);
+				if (!start_isolating(page_window))
+				{
+					CheckDlgButton(page_window->window,ISOLATE_CHECKBOX,BST_UNCHECKED);
+				}
 			}
 			else
 			{
-				stop_isolating(page_window);
+				if (!stop_isolating(page_window))
+				{
+					CheckDlgButton(page_window->window,ISOLATE_CHECKBOX,BST_CHECKED);
+				}
 			}
 		} break;
 		case LOW_PASS_FILTER_EDIT:
@@ -8157,11 +8177,17 @@ DESCRIPTION :
 			checkbox_state=IsDlgButtonChecked(window,SAMPLE_CHECKBOX);
 			if (BST_CHECKED==checkbox_state)
 			{
-				start_sampling(page_window);
+				if (!start_sampling(page_window))
+				{
+					CheckDlgButton(page_window->window,SAMPLE_CHECKBOX,BST_UNCHECKED);
+				}
 			}
 			else
 			{
-				stop_sampling(page_window);
+				if (!stop_sampling(page_window))
+				{
+					CheckDlgButton(page_window->window,SAMPLE_CHECKBOX,BST_CHECKED);
+				}
 			}
 		} break;
 		case SAVE_BUTTON:
@@ -8201,11 +8227,17 @@ DESCRIPTION :
 			checkbox_state=IsDlgButtonChecked(window,STIMULATE_CHECKBOX);
 			if (BST_CHECKED==checkbox_state)
 			{
-				set_current_electrode_stimulate(page_window);
+				if (!set_current_electrode_stimulate(page_window))
+				{
+					CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_UNCHECKED);
+				}
 			}
 			else
 			{
-				set_current_electrode_record(page_window);
+				if (!set_current_electrode_record(page_window))
+				{
+					CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_CHECKED);
+				}
 			}
 #if defined (OLD_CODE)
 			if (BST_CHECKED==checkbox_state)
@@ -8227,11 +8259,17 @@ DESCRIPTION :
 			checkbox_state=IsDlgButtonChecked(window,STIMULATOR_CHECKBOX);
 			if (BST_CHECKED==checkbox_state)
 			{
-				start_stimulator(page_window);
+				if (!start_stimulator(page_window))
+				{
+					CheckDlgButton(page_window->window,STIMULATOR_CHECKBOX,BST_UNCHECKED);
+				}
 			}
 			else
 			{
-				stop_stimulator(page_window);
+				if (!stop_stimulator(page_window))
+				{
+					CheckDlgButton(page_window->window,STIMULATOR_CHECKBOX,BST_CHECKED);
+				}
 			}
 		} break;
 		case STOP_ALL_STIMULATORS_BUTTON:
@@ -8247,11 +8285,17 @@ DESCRIPTION :
 			checkbox_state=IsDlgButtonChecked(window,TEST_CHECKBOX);
 			if (BST_CHECKED==checkbox_state)
 			{
-				start_testing(page_window);
+				if (!start_testing(page_window))
+				{
+					CheckDlgButton(page_window->window,TEST_CHECKBOX,BST_UNCHECKED);
+				}
 			}
 			else
 			{
-				stop_testing(page_window);
+				if (!stop_testing(page_window))
+				{
+					CheckDlgButton(page_window->window,TEST_CHECKBOX,BST_CHECKED);
+				}
 			}
 		} break;
 	}
