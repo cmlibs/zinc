@@ -67,8 +67,8 @@ cmgui-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
 cmgui-debug-memorycheck : MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
-cmgui-gtk cmgui-gtk-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
-cmgui-gtk cmgui-gtk-debug : USER_INTERFACE=GTK_USER_INTERFACE
+cmgui-gtk cmgui-gtk-debug cmgui-gtk-static-lib cmgui-gtk-lib : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui-gtk cmgui-gtk-debug cmgui-gtk-static-lib cmgui-gtk-lib : USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
@@ -93,17 +93,27 @@ ifdef MEMORYCHECK
 endif
 OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION)
 
-cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities :
+cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities:
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
+
+#Recurse on these targets so we don't have to redefine in this file what cmgui-gtk-debug is etc.
+cmgui-gtk-static-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-gtk TARGET=static_lib ;
+cmgui-gtk-debug-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui-gtk-debug TARGET=static_lib ;
+cmgui-gtk-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-gtk TARGET=so_lib ;
+cmgui-gtk-debug-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-gtk-debug TARGET=so_lib ;
 
 .NOTPARALLEL:
 
 ifeq ($(SYSNAME:IRIX%=),)
-all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
+all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck cmgui-gtk-static-lib cmgui-gtk-lib cmgui-gtk-debug-static-lib cmgui-gtk-debug-lib
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console
+all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-gtk-static-lib cmgui-gtk-lib cmgui-gtk-debug-static-lib cmgui-gtk-debug-lib
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
 all : cmgui cmgui-debug cmgui64 cmgui64-debug
