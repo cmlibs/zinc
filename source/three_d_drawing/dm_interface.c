@@ -297,7 +297,10 @@ supported on displays other than SGI will do.
 #endif /* defined (GLX_SGIX_pbuffer) */
 					if (shared_display_buffer)
 					{
+#if defined (DEBUG)
+					/* This message causes many problems as people wonder if something is wrong. */
 						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer).  Unable to create shared display offscreen buffer.");
+#endif /* defined (DEBUG) */
 						DEALLOCATE(buffer);
 						buffer = (struct Dm_buffer *)NULL;						
 					}
