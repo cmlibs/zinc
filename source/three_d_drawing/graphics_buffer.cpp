@@ -1526,10 +1526,6 @@ that it is all in one place.
 				attribute_ptr++;
 				*attribute_ptr = GLX_RGBA_BIT;
 				attribute_ptr++;
-				*attribute_ptr = GLX_VISUAL_ID;
-				attribute_ptr++;
-				*attribute_ptr = graphics_buffer_package->override_visual_id;
-				attribute_ptr++;
 				*attribute_ptr = None;
 				attribute_ptr++;
 				
@@ -1537,10 +1533,35 @@ that it is all in one place.
 					DefaultScreen(display), visual_attributes, &nelements))
 				{
 					config_index = 0;
-					Graphics_buffer_create_from_fb_config(buffer,
-						graphics_buffer_package, class, x3d_parent_widget,
-						width, height, buffer->config_list[config_index]);
-					
+					while ((config_index < nelements) &&
+					  (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type))
+					{
+					  if (visual_info = glXGetVisualFromFBConfig(display,
+						 buffer->config_list[config_index]))
+					  {
+						  if ((int)visual_info->visualid == 
+							 graphics_buffer_package->override_visual_id)
+						 {
+							if (class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
+							{
+							  /* Try a shared buffer first */
+							  Graphics_buffer_create_from_fb_config(buffer,
+								 graphics_buffer_package,
+								 GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS,
+								 x3d_parent_widget,
+								 width, height, buffer->config_list[config_index]);
+							}
+							if (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
+							{
+							  Graphics_buffer_create_from_fb_config(buffer,
+								 graphics_buffer_package, class, x3d_parent_widget,
+								 width, height, buffer->config_list[config_index]);
+							}
+						 }
+						 XFree(visual_info);
+					  }
+					  config_index++;
+					}
 				}
 			}
 		}
