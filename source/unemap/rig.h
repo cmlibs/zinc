@@ -150,7 +150,7 @@ DESCRIPTION :
 
 struct Region
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 19 January 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -170,7 +170,8 @@ DESCRIPTION :
 	int number_of_devices;
 #if defined (UNEMAP_USE_3D)
 	struct Unemap_package *unemap_package;
-	struct GROUP(FE_node) *rig_node_group;
+	struct GROUP(FE_node) *rig_node_group; /* all the nodes */	
+	struct GROUP(FE_node) *unrejected_node_group;/* the unrejected  nodes */
 	struct Map_3d_package *map_3d_package;
 	/* these fields stored here as each region can have a different one,*/ 
 	/* unlike fields in unemap_package,which are constant per rig  */
@@ -674,6 +675,27 @@ LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Sets (and accesses) rig_node_group of <region> to <rig_node_group>
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct GROUP(FE_node) *get_Region_unrejected_node_group(struct Region *region);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2001
+
+DESCRIPTION :
+Gets  unrejected_node_group of <region> 
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+int set_Region_unrejected_node_group(struct Region *region,
+	struct GROUP(FE_node) *unrejected_node_group);
+/*******************************************************************************
+LAST MODIFIED : 19 January 2001
+
+DESCRIPTION :
+Sets (and accesses) unrejected_node_group of <region> to <unrejected_node_group>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 

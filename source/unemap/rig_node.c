@@ -107,6 +107,7 @@ to store info when iterating
 
 #endif /* defined (UNEMAP_USE_3D) */
 
+
 /*
 Module variables
 ----------------
@@ -117,7 +118,6 @@ Module variables
 Module functions
 ----------------
 */
-
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *create_config_template_node(enum Config_node_type 
@@ -1495,12 +1495,11 @@ in rig.c
 									template_node = create_config_template_node(
 										SOCK_ELECTRODE_TYPE,focus,&field_order_info,package,
 										&electrode_position_field);
-									node_group = make_node_and_element_and_data_groups(
-											node_group_manager,node_manager,element_manager,
-											element_group_manager,data_group_manager,region_name); 
+									node_group=CREATE(GROUP(FE_node))(region_name);
+									ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 									set_Region_electrode_position_field(region,electrode_position_field);
-									set_Region_rig_node_group(region,node_group);
+									set_Region_rig_node_group(region,node_group);								
 								} break;
 								case TORSO:
 								{	
@@ -1516,9 +1515,8 @@ in rig.c
 									template_node = create_config_template_node(
 										TORSO_ELECTRODE_TYPE,0,&field_order_info,package,
 										&electrode_position_field);
-									node_group = make_node_and_element_and_data_groups(
-										node_group_manager,node_manager,element_manager,
-										element_group_manager,data_group_manager,region_name);
+									node_group=CREATE(GROUP(FE_node))(region_name);
+									ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 									set_Region_electrode_position_field(region,electrode_position_field);
 									set_Region_rig_node_group(region,node_group);
@@ -1537,9 +1535,8 @@ in rig.c
 									template_node = create_config_template_node(
 										PATCH_ELECTRODE_TYPE,0,&field_order_info,package,
 										&electrode_position_field);
-									node_group = make_node_and_element_and_data_groups(
-										node_group_manager,node_manager,element_manager,
-										element_group_manager,data_group_manager,region_name);
+									node_group=CREATE(GROUP(FE_node))(region_name);
+									ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 									set_Region_electrode_position_field(region,electrode_position_field);
 									set_Region_rig_node_group(region,node_group);
@@ -1553,9 +1550,8 @@ in rig.c
 								MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 							}								
 							/* Get group */
-							node_group = make_node_and_element_and_data_groups(
-								node_group_manager,node_manager,element_manager,
-								element_group_manager,data_group_manager,region_name);
+							node_group=CREATE(GROUP(FE_node))(region_name);
+							ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 							MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 							set_Region_rig_node_group(region,node_group);
 							/*destroy any exisiting template,field_order_info*/
@@ -1713,7 +1709,7 @@ in rig.c
 							}
 							region_number_of_devices--;
 							read_order_number++;
-						} /*	while (region_number_of_devices>0)&&return_code) */
+						} /*	while (region_number_of_devices>0)&&return_code) */					
 					}	/* if (ALLOCATE(region_name */
 					else
 					{
@@ -1976,9 +1972,8 @@ files, and there are no text signal files.
 						}	
 						template_node=create_config_template_node(TORSO_ELECTRODE_TYPE,0,
 							&field_order_info,package,&electrode_position_field);
-						node_group=make_node_and_element_and_data_groups(node_group_manager,
-							node_manager,element_manager,element_group_manager,
-							data_group_manager,rig_name);
+						node_group=CREATE(GROUP(FE_node))(rig_name);
+						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_electrode_position_field(region,electrode_position_field);
 						set_Region_rig_node_group(region,node_group);
@@ -2016,9 +2011,8 @@ files, and there are no text signal files.
 						}		
 						template_node = create_config_template_node(PATCH_ELECTRODE_TYPE,
 							0,&field_order_info,package,&electrode_position_field);
-						node_group=make_node_and_element_and_data_groups(node_group_manager,
-							node_manager,element_manager,element_group_manager,
-							data_group_manager,rig_name);
+						node_group=CREATE(GROUP(FE_node))(rig_name);
+						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_electrode_position_field(region,electrode_position_field);
 						set_Region_rig_node_group(region,node_group);
@@ -2064,9 +2058,8 @@ files, and there are no text signal files.
 						}			
 						template_node=create_config_template_node(SOCK_ELECTRODE_TYPE,focus,
 							&field_order_info,package,&electrode_position_field);
-						node_group=make_node_and_element_and_data_groups(node_group_manager,
-							node_manager,element_manager,element_group_manager,
-							data_group_manager,rig_name);
+						node_group=CREATE(GROUP(FE_node))(rig_name);
+						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_electrode_position_field(region,electrode_position_field);
 						set_Region_rig_node_group(region,node_group);
@@ -2089,9 +2082,8 @@ files, and there are no text signal files.
 							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 						}								
 						/* get group */
-						node_group=make_node_and_element_and_data_groups(node_group_manager,
-							node_manager,element_manager,element_group_manager,
-							data_group_manager,region_name);
+						node_group=CREATE(GROUP(FE_node))(region_name);
+						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
 						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_rig_node_group(region,node_group);											
 						/*destroy any existing template,field_order_info*/	
@@ -5548,6 +5540,81 @@ Sets the field of the Signal_drawing_package.
 } /* set_Signal_drawing_package_channel_gain_field */
 #endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
+struct GROUP(FE_node) *make_unrejected_node_group(
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct GROUP(FE_node) *rig_node_group,struct FE_field *signal_status_field)
+/*******************************************************************************
+LAST MODIFIED : 22 January 2001
+
+DESCRIPTION :
+makes and returns unrejected_node_group, consisting of all the unrejected 
+(ie accepted or undecided) nodes in <rig_node_group>. Adds the group to the 
+manager.
+==============================================================================*/
+{
+	char *group_name,*unrejected_name;
+	int string_length;
+	struct FE_node_group_conditional_data group_conditional_data;
+	struct GROUP(FE_node) *unrejected_node_group;
+	char *unrejected_str = "_unrejected";
+
+	ENTER(make_unrejected_node_group);
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	group_name=(char *)NULL;
+	if(rig_node_group&&signal_status_field&&node_manager&&node_group_manager)
+	{
+		/* construct the unrejected group name */
+		GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);
+		string_length = strlen(group_name);
+		string_length += strlen(unrejected_str);
+		string_length++;
+		if(ALLOCATE(unrejected_name,char,string_length))
+		{
+			strcpy(unrejected_name,group_name);
+			strcat(unrejected_name,unrejected_str);
+			/* make the group */
+			if(unrejected_node_group=	make_node_and_element_and_data_groups(
+				node_group_manager,node_manager,element_manager,
+				element_group_manager,data_group_manager,unrejected_name))
+			{				
+				group_conditional_data.node_group=unrejected_node_group;
+				group_conditional_data.function=node_signal_is_unrejected;
+				group_conditional_data.user_data=(void *)(signal_status_field);
+				MANAGED_GROUP_BEGIN_CACHE(FE_node)(unrejected_node_group);
+				FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_group_conditional,
+					(void *)&group_conditional_data,rig_node_group);
+				MANAGED_GROUP_END_CACHE(FE_node)(unrejected_node_group);
+			}
+			else
+			{	
+				DESTROY(GROUP(FE_node))(&unrejected_node_group);
+					unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+				display_message(ERROR_MESSAGE,
+					"make_unrejected_node_group. Couldn't CREATE unrejected_node_group");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"make_unrejected_node_group. Could not allocate memory for "
+				"unrejected_name");		
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"make_unrejected_node_group.  Invalid argument");	
+	}
+	LEAVE;
+	return(unrejected_node_group);
+} /* make_unrejected_node_group */
+#endif /* defined (UNEMAP_USE_3D) */
+
 int extract_signal_information(struct FE_node *device_node,
 	struct Signal_drawing_package *signal_drawing_package,struct Device *device,
 	int signal_number,int first_data,int last_data,
@@ -6417,11 +6484,29 @@ configuration info.
 	FILE *input_file;
 	int return_code;
 	struct FE_node_order_info *node_order_info;
-
-	ENTER(file_read_signal_FE_node_group);
+	struct FE_field *signal_status_field;
+	struct GROUP(FE_node) *unrejected_node_group,*rig_node_group;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(FE_element) *element_manager;	
+	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct Region *region;
+	struct Region_list_item *region_item;
+	ENTER(file_read_signal_FE_node_group);	
+	signal_status_field = (struct FE_field *)NULL;
+	unrejected_node_group= (struct GROUP(FE_node) *)NULL;
+	rig_node_group= (struct GROUP(FE_node) *)NULL;	
+	node_order_info=(struct FE_node_order_info *)NULL;
+	region=(struct Region *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;	
+	element_manager=(struct MANAGER(FE_element) *)NULL;
+	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
+	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 	if (file_name&&unemap_package)
-	{		
-		node_order_info=(struct FE_node_order_info *)NULL;		
+	{					
 		if (input_file=fopen(file_name,"rb"))
 		{
 			if (1==BINARY_FILE_READ((char *)&region_type,sizeof(enum Region_type),1,
@@ -6443,7 +6528,36 @@ configuration info.
 									"file_read_signal_FE_node_group."
 									" read_event_settings_FE_node_group failed");
 								return_code=0;
-							}
+							}							
+							/* set up the unrejected_node_groups*/
+							region_item=get_Rig_region_list(rig);
+							while (region_item)
+							{	
+								region=get_Region_list_item_region(region_item);
+								rig_node_group=get_Region_rig_node_group(region);
+								if((signal_status_field=
+									get_unemap_package_signal_status_field(unemap_package))&&
+									(node_manager=get_unemap_package_node_manager(unemap_package))&&
+									(element_manager=get_unemap_package_element_manager(unemap_package))&&
+									(node_group_manager=
+										get_unemap_package_node_group_manager(unemap_package))&&
+									(element_group_manager=
+										get_unemap_package_element_group_manager(unemap_package))&&
+									(data_group_manager=
+										get_unemap_package_data_group_manager(unemap_package))&&
+									(unrejected_node_group=make_unrejected_node_group(node_manager,
+										element_manager,node_group_manager,element_group_manager,
+										data_group_manager,rig_node_group,signal_status_field)))
+								{									
+									set_Region_unrejected_node_group(region,unrejected_node_group);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group."
+										"can't set_Region_unrejected_node_group");
+								}
+								region_item=get_Region_list_item_next(region_item);							
+							}/* while (region_item) */													
 						}
 						else
 						{	
@@ -7028,7 +7142,8 @@ This function is called iteratively by analysis_unrange_all
 					1/*int time_range*/);					
 				/* set the new signal_minimum,signal_maximum*/
 				component.number=0;	
-				component.field = min_max_iterator->signal_minimum_field;												
+				component.field = min_max_iterator->signal_minimum_field;	
+				/*??JW should be copying to/from node with MANAGER_MODIFY, but this func not yet used */
 				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_minimum);
 				component.field = min_max_iterator->signal_maximum_field;
 				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);			
@@ -7085,7 +7200,8 @@ This function is called iteratively by analysis_set_range
 				signal_minimum=min_max_iterator->min;
 				signal_maximum=min_max_iterator->max;
 				/* set the new signal_minimum,signal_maximum*/
-				component.field = min_max_iterator->signal_minimum_field;												
+				component.field = min_max_iterator->signal_minimum_field;
+				/*??JW should be copying to/from node with MANAGER_MODIFY, but this func not yet used */
 				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_minimum);
 				component.field = min_max_iterator->signal_maximum_field;
 				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);

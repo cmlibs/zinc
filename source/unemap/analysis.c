@@ -949,6 +949,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 					/* channel_offset) values*/
 					component.field=get_Signal_drawing_package_signal_minimum_field(
 						signal_drawing_package); 
+					/*??JW should be copying out of and into node with MANAGER_MODIFY */
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						signal_minimum);
 					component.number=0;

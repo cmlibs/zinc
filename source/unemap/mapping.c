@@ -3426,7 +3426,7 @@ static int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
 	struct Unemap_package *package,struct Computed_field *data_field,
 	int delauney_map)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 22 January 2001
 
 DESCRIPTION :
 Draws (or erases) the map contours
@@ -3434,14 +3434,20 @@ Draws (or erases) the map contours
 {
 	int default_torso_loaded,number_of_constant_contours,number_of_variable_contours,
 		return_code;
-	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-	struct Scene *scene=(struct Scene *)NULL;
-	struct Rig *rig=(struct Rig *)NULL;
-	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
-	struct Region_list_item *region_item=(struct Region_list_item *)NULL;	
-	struct Region *region=(struct Region *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager;
+	struct Scene *scene;
+	struct Rig *rig;
+	struct GROUP(FE_node) *unrejected_node_group;
+	struct Region_list_item *region_item;	
+	struct Region *region;
 
-	ENTER(map_draw_contours); 
+	ENTER(map_draw_contours);
+	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	scene=(struct Scene *)NULL;
+	rig=(struct Rig *)NULL;	
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;	
+	region_item=(struct Region_list_item *)NULL;	
+	region=(struct Region *)NULL; 
 	/*data_field can be NULL*/
 	if(map&&&package&&spectrum&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
 		(map->drawing_information)&&(spectrum_manager=
@@ -3486,9 +3492,9 @@ Draws (or erases) the map contours
 		while(region_item)
 		{
 			region=get_Region_list_item_region(region_item);			
-			rig_node_group=get_Region_rig_node_group(region);
-			if(rig_node_group&&
-				(unemap_package_rig_node_group_has_electrodes(package,rig_node_group)))
+			unrejected_node_group=get_Region_unrejected_node_group(region);
+			if(unrejected_node_group&&
+				(unemap_package_rig_node_group_has_electrodes(package,unrejected_node_group)))
 			{			
 				/* draw/remove CONSTANT_THICKNESS contours */
 				map_draw_constant_thickness_contours(scene,map->drawing_information,
@@ -3975,7 +3981,7 @@ static struct GT_object *map_get_map_electrodes_glyph(
 	struct Map_drawing_information *drawing_information,
 	struct Map_3d_package *map_3d_package,enum Electrodes_marker_type electrodes_marker_type)
 /*******************************************************************************
-LAST MODIFIED : 17 Julyy 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Gets  and returns a <glyph> for the map electrode, based upon <electrodes_marker_type>
@@ -4236,7 +4242,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	struct FE_field *map_electrode_position_field,*field;
 	struct Graphical_material *electrode_selected_material,*electrode_material;
 	struct GROUP(FE_element) *rig_element_group;
-	struct GROUP(FE_node) *rig_node_group;	
+	struct GROUP(FE_node) *unrejected_node_group;
 	struct GT_element_group *gt_element_group;	
 	struct GT_element_settings *unselected_settings,*selected_settings;	
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -4256,7 +4262,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	electrode_material=(struct Graphical_material *)NULL;	
 	electrode_selected_material=(struct Graphical_material *)NULL;	
 	scene=(struct Scene *)NULL;	
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
 	rig_element_group=(struct GROUP(FE_element) *)NULL;
 	group_name=(char *)NULL;
 	map_electrode_position_field=(struct FE_field *)NULL;
@@ -4274,12 +4280,12 @@ Construct the settings and build the graphics objects for the glyphs.
 			get_unemap_package_Computed_field_manager(package))&&
 		(element_group_manager=
 			get_unemap_package_element_group_manager(package))&&
-		(rig_node_group=get_Region_rig_node_group(region))&&
+		(unrejected_node_group=get_Region_unrejected_node_group(region))&&
 		(map_electrode_position_field=
 		  get_Region_map_electrode_position_field(region)))
 	{		
 		return_code=0;							
-		GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);	 
+		GET_NAME(GROUP(FE_node))(unrejected_node_group,&group_name);	 
 		rig_element_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 			(group_name,element_group_manager);
@@ -4572,16 +4578,22 @@ region(s)
 ==============================================================================*/
 {
 	int display_all_regions,electrodes_properties_changed,return_code;
-  struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
-  struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
-	struct Map_drawing_information *drawing_information=
-		(struct Map_drawing_information *)NULL;
-	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
-	struct Region *region=(struct Region *)NULL;
-	struct Region *current_region=(struct Region *)NULL;
-	struct Rig *rig=(struct Rig *)NULL;
+	struct GROUP(FE_node)	 *unrejected_node_group;
+  struct Map_3d_package *map_3d_package;
+	struct Map_drawing_information *drawing_information;
+	struct Region_list_item *region_item;
+	struct Region *region;
+	struct Region *current_region;
+	struct Rig *rig;
 
 	ENTER(map_draw_map_electrodes);
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+  map_3d_package=(struct Map_3d_package *)NULL;
+	drawing_information=(struct Map_drawing_information *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	region=(struct Region *)NULL;
+	current_region=(struct Region *)NULL;
+	rig=(struct Rig *)NULL;
 	if(unemap_package&&map&&(drawing_information=map->drawing_information)&&
 		(map->rig_pointer)&&(rig= *(map->rig_pointer)))
 	{	
@@ -4598,8 +4610,8 @@ region(s)
 		/* work through all regions */
 		while(region_item)
 		{						
-			region=get_Region_list_item_region(region_item);	
-			rig_node_group=get_Region_rig_node_group(region);
+			region=get_Region_list_item_region(region_item);			
+			unrejected_node_group=get_Region_unrejected_node_group(region);
 			map_3d_package=get_Region_map_3d_package(region);
 			if(map_3d_package)
 			{
@@ -4615,12 +4627,12 @@ region(s)
 				(region!=current_region)))
 			{									
 				map_remove_map_electrode_glyphs(drawing_information,
-					unemap_package,map_3d_package,rig_node_group);
+					unemap_package,map_3d_package,unrejected_node_group);
 			}
 			/* draw current electrodes */
-			if(rig_node_group&&map_3d_package&&
+			if(unrejected_node_group&&map_3d_package&&
 				(unemap_package_rig_node_group_has_electrodes(unemap_package,
-					rig_node_group))&&((region==current_region)||display_all_regions))
+					unrejected_node_group))&&((region==current_region)||display_all_regions))
 			{
 				map_update_map_electrodes(unemap_package,region,map,time);
 			}		
@@ -4791,16 +4803,23 @@ time computed fields used by the glyphs.
 ==============================================================================*/
 {
 	int return_code;
-	struct Rig *rig=(struct Rig *)NULL;
-	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
-	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
-	struct Region *region=(struct Region *)NULL;
-	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
-	struct Map_drawing_information *drawing_information
-		=(struct Map_drawing_information *)NULL;
-	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
+	struct Rig *rig;
+	struct GROUP(FE_node) *unrejected_node_group;
+	struct Region_list_item *region_item;
+	struct Region *region;
+	struct Map_3d_package *map_3d_package;
+	struct Map_drawing_information *drawing_information;
+	struct Unemap_package *unemap_package;
 
 	ENTER(map_remove_all_electrodes);
+
+	rig=(struct Rig *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	region=(struct Region *)NULL;
+	map_3d_package=(struct Map_3d_package *)NULL;
+	drawing_information	=(struct Map_drawing_information *)NULL;
+	unemap_package=(struct Unemap_package *)NULL;
 	if(map&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
 		(unemap_package=map->unemap_package)&&
 		(drawing_information=map->drawing_information))
@@ -4810,15 +4829,15 @@ time computed fields used by the glyphs.
 		while(region_item)
 		{
 			region=get_Region_list_item_region(region_item);
-			rig_node_group=get_Region_rig_node_group(region);
+			unrejected_node_group=get_Region_unrejected_node_group(region);
 			map_3d_package=get_Region_map_3d_package(region);
-			if(rig_node_group&&map_3d_package&&
+			if(unrejected_node_group&&map_3d_package&&
 				(unemap_package_rig_node_group_has_electrodes(unemap_package,
-					rig_node_group)))
+					unrejected_node_group)))
 			{
 				map_remove_map_electrode_glyphs(drawing_information,
 					unemap_package,map_3d_package,
-					rig_node_group);
+					unrejected_node_group);
 			}
 			region_item=get_Region_list_item_next(region_item);
 		}/* while(region_item)*/
@@ -5610,6 +5629,9 @@ Stores node and element groups in region <map_3d_package>
 									(void *)node_order_info,source_nodes)))
 							{													
 								/* find nodes from triangle info, put in node group*/
+								/* when full, delauney_node_group should match source_nodes group */
+								/* but a future mapping may not, and want own same name data and element */
+								/* groups for graphics */
 								vertex_number=triangles;
 								i=0;	
 								while((i<number_of_triangles)&&(return_code))	
@@ -5934,7 +5956,7 @@ cf map_set_electrode_colour_from_time
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return(return_code); 
 } /*iterative_set_delauney_signal_nodal_value */
 
 #endif /* defined (UNEMAP_USE_3D) */
@@ -5954,11 +5976,9 @@ Makes and/or sets the nodal values in the delauney node and element groups
 	enum FE_nodal_value_type *components_value_types[1];
 	int number_of_derivatives[1]={0},number_of_versions[1]={1},return_code;
 	struct Define_FE_field_at_node_data define_FE_field_at_node_data;
-	struct FE_field *electrode_postion_field,*delauney_signal_field,
-		*signal_status_field;	
+	struct FE_field *electrode_postion_field,*delauney_signal_field;	
 	struct FE_node *node;
-	struct FE_node_group_conditional_data group_conditional_data;
-	struct GROUP(FE_node) *delauney_torso_node_group,*source_nodes,*unrejected_nodes;
+	struct GROUP(FE_node) *delauney_torso_node_group,*rig_node_group,*unrejected_nodes;
 	struct MANAGER(FE_node) *node_manager;
 	struct Map_3d_package *map_3d_package;
 	struct Set_delauney_signal_data set_delauney_signal_data;
@@ -5966,8 +5986,7 @@ Makes and/or sets the nodal values in the delauney node and element groups
 	ENTER(make_and_set_delauney);
 	electrode_postion_field=(struct FE_field *)NULL;
 	delauney_signal_field=(struct FE_field *)NULL;
-	signal_status_field=(struct FE_field *)NULL;
-	source_nodes=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	unrejected_nodes=(struct GROUP(FE_node) *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;	
@@ -5975,8 +5994,8 @@ Makes and/or sets the nodal values in the delauney node and element groups
 	node=(struct FE_node *)NULL;
 	if(region&&unemap_package&&	
 		(node_manager=get_unemap_package_node_manager(unemap_package))&&
-		(electrode_postion_field=get_Region_electrode_position_field(region))&&	
-		(source_nodes=get_Region_rig_node_group(region)))
+		(electrode_postion_field=get_Region_electrode_position_field(region))&&		
+		(rig_node_group=get_Region_rig_node_group(region)))
 	{	
 		return_code=1;
 		/* if necessary, make the delauney_signal_field , and define it at the nodes*/
@@ -5990,9 +6009,11 @@ Makes and/or sets the nodal values in the delauney node and element groups
 				delauney_signal_field);
 		}		
 		node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,source_nodes);
+					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group);
 	  if(node&&delauney_signal_field)
 		{
+			/* define field at all nodes, not just unrejected ones, as rejected ones may */
+			/* be accepted later*/
 			/*is field not defined at first node, assume it's not defined at the rest*/
 			if(!FE_field_is_defined_at_node(delauney_signal_field,node))
 			{
@@ -6005,7 +6026,7 @@ Makes and/or sets the nodal values in the delauney node and element groups
 				define_FE_field_at_node_data.node_manager=node_manager;									
 				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
 				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_define_FE_field_at_node,
-					(void *)(&define_FE_field_at_node_data),source_nodes);
+					(void *)(&define_FE_field_at_node_data),rig_node_group);
 				MANAGER_END_CACHE(FE_node)(node_manager);
 			}
 		}
@@ -6031,38 +6052,16 @@ Makes and/or sets the nodal values in the delauney node and element groups
 			if((!map_3d_package)||(map_3d_package&&
 				(!get_map_3d_package_delauney_torso_node_group(map_3d_package))))
 			{
-				/* make a group of the unrejected nodes*/
-				if(return_code&&(unrejected_nodes=CREATE(GROUP(FE_node))("unrejected_nodes")))
-				{	 
-					signal_status_field=get_unemap_package_signal_status_field(unemap_package);
-					group_conditional_data.node_group=unrejected_nodes;
-					group_conditional_data.function=node_signal_is_unrejected;
-					group_conditional_data.user_data=(void *)(signal_status_field);
-				
-					if(return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
-						(ensure_FE_node_is_in_group_conditional,(void *)&group_conditional_data,
-							source_nodes))
-					{
-						return_code=make_delauney_node_and_element_group(unrejected_nodes,
-							electrode_postion_field,delauney_signal_field,
-							unemap_package,region);		
-					}	
-					else
-					{
-						display_message(ERROR_MESSAGE,"make_and_set_delauney"
-							" failed to make delauney node and element groups");
-					}		
+				if(return_code&&(unrejected_nodes=get_Region_unrejected_node_group(region)))
+				{
+					return_code=make_delauney_node_and_element_group(unrejected_nodes,
+						electrode_postion_field,delauney_signal_field,unemap_package,region);	
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,"make_and_set_delauney"
-						"unrejected_nodes failed to create.");
-					return_code=0;
-				}
-				if(unrejected_nodes)
-				{			
-					DESTROY(GROUP(FE_node))(&unrejected_nodes);
-				}
+							" failed to make delauney node and element groups");
+				}				
 			}/* if((!map_3d_package)||(map_3d_package&& */
 		}/* (nodes_rejected_or_accepted) */			
 		/* map_3d_package may have changed*/
@@ -6917,30 +6916,44 @@ Removes 3d drawing for non-current region(s).
 	double z_up[3]={0.0,0.0,1.0};
 	double *up_vector;
 	FE_value time;
-	struct FE_field *fit_field=(struct FE_field *)NULL;
-	struct Computed_field *data_field=(struct Computed_field *)NULL;
+	struct FE_field *fit_field;
+	struct Computed_field *data_field;
 	float frame_time,minimum, maximum;
 	int default_torso_loaded,delauney_map,display_all_regions,nodes_rejected_or_accepted,
 		range_set,return_code;
 	enum Map_type map_type;
 	char undecided_accepted;
-	struct Map_drawing_information *drawing_information=
-		(struct Map_drawing_information *)NULL;
-	struct Rig *rig=(struct Rig *)NULL;
-	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
-	struct Region *current_region=(struct Region *)NULL;
-	struct Region *region=(struct Region *)NULL;
-	struct Interpolation_function *function=(struct Interpolation_function *)NULL;
-	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
-	struct Scene *scene=(struct Scene *)NULL;
-	struct Spectrum *spectrum=(struct Spectrum *)NULL;
-	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
-	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
-	struct GROUP(FE_element) *element_group=(struct GROUP(FE_element) *)NULL;
-	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+	struct Map_drawing_information *drawing_information;
+	struct Rig *rig;
+	struct Region_list_item *region_item;
+	struct Region *current_region,*region;
+	struct Interpolation_function *function;
+	struct Unemap_package *unemap_package;
+	struct Scene *scene;
+	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;
+	struct MANAGER(Spectrum) *spectrum_manager;
+	struct Map_3d_package *map_3d_package;
+	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
 
-	ENTER(draw_map_3d);	
+	ENTER(draw_map_3d);
+	fit_field=(struct FE_field *)NULL;
+	data_field=(struct Computed_field *)NULL;
+	drawing_information=(struct Map_drawing_information *)NULL;
+	rig=(struct Rig *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	current_region=(struct Region *)NULL;
+	region=(struct Region *)NULL;
+	function=(struct Interpolation_function *)NULL;
+	unemap_package=(struct Unemap_package *)NULL;
+	scene=(struct Scene *)NULL;
+	spectrum=(struct Spectrum *)NULL;
+	spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	map_3d_package=(struct Map_3d_package *)NULL;
+	element_group=(struct GROUP(FE_element) *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
 	if(map&&(drawing_information=map->drawing_information))
 	{		
 		range_set=0;
@@ -7011,6 +7024,7 @@ Removes 3d drawing for non-current region(s).
 				{						
 					region=get_Region_list_item_region(region_item);
 					rig_node_group=get_Region_rig_node_group(region);
+					unrejected_node_group=get_Region_unrejected_node_group(region);
 					map_3d_package=get_Region_map_3d_package(region);	
 					/* free everything except the current region(s) map_3d_package*/
 					if((region!=current_region)&&(!display_all_regions))
@@ -7022,7 +7036,7 @@ Removes 3d drawing for non-current region(s).
 					/*draw the current region(s) */
 					else if(((region==current_region)||display_all_regions)&&
 						(unemap_package_rig_node_group_has_electrodes(unemap_package,
-							rig_node_group)))
+							unrejected_node_group)))
 					{	
 						if(delauney_map)
 						{
@@ -7133,7 +7147,7 @@ Removes 3d drawing for non-current region(s).
 						}
 						else
 						{ 
-							map_remove_torso_arm_labels(drawing_information);																			
+							map_remove_torso_arm_labels(drawing_information);
 						}
 					}/* if(unemap_package_rig_node_group_has_electrodes */					
 					region_item=get_Region_list_item_next(region_item);
@@ -7313,6 +7327,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 #define GOURAUD_FROM_MESH 1
 #define GOURAUD_FROM_PIXEL_VALUE 1
 */
+
 int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
 LAST MODIFIED : 31 May 2000

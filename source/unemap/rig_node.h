@@ -744,6 +744,24 @@ Sets the field of the signal_drawing_package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
+struct GROUP(FE_node) *make_unrejected_node_group(
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct GROUP(FE_node) *rig_node_group,struct FE_field *signal_status_field);
+/*******************************************************************************
+LAST MODIFIED : 22 January 2001
+
+DESCRIPTION :
+makes and returns unrejected_node_group, consisting of all the unrejected 
+(ie accepted or undecided) nodes in <rig_node_group>. Adds the group to the 
+manager.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
 int extract_signal_information(struct FE_node *device_node,
 	struct Signal_drawing_package *signal_drawing_package,struct Device *device,
 	int signal_number,int first_data,int last_data,

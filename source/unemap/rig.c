@@ -770,10 +770,10 @@ struct Region *create_Region(char *name,enum Region_type type,int number,
 	int number_of_devices
 #if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
-#endif /* defined (UNEMAP_USE_3D)*/
-														 )
+#endif /* defined (UNEMAP_USE_3D)*/														 
+)
 /*******************************************************************************
-LAST MODIFIED : 8 October 1997
+LAST MODIFIED : 19 January 2001
 
 DESCRIPTION :
 This function allocates memory for a region and initializes all the fields to
@@ -817,6 +817,7 @@ and NULL if unsuccessful.
 #if defined (UNEMAP_USE_3D)
 		region->unemap_package=ACCESS(Unemap_package)(unemap_package);
 		region->rig_node_group=(struct GROUP(FE_node) *)NULL;
+		region->unrejected_node_group=(struct GROUP(FE_node) *)NULL;
 		region->map_3d_package=(struct Map_3d_package *)NULL;
 		region->electrode_position_field=(struct FE_field *)NULL;
 		region->map_electrode_position_field=(struct FE_field *)NULL;
@@ -860,13 +861,17 @@ the devices in the device list.
 		the_region=*region;
 		unemap_package=the_region->unemap_package;
 		if(the_region&&unemap_package)
-		{
-			DEACCESS(Map_3d_package)(&((*region)->map_3d_package));
-			/* following will deaccess the rig_node_group */
+		{			
+			DEACCESS(Map_3d_package)(&((*region)->map_3d_package)); 		
 			if(the_region->rig_node_group)
 			{
 				free_unemap_package_rig_node_group(unemap_package,&(the_region->rig_node_group));
 			}
+			/* following will deaccess the rig_node_group */	
+			if(the_region->unrejected_node_group)
+			{
+				free_unemap_package_rig_node_group(unemap_package,&(the_region->unrejected_node_group));
+			}			
 			computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
 			fe_field_manager=get_unemap_package_FE_field_manager(unemap_package);
 			if(the_region->electrode_position_field)
@@ -977,6 +982,60 @@ Sets (and accesses) rig_node_group of <region> to <rig_node_group>
 	LEAVE;
 	return (return_code);
 }/* set_Region_rig_node_group*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct GROUP(FE_node) *get_Region_unrejected_node_group(struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2001
+
+DESCRIPTION :
+Gets  unrejected_node_group of <region> 
+==============================================================================*/
+{
+	struct GROUP(FE_node) *unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+
+	ENTER(get_Region_unrejected_node_group);
+	if(region)
+	{
+		unrejected_node_group=region->unrejected_node_group;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_unrejected_node_group."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (unrejected_node_group);
+}/* get_Region_unrejected_node_group*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+int set_Region_unrejected_node_group(struct Region *region,
+	struct GROUP(FE_node) *unrejected_node_group)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2001
+
+DESCRIPTION :
+Sets (and accesses) unrejected_node_group of <region> to <unrejected_node_group>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Region_unrejected_node_group);
+	if(region&&unrejected_node_group)
+	{
+		return_code =1;	
+		REACCESS(GROUP(FE_node))(&(region->unrejected_node_group),unrejected_node_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Region_unrejected_node_group."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Region_unrejected_node_group*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
@@ -1345,7 +1404,7 @@ NULL if unsuccessful.
 			rig->current_region=current_region;
 #if defined (UNEMAP_USE_3D)
 			rig->unemap_package=ACCESS(Unemap_package)(unemap_package);
-			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;	
+			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;				
 #endif /* defined (UNEMAP_USE_3D) */
 			rig->signal_file_name=(char *)NULL;
 #if defined (OLD_CODE)

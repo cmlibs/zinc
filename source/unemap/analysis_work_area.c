@@ -219,12 +219,6 @@ DESCRIPTION :
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
 	struct User_interface *user_interface;
-#if defined (UNEMAP_USE_3D)
-	struct FE_field *device_name_field;
-	struct FE_node *rig_node;
-	struct FE_node_selection *node_selection;
-	struct GROUP(FE_node) *rig_node_group;
-#endif /* defined (UNEMAP_USE_3D) */
 	ENTER(display_map);
 	analysis_window=(struct Analysis_window *)NULL;
 	analysis=(struct Analysis_work_area *)NULL;
@@ -233,12 +227,6 @@ DESCRIPTION :
 	mapping=(struct Mapping_window *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
 	user_interface=(struct User_interface *)NULL;
-#if defined (UNEMAP_USE_3D)
-	device_name_field=(struct FE_field *)NULL;
-	rig_node=(struct FE_node *)NULL;
-	node_selection=(struct FE_node_selection *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-#endif /* defined (UNEMAP_USE_3D) */
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis_window=analysis->window)&&
 		(user_interface=analysis->user_interface))
@@ -403,20 +391,6 @@ DESCRIPTION :
 				map->frame_start_time=0;
 				map->frame_end_time=0;
 			}
-#if defined (UNEMAP_USE_3D)
-				/* highlight the  node (and everything else) */
-				if ((analysis->highlight)&&(*(analysis->highlight)))
-				{
-				/*get the rig_node corresponding to the device */
-				node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
-				device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-				rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
-				rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
-					device_name_field);
-				/*trigger the selction callback*/
-				FE_node_selection_select_node(node_selection,rig_node);
-				}
-#endif /* defined (UNEMAP_USE_3D) */
 			update_mapping_drawing_area(mapping,2);
 			update_mapping_colour_or_auxili(mapping);
 			if ((map=mapping->map)&&(map->type)&&
@@ -2049,16 +2023,20 @@ Sets up the analysis work area for analysing a set of signals.
 	XmString new_dialog_title,old_dialog_title,value_xmstring;
 #if defined (UNEMAP_USE_NODES)
 	struct FE_field *field,*highlight_field;
-	struct FE_field_component component;
-	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_field_component component;	
 #endif /* defined (UNEMAP_USE_NODES) */
 #if defined (UNEMAP_USE_3D)
 	struct FE_node_selection *node_selection;
+	struct FE_field *device_name_field;
+	struct FE_node *rig_node;
+	struct GROUP(FE_node) *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 	ENTER(analysis_read_signal_file);
 #if defined (UNEMAP_USE_3D)
-	node_selection=(struct FE_node_selection *)NULL;
+	node_selection=(struct FE_node_selection *)NULL;	
+	device_name_field=(struct FE_field *)NULL;
+	rig_node=(struct FE_node *)NULL;	
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	return_code=0;
 	input_file=(FILE *)NULL;
@@ -2613,7 +2591,7 @@ Sets up the analysis work area for analysing a set of signals.
 		if (file_read_signal_FE_node_group(file_name,
 			analysis->unemap_package,analysis->rig))
 		{
-			ACCESS(Unemap_package)(analysis->unemap_package);
+			ACCESS(Unemap_package)(analysis->unemap_package);		 
 #if defined (UNEMAP_USE_NODES)
 			/* create the signal_drawing_package, store it, set it up */
 			if (!analysis->signal_drawing_package)
@@ -2675,7 +2653,8 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				analysis->highlight_rig_node=rig_node;
 				component.number=0;
-				component.field=highlight_field;
+				component.field=highlight_field;	
+				/*??JW should be copying out of and into node with MANAGER_MODIFY */
 				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
 					1/*highlight*/);
 			}
@@ -2686,7 +2665,7 @@ Sets up the analysis work area for analysing a set of signals.
 			display_message(ERROR_MESSAGE,
 				"analysis_read_signal_file. file_read_signal_FE_node_group failed ");
 		}
-#endif /* defined (UNEMAP_USE_3D) */
+#endif /* defined (UNEMAP_USE_NODES) */
 		if (return_code)
 		{
 			/*highlight the first device*/
@@ -2694,6 +2673,20 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				(*(analysis->highlight))->highlight=1;
 			}
+#if defined (UNEMAP_USE_3D) 
+				/* highlight the  node (and everything else) */
+				if ((analysis->highlight)&&(*(analysis->highlight)))
+				{	
+					/*get the rig_node corresponding to the device */
+					node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
+					device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+					rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+					rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
+						device_name_field);
+					/*trigger the selction callback*/
+					FE_node_selection_select_node(node_selection,rig_node);
+				}
+#endif /* defined (UNEMAP_USE_3D) */
 			/* assign the signal file name */
 			if (ALLOCATE(analysis->rig->signal_file_name,char,strlen(file_name)+1))
 			{
@@ -9155,7 +9148,8 @@ should be done as a callback from the trace_window.
 																			signal_drawing_package);
 																		/* set the new signal_maximum*/
 																		component.number=0;
-																		component.field = signal_maximum_field;
+																		component.field = signal_maximum_field;	
+							 /*??JW should be copying out of and into node with MANAGER_MODIFY */
 																		set_FE_nodal_FE_value_value(
 																			analysis->highlight_rig_node,
 																			&component,0,FE_NODAL_VALUE,new_max);
@@ -9182,6 +9176,7 @@ should be done as a callback from the trace_window.
 																		/* set the new signal_minimum*/
 																		component.number=0;
 																		component.field = signal_minimum_field;
+	/*??JW should be copying out of and into node with MANAGER_MODIFY */
 																		set_FE_nodal_FE_value_value(
 																			analysis->highlight_rig_node,&component,0,
 																			FE_NODAL_VALUE,new_min);
@@ -9574,14 +9569,15 @@ Duplicates the raw rig, except that
 	struct Signal *signal;
 	struct Signal_buffer *raw_signal_buffer,*signal_buffer;
 #if defined (UNEMAP_USE_3D)
-	struct GROUP(FE_node) *all_devices_rig_node_group;
-	struct GROUP(FE_node) *rig_node_group;
+	struct GROUP(FE_node) *all_devices_rig_node_group,*rig_node_group,
+		*unrejected_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(create_processed_rig);
 #if defined (UNEMAP_USE_3D)
 	all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	if (raw_rig&&(0<raw_rig->number_of_devices)&&(raw_rig->devices)&&
 		(*(raw_rig->devices))&&
@@ -9682,6 +9678,11 @@ Duplicates the raw rig, except that
 							{
 								set_Region_rig_node_group((*region_item_address)->region,
 									rig_node_group);
+							}
+							if(unrejected_node_group=get_Region_unrejected_node_group(raw_region))
+							{
+								set_Region_unrejected_node_group((*region_item_address)->region,
+									unrejected_node_group);
 							}
 #endif /* defined (UNEMAP_USE_3D) */
 							switch (raw_region->type)
@@ -10364,7 +10365,8 @@ c.f. analysis_set_range.
 			channel_offset_field,&minimum,&maximum,(enum Event_signal_status *)NULL,
 			1/*time_range*/);
 		/* set the new signal_minimum,signal_maximum*/
-		component.field = signal_minimum_field;
+		component.field = signal_minimum_field;	
+		/*??JW should be copying out of and into node with MANAGER_MODIFY */
 		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
 		component.field = signal_maximum_field;
 		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
@@ -11436,8 +11438,9 @@ DESCRIPTION :
 	struct Signals_area *signals;
 #if defined(UNEMAP_USE_3D)
 	struct FE_field *device_name_field,*signal_status_field;
-	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_node *rig_node,*node;
+	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
+	struct MANAGER(FE_node) *node_manager;
 #endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(analysis_accept_signal);
@@ -11445,7 +11448,10 @@ DESCRIPTION :
 	device_name_field=(struct FE_field *)NULL;
 	signal_status_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
+	node=(struct FE_node *)NULL;
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
 #endif /* defined(UNEMAP_USE_3D) */
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
@@ -11600,8 +11606,29 @@ DESCRIPTION :
 					device_name_field);
 				signal_status_field=
 					get_unemap_package_signal_status_field(analysis->unemap_package);
-				set_FE_nodal_string_value(rig_node,signal_status_field,0,0,FE_NODAL_VALUE,
-					"ACCEPTED");
+				node_manager=get_unemap_package_node_manager(analysis->unemap_package);					
+				/* create a node to work with */
+				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
+				/* copy it from the manager */
+				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(node,rig_node))
+				{
+					set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
+						"ACCEPTED");
+					/* copy it back into the manager */
+					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+						(rig_node,node,node_manager);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"analysis_accept_signal. MANAGER_COPY_WITH_IDENTIFIER failed ");				
+				}	
+				/* destroy the working copy */
+				DESTROY(FE_node)(&node);
+				/* add node to unrejected group, as it's now  visible*/
+				current_region=get_Rig_current_region(rig);
+				unrejected_node_group=get_Region_unrejected_node_group(current_region);
+				ADD_OBJECT_TO_GROUP(FE_node)(rig_node,unrejected_node_group);
 				/* we've accpeted or rejected a signal so set the flag */
 				if(mapping&&(mapping->map))
 				{				
@@ -11651,8 +11678,9 @@ DESCRIPTION :
 	struct Signals_area *signals;
 #if defined(UNEMAP_USE_3D)
 	struct FE_field *device_name_field,*signal_status_field;
-	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_node *rig_node,*node;
+	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
+	struct MANAGER(FE_node) *node_manager;
 #endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(analysis_reject_signal);
@@ -11660,7 +11688,10 @@ DESCRIPTION :
 	device_name_field=(struct FE_field *)NULL;
 	signal_status_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
+	node=(struct FE_node *)NULL;
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
 #endif /* defined(UNEMAP_USE_3D) */
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
@@ -11734,9 +11765,32 @@ DESCRIPTION :
 				rig_node=find_rig_node_given_device(*highlight,rig_node_group,
 					device_name_field);
 				signal_status_field=
-					get_unemap_package_signal_status_field(analysis->unemap_package);
-				set_FE_nodal_string_value(rig_node,signal_status_field,0,0,FE_NODAL_VALUE,
-					"REJECTED");
+					get_unemap_package_signal_status_field(analysis->unemap_package);				
+				node_manager=get_unemap_package_node_manager(analysis->unemap_package);
+				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
+				/* copy it from the manager */
+				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(node,rig_node))
+				{
+					set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
+						"REJECTED");
+					/* copy it back into the manager */
+					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+						(rig_node,node,node_manager);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"analysis_reject_signal. MANAGER_COPY_WITH_IDENTIFIER failed ");				
+				}	
+				/* destroy the working copy */
+				DESTROY(FE_node)(&node);
+				/* unselect the node, as we don't want it to be visible */			
+				FE_node_selection_unselect_node(
+					get_unemap_package_FE_node_selection(analysis->unemap_package),rig_node);	
+				/* remove node from  unrejected group */				
+				current_region=get_Rig_current_region(rig);
+				unrejected_node_group=get_Region_unrejected_node_group(current_region);
+				REMOVE_OBJECT_FROM_GROUP(FE_node)(rig_node,unrejected_node_group);			
 				/* we've accpeted or rejected an signal so set the flag  */
 				if(mapping&&(mapping->map))
 				{				
@@ -13614,6 +13668,7 @@ DESCRIPTION :
 			{
 				component.number=0;
 				component.field=set_highlight_iterator->highlight_field;
+				/*??JW should be copying out of and into node with MANAGER_MODIFY */
 				set_FE_nodal_int_value(node,&component,/*version*/0,FE_NODAL_VALUE,
 					set_highlight_iterator->highlight);
 				set_highlight_iterator->count++;
@@ -13979,6 +14034,7 @@ remain unchanged.
 	return(return_code);
 }/*analysis_get_device_and_numbers*/
 
+#if !defined (UNEMAP_USE_3D)
 static int highlight_analysis_perform_highlighting(struct Analysis_work_area *analysis,
 	unsigned int multiple_selection,struct Device **new_highlight,
 	int new_device_number,int new_electrode_number,int new_auxiliary_number)
@@ -14048,7 +14104,7 @@ else
 		end_analysis_interval=buffer->end;
 		/* if the highlight is part of a multiple selection */
 		if (multiple_selection)
-		{
+		{		
 			/* if the device is highlighted */
 			if ((*new_highlight)->highlight)
 			{
@@ -14094,7 +14150,7 @@ else
 #endif
 						new_electrode_number,new_auxiliary_number,map,mapping);
 				}
-			}
+			}			
 			else
 			{
 				/* highlight it and make it THE highlighted device for the analysis
@@ -14120,7 +14176,7 @@ else
 					(struct FE_node *)NULL,
 #endif
 					new_electrode_number,new_auxiliary_number,map,mapping);
-			}
+			}		
 		} /* if (multiple_selection) */
 		else
 		{
@@ -14228,74 +14284,7 @@ else
 	LEAVE;
 	return(return_code);
 } /*highlight_analysis_perform_highlighting */
-
-#if defined (UNEMAP_USE_3D)
-static int rig_node_selection_change(struct FE_node *node,
-	void *change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 29 September 2000
-
-DESCRIPTION :
-If the selected node is a rig device node ( in all_devices_rig_node_group),
-  if highlight is 1, highlights it via highlight_analysis_perform_highlighting
-  else unhighlightsal current hghlighted via  highlight_analysis_perform_highlighting
-==============================================================================*/
-{
-	int auxiliary_number,device_number,electrode_number,multiple_selection,highlight,
-		return_code;
-	struct Analysis_work_area *analysis;
-	struct Device **device;
-	struct FE_field *device_name_field;
-	struct GROUP(FE_node) *all_devices_rig_node_group;
-	struct Rig *rig;
-	struct rig_node_selection_change_data *data;
-
-	ENTER(rig_node_selection_change);
-	device_name_field=(struct FE_field *)NULL;
-	device=(struct Device **)NULL;
-	if (node&&(data=(struct rig_node_selection_change_data *)change_data_void)
-		&&(analysis=data->analysis_work_area)
-		&&(rig=analysis->rig)&&(all_devices_rig_node_group=
-			get_Rig_all_devices_rig_node_group(rig)))
-	{
-		return_code=1;
-		multiple_selection=data->multiple_selection;
-		highlight=data->highlight;
-		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
-		{
-			if (!highlight)
-			{
-				/* don't highlight, just unhighlight any existing highlighted devices/nodes */
-				device=(struct Device **)NULL;
-			}
-			else
-			{
-				/* find the device corresponding to the node */
-				device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-				device=find_device_given_rig_node(node,device_name_field,analysis->rig);
-				analysis_get_numbers_from_device(analysis,device,&device_number,&electrode_number,
-					&auxiliary_number);
-			}
-			/* (un)highlight the device */
-			highlight_analysis_perform_highlighting(analysis,multiple_selection,
-				device,device_number,electrode_number,auxiliary_number);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"rig_node_selection_change. node not in rig_node_group");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"rig_node_selection_change.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-} /* rig_node_selection_change */
-#endif /* defined (UNEMAP_USE_3D) */
-
+#endif /* not defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 static int rig_node_highlight_change(struct FE_node *node,void *change_data_void)
@@ -14388,77 +14377,47 @@ the rig_node group. If are highlights them.
 #else /* if defined(UNEMAP_USE_NODES) */
 	struct rig_node_selection_change_data data;
 	struct Analysis_work_area *analysis;
-	struct LIST(FE_node) *node_list;
 	struct FE_node *node;
 	struct FE_field *device_name_field;
 	struct Device **device;
 
 	ENTER(rig_node_group_node_selection_change);
-	node_list=(struct LIST(FE_node) *)NULL;
 	device=(struct Device **)NULL;
 	node=(struct FE_node *)NULL;
 	device_name_field=(struct FE_field *)NULL;
-	node_list=(struct LIST(FE_node) *)NULL;
-
 	if (node_selection&&changes&&(analysis=(struct Analysis_work_area *)
 		analysis_work_area_void))
 	{
 		data.analysis_work_area=analysis;
-		/* determine multiple_selection flag */
-		node_list=FE_node_selection_get_node_list(node_selection);
-		if ((NUMBER_IN_LIST(FE_node)(node_list))>1)
+		/* data.multiple_selection flag  not used for rig_node_highlight_change*/
+		/* this method is more efficient if many nodes are (un)selected
+			 unhighlight the unselected nodes/devices */
+		data.highlight=0;
+		FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
+			changes->newly_unselected_node_list);
+		/* highlight the selected nodes/devices */
+		data.highlight=1;
+		FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
+			changes->newly_selected_node_list);
+		/* get the first (un)selected node */
+		if (!(node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+			changes->newly_selected_node_list)))
 		{
-			data.multiple_selection=1;
-		}
-		else
-		{
-			data.multiple_selection=0;
-		}
-		if (((NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))>1)||
-			((NUMBER_IN_LIST(FE_node)(changes->newly_unselected_node_list))>1))
-		{
-			/* this method is more efficient if many nodes are (un)selected
-				unhighlight the unselected nodes/devices */
-			data.highlight=0;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
-				changes->newly_unselected_node_list);
-			/* highlight the selected nodes/devices */
-			data.highlight=1;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
-				changes->newly_selected_node_list);
-			/* get the first (un)selected node */
-			if (!(node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+			node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
 				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-				changes->newly_selected_node_list)))
-			{
-				node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-					(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-					changes->newly_unselected_node_list);
-			}
-			/* find the device corresponding to the node */
-			device_name_field=
-				get_unemap_package_device_name_field(analysis->unemap_package);
-			device=find_device_given_rig_node(node,device_name_field,analysis->rig);
-			/*make it THE highlighted device */
-			analysis->highlight=device;
-			/* update the  windows*/
-			update_signals_drawing_area(analysis->window);
-			update_interval_drawing_area(analysis->window);
-			trace_change_signal(analysis->trace);
-		}
-		else
-		{
-			/* this method is more efficient if just one node is (un)selected
-				change unselected nodes. Don't highlight anything, just unhighlight
-				unselected  */
-			data.highlight=0;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
 				changes->newly_unselected_node_list);
-			/* change selected nodes. Highlight them! */
-			data.highlight=1;
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
-				changes->newly_selected_node_list);
 		}
+		/* find the device corresponding to the node */
+		device_name_field=
+			get_unemap_package_device_name_field(analysis->unemap_package);
+		device=find_device_given_rig_node(node,device_name_field,analysis->rig);
+		/*make it THE highlighted device */
+		analysis->highlight=device;
+		/* update the  windows*/
+		update_signals_drawing_area(analysis->window);
+		update_interval_drawing_area(analysis->window);
+		trace_change_signal(analysis->trace);		
 	}
 	else
 	{
@@ -14524,7 +14483,8 @@ c.f update_signal_range_widget_from_highlight_signal
 				signal_drawing_package);
 			/* set the new signal_minimum */
 			component.number=0;
-			component.field = signal_minimum_field;
+			component.field = signal_minimum_field;	
+			/*??JW should be copying out of and into node with MANAGER_MODIFY */
 			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
 #else
 			device->signal_minimum=minimum;
@@ -14598,7 +14558,8 @@ c.f update_signal_range_widget_from_highlight_signal
 				signal_drawing_package);
 			/* set the new signal_maximum*/
 			component.number=0;
-			component.field = signal_maximum_field;
+			component.field = signal_maximum_field;	
+			/*??JW should be copying out of and into node with MANAGER_MODIFY */
 			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
 #else
 			device->signal_maximum=maximum;
@@ -14691,8 +14652,16 @@ Guts of highlighting happens in highlight_analysis_perform_highlighting
 			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
 			rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
 			rig_node=find_rig_node_given_device(*new_highlight,rig_node_group,device_name_field);
-			/*trigger the selction callback*/
-			FE_node_selection_select_node(node_selection,rig_node);
+			/*trigger the selction callback*/		
+			/* if it wasn't highlighted, highlight it (and vice versa)*/
+			if(!((*new_highlight)->highlight))
+			{
+				FE_node_selection_select_node(node_selection,rig_node);
+			}
+			else
+			{
+				FE_node_selection_unselect_node(node_selection,rig_node);
+			}
 #else
 			/*highlight the device */
 			return_code=highlight_analysis_perform_highlighting(analysis,
@@ -15061,7 +15030,8 @@ cf highlight_analysis_device
 				}
 				component.field=signal_drawing_package->highlight_field;
 				component.number=0;
-				/*update the node_order_info current node to the highlighted node */
+				/*update the node_order_info current node to the highlighted node */	
+				/*??JW should be copying out of and into node with MANAGER_MODIFY */
 				set_FE_node_order_info_current_node_number(rig_node_order_info,
 					new_device_number);
 				/* if the highlight is part of a multiple selection */
@@ -15115,7 +15085,8 @@ cf highlight_analysis_device
 						/* if it is not the only highlighted device */
 						if (new_highlight_rig_node!=analysis->highlight_rig_node)
 						{
-							/* dehighlight the selected device */
+							/* dehighlight the selected device */	
+							/*??JW should be copying out of and into node with MANAGER_MODIFY */
 							set_FE_nodal_int_value(new_highlight_rig_node,&component,
 								/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
 							highlight_signal((struct Device *)NULL,new_highlight_rig_node,
@@ -15133,6 +15104,7 @@ cf highlight_analysis_device
 						/* highlight it and make it THE highlighted device for the analysis
 							 work area */
 						analysis->highlight_rig_node=new_highlight_rig_node;
+						/*??JW should be copying out of and into node with MANAGER_MODIFY */
 						set_FE_nodal_int_value(new_highlight_rig_node,&component,
 							/*version*/0,FE_NODAL_VALUE,1/*highlight*/);
 						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
@@ -15170,7 +15142,8 @@ cf highlight_analysis_device
 						if (!strcmp(device_type_string,"ELECTRODE"))
 						{
 							if (highlighted)
-							{
+							{	
+								/*??JW should be copying out of and into node with MANAGER_MODIFY */
 								set_FE_nodal_int_value(old_highlight_rig_node,&component,
 									/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
 								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
@@ -15188,6 +15161,7 @@ cf highlight_analysis_device
 						{
 							if (highlighted)
 							{
+								/*??JW should be copying out of and into node with MANAGER_MODIFY */
 								set_FE_nodal_int_value(old_highlight_rig_node,&component,
 									/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
 								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
@@ -15237,7 +15211,8 @@ cf highlight_analysis_device
 					/* highlight the new device */
 					analysis->highlight_rig_node=new_highlight_rig_node;
 					if (new_highlight_rig_node)
-					{
+					{	
+						/*??JW should be copying out of and into node with MANAGER_MODIFY */
 						set_FE_nodal_int_value(new_highlight_rig_node,&component,
 							/*version*/0,FE_NODAL_VALUE,1/*highlight*/);
 						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
