@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 19 December 2001
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -1208,7 +1208,7 @@ Returns the <Control_curve_extend_mode> described by <extend_mode_string>.
 struct Control_curve *CREATE(Control_curve)(char *name,
 	enum FE_basis_type fe_basis_type,int number_of_components)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 19 December 2001
 
 DESCRIPTION :
 Allocates memory and assigns fields for a struct Control_curve using the given
@@ -1280,14 +1280,14 @@ value will be zero in its initial state.
 				}
 				if (return_code)
 				{
-					node_field_creator = CREATE(FE_node_field_creator)(
-						/*number_of_components*/1);
-					FE_node_field_creator_define_derivative(node_field_creator, 
-						0, FE_NODAL_D_DS1);
 					/* curve must access template_node */
 					if (curve->template_node=
 						ACCESS(FE_node)(CREATE(FE_node)(0,(struct FE_node *)NULL)))
 					{
+						node_field_creator = CREATE(FE_node_field_creator)(
+							/*number_of_components*/1);
+						FE_node_field_creator_define_derivative(node_field_creator, 
+							0, FE_NODAL_D_DS1);
 						if (!define_FE_field_at_node(curve->template_node,
 							curve->parameter_field,(struct FE_time_version *)NULL,
 							node_field_creator))
@@ -1312,6 +1312,7 @@ value will be zero in its initial state.
 						{
 							return_code=0;
 						}
+						DESTROY(FE_node_field_creator)(&(node_field_creator));
 						if (return_code)
 						{
 							element_identifier.type=CM_ELEMENT;
