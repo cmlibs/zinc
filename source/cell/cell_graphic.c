@@ -192,7 +192,6 @@ is created.
 ==============================================================================*/
 {
 	int return_code = 0;
-	struct File_read_graphics_object_from_obj_data *obj_data;
 	struct LIST(GT_object) *graphics_list;
 
 	ENTER(Cell_graphic_create_graphical_object);
@@ -221,7 +220,6 @@ is created.
 				display_message(ERROR_MESSAGE,"Cell_graphic_create_graphics_object.  "
 					"Unable to read the wavefront obj file");
 			}
-			DEALLOCATE(obj_data);
 		}
 		else
 		{
