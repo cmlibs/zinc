@@ -4657,9 +4657,11 @@ uses them to find faces and lines for elements without them, if they exist.
 					}
 #endif /* defined (OLD_CODE) */
 				}
+#if defined (DEBUG)
 				/*???debug*/
 				printf("FE_element_type_node_sequence  %s %d has nodes: ",
 					CM_element_type_string(element->cm.type), element->cm.number);
+#endif /* defined (DEBUG) */
 				for (i=0;i<number_of_nodes;i++)
 				{
 					printf(" %d",node_numbers[i]);
