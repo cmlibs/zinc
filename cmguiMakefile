@@ -34,6 +34,8 @@ cmgui cmgui-dynamicgl cmgui64 : DEBUG=DEBUG=false
 cmgui-debug cmgui-dynamicgl-debug cmgui64-debug : DEBUG=DEBUG=true
 cmgui64 cmgui64-debug : ABI=ABI=64
 cmgui-debug-memorycheck : MEMORYCHECK=MEMORYCHECK=true
+cmgui-console : USER_INTERFACE=USER_INTERFACE=CONSOLE_USER_INTERFACE
+cmgui-gtk : USER_INTERFACE=USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities: TARGET=utilities
 
