@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 14 October 2003
+LAST MODIFIED : 15 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -35,14 +35,14 @@ Module types
 */
 struct Pacing_window
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 15 April 2004
 
 DESCRIPTION :
 The window associated with the set up button.
 ==============================================================================*/
 {
-	char *decrement_threshold_pairs_string,pacing,*pacing_electrodes,
-		*return_electrodes;
+	char *decrement_threshold_pairs_string,negative_return_signal,pacing,
+		*pacing_electrodes,*return_electrodes;
 	float basic_cycle_length,basic_cycle_length_arrow_step,control_voltage,
 		control_voltage_arrow_step,control_width,control_width_arrow_step,
 		*decrement_threshold_pairs,*pacing_voltages,resolution,*si_length,sn_length,
@@ -1343,7 +1343,7 @@ Called when the return electrodes widget is changed.
 
 static int start_basic_cycle_length_pacing(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 15 April 2004
 
 DESCRIPTION :
 Starts or re-starts the basic cycle length pacing.
@@ -1404,11 +1404,26 @@ Starts or re-starts the basic cycle length pacing.
 					unemap_set_channel_stimulating((pacing_window->return_channels)[i],
 						1);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_return_channels,
-					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-					(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-					(void *)NULL);
+				if (pacing_window->negative_return_signal)
+				{
+					for (i=0;i<number_of_pacing_voltages;i++)
+					{
+						pacing_voltages[i]= -pacing_voltages[i];
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_return_channels,
+						pacing_window->return_channels,number_of_pacing_voltages,
+						voltages_per_second,pacing_voltages,(unsigned int)0,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+				}
+				else
+				{
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_return_channels,
+						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+						(void *)NULL);
+				}
 			}
 			/* start pacing */
 			unemap_start_stimulating();
@@ -3465,7 +3480,7 @@ Finds the id of the restitution time pace button in the pacing window.
 
 static int restitution_time_pace(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 15 April 2004
 
 DESCRIPTION :
 Restarts the restitution time pacing.
@@ -3569,11 +3584,32 @@ Restarts the restitution time pacing.
 					unemap_set_channel_stimulating((pacing_window->return_channels)[i],
 						1);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_return_channels,
-					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-					(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-					(void *)NULL);
+				if (pacing_window->negative_return_signal)
+				{
+					for (i=0;i<number_of_pacing_voltages;i++)
+					{
+						(pacing_window->pacing_voltages)[i]=
+							-(pacing_window->pacing_voltages[i]);
+					}
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_return_channels,
+						pacing_window->return_channels,number_of_pacing_voltages,
+						voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+					for (i=0;i<number_of_pacing_voltages;i++)
+					{
+						(pacing_window->pacing_voltages)[i]=
+							-(pacing_window->pacing_voltages[i]);
+					}
+				}
+				else
+				{
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_return_channels,
+						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+						(void *)NULL);
+				}
 			}
 			/* start pacing */
 			unemap_start_stimulating();
@@ -4309,7 +4345,7 @@ Called when the restitution curve pacing ends.
 
 static int restitution_curve_pace(void *pacing_window_void)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 15 April 2004
 
 DESCRIPTION :
 Does one stimulus train in the restitution curve creation.
@@ -4486,11 +4522,33 @@ Does one stimulus train in the restitution curve creation.
 								unemap_set_channel_stimulating(
 									(pacing_window->return_channels)[l],1);
 							}
-							unemap_load_voltage_stimulating(
-								pacing_window->number_of_return_channels,
-								pacing_window->return_channels,(int)0,(float)0,
-								(float *)NULL,(unsigned int)0,
-								(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+							if (pacing_window->negative_return_signal)
+							{
+								for (l=0;l<number_of_pacing_voltages;l++)
+								{
+									(pacing_window->pacing_voltages)[l]=
+										-(pacing_window->pacing_voltages[l]);
+								}
+								unemap_load_voltage_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,number_of_pacing_voltages,
+									voltages_per_second,pacing_window->pacing_voltages,
+									(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+								for (l=0;l<number_of_pacing_voltages;l++)
+								{
+									(pacing_window->pacing_voltages)[l]=
+										-(pacing_window->pacing_voltages[l]);
+								}
+							}
+							else
+							{
+								unemap_load_voltage_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+									(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
 						}
 						/* start pacing */
 						unemap_start_stimulating();
@@ -4762,11 +4820,33 @@ Called when the restitution curve pace button is toggled.
 							unemap_set_channel_stimulating(
 								(pacing_window->return_channels)[l],1);
 						}
-						unemap_load_voltage_stimulating(
-							pacing_window->number_of_return_channels,
-							pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-							(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-							(void *)NULL);
+						if (pacing_window->negative_return_signal)
+						{
+							for (l=0;l<number_of_pacing_voltages;l++)
+							{
+								(pacing_window->pacing_voltages)[l]=
+									-(pacing_window->pacing_voltages[l]);
+							}
+							unemap_load_voltage_stimulating(
+								pacing_window->number_of_return_channels,
+								pacing_window->return_channels,number_of_pacing_voltages,
+								voltages_per_second,pacing_window->pacing_voltages,
+								(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+								(void *)NULL);
+							for (l=0;l<number_of_pacing_voltages;l++)
+							{
+								(pacing_window->pacing_voltages)[l]=
+									-(pacing_window->pacing_voltages[l]);
+							}
+						}
+						else
+						{
+							unemap_load_voltage_stimulating(
+								pacing_window->number_of_return_channels,
+								pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+								(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+								(void *)NULL);
+						}
 					}
 					/* start pacing */
 					unemap_start_stimulating();
@@ -4847,7 +4927,7 @@ static struct Pacing_window *create_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 15 April 2004
 
 DESCRIPTION :
 Allocates the memory for a pacing window.  Retrieves the necessary widgets and
@@ -4855,7 +4935,7 @@ initializes the appropriate fields.
 ==============================================================================*/
 {
 #if defined (MOTIF)
-	Boolean sn_increment;
+	Boolean negative_return_signal,sn_increment;
 	char *decrement_threshold_pairs_string,*numbers_of_stimuli,*pacing_electrodes,
 		*return_electrodes,*stimuli_lengths,temp_string[20];
 	MrmType pacing_window_class;
@@ -5009,6 +5089,8 @@ initializes the appropriate fields.
 #define XmCRestitutionControlWidthArrowStep "RestitutionControlWidthArrowStep"
 #define XmNrestitutionDecrementThresholdPairs "restitutionDecrementThresholdPairs"
 #define XmCRestitutionDecrementThresholdPairs "RestitutionDecrementThresholdPairs"
+#define XmNrestitutionNegativeReturnSignal "restitutionNegativeReturnSignal"
+#define XmCRestitutionNegativeReturnSignal "RestitutionNegativeReturnSignal"
 #define XmNrestitutionNumberOfStimulusTypes "restitutionNumberOfStimulusTypes"
 #define XmCRestitutionNumberOfStimulusTypes "RestitutionNumberOfStimulusTypes"
 #define XmNrestitutionNumberOfSi "restitutionNumberOfSi"
@@ -5125,6 +5207,18 @@ initializes the appropriate fields.
 			"false"
 		},
 	};
+	static XtResource negative_return_signal_resources[]=
+	{
+		{
+			XmNrestitutionNegativeReturnSignal,
+			XmCRestitutionNegativeReturnSignal,
+			XmRBoolean,
+			sizeof(Boolean),
+			0,
+			XmRString,
+			"false"
+		},
+	};
 	static XtResource control_width_resources[]=
 	{
 		{
@@ -5232,6 +5326,7 @@ initializes the appropriate fields.
 				pacing_window->number_of_return_channels=0;
 				pacing_window->return_channels=(int *)NULL;
 				pacing_window->return_electrodes=(char *)NULL;
+				pacing_window->negative_return_signal=0;
 				pacing_window->number_of_decrement_threshold_pairs=0;
 				pacing_window->decrement_threshold_pairs=(float *)NULL;
 				pacing_window->decrement_threshold_pairs_string=(char *)NULL;
@@ -5351,6 +5446,18 @@ initializes the appropriate fields.
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					return_electrodes, so it does not need to be free'd */
 				set_return_channels_from_string(pacing_window,return_electrodes);
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
+					&negative_return_signal,negative_return_signal_resources,
+					XtNumber(negative_return_signal_resources),NULL);
+				if (True==negative_return_signal)
+				{
+					pacing_window->negative_return_signal=1;
+				}
+				else
+				{
+					pacing_window->negative_return_signal=0;
+				}
 				numbers_of_stimuli=(char *)NULL;
 				XtVaGetApplicationResources(
 					User_interface_get_application_shell(user_interface),
