@@ -436,7 +436,7 @@ writes the discretization in use, otherwise N/A.
 				{
 					case 1:
 					{
-						sprintf(temp_string,"%d",number_in_xi[2]);
+						sprintf(temp_string,"%d",number_in_xi[0]);
 					} break;
 					case 2:
 					{
