@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : bmsi2sig.c
 
-LAST MODIFIED : 19 October 1999
+LAST MODIFIED : 7 January 2000
 
 DESCRIPTION :
 Converts BMSI 5000 TAG and EEG files to a unemap signal file.
@@ -263,7 +263,7 @@ DESCRIPTION :
 {
 	char *channel_names,*delta8,*delta8s,*device_name;
 	FILE *eeg_file,*signal_file,*tag_file;
-	float sampling_frequency=1/0.00375;
+	float gain=1,sampling_frequency=1/0.00375;
 	int device_number,i,j,number_of_signals,number_of_samples,return_code=0,step,
 		*time;
 	long int event_addr,eeg_file_size,event_time,minimum_event_addr,start_time;
@@ -404,6 +404,8 @@ DESCRIPTION :
 						copy_byte_swapped((unsigned char *)&eeg_gain,
 							sizeof(eeg_gain),buffer,BIG_ENDIAN);
 						printf("EEG gain: %d\n",eeg_gain);
+						/*???DB.  Assume that eeg_gain is microV per 1000 bits */
+						gain=(float)eeg_gain/(float)1000;
 					} break;
 					case TAG_ADC_RANGE:
 					{
@@ -663,11 +665,10 @@ DESCRIPTION :
 											}
 											if ((description=create_Device_description(
 												device_name,ELECTRODE,region))&&(channel=
-												create_Channel(device_number+1,(float)0,
-												(float)1))&&(signal=create_Signal(device_number,
-												signal_buffer,UNDECIDED,0))&&(*device=
-												create_Device(device_number,description,channel,
-												signal)))
+												create_Channel(device_number+1,(float)0,gain))&&
+												(signal=create_Signal(device_number,signal_buffer,
+												UNDECIDED,0))&&(*device=create_Device(device_number,
+												description,channel,signal)))
 											{
 												description->properties.electrode.position.x=
 													(float)(device_number%8);
