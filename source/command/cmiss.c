@@ -11037,21 +11037,21 @@ transformation in the transformation data.
 			{
 				if (FE_node_set_position_cartesian(copy_node,coordinate_field,x2,y2,z2))
 				{
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
+					return_code = MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
 						node,copy_node,data->node_manager);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_node_translate.  Could not make move node");
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_node_translate.  Could not make copy of node");
-				return_code=0;
+				return_code = 0;
 			}
 			DESTROY(FE_node)(&copy_node);
 		}
@@ -11059,13 +11059,14 @@ transformation in the transformation data.
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_node_translate.  Could not calculate coordinate field");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"end_edit_graphics_object.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
