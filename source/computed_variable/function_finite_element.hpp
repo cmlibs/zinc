@@ -227,7 +227,7 @@ class Function_finite_element : public Function
 		//   the returned element
 		struct FE_element* element_value() const;
 		// return the time value
-		Scalar Function_finite_element::time_value();
+		Scalar time_value() const;
 		// return the xi value 1<=index<=number_of_xi
 		Scalar xi_value(Function_size_type index) const;
 		// get the component value 1<=number<=number_of_components
