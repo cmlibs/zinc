@@ -113,12 +113,6 @@ cronjob: update_sources
 		if ! $(MAKE) -f $(MAKEFILE) update; then \
 			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
-		if ! $(MAKE) -f $(MAKEFILE) run_tests; then \
-			cat $(MAILFILE_PATH)/testfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
-		fi ; \
-		if [ -s $(TEST_PATH)/all.mail ]; then \
-			cat $(TEST_PATH)/all.mail >> $(MAILFILE_PATH)/programmer.mail ; \
-		fi ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
