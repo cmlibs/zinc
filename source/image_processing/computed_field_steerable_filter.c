@@ -1,9 +1,9 @@
 /******************************************************************
   FILE: computed_field_steerable_filter.c
 
-  LAST MODIFIED: 22 July 2004
+  LAST MODIFIED: 28 July 2004
 
-  DESCRIPTION:Implement steerable filtering
+  DESCRIPTION:Implement local orientation detecting.
 ==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -17,15 +17,14 @@
 #include "user_interface/message.h"
 #include "image_processing/computed_field_steerable_filter.h"
 
+
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
 
-extern double ceil(double x);
-extern double pow(double x, double y);
 
 struct Computed_field_steerable_filter_package
 /*******************************************************************************
-LAST MODIFIED : 22 July 2004
+LAST MODIFIED : 17 February 2004
 
 DESCRIPTION :
 A container for objects required to define fields in this module.
@@ -40,7 +39,8 @@ A container for objects required to define fields in this module.
 struct Computed_field_steerable_filter_type_specific_data
 {
 	double sigma;
-	int *direction;
+	int *angle_from_x_axis; /* 2d vector (n,m) corresponding to angle value pi * (n/m). */
+	int *angle_from_z_axis; /* 2d vector (n,m) corresponding to angle value pi * (n/m). */
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -54,13 +54,12 @@ static char computed_field_steerable_filter_type_string[] = "steerable_filter";
 
 int Computed_field_is_type_steerable_filter(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-
 
 	ENTER(Computed_field_is_type_steerable_filter);
 	if (field)
@@ -132,7 +131,7 @@ we know to invalidate the image cache.
 static int Computed_field_steerable_filter_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -160,9 +159,13 @@ Clear the type specific data used by this type.
 				data->computed_field_manager_callback_id,
 				data->computed_field_manager);
 		}
-		if (data->direction)
+		if (data->angle_from_x_axis)
 		{
-		        DEALLOCATE(data->direction);
+		        DEALLOCATE(data->angle_from_x_axis);
+		}
+		if (data->angle_from_z_axis)
+		{
+		        DEALLOCATE(data->angle_from_z_axis);
 		}
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
@@ -182,7 +185,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_steerable_filter_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -201,9 +204,10 @@ Copy the type specific data used by this type.
 			struct Computed_field_steerable_filter_type_specific_data, 1))
 		{
 			destination->sigma = source->sigma;
-			for (i = 0; i < 2; i++)
+			for (i = 0 ; i < 2 ; i++)
 			{
-			        destination->direction[i] = source->direction[i];
+				destination->angle_from_x_axis[i] = source->angle_from_x_axis[i];
+				destination->angle_from_z_axis[i] = source->angle_from_z_axis[i];
 			}
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
@@ -250,7 +254,7 @@ Copy the type specific data used by this type.
 int Computed_field_steerable_filter_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -284,7 +288,7 @@ DESCRIPTION :
 static int Computed_field_steerable_filter_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Compare the type specific data
@@ -326,7 +330,7 @@ Compare the type specific data
 #define Computed_field_steerable_filter_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -335,7 +339,7 @@ Check the source fields using the default.
 #define Computed_field_steerable_filter_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -344,7 +348,7 @@ Check the source fields using the default.
 #define Computed_field_steerable_filter_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -353,57 +357,63 @@ Window projection does have numerical components.
 #define Computed_field_steerable_filter_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-
-static int Image_cache_steerable_filter(struct Image_cache *image, double sigma, int *direction)
+static int Image_cache_steerable_filter(struct Image_cache *image, double sigma,
+          int *angle_from_x_axis, int *angle_from_z_axis)
 /*******************************************************************************
-LAST MODIFIED : 22 July 2004
+LAST MOErFIED : 28 July 2004
 
-DESCRIPTION : Implement image steerable filtering.
-        
+DESCRIPTION :
+Perform orientation deviation calculating bsed on steerable filter.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *temp_index, *gaussian_kernel;
-	int i, j, k, return_code, kernel_size, storage_size;
-	int center, iX, iY, cur_pt;
-	FE_value x, fx, sum, dot, sumX, sumY, SUM;
-	FE_value GX[3][3];
-	FE_value GY[3][3];
-	FE_value dir, *max;
+	FE_value *data_index, *result_index, *temp_index;
+	int i, j, k, l, m, storage_size;
+	FE_value  *kernel, *g_kernel, *sums;
+	int filter_size;
+	int *offsets, *g_offsets;
+	int pass, radius, center;
+	int image_step, kernel_step;
+	int return_code, kernel_size, g_kernel_size;
+	FE_value thelta, phi, x, fx, sum, dot;
 
 	ENTER(Image_cache_steerable_filter);
-	if (image && (image->dimension > 0) && (image->depth > 0))
+	if (image && (image->dimension > 1) && (image->dimension < 4) && (image->depth > 0)
+	        && (angle_from_x_axis[1] > 0) && (angle_from_z_axis[1] > 0))
 	{
 		return_code = 1;
-		kernel_size = 1 + 2 *((int) ceil(2.5 * sigma));
+		radius = 1;
+		filter_size = 2 * radius + 1;
+		g_kernel_size = 1 + 2 *((int) ceil(2.5 * sigma));
+		thelta = ((FE_value)angle_from_x_axis[0] / (FE_value)angle_from_x_axis[1]) * M_PI;
+		phi = ((FE_value)angle_from_z_axis[0] / (FE_value)angle_from_z_axis[1]) * M_PI;
+
+		/* We only need the one kernel as it is just a reordering for the other dimensions */
+		kernel_size = 1;
+		for (i = 0 ; i < image->dimension ; i++)
+		{
+			kernel_size *= filter_size;
+		}
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
 		for (i = 0 ; i < image->dimension ; i++)
 		{
 			storage_size *= image->sizes[i];
 		}
-		if (ALLOCATE(gaussian_kernel, FE_value, kernel_size) &&
+		if (ALLOCATE(kernel, FE_value, kernel_size) &&
+			ALLOCATE(offsets, int, kernel_size) &&
+			ALLOCATE(g_kernel, FE_value, g_kernel_size) &&
+			ALLOCATE(g_offsets, int, g_kernel_size) &&
 			ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
-			ALLOCATE(max, FE_value, image->depth) &&
+			ALLOCATE(sums, FE_value, image->depth) &&
 			ALLOCATE(temp_index, FE_value, storage_size))
 		{
-		        return_code = 1;
-			dir = ((FE_value)direction[0]/(FE_value)direction[1]) * M_PI;
-			/* 3x3 GX Sobel mask. */
-                        GX[0][0] = -1.0; GX[0][1] = 0.0; GX[0][2] = 1.0;
-                        GX[1][0] = -2.0; GX[1][1] = 0.0; GX[1][2] = 2.0;
-                        GX[2][0] = -1.0; GX[2][1] = 0.0; GX[2][2] = 1.0;
-			/* 3x3 GY Sobel mask.  */
-			GY[0][0] =  1.0; GY[0][1] =  2.0; GY[0][2] =  1.0;
-			GY[1][0] =  0.0; GY[1][1] =  0.0; GY[1][2] =  0.0;
-			GY[2][0] = -1.0; GY[2][1] = -2.0; GY[2][2] = -1.0;
-			/* 3x3 GL Laplacian mask. */
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
 			{
@@ -411,143 +421,183 @@ DESCRIPTION : Implement image steerable filtering.
 				result_index++;
 			}
 			/* Create a 1d gaussian kernel */
-			center = kernel_size / 2;
+			center = g_kernel_size / 2;
 			sum = 0.0;
-			for(j = 0; j < kernel_size; j++)
+			for(j = 0; j < g_kernel_size; j++)
 			{
                                 x = (FE_value)(j - center);
-                                fx = pow(2.71828, -0.5*x*x/(sigma*sigma)) / (sigma * sqrt(6.2831853));
-                                gaussian_kernel[j] = fx;
+                                fx = pow(2.7, -0.5*x*x/(sigma*sigma)) / (sigma * 2.5);
+                                g_kernel[j] = fx;
 				sum += fx;
 			}
-			for(j = 0; j < kernel_size; j++)
+			for(j = 0; j < g_kernel_size; j++)
 			{
-			        gaussian_kernel[j] /= sum;
+			        g_kernel[j] /= sum;
 			}
-
 			data_index = (FE_value *)image->data;
+			for (i = 0; i < storage_size; i++)
+			{
+			        temp_index[i] = *data_index;
+				data_index++;
+			}
 			result_index = (FE_value *)storage;
-			/* Blur in the x - direction. */
-			for (iY = 0; iY < image->sizes[1]; iY++)
+			image_step = 1;
+			for (m = 0; m < image->dimension; m++)
 			{
-			        for (iX = 0; iX < image->sizes[0]; iX++)
+			        for (j = 0; j < g_kernel_size; j++)
 				{
-					for (k = 0; k < image->depth; k++)
-					{
-					        sum = 0.0;
-						dot = 0.0;
-						for (j = (- center); j <= center; j++)
-						{
-						        if(((iX + j) >= 0) && ((iX + j) < image->sizes[0]))
-							{
-							         cur_pt = (iY * image->sizes[0] + iX + j) * image->depth;
-							         dot += *(data_index + cur_pt + k) * gaussian_kernel[center + j];
-								 sum += gaussian_kernel[center + j];
-							}
-						}
-						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
-						*(result_index + cur_pt + k) = dot/sum;
-					}
+				        g_offsets[j] = (j - center) * image_step * image->depth;
 				}
-			}
-			/* Blur int the y - direction */
-			for (iX = 0; iX < image->sizes[0]; iX++)
-			{
-			        for (iY = 0; iY < image->sizes[1]; iY++)
-				{
-					for (k = 0; k < image->depth; k++)
-					{
-					        sum = 0.0;
-						dot = 0.0;
-						for (j = (- center); j <= center; j++)
-						{
-						        if(((iY + j) >= 0) && ((iY + j) < image->sizes[1]))
-							{
-							         cur_pt = ((iY + j) * image->sizes[0] + iX) * image->depth;
-							         dot += *(result_index + cur_pt + k) * gaussian_kernel[center + j];
-								 sum += gaussian_kernel[center + j];
-							}
-						}
-						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
-						if ((dot / sum) > 1.0)
-						{
-						        *(temp_index + cur_pt + k) = 1.0;
-						}
-						else
-						{
-						        *(temp_index + cur_pt + k) = dot/sum;
-						}
-					}
-				}
-			}
-			/* Sobel gradient approximation */
-			for (k = 0; k < image->depth; k++)
-			{
-			        max[k] = 0.0;
-			}
-
-			for (iY = 0; iY < image->sizes[1]; iY++)
-			{
-			        for (iX = 0; iX < image->sizes[0]; iX++)
+				image_step *= image->sizes[m];
+				for (i = 0; i < storage_size / image->depth; i++)
 				{
 				        for (k = 0; k < image->depth; k++)
 					{
-					         sumX = 0.0;
-					         sumY = 0.0;
-					         /* image boundaries */
-					         if (iY == 0 || iY == image->sizes[1] - 1)
-					         {
-						          SUM = 0.0;
-					         }
-						 else if (iX == 0 || iX == image->sizes[0] - 1)
-						 {
-						          SUM = 0.0;
-						 }
-						 else
-						 {
-						          /* x gradient */
-							for (i = -1; i <= 1; i++)
+					        dot = 0.0;
+						for (j = 0; j < g_kernel_size; j++)
+						{
+						        if ((result_index + g_offsets[j] >= (FE_value *)storage) &&
+							         (result_index + g_offsets[j] < ((FE_value *)storage) + storage_size))
 							{
-							        for (j = -1; j <= 1; j++)
-								{
-								        cur_pt = (iX + i + (iY + j) * image->sizes[0]) * image->depth;
-								        sumX += *(temp_index + cur_pt + k) * GX[i+1][j+1];
-								}
+							         dot += temp_index[i * image->depth + g_offsets[j] + k] * g_kernel[j];
 							}
-							 /* y gradient */
-							for (i = -1; i <= 1; i++)
-							{
-							        for (j = -1; j <= 1; j++)
-								{
-								        cur_pt = (iX + i + (iY + j) * image->sizes[0]) * image->depth;
-								        sumY += *(temp_index + cur_pt + k) * GY[i+1][j+1];
-								}
-							}
-							/* gradient magnitude */
-							SUM = fabs(cos(dir) * sumX + sin(dir) * sumY);
-
 						}
-						cur_pt = (iY * image->sizes[0] + iX) * image->depth;
-						*(result_index + cur_pt + k) = SUM;
-						max[k] = my_Max(max[k], SUM);
+						result_index[k] = dot;
+					}
+					result_index += image->depth;
+				}
+				for (i = (storage_size / image->depth) - 1; i >= 0; i--)
+				{
+				        result_index -= image->depth;
+				        for (k = 0; k < image->depth; k++)
+					{
+					        temp_index[i * image->depth + k] = result_index[k];
 					}
 				}
 			}
-			for (i = 0; i < storage_size/image->depth; i++)
+			for (i = 0 ; i < storage_size ; i++)
 			{
-			        for (k = 0; k < image->depth; k++)
+				*result_index = 0.0;
+				result_index++;
+			}
+			for (j = 0 ; j < kernel_size ; j++)
+			{
+				offsets[j] = 0;
+			}
+			kernel_step = 1;
+			image_step = 1;
+			for (i = 0 ; i < image->dimension ; i++)
+			{
+				for (j = 0 ; j < kernel_size ; j++)
 				{
-				        if(max[k] == 0.0)
+					l = (j / kernel_step) % filter_size;
+					offsets[j] += (l - radius) * image_step * image->depth;
+				}
+				kernel_step *= filter_size;
+				image_step *= image->sizes[i];
+			}
+			for (pass = 0 ; pass < image->dimension ; pass++)
+			{
+				for (j = 0 ; j < kernel_size ; j++)
+				{
+					kernel[j] = 1.0;
+				}
+				kernel_step = 1;
+				for (i = 0 ; i < image->dimension ; i++)
+				{
+					if (i == pass)
 					{
-					        result_index[k] = 0.0;
+						for (j = 0 ; j < kernel_size ; j++)
+						{
+							l = (j / kernel_step) % filter_size;
+							if (l == radius)
+							{
+								kernel[j] *= 2.0;
+							}
+						}
 					}
 					else
 					{
-					        result_index[k] /= max[k];
+						for (j = 0 ; j < kernel_size ; j++)
+						{
+							l = (j / kernel_step) % filter_size;
+							if ( l < radius)
+							{
+							        kernel[j] *= -1.0;
+							}
+							else if (l == radius)
+							{
+							        kernel[j] = 0.0;
+							}
+						}
 					}
+					kernel_step *= filter_size;
 				}
-				result_index += image->depth;
+				result_index = (FE_value *)storage;
+				for (i = 0 ; i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+						sums[k] = 0;
+					}
+					for (j = 0 ; j < kernel_size ; j++)
+					{
+						if (result_index + offsets[j] < ((FE_value *)storage))
+						{
+							/* Wrapping around */
+							for (k = 0 ; k < image->depth ; k++)
+							{
+								sums[k] += kernel[j] *
+									temp_index[i * image->depth + offsets[j] + storage_size + k];
+							}
+						}
+						else if (result_index + offsets[j] >= ((FE_value *)storage) + storage_size)
+						{
+							/* Wrapping back */
+							for (k = 0 ; k < image->depth ; k++)
+							{
+								sums[k] += kernel[j] *
+									temp_index[i * image->depth + offsets[j] - storage_size + k];
+							}
+						}
+						else
+						{
+							/* standard */
+							for (k = 0 ; k < image->depth ; k++)
+							{
+								sums[k] += kernel[j] *
+									temp_index[i * image->depth + offsets[j] + k];
+							}
+						}
+					}
+					/* Accumulate the absolute value of this pass */
+					for (k = 0 ; k < image->depth ; k++)
+					{
+					        if ((image->dimension == 2) && (pass == 0))
+					        {
+						        result_index[k] += sums[k] * cos(thelta);
+						}
+						else if ((image->dimension == 2) && (pass == 1))
+						{
+						        result_index[k] += sums[k] * sin(thelta);
+						}
+						else if ((image->dimension == 3) && (pass == 0))
+						{
+						        result_index[k] += sums[k] * cos(thelta) * sin(phi);
+						}
+						else if ((image->dimension == 3) && (pass == 1))
+						{
+						        result_index[k] += sums[k] * sin(thelta) * sin(phi);
+						}
+						else if ((image->dimension == 3) && (pass == 2))
+						{
+						        result_index[k] += sums[k] * cos(phi);
+						}
+					}
+					result_index += image->depth;
+				}
 			}
+
 			if (return_code)
 			{
 				DEALLOCATE(image->data);
@@ -558,10 +608,12 @@ DESCRIPTION : Implement image steerable filtering.
 			{
 				DEALLOCATE(storage);
 			}
-
-			DEALLOCATE(gaussian_kernel);
+			DEALLOCATE(kernel);
+			DEALLOCATE(offsets);
+			DEALLOCATE(sums);
+			DEALLOCATE(g_kernel);
+			DEALLOCATE(g_offsets);
 			DEALLOCATE(temp_index);
-			DEALLOCATE(max);
 		}
 		else
 		{
@@ -584,7 +636,7 @@ DESCRIPTION : Implement image steerable filtering.
 static int Computed_field_steerable_filter_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -605,7 +657,8 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_steerable_filter(data->image, data->sigma, data->direction);
+			return_code = Image_cache_steerable_filter(data->image, data->sigma,
+			        data->angle_from_x_axis, data->angle_from_z_axis);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -629,7 +682,7 @@ static int Computed_field_steerable_filter_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -653,7 +706,8 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_steerable_filter(data->image, data->sigma, data->direction);
+			return_code = Image_cache_steerable_filter(data->image, data->sigma,
+			        data->angle_from_x_axis, data->angle_from_z_axis);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -676,7 +730,7 @@ Evaluate the fields cache at the node.
 #define Computed_field_steerable_filter_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -685,7 +739,7 @@ Print the values calculated in the cache.
 #define Computed_field_steerable_filter_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -694,7 +748,7 @@ Print the values calculated in the cache.
 #define Computed_field_steerable_filter_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Not implemented yet.
@@ -703,7 +757,7 @@ Not implemented yet.
 #define Computed_field_steerable_filter_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Not implemented yet.
@@ -712,7 +766,7 @@ Not implemented yet.
 #define Computed_field_steerable_filter_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -721,7 +775,7 @@ Inherit result from first source field.
 #define Computed_field_steerable_filter_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Not implemented yet.
@@ -730,7 +784,7 @@ Not implemented yet.
 static int list_Computed_field_steerable_filter(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -748,7 +802,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    sigma : %f\n", data->sigma);
+			"    filter sigma : %f\n", data->sigma);
 		return_code = 1;
 	}
 	else
@@ -765,7 +819,7 @@ DESCRIPTION :
 static char *Computed_field_steerable_filter_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -798,10 +852,15 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " dimension %d", data->image->dimension);
+		sprintf(temp_string, " dimension %d ", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string, " direction %d %d", data->direction[0], data->direction[1]);
+		sprintf(temp_string, " angle_from_x_axis %d %d ",
+		                    data->angle_from_x_axis[0],data->angle_from_x_axis[1]);
+		append_string(&command_string, temp_string, &error);
+
+		sprintf(temp_string, " angle_from_z_axis %d %d ",
+		                    data->angle_from_z_axis[0],data->angle_from_z_axis[1]);
 		append_string(&command_string, temp_string, &error);
 
 		sprintf(temp_string, " sigma %f", data->sigma);
@@ -818,7 +877,6 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " maximums %f %f",
 		                    data->image->maximums[0], data->image->maximums[1]);
 		append_string(&command_string, temp_string, &error);
-
 	}
 	else
 	{
@@ -842,16 +900,16 @@ Works out whether time influences the field.
 int Computed_field_set_type_steerable_filter(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	double sigma, int *direction,
+	double sigma, int *angle_from_x_axis, int *angle_from_z_axis,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
-LAST MODIFIED : Mar 18 2004
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_steerable_filter with the supplied
-fields, <source_field> and <texture_coordinate_field>.  The <sigma> specifies
+fields, <source_field> and <texture_coordinate_field>.  The <radius> specifies
 half the width and height of the filter window.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
@@ -859,13 +917,13 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int depth, number_of_source_fields, return_code;
+	int i, depth, number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 	struct Computed_field_steerable_filter_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_steerable_filter);
 	if (field && source_field && texture_coordinate_field &&
-		(sigma > 0.0) && (direction[1] > 0) && (depth = source_field->number_of_components) &&
+		(sigma > 0.0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
 	{
@@ -875,7 +933,8 @@ although its cache may be lost.
 		data = (struct Computed_field_steerable_filter_type_specific_data *)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields) &&
 			ALLOCATE(data, struct Computed_field_steerable_filter_type_specific_data, 1) &&
-			ALLOCATE(data->direction, int, 2) &&
+			ALLOCATE(data->angle_from_x_axis, int, 2) &&
+			ALLOCATE(data->angle_from_z_axis, int, 2) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
 			data->image, dimension, depth, sizes, minimums, maximums) &&
@@ -891,8 +950,11 @@ although its cache may be lost.
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
 			data->sigma = sigma;
-			data->direction[0] = direction[0];
-			data->direction[1] = direction[1];
+			for (i = 0 ; i < 2 ; i++)
+			{
+				data->angle_from_x_axis[i] = angle_from_x_axis[i];
+				data->angle_from_z_axis[i] = angle_from_z_axis[i];
+			}
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
@@ -935,11 +997,11 @@ although its cache may be lost.
 int Computed_field_get_type_steerable_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	double *sigma, int **direction,
+	double *sigma, int **angle_from_x_axis, int **angle_from_z_axis,
 	int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 17 December 2003
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_steerable_filter, the
@@ -956,15 +1018,19 @@ parameters defining it are returned.
 	{
 		*dimension = data->image->dimension;
 		if (ALLOCATE(*sizes, int, *dimension)
-		        && ALLOCATE(*direction, int, 2)
+		        && ALLOCATE(*angle_from_x_axis, int, 2)
+			&& ALLOCATE(*angle_from_z_axis, int, 2)
 			&& ALLOCATE(*minimums, FE_value, *dimension)
 			&& ALLOCATE(*maximums, FE_value, *dimension))
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
 			*sigma = data->sigma;
-			(*direction)[0] = data->direction[0];
-			(*direction)[1] = data->direction[1];
+			for (i = 0; i < 2; i++)
+			{
+			        (*angle_from_x_axis)[i] = data->angle_from_x_axis[i];
+				(*angle_from_z_axis)[i] = data->angle_from_z_axis[i];
+			}
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
@@ -995,7 +1061,7 @@ parameters defining it are returned.
 static int define_Computed_field_type_steerable_filter(struct Parse_state *state,
 	void *field_void, void *computed_field_steerable_filter_package_void)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_steerable_filter (if it is not
@@ -1003,10 +1069,10 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	char *current_token;
-	FE_value *minimums, *maximums;
-	double sigma;
-	int *direction;
 	int dim = 2;
+	double sigma;
+	FE_value *minimums, *maximums;
+	int *angle_from_x_axis, *angle_from_z_axis;
 	int dimension, element_dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_steerable_filter_package
@@ -1025,12 +1091,13 @@ already) and allows its contents to be modified.
 		source_field = (struct Computed_field *)NULL;
 		texture_coordinate_field = (struct Computed_field *)NULL;
 		dimension = 0;
+		angle_from_x_axis = (int *)NULL;
+		angle_from_z_axis = (int *)NULL;
 		sizes = (int *)NULL;
 		minimums = (FE_value *)NULL;
 		maximums = (FE_value *)NULL;
 		element_dimension = 0;
 		sigma = 1.0;
-		direction = (int *)NULL;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_steerable_filter_package->computed_field_manager;
@@ -1048,7 +1115,8 @@ already) and allows its contents to be modified.
 			Computed_field_get_type_string(field))
 		{
 			return_code = Computed_field_get_type_steerable_filter(field,
-				&source_field, &texture_coordinate_field, &sigma, &direction,
+				&source_field, &texture_coordinate_field, &sigma,
+				&angle_from_x_axis, &angle_from_z_axis,
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -1068,15 +1136,18 @@ already) and allows its contents to be modified.
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
 				option_table = CREATE(Option_table)();
-				/* dimension */
-				Option_table_add_int_positive_entry(option_table, "dimension",
-					&dimension);
-				/* element_dimension */
-				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
-					&element_dimension);
-				/* direction */
+				/* angle_from_x_axis */
 				Option_table_add_int_vector_entry(option_table,
-					"direction", direction, &dim);
+					"angle_from_x_axis", angle_from_x_axis, &dim);
+				/* angle_from_z_axis */
+				Option_table_add_int_vector_entry(option_table,
+					"angle_from_z_axis", angle_from_z_axis, &dim);
+				/* dimension */
+				Option_table_add_int_positive_entry(option_table,
+				        "dimension", &dimension);
+				/* element_dimension */
+				Option_table_add_int_non_negative_entry(option_table,
+				        "element_dimension", &element_dimension);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
@@ -1086,7 +1157,7 @@ already) and allows its contents to be modified.
 				/* minimums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"minimums", minimums, &dimension);
-				/* sigma */
+				/* radius */
 				Option_table_add_double_entry(option_table,
 					"sigma", &sigma);
 				/* sizes */
@@ -1112,7 +1183,8 @@ already) and allows its contents to be modified.
 					if (return_code = Option_table_parse(option_table, state))
 					{
 						if (!(REALLOCATE(sizes, sizes, int, dimension) &&
-						        REALLOCATE(direction, direction, int, 2) &&
+						        REALLOCATE(angle_from_x_axis, angle_from_x_axis, int, 2) &&
+							REALLOCATE(angle_from_z_axis, angle_from_z_axis, int, 2) &&
 							REALLOCATE(minimums, minimums, FE_value, dimension) &&
 							REALLOCATE(maximums, maximums, FE_value, dimension)))
 						{
@@ -1132,12 +1204,15 @@ already) and allows its contents to be modified.
 			if (return_code&&state->current_token)
 			{
 				option_table = CREATE(Option_table)();
+				/* angle_from_x_axis */
+				Option_table_add_int_vector_entry(option_table,
+					"angle_from_x_axis", angle_from_x_axis, &dim);
+				/* angle_from_z_axis */
+				Option_table_add_int_vector_entry(option_table,
+					"angle_from_z_axis", angle_from_z_axis, &dim);
 				/* element_dimension */
 				Option_table_add_int_non_negative_entry(option_table, "element_dimension",
 					&element_dimension);
-				/* direction */
-				Option_table_add_int_vector_entry(option_table,
-					"direction", direction, &dim);
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
@@ -1147,7 +1222,7 @@ already) and allows its contents to be modified.
 				/* minimums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"minimums", minimums, &dimension);
-				/* sigma */
+				/* radius */
 				Option_table_add_double_entry(option_table,
 					"sigma", &sigma);
 				/* sizes */
@@ -1164,8 +1239,9 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_steerable_filter(field,
-					source_field, texture_coordinate_field, sigma, direction,dimension,
-					sizes, minimums, maximums, element_dimension,
+					source_field, texture_coordinate_field, sigma,
+					angle_from_x_axis, angle_from_z_axis,
+					dimension, sizes, minimums, maximums, element_dimension,
 					computed_field_steerable_filter_package->computed_field_manager,
 					computed_field_steerable_filter_package->root_region,
 					computed_field_steerable_filter_package->graphics_buffer_package);
@@ -1189,13 +1265,17 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&texture_coordinate_field);
 			}
+			if (angle_from_x_axis)
+			{
+				DEALLOCATE(angle_from_x_axis);
+			}
+			if (angle_from_z_axis)
+			{
+				DEALLOCATE(angle_from_z_axis);
+			}
 			if (sizes)
 			{
 				DEALLOCATE(sizes);
-			}
-			if (direction)
-			{
-				DEALLOCATE(direction);
 			}
 			if (minimums)
 			{
@@ -1222,7 +1302,7 @@ int Computed_field_register_types_steerable_filter(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
-LAST MODIFIED : 12 December 2003
+LAST MODIFIED : 28 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
