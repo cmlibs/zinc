@@ -112,6 +112,7 @@ DESCRIPTION :
 	XtAppContext application_context;
 #else /* defined (USE_XTAPP_CONTEXT) */
 /* This is the default system */
+	int special_idle_callback_pending;
 	struct Event_dispatcher_idle_callback *special_idle_callback;
 #endif /* defined (USE_XTAPP_CONTEXT) */
 };
@@ -669,6 +670,7 @@ Creates a connection to a event_dispatcher of the specified type.
 #if defined (USE_XTAPP_CONTEXT)
 		event_dispatcher->application_context = (XtAppContext)NULL;
 #else /* defined (USE_XTAPP_CONTEXT) */
+		event_dispatcher->special_idle_callback_pending = 0;
 		event_dispatcher->special_idle_callback = 
 			(struct Event_dispatcher_idle_callback *)NULL;
 #endif /* defined (USE_XTAPP_CONTEXT) */
@@ -1198,7 +1200,7 @@ DESCRIPTION :
 {
 	int return_code;
 #if ! defined (USE_XTAPP_CONTEXT)
-	int callback_code, dont_select, select_code;
+	int callback_code, select_code;
 	fd_set read_set;
 	struct timeval timeofday, timeout, *timeout_ptr;
 	struct timezone timeofdayzone;
@@ -1215,7 +1217,6 @@ DESCRIPTION :
 		XtAppProcessEvent(event_dispatcher->application_context, XtIMAll);
 		return_code = 1;
 #else /* defined (USE_XTAPP_CONTEXT) */
-		dont_select = 0;
 		return_code=1;
 		FD_ZERO(&read_set);
 		FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
@@ -1224,76 +1225,82 @@ DESCRIPTION :
 		timeout_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_timeout_callback)
 			((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_timeout_callback) *)NULL,
 			(void *)NULL, event_dispatcher->timeout_list);
-		if (idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
-			((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_idle_callback) *)NULL,
-			(void *)NULL, event_dispatcher->idle_list))
+		if (event_dispatcher->special_idle_callback_pending && event_dispatcher->special_idle_callback)
 		{
-			timeout.tv_sec = 0;
-			timeout.tv_usec = 0;
-			timeout_ptr = &timeout;
+			callback_code = (*event_dispatcher->special_idle_callback->idle_function)
+				(event_dispatcher->special_idle_callback->user_data);
+			if (callback_code == 0)
+			{
+				event_dispatcher->special_idle_callback_pending = 0;
+			}
 		}
 		else
 		{
-			/* Till the first timeout */
-			if (timeout_callback)
+			if (idle_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_idle_callback)
+				((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_idle_callback) *)NULL,
+					(void *)NULL, event_dispatcher->idle_list))
 			{
-				gettimeofday(&timeofday, &timeofdayzone);
-				if ((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
-					((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
-					(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec)))
-				{
-					/* Do it now */
-					callback_code = (*timeout_callback->timeout_function)(timeout_callback->user_data);
-					REMOVE_OBJECT_FROM_LIST(Event_dispatcher_timeout_callback)
-						(timeout_callback, event_dispatcher->timeout_list);
-					dont_select = 1;
-				}
-				else
-				{
-					timeout.tv_sec = (long)timeout_callback->timeout_s - timeofday.tv_sec;
-					if (timeout_callback->timeout_ns/1000.0 > timeofday.tv_usec)
-					{
-						timeout.tv_usec = ((long)timeout_callback->timeout_ns)/1000 - timeofday.tv_usec;
-					}
-					else
-					{
-						timeout.tv_sec--;
-						timeout.tv_usec = 1000000 + ((long)timeout_callback->timeout_ns)/1000
-							- timeofday.tv_usec;
-					}
-					timeout_ptr = &timeout;
-				}
+				timeout.tv_sec = 0;
+				timeout.tv_usec = 0;
+				timeout_ptr = &timeout;
 			}
 			else
 			{
-				/* Indefinite */
-				timeout_ptr = (struct timeval *)NULL;
+				/* Till the first timeout */
+				if (timeout_callback)
+				{
+					gettimeofday(&timeofday, &timeofdayzone);
+					if ((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
+						((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
+							(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec)))
+					{
+						timeout.tv_sec = 0;
+						timeout.tv_usec = 0;
+						timeout_ptr = &timeout;
+					}
+					else
+					{
+						timeout.tv_sec = (long)timeout_callback->timeout_s - timeofday.tv_sec;
+						if (timeout_callback->timeout_ns/1000.0 > timeofday.tv_usec)
+						{
+							timeout.tv_usec = ((long)timeout_callback->timeout_ns)/1000 - timeofday.tv_usec;
+						}
+						else
+						{
+							timeout.tv_sec--;
+							timeout.tv_usec = 1000000 + ((long)timeout_callback->timeout_ns)/1000
+								- timeofday.tv_usec;
+						}
+						timeout_ptr = &timeout;
+					}
+				}
+				else
+				{
+					/* Indefinite */
+					timeout_ptr = (struct timeval *)NULL;
+				}
 			}
-		}
-		if (!dont_select)
-		{
 			select_code = 0;
 			if (!(file_descriptor_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_file_descriptor_handler)
-				(Event_dispatcher_file_descriptor_handler_is_pending,
-				(void *)NULL, event_dispatcher->handler_list)))
+					 (Event_dispatcher_file_descriptor_handler_is_pending,
+						 (void *)NULL, event_dispatcher->handler_list)))
 			{
 				if (0 < (select_code = select(100, &read_set, NULL, NULL, timeout_ptr)))
 				{
 					/* The select leaves only those descriptors that are pending in the read set,
-					 we set the pending flag and then work through them one by one.  This makes sure
-					 that each file handler that is waiting gets an equal chance and we don't just
-					 call them directly from the iterator as any of the events could modify the list */
+						we set the pending flag and then work through them one by one.  This makes sure
+						that each file handler that is waiting gets an equal chance and we don't just
+						call them directly from the iterator as any of the events could modify the list */
 					FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
 						(Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set,
-						&read_set, event_dispatcher->handler_list);
+							&read_set, event_dispatcher->handler_list);
 				}
 			}
 			if (file_descriptor_callback)
 			{
-				if (!idle_callback && event_dispatcher->special_idle_callback)
+				if (event_dispatcher->special_idle_callback)
 				{
-					ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
-						(event_dispatcher->special_idle_callback, event_dispatcher->idle_list);
+					event_dispatcher->special_idle_callback_pending = 1;
 				}
 				/* Call the file handler then */
 				(*file_descriptor_callback->handler_function)(file_descriptor_callback->file_descriptor,
@@ -1308,9 +1315,13 @@ DESCRIPTION :
 					gettimeofday(&timeofday, &timeofdayzone);
 					if (timeout_callback &&
 						((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
-						((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
-						(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec))))
+							((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
+								(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec))))
 					{
+						if (event_dispatcher->special_idle_callback)
+						{
+							event_dispatcher->special_idle_callback_pending = 1;
+						}
 						/* Do it now */
 						callback_code = (*timeout_callback->timeout_function)(
 							timeout_callback->user_data);
@@ -1322,21 +1333,23 @@ DESCRIPTION :
 						/* Now do idle callbacks */
 						if (idle_callback)
 						{
+							ACCESS(Event_dispatcher_idle_callback)(idle_callback);
 							callback_code = (*idle_callback->idle_function)(idle_callback->user_data);
-							if (event_dispatcher->special_idle_callback &&
-								(idle_callback->idle_function != 
-								event_dispatcher->special_idle_callback->idle_function))
+							if (event_dispatcher->special_idle_callback)
 							{
-								ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
-									(event_dispatcher->special_idle_callback,
-									event_dispatcher->idle_list);
+								event_dispatcher->special_idle_callback_pending = 1;
 							}
 							if (callback_code == 0)
 							{
-								/* Error or finished so we remove it */
-								REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
-									(idle_callback, event_dispatcher->idle_list);
+								/* Error or finished so we remove it if this hasn't happened already */
+								if (IS_OBJECT_IN_LIST(Event_dispatcher_idle_callback)
+									(idle_callback, event_dispatcher->idle_list))
+								{
+									REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
+										(idle_callback, event_dispatcher->idle_list);
+								}
 							}
+							DEACCESS(Event_dispatcher_idle_callback)(&idle_callback);
 						}
 					}
 				}
