@@ -314,7 +314,7 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/mips4-64/libperlinterpreter-opt.a
 #if defined (OPTIMISED)
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/mips4-n32/libperlinterpreter-opt.a
 #else /* defined (OPTIMISED) */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/mips3-n32/libperlinterpreter-debug.a
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/mips4-n32/libperlinterpreter-opt.a
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
