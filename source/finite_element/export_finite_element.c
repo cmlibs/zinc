@@ -2197,19 +2197,27 @@ different from the last node then the header is written out.
 			{
 				/* remember the node field info */
 				group_data->last_field_node=node;
-				/* write out the single, specified field */
-				fprintf(output_file," #Fields=1\n");
-				field_data.field_number=1;
-				field_data.value_index=1;
-				field_data.output_file=output_file;
-				for_FE_field_at_node(field,write_FE_node_field_info_sub,&field_data,
-					node);
-				if (0<get_FE_field_number_of_values(field))
+				if (FE_field_is_defined_at_node(field,node))
 				{
-					/* write values for constant and indexed fields */
-					fprintf(output_file," Values :\n");
-					for_FE_field_at_node(field,write_FE_node_field_FE_field_values,
-						(void *)output_file,node);
+					/* write out the single, specified field */
+					fprintf(output_file," #Fields=1\n");
+					field_data.field_number=1;
+					field_data.value_index=1;
+					field_data.output_file=output_file;
+					for_FE_field_at_node(field,write_FE_node_field_info_sub,&field_data,
+						node);
+					if (0<get_FE_field_number_of_values(field))
+					{
+						/* write values for constant and indexed fields */
+						fprintf(output_file," Values :\n");
+						for_FE_field_at_node(field,write_FE_node_field_FE_field_values,
+							(void *)output_file,node);
+					}
+				}
+				else
+				{
+					/* no fields */
+					fprintf(output_file," #Fields=0\n");
 				}
 			}
 		}
