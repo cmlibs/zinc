@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 1 November 2004
+LAST MODIFIED : 11 March 2005
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1466,6 +1466,18 @@ LAST MODIFIED : 16 January 2003
 
 DESCRIPTION :
 Returns the integer identifier of the <node>.
+==============================================================================*/
+
+int set_FE_node_identifier(struct FE_node *node, int identifier);
+/*******************************************************************************
+LAST MODIFIED : 16 January 2003
+
+DESCRIPTION :
+Changes the identifier of <node> to <identifier>.
+Caution! Should only call for nodes that are NOT in indexed lists;
+Must wrap in LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
+node is temporarily removed from all the indexed lists it is in and re-added
+afterwards. FE_region should be the only object that needs to call this.
 ==============================================================================*/
 
 int get_FE_node_access_count(struct FE_node *node);
