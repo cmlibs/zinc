@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 
@@ -2213,7 +2213,7 @@ static void save_write_signal_file_background(const int all_channels,
 	const int number_of_samples,const short *samples,
 	void *save_write_signal_file_background_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
@@ -2262,6 +2262,7 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 				"save_write_signal_file_background.  CreateThread failed");
 #endif /* defined (WINDOWS) */
 			DEALLOCATE(save_write_signal_file_background_data);
+			/*???RC This is very dodgy - deallocating a const short */
 			DEALLOCATE(samples);
 		}
 	}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -2070,7 +2070,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 static int modify_Graphics_window_view(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Parser commands for modifying the view in the current pane of <window>,
@@ -2086,7 +2086,6 @@ view angle, interest point etc.
 	enum Scene_viewer_projection_mode projection_mode;
 	int i,number_of_components,return_code;
 	struct Graphics_window *window;
-	struct Modify_graphics_window_data *modify_graphics_window_data;
 	struct Scene_viewer *scene_viewer;
 	static struct Modifier_entry
 		projection_mode_option_table[]=
@@ -2139,332 +2138,321 @@ view angle, interest point etc.
 			{4," VIEWPORT_LEFT VIEWPORT_TOP PIXELS_PER_UNIT_X PIXELS_PER_UNIT_Y",0};
 
 	ENTER(modify_Graphics_window_view);
+	USE_PARAMETER(modify_graphics_window_data_void);
 	if (state)
 	{
-		if (modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void)
+		if (state->current_token)
 		{
-			/* Keep the handle in case we need it sometime */
-			USE_PARAMETER(modify_graphics_window_data);
-			if (state->current_token)
+			/* get defaults from scene_viewer of current pane of window */
+			if ((window=(struct Graphics_window *)window_void)&&
+				(scene_viewer=window->scene_viewer[window->current_pane])&&
+				Scene_viewer_get_lookat_parameters(scene_viewer,
+					&(eye[0]),&(eye[1]),&(eye[2]),
+					&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
+				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
+					&bottom,&top,&near,&far))
 			{
-				/* get defaults from scene_viewer of current pane of window */
-				if ((window=(struct Graphics_window *)window_void)&&
-					(scene_viewer=window->scene_viewer[window->current_pane])&&
-					Scene_viewer_get_lookat_parameters(scene_viewer,
-						&(eye[0]),&(eye[1]),&(eye[2]),
-						&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
-					Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-						&bottom,&top,&near,&far))
+				if (SCENE_VIEWER_CUSTOM==
+					Scene_viewer_get_projection_mode(scene_viewer))
 				{
-					if (SCENE_VIEWER_CUSTOM==
-						Scene_viewer_get_projection_mode(scene_viewer))
-					{
-						view_angle=0.0;
-					}
-					else
-					{
-						Scene_viewer_get_view_angle(scene_viewer,&view_angle);
-					}
-					view_angle *= (180.0/PI);
+					view_angle=0.0;
 				}
 				else
 				{
-					eye[0]=eye[1]=eye[2]=0.0;
-					lookat[0]=lookat[1]=lookat[2]=0.0;
-					up[0]=up[1]=up[2]=0.0;
-					left=right=bottom=top=0.0;
-					near=far=0.0;
-					view_angle=0.0;
-					scene_viewer=(struct Scene_viewer *)NULL;
+					Scene_viewer_get_view_angle(scene_viewer,&view_angle);
 				}
-				allow_skew_flag=0;
-				absolute_viewport_flag=0;
-				relative_viewport_flag=0;
-				custom_projection_flag=0;
-				parallel_projection_flag=0;
-				perspective_projection_flag=0;
-				number_of_components=3;
-				modelview_matrix_data.set=0;
-				ndc_placement_data.set=0;
-				photogrammetry_matrix_data.set=0;
-				projection_matrix_data.set=0;
-				viewport_coordinates_data.set=0;
-				i=0;
-				/* allow_skew */
-				(option_table[i]).to_be_modified= &allow_skew_flag;
-				i++;
-				/* clip_plane_add */
-				(option_table[i]).to_be_modified= (void *)clip_plane_add;
-				(option_table[i]).user_data= &clip_plane_add_data;
-				i++;
-				/* clip_plane_remove */
-				(option_table[i]).to_be_modified= (void *)clip_plane_remove;
-				(option_table[i]).user_data= &clip_plane_remove_data;
-				i++;
-				/* eye_point */
-				(option_table[i]).to_be_modified= eye;
-				(option_table[i]).user_data= (void *)&number_of_components;
-				i++;
-				/* far_clipping_plane */
-				(option_table[i]).to_be_modified= &far;
-				i++;
-				/* interest_point */
-				(option_table[i]).to_be_modified= lookat;
-				(option_table[i]).user_data= (void *)&number_of_components;
-				i++;
-				/* modelview_matrix */
-				(option_table[i]).to_be_modified= (void *)modelview_matrix;
-				(option_table[i]).user_data= &modelview_matrix_data;
-				i++;
-				/* ndc_placement (normalised device coordinate placement) */
-				(option_table[i]).to_be_modified= (void *)ndc_placement;
-				(option_table[i]).user_data= &ndc_placement_data;
-				i++;
-				/* near_clipping_plane */
-				(option_table[i]).to_be_modified= &near;
-				i++;
-				/* photogrammetry_matrix */
-				(option_table[i]).to_be_modified= (void *)photogrammetry_matrix;
-				(option_table[i]).user_data= &photogrammetry_matrix_data;
-				i++;
-				/* projection_matrix */
-				(option_table[i]).to_be_modified= (void *)projection_matrix;
-				(option_table[i]).user_data= &projection_matrix_data;
-				i++;
-				/* projection mode: custom/parallel/perspective */
-				(projection_mode_option_table[0]).to_be_modified=
-					&custom_projection_flag;
-				(projection_mode_option_table[1]).to_be_modified=
-					&parallel_projection_flag;
-				(projection_mode_option_table[2]).to_be_modified=
-					&perspective_projection_flag;
-				(option_table[i]).user_data=projection_mode_option_table;
-				i++;
-				/* up_vector */
-				(option_table[i]).to_be_modified= up;
-				(option_table[i]).user_data= (void *)&number_of_components;
-				i++;
-				/* viewport_coordinates */
-				(option_table[i]).to_be_modified= (void *)viewport_coordinates;
-				(option_table[i]).user_data= &viewport_coordinates_data;
-				i++;
-				/* view_angle */
-				(option_table[i]).to_be_modified= &view_angle;
-				i++;
-				/* viewport mode: absolute_viewport/relative_viewport */
-				(viewport_mode_option_table[0]).to_be_modified= &absolute_viewport_flag;
-				(viewport_mode_option_table[1]).to_be_modified= &relative_viewport_flag;
-				(option_table[i]).user_data=viewport_mode_option_table;
-				i++;
-				if (return_code=process_multiple_options(state,option_table))
+				view_angle *= (180.0/PI);
+			}
+			else
+			{
+				eye[0]=eye[1]=eye[2]=0.0;
+				lookat[0]=lookat[1]=lookat[2]=0.0;
+				up[0]=up[1]=up[2]=0.0;
+				left=right=bottom=top=0.0;
+				near=far=0.0;
+				view_angle=0.0;
+				scene_viewer=(struct Scene_viewer *)NULL;
+			}
+			allow_skew_flag=0;
+			absolute_viewport_flag=0;
+			relative_viewport_flag=0;
+			custom_projection_flag=0;
+			parallel_projection_flag=0;
+			perspective_projection_flag=0;
+			number_of_components=3;
+			modelview_matrix_data.set=0;
+			ndc_placement_data.set=0;
+			photogrammetry_matrix_data.set=0;
+			projection_matrix_data.set=0;
+			viewport_coordinates_data.set=0;
+			i=0;
+			/* allow_skew */
+			(option_table[i]).to_be_modified= &allow_skew_flag;
+			i++;
+			/* clip_plane_add */
+			(option_table[i]).to_be_modified= (void *)clip_plane_add;
+			(option_table[i]).user_data= &clip_plane_add_data;
+			i++;
+			/* clip_plane_remove */
+			(option_table[i]).to_be_modified= (void *)clip_plane_remove;
+			(option_table[i]).user_data= &clip_plane_remove_data;
+			i++;
+			/* eye_point */
+			(option_table[i]).to_be_modified= eye;
+			(option_table[i]).user_data= (void *)&number_of_components;
+			i++;
+			/* far_clipping_plane */
+			(option_table[i]).to_be_modified= &far;
+			i++;
+			/* interest_point */
+			(option_table[i]).to_be_modified= lookat;
+			(option_table[i]).user_data= (void *)&number_of_components;
+			i++;
+			/* modelview_matrix */
+			(option_table[i]).to_be_modified= (void *)modelview_matrix;
+			(option_table[i]).user_data= &modelview_matrix_data;
+			i++;
+			/* ndc_placement (normalised device coordinate placement) */
+			(option_table[i]).to_be_modified= (void *)ndc_placement;
+			(option_table[i]).user_data= &ndc_placement_data;
+			i++;
+			/* near_clipping_plane */
+			(option_table[i]).to_be_modified= &near;
+			i++;
+			/* photogrammetry_matrix */
+			(option_table[i]).to_be_modified= (void *)photogrammetry_matrix;
+			(option_table[i]).user_data= &photogrammetry_matrix_data;
+			i++;
+			/* projection_matrix */
+			(option_table[i]).to_be_modified= (void *)projection_matrix;
+			(option_table[i]).user_data= &projection_matrix_data;
+			i++;
+			/* projection mode: custom/parallel/perspective */
+			(projection_mode_option_table[0]).to_be_modified=
+				&custom_projection_flag;
+			(projection_mode_option_table[1]).to_be_modified=
+				&parallel_projection_flag;
+			(projection_mode_option_table[2]).to_be_modified=
+				&perspective_projection_flag;
+			(option_table[i]).user_data=projection_mode_option_table;
+			i++;
+			/* up_vector */
+			(option_table[i]).to_be_modified= up;
+			(option_table[i]).user_data= (void *)&number_of_components;
+			i++;
+			/* viewport_coordinates */
+			(option_table[i]).to_be_modified= (void *)viewport_coordinates;
+			(option_table[i]).user_data= &viewport_coordinates_data;
+			i++;
+			/* view_angle */
+			(option_table[i]).to_be_modified= &view_angle;
+			i++;
+			/* viewport mode: absolute_viewport/relative_viewport */
+			(viewport_mode_option_table[0]).to_be_modified= &absolute_viewport_flag;
+			(viewport_mode_option_table[1]).to_be_modified= &relative_viewport_flag;
+			(option_table[i]).user_data=viewport_mode_option_table;
+			i++;
+			if (return_code=process_multiple_options(state,option_table))
+			{
+				if (absolute_viewport_flag&&relative_viewport_flag)
 				{
-					if (absolute_viewport_flag&&relative_viewport_flag)
+					display_message(WARNING_MESSAGE,
+						"Only one of absolute_viewport/relative_viewport");
+					absolute_viewport_flag=0;
+					relative_viewport_flag=0;
+				}
+				if (1<(custom_projection_flag+parallel_projection_flag+
+					perspective_projection_flag))
+				{
+					display_message(WARNING_MESSAGE,
+						"Only one of parallel/perspective/custom");
+					custom_projection_flag=0;
+					parallel_projection_flag=0;
+					perspective_projection_flag=0;
+				}
+				if (photogrammetry_matrix_data.set&&
+					(modelview_matrix_data.set || projection_matrix_data.set))
+				{
+					display_message(WARNING_MESSAGE,"photogrammetry_matrix "
+						"may not be used with modelview_matrix or projection_matrix");
+					photogrammetry_matrix_data.set=0;
+				}
+				if (scene_viewer)
+				{
+					if (parallel_projection_flag)
+					{
+						Graphics_window_set_projection_mode(window,window->current_pane,
+							SCENE_VIEWER_PARALLEL);
+					}
+					if (perspective_projection_flag)
+					{
+						Graphics_window_set_projection_mode(window,window->current_pane,
+							SCENE_VIEWER_PERSPECTIVE);
+					}
+					if (custom_projection_flag)
+					{
+						Graphics_window_set_projection_mode(window,window->current_pane,
+							SCENE_VIEWER_CUSTOM);
+					}
+					projection_mode=
+						Graphics_window_get_projection_mode(window,window->current_pane);
+					/* must set viewing volume before view_angle otherwise view_angle
+						 is overwritten */
+					Scene_viewer_set_viewing_volume(scene_viewer,left,right,bottom,top,
+						near,far);
+					if (allow_skew_flag)
+					{
+						Scene_viewer_set_lookat_parameters(scene_viewer,
+							eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
+							up[0],up[1],up[2]);
+					}
+					else
+					{
+						Scene_viewer_set_lookat_parameters_non_skew(scene_viewer,
+							eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
+							up[0],up[1],up[2]);
+					}
+					/* must set view angle after lookat parameters */
+					if ((0.0<view_angle)&&(view_angle<180.0))
+					{
+						Scene_viewer_set_view_angle(scene_viewer,view_angle*(PI/180.0));
+					}
+					else
 					{
 						display_message(WARNING_MESSAGE,
-							"Only one of absolute_viewport/relative_viewport");
-						absolute_viewport_flag=0;
-						relative_viewport_flag=0;
+							"View angle should be between 0 and 180 degrees.");
 					}
-					if (1<(custom_projection_flag+parallel_projection_flag+
-						perspective_projection_flag))
+					if (absolute_viewport_flag)
 					{
-						display_message(WARNING_MESSAGE,
-							"Only one of parallel/perspective/custom");
-						custom_projection_flag=0;
-						parallel_projection_flag=0;
-						perspective_projection_flag=0;
+						Scene_viewer_set_viewport_mode(scene_viewer,
+							SCENE_VIEWER_ABSOLUTE_VIEWPORT);
 					}
-					if (photogrammetry_matrix_data.set&&
-						(modelview_matrix_data.set || projection_matrix_data.set))
+					if (relative_viewport_flag)
 					{
-						display_message(WARNING_MESSAGE,"photogrammetry_matrix "
-							"may not be used with modelview_matrix or projection_matrix");
-						photogrammetry_matrix_data.set=0;
+						Scene_viewer_set_viewport_mode(scene_viewer,
+							SCENE_VIEWER_RELATIVE_VIEWPORT);
 					}
-					if (scene_viewer)
+					/*???RC should have checks on whether you can set these for the
+						current layout_mode */
+					if (modelview_matrix_data.set)
 					{
-						if (parallel_projection_flag)
+						if (SCENE_VIEWER_CUSTOM==projection_mode)
 						{
-							Graphics_window_set_projection_mode(window,window->current_pane,
-								SCENE_VIEWER_PARALLEL);
-						}
-						if (perspective_projection_flag)
-						{
-							Graphics_window_set_projection_mode(window,window->current_pane,
-								SCENE_VIEWER_PERSPECTIVE);
-						}
-						if (custom_projection_flag)
-						{
-							Graphics_window_set_projection_mode(window,window->current_pane,
-								SCENE_VIEWER_CUSTOM);
-						}
-						projection_mode=
-							Graphics_window_get_projection_mode(window,window->current_pane);
-						/* must set viewing volume before view_angle otherwise view_angle
-							 is overwritten */
-						Scene_viewer_set_viewing_volume(scene_viewer,left,right,bottom,top,
-							near,far);
-						if (allow_skew_flag)
-						{
-							Scene_viewer_set_lookat_parameters(scene_viewer,
-								eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
-								up[0],up[1],up[2]);
-						}
-						else
-						{
-							Scene_viewer_set_lookat_parameters_non_skew(scene_viewer,
-								eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
-								up[0],up[1],up[2]);
-						}
-						/* must set view angle after lookat parameters */
-						if ((0.0<view_angle)&&(view_angle<180.0))
-						{
-							Scene_viewer_set_view_angle(scene_viewer,view_angle*(PI/180.0));
+							Scene_viewer_set_modelview_matrix(scene_viewer,
+								modelview_matrix);
 						}
 						else
 						{
 							display_message(WARNING_MESSAGE,
-								"View angle should be between 0 and 180 degrees.");
+								"modelview_matrix may only be used with CUSTOM projection");
 						}
-						if (absolute_viewport_flag)
+					}
+					/* must set ndc_placement before photogrammetry_matrix */
+					if (ndc_placement_data.set)
+					{
+						Scene_viewer_set_NDC_info(scene_viewer,ndc_placement[0],
+							ndc_placement[1],ndc_placement[2],ndc_placement[3]);
+					}
+					if (projection_matrix_data.set)
+					{
+						if (SCENE_VIEWER_CUSTOM==projection_mode)
 						{
-							Scene_viewer_set_viewport_mode(scene_viewer,
-								SCENE_VIEWER_ABSOLUTE_VIEWPORT);
+							Scene_viewer_set_projection_matrix(scene_viewer,
+								projection_matrix);
 						}
-						if (relative_viewport_flag)
+						else
 						{
-							Scene_viewer_set_viewport_mode(scene_viewer,
-								SCENE_VIEWER_RELATIVE_VIEWPORT);
+							display_message(WARNING_MESSAGE,
+								"projection_matrix may only be used with CUSTOM projection");
 						}
-						/*???RC should have checks on whether you can set these for the
-							current layout_mode */
-						if (modelview_matrix_data.set)
+					}
+					if (photogrammetry_matrix_data.set)
+					{
+						if (SCENE_VIEWER_CUSTOM==projection_mode)
 						{
-							if (SCENE_VIEWER_CUSTOM==projection_mode)
+#if defined (MIRAGE)
+							double NDC_left,NDC_bottom,NDC_top,NDC_width,NDC_height;
+
+							/* photogrammetry_matrix must be after ndc_placement viewing
+								 volume since it uses the latest NDC, near and far values */
+							if (Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
+								&bottom,&top,&near,&far)&&Scene_viewer_get_NDC_info(
+									scene_viewer,&NDC_left,&NDC_top,&NDC_width,&NDC_height))
 							{
+								NDC_bottom=NDC_top-NDC_height;
+								photogrammetry_to_graphics_projection(photogrammetry_matrix,
+									near,far,NDC_left,NDC_bottom,NDC_width,NDC_height,
+									modelview_matrix,projection_matrix,eye,lookat,up);
 								Scene_viewer_set_modelview_matrix(scene_viewer,
 									modelview_matrix);
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE,
-									"modelview_matrix may only be used with CUSTOM projection");
-							}
-						}
-						/* must set ndc_placement before photogrammetry_matrix */
-						if (ndc_placement_data.set)
-						{
-							Scene_viewer_set_NDC_info(scene_viewer,ndc_placement[0],
-								ndc_placement[1],ndc_placement[2],ndc_placement[3]);
-						}
-						if (projection_matrix_data.set)
-						{
-							if (SCENE_VIEWER_CUSTOM==projection_mode)
-							{
+								Scene_viewer_set_lookat_parameters(scene_viewer,
+									eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
+									up[0],up[1],up[2]);
+								Scene_viewer_set_NDC_info(scene_viewer,
+									NDC_left,NDC_top,NDC_width,NDC_height);
 								Scene_viewer_set_projection_matrix(scene_viewer,
 									projection_matrix);
 							}
 							else
 							{
-								display_message(WARNING_MESSAGE,
-									"projection_matrix may only be used with CUSTOM projection");
+								display_message(ERROR_MESSAGE,"modify_Graphics_window_view.  "
+									"Could not apply photogrammetry_matrix");
+								return_code=0;
 							}
-						}
-						if (photogrammetry_matrix_data.set)
-						{
-							if (SCENE_VIEWER_CUSTOM==projection_mode)
-							{
-#if defined (MIRAGE)
-								double NDC_left,NDC_bottom,NDC_top,NDC_width,NDC_height;
-
-								/* photogrammetry_matrix must be after ndc_placement viewing
-									 volume since it uses the latest NDC, near and far values */
-								if (Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-									&bottom,&top,&near,&far)&&Scene_viewer_get_NDC_info(
-										scene_viewer,&NDC_left,&NDC_top,&NDC_width,&NDC_height))
-								{
-									NDC_bottom=NDC_top-NDC_height;
-									photogrammetry_to_graphics_projection(photogrammetry_matrix,
-										near,far,NDC_left,NDC_bottom,NDC_width,NDC_height,
-										modelview_matrix,projection_matrix,eye,lookat,up);
-									Scene_viewer_set_modelview_matrix(scene_viewer,
-										modelview_matrix);
-									Scene_viewer_set_lookat_parameters(scene_viewer,
-										eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
-										up[0],up[1],up[2]);
-									Scene_viewer_set_NDC_info(scene_viewer,
-										NDC_left,NDC_top,NDC_width,NDC_height);
-									Scene_viewer_set_projection_matrix(scene_viewer,
-										projection_matrix);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"modify_Graphics_window_view.  "
-										"Could not apply photogrammetry_matrix");
-									return_code=0;
-								}
 #else /* defined (MIRAGE) */
-								display_message(INFORMATION_MESSAGE,
-									"photogrammetry_matrix is not available\n");
+							display_message(INFORMATION_MESSAGE,
+								"photogrammetry_matrix is not available\n");
 #endif /* defined (MIRAGE) */
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE,
-							 "photogrammetry_matrix may only be used with CUSTOM projection");
-							}
 						}
-						if (viewport_coordinates_data.set)
+						else
 						{
-							Scene_viewer_set_viewport_info(scene_viewer,
-								viewport_coordinates[0],viewport_coordinates[1],
-								viewport_coordinates[2],viewport_coordinates[3]);
+							display_message(WARNING_MESSAGE,
+								"photogrammetry_matrix may only be used with CUSTOM projection");
 						}
-						if (clip_plane_remove_data.set)
-						{
-							Scene_viewer_remove_clip_plane(scene_viewer,
-								clip_plane_remove[0], clip_plane_remove[1], clip_plane_remove[2],
-								clip_plane_remove[3]);
-						}
-						if (clip_plane_add_data.set)
-						{
-							Scene_viewer_add_clip_plane(scene_viewer,
-								clip_plane_add[0], clip_plane_add[1], clip_plane_add[2],
-								clip_plane_add[3]);
-						}
-						/* redraw the Scene_viewer */
-						Scene_viewer_redraw_now(scene_viewer);
-						/* allow changes to flow to tied panes */
-						Graphics_window_view_changed(window,window->current_pane);
 					}
-					else
+					if (viewport_coordinates_data.set)
 					{
-						display_message(ERROR_MESSAGE,
-							"modify_Graphics_window_view.  Missing or invalid scene_viewer");
-						display_parse_state_location(state);
-						return_code=0;
+						Scene_viewer_set_viewport_info(scene_viewer,
+							viewport_coordinates[0],viewport_coordinates[1],
+							viewport_coordinates[2],viewport_coordinates[3]);
 					}
+					if (clip_plane_remove_data.set)
+					{
+						Scene_viewer_remove_clip_plane(scene_viewer,
+							clip_plane_remove[0], clip_plane_remove[1], clip_plane_remove[2],
+							clip_plane_remove[3]);
+					}
+					if (clip_plane_add_data.set)
+					{
+						Scene_viewer_add_clip_plane(scene_viewer,
+							clip_plane_add[0], clip_plane_add[1], clip_plane_add[2],
+							clip_plane_add[3]);
+					}
+					/* redraw the Scene_viewer */
+					Scene_viewer_redraw_now(scene_viewer);
+					/* allow changes to flow to tied panes */
+					Graphics_window_view_changed(window,window->current_pane);
 				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"Missing window view modifications");
-				display_parse_state_location(state);
-				return_code=0;
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"modify_Graphics_window_view.  Missing or invalid scene_viewer");
+					display_parse_state_location(state);
+					return_code=0;
+				}
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"modify_Graphics_window_view.  Missing modify_graphics_window_data");
+			display_message(WARNING_MESSAGE,"Missing window view modifications");
+			display_parse_state_location(state);
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"modify_Graphics_window_view.  Missing state");
+			"modify_Graphics_window_view.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;

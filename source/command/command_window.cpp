@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command_window.c
 
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Management routines for the main command window.
@@ -96,8 +96,7 @@ so that the bits can operate as independent flags.
 {
 	OUTFILE_INVALID = 0,
 	OUTFILE_OUTPUT = 1,
-	OUTFILE_INPUT = 2,
-	OUTFILE_OUTPUT_AND_INPUT = 3
+	OUTFILE_INPUT = 2
 }; /* enum Command_window_outfile_mode */
 
 struct Command_window
@@ -1067,7 +1066,7 @@ printf("XA_CMGUI_RESPONSE changed\n");
 static int modify_Command_window_out_file_open(struct Parse_state *state,
 	void *dummy,void *command_window_void)
 /*******************************************************************************
-LAST MODIFIED : 11 November 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1102,7 +1101,8 @@ DESCRIPTION :
 			{
 			   if (input && output)
 				{
-					command_window->out_file_mode = OUTFILE_OUTPUT_AND_INPUT;
+					command_window->out_file_mode =
+						(enum Command_window_outfile_mode)(OUTFILE_INPUT & OUTFILE_OUTPUT);
 				}
 				else if (input)
 				{

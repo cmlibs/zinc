@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -8713,7 +8713,7 @@ editor at a time.  This implementation may be changed later.
 static int gfx_create_tracking_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Executes a GFX CREATE TRACKING_EDITOR command.
@@ -8721,10 +8721,15 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 {
 	char *current_token;
 	int return_code;
+#if defined (MIRAGE)
 	struct Cmiss_command_data *command_data;
+#endif /* defined (MIRAGE) */
 
 	ENTER(gfx_create_tracking_editor);
 	USE_PARAMETER(dummy_to_be_modified);
+#if !defined (MIRAGE)
+	USE_PARAMETER(command_data_void);
+#endif /* !defined (MIRAGE) */
 	if (state)
 	{
 		if (current_token=state->current_token)
@@ -8743,9 +8748,9 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 		}
 		else
 		{
+#if defined (MIRAGE)
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
-#if defined (MIRAGE)
 				return_code=open_tracking_editor_dialog(
 					&(command_data->tracking_editor_dialog),
 					tracking_editor_close_cb,
@@ -8779,10 +8784,6 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 					command_data->texture_manager,
 					command_data->interactive_tool_manager,
 					command_data->user_interface);
-#else /* defined (MIRAGE) */
-				display_message(ERROR_MESSAGE,"Tracking editor is not available");
-				return_code=0;
-#endif /* defined (MIRAGE) */
 			}
 			else
 			{
@@ -8790,6 +8791,10 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 					"gfx_create_tracking_editor.  Missing command_data");
 				return_code=0;
 			}
+#else /* defined (MIRAGE) */
+			display_message(ERROR_MESSAGE,"Tracking editor is not available");
+			return_code=0;
+#endif /* defined (MIRAGE) */
 		}
 	}
 	else
@@ -10299,7 +10304,7 @@ Executes a DETACH command.
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Executes a GFX CREATE command.
@@ -10307,7 +10312,9 @@ Executes a GFX CREATE command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
+#if defined (MIRAGE)
 	struct Create_emoter_slider_data create_emoter_slider_data;
+#endif /* defined (MIRAGE) */
 	struct Create_node_group_slider_data create_node_group_slider_data;
 	struct Option_table *option_table;
 
@@ -10342,6 +10349,37 @@ Executes a GFX CREATE command.
 				{
 					create_node_group_slider_data.parent=(Widget)NULL;
 				}
+
+				option_table=CREATE(Option_table)();
+				Option_table_add_entry(option_table,"annotation",NULL,
+					command_data_void,gfx_create_annotation);
+				Option_table_add_entry(option_table,"axes",NULL,
+					command_data_void,gfx_create_axes);
+				Option_table_add_entry(option_table,"cmiss_connection",NULL,
+					command_data_void,gfx_create_cmiss);
+				Option_table_add_entry(option_table,"colour_bar",NULL,
+					command_data_void,gfx_create_colour_bar);
+				Option_table_add_entry(option_table,"curve_editor",NULL,
+					command_data_void,gfx_create_control_curve_editor);
+				Option_table_add_entry(option_table,"cylinders",NULL,
+					command_data_void,gfx_create_cylinders);
+				Option_table_add_entry(option_table,"data_viewer",NULL,
+					command_data_void,gfx_create_data_viewer);
+				Option_table_add_entry(option_table,"data_points",/*use_data*/(void *)1,
+					command_data_void,gfx_create_node_points);
+				Option_table_add_entry(option_table,"data_sync",NULL,
+					command_data_void,gfx_create_data_sync);
+				Option_table_add_entry(option_table,"dgroup",NULL,
+					command_data_void,gfx_create_data_group);
+				Option_table_add_entry(option_table,"egroup",NULL,
+					command_data_void,gfx_create_element_group);
+				Option_table_add_entry(option_table,"element_creator",NULL,
+					command_data_void,gfx_create_element_creator);
+				Option_table_add_entry(option_table,"element_point_viewer",NULL,
+					command_data_void,gfx_create_element_point_viewer);
+				Option_table_add_entry(option_table,"element_points",NULL,
+					command_data_void,gfx_create_element_points);
+#if defined (MIRAGE)
 				create_emoter_slider_data.execute_command=command_data->execute_command;
 				create_emoter_slider_data.fe_field_manager=
 					command_data->fe_field_manager;
@@ -10382,37 +10420,6 @@ Executes a GFX CREATE command.
 				create_emoter_slider_data.command_data=command_data;
 					/*???DB.  command_data shouldn't leave this module */
 #endif /* defined (SCENE_IN_EMOTER) */
-
-				option_table=CREATE(Option_table)();
-				Option_table_add_entry(option_table,"annotation",NULL,
-					command_data_void,gfx_create_annotation);
-				Option_table_add_entry(option_table,"axes",NULL,
-					command_data_void,gfx_create_axes);
-				Option_table_add_entry(option_table,"cmiss_connection",NULL,
-					command_data_void,gfx_create_cmiss);
-				Option_table_add_entry(option_table,"colour_bar",NULL,
-					command_data_void,gfx_create_colour_bar);
-				Option_table_add_entry(option_table,"curve_editor",NULL,
-					command_data_void,gfx_create_control_curve_editor);
-				Option_table_add_entry(option_table,"cylinders",NULL,
-					command_data_void,gfx_create_cylinders);
-				Option_table_add_entry(option_table,"data_viewer",NULL,
-					command_data_void,gfx_create_data_viewer);
-				Option_table_add_entry(option_table,"data_points",/*use_data*/(void *)1,
-					command_data_void,gfx_create_node_points);
-				Option_table_add_entry(option_table,"data_sync",NULL,
-					command_data_void,gfx_create_data_sync);
-				Option_table_add_entry(option_table,"dgroup",NULL,
-					command_data_void,gfx_create_data_group);
-				Option_table_add_entry(option_table,"egroup",NULL,
-					command_data_void,gfx_create_element_group);
-				Option_table_add_entry(option_table,"element_creator",NULL,
-					command_data_void,gfx_create_element_creator);
-				Option_table_add_entry(option_table,"element_point_viewer",NULL,
-					command_data_void,gfx_create_element_point_viewer);
-				Option_table_add_entry(option_table,"element_points",NULL,
-					command_data_void,gfx_create_element_points);
-#if defined (MIRAGE)
 				Option_table_add_entry(option_table,"emoter",NULL,
 					(void *)&create_emoter_slider_data,gfx_create_emoter);
 				Option_table_add_entry(option_table,"em_sliders",NULL,
