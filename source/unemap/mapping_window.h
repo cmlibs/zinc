@@ -128,9 +128,7 @@ The mapping window object.
 	struct Mapping_window **address,**current_mapping_window_address;
 	char *open;
 	struct Time_object *potential_time_object;
-#if defined (MOTIF)
-	Widget time_editor_dialog;
-#endif /* defined (MOTIF) */
+	struct Time_editor_dialog_struct *time_editor_dialog;
 #if defined (UNEMAP_USE_3D)
 #if defined (MOTIF)
 	Widget map3d_interactive_tool_form;	
@@ -267,4 +265,21 @@ int Mapping_window_set_potential_time_object(struct Mapping_window *mapping,
 LAST MODIFIED : 15 October 1998
 DESCRIPTION :
 ==============================================================================*/
+
+int mapping_window_kill_time_keeper_editor(struct Mapping_window *mapping);
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+If the <mapping> has a time keeper, stop it and destroy it's editor widget.
+==============================================================================*/
+
+int mapping_window_stop_time_keeper(struct Mapping_window *mapping);
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+If the <mapping> has a time keeper, stop it .
+==============================================================================*/
+
 #endif /* !defined (MAPPING_WINDOW_H) */

@@ -2197,7 +2197,7 @@ static int set_up_time_keeper_after_read(struct Analysis_work_area *analysis)
 LAST MODIFIED : 28 November 2001
 
 DESCRIPTION :
-After a signal (or EDF or similar) file is loaded, sets up the timekeeper
+After a signal (or EDF or similar) file is loaded, sets up the time_keeper
 to be consistant with it.
 ==============================================================================*/
 {
@@ -2259,7 +2259,9 @@ signal type file
 	map=(struct Map *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
 	if(analysis)
-	{
+	{	
+		/*don't want to animate during load*/
+		mapping_window_stop_time_keeper(analysis->mapping_window);
 		return_code=1;
 #if defined (UNEMAP_USE_3D)
 		/* need to unselect nodes, as selecting them accesses them */
@@ -2324,7 +2326,7 @@ signal type file
 			}
 		}
 		if (analysis->mapping_window)
-		{
+		{		
 			XtSetSensitive(analysis->mapping_window->animate_button,False);
 			if (map=analysis->mapping_window->map)
 			{			
@@ -3098,7 +3100,7 @@ Sets up the analysis work area for analysing a set of signals.
 			}
 		}
 		update_analysis_window_menu(analysis->window);
-		update_mapping_window_menu(analysis->mapping_window);
+		update_mapping_window_menu(analysis->mapping_window);		
 		/* ensure projection_type matches region type */
 		ensure_projection_type_matches_region_type(analysis);
 		/* update the drawing areas */
@@ -3123,6 +3125,7 @@ Sets up the analysis work area for analysing a set of signals.
 		}
 #endif /* defined (UNEMAP_USE_3D) */		
 		set_up_time_keeper_after_read(analysis);
+		mapping_window_set_animation_buttons(analysis->mapping_window);
 	}
 	else
 	{
@@ -4110,7 +4113,7 @@ signals.
 				}	
 				trace_change_rig(analysis->trace);		
 				update_analysis_window_menu(analysis->window);
-				update_mapping_window_menu(analysis->mapping_window);		 
+				update_mapping_window_menu(analysis->mapping_window);					
 				/* update the drawing areas */
 				update_mapping_drawing_area(analysis->mapping_window,2);
 				update_mapping_colour_or_auxili(analysis->mapping_window);
@@ -4153,6 +4156,7 @@ signals.
 				/*set the time keeper to the new current time. Important to keep any */
 				/*movie player in sync */				
 				set_up_time_keeper_after_read(analysis);
+				mapping_window_set_animation_buttons(analysis->mapping_window);
 			}
 			else
 			{
@@ -4802,7 +4806,7 @@ for analysing the signals.
 				}
 			}
 			update_analysis_window_menu(analysis->window);
-			update_mapping_window_menu(analysis->mapping_window);
+			update_mapping_window_menu(analysis->mapping_window);			
 			/* ensure projection_type matches region type */
 			ensure_projection_type_matches_region_type(analysis);
 			/* update the drawing areas */
@@ -4828,7 +4832,8 @@ for analysing the signals.
 #endif /* defined (UNEMAP_USE_3D) */
 			/*set the time keeper to the new current time. Important to keep any */
 			/*movie player in sync */
-			set_up_time_keeper_after_read(analysis);		
+			set_up_time_keeper_after_read(analysis);
+			mapping_window_set_animation_buttons(analysis->mapping_window);
 		}/* if(return_code) */
 	}
 	else

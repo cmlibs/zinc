@@ -129,7 +129,7 @@ static void mapping_window_update_time_limits(struct Mapping_window *mapping)
 LAST MODIFIED : 30 April 1999
 
 DESCRIPTION :
-Sets the minimum and maximum of the timekeeper to relate to the current map
+Sets the minimum and maximum of the time_keeper to relate to the current map
 ==============================================================================*/
 {
 	struct Map *map;
@@ -383,6 +383,66 @@ of frames, map dialog information, etc. and set <recalculate>
 	return(return_code);
 }/* update_movie_frames_information */
 
+int mapping_window_stop_time_keeper(struct Mapping_window *mapping)
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+If the <mapping> has a time keeper, stop it .
+==============================================================================*/
+{
+	int return_code;
+	struct Time_keeper *time_keeper;
+
+	ENTER(mapping_window_stop_time_keeper);
+	time_keeper=(struct Time_keeper *)NULL;
+	return_code=0;
+	if(mapping)
+	{
+		return_code=1;
+	
+		/*stop the time keeper and get rid of the editor widget*/
+		if((mapping->potential_time_object)&&
+			(time_keeper=Time_object_get_time_keeper(mapping->potential_time_object)))
+		{
+			Time_keeper_stop(time_keeper);						
+		}				
+	}
+	LEAVE;
+	return(return_code);
+}/* mapping_window_stop_time_keeper */
+
+int mapping_window_kill_time_keeper_editor(struct Mapping_window *mapping)
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+If the <mapping> has a time keeper, stop it and destroy it's editor widget.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(mapping_window_kill_time_keeper_editor);	
+	if(mapping)
+	{
+		return_code=1;
+		if(mapping->time_editor_dialog)
+		{
+			/*stop the time keeper and get rid of the editor widget*/
+			mapping_window_stop_time_keeper(mapping);			
+			time_editor_dialog_destroy(mapping->time_editor_dialog);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"mapping_window_kill_time_keeper_editor. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* mapping_window_kill_time_keeper_editor */
+
 static void update_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
@@ -569,9 +629,13 @@ necessary.
 			}
 		}
 		if (map->interpolation_type!=interpolation_type)
-		{
+		{		
+			/*time keeper editor may now be invalid, eg when moving from direct to*/
+			/* bicubic maps, so get rid of it ??JW may wish to decied to leave it for some */
+			/*transitions of interpolation_type and map->type*/
+			mapping_window_kill_time_keeper_editor(mapping);					
 			map->interpolation_type=interpolation_type;
-			map_settings_changed=1;
+			map_settings_changed=1;			
 			if (recalculate<2)
 			{
 				recalculate=2;
@@ -948,7 +1012,7 @@ necessary.
 				{				
 					update_movie_frames_information(mapping,&recalculate,
 						&map_settings_changed);					
-					/*the time can have changed so update the timekeeper*/
+					/*the time can have changed so update the time_keeper*/
 					time_keeper=Time_object_get_time_keeper(mapping->potential_time_object);
 					Time_keeper_request_new_time(time_keeper,map->start_time);					
 				}break; /*case BICUBIC_INTERPOLATION:*/
@@ -1011,7 +1075,7 @@ necessary.
 			ensure_map_projection_type_matches_region_type(map);
 			update_mapping_drawing_area(mapping,recalculate);
 			update_mapping_colour_or_auxili(mapping);
-			mapping_window_update_time_limits(mapping);
+			mapping_window_update_time_limits(mapping);			
 		}
 		if (widget==map_dialog->ok_button)
 		{
@@ -1620,8 +1684,7 @@ Starts the activation map animation.
 								*(map->start_search_interval));
 					} break;
 				}
-				bring_up_time_editor_dialog(
-					&(mapping->time_editor_dialog),
+				bring_up_time_editor_dialog(&mapping->time_editor_dialog,
 					mapping->user_interface->application_shell,
 					time_keeper, mapping->user_interface);
 				Time_keeper_play(time_keeper, TIME_KEEPER_PLAY_FORWARD);
@@ -3085,8 +3148,9 @@ Sets the animation buttons of the mapping window based upon map information
 {
 	int return_code;
 	struct Map *map;
-
+	
 	ENTER(mapping_window_set_animation_buttons);
+	return_code=0;
 	if(mapping)
 	{
 		return_code=1;
@@ -3109,15 +3173,11 @@ Sets the animation buttons of the mapping window based upon map information
 			XtSetSensitive(mapping->animate_button,False);
 			XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 			XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
-			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);	
+			/*stop the time keeper and get rid of the editor widget*/
+			mapping_window_kill_time_keeper_editor(mapping);
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"mapping_window_set_animation_buttons.  Invalid argument(s)");
-		return_code=0;
-	}	
 	LEAVE;
 	return (return_code);
 } /* mapping_window_set_animation_buttons */
@@ -4729,8 +4789,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->region_pull_down_menu=(Widget)NULL;
 				mapping->number_of_regions=0;
 				mapping->regions=(Widget *)NULL;
-				mapping->potential_time_object=(struct Time_object *)NULL;
-				mapping->time_editor_dialog = (Widget)NULL;
+				mapping->potential_time_object=(struct Time_object *)NULL;	
 				mapping->print_button=(Widget)NULL;
 				(mapping->print_menu).postscript_button=(Widget)NULL;
 				(mapping->print_menu).rgb_button=(Widget)NULL;
@@ -4748,6 +4807,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->interactive_toolbar_widget=(Widget)NULL;
 				mapping->map3d_viewing_form=(Widget)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
+				mapping->time_editor_dialog = (struct Time_editor_dialog_struct *)NULL;
 				mapping->map_drawing_area_2d=(Widget)NULL;
 				mapping->scene_viewer=(struct Scene_viewer *)NULL;
 				mapping->map_drawing=(struct Drawing_2d *)NULL;
