@@ -180,6 +180,7 @@ Computed_field_clear_type;
 ==============================================================================*/
 #include <math.h>
 #include "finite_element/computed_field.h"
+#include "finite_element/computed_field_find_xi.h"
 #include "finite_element/finite_element.h"
 #include "general/child_process.h"
 #include "general/compare.h"
@@ -192,6 +193,7 @@ Computed_field_clear_type;
 #include "general/mystring.h"
 #include "general/value.h"
 #include "user_interface/message.h"
+#include "user_interface/user_interface.h"
 
 /*
 Module types
@@ -244,6 +246,10 @@ DESCRIPTION :
 		that it can first try this element again */
 	struct Computed_field_element_texture_mapping *find_element_xi_mapping;
 
+	/* cache used by external routine Computed_field_find_element_xi_special,
+	 contains all sorts of things we don't want to include in computed_field */
+	struct Computed_field_find_element_xi_special_cache *find_element_xi_cache;
+
 	/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
 		 COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
 	/* the real FE_field being computed */
@@ -255,6 +261,9 @@ DESCRIPTION :
 
 	/* for COMPUTED_FIELD_COMPONENT only */
 	int component_no;
+
+	/* for COMPUTED_FIELD_COMPOSE only */
+	struct GROUP(FE_element) *compose_element_group;
 
 	/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
 	enum FE_nodal_value_type nodal_value_type;
@@ -652,6 +661,12 @@ Calls Computed_field_clear_cache before clearing the type.
 		/* for COMPUTED_FIELD_COMPONENT only */
 		field->component_no=0;
 
+		/* for COMPUTED_FIELD_COMPOSE only */
+		if (field->compose_element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&field->compose_element_group);
+		}
+
 		/* for COMPUTED_FIELD_DEFAULT_COORDINATE only */
 		field->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 
@@ -833,6 +848,8 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 
 			field->find_element_xi_mapping=(struct Computed_field_element_texture_mapping *)NULL;
 
+			field->find_element_xi_cache=(struct Computed_field_find_element_xi_special_cache *)NULL;
+
 			/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
 				 COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
 			field->fe_field=(struct FE_field *)NULL;
@@ -842,6 +859,9 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 
 			/* for COMPUTED_FIELD_COMPONENT only */
 			field->component_no=-1;
+
+			/* for COMPUTED_FIELD_COMPOSE only */
+			field->compose_element_group = (struct GROUP(FE_element) *)NULL;
 
 			/* for COMPUTED_FIELD_DEFAULT_COORDINATE only */
 			field->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
@@ -1075,6 +1095,10 @@ functions to check if read_only flag is set.
 				
 					/* for COMPUTED_FIELD_COMPONENT only */
 					destination->component_no=source->component_no;
+
+					/* for COMPUTED_FIELD_COMPOSE only */
+					REACCESS(GROUP(FE_element))(&destination->compose_element_group,
+						source->compose_element_group);
 
 					/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
 					destination->nodal_value_type=source->nodal_value_type;
@@ -1415,6 +1439,11 @@ Only certain field types require a special implementation of this function.
 		{
 			DEACCESS(Computed_field_element_texture_mapping)
 				(&field->find_element_xi_mapping);
+		}
+		if (field->find_element_xi_cache)
+		{
+			DESTROY(Computed_field_find_element_xi_special_cache)
+				(&field->find_element_xi_cache);
 		}
 		if (field->node)
 		{
@@ -3299,7 +3328,9 @@ is avoided.
 						if (return_code = Computed_field_find_element_xi(field->source_fields[1],
 							field->source_fields[0]->values,
 							field->source_fields[0]->number_of_components,
-							&compose_element, compose_xi))
+							&compose_element, compose_xi, field->compose_element_group,
+							(struct User_interface *)NULL, (float *)NULL, (float *)NULL, 
+							(float *)NULL))
 						{
 							/* calculate the third source_field at this new location */
 							return_code=
@@ -4469,7 +4500,9 @@ fields with the name 'coordinates' are quite pervasive.
 							the third source field */
 						if (return_code = Computed_field_find_element_xi(field->source_fields[1],
 							field->source_fields[0]->values,
-							field->source_fields[0]->number_of_components, &element, xi))
+							field->source_fields[0]->number_of_components, &element, xi,
+							field->compose_element_group, (struct User_interface *)NULL,
+							(float *)NULL, (float *)NULL, (float *)NULL))
 						{
 							/* calculate the third source_field at this new location */
 							return_code=
@@ -7990,9 +8023,10 @@ although its cache may be lost.
 int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **find_element_xi_field,
-	struct Computed_field **calculate_values_field)
+	struct Computed_field **calculate_values_field,
+	struct GROUP(FE_element) **search_element_group)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1999
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
@@ -8005,11 +8039,12 @@ Use function Computed_field_get_type to determine the field type.
 
 	ENTER(Computed_field_get_type_compose);
 	if (field&&(COMPUTED_FIELD_COMPOSE==field->type)&&texture_coordinate_field&&
-		find_element_xi_field&&calculate_values_field)
+		find_element_xi_field&&calculate_values_field&&search_element_group)
 	{
 		*texture_coordinate_field = field->source_fields[0];
 		*find_element_xi_field = field->source_fields[1];
 		*calculate_values_field = field->source_fields[2];
+		*search_element_group = field->compose_element_group;
 	}
 	else
 	{
@@ -8025,16 +8060,18 @@ Use function Computed_field_get_type to determine the field type.
 int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
-	struct Computed_field *calculate_values_field)
+	struct Computed_field *calculate_values_field,
+	struct GROUP(FE_element) *search_element_group)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1999
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
 evaluate one field to find "texture coordinates", use a find_element_xi field
 to then calculate a corresponding element/xi and finally calculate values using
 this element/xi and a third field.  You can then evaluate values on a "host"
-mesh for any points "contained" inside.
+mesh for any points "contained" inside.  The <search_element_group> is the group
+from which any returned element_xi will belong.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -8044,7 +8081,7 @@ although its cache may be lost.
 
 	ENTER(Computed_field_set_type_compose);
 	if (field&&texture_coordinate_field&&find_element_xi_field&&
-		calculate_values_field)
+		calculate_values_field&&search_element_group)
 	{
 		return_code=1;
 		if (return_code)
@@ -8072,6 +8109,7 @@ although its cache may be lost.
 						source_fields[2]=ACCESS(Computed_field)(calculate_values_field);
 						field->source_fields=source_fields;
 						field->number_of_source_fields=number_of_source_fields;
+						field->compose_element_group=search_element_group;
 					}
 					else
 					{
@@ -11228,10 +11266,148 @@ Compares the user_data values with the offsets in the <mapping>
 	return (return_code);
 } /* Computed_field_element_texture_mapping_has_values */
 
-int Computed_field_find_element_xi(struct Computed_field *field, FE_value *values,
-	int number_of_values, struct FE_element **element, FE_value *xi)
+int Computed_field_iterative_element_conditional(
+	struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 May 1999
+LAST MODIFIED: 16 June 2000
+
+DESCRIPTION:
+Returns true if a valid element xi is found.
+==============================================================================*/
+{
+	FE_value *derivatives, *values;
+	int i, number_of_xi, return_code;
+	struct Computed_field_iterative_find_element_xi_data *data;
+
+	ENTER(Computed_field_iterative_element_conditional);
+
+	if (element &&
+		(data = (struct Computed_field_iterative_find_element_xi_data *)data_void))
+	{
+		number_of_xi = get_FE_element_dimension(element);
+		if (number_of_xi <= data->number_of_values)
+		{
+			return_code = 1;
+			if (data->found_number_of_xi != number_of_xi)
+			{
+				if (REALLOCATE(derivatives, data->found_derivatives, FE_value,
+					data->number_of_values * number_of_xi))
+				{
+					data->found_derivatives = derivatives;
+					data->found_number_of_xi = number_of_xi;
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_iterative_element_conditional.  Unable to allocate derivative storage");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				values = data->found_values;
+				derivatives = data->found_derivatives;
+
+				/* Start at centre to find element xi */
+				for (i = 0 ; i < number_of_xi ; i++)
+				{
+					data->xi[i] = 0.5;
+				}
+				Computed_field_evaluate_in_element(data->field, element, data->xi,
+					(struct FE_element *)NULL, values, derivatives);
+
+				/* Solve optimally for each number of xi */
+				switch (number_of_xi)
+				{
+					case 1:
+					{
+						data->xi[0] = (data->values[0] - values[0]) / derivatives[0] + 0.5;
+						if ((data->xi[0] >= -data->tolerance) && (data->xi[0] <= 1.0 + data->tolerance))
+						{
+							return_code = 1;
+						}
+						else
+						{
+							return_code = 0;
+						}
+						for (i = 1 ; return_code && (i < data->number_of_values); i++)
+						{
+							if (data->tolerance > fabs ((data->values[0] - values[0]) / derivatives[0]
+								+ 0.5 - data->xi[0]))
+							{
+								return_code = 0;
+							}
+						}
+					} break;
+					case 2:
+					{
+						data->xi[0] = (derivatives[3] * (data->values[0] - values[0]) -
+							derivatives[1] * (data->values[1] - values[1]))
+							/ (derivatives[0] * derivatives[3] - derivatives[1] * derivatives[2]) + 0.5;
+						data->xi[1] = (data->values[0] - values[0] - derivatives[0] * (data->xi[0] - 0.5))
+							/ derivatives[1] + 0.5;
+						if (SIMPLEX_SHAPE== *(element->shape->type))
+						{
+							if ((data->xi[0] >= -data->tolerance) && (data->xi[1] >= -data->tolerance)
+								&& (data->xi[0] + data->xi[1] <= 1.0 + data->tolerance))
+							{
+								return_code = 1;
+							}
+							else
+							{
+								return_code = 0;
+							}
+							for (i = 2 ; return_code && (i < data->number_of_values); i++)
+							{
+								/* Check tolerance */
+							}
+						}
+						else
+						{
+							if ((data->xi[0] >= -data->tolerance) && (data->xi[0] <= 1.0 + data->tolerance)
+								&& (data->xi[1] >= -data->tolerance) && (data->xi[1] <= 1.0 + data->tolerance))
+							{
+								return_code = 1;
+							}
+							else
+							{
+								return_code = 0;
+							}
+							for (i = 2 ; return_code && (i < data->number_of_values); i++)
+							{
+								/* Check tolerance */
+							}
+						}
+					} break;
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_iterative_element_conditional.  Unable to solve undertermined system");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_iterative_element_conditional.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Computed_field_iterative_element_conditional */
+
+int Computed_field_find_element_xi(struct Computed_field *field, FE_value *values,
+	int number_of_values, struct FE_element **element, FE_value *xi,
+	struct GROUP(FE_element) *search_element_group, 
+	struct User_interface *user_interface,
+	float *hint_minimums, float *hint_maximums, float *hint_resolution)
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -11240,17 +11416,94 @@ and xi which would evaluate to the given values.
 This has been implemented so that the texture_coordinates can be used to extract
 information from textures (sample_texture computed_field) and then modified and
 then put back into another texture.
+The <search_element_group> is the set of elements from which the chosen element
+will belong.
 ==============================================================================*/
 {
 	FE_value floor_values[3];
-	int i, return_code;
+	int i, number_of_xi, return_code;
 	struct Computed_field_element_texture_mapping *mapping;
+	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 
 	ENTER(Computed_field_find_element_xi);
-	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi)
+	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
+		search_element_group)
 	{
 		switch (field->type)
 		{
+			case COMPUTED_FIELD_FINITE_ELEMENT:
+			{
+				/* Attempt to find correct element by searching */
+				find_element_xi_data.field = field;
+				find_element_xi_data.values = values;
+				find_element_xi_data.number_of_values = number_of_values;
+				find_element_xi_data.found_number_of_xi = 0;
+				find_element_xi_data.found_derivatives = (FE_value *)NULL;
+				find_element_xi_data.tolerance = 1e-06;
+				if (ALLOCATE(find_element_xi_data.found_values, FE_value, number_of_values))
+				{
+					*element = (struct FE_element *)NULL;
+					
+					/* Look up element specially if we can */
+					if (Computed_field_find_element_xi_special(field, 
+						&field->find_element_xi_cache,
+						values, number_of_values, element, xi, search_element_group,
+						user_interface, &find_element_xi_data,
+						hint_minimums, hint_maximums, hint_resolution))
+					{
+						if (*element)
+						{
+							return_code = 1;						
+						}
+						else
+						{
+							return_code = 0;
+						}
+					}
+					else
+					{
+						/* Try the cached element first */
+						if (!*element && field->element && Computed_field_iterative_element_conditional(
+							field->element, (void *)&find_element_xi_data))
+						{
+							*element = field->element;
+						}
+						/* Now try every element */
+						if (!*element)
+						{
+							*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
+							(Computed_field_iterative_element_conditional,
+								&find_element_xi_data, search_element_group);
+						}
+						if (*element)
+						{
+							number_of_xi = get_FE_element_dimension(*element);
+							for (i = 0 ; i < number_of_xi ; i++)
+							{
+								xi[i] = find_element_xi_data.xi[i];
+							}
+							return_code = 1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_find_element_xi.  Unable to find an element xi for values given.");
+							return_code = 0;
+						}
+					}
+					DEALLOCATE(find_element_xi_data.found_values);
+					if (find_element_xi_data.found_derivatives)
+					{
+						DEALLOCATE(find_element_xi_data.found_derivatives);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_find_element_xi.  Unable to allocate value memory.");
+					return_code = 0;
+				}
+			} break;
 			case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 			{
 				if (number_of_values<=3)
@@ -11291,6 +11544,13 @@ then put back into another texture.
 							for (i = 0 ; i < (*element)->shape->dimension ; i++)
 							{
 								xi[i] = values[i] - floor_values[i];	
+							}
+							if (!IS_OBJECT_IN_GROUP(FE_element)(*element, search_element_group))
+							{
+								*element = (struct FE_element *)NULL;
+								display_message(ERROR_MESSAGE,
+									"Computed_field_find_element_xi.  Element is not in specified group");
+								return_code=0;
 							}
 						}
 						else
@@ -11336,7 +11596,7 @@ then put back into another texture.
 int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1999
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 This function returns true if the <field> can find element and xi given
@@ -11351,6 +11611,11 @@ a set of values.
 	{
 		switch (field->type)
 		{
+			case COMPUTED_FIELD_FINITE_ELEMENT:
+			{
+				/* Probably need to be more selective */
+				return_code=1;
+			} break;
 			case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 			{
 				return_code=1;
@@ -11370,7 +11635,7 @@ a set of values.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_is_find_element_xi_capableC */
+} /* Computed_field_is_find_element_xi_capable */
 
 struct Computed_field *Computed_field_manager_get_component_wrapper(
 	struct MANAGER(Computed_field) *computed_field_manager,
@@ -12512,12 +12777,14 @@ and allows its contents to be modified.
 		{
 			{"calculate_values_field",NULL,NULL,set_Computed_field_conditional},
 			{"find_element_xi_field",NULL,NULL,set_Computed_field_conditional},
+			{"group",NULL,NULL,set_FE_element_group},
 			{"texture_coordinates_field",NULL,NULL,set_Computed_field_conditional},
 			{NULL,NULL,NULL,NULL}
 		};
 	struct Computed_field *field,*calculate_values_field,*find_element_xi_field,
 		*texture_coordinates_field;
 	struct Computed_field_package *computed_field_package;
+	struct GROUP(FE_element) *search_element_group;
 	struct Set_Computed_field_conditional_data set_calculate_values_field_data,
 		set_find_element_xi_field_data, set_texture_coordinates_field_data;
 
@@ -12539,12 +12806,13 @@ and allows its contents to be modified.
 		set_texture_coordinates_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_texture_coordinates_field_data.conditional_function_user_data=(void *)NULL;
+		search_element_group = (struct GROUP(FE_element) *)NULL;
 		/* get valid parameters for composite field */
 		if (COMPUTED_FIELD_COMPOSE==Computed_field_get_type(field))
 		{
 			return_code=Computed_field_get_type_compose(field,
 				&calculate_values_field, &find_element_xi_field,
-				&texture_coordinates_field);
+				&texture_coordinates_field, &search_element_group);
 		}
 		else
 		{
@@ -12569,6 +12837,10 @@ and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(find_element_xi_field);
 			}
+			if (search_element_group)
+			{
+				ACCESS(GROUP(FE_element))(search_element_group);
+			}
 			if (texture_coordinates_field)
 			{
 				ACCESS(Computed_field)(texture_coordinates_field);
@@ -12580,15 +12852,17 @@ and allows its contents to be modified.
 				(option_table[0]).user_data= &set_calculate_values_field_data;
 				(option_table[1]).to_be_modified= &find_element_xi_field;
 				(option_table[1]).user_data= &set_find_element_xi_field_data;
-				(option_table[2]).to_be_modified= &texture_coordinates_field;
-				(option_table[2]).user_data= &set_texture_coordinates_field_data;
+				(option_table[2]).to_be_modified= &search_element_group;
+				(option_table[2]).user_data= computed_field_package->fe_element_manager;
+				(option_table[3]).to_be_modified= &texture_coordinates_field;
+				(option_table[3]).user_data= &set_texture_coordinates_field_data;
 				return_code=process_multiple_options(state,option_table);
 			}
 			if (return_code)
 			{
 				return_code=Computed_field_set_type_compose(field,
 					texture_coordinates_field, find_element_xi_field,
-					calculate_values_field);
+					calculate_values_field, search_element_group);
 			}
 			if (!return_code)
 			{
@@ -12603,15 +12877,19 @@ and allows its contents to be modified.
 			}
 			if (calculate_values_field)
 			{
-				DEACCESS(Computed_field)(&(calculate_values_field));
+				DEACCESS(Computed_field)(&calculate_values_field);
 			}
 			if (find_element_xi_field)
 			{
-				DEACCESS(Computed_field)(&(find_element_xi_field));
+				DEACCESS(Computed_field)(&find_element_xi_field);
+			}
+			if (search_element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&search_element_group);
 			}
 			if (texture_coordinates_field)
 			{
-				DEACCESS(Computed_field)(&(texture_coordinates_field));
+				DEACCESS(Computed_field)(&texture_coordinates_field);
 			}
 		}
 	}
