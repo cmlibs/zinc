@@ -352,6 +352,21 @@ recorded with the texture - not however that if perform_crop is true then the
 crop is performed as the image is put into the texture.
 ==============================================================================*/
 
+int managed_Texture_set_image(struct Texture *texture,
+	struct MANAGER(Texture) *texture_manager,unsigned long *image,
+	enum Texture_storage_type storage,int number_of_bytes_per_component,
+	int image_width,int image_height, enum Texture_row_order row_order,
+	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
+	int crop_width,int crop_height,int perform_crop);
+/*******************************************************************************
+LAST MODIFIED : 25 January 2002
+
+DESCRIPTION :
+Does Texture_set_image on the managed <texture>.
+Returns an error if <texture> is not managed.
+==============================================================================*/
+
+
 int Texture_set_image_file(struct Texture *texture,char *image_file_name,
 	int specify_width,int specify_height,enum Raw_image_storage raw_image_storage,
 	int crop_left_margin,int crop_bottom_margin,int crop_width,

@@ -2176,6 +2176,54 @@ crop is performed as the image is put into the texture.
 	return (return_code);
 } /* Texture_set_image */
 
+int managed_Texture_set_image(struct Texture *texture,
+	struct MANAGER(Texture) *texture_manager,unsigned long *image,
+	enum Texture_storage_type storage,int number_of_bytes_per_component,
+	int image_width,int image_height, enum Texture_row_order row_order,
+	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
+	int crop_width,int crop_height,int perform_crop)
+/*******************************************************************************
+LAST MODIFIED : 25 January 2002
+
+DESCRIPTION :
+Does Texture_set_image on the managed <texture>.
+Returns an error if <texture> is not managed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(managed_Texture_set_image);
+	if (texture)
+	{
+		/* display list is assumed to be current */
+		if (texture_manager&&IS_MANAGED(Texture)(texture,texture_manager))
+		{			
+			MANAGER_BEGIN_CHANGE(Texture)(texture->texture_manager,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
+			return_code =Texture_set_image(texture,image,storage,
+				number_of_bytes_per_component,image_width,image_height,
+				row_order,image_file_name,crop_left_margin,
+				crop_bottom_margin,crop_width,crop_height,perform_crop);
+			MANAGER_END_CHANGE(Texture)(texture_manager);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "managed_Texture_set_image.  Texture not managed");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "managed_Texture_set_image.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* managed_Texture_set_image */
+
+
 int Texture_set_image_file(struct Texture *texture,char *image_file_name,
 	int specify_width,int specify_height, enum Raw_image_storage raw_image_storage,
 	int crop_left_margin,int crop_bottom_margin,int crop_width,
