@@ -813,6 +813,10 @@ If <specified_visual_id> is not zero then this visual is required.
 	{
 		switch(buffering_mode)
 		{
+			case GRAPHICS_BUFFER_ANY_BUFFERING_MODE:
+			{
+				x3d_buffering_mode = X3dANY_BUFFERING_MODE;
+			} break;
 			case GRAPHICS_BUFFER_SINGLE_BUFFERING:
 			{
 				x3d_buffering_mode = X3dSINGLE_BUFFERING;
@@ -820,6 +824,12 @@ If <specified_visual_id> is not zero then this visual is required.
 			case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
 			{
 				x3d_buffering_mode = X3dDOUBLE_BUFFERING;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+					"Unknown buffering mode.");
+				x3d_buffering_mode = X3dANY_BUFFERING_MODE;
 			} break;
 		}
 		switch(stereo_mode)
@@ -831,6 +841,12 @@ If <specified_visual_id> is not zero then this visual is required.
 			case GRAPHICS_BUFFER_STEREO:
 			{
 				x3d_stereo_mode = X3dSTEREO_BUFFERING;
+			} break;
+			default:
+			{
+				x3d_stereo_mode = X3dMONO_BUFFERING;
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+					"Unknown stereo mode.");
 			} break;
 		}
 		if (buffer->drawing_widget=XtVaCreateWidget("cmiss_graphics_buffer_area",
