@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : export_finite_element.c
 
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 4 October 2000
 
 DESCRIPTION :
 The function for exporting finite element data, to a file or to CMISS (via a
@@ -2382,7 +2382,7 @@ Writes an element group to a file.
 
 int file_write_all_FE_element_groups(char *file_name,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 4 October 2000
 
 DESCRIPTION :
 Writes all existing element groups to a file.
@@ -2403,7 +2403,7 @@ Writes all existing element groups to a file.
 		{
 			data_sub.output_file=output_file;
 			data_sub.field=data->field;
-			FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
+			return_code=FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
 				file_write_FE_element_group_sub,
 				(void *)&data_sub,element_group_manager);
 			fclose(output_file);
@@ -2519,7 +2519,7 @@ Writes a node group to a file.
 
 int file_write_all_FE_node_groups(char *file_name,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 4 October 2000
 
 DESCRIPTION :
 Writes all existing node groups to a file.
@@ -2540,8 +2540,8 @@ Writes all existing node groups to a file.
 		{
 			data_sub.output_file=output_file;
 			data_sub.field=data->field;
-			FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(file_write_FE_node_group_sub,
-				(void *)&data_sub,node_group_manager);
+			return_code=FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(
+				file_write_FE_node_group_sub,(void *)&data_sub,node_group_manager);
 			fclose(output_file);
 		}
 		else
