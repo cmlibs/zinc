@@ -3129,7 +3129,34 @@ signals.
 					{
 						destroy_Signal_buffer(&buffer);
 					}
+#if defined (UNEMAP_USE_3D)
+					if ((analysis->mapping_window)&&(analysis->mapping_window->map&&
+						(analysis->mapping_window->map->drawing_information)))
+					{
+						map_remove_torso_arm_labels(analysis->mapping_window->map->drawing_information);
+						/*DIRECT_INTERPOLATION will cause problems with no TORSOs*/
+						analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
+					}
+#endif /* defined (UNEMAP_USE_3D)*/
+#if defined (UNEMAP_USE_NODES)
+					/* remove nodes from window, so can remove from rig */
+					if (analysis->window)
+					{
+						analysis_Window_free_rig_node_order_info(analysis->window);
+					}
+#endif /* defined (UNEMAP_USE_NODES)*/
 					destroy_Rig(&(analysis->rig));
+
+#if defined (UNEMAP_USE_NODES)
+					if (analysis->signal_drawing_package)
+					{
+						DEACCESS(Signal_drawing_package)(&(analysis->signal_drawing_package));
+					}
+#endif /* defined (UNEMAP_USE_NODES)*/
+#if defined (UNEMAP_USE_3D)
+					free_unemap_package_time_computed_fields(analysis->unemap_package);
+					free_unemap_package_rig_fields(analysis->unemap_package);			
+#endif /* defined (UNEMAP_USE_NODES)*/
 				}
 				/* initialize the new analysis */
 				analysis->datum=0;
@@ -3158,13 +3185,13 @@ signals.
 #endif /* defined (UNEMAP_USE_3D)*/
 						))
 				{
-					/* found the signal file at the file stored in the events file*/
+					/* found the signal file at the location stored in the events file*/
 					return_code=1;
 				}
 				else
 				{
 					/* prompt the user to search for a signal file */
-					/*NOTE! they could load in the wrong one. */										
+					/*NOTE: they could load in the wrong one! */
 					confirmation_information_ok("Warning!",
 					 "Can't find this Events File's Signal File. Please locate it.",
 #if defined (MOTIF)				
@@ -3172,10 +3199,8 @@ signals.
 #endif /* defined (MOTIF) */
 					 analysis->user_interface);
 					if (signal_file_name=confirmation_get_read_filename(
-						analysis->signal_file_extension_read,
-						analysis->user_interface))
+						analysis->signal_file_extension_read,analysis->user_interface))
 					{
-
 					  if((signal_input_file=fopen(signal_file_name,"rb"))&&
 							read_signal_file(signal_input_file,&(analysis->rig)
 #if defined (UNEMAP_USE_3D)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 18 April 2001
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -534,8 +534,7 @@ The callback for redrawing part of the drawing area in trace area 2.
 							} break;
 							case ELECTRICAL_IMAGING:
 							{
-								/*??JW do stuff here */
-
+								/* nothing to do here */
 							} break;
 							default:
 							{
@@ -4801,10 +4800,196 @@ DESCRIPTION : draws the markers on the trace window.
 	return(return_code);
 } /* draw_trace_markers */
 
+static int calculate_cardiac_interval_device(struct Trace_window *trace)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2001
+
+DESCRIPTION : 
+Calculate the <trace's> cardiac_interval_device. 
+This is a device that contains a signal derived from trace->highlight 
+or trace->processed_device.
+If trace->calculate_signal_mode==CURRENT_SIGNAL, it derives from trace->highlight; 
+if trace->calculate_signal_mode==RMS_SIGNAL or RMS_AND_CURRENT_SIGNAL  it derives 
+from trace->processed_device .
+If the trace's cardiac intervals have been calculated, 
+trace->cardiac_interval_device's signal will be calculated  from the start of 
+the first cardiac interval to the end of the last. If they haven't been 
+calculated, it contains the entire signal.
+==============================================================================*/
+{
+	int buffer_end,buffer_offset,buffer_start,*cardiac_interval_time,j,
+		number_of_signals,number_of_samples,return_code,signal_number;
+	float *current_times,*current_values,frequency,*cardiac_interval_value,
+		maximum_value,*time_float,*value;
+	struct Cardiac_interval *interval;
+	struct Device *cardiac_interval_device,*source_device;
+	struct Signal_buffer *cardiac_interval_buffer;
+	struct Signal *signal_next,*signal_next_new;
+
+	ENTER(calculate_cardiac_interval_device);
+	return_code=0;
+	interval=(struct Cardiac_interval *)NULL;
+	source_device=(struct Device *)NULL;
+	cardiac_interval_device=(struct Device *)NULL;	
+	current_values=(float *)NULL;
+	current_times=(float *)NULL;	
+	cardiac_interval_value=(float *)NULL;
+	time_float=(float *)NULL;
+	value=(float *)NULL;
+	cardiac_interval_time=(int *)NULL;
+	signal_next=(struct Signal *)NULL;
+	signal_next_new=(struct Signal *)NULL;
+	cardiac_interval_buffer=(struct Signal_buffer *)NULL;
+	if(trace&&(cardiac_interval_device=trace->cardiac_interval_device)&&		
+		(cardiac_interval_device->signal)&&(cardiac_interval_device->channel)&&
+		(cardiac_interval_buffer=cardiac_interval_device->signal->buffer))
+	{			
+		if(trace->calculate_signal_mode==CURRENT_SIGNAL)
+		{
+			source_device=**(trace->highlight);		
+		}
+		else		
+		{	/* RMS/RMS_AND_CURRENT_SIGNAL	*/
+			source_device=trace->processed_device;		
+		}
+		if(source_device)
+		{	
+			if(trace->calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
+			{	
+				/* set up the signal->next */
+				if (signal_next=cardiac_interval_device->signal->next)
+				{
+					signal_next_new=(struct Signal *)NULL;
+				}
+				else
+				{
+					signal_next_new=create_Signal(1,cardiac_interval_buffer,REJECTED,2);
+					signal_next=signal_next_new;
+				}				
+				cardiac_interval_device->signal->next=signal_next;
+				signal_next->buffer=cardiac_interval_buffer;			
+			}
+			else
+			{				
+				destroy_Signal(&(cardiac_interval_device->signal->next));
+			}
+			/*extract from  the first cariac interval's start_time to last interval's */
+			/* end_time) */		
+			if(trace->first_interval)
+			{				
+				interval=trace->first_interval;
+				buffer_start=interval->start_time;
+				/* find last interval*/
+				while(interval->next)
+				{
+					interval=interval->next;
+				}	
+				buffer_end=interval->end_time;			
+			}
+			else
+			{
+				/* extract all of the signal*/
+				buffer_start=1;
+				buffer_end=0;
+			}
+			/* extract all the signals (signal and any signal->next)*/
+			signal_number=0;
+			if(extract_signal_information((struct FE_node *)NULL,
+				(struct Signal_drawing_package *)NULL,source_device,signal_number,
+				buffer_start,buffer_end,&number_of_signals,&number_of_samples,
+				&current_times,&current_values,(enum Event_signal_status **)NULL,
+				(char **)NULL,(int *)NULL,(float *)NULL,&maximum_value/* (float *)NULL) */))
+			{
+				/* realloc Signal_buffer for cardiac_interval_device */				
+				frequency=(float)number_of_samples/(current_times[number_of_samples-1]
+					-current_times[0]);				
+				if(cardiac_interval_buffer=reallocate_Signal_buffer(cardiac_interval_buffer,
+					FLOAT_VALUE,number_of_signals,number_of_samples,frequency))
+				{
+					time_float=current_times;				
+					cardiac_interval_time=cardiac_interval_buffer->times;					
+					buffer_offset=cardiac_interval_buffer->number_of_signals;
+					cardiac_interval_device->channel->offset=0;
+					cardiac_interval_device->channel->gain=1;
+					cardiac_interval_device->signal_display_maximum=0;
+					cardiac_interval_device->signal_display_minimum=1;					
+					/*copy the times*/													
+					for (j=number_of_samples;j>0;j--)
+					{						
+						*cardiac_interval_time=(int)((*time_float)*frequency+0.5);
+						cardiac_interval_time++;
+						time_float++;
+					}			
+					/* put source signal (rms or current) in the cardiac_interval_device->signal */
+					value=current_values;
+					cardiac_interval_value=((cardiac_interval_buffer->signals).float_values)+
+						(cardiac_interval_device->signal->index);
+					for (j=number_of_samples;j>0;j--)
+					{						
+						*cardiac_interval_value= *value;
+						cardiac_interval_value += buffer_offset;
+						value++;						
+					}
+					if(trace->calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
+					{
+						/* put rms signal in the cardiac_interval_device->signal->next */
+						value=current_values+number_of_samples;
+						cardiac_interval_value=((cardiac_interval_buffer->signals).float_values)+
+						(cardiac_interval_device->signal->next->index);
+						for (j=number_of_samples;j>0;j--)
+						{						
+							*cardiac_interval_value= *value;
+							cardiac_interval_value += buffer_offset;
+							value++;						
+						}
+					}
+					/* ensure the range of rms is 0 to max; min to max looks confusing, as*/
+					/* rms is all positive.*/
+					if(trace->calculate_signal_mode==RMS_SIGNAL)
+					{					
+						cardiac_interval_device->signal_display_minimum=0;
+						cardiac_interval_device->signal_display_maximum=maximum_value;
+					}	 
+					trace->valid_processing=1;
+					return_code=1;
+				} /* if(cardiac_interval_buffer=reallocate_Signal_buffer */
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_cardiac_interval_device.reallocate_Signal_buffer failed");
+					return_code=0;
+				}
+			}	/* if(extract_signal_information*/
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_cardiac_interval_device. extract_signal_information failed");
+				return_code=0;
+			}
+			if(current_times)
+			{
+				DEALLOCATE(current_times);
+			}
+			if(current_values)
+			{
+				DEALLOCATE(current_values);
+			}
+		}/* if(source_device)	*/
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_cardiac_interval_device. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* calculate_cardiac_interval_device */
+
 static void calculate_calculate(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2001
+LAST MODIFIED : 28 March 2001
 
 DESCRIPTION :
 Calculate  intervals (P QRS T) for inverse.
@@ -4812,6 +4997,7 @@ Does this by finding the signal maximum, then the adjacent zero crossings
 on each side of this max. Interval is left zero x-ing to right zerp x-ing.
 Then search the signal for new intervals, EXCLUDING the area region of the 
 previous intervals.
+
 ==============================================================================*/
 {
 	GC graphics_context[3];
@@ -5044,7 +5230,8 @@ previous intervals.
 										((values[j]<0)&&(values[j-1]>0))||(j==0))
 									{
 #if defined (DEBUG)
-										printf("LH zero crossing  = %f, time = %f %d\n",values[j],times[j],j);fflush(NULL);
+										printf("LH zero crossing  = %f, time = %f %d\n",values[j],times[j],j);
+										fflush(NULL);
 #endif								
 										success=1;
 										start_time=j;
@@ -5070,7 +5257,7 @@ previous intervals.
 							}
 						} /* if(success)*/
 					} /* for(i=0;i<3;i++) */
-					/* intervals are relative to the first entry of the buffer, so add buffer_start, the offset*/
+					/* intervals are relative to the first entry of the buffer,so add buffer_start,the offset*/
 					if(interval=trace->first_interval)
 					{					
 						while (interval)
@@ -5081,12 +5268,16 @@ previous intervals.
 							interval=interval->next;													
 						}
 					}
+					/* we've changed the cardiac intervals, so change their device*/				
+					calculate_cardiac_interval_device(trace);					
 				}
 				/* don't deallocate values or do a destroy_Signal_buffer */
 				DEALLOCATE(times);
 				destroy_Signal(&intervals_signal);
 				/*update the window  */
 				draw_trace_markers(trace);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+						(XtPointer)NULL);
 			}	/* if(extract_signal_information */
 		} /*if ((trace->highlight)&&( */
 	}
@@ -7423,7 +7614,7 @@ static struct Trace_window *create_Trace_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -7781,16 +7972,17 @@ the created trace window.  If unsuccessful, NULL is returned.
 		{"trace_window_structure",(XtPointer)NULL},
 		{"identifying_colour",(XtPointer)NULL}
 	};
-	struct Channel *imaginary_channel_1,*imaginary_channel_2,*processed_channel,
-		*real_channel_1,*real_channel_2;
-	struct Device **device,*imaginary_device_1,*imaginary_device_2,
-		*processed_device,*real_device_1,*real_device_2;
-	struct Device_description *imaginary_description_1,*imaginary_description_2,
-		*processed_description,*real_description_1,*real_description_2;
-	struct Signal *imaginary_signal_1,*imaginary_signal_2,*processed_signal,
-		*real_signal_1,*real_signal_2;
-	struct Signal_buffer *frequency_domain_buffer_1,*frequency_domain_buffer_2,
-		*processed_buffer;
+	struct Channel *cardiac_interval_channel,*imaginary_channel_1,*imaginary_channel_2,
+		*processed_channel,*real_channel_1,*real_channel_2;
+	struct Device **device,*cardiac_interval_device,*imaginary_device_1,
+		*imaginary_device_2,*processed_device,*real_device_1,*real_device_2;
+	struct Device_description *cardiac_interval_description,*imaginary_description_1,
+		*imaginary_description_2,*processed_description,*real_description_1,
+		*real_description_2;
+	struct Signal *cardiac_interval_signal,*imaginary_signal_1,*imaginary_signal_2,
+		*processed_signal,*real_signal_1,*real_signal_2;
+	struct Signal_buffer *cardiac_interval_buffer,*frequency_domain_buffer_1,
+		*frequency_domain_buffer_2,*processed_buffer;
 	struct Region *current_region;
 	struct Signal *signal;
 	struct Trace_window *trace;
@@ -8010,16 +8202,19 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->filtering.notch_on=0;
 				/*???debug */
 				trace->processed_device=(struct Device *)NULL;
+				trace->cardiac_interval_device=(struct Device *)NULL;
 				/* allocate memory for spectral analysis */
 				if (
 					(frequency_domain_buffer_1=create_Signal_buffer(FLOAT_VALUE,2,1,1))&&
 					(frequency_domain_buffer_2=create_Signal_buffer(FLOAT_VALUE,2,1,1))&&
+					(cardiac_interval_buffer=create_Signal_buffer(FLOAT_VALUE,2,1,1))&&
 					(processed_buffer=create_Signal_buffer(FLOAT_VALUE,2,1,1)))
 				{
 					if ((real_channel_1=create_Channel(0,0,1))&&
 						(imaginary_channel_1=create_Channel(1,0,1))&&
 						(real_channel_2=create_Channel(0,0,1))&&
 						(imaginary_channel_2=create_Channel(1,0,1))&&
+						(cardiac_interval_channel=create_Channel(1,0,1))&&
 						(processed_channel=create_Channel(1,0,1)))
 					{
 						if ((real_signal_1=create_Signal(0,frequency_domain_buffer_1,
@@ -8029,7 +8224,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 							(imaginary_signal_2=create_Signal(1,frequency_domain_buffer_2,
 							UNDECIDED,0))&&(processed_signal=create_Signal(0,
 							processed_buffer,UNDECIDED,1))&&(processed_signal->next=
-							create_Signal(1,processed_buffer,REJECTED,2)))
+							create_Signal(1,processed_buffer,REJECTED,2))&&
+							(cardiac_interval_signal=create_Signal(0,cardiac_interval_buffer,
+								UNDECIDED,1)))
 						{
 							if ((real_description_1=create_Device_description("Re",AUXILIARY,
 								(struct Region *)NULL))&&(imaginary_description_1=
@@ -8039,6 +8236,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 								(struct Region *)NULL))&&(imaginary_description_2=
 								create_Device_description((char *)NULL,AUXILIARY,
 								(struct Region *)NULL))&&(processed_description=
+								create_Device_description((char *)NULL,AUXILIARY,
+								(struct Region *)NULL))&&(cardiac_interval_description=
 								create_Device_description((char *)NULL,AUXILIARY,
 								(struct Region *)NULL)))
 							{
@@ -8050,13 +8249,16 @@ the created trace window.  If unsuccessful, NULL is returned.
 									(imaginary_device_2=create_Device(1,imaginary_description_2,
 									imaginary_channel_2,imaginary_signal_2))&&
 									(processed_device=create_Device(0,processed_description,
-									processed_channel,processed_signal)))
+									processed_channel,processed_signal))&&(cardiac_interval_device=
+									create_Device(0,cardiac_interval_description,
+									cardiac_interval_channel,cardiac_interval_signal)))
 								{
 									trace->real_device_1=real_device_1;
 									trace->imaginary_device_1=imaginary_device_1;
 									trace->real_device_2=real_device_2;
 									trace->imaginary_device_2=imaginary_device_2;
 									trace->processed_device=processed_device;
+									trace->cardiac_interval_device=cardiac_interval_device;
 								}
 								else
 								{
@@ -8083,25 +8285,30 @@ the created trace window.  If unsuccessful, NULL is returned.
 									destroy_Device_description(&real_description_2);
 									destroy_Device_description(&imaginary_description_2);
 									destroy_Device_description(&processed_description);
+									destroy_Device_description(&cardiac_interval_description);
 									destroy_Signal(&real_signal_1);
 									destroy_Signal(&imaginary_signal_1);
 									destroy_Signal(&real_signal_2);
 									destroy_Signal(&imaginary_signal_2);
 									destroy_Signal(&(processed_signal->next));
 									destroy_Signal(&processed_signal);
+									destroy_Signal(&cardiac_interval_signal);
 									destroy_Channel(&real_channel_1);
 									destroy_Channel(&imaginary_channel_1);
 									destroy_Channel(&real_channel_2);
 									destroy_Channel(&imaginary_channel_2);
 									destroy_Channel(&processed_channel);
+									destroy_Channel(&cardiac_interval_channel);
 									destroy_Signal_buffer(&frequency_domain_buffer_1);
 									destroy_Signal_buffer(&frequency_domain_buffer_2);
 									destroy_Signal_buffer(&processed_buffer);
+									destroy_Signal_buffer(&cardiac_interval_buffer);
 									trace->real_device_1=(struct Device *)NULL;
 									trace->imaginary_device_1=(struct Device *)NULL;
 									trace->real_device_2=(struct Device *)NULL;
 									trace->imaginary_device_2=(struct Device *)NULL;
 									trace->processed_device=(struct Device *)NULL;
+									trace->cardiac_interval_device=(struct Device *)NULL;
 								}
 							}
 							else
@@ -8130,19 +8337,23 @@ the created trace window.  If unsuccessful, NULL is returned.
 								destroy_Signal(&imaginary_signal_2);
 								destroy_Signal(&(processed_signal->next));
 								destroy_Signal(&processed_signal);
+								destroy_Signal(&cardiac_interval_signal);
 								destroy_Channel(&real_channel_1);
 								destroy_Channel(&imaginary_channel_1);
 								destroy_Channel(&real_channel_2);
 								destroy_Channel(&imaginary_channel_2);
 								destroy_Channel(&processed_channel);
+								destroy_Channel(&cardiac_interval_channel);
 								destroy_Signal_buffer(&frequency_domain_buffer_1);
 								destroy_Signal_buffer(&frequency_domain_buffer_2);
 								destroy_Signal_buffer(&processed_buffer);
+								destroy_Signal_buffer(&cardiac_interval_buffer);
 								trace->real_device_1=(struct Device *)NULL;
 								trace->imaginary_device_1=(struct Device *)NULL;
 								trace->real_device_2=(struct Device *)NULL;
 								trace->imaginary_device_2=(struct Device *)NULL;
 								trace->processed_device=(struct Device *)NULL;
+								trace->cardiac_interval_device=(struct Device *)NULL;
 							}
 						}
 						else
@@ -8164,6 +8375,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 											if (processed_signal)
 											{
 												destroy_Signal(&processed_signal);
+												if (cardiac_interval_signal)
+												{
+													destroy_Signal(&cardiac_interval_signal);
+												}
 											}
 										}
 									}
@@ -8174,14 +8389,17 @@ the created trace window.  If unsuccessful, NULL is returned.
 							destroy_Channel(&real_channel_2);
 							destroy_Channel(&imaginary_channel_2);
 							destroy_Channel(&processed_channel);
+							destroy_Channel(&cardiac_interval_channel);
 							destroy_Signal_buffer(&frequency_domain_buffer_1);
 							destroy_Signal_buffer(&frequency_domain_buffer_2);
 							destroy_Signal_buffer(&processed_buffer);
+							destroy_Signal_buffer(&cardiac_interval_buffer);
 							trace->real_device_1=(struct Device *)NULL;
 							trace->imaginary_device_1=(struct Device *)NULL;
 							trace->real_device_2=(struct Device *)NULL;
 							trace->imaginary_device_2=(struct Device *)NULL;
 							trace->processed_device=(struct Device *)NULL;
+							trace->cardiac_interval_device=(struct Device *)NULL;
 						}
 					}
 					else
@@ -8207,11 +8425,13 @@ the created trace window.  If unsuccessful, NULL is returned.
 						destroy_Signal_buffer(&frequency_domain_buffer_1);
 						destroy_Signal_buffer(&frequency_domain_buffer_2);
 						destroy_Signal_buffer(&processed_buffer);
+						destroy_Signal_buffer(&cardiac_interval_buffer);
 						trace->real_device_1=(struct Device *)NULL;
 						trace->imaginary_device_1=(struct Device *)NULL;
 						trace->real_device_2=(struct Device *)NULL;
 						trace->imaginary_device_2=(struct Device *)NULL;
 						trace->processed_device=(struct Device *)NULL;
+						trace->cardiac_interval_device=(struct Device *)NULL;
 					}
 				}
 				else
@@ -8231,6 +8451,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 					trace->real_device_2=(struct Device *)NULL;
 					trace->imaginary_device_2=(struct Device *)NULL;
 					trace->processed_device=(struct Device *)NULL;
+					trace->cardiac_interval_device=(struct Device *)NULL;
 				}
 				trace->correlation.signal_1_input=1;
 				if (highlight&&(*highlight))
@@ -9283,7 +9504,7 @@ before this function is exited.
 					(struct Signal_drawing_package *)NULL,device,1,
 					1,0,(int *)NULL,&number_of_samples,&current_times,&current_values,
 						 (enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
-					(float *)NULL,(float *)NULL)&&(0<number_of_samples))
+					(float *)NULL,(float *)NULL)&&(0<number_of_samples)) 
 				{		
 					if(calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
 					{	
@@ -9316,13 +9537,13 @@ before this function is exited.
 								/* put the rms signal in the processed_device->signal->next*/
 							{							
 								start_value=((processed_buffer->signals).float_values)+
-									(trace->processed_device->signal->next->index);
+									(processed_device->signal->next->index);
 							}
 							else
 								/* RMS_SIGNAL put the rms signal in the processed_device->signal */
 							{
 								start_value=((processed_buffer->signals).float_values)+
-									(trace->processed_device->signal->index);
+									(processed_device->signal->index);
 							}	
 							/* zero all the processed values, and copy the processed times*/				
 							processed_value=start_value;								
@@ -9370,7 +9591,8 @@ before this function is exited.
 									DEALLOCATE(values)
 								}								
 								the_device++;
-							}					
+							}
+							/* calculate rms, and find maximum */
 							if(num_valid_devices)
 							{														
 								processed_value=start_value;
@@ -9379,16 +9601,14 @@ before this function is exited.
 								{
 									*processed_value/=num_valid_devices;
 									*processed_value=sqrt(*processed_value);
-
 									if(*processed_value>maximum_value)
 									{
 										maximum_value=*processed_value;
 									}
-
 									processed_value += buffer_offset;					
 								}				
 							}	
-							/* ensure the range of rms is 0 to max; min to max  looks confusing, as*/
+							/* ensure the range of rms is 0 to max; min to max looks confusing, as*/
 							/* rms is all positive. */
 							if(calculate_signal_mode==RMS_SIGNAL)
 							{			
@@ -9403,7 +9623,7 @@ before this function is exited.
 							buffer_offset=processed_buffer->number_of_signals;
 							value=current_values;
 							processed_value=((processed_buffer->signals).float_values)+
-								(trace->processed_device->signal->index);
+								(processed_device->signal->index);
 							for (j=number_of_samples;j>0;j--)
 							{						
 								*processed_value= *value;
@@ -11159,7 +11379,10 @@ either indivisually or the whole box.
 							signal_drawing_information,display,pointer_x,moving,times,
 							marker_graphics_context,frequency,start_analysis_interval);
 					}/* if(moving==TRACE_MOVING_BOX) */
-
+					/* we've changed the cardiac intervals, so change their device and redraw*/
+					calculate_cardiac_interval_device(trace);
+					redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+						(XtPointer)NULL);
 				}/* if(found) */
 			}/* if ((pointer_x>=axes_left-pointer_sensitivity) */			
 		}/* if((ButtonPress==callback->e */
@@ -11717,8 +11940,26 @@ The callback for redrawing part of the drawing area in trace area 3.
 						switch (trace->analysis_mode)
 						{	
 							case ELECTRICAL_IMAGING:
-							{
-								/* ??JW do something! */
+							{																				 
+								device=trace->cardiac_interval_device;														
+								buffer=get_Device_signal_buffer(device);	
+								start_analysis_interval=buffer->start;
+								end_analysis_interval=buffer->end;
+								if(device&&buffer&&trace->valid_processing)	
+								{																
+									/* draw the active signal */
+									draw_signal((struct FE_node *)NULL,
+										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+										&start_analysis_interval,&end_analysis_interval,0,0,
+										trace_area_3->drawing->width,trace_area_3->drawing->height,
+										trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
+										&axes_width,&axes_height,signal_drawing_information,
+										user_interface);
+									trace_area_3->axes_left=axes_left;
+									trace_area_3->axes_top=axes_top;
+									trace_area_3->axes_width=axes_width;
+									trace_area_3->axes_height=axes_height;									
+								}			
 							} break;
 							case EVENT_DETECTION:
 							{
@@ -12117,6 +12358,7 @@ Called when the "highlighted_device" is changed.
 			case ELECTRICAL_IMAGING:
 			{
 				trace_process_device(trace);
+				calculate_cardiac_interval_device(trace);
 				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 					(XtPointer)NULL);			
 				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
@@ -13355,7 +13597,13 @@ called when the analysis rig is changed.
 		/* update filtering */
 		(trace->filtering).low_pass_frequency= -1;
 		(trace->filtering).high_pass_frequency= -1;
+		/* update electrical imaging stuff */
 		trace->calculate_rms=1;
+		/* destroy any existing intervals */
+		if(trace->first_interval)
+		{
+			destroy_Cardiac_interval_list(&trace->first_interval);
+		}
 		trace_change_signal(trace);
 	}
 	else
