@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1620,7 +1620,7 @@ static void graphical_element_editor_update_settings(
 	Widget surface_settings_editor_widget,
 	void *gelem_editor_void,void *settings_void)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
 Callback for when changes are made in the settings editor.
@@ -1646,7 +1646,7 @@ Callback for when changes are made in the settings editor.
 		GT_element_settings_set_visibility(gelem_editor->current_settings,
 			visibility);
 		if (settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
-			settings, gelem_editor->settings_item_list))
+			gelem_editor->current_settings, gelem_editor->settings_item_list))
 		{
 			previous_widget = settings_item->previous_widget;
 			Graphical_element_editor_update_Settings_item(settings_item->gelem_editor,
