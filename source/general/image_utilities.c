@@ -25,8 +25,6 @@ Utilities for handling images.
 #if defined (IMAGEMAGICK)
 /* image magick interfaces */
 #include "magick/api.h"
-#define MagickFalse 0
-#define MagickTrue 1
 #endif /* defined (IMAGEMAGICK) */
 
 /* #define DEBUG 1 */
