@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.hpp
 //
-// LAST MODIFIED : 25 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // Functions are expressions that are constructed for:
@@ -20,9 +20,13 @@
 
 #include "computed_variable/function_base.hpp"
 
+#if defined (PRIVATE_EVALUATE_ETC)
+EXPORT template<typename Value_type> class Function_matrix_sum;
+#endif // defined (PRIVATE_EVALUATE_ETC)
+
 class Function
 //******************************************************************************
-// LAST MODIFIED : 25 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // A function maintains storage for all its inputs and the outputs that can be
@@ -32,13 +36,17 @@ class Function
 //   than one object (Alexandrescu, Chapter 11)?
 //==============================================================================
 {
+#if defined (PRIVATE_EVALUATE_ETC)
+	//???DB.  Too many friends.  All for evaluate_derivative?
 	friend class Function_composite;
 	friend class Function_composition;
 	friend class Function_derivative;
 	friend class Function_derivative_matrix;
 	friend class Function_identity;
 	friend class Function_gradient;
+	friend class Function_matrix_sum<Scalar>;
 	friend class Function_variable;
+#endif // defined (PRIVATE_EVALUATE_ETC)
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
@@ -52,7 +60,9 @@ class Function
 		//   for specifying subsets of the outputs.  Components can be iterated
 		//   using output()->begin_atomic() and output()->end_atomic()
 		virtual Function_variable_handle output()=0;
+#if defined (PRIVATE_EVALUATE_ETC)
 	private:
+#endif // defined (PRIVATE_EVALUATE_ETC)
 		// if <atomic_variable> is not a variable of the function, then a zero
 		//   handle is returned.  Otherwise, evaluate returns a new Function which
 		//   is the value of the <atomic_variable>.  For a dependent variable, this
