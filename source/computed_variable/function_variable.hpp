@@ -18,7 +18,7 @@
 #include "computed_variable/function_base.hpp"
 #include "computed_variable/function_variable_value.hpp"
 
-//#define USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE
+#define USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE
 
 class Function_variable_iterator_representation
 //******************************************************************************
