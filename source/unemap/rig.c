@@ -2373,7 +2373,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 																						position.z)))
 																					{
 																						display_message(ERROR_MESSAGE,
-													"read_configuration.  Could not read sock position");
+													"read_configuration.  Could not read position");
 																						destroy_Device_list(
 																							&last_device_item,1);
 																						destroy_Rig(&rig);
@@ -3320,9 +3320,6 @@ the specified configuration and returns a pointer to it.
 	FILE *input_file;
 	int return_code;
 	struct Rig *rig;
-#if defined (OLD_CODE)
-	char *calibration_file_name;
-#endif /* defined (OLD_CODE) */
 
 	ENTER(read_configuration_file);
 	/* determine the file type and rig type */
@@ -3411,14 +3408,6 @@ the specified configuration and returns a pointer to it.
 		}
 		fclose(input_file);
 	}
-#if defined (OLD_CODE)
-	else
-	{
-		display_message(ERROR_MESSAGE,"read_configuration_file.  Invalid file: %s",
-			file_name);
-		rig=(struct Rig *)NULL;
-	}
-#endif /* defined (OLD_CODE) */
 	if (rig)
 	{
 		*((struct Rig **)rig_pointer)=rig;
@@ -5026,19 +5015,6 @@ the <input_file>.
 												buffer_value=buffer->signals.float_values;
 												for (i=0;i<number_of_samples*number_of_signals;i++)
 												{			
-#if defined (OLD_CODE)
-#if defined (WIN32)
-													if (_isnan((double)(*buffer_value)))
-#else /* defined (WIN32) */
-														if (isnan((double)(*buffer_value)))
-#endif /* defined (WIN32) */
-														{
-															*buffer_value=0.0;
-															display_message(ERROR_MESSAGE,
-																"read_signal_file. signal value is not "
-																"a number. Set to 0 ");
-														}
-#endif /* defined (OLD_CODE) */
 													/* check if data is valid finite() checks inf and
 														nan */
 													/* finite() in math.h for Linux, ieeefp.h for Irix */

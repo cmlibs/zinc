@@ -468,12 +468,10 @@ necessary.
 				{
 					contour_thickness=VARIABLE_THICKNESS;
 				}
-			}
-			if (map->contour_thickness!=contour_thickness)
-			{
-				map->contour_thickness=contour_thickness;
-				map_settings_changed=1;
-			}
+			}		
+			map->contour_thickness=contour_thickness;
+			map_settings_changed=1;
+			recalculate=2;		
 		}
 		value_string=(char *)NULL;
 		XtVaGetValues((map_dialog->range.maximum_value),
@@ -865,12 +863,10 @@ necessary.
 					recalculate=3;
 				}
 			}
-
 			if (number_of_frames!=map->number_of_movie_frames)
 			{
-				map->number_of_movie_frames=number_of_frames;			
+				map->number_of_movie_frames=number_of_frames;
 			}	
-
 			/* no animation if only one frame*/
 			if (1<number_of_frames)
 			{

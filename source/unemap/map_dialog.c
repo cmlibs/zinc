@@ -2391,8 +2391,12 @@ Opens the <map_dialog>.
 					False);
 			}
 			/* set animation options */
-			map_dialog->number_of_frames=map->number_of_sub_maps;
+			/*!!jw this will incorretly report the number of frames for*/
+			/*a 3D animations. Need to sort out the sub_maps for 3D */
+			/* 3D animation still work */
+			map_dialog->number_of_frames=map->number_of_sub_maps;	
 			sprintf(value_string,"%d",map->number_of_sub_maps);
+
 			XtVaSetValues(map_dialog->animation.number_of_frames_text,
 				XmNvalue,value_string,
 				NULL);

@@ -1592,7 +1592,7 @@ in rig.c
 							MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 							set_Region_rig_node_group(region,node_group);
 							/*destroy any exisiting template,field_order_info*/
-							/* create the template node,(but may change it to auxiliary later*/							
+							/* create the template node,(but may change it to auxiliary later*/	
 							DESTROY(FE_node)(&template_node);
 							DESTROY(FE_field_order_info)(&field_order_info);
 							switch (config_node_type)
@@ -7747,4 +7747,33 @@ Returns 1 if the <signal_status_field> at the <node> does NOT return the string
 	LEAVE;
 	return (return_code);
 } /* node_signal_is_unrejected  */
+#endif /* defined (UNEMAP_USE_3D) */
+
+
+#if defined (UNEMAP_USE_3D)
+int convert_rig_to_nodes(struct Rig *rig)
+/*******************************************************************************
+LAST MODIFIED :15 October 2001
+
+DESCRIPTION : 
+Convert a rig into nodes/elements/fields
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(convert_rig_to_nodes);
+	return_code=0;
+	if (rig)
+	{
+
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"convert_rig_to_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* convert_rig_to_nodes*/
 #endif /* defined (UNEMAP_USE_3D) */

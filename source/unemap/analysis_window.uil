@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : analysis_window.uil
 !
-! LAST MODIFIED : 23 February 2001
+! LAST MODIFIED : 2 October 2001
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the analysis window in the analysis work area.
@@ -32,6 +32,7 @@ procedure
 	identify_anal_sig_range_maxim;
 	analysis_set_highlight_min;
 	analysis_set_highlight_max;
+	analysis_read_edf_file;
 !OLD_CODE
 !	identify_analysis_previous_acce;
 	analysis_previous_signal;
@@ -62,6 +63,7 @@ procedure
 	id_analysis_map_multiple_activa;
 	identify_analysis_file_button;
 	identify_analysis_file_read_sig;
+	identify_analysis_file_read_edf;
 	open_file_and_read;
 	identify_analysis_file_overlay;
 	identify_analysis_file_save_int;
@@ -1232,6 +1234,7 @@ object
 		controls
 			{
 			XmPushButton analysis_file_read_signals_butt;
+			XmPushButton analysis_file_read_edf_butt;
 			XmPushButton analysis_file_overlay_signals_b;
 			XmPushButton analysis_file_save_interval_but;
 			XmPushButton analysis_file_save_interval_as_;
@@ -1261,6 +1264,26 @@ object
 			XmNactivateCallback = procedures
 				{
 				open_file_and_read(read_signal_file_data);
+				};
+			};
+		};
+	analysis_file_read_edf_butt: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Read EDF signals");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_analysis_file_read_edf(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				analysis_read_edf_file(analysis_work_area_structure);
 				};
 			};
 		};

@@ -1003,4 +1003,13 @@ Returns 1 if the <signal_status_field> at the <node> does NOT return the string
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
+int convert_rig_to_nodes(struct Rig *rig);
+/*******************************************************************************
+LAST MODIFIED :15 October 2001
+
+DESCRIPTION : 
+==============================================================================*/
+#endif
+
 #endif /* #if !defined (RIG_NODE_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 23 August 2001
+LAST MODIFIED :2 October 2001
 
 DESCRIPTION :
 ===========================================================================*/
@@ -787,6 +787,31 @@ Finds the id of the analysis file read signals button.
 	}
 	LEAVE;
 } /* identify_analysis_file_read_sig */
+
+static void identify_analysis_file_read_edf(Widget *widget_id,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2001
+
+DESCRIPTION :
+Finds the id of the analysis file read edf signals button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(identify_analysis_file_read_edf);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)client_data)
+	{
+		analysis->file_menu.read_edf_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_analysis_file_read_edf.  client_data missing");
+	}
+	LEAVE;
+} /*identify_analysis_file_read_edf  */
 
 static void identify_analysis_file_overlay(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
@@ -1827,7 +1852,7 @@ Writes the PostScript for drawing either <all> the signals from the
 	float postscript_page_height,postscript_page_width,scale_point_to_pixel_x,
 		scale_point_to_pixel_y,signal_gap,signal_height_point,signal_width_point,
 		y_position_point;
-	int axes_height,axes_left,axes_top,axes_width,datum,first_data,i,j,last_data,
+	int axes_height,axes_left,axes_top,axes_width,first_data,i,j,last_data,
 		number_of_devices,return_code,screen,signal_height_pixel,signals_per_page,
 		signal_width_pixel;
 	Pixel background_drawing_colour;
@@ -1851,8 +1876,7 @@ Writes the PostScript for drawing either <all> the signals from the
 	{
 		display=analysis->user_interface->display;
 		first_data=buffer->start;
-		last_data=buffer->end;
-		datum= *(analysis->datum);
+		last_data=buffer->end;		
 		current_region=get_Rig_current_region(rig);	 
 		if (open_printer(&printer,analysis->user_interface))
 		{
@@ -4212,7 +4236,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface,enum Signal_order *signal_order)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2001
+LAST MODIFIED : 2 October 2001
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -4292,6 +4316,8 @@ returned.
 		{"identify_analysis_file_button",(XtPointer)identify_analysis_file_button},
 		{"identify_analysis_file_read_sig",
 			(XtPointer)identify_analysis_file_read_sig},
+		{"identify_analysis_file_read_edf",
+			(XtPointer)identify_analysis_file_read_edf},
 		{"open_file_and_read",(XtPointer)open_file_and_read},
 		{"identify_analysis_file_overlay",
 			(XtPointer)identify_analysis_file_overlay},
@@ -4461,6 +4487,7 @@ returned.
 				analysis->display_map_warning_box_shell=(Widget)NULL;
 				analysis->file_button=(Widget)NULL;
 				analysis->file_menu.read_signals_button=(Widget)NULL;
+				analysis->file_menu.read_edf_button=(Widget)NULL;
 				analysis->file_menu.overlay_signals_button=(Widget)NULL;
 				analysis->file_menu.save_interval_button=(Widget)NULL;
 				analysis->file_menu.save_interval_as_button=(Widget)NULL;

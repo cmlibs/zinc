@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 18 July 2001
+LAST MODIFIED : 2 October 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -138,6 +138,7 @@ DESCRIPTION :
 #include "unemap/beekeeper.h"
 #include "unemap/cardiomapp.h"
 #include "unemap/drawing_2d.h"
+#include "unemap/edf.h"
 #include "unemap/interpolate.h"
 #include "unemap/mapping_work_area.h"
 #include "unemap/neurosoft.h"
@@ -4577,6 +4578,351 @@ for analysing the signals.
 
 	return (return_code);
 } /* analysis_read_beekeeper_eeg_fil */
+
+static void analysis_read_edf_file(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 4 October 2001
+
+DESCRIPTION :
+Reads in the signals from the edf file and sets up the analysis work area
+for analysing the signals.
+==============================================================================*/
+{
+	char *file_name,*temp_string;
+	int buffer_end,buffer_start,success;
+	struct Analysis_work_area *analysis;
+	struct Map *map=(struct Map *)NULL;
+	struct Rig *rig;
+	struct Signal_buffer *buffer;
+	XmString new_dialog_title,old_dialog_title;
+#if defined (UNEMAP_USE_3D)
+	struct FE_node_selection *node_selection;
+	struct FE_field *device_name_field;
+	struct FE_node *rig_node;
+	struct GROUP(FE_node) *rig_node_group;
+#endif /* defined (UNEMAP_USE_3D) */
+	ENTER(analysis_read_edf_file);
+#if defined (UNEMAP_USE_3D)
+	node_selection=(struct FE_node_selection *)NULL;	
+	device_name_field=(struct FE_field *)NULL;
+	rig_node=(struct FE_node *)NULL;	
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined (UNEMAP_USE_3D) */
+	success=0;
+	ENTER(analysis_read_edf_file);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{
+		/* read the edf file name */
+		if (file_name=confirmation_get_read_filename(".edf",analysis->user_interface))
+		{
+			success=1;				
+		}
+		else
+		{
+			/*pressed cancel on confirmation_get_read_filename dialogue*/
+			success=0;
+		}
+		if(success)
+		{
+#if defined (UNEMAP_USE_3D)
+			/* need to unselect nodes, as selecting them accesses them */
+			if (node_selection=get_unemap_package_FE_node_selection
+				(analysis->unemap_package))
+			{
+				FE_node_selection_clear(node_selection);
+			}
+#endif /* defined (UNEMAP_USE_3D)	 */
+			/* clear the old analysis */
+			if (analysis->raw_rig)
+			{
+				if ((*(analysis->raw_rig->devices))&&
+					(buffer=get_Device_signal_buffer(*(analysis->raw_rig->devices))))
+				{
+					destroy_Signal_buffer(&buffer);
+				}
+				destroy_Rig(&(analysis->raw_rig));
+			}
+			if (analysis->rig)
+			{
+				if ((*(analysis->rig->devices))&&
+					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
+				{
+					destroy_Signal_buffer(&buffer);
+				}
+#if defined (UNEMAP_USE_3D)
+				if ((analysis->mapping_window)&&(analysis->mapping_window->map&&
+					(analysis->mapping_window->map->drawing_information)))
+				{
+					map_remove_torso_arm_labels(analysis->mapping_window->map->drawing_information);
+					/*DIRECT_INTERPOLATION will cause problems with no TORSOs*/
+					analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
+				}
+#endif /* defined (UNEMAP_USE_3D)*/
+
+				destroy_Rig(&(analysis->rig));
+#if defined (UNEMAP_USE_3D)
+				free_unemap_package_time_computed_fields(analysis->unemap_package);	
+				free_unemap_package_rig_fields(analysis->unemap_package);			
+#endif /* defined (UNEMAP_USE_NODES)*/
+			}
+			/* initialize the new analysis */
+			analysis->datum=0;
+			analysis->potential_time=0;
+			analysis->highlight=(struct Device **)NULL;
+			analysis->map_type=NO_MAP_FIELD;
+			if (analysis->mapping_window)
+			{
+				XtSetSensitive(analysis->mapping_window->animate_button,False);
+				if (map=analysis->mapping_window->map)
+				{
+					map->activation_front= -1;
+					map->colour_option=HIDE_COLOUR;
+					map->contours_option=HIDE_CONTOURS;
+					map->electrodes_option=SHOW_ELECTRODE_NAMES;
+#if defined (UNEMAP_USE_3D)
+					if (map->drawing_information)
+					{
+						set_map_drawing_information_viewed_scene(map->drawing_information,0);
+					}
+#endif /* defined (UNEMAP_USE_NODES)*/
+				}
+			}
+			/* get the analysis window title */
+			XtVaGetValues(analysis->window->window,
+				XmNdialogTitle,&old_dialog_title,
+				NULL);	
+			/* open the input file */
+			if (read_edf_file(file_name,&analysis->rig,analysis->user_interface
+#if defined (UNEMAP_USE_3D)
+				,analysis->unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+												)
+				&&(rig=analysis->rig)&&(rig->devices)&&(*(rig->devices))&&
+				(buffer=get_Device_signal_buffer(*(rig->devices))))
+			{
+				success=1;
+				/* read the event detection settincgs */
+				buffer_start=buffer->start;
+				buffer_end=buffer->end;
+								
+				if (analysis->window)
+				{
+					XtSetSensitive(analysis->window->map_menu.single_activation_button,
+						False);
+					XtSetSensitive(
+						analysis->window->map_menu.multiple_activation_button,False);
+					XtSetSensitive(analysis->window->file_menu.save_times_button,False);
+				}
+				/* initialize the search interval */
+				analysis->start_search_interval=buffer_start;
+				analysis->end_search_interval=buffer_end;
+				DEALLOCATE(analysis->search_interval_divisions);
+				/* initialize the potential time */
+				analysis->potential_time=(buffer_end-buffer_start)/3;
+				/* initialize the datum */
+				analysis->datum=2*(analysis->potential_time);					
+			}
+			else
+			{
+				success=0;
+				display_message(ERROR_MESSAGE,
+					"analysis_read_edf_file.  Invalid edf file: %s or cnfg file ",file_name);		
+			}
+#if defined (UNEMAP_USE_3D)
+			/* read the signal file into nodes */
+			/*???DB.  Would be better to be another callback from the same button ? */
+			if (convert_rig_to_nodes(analysis->rig))
+			{
+				/* same as rig->unemap_package */
+				ACCESS(Unemap_package)(analysis->unemap_package);		 
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"analysis_read_edf_file. convert_rig_to_nodes  failed ");
+			}
+#endif /* defined (UNEMAP_USE_3D) */
+			if (success)
+			{
+				/*highlight the first device*/
+				if (analysis->highlight=analysis->rig->devices)
+				{
+					(*(analysis->highlight))->highlight=1;
+				}
+				/* assign the signal file name */
+				if (ALLOCATE(analysis->rig->signal_file_name,char,strlen(file_name)+1))
+				{
+					strcpy(analysis->rig->signal_file_name,file_name);
+					/* unghost the write interval button */
+					XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
+					/* unghost the overlay signals button */
+					XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"analysis_read_edf_file.  Could not allocate memory for signal file name");
+				}
+				/* set the analysis window title */
+				if (ALLOCATE(temp_string,char,strlen(file_name)+12))
+				{
+					strcpy(temp_string,"Analysing: ");
+					strcat(temp_string,file_name);
+					new_dialog_title=XmStringCreateSimple(temp_string);
+					DEALLOCATE(temp_string);
+				}
+				else
+				{
+					new_dialog_title=XmStringCreateSimple("Analysis");
+					display_message(ERROR_MESSAGE,
+						"analysis_read_edf_file.  Could not allocate memory for window title");
+				}
+				XtVaSetValues(analysis->window->window,
+					XmNdialogTitle,new_dialog_title,
+					NULL);
+				if (analysis->mapping_window)
+				{
+					/* unghost the mapping window file button */
+					XtSetSensitive(analysis->mapping_window->file_button,True);
+				}
+				/* unghost the write interval buttons */
+				XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
+				XtSetSensitive(analysis->window->file_menu.save_interval_as_button,True);
+				/* unghost the overlay signals button */
+				XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
+				/* ghost the reset button */
+				XtSetSensitive(analysis->window->interval.reset_button,False);
+				/* unghost the set baseline button */
+				XtSetSensitive(analysis->window->interval.baseline_button,True);
+				/* unghost the set range button */
+				XtSetSensitive(analysis->window->interval.range_button,True);
+				/* unghost the signal_range */
+				XtSetSensitive(analysis->window->interval.signal_range,True);
+				/* unghost the display integral map button */
+				XtSetSensitive(analysis->window->map_menu.integral_button,True);
+				/* unghost the display potential map button */
+				XtSetSensitive(analysis->window->map_menu.potential_button,True);
+				/* unghost the print selected signals button */
+				XtSetSensitive(analysis->window->print_menu.selected_button,True);
+				/* unghost the print all signals button */
+				XtSetSensitive(analysis->window->print_menu.all_button,True);
+				trace_change_rig(analysis->trace);
+				/* open the trace window */
+				if (!open_trace_window(&(analysis->trace),analysis->window_shell,
+					analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
+					&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
+					&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+				&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+					&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
+					&(analysis->potential_time),&(analysis->event_number),
+					&(analysis->number_of_events),&(analysis->threshold),
+					&(analysis->minimum_separation),&(analysis->level),
+					&(analysis->average_width),&(analysis->start_search_interval),
+					&(analysis->search_interval_divisions),&(analysis->end_search_interval),
+					analysis->user_interface->screen_width,
+					analysis->user_interface->screen_height,
+					analysis->signal_drawing_information,analysis->user_interface,
+					&(analysis->first_eimaging_event)))
+				{
+					display_message(ERROR_MESSAGE,
+						"analysis_read_edf_file.  Could not open trace window");
+				}
+			}
+			else
+			{
+				if (analysis->rig)
+				{
+					if ((*(analysis->rig->devices))&&
+						(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
+					{
+						destroy_Signal_buffer(&buffer);
+					}
+					destroy_Rig(&(analysis->rig));
+				}
+				if (analysis->mapping_window)
+				{
+					/* ghost the mapping window file button */
+					XtSetSensitive(analysis->mapping_window->file_button,False);
+				}
+				/* set the analysis window title */
+				new_dialog_title=XmStringCreateSimple("Analysis");
+				XtVaSetValues(analysis->window->window,
+					XmNdialogTitle,new_dialog_title,
+					NULL);
+				/* ghost the write interval buttons */
+				XtSetSensitive(analysis->window->file_menu.save_interval_button,False);
+				XtSetSensitive(analysis->window->file_menu.save_interval_as_button,False);
+				/* ghost the overlay signals button */
+				XtSetSensitive(analysis->window->file_menu.overlay_signals_button,False);
+				/* ghost the write event times button */
+				XtSetSensitive(analysis->window->file_menu.save_times_button,False);
+				/* ghost the reset button */
+				XtSetSensitive(analysis->window->interval.reset_button,False);
+				/* ghost the set baseline button */
+				XtSetSensitive(analysis->window->interval.baseline_button,False);
+				/* ghost the set range button */
+				XtSetSensitive(analysis->window->interval.range_button,False);
+				/* ghost the signal_range */
+				XtSetSensitive(analysis->window->interval.signal_range,False);
+				/* ghost the display potential map button */
+				XtSetSensitive(analysis->window->map_menu.potential_button,False);
+				/* ghost the display single activation map button */
+				XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
+				/* ghost the display multiple activation map button */
+				XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+					False);
+				/* ghost the print selected signals button */
+				XtSetSensitive(analysis->window->print_menu.selected_button,False);
+				/* ghost the print all signals button */
+				XtSetSensitive(analysis->window->print_menu.all_button,False);
+				/* close the trace window */
+				if (analysis->trace)
+				{
+					XtPopdown(analysis->trace->shell);
+					analysis->trace->open=0;
+				}
+			}
+			update_analysis_window_menu(analysis->window);
+			update_mapping_window_menu(analysis->mapping_window);
+			/* ensure projection_type matches region type */
+			ensure_projection_type_matches_region_type(analysis);
+			/* update the drawing areas */
+			update_mapping_drawing_area(analysis->mapping_window,2);
+			update_mapping_colour_or_auxili(analysis->mapping_window);
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			/* free the old analysis window title */
+			XmStringFree(old_dialog_title);
+#if defined (UNEMAP_USE_3D) 
+			/* highlight the  node (and everything else) */
+			if ((analysis->highlight)&&(*(analysis->highlight)))
+			{	
+				/*get the rig_node corresponding to the device */
+				node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
+				device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+				rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+				rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
+					device_name_field);
+				/*trigger the selction callback*/
+				FE_node_selection_select_node(node_selection,rig_node);
+			}
+#endif /* defined (UNEMAP_USE_3D) */
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_read_edf_file.  Missing analysis_work_area");
+		success=0;
+	}	
+	LEAVE;
+} /* analysis_read_edf_file */
+
 
 static int analysis_read_neurosoft_sig_fil(char *file_name,
 	void *analysis_work_area)
@@ -13837,8 +14183,8 @@ Calculates the next desired update callback from the time object.
 								{
 									next_time=map->start_time+
 										(map->end_time-map->start_time)/
-										(float)(map->number_of_sub_maps-1)*
-										floor((float)(map->number_of_sub_maps-1)*
+										(float)(map->number_of_movie_frames-1)*
+										floor((float)(map->number_of_movie_frames-1)*
 										((time_after-map->start_time)/
 										(map->end_time-map->start_time))+1.0);
 									time_set=1;
@@ -13847,8 +14193,8 @@ Calculates the next desired update callback from the time object.
 								{
 									next_time=map->start_time+
 										(map->end_time - map->start_time)/
-										(float)(map->number_of_sub_maps-1)*
-										ceil((float)(map->number_of_sub_maps-1)*
+										(float)(map->number_of_movie_frames-1)*
+										ceil((float)(map->number_of_movie_frames-1)*
 										((time_after-map->start_time)/
 										(map->end_time-map->start_time))-1.0);
 									time_set=1;
@@ -16787,7 +17133,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 2 October 2001
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -16811,6 +17157,7 @@ Creates the windows associated with the analysis work area.
 		{"analysis_unrange_highlighted",(XtPointer)analysis_unrange_highlighted},
 		{"anal_set_range_all_accep_undec",
 			(XtPointer)anal_set_range_all_accep_undec},
+		{"analysis_read_edf_file",(XtPointer)analysis_read_edf_file},
 		{"trace_analysis_mode_apply",(XtPointer)trace_analysis_mode_apply},
 		{"display_map_with_check",(XtPointer)display_map_with_check},
 		{"set_analysis_order_event",(XtPointer)set_analysis_order_event},
@@ -16841,7 +17188,7 @@ Creates the windows associated with the analysis work area.
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"analysis_work_area_structure",(XtPointer)NULL},
-		{"read_signal_file_data",(XtPointer)NULL},
+		{"read_signal_file_data",(XtPointer)NULL},	
 		{"read_event_times_file_data",(XtPointer)NULL},
 		{"read_bard_data_file_data",(XtPointer)NULL},
 		{"read_beekeeper_data_file_data",(XtPointer)NULL},
@@ -16936,7 +17283,7 @@ Creates the windows associated with the analysis work area.
 			analysis_datum_time_update_callback,(void *)analysis);
 		analysis->search_interval_divisions=(int *)NULL;
     /* DPN 18 June 2001 - Initialise the file selection boxes */
-    analysis->read_signal_file_data = (struct File_open_data *)NULL;
+    analysis->read_signal_file_data = (struct File_open_data *)NULL;	
     analysis->event_times_file_data = (struct File_open_data *)NULL;
     analysis->read_bard_electrode_data = (struct File_open_data *)NULL;
     analysis->read_beekeeper_eeg_fil_data = (struct File_open_data *)NULL;
@@ -16991,7 +17338,7 @@ Creates the windows associated with the analysis work area.
 				identifier_list[0].value=(XtPointer)analysis;
         analysis->read_signal_file_data = create_File_open_data(
 					signal_file_extension_read,REGULAR,analysis_read_signal_file,
-					(void *)analysis,0,user_interface);
+					(void *)analysis,0,user_interface);	
 				identifier_list[1].value=(XtPointer)(analysis->read_signal_file_data);
         analysis->event_times_file_data = create_File_open_data(
 					analysis->events_file_extension,REGULAR,read_event_times_file,
@@ -17160,7 +17507,7 @@ Closes the windows associated with the analysis work area.
 
 int destroy_analysis_work_area(struct Analysis_work_area *analysis)
 /*******************************************************************************
-LAST MODIFIED : 19 June 2001
+LAST MODIFIED : 2 October 2001
 
 DESCRIPTION :
 Frees up the memory associated with the <analysis> work area object given. Does
@@ -17181,7 +17528,7 @@ is used in Cell.
     if (analysis->read_signal_file_data)
     {
       destroy_File_open_data(&(analysis->read_signal_file_data));
-    }
+    }	
     if (analysis->event_times_file_data)
     {
       destroy_File_open_data(&(analysis->event_times_file_data));
