@@ -78,6 +78,7 @@ DESCRIPTION :
 	COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME,  /* extracts an array value at the given time */
 	COMPUTED_FIELD_NODE_VALUE,         /* value/deriv/version of fe_field at node */
 	COMPUTED_FIELD_OFFSET,             /* individ'ly offset components of field */
+	COMPUTED_FIELD_PROJECTION,         /* Projects coordinates through a perspective projection matrix */
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
 	COMPUTED_FIELD_SAMPLE_TEXTURE,     /* extracts values from a texture */
@@ -649,6 +650,15 @@ LAST MODIFIED : 25 January 1999
 DESCRIPTION :
 Returns a pointer to a static string token for the given <field_type>.
 The calling function must not deallocate the returned string.
+==============================================================================*/
+
+int Computed_field_has_3_components(struct Computed_field *field,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 10 March 1999
+
+DESCRIPTION :
+Conditional function returning true if <field> has exactly four components.
 ==============================================================================*/
 
 int Computed_field_has_4_components(struct Computed_field *field,
@@ -1273,6 +1283,40 @@ DESCRIPTION :
 If the field is of type COMPUTED_FIELD_RC_COORDINATE, the coordinate field used
 by it is returned - otherwise an error is reported.
 Use function Computed_field_get_type to determine the field type.
+==============================================================================*/
+
+int Computed_field_get_type_projection(struct Computed_field *field,
+	struct Computed_field **source_field, int *number_of_components, 
+	double **projection_matrix);
+/*******************************************************************************
+LAST MODIFIED : 5 May 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_PROJECTION, the source_field and
+projection matrix used by it are returned. Since the number of projections is
+equal to the number of components in the source_field (and you don't know this
+yet), this function returns in *projection_matrix a pointer to an allocated 
+array containing the values.
+It is up to the calling function to DEALLOCATE the returned <*projection_matrix>.
+Use function Computed_field_get_type to determine the field type.
+==============================================================================*/
+
+int Computed_field_set_type_projection(struct Computed_field *field,
+	struct Computed_field *source_field, int number_of_components, 
+	double *projection_matrix);
+/*******************************************************************************
+LAST MODIFIED : 5 May 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_PROJECTION, returning the <source_field>
+with each component multiplied by the perspective <projection_matrix>.
+The <projection_matrix> array must be of size
+(source_field->number_of_components + 1) * (field->number_of_components + 1).
+The source vector is appended with a 1 to make source_field->number_of_components + 1
+components.  The extra calculated value is a perspective value which divides
+through each of the other components.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
 ==============================================================================*/
 
 int Computed_field_set_type_rc_coordinate(struct Computed_field *field,
