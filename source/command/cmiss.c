@@ -2341,6 +2341,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 				}
 			}
 		} /* parse error,help */
+		DESTROY(Option_table)(&option_table);
 		if (coordinate_field)
 		{
 			DEACCESS(Computed_field)(&coordinate_field);
