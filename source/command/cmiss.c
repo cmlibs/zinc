@@ -9002,6 +9002,18 @@ Modifies the properties of a texture.
 						if (evaluate_data.field && evaluate_data.spectrum && 
 							evaluate_data.texture_coordinates_field)
 						{
+							if (0 == specify_width)
+							{
+								specify_width = 1;
+							}
+							if (0 == specify_height)
+							{
+								specify_height = 1;
+							}
+							if (0 == specify_depth)
+							{
+								specify_depth = 1;
+							}
 							set_Texture_image_from_field(texture, 
 								evaluate_data.field,
 								evaluate_data.texture_coordinates_field,
