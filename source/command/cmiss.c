@@ -11196,7 +11196,9 @@ DESCRIPTION :
 Executes a GFX DESTROY CMISS_CONNECTION command.
 ==============================================================================*/
 {
+#if defined (LINK_CMISS)
 	char *current_token;
+#endif /* defined (LINK_CMISS) */
 	int return_code;
 
 	ENTER(gfx_destroy_cmiss);
