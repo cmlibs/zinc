@@ -3786,8 +3786,7 @@ static int map_show_surfaces(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
-	struct Colour *no_interpolation_colour,struct User_interface *user_interface,
-	struct Element_discretization *map_element_discretization)
+	struct Colour *no_interpolation_colour)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2000
 
@@ -3978,9 +3977,7 @@ Also applies <number_of_contours> contours to surface.
 								"map_show_surfaces. Couldn't copy material ");							
 							return_code=0;
 						}		
-					}																							
-					GT_element_group_set_element_discretization(gt_element_group,
-						map_element_discretization,user_interface);							
+					}	
 					GT_element_settings_set_selected_material(settings,default_selected_material);
 					GT_element_settings_set_material(settings,material);
 					if (GT_element_group_add_settings(gt_element_group,settings,0))
@@ -4209,7 +4206,7 @@ Also sets the glyph in the unemap_package <package>
 	if(package)
 	{
 		/* match the names to the marker types. Maybe store the marker types ??JW*/
-		/* see also map_draw_map_electrodes */					
+		/* see also map_update_map_electrodes */					
 		switch(electrodes_marker_type)
 		{
 			case CIRCLE_ELECTRODE_MARKER:
@@ -4376,8 +4373,7 @@ Sets the <time> of the time field.
 
 #if defined (UNEMAP_USE_NODES)
 static int map_show_map_electrodes(struct Unemap_package *package,int map_number,
-	struct GT_object *glyph,FE_value electrodes_marker_size,
-	enum Electrodes_option electrodes_option,FE_value time,struct Spectrum *spectrum)
+	struct GT_object *glyph,struct Map *map,FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000 
 
@@ -4440,10 +4436,6 @@ Construct the settings and build the graphics objects for the glyphs.
 		if (rig_element_group&&(gt_element_group=Scene_get_graphical_element_group(
 			scene,rig_element_group)))
 		{	
-#if defined (OLD_CODE)
-			/* get rid of the default lines*/
-			map_graphics_hide_lines(scene,rig_element_group);
-#endif /* defined (OLD_CODE) */
 			/* do nothing if already have settings in this group*/
 			if (!(settings=first_settings_in_GT_element_group_that(gt_element_group,
 				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))
@@ -4452,21 +4444,21 @@ Construct the settings and build the graphics objects for the glyphs.
 				{						
 					graphical_material_manager=
 						get_unemap_package_Graphical_material_manager(package);
-					default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-						"default_selected",graphical_material_manager);
+					default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER
+						(Graphical_material,name)("default_selected",graphical_material_manager);
 					GT_element_settings_set_selected_material(settings,default_selected_material);
 					GT_element_settings_set_material(settings,material);
 					GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);					
 					glyph_centre[0]=0.0;
 					glyph_centre[1]=0.0;
 					glyph_centre[2]=0.0;
-					glyph_size[0]=electrodes_marker_size;
-					glyph_size[1]=electrodes_marker_size;
-					glyph_size[2]=electrodes_marker_size;
+					glyph_size[0]=map->electrodes_marker_size;
+					glyph_size[1]=map->electrodes_marker_size;
+					glyph_size[2]=map->electrodes_marker_size;
 					orientation_scale_field=(struct Computed_field *)NULL;
 					glyph_scale_factors[0]=1.0;
 					glyph_scale_factors[1]=1.0;
-					glyph_scale_factors[2]=1.0;	
+					glyph_scale_factors[2]=1.0;
 					computed_field_manager=get_unemap_package_Computed_field_manager(package);
 					computed_coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_read_only_with_fe_field,(void *)
@@ -4474,8 +4466,9 @@ Construct the settings and build the graphics objects for the glyphs.
 					GT_element_settings_set_coordinate_field(settings,computed_coordinate_field);
 					GT_element_settings_set_glyph_parameters(settings,glyph,
 						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);
-					map_set_electrode_colour_from_time(package,spectrum,settings,time);
-					switch(electrodes_option)
+					map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
+						settings,time);
+					switch(map->electrodes_option)
 					{
 						case SHOW_ELECTRODE_VALUES:
 						{						
@@ -4518,9 +4511,9 @@ Construct the settings and build the graphics objects for the glyphs.
 					/* add the settings to the group */
 					if (GT_element_group_add_settings(gt_element_group,settings,1))
 					{
-						set_unemap_package_map_electrode_size(package,electrodes_marker_size,
+						set_unemap_package_map_electrode_size(package,map->electrodes_marker_size,
 							map_number);
-						set_unemap_package_map_electrodes_option(package,electrodes_option,
+						set_unemap_package_map_electrodes_option(package,map->electrodes_option,
 							map_number);
 						GT_element_group_build_graphics_objects(gt_element_group,
 							(struct FE_element *)NULL,(struct FE_node *)NULL);
@@ -4582,10 +4575,8 @@ referenced by <map_number>.
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_draw_map_electrodes(struct Unemap_package *package,int map_number,
-	enum Electrodes_marker_type electrodes_marker_type,
-	enum Electrodes_option electrodes_option,FE_value electrodes_marker_size,
-	struct Spectrum *spectrum,FE_value time)
+static int map_update_map_electrodes(struct Unemap_package *package,int map_number,
+	struct Map *map,FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
@@ -4598,7 +4589,7 @@ rig_node_group referenced by <map_number>. Glyph type taken from
 	int return_code;		
 	struct GT_object *electrode_glyph;	
 	
-	ENTER(map_draw_map_electrodes);	 
+	ENTER(map_update_map_electrodes);	 
 	electrode_glyph=(struct GT_object *)NULL;
 	
 	if(package)
@@ -4608,27 +4599,25 @@ rig_node_group referenced by <map_number>. Glyph type taken from
 			(package,map_number)))
 		{
 			electrode_glyph=map_get_map_electrodes_glyph(package,map_number,
-				electrodes_marker_type);	
+				map->electrodes_marker_type);	
 		}
-		map_show_map_electrodes(package,map_number,electrode_glyph,
-			electrodes_marker_size,electrodes_option,time,spectrum);
+		map_show_map_electrodes(package,map_number,electrode_glyph,map,time);
 		map_update_electrode_colour_from_time(package,time);
 	}
 	else
 	{	
 		display_message(ERROR_MESSAGE,
-			"map_draw_map_electrodes.  Invalid argument(s)");
+			"map_update_map_electrodes.  Invalid argument(s)");
 		return_code=0;
 	}	
 	LEAVE;
 	return(return_code);
-}/* map_draw_map_electrodes */
+}/* map_update_map_electrodes */
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
 static int map_remove_map_electrodes_if_changed(struct Unemap_package *unemap_package,
-	int number_of_regions,enum Electrodes_marker_type electrodes_marker_type,
-	enum Electrodes_option electrodes_option,int electrodes_marker_size)
+	struct Map *map,int number_of_regions)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
@@ -4640,7 +4629,7 @@ removes the maps elecrodes, if they've changed.
 	int region_number,return_code;
 	struct GT_object *electrode_glyph;
 
-	ENTER(map_draw_map_electrodes);	
+	ENTER(map_remove_map_electrodes_if_changed);	
  	electrode_glyph=(struct GT_object *)NULL;	
 	electrode_glyph_name=(char *)NULL;
 	if(unemap_package)
@@ -4661,16 +4650,16 @@ removes the maps elecrodes, if they've changed.
 			GET_NAME(GT_object)(electrode_glyph,&electrode_glyph_name);	
 			/*Glyph type has changed */		
 			if((((!strcmp(electrode_glyph_name,"cross"))&&
-				(electrodes_marker_type!=PLUS_ELECTRODE_MARKER))||
+				(map->electrodes_marker_type!=PLUS_ELECTRODE_MARKER))||
 				((!strcmp(electrode_glyph_name,"sphere"))&&
-					(electrodes_marker_type!=CIRCLE_ELECTRODE_MARKER))||
+					(map->electrodes_marker_type!=CIRCLE_ELECTRODE_MARKER))||
 				((!strcmp(electrode_glyph_name,"diamond"))&&
-					(electrodes_marker_type!=SQUARE_ELECTRODE_MARKER)))||
+					(map->electrodes_marker_type!=SQUARE_ELECTRODE_MARKER)))||
 				/* electrode size changed*/
-				(electrodes_marker_size!=
+				(map->electrodes_marker_size!=
 					get_unemap_package_map_electrode_size(unemap_package,region_number))||
 				/* electrode option changed*/
-				(electrodes_option!=
+				(map->electrodes_option!=
 					get_unemap_package_map_electrodes_option(unemap_package,region_number)))
 			{	
 				for (region_number=0;region_number<number_of_regions;region_number++)
@@ -4690,6 +4679,41 @@ removes the maps elecrodes, if they've changed.
 	LEAVE;
 	return(return_code);
 }/* map_remove_map_electrodes_if_changed */
+#endif /* UNEMAP_USE_NODES */
+
+#if defined (UNEMAP_USE_NODES)
+static int map_draw_map_electrodes(struct Unemap_package *unemap_package,struct Map *map,
+	int number_of_regions,FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Removes the map electrodes if they've changed, then redraws them.
+==============================================================================*/
+{
+	int region_number,return_code;
+
+	ENTER(map_draw_map_electrodes);
+	return_code=0;
+	if(unemap_package&&map&&(number_of_regions>0))
+	{		
+		return_code=map_remove_map_electrodes_if_changed(unemap_package,map,
+			number_of_regions);
+		/*re loop through regions and and draw electrodes, now we have the changes to the*/
+		/* spectrum (map->drawing_information->spectrum) */
+		for (region_number=0;region_number<number_of_regions;region_number++)
+		{
+			map_update_map_electrodes(unemap_package,region_number,map,time);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map_draw_map_electrodes.  Invalid argument(s)");	
+	}
+	LEAVE;
+	return(return_code);
+}/* map_draw_map_electrodes */
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
@@ -4786,10 +4810,6 @@ This function draws the <map> in as a 3D CMGUI scene.
 							/* Show the map element surface */						
 							element_group=get_unemap_package_map_element_group
 								(unemap_package,region_number);
-#if defined (OLD_CODE)
-							map_graphics_hide_lines(get_unemap_package_scene(unemap_package),
-								element_group);
-#endif /* defined (OLD_CODE) */
 							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
 							if((map->interpolation_type==NO_INTERPOLATION)||
 								(map->colour_option==HIDE_COLOUR))
@@ -4799,9 +4819,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 									get_unemap_package_graphical_material(unemap_package),
 									get_unemap_package_Graphical_material_manager(unemap_package),
 									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
-									get_unemap_package_no_interpolation_colour(unemap_package),
-									get_unemap_package_user_interface(unemap_package),
-									get_unemap_package_map_element_discretization(unemap_package));
+									get_unemap_package_no_interpolation_colour(unemap_package));
 							}
 							else /* BICUBIC interpolation  */
 							{
@@ -4814,9 +4832,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 								map_show_surfaces(scene,element_group,
 									get_unemap_package_graphical_material(unemap_package),
 									get_unemap_package_Graphical_material_manager(unemap_package),
-									spectrum,data_field,(struct Colour*)NULL,
-									get_unemap_package_user_interface(unemap_package),
-									get_unemap_package_map_element_discretization(unemap_package));
+									spectrum,data_field,(struct Colour*)NULL);
 							}
 							if(!get_unemap_package_viewed_scene(unemap_package))
 							{														
@@ -4834,7 +4850,9 @@ This function draws the <map> in as a 3D CMGUI scene.
 					{		
 						if(map->range_changed)
 						{
-							map->range_changed=0;
+							map->range_changed=0;	
+							minimum=map->minimum_value;
+							maximum=map->maximum_value;	
 							range_set=1;
 						}
 					}
@@ -4874,7 +4892,8 @@ This function draws the <map> in as a 3D CMGUI scene.
 						map->range_changed=0;
 					}	/* if(map->fixed_range) */
 					if(range_set)
-					{						
+					{
+						map->range_changed=0;					
 						if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 						{
 							if (spectrum_to_be_modified_copy=CREATE(Spectrum)
@@ -4901,17 +4920,8 @@ This function draws the <map> in as a 3D CMGUI scene.
 								"new_draw_map.  Spectrum is not in manager!");
 							return_code=0;
 						}				
-					}								
-					map_remove_map_electrodes_if_changed(unemap_package,number_of_regions,
-						map->electrodes_marker_type,map->electrodes_option,
-						map->electrodes_marker_size);
-					/*re loop through regions and and draw electrodes, now we have the spectrum */
-					for (region_number=0;region_number<number_of_regions;region_number++)
-					{
-						map_draw_map_electrodes(unemap_package,region_number,
-							map->electrodes_marker_type,map->electrodes_option,
-							map->electrodes_marker_size,spectrum,time);
-					}		
+					}	
+					map_draw_map_electrodes(unemap_package,map,number_of_regions,time);
 					map_draw_contours(map,spectrum,unemap_package,data_field,
 						number_of_regions);
 					/* First time the scene's viewed  do "view_all"*/

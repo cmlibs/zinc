@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -203,19 +203,24 @@ DESCRIPTION :
 		(analysis_window=analysis->window)&&
 		(user_interface=analysis->user_interface))
 	{
-		switch (analysis->map_type)
+		if(analysis->map_type_changed)
+		/* revert to the default spectrum type if the map type has changed  */
 		{
-			case SINGLE_ACTIVATION:
-			case MULTIPLE_ACTIVATION:
+			switch (analysis->map_type)
 			{
-				Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
-					RED_TO_BLUE_SPECTRUM);
-			} break;
-			default:
-			{
-				Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
-					BLUE_TO_RED_SPECTRUM);
-			} break;
+				case SINGLE_ACTIVATION:
+				case MULTIPLE_ACTIVATION:
+				{
+					Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
+						RED_TO_BLUE_SPECTRUM);
+				} break;
+				default:
+				{
+					Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
+						BLUE_TO_RED_SPECTRUM);
+				} break;
+			}
+			analysis->map_type_changed=0;
 		}
 		if (widget==analysis_window->display_map_warning_box)
 		{
@@ -462,7 +467,7 @@ except the warning box shell.
 static void display_map_with_check(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Check the analysis rig for events and for undecided events.  Prompt user for
@@ -519,6 +524,14 @@ continuation.  Display the map.
 					end_search_interval=analysis->end_search_interval;
 				}
 			}
+		}
+		if(analysis->map_type!=map_type)
+		{
+			analysis->map_type_changed=1;
+		}
+		else
+		{
+			analysis->map_type_changed=0;
 		}
 		analysis->map_type=map_type;
 		current_region=rig->current_region;
@@ -14106,7 +14119,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -14190,6 +14203,7 @@ Creates the windows associated with the analysis work area.
 #endif /* defined (UNEMAP_USE_NODES) */
 		analysis->activation=activation;
 		analysis->map_type=NO_MAP_FIELD;
+		analysis->map_type_changed=0;
 		analysis->user_interface=user_interface;
 		analysis->pointer_sensitivity=pointer_sensitivity;
 		analysis->postscript_file_extension=postscript_file_extension;

@@ -57,6 +57,7 @@ DESCRIPTION :
 	enum Edit_order edit_order;
 	enum Signal_order signal_order;
 	enum Map_type map_type;
+	int map_type_changed; /* flag 1/0 true/false */
 	struct File_open_data *bard_signal_file_data,*cardiomapp_signal_file_data,
 		*neurosoft_signal_file_data;
 	/* the <search_interval_divisions> mark the internal boundaries between beats
