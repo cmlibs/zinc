@@ -54,7 +54,7 @@ FORTRAN = f77 -c
 LINK = cc
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O
-COMPILE_FLAGS = -ansi -pedantic -woff 1521,1048
+COMPILE_FLAGS = -ansi -pedantic -woff 1521
 COMPILE_DEFINES = 
 STRICT_FLAGS = 
 STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
