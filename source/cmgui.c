@@ -1675,6 +1675,7 @@ Main program for the CMISS Graphical User Interface
 					}
 					if(!batch_mode)
 					{
+						/* DESTROY(Command_window)(&command_data.command_window); */
 						/* user interface loop */						
 						return_code=application_main_loop(&user_interface);						
 						/*???DB.  Need better way to stop error handling because
@@ -1726,11 +1727,16 @@ Main program for the CMISS Graphical User Interface
 				}
 				if(!batch_mode)
 				{
+#if defined (OLD_CODE)
+					/* Close_user_interface is called by execute_command_quit and
+						stops the main loop */
 					/* close the user interface */
 					close_user_interface(&user_interface);
 					/*???DB.  Should this actually be inside the application and be used to
 					  set a flag that terminates the main loop ? */
-					DESTROY(Machine_information)(&user_interface.local_machine_info);		
+#endif /* defined (OLD_CODE) */
+					DESTROY(Machine_information)(&user_interface.local_machine_info);
+					DEACCESS(Time_keeper)(&command_data.default_time_keeper);
 				}
 
 #if defined (SGI_MOVIE_FILE)
@@ -1793,7 +1799,7 @@ Main program for the CMISS Graphical User Interface
 
 				/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 					on.  When MEMORY_CHECKING is off this function does nothing */
-				list_memory(/*count_number*/1, /*show_pointers*/0, /*increment_counter*/0);
+				list_memory(/*count_number*/1, /*show_pointers*/0, /*increment_counter*/0, /*show_structures*/1);
 			}
 		}
 	}
