@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1127,12 +1127,13 @@ Note that lights are not included in the scene and must be handled separately!
 
 int execute_Scene(struct Scene *scene);
 /*******************************************************************************
-LAST MODIFIED : 28 November 1997
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Calls the display list for <scene>. If the display list is not current, an
-an error is reported.
+an error is reported. Version calls both the normal and fast_changing lists.
 Note that lights are not included in the scene and must be handled separately!
+Initialises the name stack then calls execute_child_Scene.
 ==============================================================================*/
 
 int execute_Scene_non_fast_changing(struct Scene *scene);

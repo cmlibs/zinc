@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -221,6 +221,47 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_object,position,int,compare_int)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
+
+static int execute_child_Scene(struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 9 March 2001
+
+DESCRIPTION :
+Calls the display list for <scene>. If the display list is not current, an
+an error is reported. Version calls both the normal and fast_changing lists.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(execute_Scene);
+	if (scene)
+	{
+		if (scene->display_list_current)
+		{
+			glCallList(scene->display_list);
+			if (Scene_has_fast_changing_objects(scene))
+			{
+				glCallList(scene->fast_changing_display_list);
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_child_Scene.  display list not current");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_child_Scene.  Missing scene");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_child_Scene */
 
 static int Scene_refresh(struct Scene *scene)
 /*******************************************************************************
@@ -676,7 +717,7 @@ linked list contained in the scene_object.
 static int execute_Scene_object(struct Scene_object *scene_object,
 	void *fast_changing_void)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Calls the display lists of all created graphics_objects in the linked list
@@ -738,7 +779,7 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 				} break;
 				case SCENE_OBJECT_SCENE:
 				{
-					return_code=execute_Scene(scene_object->child_scene);
+					return_code = execute_child_Scene(scene_object->child_scene);
 				}
 			}
 			if(scene_object->transformation)	
@@ -6435,7 +6476,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
 	struct Interaction_volume *interaction_volume)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Returns a list of all the graphical entities in the <interaction_volume> of
@@ -6451,6 +6492,7 @@ understood for the type of <interaction_volume> passed.
 	GLuint *select_buffer,*select_buffer_ptr;
 	int hit_no,i,j,num_hits,number_of_names,return_code,scene_object_no;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
+	struct Scene *parent_scene;
 	struct Scene_picked_object *scene_picked_object;
 	struct Scene_object *scene_object;
 
@@ -6531,27 +6573,42 @@ understood for the type of <interaction_volume> passed.
 #endif /* defined (OLD_CODE) */
 									/* first part of names identifies list of scene_objects in
 										 path to picked graphic. Must be at least one; only more
-										 that one if contains child_scene */
+										 than one if contains child_scene, which then becomes the
+										 parent of the next level of scene objects */
+									parent_scene = scene;
 									do
 									{
 										scene_object_no=(int)(*select_buffer_ptr);
 										select_buffer_ptr++;
 										number_of_names--;
-										if (scene_object=FIND_BY_IDENTIFIER_IN_LIST(Scene_object,
-											position)(scene_object_no,scene->scene_object_list))
+										if (scene_object =
+											FIND_BY_IDENTIFIER_IN_LIST(Scene_object, position)(
+												scene_object_no, parent_scene->scene_object_list))
 										{
-											return_code=Scene_picked_object_add_Scene_object(
-												scene_picked_object,scene_object);
+											return_code = Scene_picked_object_add_Scene_object(
+												scene_picked_object, scene_object);
+											if (SCENE_OBJECT_SCENE == scene_object->type)
+											{
+												parent_scene =
+													Scene_object_get_child_scene(scene_object);
+												if (!parent_scene)
+												{
+													display_message(ERROR_MESSAGE,
+														"Scene_pick_objects.  Missing child scene");
+													return_code = 0;
+												}
+											}
 										}
 										else
 										{
-											display_message(ERROR_MESSAGE,
-												"Scene_pick_objects.  No scene object at position %d",
-												scene_object_no);
-											return_code=0;
+											display_message(ERROR_MESSAGE, "Scene_pick_objects.  "
+												"No object at position %d in scene %s",
+												scene_object_no, parent_scene->name);
+											return_code = 0;
 										}
 									}
-									while (return_code&&(SCENE_OBJECT_SCENE==scene_object->type));
+									while (return_code && (0 < number_of_names) &&
+										(SCENE_OBJECT_SCENE==scene_object->type));
 									if (return_code)
 									{
 										for (;0<number_of_names&&return_code;number_of_names--)
@@ -6816,7 +6873,7 @@ SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
 
 int compile_Scene(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Assembles the display list containing the whole scene. Before that, however, it
@@ -6827,7 +6884,6 @@ Note that lights are not included in the scene and must be handled separately!
 	int fast_changing,return_code;
 
 	ENTER(compile_Scene);
-	/* checking arguments */
 	if (scene&&scene->graphical_material_manager)
 	{
 		return_code=1;
@@ -6869,8 +6925,6 @@ Note that lights are not included in the scene and must be handled separately!
 #endif /* defined (DEBUG) */
 					/* compile non-fast changing part of scene */
 					glNewList(scene->display_list,GL_COMPILE);
-					/* initialize the names stack at the start of the scene */
-					glInitNames();
 					/* push a dummy name to be overloaded with scene_object identifiers */
 					glPushName(0);
 					FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
@@ -6891,8 +6945,6 @@ Note that lights are not included in the scene and must be handled separately!
 					{
 						fast_changing=1;
 						glNewList(scene->fast_changing_display_list,GL_COMPILE);
-						/* initialize the names stack at the start of the scene */
-						glInitNames();
 						/* push dummy name to be overloaded with scene_object identifiers */
 						glPushName(0);
 						FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
@@ -6927,12 +6979,13 @@ Note that lights are not included in the scene and must be handled separately!
 
 int execute_Scene(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Calls the display list for <scene>. If the display list is not current, an
 an error is reported. Version calls both the normal and fast_changing lists.
 Note that lights are not included in the scene and must be handled separately!
+Initialises the name stack then calls execute_child_Scene.
 ==============================================================================*/
 {
 	int return_code;
@@ -6940,27 +6993,14 @@ Note that lights are not included in the scene and must be handled separately!
 	ENTER(execute_Scene);
 	if (scene)
 	{
-		if (scene->display_list_current)
-		{
-			glCallList(scene->display_list);
-			if (Scene_has_fast_changing_objects(scene))
-			{
-				glCallList(scene->fast_changing_display_list);
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_Scene.  display list not current");
-			return_code=0;
-		}
+		/* initialize the names stack at the start of the scene */
+		glInitNames();
+		return_code = execute_child_Scene(scene);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"execute_Scene.  Missing scene");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "execute_Scene.  Missing scene");
+		return_code = 0;
 	}
 	LEAVE;
 
