@@ -789,6 +789,7 @@ access this function.
 						}
 					}
 
+#if defined GL_EXT_polygon_offset
 					/* It is also possible to test the extensions at compile time
 						 by using #if defined GL_EXT_polygon_offset */
 					if (query_gl_extension("GL_EXT_polygon_offset"))
@@ -803,6 +804,7 @@ access this function.
 							glDisable(GL_POLYGON_OFFSET_EXT);
 						}
 					}
+#endif /* defined GL_EXT_polygon_offset */
 					compile_Scene(scene_viewer->scene);
 					if (scene_viewer->overlay_scene)
 					{
