@@ -625,28 +625,14 @@ Opens, executes and then closes a com file.  No window is created.
 		{
 			if (comfile=fopen(file_name,"r"))
 			{
-				return_code = 1;
-#if defined (OLD_CODE)
 				fscanf(comfile," ");
-#endif /* defined (OLD_CODE) */
-				while (return_code&&(!feof(comfile))&&(read_string(comfile,"[^\n]",&command_string)))
+				while (!feof(comfile)&&(read_string(comfile,"[^\n]",&command_string)))
 				{
-					return_code = 
-					  Execute_command_execute_string(execute_command, command_string);
+					Execute_command_execute_string(execute_command, command_string);
 					DEALLOCATE(command_string);
-					fscanf(comfile,"%*[\n]");
-#if defined (OLD_CODE)
 					fscanf(comfile," ");
-#endif /* defined (OLD_CODE) */
 				}
 				fclose(comfile);
-#if defined (PERL_INTERPRETER)
-				if (return_code)
-				  {
-					 return_code = 
-						Execute_command_execute_string(execute_command, "assert blocks closed");
-				  }
-#endif /* defined (PERL_INTERPRETER) */
 			}
 			else
 			{
@@ -832,7 +818,7 @@ specified on the command line, a file selection box is presented to the user.
 				{
 					for (i=open_comfile_data->execute_count;i>0;i--)
 					{
-						return_code = execute_comfile(open_comfile_data->file_name,
+						execute_comfile(open_comfile_data->file_name,
 							open_comfile_data->execute_command);
 					}
 				}
