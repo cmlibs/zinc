@@ -28,7 +28,6 @@ Functions and structures for interfacing with the graphics library.
 /* SAB On Win32 I think you have to load all OpenGL 1.2, 1.3 etc functions
 	as extensions and keep pointer references to them.  I haven't done this
 	yet so we will undefine the version symbols */
-#undef GL_VERSION_1_4
 #undef GL_NV_vertex_program
 #undef GL_NV_register_combiners2
 #endif /* defined (WIN32_SYSTEM) */
