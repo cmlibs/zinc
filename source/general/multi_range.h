@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.h
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -94,6 +94,16 @@ DESCRIPTION :
 Returns true if <value> is in any range in <multi_range>.
 ==============================================================================*/
 
+int Multi_range_intersect(struct Multi_range *multi_range,
+	struct Multi_range *other_multi_range);
+/*******************************************************************************
+LAST MODIFIED : 21 March 2000
+
+DESCRIPTION :
+Modifies <multi_range> so it contains only ranges or part ranges in both it and
+<other_multi_range>.
+==============================================================================*/
+
 int Multi_ranges_overlap(struct Multi_range *multi_range1,
 	struct Multi_range *multi_range2);
 /*******************************************************************************
@@ -158,6 +168,23 @@ LAST MODIFIED : 12 March 1998
 DESCRIPTION :
 Returns the start and stop values for range[range_no] in <multi_range>.
 Valid range numbers are from 0 to number_of_ranges-1.
+==============================================================================*/
+
+char *Multi_range_get_ranges_string(struct Multi_range *multi_range);
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Returns the <multi_range> as an allocated, comma separated string of ranges,
+eg. "1,3..7,22". Up to calling function to DEALLOCATE the returned string.
+==============================================================================*/
+
+int Multi_range_get_total_number_in_ranges(struct Multi_range *multi_range);
+/*******************************************************************************
+LAST MODIFIED : 21 March 2000
+
+DESCRIPTION :
+Returns the sum of all the number of numbers in the ranges of <multi_range>.
 ==============================================================================*/
 
 int Multi_range_print(struct Multi_range *multi_range);

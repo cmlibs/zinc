@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.c
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -13,6 +13,7 @@ At present, limited to int type, but could be converted to other number types.
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/multi_range.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 
 /*
@@ -539,6 +540,57 @@ Returns true if <value> is in any range in <multi_range>.
 	return (return_code);
 } /* Multi_range_is_value_in_range */
 
+int Multi_range_intersect(struct Multi_range *multi_range,
+	struct Multi_range *other_multi_range)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2000
+
+DESCRIPTION :
+Modifies <multi_range> so it contains only ranges or part ranges in both it and
+<other_multi_range>.
+==============================================================================*/
+{
+	int last_stop,return_code,start,stop;
+
+	ENTER(Multi_range_intersect);
+	if (multi_range&&other_multi_range)
+	{
+		return_code=1;
+		if (0<multi_range->number_of_ranges)
+		{
+			start=multi_range->range[0].start;
+			if (Multi_range_is_value_in_range(other_multi_range,start))
+			{
+				Multi_range_get_next_stop_value(other_multi_range,start,&start);
+				start++;
+			}
+			stop=start-1;
+			last_stop=multi_range->range[multi_range->number_of_ranges-1].stop;
+			while ((stop<last_stop)&&return_code)
+			{
+				if (Multi_range_get_next_start_value(other_multi_range,start,&stop))
+				{
+					stop--;
+				}
+				else
+				{
+					stop=last_stop;
+				}
+				return_code=Multi_range_remove_range(multi_range,start,stop);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Multi_range_intersect.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Multi_range_intersect */
+
 int Multi_ranges_overlap(struct Multi_range *multi_range1,
 	struct Multi_range *multi_range2)
 /*******************************************************************************
@@ -775,6 +827,82 @@ Valid range numbers are from 0 to number_of_ranges-1.
 
 	return (return_code);
 } /* Multi_range_get_range */
+
+char *Multi_range_get_ranges_string(struct Multi_range *multi_range)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Returns the <multi_range> as an allocated, comma separated string of ranges,
+eg. "1,3..7,22". Up to calling function to DEALLOCATE the returned string.
+==============================================================================*/
+{
+	char *ranges_string,temp_string[50];
+	int error,i;
+
+	ENTER(Multi_range_get_ranges_string);
+	if (multi_range)
+	{
+		ranges_string=(char *)NULL;
+		error=0;
+		for (i=0;(i<multi_range->number_of_ranges)&&(!error);i++)
+		{
+			if (0<i)
+			{
+				append_string(&ranges_string,",",&error);
+			}
+			if (multi_range->range[i].stop > multi_range->range[i].start)
+			{
+				sprintf(temp_string,"%d..%d",multi_range->range[i].start,
+					multi_range->range[i].stop);
+			}
+			else
+			{
+				sprintf(temp_string,"%d",multi_range->range[i].start);
+			}
+			append_string(&ranges_string,temp_string,&error);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Multi_range_get_ranges_string.  Invalid argument(s)");
+		ranges_string=(char *)NULL;
+	}
+	LEAVE;
+
+	return (ranges_string);
+} /* Multi_range_get_ranges_string */
+
+int Multi_range_get_total_number_in_ranges(struct Multi_range *multi_range)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2000
+
+DESCRIPTION :
+Returns the sum of all the number of numbers in the ranges of <multi_range>.
+==============================================================================*/
+{
+	int i,number_in_ranges;
+
+	ENTER(Multi_range_get_total_number_of_ranges);
+	number_in_ranges=0;
+	if (multi_range)
+	{
+		for (i=0;i<multi_range->number_of_ranges;i++)
+		{
+			number_in_ranges +=
+				(multi_range->range[i].stop - multi_range->range[i].start + 1);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Multi_range_get_total_number_of_ranges.  Invalid argument");
+	}
+	LEAVE;
+
+	return (number_in_ranges);
+} /* Multi_range_get_total_number_of_ranges */
 
 int Multi_range_print(struct Multi_range *multi_range)
 /*******************************************************************************
