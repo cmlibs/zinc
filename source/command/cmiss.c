@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -15106,7 +15106,7 @@ Executes a GFX MODIFY NGROUP command.
 static int execute_command_gfx_modify(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY command.
@@ -15249,6 +15249,8 @@ Executes a GFX MODIFY command.
 				/* window */
 				modify_graphics_window_data.graphics_window_manager=
 					command_data->graphics_window_manager;
+				modify_graphics_window_data.interactive_tool_manager=
+					command_data->interactive_tool_manager;
 				modify_graphics_window_data.light_manager=command_data->light_manager;
 				modify_graphics_window_data.light_model_manager=
 					command_data->light_model_manager;
