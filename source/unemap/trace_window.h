@@ -15,6 +15,7 @@ DESCRIPTION :
 #include <Xm/Xm.h>
 #endif /* defined (MOTIF) */
 #include "unemap/analysis.h"
+#include "unemap/eimaging_time_dialog.h"
 #include "unemap/rig.h"
 #include "unemap/spectral_methods.h"
 #include "user_interface/user_interface.h"
@@ -59,7 +60,7 @@ enum Inverse_wave_mode
 LAST MODIFIED : 20 February 2001
 
 DESCRIPTION :
-The type of wave used for inverse
+The type of wave(s) used for inverse
 ==============================================================================*/
 {
 	NO_WAVE,
@@ -71,6 +72,20 @@ The type of wave used for inverse
 	QRST_WAVE,
 	PQRST_WAVE
 }; /* enum Inverse_wave_mode */
+
+enum Cardiac_interval_type 
+/*******************************************************************************
+LAST MODIFIED : 22 June 2001
+
+DESCRIPTION :
+The identifiers for the cardiac intervals
+==============================================================================*/
+{	
+	P_WAVE_INTERVAL,
+	QRS_WAVE_INTERVAL,
+	T_WAVE_INTERVAL,
+	UNKNOWN_INTERVAL
+}; /* Cardiac_interval_type */
 
 enum Inverse_potential_activation_mode
 /*******************************************************************************
@@ -521,13 +536,14 @@ The drawing area 2 in the trace window.
 
 struct Trace_window_area_3
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
 The drawing area 3 in the trace window.
 ==============================================================================*/
 {
 	struct Edit_area edit;
+	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
 	struct Frequency_domain_area frequency_domain;
 	struct Eimaging_interval_area interval;
 	struct Power_spectra_area power_spectra;
@@ -550,6 +566,7 @@ the Cardiac interval on the electrical imaging pane. P, T QRS, etc
 ==============================================================================*/
 {
 	GC graphics_context; /*colour*/
+	enum Cardiac_interval_type type;
 	int peak_or_trough_time,start_time,end_time;/* these are array indices 	*/
 	struct Cardiac_interval *next,*previous;
 }; /* struct Cardiac_interval */
@@ -564,7 +581,7 @@ Used to generate maps.
 ==============================================================================*/
 {
 	GC graphics_context; /*colour*/
-	int time,time_written; /* time an array index, time_written a flag  */
+	int time,is_current_event; /* time an array index,is_current_event a flag  */
 	struct Electrical_imaging_event *next,*previous;
 }; /* Electrical_imaging_event */
 
@@ -833,4 +850,13 @@ LAST MODIFIED : 13 June 2001
 DESCRIPTION : moves, adds or removes an Electrical_imaging_event.
 ==============================================================================*/
 
+int alter_eimaging_button_event_info(Widget widget,
+	struct Electrical_imaging_time_dialog *eimaging_time_dialog);
+/*******************************************************************************
+LAST MODIFIED : 26 June 2001
+
+DESCRIPTION :
+Alters the dialog's button informtion used to generate the event time markers.
+The event time markers are updated in update_eimaging_evnts_frm_dlg
+==============================================================================*/
 #endif /* !defined (TRACE_WINDOW_H) */

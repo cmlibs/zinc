@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 30 May 2001
+XCOMM LAST MODIFIED : 19 June 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -375,6 +375,7 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/delauney.c \
+	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
 	unemap/interpolate.c \
 	unemap/map_dialog.c \

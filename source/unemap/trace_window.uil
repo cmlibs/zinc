@@ -167,7 +167,7 @@ procedure
 	identify_trace_3_area;
 	id_trace_3_interval_menu;
 	id_trace_times_button;
-	trace_times;
+	configure_eimaging_event_times;
 	identify_trace_edit_menu;
 	identify_trace_edit_previous_bu;
 !OLD_CODE
@@ -2711,7 +2711,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				trace_times(analysis_work_area_structure);
+				configure_eimaging_event_times(trace_window_structure);
 				};
 			};
 		};

@@ -2172,10 +2172,7 @@ Opens the <map_dialog>.
 				{
 					map->interpolation_type=BICUBIC_INTERPOLATION;
 				}
-			}
-			
-		
-
+			}					
 			switch (map->interpolation_type)
 			{
 				case NO_INTERPOLATION:
@@ -2222,32 +2219,6 @@ Opens the <map_dialog>.
 			XtVaSetValues(map_dialog->interpolation.mesh_columns_text,
 				XmNvalue,value_string,
 				NULL);
-#if defined (OLD_CODE)
-			if (map->contours_option==SHOW_CONTOURS)
-			{
-				XmToggleButtonGadgetSetState(map_dialog->contours.show_toggle,True,
-					False);
-			}
-			else
-			{
-				XmToggleButtonGadgetSetState(map_dialog->contours.show_toggle,False,
-					False);
-			}
-			switch (map->contour_thickness)
-			{
-				case CONSTANT_THICKNESS:
-				{
-					option_widget=map_dialog->contours.thickness_option.constant;
-				} break;
-				case VARIABLE_THICKNESS:
-				{
-					option_widget=map_dialog->contours.thickness_option.variable;
-				} break;
-			}
-			XtVaSetValues(map_dialog->contours.thickness_option_menu,
-				XmNmenuHistory,option_widget,
-				NULL);
-#endif /* defined (OLD_CODE) */
 			if (map->contours_option==SHOW_CONTOURS)
 			{
 				switch (map->contour_thickness)

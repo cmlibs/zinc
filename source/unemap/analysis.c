@@ -2098,6 +2098,8 @@ DESCRIPTION : creates the Signal_drawing_information
 #define XmCDatumColour "DatumColour"
 #define XmNdeviceNameColour "deviceNameColour"
 #define XmCDeviceNameColour "DeviceNameColour"
+#define XmNeimagingEventColour "eimagingEventColour"
+#define XmCEimagingEventColour "EimagingEventColour"
 #define XmNdrawingBackgroundColour "drawingBackgroundColour"
 #define XmCDrawingBackgroundColour "DrawingBackgroundColour"
 #define XmNhighlightedColour "highlightedColour"
@@ -2157,6 +2159,15 @@ DESCRIPTION : creates the Signal_drawing_information
 			XtOffsetOf(Signal_drawing_information_settings,cardiac_interval_colour),
 			XmRString,
 			"red"
+		},
+		{
+			XmNeimagingEventColour,
+			XmCEimagingEventColour,		
+			XmRPixel,
+			sizeof(Pixel),
+			XtOffsetOf(Signal_drawing_information_settings,eimaging_event_colour),
+			XmRString,
+			"white"
 		},
 		{
 			XmNdatumColour,
@@ -2495,6 +2506,11 @@ DESCRIPTION : creates the Signal_drawing_information
 			values.function=GXxor;
 			(signal_drawing_information->graphics_context).cardiac_interval_colour=
 				XCreateGC(display,depth_screen_drawable,mask,&values);
+			values.foreground=signal_drawing_information->eimaging_event_colour^
+				signal_drawing_information->background_drawing_colour;
+			values.function=GXxor;
+			(signal_drawing_information->graphics_context).eimaging_event_colour=
+				XCreateGC(display,depth_screen_drawable,mask,&values);
 			values.foreground=signal_drawing_information->background_drawing_colour;
 			values.function=GXcopy;
 			(signal_drawing_information->graphics_context).background_drawing_colour=
@@ -2609,6 +2625,11 @@ DESCRIPTION : destroys the Signal_drawing_information
       {
         XFreeGC(display,(signal_drawing_information->graphics_context).
           cardiac_interval_colour);
+      }
+			if ((signal_drawing_information->graphics_context).eimaging_event_colour)
+      {
+        XFreeGC(display,(signal_drawing_information->graphics_context).
+          eimaging_event_colour);
       }
       if ((signal_drawing_information->graphics_context).device_name_colour)
       {

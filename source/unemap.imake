@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 7 June 2001
+XCOMM LAST MODIFIED : 19 June 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -619,6 +619,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_finite_element.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_fibres.c \
+	computed_field/computed_field_integration.c \
 	computed_field/computed_field_vector_operations.c \
 	computed_field/computed_field_wrappers.c
 FINITE_ELEMENT_SRCS = \
@@ -710,6 +711,7 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/delauney.c \
+	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
 	unemap/interpolate.c \
 	unemap/map_dialog.c \
@@ -769,6 +771,7 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/delauney.c \
+	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
 	unemap/interpolate.c \
 	unemap/map_dialog.c \

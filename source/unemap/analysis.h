@@ -140,7 +140,7 @@ Information needed for drawing a signal.  Windowing system dependent
 {
 	int number_of_signal_overlay_colours;
 	Pixel accepted_colour,axis_colour,background_drawing_colour,
-		cardiac_interval_colour,datum_colour,
+		cardiac_interval_colour,eimaging_event_colour,datum_colour,
 		device_name_colour,highlighted_colour,interval_box_colour,
 		potential_time_colour,pwave_colour,qrswave_colour,rejected_colour,
 		scaling_signal_colour,signal_accepted_colour,*signal_overlay_colours,
@@ -149,7 +149,7 @@ Information needed for drawing a signal.  Windowing system dependent
 	struct
 	{
 		GC accepted_colour,axis_colour,background_drawing_colour,cardiac_interval_colour,
-			copy,datum_colour,
+			eimaging_event_colour,copy,datum_colour,
 			device_name_colour,highlighted_box_colour,highlighted_colour,
 			interval_box_colour,potential_time_colour,pwave_colour,qrswave_colour,
 			rejected_colour,scaling_signal_colour,signal_accepted_colour,
