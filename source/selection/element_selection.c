@@ -22,7 +22,7 @@ FULL_DECLARE_CALLBACK_TYPES(FE_element_selection_change, \
 
 struct FE_element_selection
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Global store of selected elements for group actions and highlighting.
@@ -39,7 +39,7 @@ Global store of selected elements for group actions and highlighting.
 		 already selected; excludes those subsequently selected */
 	struct LIST(FE_element) *newly_unselected_element_list;
 	/* list of callbacks requested by other objects when selction changes */
-	struct LIST(CALLBACK(FE_element_selection_change)) *change_callback_list;
+	struct LIST(CALLBACK_ITEM(FE_element_selection_change)) *change_callback_list;
 }; /* struct FE_element_selection */
 
 /*
@@ -111,7 +111,7 @@ Global functions
 
 struct FE_element_selection *CREATE(FE_element_selection)(void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Creates the global store of selected elements for group actions and
@@ -128,7 +128,7 @@ highlighting.
 		element_selection->newly_selected_element_list=CREATE(LIST(FE_element))();
 		element_selection->newly_unselected_element_list=CREATE(LIST(FE_element))();
 		element_selection->change_callback_list=
-			CREATE(LIST(CALLBACK(FE_element_selection_change)))();
+			CREATE(LIST(CALLBACK_ITEM(FE_element_selection_change)))();
 		if (!(element_selection->element_list&&
 			element_selection->newly_selected_element_list&&
 			element_selection->newly_unselected_element_list&&
@@ -170,7 +170,7 @@ Destroys the FE_element_selection.
 			&(element_selection->newly_selected_element_list));
 		DESTROY(LIST(FE_element))(
 			&(element_selection->newly_unselected_element_list));
-		DESTROY(LIST(CALLBACK(FE_element_selection_change)))(
+		DESTROY(LIST(CALLBACK_ITEM(FE_element_selection_change)))(
 			&(element_selection->change_callback_list));
 		DEALLOCATE(*element_selection_address);
 		return_code=1;

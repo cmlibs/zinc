@@ -22,7 +22,7 @@ FULL_DECLARE_CALLBACK_TYPES(FE_node_selection_change, \
 
 struct FE_node_selection
 /*******************************************************************************
-LAST MODIFIED : 15 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Global store of selected nodes for group actions and highlighting.
@@ -39,7 +39,7 @@ Global store of selected nodes for group actions and highlighting.
 		 already selected; excludes those subsequently selected */
 	struct LIST(FE_node) *newly_unselected_node_list;
 	/* list of callbacks requested by other objects when selction changes */
-	struct LIST(CALLBACK(FE_node_selection_change)) *change_callback_list;
+	struct LIST(CALLBACK_ITEM(FE_node_selection_change)) *change_callback_list;
 }; /* struct FE_node_selection */
 
 /*
@@ -109,7 +109,7 @@ Global functions
 
 struct FE_node_selection *CREATE(FE_node_selection)(void)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Creates the global store of selected nodes for group actions and highlighting.
@@ -125,7 +125,7 @@ Creates the global store of selected nodes for group actions and highlighting.
 		node_selection->newly_selected_node_list=CREATE(LIST(FE_node))();
 		node_selection->newly_unselected_node_list=CREATE(LIST(FE_node))();
 		node_selection->change_callback_list=
-			CREATE(LIST(CALLBACK(FE_node_selection_change)))();
+			CREATE(LIST(CALLBACK_ITEM(FE_node_selection_change)))();
 		if (!(node_selection->node_list&&node_selection->newly_selected_node_list&&
 			node_selection->newly_unselected_node_list&&
 			node_selection->change_callback_list))
@@ -163,7 +163,7 @@ Destroys the FE_node_selection.
 		DESTROY(LIST(FE_node))(&(node_selection->node_list));
 		DESTROY(LIST(FE_node))(&(node_selection->newly_selected_node_list));
 		DESTROY(LIST(FE_node))(&(node_selection->newly_unselected_node_list));
-		DESTROY(LIST(CALLBACK(FE_node_selection_change)))(
+		DESTROY(LIST(CALLBACK_ITEM(FE_node_selection_change)))(
 			&(node_selection->change_callback_list));
 		DEALLOCATE(*node_selection_address);
 		return_code=1;
