@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 11 September 2001
+LAST MODIFIED : 12 September 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -5662,7 +5662,7 @@ Checks if the <field_info> matchs the <element_field_lists>.
 static int list_FE_element_field(struct FE_element_field *element_field,
 	void *dummy_user_data)
 /*******************************************************************************
-LAST MODIFIED : 11 September 2001
+LAST MODIFIED : 12 September 2001
 
 DESCRIPTION :
 Outputs the information contained by the element field.
@@ -5682,8 +5682,7 @@ Outputs the information contained by the element field.
 		if (field=element_field->field)
 		{
 			return_code=1;
-			display_message(INFORMATION_MESSAGE,"  ");
-			display_message(INFORMATION_MESSAGE,field->name);
+			display_message(INFORMATION_MESSAGE,"  %s",field->name);
 			if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
 			{
 				display_message(INFORMATION_MESSAGE,", %s",type_string);
@@ -5713,7 +5712,7 @@ Outputs the information contained by the element field.
 			while (return_code&&(i<number_of_components))
 			{
 				display_message(INFORMATION_MESSAGE,"    ");
-				if (component_name = get_FE_field_component_name(field, i))
+				if (component_name=get_FE_field_component_name(field,i))
 				{
 					display_message(INFORMATION_MESSAGE,component_name);
 					DEALLOCATE(component_name);
@@ -5901,7 +5900,7 @@ Outputs the information contained by the element field.
 #if !defined (WINDOWS_DEV_FLAG)
 static int list_FE_node_field(struct FE_node_field *node_field,void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 12 September 2001
 
 DESCRIPTION :
 Outputs the information contained by the node field.
@@ -5926,7 +5925,7 @@ Outputs the information contained by the node field.
 			display_message(INFORMATION_MESSAGE,"  %s",field->name);
 			if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
 			{
-				display_message(INFORMATION_MESSAGE,", %s");
+				display_message(INFORMATION_MESSAGE,", %s",type_string);
 			}
 			else
 			{
@@ -5937,7 +5936,7 @@ Outputs the information contained by the node field.
 			if (type_string=Coordinate_system_type_to_string(
 				field->coordinate_system.type))
 			{
-				display_message(INFORMATION_MESSAGE,", %s");
+				display_message(INFORMATION_MESSAGE,", %s",type_string);
 			}
 			else
 			{
@@ -5951,9 +5950,9 @@ Outputs the information contained by the node field.
 			i=0;
 			while (return_code&&(i<number_of_components))
 			{
-				if (component_name = get_FE_field_component_name(field, i))
+				if (component_name=get_FE_field_component_name(field,i))
 				{
-					display_message(INFORMATION_MESSAGE,"    %s", component_name);
+					display_message(INFORMATION_MESSAGE,"    %s",component_name);
 					DEALLOCATE(component_name);
 				}
 				number_of_versions=node_field_component->number_of_versions;
@@ -5962,11 +5961,8 @@ Outputs the information contained by the node field.
 					display_message(INFORMATION_MESSAGE,", #Versions=%d",
 						number_of_versions);
 				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE,".  ");
-				}			
-				/* display field based information*/
+				display_message(INFORMATION_MESSAGE,".  ");
+				/* display field based information */
 				if (field->number_of_values)
 				{	
 					int count;
@@ -5981,11 +5977,11 @@ Outputs the information contained by the node field.
 							/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
 							for (count=0;count<field->number_of_values;count++)
 							{	
-								display_message(INFORMATION_MESSAGE,"%g",
-									/*	display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,*/
-									*((FE_value*)(field->values_storage + count*sizeof(FE_value)) ));
+								display_message(INFORMATION_MESSAGE," %" FE_VALUE_STRING,
+									*((FE_value *)(field->values_storage+
+									count*sizeof(FE_value))));
 								if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
-									(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
+									(0==((count+1)%DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
 								{
 									display_message(INFORMATION_MESSAGE,"\n");
 								}											
@@ -5994,10 +5990,10 @@ Outputs the information contained by the node field.
 						} break;
 						default:
 						{
-							display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
-								"Can't display that field value_type yet. Write the code!");
+							display_message(INFORMATION_MESSAGE,"list_FE_node_field.  "
+								"Can't display that field value_type yet.  Write the code!");
 						} break;
-					}	/* switch () */							
+					}
 				}
 				/* display node based information*/
 				if ((values_storage=node->values_storage)&&(type=node_field_component->
@@ -6018,7 +6014,8 @@ Outputs the information contained by the node field.
 						{
 							display_message(INFORMATION_MESSAGE,"%s=",
 								ENUMERATOR_STRING(FE_nodal_value_type)(*type));
-#if defined (NEW_CODE) /* not sure how we're going to display these yet */
+#if defined (NEW_CODE)
+/*???JW.ot sure how we're going to display these yet */
 							/* display field time information*/
 							if (field->number_of_times)
 							{
@@ -6044,18 +6041,20 @@ Outputs the information contained by the node field.
 									} break;
 									default:
 									{
-										display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
-											"Can't display that time_value_type yet. Write the code!");
+										display_message(INFORMATION_MESSAGE,"list_FE_node_field.  "
+											"Can't display that time_value_type yet.  "
+											"Write the code!");
 									} break;
-								}	/* switch () */							
+								}
 							}
 #endif /* defined (NEW_CODE) */				
-							/* display node based field information*/
+							/* display node based field information */
 							if (field->number_of_times)
 							{
-								/* for the moment don't display the (generally massive) time based*/
+								/* for the moment don't display the (generally massive) time
+									based */
 								/* field information */
-								display_message(INFORMATION_MESSAGE," TIME BASED FIELD ");
+								display_message(INFORMATION_MESSAGE," Time based field ");
 							}
 							else
 							{							
@@ -6068,16 +6067,16 @@ Outputs the information contained by the node field.
 									} break;
 									case ELEMENT_XI_VALUE:
 									{
-										xi_dimension = (*((struct FE_element**)
-											values_storage))->shape->dimension;
+										xi_dimension=(*((struct FE_element **)values_storage))->
+											shape->dimension;
 										display_message(INFORMATION_MESSAGE,"element %d xi",
-											(*((struct FE_element**)values_storage))->cm.number);
-										value = values_storage + sizeof (struct FE_element *);
-										for (xi_index = 0 ; xi_index < xi_dimension ; xi_index++)
+											(*((struct FE_element **)values_storage))->cm.number);
+										value=values_storage+sizeof(struct FE_element *);
+										for (xi_index=0;xi_index<xi_dimension;xi_index++)
 										{
 											display_message(INFORMATION_MESSAGE," %g",
 												*((FE_value *)value));
-											value += sizeof (FE_value);
+											value += sizeof(FE_value);
 										}
 									} break;	
 									case INT_VALUE:
@@ -6119,32 +6118,32 @@ Outputs the information contained by the node field.
 												get_FE_nodal_double_array_value(node,&component,0,
 													FE_NODAL_VALUE,array,number_of_values);
 												display_message(INFORMATION_MESSAGE,"\n");
-												/* output in columns if DOUBLE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+												/* output in columns if
+													DOUBLE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
 												for (count=0;count<number_of_values;count++)
 												{
 													display_message(INFORMATION_MESSAGE," %"
 														DOUBLE_VALUE_STRING,array[count]);
 													if ((0<DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)&&
-														(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
+														(0==((count+1)%DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
 													{
 														display_message(INFORMATION_MESSAGE,"\n");
 													}											
 												}										
+												DEALLOCATE(array);
 											}
 											else
 											{
 												display_message(ERROR_MESSAGE,"list_FE_node_field."
-													" Out of memory");
+													"  Could not allocate double array");
 												return_code =0;
 											}	
-											DEALLOCATE(array);							
-										}	
+										}
 										else
 										{
 											/* this is NOT an error */
 											display_message(INFORMATION_MESSAGE,"array length 0");
 										}
-										
 									} break;	
 									case FE_VALUE_ARRAY_VALUE:
 									{
@@ -6152,10 +6151,10 @@ Outputs the information contained by the node field.
 										FE_value *array;
 										int number_of_values,count;
 									
-										component.field =field;
-										component.number = 0;	
-										number_of_values=get_FE_nodal_array_number_of_elements(node,&component,
-											0,FE_NODAL_VALUE);
+										component.field=field;
+										component.number=0;	
+										number_of_values=get_FE_nodal_array_number_of_elements(node,
+											&component,0,FE_NODAL_VALUE);
 										if (number_of_values>0)
 										{																			
 											if (ALLOCATE(array,FE_value,number_of_values))
@@ -6163,7 +6162,7 @@ Outputs the information contained by the node field.
 												get_FE_nodal_FE_value_array(node,&component,0,
 													FE_NODAL_VALUE,array,number_of_values);	
 												display_message(INFORMATION_MESSAGE,"\n");
-												/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+												/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS>0 */
 												for (count=0;count<number_of_values;count++)
 												{
 													display_message(INFORMATION_MESSAGE," %"
@@ -6174,14 +6173,14 @@ Outputs the information contained by the node field.
 														display_message(INFORMATION_MESSAGE,"\n");
 													}											
 												}									
+												DEALLOCATE(array);
 											}
 											else
 											{
 												display_message(ERROR_MESSAGE,"list_FE_node_field."
-													" Out of memory");
-												return_code =0;
+													"  Could not allocate FE_value array");
+												return_code=0;
 											}
-											DEALLOCATE(array);								
 										}
 										else
 										{
@@ -6197,8 +6196,8 @@ Outputs the information contained by the node field.
 
 										component.field =field;
 										component.number = 0;
-										number_of_values=get_FE_nodal_array_number_of_elements(node,&component,
-											0,FE_NODAL_VALUE);
+										number_of_values=get_FE_nodal_array_number_of_elements(node,
+											&component,0,FE_NODAL_VALUE);
 										if (number_of_values>0)
 										{								
 											if (ALLOCATE(array,short,number_of_values))
@@ -6206,24 +6205,26 @@ Outputs the information contained by the node field.
 												get_FE_nodal_short_array(node,&component,0,
 													FE_NODAL_VALUE,array,number_of_values);
 												display_message(INFORMATION_MESSAGE,"\n");
-												/* output in columns if SHORT_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+												/* output in columns if
+													SHORT_VALUE_MAX_OUTPUT_COLUMNS > 0 */
 												for (count=0;count<number_of_values;count++)
 												{
-													display_message(INFORMATION_MESSAGE," %4d",array[count]);
+													display_message(INFORMATION_MESSAGE," %4d",
+														array[count]);
 													if ((0<SHORT_VALUE_MAX_OUTPUT_COLUMNS)&&
 														(0==((count+1) % SHORT_VALUE_MAX_OUTPUT_COLUMNS)))
 													{
 														display_message(INFORMATION_MESSAGE,"\n");
 													}											
 												}										
+												DEALLOCATE(array);
 											}
 											else
 											{
 												display_message(ERROR_MESSAGE,"list_FE_node_field."
-													" Out of memory");
-												return_code =0;
+													"  Could not allocate short array");
+												return_code=0;
 											}
-											DEALLOCATE(array);									
 										}																		
 										else
 										{
@@ -6251,7 +6252,8 @@ Outputs the information contained by the node field.
 				}
 				else
 				{
-					/*Missing nodal values only an error if no field based values either */
+					/* missing nodal values only an error if no field based values
+						either */
 					if (!(field->number_of_values))
 					{
 						display_message(ERROR_MESSAGE,
