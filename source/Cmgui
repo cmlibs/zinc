@@ -32,10 +32,6 @@ cmgui.*.helpUrl: http://www.bioeng.auckland.ac.nz/cmiss/help/user_help.php
 ! The mycm executable to be run
 cmgui.*.mycmExecutable: mycm
 !
-! The directory containing the cmgui uid files
-! (Not required from version (001.001.019) on)
-cmgui.*.uidDirectory: /usr/local/cmiss/cmgui/uid/
-!
 ! The number of seconds before the connection between the front and back ends
 ! times out
 cmgui.*.wormholeTimeoutSeconds: 300
@@ -102,10 +98,10 @@ cmiss_plugin.*.cmissCommand: cmgui
 cmiss_plugin.development.cmissCommand: /product/cmiss/cmgui/bin/cmgui
 !
 !
-! Digitiser window
+! Scene editor
 ! ----------------
-cmgui.*.digitiser_window.*.digwin_viewing_area.height: 402
-cmgui.*.digitiser_window.*.digwin_viewing_area.width:  402
+!cmgui.*.Scene Editor.height: 400
+!cmgui.*.Scene Editor.width:  600
 !
 !
 ! Graphical finite elements
@@ -120,30 +116,7 @@ cmgui.*.defaultCircleDiscretization:    6
 ! No longer used: maximum number of line segments used to draw circles
 ! cmgui.*.maximumCircleDiscretization:   64
 !
-!
-! Help window (replaced by netscape)
-! -----------
-*.cm_help_window.height:              500
-*.cm_help_window.width:               800
-*.help_text.fontList:                 *-courier-medium-r-*--*-120-*
-*.help_topic.fontList:                *-helvetica-medium-r-*--*-120-*
-!
-!
-! Menu window
-! -----------
-*.menu_window.x:                        0
-*.menu_window.y:                      520
-*.menu_window.height:                 200
-*.menu_window.width:                  300
-!
-!
-! Projection window
-! -----------------
-*.projection_window.*.spectrum_drawing_area.height: 75
-*.projection_window.*.projection_drawing_area.height: 400
-*.projection_window.*.projection_drawing_area.width: 600
-!
-!
+!!
 ! Prompt window
 ! -------------
 cmgui.*.prompt_window.x:                0
