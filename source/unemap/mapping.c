@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 22 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -10940,15 +10940,16 @@ Write the title,using the sub_map->potential_time
 	return (return_code);
 }/* write_map_title */
 
-static int set_electrode_2d_name_and_colour(struct Map *map,struct Drawing_2d *drawing,
-	GC *graphics_context,struct Device *electrode,char *name,float electrode_value,
-	char *electrode_drawn,float range_f)
+static int set_electrode_2d_name_and_colour(struct Map *map,
+	struct Drawing_2d *drawing,GC *graphics_context,struct Device *electrode,
+	char *name,float electrode_value,char *electrode_drawn,float range_f)
 /*******************************************************************************
-LAST MODIFIED : 16 July 2001
+LAST MODIFIED : 22 September 2002
 
-DESCRIPTION :  Set the colour (in <graphics_context>) and <name> of the electrode.
-Name must already have been allocated. It's only a short string, so pass it
-a static string of length 11.
+DESCRIPTION :
+Set the colour (in <graphics_context>) and <name> of the electrode.  Name must
+already have been allocated. It's only a short string, so pass it a static
+string of length 11.
 *******************************************************************************/
 {
 	enum Map_type map_type;
@@ -10961,7 +10962,8 @@ a static string of length 11.
 	ENTER(set_electrode_2d_name_and_colour);
 	spectrum_pixels=(Pixel *)NULL;
 	if (map&&(drawing_information=map->drawing_information)&&graphics_context&&
-		electrode&&electrode_drawn&&(display=User_interface_get_display(drawing->user_interface)))
+		electrode&&electrode_drawn&&
+		(display=User_interface_get_display(drawing->user_interface)))
 	{
 		return_code=1;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
@@ -10977,7 +10979,7 @@ a static string of length 11.
 			map_type=NO_MAP_FIELD;
 		}
 
-		if (electrode->signal->status==REJECTED)
+		if ((electrode->signal)&&(electrode->signal->status==REJECTED))
 		{
 			*electrode_drawn=0;
 		}
@@ -11506,7 +11508,7 @@ Actually draw the map from the calculated data.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"draw_2d_show_map Invalid arguments");
+			"draw_2d_show_map.  Invalid arguments");
 		return_code=0;
 	}
 	LEAVE;
