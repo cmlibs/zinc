@@ -344,7 +344,7 @@ upwind difference time integration.
 				if (length)
 				{
 					mapping_item->offset[0] = previous_mapping_item->offset[0] -
-						flow_step / (length * length) *
+						(flow_step / length) *
 						previous_mapping_item->differentials[0];
 				}
 				else
@@ -358,15 +358,17 @@ upwind difference time integration.
 			{
 				mapping_item->offset[0] = seed_mapping_item->offset[0] +
 					seed_mapping_item->differentials[0];
+#if defined (DEBUG)
 				if (mapping_item->offset[0] < previous_mapping_item->offset[0])
 				{
 					printf("Regression\n");
 				}
+#endif /* defined (DEBUG) */
 				if (length)
 				{
 					mapping_item->differentials[0] = previous_mapping_item->offset[0]
 						+ previous_mapping_item->differentials[0] - 
-						flow_step / (length * length) * previous_mapping_item->differentials[0]
+						(flow_step / length) * previous_mapping_item->differentials[0]
 						- mapping_item->offset[0];
 				}
 				else
@@ -1768,8 +1770,8 @@ and allows its contents to be modified.
 			return_code=0;
 		}
 		value = 1.0;
-		if (!((integrand = CREATE(Computed_field)("constant_1.0")) &&
-			Computed_field_set_type_constant(integrand,1,&value)))
+		if (!((integrand = ACCESS(Computed_field)(CREATE(Computed_field)("constant_1.0"))) &&
+		  Computed_field_set_type_constant(integrand,1,&value)))
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
@@ -1794,6 +1796,10 @@ and allows its contents to be modified.
 			{
 				DEACCESS(FE_element)(&seed_element);
 			}
+		}
+		if (integrand)
+		{
+			DEACCESS(Computed_field)(&integrand);
 		}
 	}
 	else
