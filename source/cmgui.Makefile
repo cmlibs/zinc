@@ -1090,7 +1090,8 @@ endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifneq ($(STATIC_LINK),true)
       ifneq ($(EXPORT_EVERYTHING),true)
-#         NEW_BINUTILS=true
+         LD_VERSION := $(shell ld -v | grep "version \([3-9]\.\|2\.[2-9]\d\|2\.1[2-9]\)")
+         NEW_BINUTILS := $(if $(LD_VERSION),true)
          ifdef NEW_BINUTILS
             # In Linux this requires an ld from binutils 2.12 or later 
             #   but is much better code so hopefully what I do here will
