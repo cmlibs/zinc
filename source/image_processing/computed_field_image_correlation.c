@@ -403,7 +403,7 @@ static int Image_cache_image_correlation(struct Image_cache *image,
 LAST MODIFIED : 2 July 2004
 
 DESCRIPTION :
-Perform weighted averaging on the image cache.
+Comput images correlation/weighted averaging on the image cache.
 ==============================================================================*/
 {
 	char *storage;

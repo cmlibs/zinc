@@ -3,7 +3,7 @@
 
   LAST MODIFIED: 27 February 2004
 
-  DESCRIPTION:Implement image dilate filtering
+  DESCRIPTION:Implement image local adaptive thresholding
 ==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -354,7 +354,7 @@ static int Image_cache_local_thresholding(struct Image_cache *image, int radius,
 LAST MOErFIED : 12 December 2003
 
 DESCRIPTION :
-Perform a dilate filter operation on the image cache.
+Perform local adaptive thresholding on the image cache.
 ==============================================================================*/
 {
 	char *storage;
@@ -669,7 +669,6 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
-	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_local_thresholding_type_specific_data *data;
 
@@ -698,22 +697,22 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
-		sprintf(temp_string1, " global_threshold %f", data->global_threshold);
-		append_string(&command_string, temp_string1, &error);
-		sprintf(temp_string1, " radius %d", data->radius);
-		append_string(&command_string, temp_string1, &error);
+		sprintf(temp_string, " global_threshold %f", data->global_threshold);
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " radius %d", data->radius);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string2, " sizes %d %d",
+		sprintf(temp_string, " sizes %d %d",
 		                    data->image->sizes[0],data->image->sizes[1]);
-		append_string(&command_string, temp_string2, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string3, " minimums %f %f",
+		sprintf(temp_string, " minimums %f %f",
 		                    data->image->minimums[0], data->image->minimums[1]);
-		append_string(&command_string, temp_string3, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string4, " maximums %f %f",
+		sprintf(temp_string, " maximums %f %f",
 		                    data->image->maximums[0], data->image->maximums[1]);
-		append_string(&command_string, temp_string4, &error);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{

@@ -3,7 +3,7 @@
 
    LAST MODIFIED: 25 June 2004
 
-   DESCRIPTION: Perform bone parameters extraction on Computed field.
+   DESCRIPTION: Perform morphological parameters extraction on Computed field.
 ===================================================================================*/
 #include <math.h>
 #include <time.h>
@@ -24,15 +24,8 @@
 
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
-
-#undef  A
-#define A(X,Y)  *(a + (X)*dim + (Y))
-#undef  IN
-#define IN(X,Y)  *(in + (X)*dim + (Y))
-#define BIGNUM  1.0E15
 #define DISTANCE sqrt((x - xctr) * (x - xctr) + (y - yctr) * (y - yctr) + (z - zctr) * (z - zctr))
 #define DISTANCE1 sqrt((x - xctr) * (x - xctr) + (y - yctr) * (y - yctr))
-
 
 struct Computed_field_cube_plugin_all_package
 /*******************************************************************************
@@ -49,11 +42,10 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_cube_plugin_all_type_specific_data
 {
-	/* gray levels */
-	int number_of_dirs;
-	int radius;
-	double pixel_size;
-	int object_dimension;
+	int number_of_dirs; /* the number of directions for checking*/
+	int radius; /* the radius of region of interest */
+	double pixel_size; /* resolution */
+	int object_dimension; /* 3D or 2D parameters */
 	int dimension;
 	int *input_sizes;
 	int *output_sizes;
@@ -397,7 +389,7 @@ static int Image_cache_structure_indices(struct Image_cache *image, int number_o
 LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
-Perform MIL analysis on the image cache.
+Perform morphologic parameters extraction on the image cache.
 ==============================================================================*/
 {
 	char *storage;
@@ -448,7 +440,6 @@ Perform MIL analysis on the image cache.
 
         unsigned char seed;			/* seed for random number gen.	*/
 
-
         FE_value	dradius;		/* test sphere radius (FE_value)	*/
         int	lmarg, rmarg;			/* x limits of analysis region	*/
         int	tlay, blay;			/* y limits of analysis region	*/
@@ -477,7 +468,6 @@ Perform MIL analysis on the image cache.
 
 	FE_value  *eigvals, *eigvecs;
 	FE_value  prin1,prin2,prin3;	/* principal MIL vectors		*/
-
 
         FE_value  deg1,deg2,deg3;		/* degrees of anisotropy		*/
         FE_value T;

@@ -3,7 +3,7 @@
 
   LAST MODIFIED: 5 May 2004
 
-  DESCRIPTION:Implement image neigborhood averaging operation
+  DESCRIPTION: Comput image local standard deviation
 ==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -37,7 +37,7 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_local_std_type_specific_data
 {
-	/* The size of the median filter window */
+	/* The size of the filter window */
 	int radius;
 
 	float cached_time;
@@ -354,7 +354,7 @@ static int Image_cache_local_std(struct Image_cache *image, int radius)
 LAST MODIFIED : 17 March 2004
 
 DESCRIPTION :
-Perform a neigborhood averaging operation on the image cache.
+Comput image local std on the image cache.
 ==============================================================================*/
 {
 	char *storage;

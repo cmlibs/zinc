@@ -1,9 +1,9 @@
 /***************************************************************
 FILE: computed_field_histogram_normalize.c
 
-LAST MODIFIED: 17 June 2004
+LAST MODIFIED: 15 July 2004
 
-DESCRIPTION: The following code implement histogram equalization operation
+DESCRIPTION: The following code implement histogram normalization operation
 ===============================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"

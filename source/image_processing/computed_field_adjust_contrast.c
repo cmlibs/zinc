@@ -723,7 +723,7 @@ LAST MODIFIED : 25 March 2004
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_adjust_contrast with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <gain> specifies
-the degree of change. The <cutoff> is the control level.  The <dimension> is the
+the actual contrast. The <cutoff> is the control level.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
 If function fails, field is guaranteed to be unchanged from its original state,

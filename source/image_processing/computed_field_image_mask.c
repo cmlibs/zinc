@@ -39,10 +39,9 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_image_mask_type_specific_data
 {
-	/*  */
 	int dimension;
-        int *left_bottom;
-	int *mask_width_height;
+        int *left_bottom; /* the coordinates of left-bottom coner*/
+	int *mask_width_height; /* the width and height of the mask */
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -667,7 +666,6 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
-	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_image_mask_type_specific_data *data;
 
@@ -697,21 +695,21 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d ", data->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string1, "left_bottom %d %d ", data->left_bottom[0],data->left_bottom[1]);
-		append_string(&command_string, temp_string1, &error);
+		sprintf(temp_string, "left_bottom %d %d ", data->left_bottom[0],data->left_bottom[1]);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string2, " mask_width_height %d %d ",
+		sprintf(temp_string, " mask_width_height %d %d ",
 		                  data->mask_width_height[0], data->mask_width_height[1]);
-		append_string(&command_string, temp_string2, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string3, " minimums %f %f ",
+		sprintf(temp_string, " minimums %f %f ",
 		                    data->image->minimums[0],data->image->minimums[1]);
 
-		append_string(&command_string, temp_string3, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string4, " maximums %f %f ",
+		sprintf(temp_string, " maximums %f %f ",
 		                    data->image->maximums[0],data->image->maximums[1]);
-		append_string(&command_string, temp_string4, &error);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{

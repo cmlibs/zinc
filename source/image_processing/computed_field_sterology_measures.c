@@ -3,7 +3,7 @@
 
    LAST MODIFIED: 12 July 2004
 
-   DESCRIPTION: Perform bone parameters extraction on Computed field.
+   DESCRIPTION: Perform stereologic parameters extraction on Computed field.
 ===================================================================================*/
 #include <math.h>
 #include <time.h>
@@ -24,15 +24,6 @@
 
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
-
-#undef  A
-#define A(X,Y)  *(a + (X)*dim + (Y))
-#undef  IN
-#define IN(X,Y)  *(in + (X)*dim + (Y))
-#define BIGNUM  1.0E15
-#define DISTANCE sqrt((x - xctr) * (x - xctr) + (y - yctr) * (y - yctr) + (z - zctr) * (z - zctr))
-#define DISTANCE1 sqrt((x - xctr) * (x - xctr) + (y - yctr) * (y - yctr))
-
 
 struct Computed_field_sterology_measures_package
 /*******************************************************************************
@@ -393,7 +384,7 @@ static int Image_cache_sterology_measures(struct Image_cache *image, int number_
 LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
-Perform MIL analysis on the image cache.
+Perform sterologic parameters extraction on the image cache.
 ==============================================================================*/
 {
 	char *storage;
@@ -1035,7 +1026,7 @@ LAST MODIFIED : 10 July 2004
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_sterology_measures with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <number_of_dirs> specifies
-the quantization level of colour range.  The <dimension> is the
+the number of directions for checking.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
 If function fails, field is guaranteed to be unchanged from its original state,

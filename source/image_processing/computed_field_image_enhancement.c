@@ -38,7 +38,7 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_image_enhancement_type_specific_data
 {
-	/* The size of the median filter window */
+	/* The rate of enhancing  */
 	double enhance_rate;
 
 	float cached_time;
@@ -355,7 +355,7 @@ static int Image_cache_image_enhancement(struct Image_cache *image, double enhan
 LAST MODIFIED : 12 December 2003
 
 DESCRIPTION :
-Perform a enhancement operation on the image cache.
+Perform enhancement operation on the image cache.
 ==============================================================================*/
 {
 	char *storage;
@@ -689,7 +689,6 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
-	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_image_enhancement_type_specific_data *data;
 
@@ -720,20 +719,20 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d ", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string1, " enhance_rate %f ", data->enhance_rate);
-		append_string(&command_string, temp_string1, &error);
+		sprintf(temp_string, " enhance_rate %f ", data->enhance_rate);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string2, " sizes %d %d ",
+		sprintf(temp_string, " sizes %d %d ",
 		                    data->image->sizes[0],data->image->sizes[1]);
-		append_string(&command_string, temp_string2, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string3, " minimums %f %f ",
+		sprintf(temp_string, " minimums %f %f ",
 		                    data->image->minimums[0], data->image->minimums[1]);
-		append_string(&command_string, temp_string3, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string4, " maximums %f %f ",
+		sprintf(temp_string, " maximums %f %f ",
 		                    data->image->maximums[0], data->image->maximums[1]);
-		append_string(&command_string, temp_string4, &error);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{

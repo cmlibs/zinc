@@ -1,9 +1,9 @@
 /*****************************************************************************************************
 FILE: computed_field_edge_detection.c
 
-LAST MODIFIED: 13 July 2004
+LAST MODIFIED: 15 July 2004
 
-DESCRIPYTION: Implement image erode transform
+DESCRIPYTION: Implement image edges detection
 =====================================================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -353,7 +353,7 @@ static int Image_cache_edge_detection(struct Image_cache *image, char *operator,
 LAST MOErFIED : 13 July 2004
 
 DESCRIPTION :
-Perform a erode filter operation on the image cache.
+Perform edges detection on the image cache.
 ==============================================================================*/
 {
 	char *storage;
@@ -747,9 +747,9 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    filter operator : %s\n", data->operator);
+			"    operator : %s\n", data->operator);
 		display_message(INFORMATION_MESSAGE,
-			"    filter threshold : %f\n", data->threshold);
+			"    threshold : %f\n", data->threshold);
 		return_code = 1;
 	}
 	else
@@ -851,8 +851,8 @@ LAST MODIFIED : 17 December 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_edge_detection with the supplied
-fields, <source_field> and <texture_coordinate_field>.  The <radius> specifies
-half the width and height of the filter window.  The <dimension> is the
+fields, <source_field> and <texture_coordinate_field>.  The <threshold> specifies
+half the threshold value for gradient image.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
@@ -1078,7 +1078,7 @@ already) and allows its contents to be modified.
 		set_texture_coordinate_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
-		/* opeators */
+		/* opeators, define a list of operators */
 		operator.number_of_tokens = 5;
 		ALLOCATE(operator.tokens, struct Set_names_from_list_token, 5);
 		operator.tokens[0].string = roberts_string;

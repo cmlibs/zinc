@@ -44,7 +44,7 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_wavelet_decomp_type_specific_data
 {
-	/* The size of the erode filter window */
+	/* The number of decomposition layers */
 	int number_of_levels;
 
 	float cached_time;
@@ -847,7 +847,6 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
-	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_wavelet_decomp_type_specific_data *data;
 
@@ -878,20 +877,20 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string1, " number_of_levels %d", data->number_of_levels);
-		append_string(&command_string, temp_string1, &error);
+		sprintf(temp_string, " number_of_levels %d", data->number_of_levels);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string2, " sizes %d %d",
+		sprintf(temp_string, " sizes %d %d",
 		                    data->image->sizes[0],data->image->sizes[1]);
-		append_string(&command_string, temp_string2, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string3, " minimums %f %f",
+		sprintf(temp_string, " minimums %f %f",
 		                    data->image->minimums[0], data->image->minimums[1]);
-		append_string(&command_string, temp_string3, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string4, " maximums %f %f",
+		sprintf(temp_string, " maximums %f %f",
 		                    data->image->maximums[0], data->image->maximums[1]);
-		append_string(&command_string, temp_string4, &error);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
@@ -925,7 +924,7 @@ LAST MODIFIED : 17 December 2003
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_wavelet_decomp with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <number_of_levels> specifies
-half the width and height of the filter window.  The <dimension> is the
+number of the decomposition layers.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
 If function fails, field is guaranteed to be unchanged from its original state,

@@ -39,9 +39,7 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_canny_filter_type_specific_data
 {
-	/* The size of the median filter window */
 	double sigma;
-
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;

@@ -40,7 +40,6 @@ struct Computed_field_binomial_filter_type_specific_data
 {
         int standard_deviation;
 	int centre_weight;
-
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -643,9 +642,9 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    filter standard_deviation : %d\n", data->standard_deviation);
+			"    standard_deviation : %d\n", data->standard_deviation);
 		display_message(INFORMATION_MESSAGE,
-			"    filter centre_weight : %d\n", data->centre_weight);
+			"    centre_weight : %d\n", data->centre_weight);
 		return_code = 1;
 	}
 	else
