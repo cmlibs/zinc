@@ -3629,8 +3629,10 @@ int Scene_viewer_get_modelview_matrix(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 21 January 1998
 
 DESCRIPTION :
-Reads the modelview matrix used if the SCENE_VIEWER_CUSTOM projection is in
-effect. The format of the matrix is as in Scene_viewer_set_modelview_matrix.
+Reads the modelview matrix in effect.  For custom projections this is set by
+Scene_viewer_set_modelview_matrix otherwise it is updated each time the window
+is rendered.
+The format of the matrix is as in Scene_viewer_set_modelview_matrix.
 ==============================================================================*/
 {
 	int return_code,i;
@@ -3908,8 +3910,10 @@ int Scene_viewer_get_projection_matrix(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 25 January 1998
 
 DESCRIPTION :
-Reads the projection matrix used if the SCENE_VIEWER_CUSTOM projection is in
-effect. The format of the matrix is as in Scene_viewer_set_projection_matrix.
+Reads the projection matrix in effect.  For custom projections this is set by
+Scene_viewer_set_modelview_matrix otherwise it is updated each time the window
+is rendered.
+The format of the matrix is as in Scene_viewer_set_projection_matrix.
 ==============================================================================*/
 {
 	int return_code,i;
