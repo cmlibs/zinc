@@ -1136,8 +1136,6 @@ DESCRIPTION :
 			scene_viewer->swap_buffers=0;
 		}
 
-		glFlush();
-
 		/* SAB  Reapply the projection matrix which was cleared by the 
 			last glPopMatrix (Apply projection is further down the stack) 
 			so that unproject gets the full transformation */
@@ -1505,6 +1503,8 @@ and then again with only semi transparent objects not changing the depth buffer.
 				(double)(layers - layer) / (double)layers);
 
 			Scene_viewer_call_next_renderer(rendering_data);
+
+			glDepthRange((GLclampd)0.0,(GLclampd)1.0);
 		}
 	}
 	else
@@ -2400,12 +2400,19 @@ access this function.
 				glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 				/* depth tests are against a normalised z coordinate (i.e. [0..1])
 					so the following sets this up and turns on the test */
-				if (double_buffer && (SCENE_VIEWER_STEREO != scene_viewer->stereo_mode))
+				if (SCENE_VIEWER_STEREO != scene_viewer->stereo_mode)
 				{
-					glDrawBuffer(GL_BACK);
+					if (double_buffer)
+					{
+						glDrawBuffer(GL_BACK);
+					}
+					else	
+					{
+						glDrawBuffer(GL_FRONT);
+					}
 				}
 
-				glDepthRange((GLclampd)0,(GLclampd)1);
+				glDepthRange((GLclampd)0.0,(GLclampd)1.0);
 				glDepthMask(GL_TRUE);
 				glEnable(GL_DEPTH_TEST);
 				glDepthFunc(GL_LESS);
@@ -2457,6 +2464,8 @@ access this function.
 
 				/********* CALL THE RENDERING CALLSTACK **********/
 				Scene_viewer_call_next_renderer(&rendering_data);
+
+				glFlush();
 			}
 #if defined (REPORT_GL_ERRORS)
 			{
