@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 6 June 2000
+LAST MODIFIED : 9 July 2000
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -106,36 +106,16 @@ Module constants
 #define FLOAT_FORMAT "%10.3f"
 #define MAXIMUM_NUMBER_OF_NI_CARDS 7
 #define NUMBER_OF_CHANNELS_ON_NI_CARD 64
+#if defined (OLD_CODE)
 #define CALIBRATE_AMPLITUDE_FACTOR ((float)0.75)
+#endif /* defined (OLD_CODE) */
+#define CALIBRATE_AMPLITUDE_FACTOR ((float)0.9)
 #define CALIBRATE_WAVEFORM_FREQUENCY ((float)100)
 
 /*
 Module types
 ------------
 */
-#if defined (OLD_CODE)
-enum Message_type
-/*******************************************************************************
-LAST MODIFIED : 31 May 1996
-
-DESCRIPTION :
-The different message types.
-==============================================================================*/
-{
-	ERROR_MESSAGE,
-	INFORMATION_MESSAGE,
-	WARNING_MESSAGE
-}; /* enum Message_type */
-
-typedef int (Display_message_function)(char *);
-/*******************************************************************************
-LAST MODIFIED : 31 May 1996
-
-DESCRIPTION :
-The type of a function for displaying message strings.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 #if defined (MOTIF)
 struct Process_keyboard_data
 /*******************************************************************************
@@ -159,16 +139,6 @@ Module variables
 */
 int max_channels=NUMBER_OF_CHANNELS_ON_NI_CARD;
 
-#if defined (OLD_CODE)
-static Display_message_function
-	*display_error_message_function=(Display_message_function *)NULL,
-	*display_information_message_function=(Display_message_function *)NULL,
-	*display_warning_message_function=(Display_message_function *)NULL;
-
-#define MESSAGE_STRING_SIZE 1000
-static char message_string[MESSAGE_STRING_SIZE];
-#endif /* defined (OLD_CODE) */
-
 const float *calibrating_channel_gains=(float *)NULL,
 	*calibrating_channel_offsets=(float *)NULL;
 const int *calibrating_channel_numbers=(int *)NULL;
@@ -182,148 +152,6 @@ XtAppContext application_context;
 Module functions
 ----------------
 */
-#if defined (OLD_CODE)
-int display_message(enum Message_type message_type,char *format, ... )
-/*******************************************************************************
-LAST MODIFIED : 31 May 1996
-
-DESCRIPTION :
-A function for displaying a message of the specified <message_type>.  The printf
-form of arguments is used.
-==============================================================================*/
-{
-	int return_code;
-	va_list ap;
-
-	ENTER(display_message);
-	va_start(ap,format);
-	return_code=vsprintf(message_string,format,ap);
-	if (return_code>=MESSAGE_STRING_SIZE)
-	{
-		printf("Overflow of message_string.  Need MESSAGE_STRING_SIZE > %d",
-			return_code);
-	}
-	switch (message_type)
-	{
-		case ERROR_MESSAGE:
-		{
-			if (display_error_message_function)
-			{
-				return_code=(*display_error_message_function)(message_string);
-			}
-			else
-			{
-				return_code=printf("ERROR: %s\n",message_string);
-			}
-		} break;
-		case INFORMATION_MESSAGE:
-		{
-			if (display_information_message_function)
-			{
-				return_code=(*display_information_message_function)(message_string);
-			}
-			else
-			{
-				return_code=printf(message_string);
-			}
-		} break;
-		case WARNING_MESSAGE:
-		{
-			if (display_warning_message_function)
-			{
-				return_code=(*display_warning_message_function)(message_string);
-			}
-			else
-			{
-				return_code=printf("WARNING: %s\n",message_string);
-			}
-		} break;
-		default:
-		{
-			return_code=printf("UNKNOWN: %s\n",message_string);
-		} break;
-	}
-	va_end(ap);
-	LEAVE;
-
-	return (return_code);
-} /* display_message */
-
-char *allocate(unsigned size,char *filename,int line)
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-Wrapper for allocate which keeps track of allocated memory.
-==============================================================================*/
-{
-	char *result;
-
-	ENTER(allocate);
-	USE_PARAMETER(filename);
-	USE_PARAMETER(line);
-	result=malloc(size);
-	if (!result)
-	{
-		display_message(ERROR_MESSAGE,"allocate.  Insufficient memory.  Size=%d",
-			size);
-	}
-	LEAVE;
-
-	return (result);
-} /* allocate */
-
-void deallocate(char *ptr,char *filename,int line)
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-Wrapper for deallocate which keeps track of allocated memory.
-==============================================================================*/
-{
-
-	ENTER(deallocate);
-	USE_PARAMETER(filename);
-	USE_PARAMETER(line);
-	if (ptr)
-	{
-		free(ptr);
-	}
-	LEAVE;
-} /* deallocate */
-
-char *reallocate(char *ptr,unsigned size,char *filename,int line)
-/*******************************************************************************
-LAST MODIFIED : 17 February 1998
-
-DESCRIPTION :
-Wrapper for reallocate which keeps track of allocated memory.
-==============================================================================*/
-{
-	char *result;
-
-	ENTER(reallocate);
-	USE_PARAMETER(filename);
-	USE_PARAMETER(line);
-	if (0<size)
-	{
-		result=realloc(ptr,size);
-		if (!result)
-		{
-			display_message(ERROR_MESSAGE,"reallocate.  Insufficient memory");
-		}
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,"reallocate.  Zero size requested");
-		result=ptr;
-	}
-	LEAVE;
-
-	return (result);
-} /* reallocate */
-#endif /* defined (OLD_CODE) */
-
 char pause_for_error_option='n';
 
 static void pause_for_error(void)
@@ -342,9 +170,9 @@ static void pause_for_error(void)
 
 int draw_histogram(FILE *file,int channel_number)
 {
-	int *histogram,i,j,max_histogram,return_code;
+	int *histogram,i,j,max_histogram,number_of_channels,return_code;
 	short int *buffer,max,min,*samples;
-	unsigned long number_of_channels,number_of_samples;
+	unsigned long number_of_samples;
 
 	ENTER(draw_histogram);
 	return_code=0;
@@ -443,12 +271,13 @@ int register_write_signal_file(char *file_name,int channel_number)
 {
 	FILE *output_file;
 	float sampling_frequency;
-	int electrodes_in_row[8]={8,8,8,8,8,8,8,8},i,index,j,return_code;
+	int electrodes_in_row[8]={8,8,8,8,8,8,8,8},i,index,j,number_of_channels,
+		return_code;
 	short int *destination,*samples,*source;
 	struct Device **device;
 	struct Rig *rig;
 	struct Signal_buffer *signal_buffer;
-	unsigned long number_of_channels,number_of_samples;
+	unsigned long number_of_samples;
 
 	ENTER(register_write_signal_file);
 	return_code=0;
@@ -664,6 +493,7 @@ static int allow_to_settle(int test_channel,int *test_cards,int *channel_check,
 	{
 		unemap_start_sampling();
 		sleep(4+sampling_delay);
+		/*???debug */
 		unemap_stop_sampling();
 		unemap_get_samples_acquired(0,samples);
 		channel_number=0;
@@ -822,9 +652,6 @@ static void print_menu(int channel_number,unsigned long number_of_channels)
 	printf("(c) Stimulate               \n");
 	printf("(d) Calibrate               ");
 	printf("(e) Calibrate DA            \n");
-#if defined (OLD_CODE)
-	printf("(e) Constant current stim.  \n");
-#endif /* defined (OLD_CODE) */
 	printf("(f) Set power up filter f   ");
 	printf("(g) Set NI gain             \n");
 	printf("(h) Shutdown SCU PC         \n");
@@ -854,14 +681,15 @@ static void process_keyboard(
 		signal_rms,sorted_mean[MAXIMUM_NUMBER_OF_NI_CARDS*
 		NUMBER_OF_CHANNELS_ON_NI_CARD],sum_x,sum_xx,sum_xy,sum_y,sum_yy,
 		switching_time,temp,tol_calibrate_gain,tol_correlation_coefficient,tol_db1,
-		tol_db2,tol_decay_constant,tol_gain,tol_offset,tol_offset_spread,tol_rms,
-		tol_settling,tol_signal_form,tol_signal_value,x,y;
+		tol_db2,tol_decay_constant,tol_gain,tol_isolation,tol_offset,
+		tol_offset_spread,tol_rms,tol_settling,tol_signal_form,tol_signal_value,x,y;
 	int battA_state,battGood_state,card_used[MAXIMUM_NUMBER_OF_NI_CARDS],
 		channel_check[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],
-		count,filter_taps,first,GA0_state,GA1_state,i,input_mode,j,k,l,max_settling,
-		NI_gain,number_of_settled_channels,number_of_test_cards,
-		number_of_waveform_points,phase_finished,phase_flag,phase0_flag,polarity,
-		sampling_interval,settling_step_max,shift_register_number,
+		channel_number_1,channel_number_2,channel_number_3,count,filter_taps,first,
+		GA0_state,GA1_state,i,input_mode,j,k,l,max_settling,NI_gain,
+		number_of_settled_channels,number_of_test_cards,number_of_waveform_points,
+		phase_finished,phase_flag,phase0_flag,polarity,sampling_interval,
+		settling_step_max,shift_register_number,
 		temp_channel_check[MAXIMUM_NUMBER_OF_NI_CARDS*
 		NUMBER_OF_CHANNELS_ON_NI_CARD],temp_c_number,test_channel,tested_card,
 		tested_cards[MAXIMUM_NUMBER_OF_NI_CARDS],tester_card_1,tester_card_2,
@@ -1315,6 +1143,12 @@ static void process_keyboard(
 							tol_offset=(float)20;
 							tol_offset_spread=(float)15;
 							tol_rms=(float)1.4;
+							/* there is a small signal for isolation (coming through WCT?)
+								whose size is dependent on the size of the test signal and on
+								the phase difference between the signals on the even and odd
+								channels.  Needs to be bigger now because the test signal is
+								bigger and the even and odd signals are in phase */
+							tol_isolation=(float)2.1*CALIBRATE_AMPLITUDE_FACTOR;
 							tol_signal_value=(float)0.02; /* proportion */
 							tol_signal_form=(float)10;
 							switching_time=(float)0.0003; /* seconds */
@@ -1385,6 +1219,7 @@ static void process_keyboard(
 									fscanf(settings," tol_gain = %f ",&tol_gain);
 									fscanf(settings," tol_calibrate_gain = %f ",
 										&tol_calibrate_gain);
+									fscanf(settings," tol_isolation = %f ",&tol_isolation);
 									fclose(settings);
 									fprintf(report,"From %s\n",file_name);
 								}
@@ -1411,6 +1246,7 @@ static void process_keyboard(
 							fprintf(report,"tol_db2=%g\n",tol_db2);
 							fprintf(report,"tol_gain=%g\n",tol_gain);
 							fprintf(report,"tol_calibrate_gain=%g\n",tol_calibrate_gain);
+							fprintf(report,"tol_isolation=%g\n",tol_isolation);
 							fprintf(report,"\n");
 							total_checks=0;
 							unemap_set_power(1);
@@ -1578,11 +1414,21 @@ static void process_keyboard(
 												(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+i,1);
 										}
 									}
+									channel_number_1=
+										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									channel_number_2=
+										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									if (unemap_load_voltage_stimulating(1,&channel_number_1,
+										(int)0,(float)0,(float *)NULL)&&
+										unemap_load_voltage_stimulating(1,&channel_number_2,(int)0,
+										(float)0,(float *)NULL)&&unemap_start_stimulating())
+#if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
 										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,(int)0,
 										(float)0,(float *)NULL)&&unemap_start_voltage_stimulating(
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,(int)0,
 										(float)0,(float *)NULL))
+#endif /* defined (OLD_CODE) */
 									{
 										/* wait for the high-pass (DC removal) to settle */
 										allow_to_settle(test_channel,tested_cards,
@@ -2087,6 +1933,22 @@ static void process_keyboard(
 												unemap_set_channel_stimulating(
 													(tester_card_3-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+l,0);
 											}
+											channel_number_1=
+												(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+											channel_number_2=
+												(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+											channel_number_3=
+												(tester_card_3-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+											if (unemap_load_voltage_stimulating(1,&channel_number_1,
+												(int)0,(float)0,(float *)NULL)&&
+												unemap_load_voltage_stimulating(1,&channel_number_3,
+												(int)0,(float)0,(float *)NULL)&&
+												unemap_load_voltage_stimulating(1,&channel_number_2,
+												number_of_waveform_points,
+												/*points/s*/(float)number_of_waveform_points*
+												CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1)&&
+												unemap_start_stimulating())
+#if defined (OLD_CODE)
 											if (unemap_start_voltage_stimulating(
 												(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,0,
 												(float)0,(float *)NULL)&&
@@ -2098,6 +1960,7 @@ static void process_keyboard(
 												number_of_waveform_points,
 												/*points/s*/(float)number_of_waveform_points*
 												CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1))
+#endif /* defined (OLD_CODE) */
 											{
 												calibrate_amplitude_1=calibrate_voltage_1[0];
 												/* wait for the high-pass (DC removal) to settle */
@@ -2617,6 +2480,46 @@ static void process_keyboard(
 														(double)i/(double)number_of_waveform_points);
 												}
 #endif /* defined (CALIBRATE_SQUARE_WAVE) */
+												channel_number_2=k*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+												channel_number_1=
+													(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+												channel_number_3=
+													(tester_card_3-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+												if (unemap_load_voltage_stimulating(1,&channel_number_2,
+													number_of_waveform_points,
+													/*points/s*/(float)number_of_waveform_points*
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1)&&
+													unemap_load_voltage_stimulating(1,&channel_number_1,
+													(int)0,(float)0,(float *)NULL)&&
+													unemap_load_voltage_stimulating(1,&channel_number_3,
+													(int)0,(float)0,(float *)NULL)&&
+													unemap_start_stimulating())
+#if defined (NOT_DEBUG)
+#endif /* defined (NOT_DEBUG) */
+#if defined (DEBUG)
+												calibrate_voltage_2[0]=0;
+												calibrate_voltage_2[1]=0;
+												for (i=0;i<number_of_waveform_points;i++)
+												{
+													calibrate_voltage_2[i]=0;
+												}
+												if (
+													unemap_load_voltage_stimulating(1,&channel_number_2,
+													number_of_waveform_points,
+													/*points/s*/(float)number_of_waveform_points*
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1)&&
+													unemap_load_voltage_stimulating(1,&channel_number_1,
+													2/*number_of_waveform_points/50*/,
+													(float)number_of_waveform_points*
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_2)&&
+													unemap_load_voltage_stimulating(1,&channel_number_3,
+													2/*number_of_waveform_points/50*/,
+													(float)number_of_waveform_points*
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_2)
+													&&unemap_start_stimulating()
+													)
+#endif /* defined (DEBUG) */
+#if defined (OLD_CODE)
 												if (unemap_start_voltage_stimulating(
 													k*NUMBER_OF_CHANNELS_ON_NI_CARD+1,
 													number_of_waveform_points,
@@ -2628,6 +2531,7 @@ static void process_keyboard(
 													unemap_start_voltage_stimulating(
 													(tester_card_3-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,0,
 													(float)0,(float *)NULL))
+#endif /* defined (OLD_CODE) */
 												{
 													calibrate_amplitude_1=calibrate_voltage_1[0];
 													/* wait for the high-pass (DC removal) to settle */
@@ -2639,15 +2543,6 @@ static void process_keyboard(
 														number_of_channels,tol_settling,max_settling);
 													tested_cards[k]=1;
 													tested_cards[tester_card_2-1]=0;
-#if defined (OLD_CODE)
-													if (number_of_settled_channels<
-														MAXIMUM_NUMBER_OF_NI_CARDS*
-														NUMBER_OF_CHANNELS_ON_NI_CARD)
-													{
-														channel_check[k*NUMBER_OF_CHANNELS_ON_NI_CARD+l
-															-1] |= phase_flag;
-													}
-#endif /* defined (OLD_CODE) */
 													first=0;
 													number_of_settled_channels=0;
 													temp_c_number=(tester_card_2-1)*
@@ -3162,10 +3057,20 @@ static void process_keyboard(
 												(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+i,0);
 										}
 									}
+									channel_number_1=
+										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									channel_number_2=
+										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									if (unemap_load_voltage_stimulating(1,&channel_number_1,
+										(int)0,(float)0,(float *)NULL)&&
+										unemap_load_voltage_stimulating(1,&channel_number_2,
+										(int)0,(float)0,(float *)NULL)&&unemap_start_stimulating())
+#if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating((tester_card_1-1)*
 										NUMBER_OF_CHANNELS_ON_NI_CARD+1,0,(float)0,(float *)NULL)&&
 										unemap_start_voltage_stimulating((tester_card_2-1)*
 										NUMBER_OF_CHANNELS_ON_NI_CARD+1,0,(float)0,(float *)NULL))
+#endif /* defined (OLD_CODE) */
 									{
 										unemap_get_sample_range(&minimum_sample_value,
 											&maximum_sample_value);
@@ -3206,12 +3111,23 @@ static void process_keyboard(
 											pause_for_error();
 										}
 										unemap_stop_stimulating(0);
+										channel_number_1=
+											(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+										channel_number_2=
+											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+										if (unemap_load_voltage_stimulating(1,&channel_number_1,
+											(int)1,(float)0,&calibrate_amplitude_1)&&
+											unemap_load_voltage_stimulating(1,&channel_number_2,
+											(int)1,(float)0,&calibrate_amplitude_2)&&
+											unemap_start_stimulating())
+#if defined (OLD_CODE)
 										if (unemap_start_voltage_stimulating(
 											(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1,
 											(float)0,&calibrate_amplitude_1)&&
 											unemap_start_voltage_stimulating(
 											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1,
 											(float)0,&calibrate_amplitude_2))
+#endif /* defined (OLD_CODE) */
 										{
 											unemap_start_sampling();
 											sleep(sampling_delay);
@@ -3585,6 +3501,18 @@ static void process_keyboard(
 											(float)sin(two_pi*(double)i/(double)500);
 										calibrate_voltage_2[i]=calibrate_voltage_1[i];
 									}
+									channel_number_1=
+										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									channel_number_2=
+										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									if (unemap_load_voltage_stimulating(1,&channel_number_1,
+										(int)500,/*points/s gives 200 Hz waveform frequency*/
+										(float)100000.,calibrate_voltage_1)&&
+										unemap_load_voltage_stimulating(1,&channel_number_2,
+										(int)500,/*points/s gives 200 Hz waveform frequency*/
+										(float)100000.,calibrate_voltage_2)&&
+										unemap_start_stimulating())
+#if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
 										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,500,
 										/*points/s gives 200 Hz waveform frequency*/
@@ -3593,6 +3521,7 @@ static void process_keyboard(
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,500,
 										/*points/s gives 200 Hz waveform frequency*/
 										(float)100000.,calibrate_voltage_2))
+#endif /* defined (OLD_CODE) */
 									{
 										/* wait for the high-pass (DC removal) to settle */
 										allow_to_settle(test_channel,tested_cards,
@@ -3763,6 +3692,18 @@ static void process_keyboard(
 												(float)sin(two_pi*(double)i/(double)400);
 											calibrate_voltage_2[i]=calibrate_voltage_1[i];
 										}
+										channel_number_1=
+											(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+										channel_number_2=
+											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+										if (unemap_load_voltage_stimulating(1,&channel_number_1,
+											(int)400,/*points/s gives 250 Hz waveform frequency*/
+											(float)100000.,calibrate_voltage_1)&&
+											unemap_load_voltage_stimulating(1,&channel_number_2,
+											(int)400,/*points/s gives 250 Hz waveform frequency*/
+											(float)100000.,calibrate_voltage_2)&&
+											unemap_start_stimulating())
+#if defined (OLD_CODE)
 										if (unemap_start_voltage_stimulating(
 											(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,400,
 											/*points/s gives 250 Hz waveform frequency*/
@@ -3771,6 +3712,7 @@ static void process_keyboard(
 											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,400,
 											/*points/s gives 250 Hz waveform frequency*/
 											(float)100000.,calibrate_voltage_2))
+#endif /* defined (OLD_CODE) */
 										{
 											/* wait for the high-pass (DC removal) to settle */
 											allow_to_settle(test_channel,tested_cards,
@@ -3858,6 +3800,18 @@ static void process_keyboard(
 														(float)sin(two_pi*(double)i/(double)250);
 													calibrate_voltage_2[i]=calibrate_voltage_1[i];
 												}
+												channel_number_1=
+													(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+												channel_number_2=
+													(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+												if (unemap_load_voltage_stimulating(1,&channel_number_1,
+													(int)250,/*points/s gives 400 Hz waveform frequency*/
+													(float)100000.,calibrate_voltage_1)&&
+													unemap_load_voltage_stimulating(1,&channel_number_2,
+													(int)250,/*points/s gives 400 Hz waveform frequency*/
+													(float)100000.,calibrate_voltage_2)&&
+													unemap_start_stimulating())
+#if defined (OLD_CODE)
 												if (unemap_start_voltage_stimulating(
 													(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,250,
 													/*points/s gives 400 Hz waveform frequency*/
@@ -3866,6 +3820,7 @@ static void process_keyboard(
 													(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,250,
 													/*points/s gives 400 Hz waveform frequency*/
 													(float)100000.,calibrate_voltage_2))
+#endif /* defined (OLD_CODE) */
 												{
 													/* wait for the high-pass (DC removal) to
 														settle */
@@ -4255,6 +4210,18 @@ static void process_keyboard(
 									{
 										rms_save[i]=(float)-1;
 									}
+									channel_number_1=
+										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									channel_number_2=
+										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									if (unemap_load_voltage_stimulating(1,&channel_number_1,
+										(int)1000,/*points/s gives 100 Hz waveform frequency*/
+										(float)100000.,calibrate_voltage_1)&&
+										unemap_load_voltage_stimulating(1,&channel_number_2,
+										(int)1000,/*points/s gives 100 Hz waveform frequency*/
+										(float)100000.,calibrate_voltage_2)&&
+										unemap_start_stimulating())
+#if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
 										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1000,
 										/*points/s gives 100 Hz waveform frequency*/
@@ -4263,6 +4230,7 @@ static void process_keyboard(
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1000,
 										/*points/s gives 100 Hz waveform frequency*/
 										(float)100000.,calibrate_voltage_2))
+#endif /* defined (OLD_CODE) */
 									{
 										/* wait for the high-pass (DC removal) to settle */
 										allow_to_settle(test_channel,tested_cards,
@@ -4856,6 +4824,18 @@ static void process_keyboard(
 											(float)sin(two_pi*(double)i/(double)1000);
 										calibrate_voltage_2[i]=calibrate_voltage_1[i];
 									}
+									channel_number_1=
+										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									channel_number_2=
+										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
+									if (unemap_load_voltage_stimulating(1,&channel_number_1,
+										(int)1000,/*points/s gives 100 Hz waveform frequency*/
+										(float)100000.,calibrate_voltage_1)&&
+										unemap_load_voltage_stimulating(1,&channel_number_2,
+										(int)1000,/*points/s gives 100 Hz waveform frequency*/
+										(float)100000.,calibrate_voltage_2)&&
+										unemap_start_stimulating())
+#if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
 										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1000,
 										/*points/s gives 100 Hz waveform frequency*/
@@ -4864,6 +4844,7 @@ static void process_keyboard(
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1000,
 										/*points/s gives 100 Hz waveform frequency*/
 										(float)100000.,calibrate_voltage_2))
+#endif /* defined (OLD_CODE) */
 									{
 										/* wait for the high-pass (DC removal) to settle */
 										allow_to_settle(test_channel,tested_cards,
@@ -4994,7 +4975,7 @@ static void process_keyboard(
 															rms=(float)sqrt((double)rms);
 															fprintf(report,"%2d " FLOAT_FORMAT,
 																temp_c_number+i+1,rms);
-															if (!(fabs(rms)<tol_rms))
+															if (!(fabs(rms)<tol_isolation))
 															{
 																channel_check[temp_c_number+i] |= phase_flag;
 																fprintf(report," <<< CHECK >>>");
@@ -5082,7 +5063,7 @@ static void process_keyboard(
 														rms=(float)sqrt((double)rms);
 														fprintf(report,"RMS: " FLOAT_FORMAT,rms);
 														printf("RMS: " FLOAT_FORMAT,rms);
-														if ((float)fabs((double)rms)<tol_rms)
+														if ((float)fabs((double)rms)<tol_isolation)
 														{
 															fprintf(report," OK");
 															printf(" OK");
@@ -5211,7 +5192,8 @@ static void process_keyboard(
 									for (j=0;j<calibrating_number_of_channels;j++)
 									{
 										temp_c_number=calibrating_channel_numbers[j];
-										if (((0==test_channel)||(temp_c_number==test_channel))&&
+										if (((0==test_channel)||((temp_c_number-1)%
+											NUMBER_OF_CHANNELS_ON_NI_CARD+1==test_channel))&&
 											((0==tested_card)||((temp_c_number-1)/
 											NUMBER_OF_CHANNELS_ON_NI_CARD+1==tested_card)))
 										{
@@ -5370,8 +5352,13 @@ static void process_keyboard(
 							if (constant_voltage)
 							{
 								printf("Voltage stimulation\n");
+								if (unemap_load_voltage_stimulating(1,&channel_number,
+									number_of_values,values_per_second,values)&&
+									unemap_start_stimulating())
+#if defined (OLD_CODE)
 								if (unemap_start_voltage_stimulating(channel_number,
 									number_of_values,values_per_second,values))
+#endif /* defined (OLD_CODE) */
 								{
 									stimulate_DA_on[(channel_number-1)%
 										NUMBER_OF_CHANNELS_ON_NI_CARD]=1;
@@ -5384,8 +5371,13 @@ static void process_keyboard(
 							else
 							{
 								printf("Current stimulation\n");
+								if (unemap_load_current_stimulating(1,&channel_number,
+									number_of_values,values_per_second,values)&&
+									unemap_start_stimulating())
+#if defined (OLD_CODE)
 								if (unemap_start_current_stimulating(channel_number,
 									number_of_values,values_per_second,values))
+#endif /* defined (OLD_CODE) */
 								{
 									stimulate_DA_on[(channel_number-1)%
 										NUMBER_OF_CHANNELS_ON_NI_CARD]=1;
@@ -5401,30 +5393,6 @@ static void process_keyboard(
 						{
 							printf("Could not read stimulate.wfm\n");
 						}
-#if defined (OLD_CODE)
-						unemap_get_sample_range(&minimum_sample_value,
-							&maximum_sample_value);
-						unemap_get_voltage_range(1,&minimum_voltage,
-							&maximum_voltage);
-						gain=(maximum_voltage-minimum_voltage)/
-							(float)(maximum_sample_value-minimum_sample_value);
-						/* use half of maximum */
-						calibrate_amplitude_1=
-							CALIBRATE_AMPLITUDE_FACTOR*maximum_voltage;
-						calibrate_voltage_1[0]=calibrate_amplitude_1;
-						calibrate_voltage_1[1]= -calibrate_amplitude_1;
-						if (unemap_start_voltage_stimulating(channel_number,2,
-							/*points/s gives 100 Hz waveform frequency*/
-							(float)200.,calibrate_voltage_1))
-						{
-							stimulate_DA_on[(channel_number-1)%
-								NUMBER_OF_CHANNELS_ON_NI_CARD]=1;
-						}
-						else
-						{
-							printf("Could not start stimulation\n");
-						}
-#endif /* defined (OLD_CODE) */
 					}
 					else
 					{
@@ -5520,67 +5488,6 @@ static void process_keyboard(
 						calibrate_DA_on[(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]=0;
 					}
 				} break;
-#if defined (OLD_CODE)
-				case 'e':
-				{
-					/* stimulate */
-					if (!stimulating)
-					{
-						unemap_set_isolate_record_mode(0,0);
-						printf("Test channel (1-64) or all (0) ? ");
-						scanf("%d",&test_channel);
-						if ((1<=test_channel)&&(test_channel<=64))
-						{
-							for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-							{
-								unemap_set_channel_stimulating(channel_number+i,0);
-							}
-							unemap_set_channel_stimulating(channel_number+test_channel-1,
-								1);
-						}
-						else
-						{
-							for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-							{
-								unemap_set_channel_stimulating(channel_number+i,1);
-							}
-							test_channel=0;
-						}
-						/* currents are as a proportion of maximum */
-						calibrate_voltage_1[0]=(float)-1;
-						calibrate_voltage_1[1]=(float)-0.8;
-						calibrate_voltage_1[2]=(float)-0.6;
-						calibrate_voltage_1[3]=(float)-0.4;
-						calibrate_voltage_1[4]=(float)-0.2;
-						calibrate_voltage_1[5]=(float)0.;
-						calibrate_voltage_1[6]=(float)0.2;
-						calibrate_voltage_1[7]=(float)0.4;
-						calibrate_voltage_1[8]=(float)0.6;
-						calibrate_voltage_1[9]=(float)0.8;
-						calibrate_voltage_1[10]=(float)1;
-						if (unemap_start_current_stimulating(channel_number,11,
-							/*points/s gives 10 Hz waveform frequency*/
-							(float)110.,calibrate_voltage_1))
-						{
-							stimulating=1;
-						}
-						else
-						{
-							printf("Could not start stimulation\n");
-						}
-					}
-					else
-					{
-						/* turn off stimulation */
-						unemap_stop_stimulating(0);
-						for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-						{
-							unemap_set_channel_stimulating(channel_number+i,0);
-						}
-						stimulating=0;
-					}
-				} break;
-#endif /* defined (OLD_CODE) */
 				case 'f':
 				{
 					/* set power up filter frequency */
@@ -5639,10 +5546,10 @@ Global functions
 void main(void)
 {
 	float sampling_frequency;
-	int channel_number;
+	int channel_number,number_of_channels;
 	long maximum_sample_value,minimum_sample_value;
 	short int *samples;
-	unsigned long number_of_channels,number_of_samples,sampling_delay;
+	unsigned long number_of_samples,sampling_delay;
 #if defined (MOTIF)
 	struct Process_keyboard_data process_keyboard_data;
 #endif /* defined (MOTIF) */
@@ -5699,7 +5606,7 @@ void main(void)
 #if defined (MOTIF)
 			application_context,
 #endif /* defined (MOTIF) */
-			(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0)&&
+			(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1)&&
 			unemap_get_sampling_frequency(&sampling_frequency)&&
 			unemap_get_maximum_number_of_samples(&number_of_samples)&&
 			unemap_get_number_of_channels(&number_of_channels))

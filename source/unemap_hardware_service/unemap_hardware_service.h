@@ -1,11 +1,13 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.h
 
-LAST MODIFIED : 13 September 1999
+LAST MODIFIED : 2 July 2000
 
 DESCRIPTION :
 Instruction codes for the unemap service which runs under NT and talks to unemap
 via sockets.
+
+Biggest code is 0x2d
 ==============================================================================*/
 #if !defined (UNEMAP_HARDWARE_SERVICE)
 #define UNEMAP_HARDWARE_SERVICE
@@ -34,8 +36,11 @@ Global constants
 #define UNEMAP_GET_POWER_CODE ((unsigned char)0x10)
 #define UNEMAP_GET_SAMPLE_RANGE_CODE ((unsigned char)0x11)
 #define UNEMAP_GET_SAMPLES_ACQUIRED_CODE ((unsigned char)0x12)
+#define UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE ((unsigned char)0x2d)
 #define UNEMAP_GET_SAMPLING_FREQUENCY_CODE ((unsigned char)0x13)
 #define UNEMAP_GET_VOLTAGE_RANGE_CODE ((unsigned char)0x14)
+#define UNEMAP_LOAD_CURRENT_STIMULATING_CODE ((unsigned char)0x2a)
+#define UNEMAP_LOAD_VOLTAGE_STIMULATING_CODE ((unsigned char)0x2b)
 #define UNEMAP_READ_WAVEFORM_FILE_CODE ((unsigned char)0x15)
 #define UNEMAP_SET_ANTIALIASING_FILTER_FREQUENCY_CODE ((unsigned char)0x16)
 #define UNEMAP_SET_CHANNEL_STIMULATING_CODE ((unsigned char)0x17)
@@ -46,10 +51,15 @@ Global constants
 #define UNEMAP_SET_SCROLLING_CHANNEL_CODE ((unsigned char)0x1c)
 #define UNEMAP_SHUTDOWN_CODE ((unsigned char)0x1d)
 #define UNEMAP_START_CALIBRATING_CODE ((unsigned char)0x1e)
+#if defined (OLD_CODE)
 #define UNEMAP_START_CURRENT_STIMULATING_CODE ((unsigned char)0x1f)
+#endif /* defined (OLD_CODE) */
 #define UNEMAP_START_SAMPLING_CODE ((unsigned char)0x20)
 #define UNEMAP_START_SCROLLING_CODE ((unsigned char)0x21)
+#define UNEMAP_START_STIMULATING_CODE ((unsigned char)0x2c)
+#if defined (OLD_CODE)
 #define UNEMAP_START_VOLTAGE_STIMULATING_CODE ((unsigned char)0x22)
+#endif /* defined (OLD_CODE) */
 #define UNEMAP_STOP_CALIBRATING_CODE ((unsigned char)0x23)
 #define UNEMAP_STOP_SAMPLING_CODE ((unsigned char)0x24)
 #define UNEMAP_STOP_SCROLLING_CODE ((unsigned char)0x25)

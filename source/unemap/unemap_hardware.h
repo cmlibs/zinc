@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 20 September 1999
+LAST MODIFIED : 3 July 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -30,27 +30,31 @@ otherwise the group is all channels.
 Global types
 ------------
 */
-enum UNEMAP_hardware_version
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 8 March 2000
 
 DESCRIPTION :
+???DB.  Used to be enum UNEMAP_hardware_version, but want to be able to do
+	bitwise ors to get mixtures
 ???DB.  Replace UnEmap by UNEMAP when got rid of code switchs
 ==============================================================================*/
-{
-	/* signal conditioning card used in second Oxford interim system */
-	UnEmap_1V2,
-	/* signal conditioning card for Oxford final system */
-	UnEmap_2V1,
-	/* current signal conditioning card */
-	UnEmap_2V2
-}; /* enum UNEMAP_hardware_version */
+/* signal conditioning card used in second Oxford interim system */
+#define UnEmap_1V2 (0x1)
+/* signal conditioning card for Oxford final system */
+#define UnEmap_2V1 (0x2)
+/* current signal conditioning card */
+#define UnEmap_2V2 (0x4)
 
+/* see unemap_configure for a description of the arguments */
 typedef void (Unemap_hardware_callback)(int,int *,int,short *,void *);
 
 /* see unemap_calibrate for a description of the arguments */
 typedef void (Calibration_end_callback)(const int,const int *,const float *, \
 	const float *,void *);
+
+/* see unemap_get_samples_acquired_background for a description of the
+	arguments */
+typedef void (Acquired_data_callback)(const int,const int,const short *,void *);
 
 /*
 Global functions
@@ -64,9 +68,9 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	XtAppContext application_context,
 #endif /* defined (MOTIF) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
-	float scrolling_refresh_frequency);
+	float scrolling_refresh_frequency,int synchronization_card);
 /*******************************************************************************
-LAST MODIFIED : 19 July 1999
+LAST MODIFIED : 9 July 2000
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified <sampling_frequency> and
@@ -103,6 +107,10 @@ Every <sampling_frequency>/<scrolling_refresh_frequency> samples (one sample
 		array.
 
 Initially there are no scrolling channels.
+
+<synchronization_card> is the number of the NI card, starting from 1 on the
+left, for which the synchronization signal is input, via the 5-way cable, to the
+attached SCU.  All other SCUs output the synchronization signal.
 ==============================================================================*/
 
 int unemap_configured(void);
@@ -122,9 +130,9 @@ Stops acquisition and signal generation.  Frees buffers associated with the
 hardware.
 ==============================================================================*/
 
-int unemap_get_hardware_version(enum UNEMAP_hardware_version *hardware_version);
+int unemap_get_hardware_version(int *hardware_version);
 /*******************************************************************************
-LAST MODIFIED : 13 September 1999
+LAST MODIFIED : 8 March 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -307,9 +315,9 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 <*frequency> is set to the frequency for the anti-aliasing filter.
 ==============================================================================*/
 
-int unemap_get_number_of_channels(unsigned long *number_of_channels);
+int unemap_get_number_of_channels(int *number_of_channels);
 /*******************************************************************************
-LAST MODIFIED : 11 February 1999
+LAST MODIFIED : 6 March 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -356,6 +364,19 @@ The number of samples acquired per channel since <unemap_start_sampling> is
 assigned to <*number_of_samples>.
 ==============================================================================*/
 
+int unemap_write_samples_acquired(int channel_number,FILE *file);
+/*******************************************************************************
+LAST MODIFIED : 3 July 2000
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+If <channel_number> is valid (between 1 and the total number of channels
+inclusive, then the samples for that channel are written to <file>.  If
+<channel_number> is 0 then the samples for all channels are written to <file>.
+Otherwise the function fails.
+==============================================================================*/
+
 int unemap_get_samples_acquired(int channel_number,short int *samples);
 /*******************************************************************************
 LAST MODIFIED : 11 February 1999
@@ -367,6 +388,24 @@ If <channel_number> is valid (between 1 and the total number of channels
 inclusive, then the <samples> for that channel are returned.  If
 <channel_number> is 0 then the <samples> for all channels are returned.
 Otherwise the function fails.
+==============================================================================*/
+
+int unemap_get_samples_acquired_background(int channel_number,
+	Acquired_data_callback *callback,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 3 July 2000
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+The function gets the samples specified by the <channel_number> and calls the
+<callback> with the <channel_number>, the number of samples, the samples and the
+<user_data>.
+
+When the function returns, it is safe to call any of the other functions
+(including unemap_start_sampling), but the <callback> may not have finished or
+even been called yet.  This function allows data to be transferred in the
+background in a client/server arrangement.
 ==============================================================================*/
 
 int unemap_get_maximum_number_of_samples(unsigned long *number_of_samples);
@@ -430,6 +469,76 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 ==============================================================================*/
 
+int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
+	int number_of_voltages,float voltages_per_second,float *voltages);
+/*******************************************************************************
+LAST MODIFIED : 4 June 2000
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+If <number_of_channels> is greater than 0 then the function applies to the group
+that is the union of ((channel_number-1) div 64)*64+1 to
+((channel_number-1) div 64)*64+64 for all the <channel_numbers>.  If
+<number_of_channels> is 0 then the function applies to the group of all
+channels.  Otherwise, the function fails.
+
+Sets all the stimulating channels in the group to voltage stimulating and loads
+the stimulating signal.  If <number_of_voltages> is 0 then the stimulating
+signal is the zero signal.  If <number_of_voltages> is 1 then the stimulating
+signal is constant at the <*voltages>.  If <number_of_voltages> is >1 then the
+stimulating signal is that in <voltages> at the specified number of
+<voltages_per_second>.
+
+The <voltages> are those desired (in volts).  The function sets <voltages> to
+the actual values used.
+
+Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
+Use <unemap_start_stimulating> to start the stimulating.
+==============================================================================*/
+
+int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
+	int number_of_currents,float currents_per_second,float *currents);
+/*******************************************************************************
+LAST MODIFIED : 4 June 2000
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+If <number_of_channels> is greater than 0 then the function applies to the group
+that is the union of ((channel_number-1) div 64)*64+1 to
+((channel_number-1) div 64)*64+64 for all the <channel_numbers>.  If
+<number_of_channels> is 0 then the function applies to the group of all
+channels.  Otherwise, the function fails.
+
+Sets all the stimulating channels in the group to current stimulating and loads
+the stimulating signal.  If <number_of_currents> is 0 then the stimulating
+signal is the zero signal.  If <number_of_currents> is 1 then the stimulating
+signal is constant at the <*currents>.  If <number_of_currents> is >1 then the
+stimulating signal is that in <currents> at the specified number of
+<currents_per_second>.
+
+The <currents> are those desired as a proportion of the maximum (dependent on
+the impedance being driven).  The function sets <currents> to the actual values
+used.
+
+Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
+Use <unemap_start_stimulating> to start the stimulating.
+==============================================================================*/
+
+int unemap_start_stimulating(void);
+/*******************************************************************************
+LAST MODIFIED : 5 June 2000
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+Starts stimulation for all channels that have been loaded (with
+unemap_load_voltage_stimulating or unemap_load_current_stimulating) and have not
+yet started.
+==============================================================================*/
+
+#if defined (OLD_CODE)
 int unemap_start_voltage_stimulating(int channel_number,int number_of_voltages,
 	float voltages_per_second,float *voltages);
 /*******************************************************************************
@@ -478,6 +587,7 @@ The <currents> are those desired as a proportion of the maximum (dependent on
 the impedance being driven).  The function sets <currents> to the actual values
 used.
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 int unemap_stop_stimulating(int channel_number);
 /*******************************************************************************

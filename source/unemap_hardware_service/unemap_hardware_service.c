@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 30 September 1999
+LAST MODIFIED : 9 July 2000
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -111,10 +111,10 @@ char error_string[501];
 /* this event is signalled when the service should end */
 HANDLE hServerStopEvent=NULL;
 #if defined (USE_SOCKETS)
-SOCKET calibration_socket=INVALID_SOCKET,command_socket=INVALID_SOCKET,
-	scrolling_socket=INVALID_SOCKET;
+SOCKET acquired_socket=INVALID_SOCKET,calibration_socket=INVALID_SOCKET,
+	command_socket=INVALID_SOCKET,scrolling_socket=INVALID_SOCKET;
 #endif /* defined (USE_SOCKETS) */
-unsigned char calibration_big_endian,scrolling_big_endian;
+unsigned char acquired_big_endian,calibration_big_endian,scrolling_big_endian;
 
 /*
 Module functions
@@ -122,7 +122,7 @@ Module functions
 */
 static int close_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 21 May 1999
+LAST MODIFIED : 2 July 2000
 
 DESCRIPTION :
 Closes the sockets connecting the service with the client.
@@ -137,6 +137,8 @@ Closes the sockets connecting the service with the client.
 	scrolling_socket=INVALID_SOCKET;
 	closesocket(calibration_socket);
 	calibration_socket=INVALID_SOCKET;
+	closesocket(acquired_socket);
+	acquired_socket=INVALID_SOCKET;
 
 	return (return_code);
 } /* close_connection */
@@ -509,12 +511,12 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 				copy_byte_swapped(out_buffer+2,sizeof(long),(char *)&message_size,
 					calibration_big_endian);
 				retval=socket_send(calibration_socket,out_buffer,out_buffer_size,0);
+#if defined (DEBUG)
 				/*???debug */
 				sprintf(error_string,
 					"calibration_callback.  Failed message sent %d %ld",retval,
 					out_buffer_size);
 				AddToMessageLog(TEXT(error_string));
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 				free(out_buffer);
 			}
@@ -523,11 +525,87 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 } /* calibration_callback */
 
 #if defined (USE_SOCKETS)
+DWORD WINAPI acquired_thread_function(LPVOID acquired_file_void)
+/*******************************************************************************
+LAST MODIFIED : 3 July 2000
+
+DESCRIPTION :
+Reads samples out of the file and sends them down the acquired socket.
+==============================================================================*/
+{
+	DWORD return_code;
+	FILE *acquired_file;
+	int channel_number,i,number_of_channels,retval;
+	long message_size,out_buffer_size;
+	short *sample;
+	unsigned char message_header[2+sizeof(long)],*out_buffer;
+	unsigned long number_of_samples;
+
+	return_code=0;
+	if (acquired_file=(FILE *)acquired_file_void)
+	{
+		rewind(acquired_file);
+		fread((char *)&channel_number,sizeof(channel_number),1,acquired_file);
+		fread((char *)&number_of_channels,sizeof(number_of_channels),1,
+			acquired_file);
+		fread((char *)&number_of_samples,sizeof(number_of_samples),1,acquired_file);
+		if (INVALID_SOCKET!=calibration_socket)
+		{
+			/* send message down acquired socket */
+				/*???DB.  Where I'm up to */
+			message_size=sizeof(number_of_channels)+sizeof(number_of_samples)+
+				number_of_channels*number_of_samples*sizeof(short);
+			out_buffer_size=2+sizeof(long)+message_size;
+			if (out_buffer=(unsigned char *)malloc(out_buffer_size+sizeof(short)))
+			{
+				out_buffer[0]=(unsigned char)0x01;
+				out_buffer[1]=acquired_big_endian;
+				copy_byte_swapped(out_buffer+2,sizeof(long),(char *)&message_size,
+					acquired_big_endian);
+				out_buffer_size=2+sizeof(long);
+				copy_byte_swapped(out_buffer+out_buffer_size,sizeof(number_of_channels),
+					(char *)&number_of_channels,acquired_big_endian);
+				out_buffer_size += sizeof(number_of_channels);
+				copy_byte_swapped(out_buffer+out_buffer_size,sizeof(number_of_samples),
+					(char *)&number_of_samples,acquired_big_endian);
+				out_buffer_size += sizeof(number_of_samples);
+				fread(out_buffer+out_buffer_size+sizeof(short),sizeof(short),
+					number_of_samples*number_of_channels,acquired_file);
+				sample=(short *)(out_buffer+out_buffer_size);
+				for (i=number_of_channels*number_of_samples;i>0;i--)
+				{
+					copy_byte_swapped((char *)sample,sizeof(short),(char *)(sample+1),
+						acquired_big_endian);
+					sample++;
+				}
+				out_buffer_size += number_of_channels*number_of_samples*sizeof(short);
+				retval=socket_send(acquired_socket,out_buffer,out_buffer_size,0);
+				free(out_buffer);
+			}
+			else
+			{
+				message_header[0]=(unsigned char)0x0;
+				message_header[1]=acquired_big_endian;
+				message_size=0;
+				copy_byte_swapped(message_header+2,sizeof(long),(char *)&message_size,
+					acquired_big_endian);
+				retval=socket_send(acquired_socket,message_header,2+sizeof(long),0);
+			}
+		}
+		/* acquired_file is temporary so it is automatically deleted on closing */
+		fclose(acquired_file);
+	}
+
+	return (return_code);
+} /* acquired_thread_function */
+#endif /* defined (USE_SOCKETS) */
+
+#if defined (USE_SOCKETS)
 static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 13 September 1999
+LAST MODIFIED : 9 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -643,11 +721,11 @@ DESCRIPTION :
 			case UNEMAP_CONFIGURE_CODE:
 			{
 				float sampling_frequency,scrolling_refresh_frequency;
-				int buffer_position,number_of_samples_in_buffer;
+				int buffer_position,number_of_samples_in_buffer,synchronization_card;
 
 				return_code=0;
 				size=sizeof(sampling_frequency)+sizeof(number_of_samples_in_buffer)+
-					sizeof(scrolling_refresh_frequency);
+					sizeof(scrolling_refresh_frequency)+sizeof(synchronization_card);
 #if defined (DEBUG)
 /*???debug */
 {
@@ -693,10 +771,13 @@ DESCRIPTION :
 						copy_byte_swapped((unsigned char *)&scrolling_refresh_frequency,
 							sizeof(scrolling_refresh_frequency),buffer+buffer_position,
 							big_endian);
+						buffer_position += sizeof(scrolling_refresh_frequency);
+						copy_byte_swapped((unsigned char *)&synchronization_card,
+							sizeof(synchronization_card),buffer+buffer_position,big_endian);
 						scrolling_big_endian=big_endian;
 						return_code=unemap_configure(sampling_frequency,
 							number_of_samples_in_buffer,(HWND)NULL,(UINT)0,scrolling_callback,
-							(void *)NULL,scrolling_refresh_frequency);
+							(void *)NULL,scrolling_refresh_frequency,synchronization_card);
 					}
 				}
 				else
@@ -956,7 +1037,7 @@ DESCRIPTION :
 			} break;
 			case UNEMAP_GET_HARDWARE_VERSION_CODE:
 			{
-				enum UNEMAP_hardware_version hardware_version;
+				int hardware_version;
 
 				return_code=0;
 				if (0==message_size)
@@ -1060,12 +1141,19 @@ DESCRIPTION :
 			} break;
 			case UNEMAP_GET_NUMBER_OF_CHANNELS_CODE:
 			{
-				unsigned long number_of_channels;
+				int number_of_channels;
 
 				return_code=0;
 				if (0==message_size)
 				{
 					return_code=unemap_get_number_of_channels(&number_of_channels);
+#if defined (DEBUG)
+					/*???debug */
+					sprintf(error_string,
+						"UNEMAP_GET_NUMBER_OF_CHANNELS_CODE.  %d %d",number_of_channels,
+						return_code);
+#endif /* defined (DEBUG) */
+					AddToMessageLog(TEXT(error_string));
 					if (return_code)
 					{
 						size=sizeof(number_of_channels);
@@ -1226,6 +1314,11 @@ DESCRIPTION :
 				unsigned char *out_buffer_entry,temp;
 				unsigned long i,number_of_channels,number_of_samples;
 
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,"enter UNEMAP_GET_SAMPLES_ACQUIRED_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 				return_code=0;
 				size=sizeof(channel_number);
 				if (size==message_size)
@@ -1254,6 +1347,11 @@ DESCRIPTION :
 								}
 							}
 							size=number_of_samples*sizeof(short int);
+#if defined (DEBUG)
+							/*???debug */
+							sprintf(error_string,"size=%ld %d",size,return_code);
+							AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 							if (return_code&&(out_buffer=(unsigned char *)malloc(size)))
 							{
 								return_code=unemap_get_samples_acquired(channel_number,
@@ -1317,6 +1415,83 @@ DESCRIPTION :
 						message_size,size);
 					AddToMessageLog(TEXT(error_string));
 				}
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,"leave UNEMAP_GET_SAMPLES_ACQUIRED_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+			} break;
+			case UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE:
+			{
+				DWORD acquired_thread_id;
+				HANDLE acquired_thread;
+				FILE *acquired_file;
+				int channel_number;
+
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,
+					"enter UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+				return_code=0;
+				size=sizeof(channel_number);
+				if (size==message_size)
+				{
+					retval=socket_recv(command_socket,buffer,message_size,0);
+					if (SOCKET_ERROR!=retval)
+					{
+						unread_size -= retval;
+						copy_byte_swapped((unsigned char *)&channel_number,
+							sizeof(channel_number),buffer,big_endian);
+						if (acquired_file=tmpfile())
+						{
+							if (unemap_write_samples_acquired(channel_number,acquired_file))
+							{
+								acquired_big_endian=big_endian;
+								/* spawn the background process for sending the samples back */
+								if (acquired_thread=CreateThread(
+									/*no security attributes*/NULL,/*use default stack size*/0,
+									acquired_thread_function,(LPVOID)acquired_file,
+									/*use default creation flags*/0,&acquired_thread_id))
+								{
+									return_code=1;
+								}
+								else
+								{
+									sprintf(error_string,
+						"unemap_get_samples_acquired_background.  Could not create thread");
+									AddToMessageLog(TEXT(error_string));
+								}
+							}
+							else
+							{
+								sprintf(error_string,
+"unemap_get_samples_acquired_background.  unemap_write_samples_acquired failed");
+								AddToMessageLog(TEXT(error_string));
+							}
+						}
+						else
+						{
+							sprintf(error_string,
+			"unemap_get_samples_acquired_background.  Could not open temporary file");
+							AddToMessageLog(TEXT(error_string));
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,
+				"unemap_get_samples_acquired_background.  Incorrect message size %d %d",
+						message_size,size);
+					AddToMessageLog(TEXT(error_string));
+				}
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,i
+					"leave UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 			} break;
 			case UNEMAP_GET_SAMPLING_FREQUENCY_CODE:
 			{
@@ -1390,6 +1565,325 @@ DESCRIPTION :
 				{
 					sprintf(error_string,
 						"unemap_get_voltage_range.  Incorrect message size %d %d",
+						message_size,size);
+					AddToMessageLog(TEXT(error_string));
+				}
+			} break;
+			/*???DB.  Needs to be made multi-crate aware */
+			case UNEMAP_LOAD_CURRENT_STIMULATING_CODE:
+			{
+				int *channel_number,*channel_numbers,i,number_of_currents,
+					number_of_channels;
+				float *current,*currents,currents_per_second;
+
+				return_code=0;
+				size=2*sizeof(int)+sizeof(float);
+				if (size<=message_size)
+				{
+					retval=socket_recv(command_socket,buffer,size,0);
+					if (SOCKET_ERROR!=retval)
+					{
+						unread_size -= retval;
+						size=0;
+						copy_byte_swapped((unsigned char *)&number_of_channels,
+							sizeof(number_of_channels),buffer+size,big_endian);
+						size += sizeof(number_of_channels);
+						copy_byte_swapped((unsigned char *)&number_of_currents,
+							sizeof(number_of_currents),buffer+size,big_endian);
+						size += sizeof(number_of_currents);
+						copy_byte_swapped((unsigned char *)&currents_per_second,
+							sizeof(currents_per_second),buffer+size,big_endian);
+						size += sizeof(currents_per_second);
+						size += number_of_channels*sizeof(int);
+						size += number_of_currents*sizeof(float);
+						if (size==message_size)
+						{
+							return_code=1;
+							if (0<number_of_channels)
+							{
+								size=number_of_channels*sizeof(int);
+								if (channel_numbers=(int *)malloc(size+sizeof(int)))
+								{
+									channel_number=channel_numbers+1;
+									retval=socket_recv(command_socket,
+										(unsigned char *)channel_number,size,0);
+									if (SOCKET_ERROR!=retval)
+									{
+										unread_size -= retval;
+										channel_number=channel_numbers;
+										for (i=number_of_channels;i>0;i--)
+										{
+											copy_byte_swapped((unsigned char *)channel_number,
+												sizeof(int),(unsigned char *)(channel_number+1),
+												big_endian);
+											channel_number++;
+										}
+									}
+									else
+									{
+										free(channel_numbers);
+										channel_numbers=(int *)NULL;
+										return_code=0;
+									}
+								}
+								else
+								{
+									sprintf(error_string,
+			"unemap_load_current_stimulating.  Could not allocate channel numbers %d",
+										number_of_channels);
+									AddToMessageLog(TEXT(error_string));
+									return_code=0;
+								}
+							}
+							else
+							{
+								channel_numbers=(int *)NULL;
+							}
+							out_buffer=(unsigned char *)NULL;
+							if (return_code&&(0<number_of_currents))
+							{
+								size=number_of_currents*sizeof(float);
+								if (out_buffer=(unsigned char *)malloc(size+sizeof(float)))
+								{
+									retval=socket_recv(command_socket,out_buffer,size,0);
+									if (SOCKET_ERROR!=retval)
+									{
+										unread_size -= retval;
+										currents=((float *)out_buffer)+1;
+										current=currents+(number_of_currents-1);
+										for (i=number_of_currents;i>0;i--)
+										{
+											copy_byte_swapped((unsigned char *)current,sizeof(float),
+												(unsigned char *)(current-1),big_endian);
+											current--;
+										}
+									}
+									else
+									{
+										free(out_buffer);
+										out_buffer=(unsigned char *)NULL;
+										return_code=0;
+									}
+								}
+								else
+								{
+									sprintf(error_string,
+						"unemap_load_current_stimulating.  Could not allocate currents %d",
+										number_of_currents);
+									AddToMessageLog(TEXT(error_string));
+									return_code=0;
+								}
+							}
+							else
+							{
+								currents=(float *)NULL;
+							}
+							if (return_code)
+							{
+								if (return_code=unemap_load_current_stimulating(
+									number_of_channels,channel_numbers,number_of_currents,
+									currents_per_second,currents))
+								{
+									if (out_buffer)
+									{
+										current=(float *)out_buffer;
+										for (i=number_of_currents;i>0;i--)
+										{
+											copy_byte_swapped((unsigned char *)current,sizeof(float),
+												(unsigned char *)(current+1),big_endian);
+											current++;
+										}
+										*out_buffer_address=out_buffer;
+										*out_buffer_size_address=size;
+									}
+								}
+								else
+								{
+									if (out_buffer)
+									{
+										free(out_buffer);
+										out_buffer=(unsigned char *)NULL;
+									}
+								}
+							}
+							if (channel_numbers)
+							{
+								free(channel_numbers);
+								channel_numbers=(int *)NULL;
+							}
+						}
+						else
+						{
+							sprintf(error_string,
+							"unemap_load_current_stimulating.  Incorrect message size %d %d",
+								message_size,size);
+							AddToMessageLog(TEXT(error_string));
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_load_current_stimulating.  Incorrect message size %d>=%d",
+						message_size,size);
+					AddToMessageLog(TEXT(error_string));
+				}
+			} break;
+			case UNEMAP_LOAD_VOLTAGE_STIMULATING_CODE:
+			{
+				int *channel_number,*channel_numbers,i,number_of_channels,
+					number_of_voltages;
+				float *voltage,*voltages,voltages_per_second;
+
+				return_code=0;
+				size=2*sizeof(int)+sizeof(float);
+				if (size<=message_size)
+				{
+					retval=socket_recv(command_socket,buffer,size,0);
+					if (SOCKET_ERROR!=retval)
+					{
+						unread_size -= retval;
+						size=0;
+						copy_byte_swapped((unsigned char *)&number_of_channels,
+							sizeof(number_of_channels),buffer+size,big_endian);
+						size += sizeof(number_of_channels);
+						copy_byte_swapped((unsigned char *)&number_of_voltages,
+							sizeof(number_of_voltages),buffer+size,big_endian);
+						size += sizeof(number_of_voltages);
+						copy_byte_swapped((unsigned char *)&voltages_per_second,
+							sizeof(voltages_per_second),buffer+size,big_endian);
+						size += sizeof(voltages_per_second);
+						size += number_of_channels*sizeof(int);
+						size += number_of_voltages*sizeof(float);
+						if (size==message_size)
+						{
+							return_code=1;
+							if (0<number_of_channels)
+							{
+								size=number_of_channels*sizeof(int);
+								if (channel_numbers=(int *)malloc(size+sizeof(int)))
+								{
+									channel_number=channel_numbers+1;
+									retval=socket_recv(command_socket,
+										(unsigned char *)channel_number,size,0);
+									if (SOCKET_ERROR!=retval)
+									{
+										unread_size -= retval;
+										channel_number=channel_numbers;
+										for (i=number_of_channels;i>0;i--)
+										{
+											copy_byte_swapped((unsigned char *)channel_number,
+												sizeof(int),(unsigned char *)(channel_number+1),
+												big_endian);
+											channel_number++;
+										}
+									}
+									else
+									{
+										free(channel_numbers);
+										channel_numbers=(int *)NULL;
+										return_code=0;
+									}
+								}
+								else
+								{
+									sprintf(error_string,
+		"unemap_load_voltage_stimulating.  Could not allocate channel numbers %d",
+										number_of_channels);
+									AddToMessageLog(TEXT(error_string));
+									return_code=0;
+								}
+							}
+							else
+							{
+								channel_numbers=(int *)NULL;
+							}
+							out_buffer=(unsigned char *)NULL;
+							if (return_code&&(0<number_of_voltages))
+							{
+								size=number_of_voltages*sizeof(float);
+								if (out_buffer=(unsigned char *)malloc(size+sizeof(float)))
+								{
+									retval=socket_recv(command_socket,out_buffer,size,0);
+									if (SOCKET_ERROR!=retval)
+									{
+										unread_size -= retval;
+										voltages=((float *)out_buffer)+1;
+										voltage=voltages+(number_of_voltages-1);
+										for (i=number_of_voltages;i>0;i--)
+										{
+											copy_byte_swapped((unsigned char *)voltage,sizeof(float),
+												(unsigned char *)(voltage-1),big_endian);
+											voltage--;
+										}
+									}
+									else
+									{
+										free(out_buffer);
+										out_buffer=(unsigned char *)NULL;
+										return_code=0;
+									}
+								}
+								else
+								{
+									sprintf(error_string,
+						"unemap_load_voltage_stimulating.  Could not allocate voltages %d",
+										number_of_voltages);
+									AddToMessageLog(TEXT(error_string));
+									return_code=0;
+								}
+							}
+							else
+							{
+								voltages=(float *)NULL;
+							}
+							if (return_code)
+							{
+								if (return_code=unemap_load_voltage_stimulating(
+									number_of_channels,channel_numbers,number_of_voltages,
+									voltages_per_second,voltages))
+								{
+									if (out_buffer)
+									{
+										voltage=(float *)out_buffer;
+										for (i=number_of_voltages;i>0;i--)
+										{
+											copy_byte_swapped((unsigned char *)voltage,sizeof(float),
+												(unsigned char *)(voltage+1),big_endian);
+											voltage++;
+										}
+										*out_buffer_address=out_buffer;
+										*out_buffer_size_address=size;
+									}
+								}
+								else
+								{
+									if (out_buffer)
+									{
+										free(out_buffer);
+										out_buffer=(unsigned char *)NULL;
+									}
+								}
+							}
+							if (channel_numbers)
+							{
+								free(channel_numbers);
+								channel_numbers=(int *)NULL;
+							}
+						}
+						else
+						{
+							sprintf(error_string,
+							"unemap_load_voltage_stimulating.  Incorrect message size %d %d",
+								message_size,size);
+							AddToMessageLog(TEXT(error_string));
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_load_voltage_stimulating.  Incorrect message size %d>=%d",
 						message_size,size);
 					AddToMessageLog(TEXT(error_string));
 				}
@@ -1809,6 +2303,7 @@ DESCRIPTION :
 				}
 			} break;
 #endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
 			case UNEMAP_START_CURRENT_STIMULATING_CODE:
 			{
 				int channel_number,i,number_of_currents;
@@ -1907,7 +2402,7 @@ DESCRIPTION :
 						{
 							sprintf(error_string,
 							"unemap_start_current_stimulating.  Incorrect message size %d %d",
-								message_size,size+number_of_currents*sizeof(float));
+								message_size,size);
 							AddToMessageLog(TEXT(error_string));
 						}
 					}
@@ -1920,6 +2415,7 @@ DESCRIPTION :
 					AddToMessageLog(TEXT(error_string));
 				}
 			} break;
+#endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
 			case UNEMAP_START_CURRENT_STIMULATING_CODE:
 			{
@@ -2041,6 +2537,22 @@ DESCRIPTION :
 					AddToMessageLog(TEXT(error_string));
 				}
 			} break;
+			case UNEMAP_START_STIMULATING_CODE:
+			{
+				return_code=0;
+				if (0==message_size)
+				{
+					return_code=unemap_start_stimulating();
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_start_stimulating.  Incorrect message size %d 0",
+						message_size);
+					AddToMessageLog(TEXT(error_string));
+				}
+			} break;
+#if defined (OLD_CODE)
 			case UNEMAP_START_VOLTAGE_STIMULATING_CODE:
 			{
 				int channel_number,i,number_of_voltages;
@@ -2139,7 +2651,7 @@ DESCRIPTION :
 						{
 							sprintf(error_string,
 							"unemap_start_voltage_stimulating.  Incorrect message size %d %d",
-								message_size,size+number_of_voltages*sizeof(float));
+								message_size,size);
 							AddToMessageLog(TEXT(error_string));
 						}
 					}
@@ -2152,6 +2664,7 @@ DESCRIPTION :
 					AddToMessageLog(TEXT(error_string));
 				}
 			} break;
+#endif /* defined (OLD_CODE) */
 			case UNEMAP_STOP_CALIBRATING_CODE:
 			{
 				int channel_number;
@@ -2365,7 +2878,7 @@ DESCRIPTION :
 
 VOID ServiceStart(DWORD dwArgc,LPTSTR *lpszArgv)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 2 July 2000
 
 DESCRIPTION :
 Actual code of the service that does the work.
@@ -2382,7 +2895,7 @@ Actual code of the service that does the work.
 #endif /* defined (OLD_CODE) */
 	int fromlen,last_error,return_code,retval,running,socket_type=SOCK_STREAM;
 	long message_size,out_buffer_size;
-	SOCKET calibration_socket_listen,command_socket_listen,
+	SOCKET acquired_socket_listen,calibration_socket_listen,command_socket_listen,
 		scrolling_socket_listen;
 	struct sockaddr_in from,local;
 	struct timeval timeout;
@@ -2447,7 +2960,9 @@ Actual code of the service that does the work.
 							command_socket_listen=socket(AF_INET,socket_type,0);
 							scrolling_socket_listen=socket(AF_INET,socket_type,0);
 							calibration_socket_listen=socket(AF_INET,socket_type,0);
-							if ((INVALID_SOCKET!=calibration_socket_listen)&&
+							acquired_socket_listen=socket(AF_INET,socket_type,0);
+							if ((INVALID_SOCKET!=acquired_socket_listen)&&
+								(INVALID_SOCKET!=calibration_socket_listen)&&
 								(INVALID_SOCKET!=command_socket_listen)&&
 								(INVALID_SOCKET!=scrolling_socket_listen))
 							{
@@ -2475,120 +2990,176 @@ Actual code of the service that does the work.
 											if (SOCKET_ERROR!=bind(calibration_socket_listen,
 												(struct sockaddr *)&local,sizeof(local)))
 											{
-												if ((SOCKET_ERROR!=listen(command_socket_listen,5))&&
-													(SOCKET_ERROR!=listen(calibration_socket_listen,5))&&
-													(SOCKET_ERROR!=listen(scrolling_socket_listen,5)))
+												port=DEFAULT_PORT+3;
+												local.sin_port=htons(port);
+												if (SOCKET_ERROR!=bind(acquired_socket_listen,
+													(struct sockaddr *)&local,sizeof(local)))
 												{
-													/* report the status to the service control manager */
-													if (ReportStatusToSCMgr(
-														/*service state*/SERVICE_RUNNING,
-														/*exit code*/NO_ERROR,/*wait hint*/0))
+													if ((SOCKET_ERROR!=listen(command_socket_listen,5))&&
+														(SOCKET_ERROR!=listen(scrolling_socket_listen,5))&&
+														(SOCKET_ERROR!=listen(calibration_socket_listen,
+														5))&&
+														(SOCKET_ERROR!=listen(acquired_socket_listen,5)))
 													{
-														running=1;
-														/*???debug */
-														sprintf(error_string,"Starting main loop");
-														AddToMessageLog(TEXT(error_string));
-														command_socket=INVALID_SOCKET;
-														timeout.tv_sec=0;
-														timeout.tv_usec=0;
-														while (1==running)
+														/* report the status to the service control
+															manager */
+														if (ReportStatusToSCMgr(
+															/*service state*/SERVICE_RUNNING,
+															/*exit code*/NO_ERROR,/*wait hint*/0))
 														{
+															running=1;
 #if defined (DEBUG)
 															/*???debug */
-															sprintf(error_string,"waiting for event");
+															sprintf(error_string,"Starting main loop");
 															AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-															dwWait=WaitForMultipleObjects(2,hEvents,FALSE,
-																INFINITE);
-#if defined (DEBUG)
-															/*???debug */
-															sprintf(error_string,"received event %x %x",
-																dwWait,WAIT_OBJECT_0+1);
-															AddToMessageLog(TEXT(error_string));
-#endif /* defined (DEBUG) */
-															if (WAIT_OBJECT_0+1==dwWait)
+															command_socket=INVALID_SOCKET;
+															timeout.tv_sec=0;
+															timeout.tv_usec=0;
+															while (1==running)
 															{
-																WSAEnumNetworkEvents(command_socket,
-																	NULL,&network_events);
 #if defined (DEBUG)
 																/*???debug */
-																sprintf(error_string,"network_events %lx %lx",
-																	network_events.lNetworkEvents,FD_CLOSE);
+																sprintf(error_string,"waiting for event");
 																AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-																if (network_events.lNetworkEvents&FD_CLOSE)
-																{
-																	close_connection();
-																}
-																WSAEnumNetworkEvents(command_socket_listen,
-																	NULL,&network_events);
+																dwWait=WaitForMultipleObjects(2,hEvents,FALSE,
+																	INFINITE);
 #if defined (DEBUG)
 																/*???debug */
-																sprintf(error_string,"network_events %lx %lx",
-																	network_events.lNetworkEvents,FD_CLOSE);
+																sprintf(error_string,"received event %x %x",
+																	dwWait,WAIT_OBJECT_0+1);
 																AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-																if (network_events.lNetworkEvents&FD_ACCEPT)
+																if (WAIT_OBJECT_0+1==dwWait)
 																{
-																	if (INVALID_SOCKET==command_socket)
+																	WSAEnumNetworkEvents(command_socket,
+																		NULL,&network_events);
+#if defined (DEBUG)
+																	/*???debug */
+																	sprintf(error_string,"network_events %lx %lx",
+																		network_events.lNetworkEvents,FD_CLOSE);
+																	AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+																	if (network_events.lNetworkEvents&FD_CLOSE)
 																	{
+																		close_connection();
+																	}
+																	WSAEnumNetworkEvents(command_socket_listen,
+																		NULL,&network_events);
 #if defined (DEBUG)
-																		/*???debug */
-																		sprintf(error_string,
-																			"Making command connection");
-																		AddToMessageLog(TEXT(error_string));
+																	/*???debug */
+																	sprintf(error_string,"network_events %lx %lx",
+																		network_events.lNetworkEvents,FD_CLOSE);
+																	AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-																		/* make connection */
-																		fromlen=sizeof(from);
-																		do
-																		{
-																			command_socket=accept(
-																				command_socket_listen,
-																				(struct sockaddr *)&from,&fromlen);
-																		} while ((INVALID_SOCKET==command_socket)&&
-																			(WSAEWOULDBLOCK==
-																			(last_error=WSAGetLastError())));
-																		if (INVALID_SOCKET!=command_socket)
+																	if (network_events.lNetworkEvents&FD_ACCEPT)
+																	{
+																		if (INVALID_SOCKET==command_socket)
 																		{
 #if defined (DEBUG)
 																			/*???debug */
 																			sprintf(error_string,
-																				"Making scrolling connection");
+																				"Making command connection");
 																			AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
+																			/* make connection */
 																			fromlen=sizeof(from);
 																			do
 																			{
-																				scrolling_socket=accept(
-																					scrolling_socket_listen,
+																				command_socket=accept(
+																					command_socket_listen,
 																					(struct sockaddr *)&from,&fromlen);
-																			} while ((INVALID_SOCKET==
-																				scrolling_socket)&&(WSAEWOULDBLOCK==
+																			} while ((
+																				INVALID_SOCKET==command_socket)&&
+																				(WSAEWOULDBLOCK==
 																				(last_error=WSAGetLastError())));
-																			if (INVALID_SOCKET!=scrolling_socket)
+																			if (INVALID_SOCKET!=command_socket)
 																			{
 #if defined (DEBUG)
 																				/*???debug */
 																				sprintf(error_string,
-																					"Making calibration connection");
+																					"Making scrolling connection");
 																				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
 																				fromlen=sizeof(from);
 																				do
 																				{
-																					calibration_socket=accept(
-																						calibration_socket_listen,
+																					scrolling_socket=accept(
+																						scrolling_socket_listen,
 																						(struct sockaddr *)&from,&fromlen);
 																				} while ((INVALID_SOCKET==
-																					calibration_socket)&&(WSAEWOULDBLOCK==
+																					scrolling_socket)&&(WSAEWOULDBLOCK==
 																					(last_error=WSAGetLastError())));
-																				if (INVALID_SOCKET==calibration_socket)
+																				if (INVALID_SOCKET!=scrolling_socket)
+																				{
+#if defined (DEBUG)
+																					/*???debug */
+																					sprintf(error_string,
+																						"Making calibration connection");
+																					AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+																					fromlen=sizeof(from);
+																					do
+																					{
+																						calibration_socket=accept(
+																							calibration_socket_listen,
+																							(struct sockaddr *)&from,
+																							&fromlen);
+																					} while ((INVALID_SOCKET==
+																						calibration_socket)&&
+																						(WSAEWOULDBLOCK==
+																						(last_error=WSAGetLastError())));
+																					if (INVALID_SOCKET!=
+																						calibration_socket)
+																					{
+#if defined (DEBUG)
+																						/*???debug */
+																						sprintf(error_string,
+																							"Making acquired connection");
+																						AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+																						fromlen=sizeof(from);
+																						do
+																						{
+																							acquired_socket=accept(
+																								acquired_socket_listen,
+																								(struct sockaddr *)&from,
+																								&fromlen);
+																						} while ((INVALID_SOCKET==
+																							acquired_socket)&&
+																							(WSAEWOULDBLOCK==
+																							(last_error=WSAGetLastError())));
+																						if (INVALID_SOCKET==acquired_socket)
+																						{
+																							sprintf(error_string,
+																					"Making acquired connection failed");
+																							AddToMessageLog(
+																								TEXT(error_string));
+																							closesocket(calibration_socket);
+																							calibration_socket=INVALID_SOCKET;
+																							closesocket(scrolling_socket);
+																							scrolling_socket=INVALID_SOCKET;
+																							closesocket(command_socket);
+																							command_socket=INVALID_SOCKET;
+																						}
+																					}
+																					else
+																					{
+																						sprintf(error_string,
+																				"Making calibration connection failed");
+																						AddToMessageLog(TEXT(error_string));
+																						closesocket(scrolling_socket);
+																						scrolling_socket=INVALID_SOCKET;
+																						closesocket(command_socket);
+																						command_socket=INVALID_SOCKET;
+																					}
+																				}
+																				else
 																				{
 																					sprintf(error_string,
-																				"Making calibration connection failed");
+																					"Making scrolling connection failed");
 																					AddToMessageLog(TEXT(error_string));
-																					closesocket(scrolling_socket);
-																					scrolling_socket=INVALID_SOCKET;
 																					closesocket(command_socket);
 																					command_socket=INVALID_SOCKET;
 																				}
@@ -2596,134 +3167,133 @@ Actual code of the service that does the work.
 																			else
 																			{
 																				sprintf(error_string,
-																					"Making scrolling connection failed");
+																					"Making command connection failed");
 																				AddToMessageLog(TEXT(error_string));
-																				closesocket(command_socket);
-																				command_socket=INVALID_SOCKET;
 																			}
-																		}
-																		else
-																		{
-																			sprintf(error_string,
-																				"Making command connection failed");
-																			AddToMessageLog(TEXT(error_string));
 																		}
 																	}
-																}
-																if (INVALID_SOCKET!=command_socket)
-																{
-#if defined (OLD_CODE)
-																	/* check if socket is ready for reading */
-																		/*???DB.  After being closed at other end,
-																			still ready for reading */
-																	FD_ZERO(&readfds);
-																	FD_SET(command_socket,&readfds);
-																	if (1==select(1,&readfds,(fd_set *)NULL,
-																		(fd_set *)NULL,&timeout))
+																	if (INVALID_SOCKET!=command_socket)
 																	{
-#endif /* defined (OLD_CODE) */
-																		retval=socket_recv(command_socket,buffer,
-																			MESSAGE_HEADER_SIZE,0);
-																		if (SOCKET_ERROR!=retval)
+#if defined (OLD_CODE)
+																		/* check if socket is ready for reading */
+																			/*???DB.  After being closed at other end,
+																				still ready for reading */
+																		FD_ZERO(&readfds);
+																		FD_SET(command_socket,&readfds);
+																		if (1==select(1,&readfds,(fd_set *)NULL,
+																			(fd_set *)NULL,&timeout))
 																		{
-																			/* decode message header */
-																			operation_code=buffer[0];
-																			big_endian=buffer[1];
-#if defined (DEBUG)
-																			/*???debug */
-																			sprintf(error_string,
-																				"operation_code=%d",
-																				(int)operation_code);
-																			AddToMessageLog(TEXT(error_string));
-#endif /* defined (DEBUG) */
-																			copy_byte_swapped((char *)&message_size,
-																				sizeof(long),buffer+2,big_endian);
-																			out_buffer=(unsigned char *)NULL;
-																			out_buffer_size=0;
-																			return_code=process_message(
-																				operation_code,message_size,
-																				big_endian,&out_buffer,
-																				&out_buffer_size);
-																			ResetEvent(hEvents[1]);
-#if defined (DEBUG)
-																			/*???debug */
-																			sprintf(error_string,"return_code=%d",
-																				(int)return_code);
-																			AddToMessageLog(TEXT(error_string));
-#endif /* defined (DEBUG) */
-																			if (return_code)
+#endif /* defined (OLD_CODE) */
+																			retval=socket_recv(command_socket,buffer,
+																				MESSAGE_HEADER_SIZE,0);
+																			if (SOCKET_ERROR!=retval)
 																			{
-																				buffer[0]=(unsigned char)0x1;
-																			}
-																			else
-																			{
-																				buffer[0]=(unsigned char)0x0;
-																			}
-																			buffer[1]=(unsigned char)0x0;
-																			copy_byte_swapped(buffer+2,sizeof(long),
-																				(char *)&out_buffer_size,big_endian);
-																			retval=socket_send(command_socket,
-																				buffer,MESSAGE_HEADER_SIZE,0);
-#if defined (DEBUG)
-																			/*???debug */
-																			sprintf(error_string,
-																				"Sent message header %d %d",
-																				SOCKET_ERROR,retval);
-																			AddToMessageLog(TEXT(error_string));
-#endif /* defined (DEBUG) */
-																			if (0<out_buffer_size)
-																			{
-																				retval=socket_send(command_socket,
-																					out_buffer,out_buffer_size,0);
+																				/* decode message header */
+																				operation_code=buffer[0];
+																				big_endian=buffer[1];
 #if defined (DEBUG)
 																				/*???debug */
 																				sprintf(error_string,
-																					"Sent message body %d %d",
+																					"operation_code=%d",
+																					(int)operation_code);
+																				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+																				copy_byte_swapped((char *)&message_size,
+																					sizeof(long),buffer+2,big_endian);
+																				out_buffer=(unsigned char *)NULL;
+																				out_buffer_size=0;
+																				return_code=process_message(
+																					operation_code,message_size,
+																					big_endian,&out_buffer,
+																					&out_buffer_size);
+																				ResetEvent(hEvents[1]);
+#if defined (DEBUG)
+																				/*???debug */
+																				sprintf(error_string,"return_code=%d",
+																					(int)return_code);
+																				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+																				if (return_code)
+																				{
+																					buffer[0]=(unsigned char)0x1;
+																				}
+																				else
+																				{
+																					buffer[0]=(unsigned char)0x0;
+																				}
+																				buffer[1]=(unsigned char)0x0;
+																				copy_byte_swapped(buffer+2,sizeof(long),
+																					(char *)&out_buffer_size,big_endian);
+																				retval=socket_send(command_socket,
+																					buffer,MESSAGE_HEADER_SIZE,0);
+#if defined (DEBUG)
+																				/*???debug */
+																				sprintf(error_string,
+																					"Sent message header %d %d",
 																					SOCKET_ERROR,retval);
 																				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-																				free(out_buffer);
-																				out_buffer=(unsigned char *)NULL;
+																				if (0<out_buffer_size)
+																				{
+																					retval=socket_send(command_socket,
+																						out_buffer,out_buffer_size,0);
+#if defined (DEBUG)
+																					/*???debug */
+																					sprintf(error_string,
+																						"Sent message body %d %d",
+																						SOCKET_ERROR,retval);
+																					AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+																					free(out_buffer);
+																					out_buffer=(unsigned char *)NULL;
+																				}
 																			}
+																			else
+																			{
+																				ResetEvent(hEvents[1]);
+																			}
+#if defined (OLD_CODE)
 																		}
 																		else
 																		{
+																			sprintf(error_string,
+																				"Command socket not ready for reading");
+																			AddToMessageLog(TEXT(error_string));
+																			close_connection();
 																			ResetEvent(hEvents[1]);
 																		}
-#if defined (OLD_CODE)
+#endif /* defined (OLD_CODE) */
 																	}
 																	else
 																	{
-																		sprintf(error_string,
-																			"Command socket not ready for reading");
-																		AddToMessageLog(TEXT(error_string));
-																		close_connection();
 																		ResetEvent(hEvents[1]);
 																	}
-#endif /* defined (OLD_CODE) */
 																}
 																else
 																{
-																	ResetEvent(hEvents[1]);
+																	running=0;
 																}
-															}
-															else
-															{
-																running=0;
-															}
 #if defined (DEBUG)
-															/*???debug */
-															sprintf(error_string,"command_socket %d\n",
-																command_socket);
-															AddToMessageLog(TEXT(error_string));
+																/*???debug */
+																sprintf(error_string,"command_socket %d\n",
+																	command_socket);
+																AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
+															}
 														}
+													}
+													else
+													{
+														sprintf(error_string,
+														"listen() failed with error %d",WSAGetLastError());
+														AddToMessageLog(TEXT(error_string));
 													}
 												}
 												else
 												{
 													sprintf(error_string,
-														"listen() failed with error %d",WSAGetLastError());
+											"bind() for acquired_socket_listen failed with error %d",
+														WSAGetLastError());
 													AddToMessageLog(TEXT(error_string));
 												}
 											}
@@ -2763,6 +3333,10 @@ Actual code of the service that does the work.
 								sprintf(error_string,"Error creating listening sockets.  %d",
 									WSAGetLastError());
 								AddToMessageLog(TEXT(error_string));
+							}
+							if (INVALID_SOCKET!=acquired_socket_listen)
+							{
+								closesocket(acquired_socket_listen);
 							}
 							if (INVALID_SOCKET!=calibration_socket_listen)
 							{
@@ -2812,9 +3386,11 @@ Actual code of the service that does the work.
 									}
 								}
 							}
+#if defined (DEBUG)
 							/*???debug */
 							sprintf(error_string,"Could not create wormholes");
 							AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 						}
 #endif /* defined (USE_WORMHOLES) */
 					}

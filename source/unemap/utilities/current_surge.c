@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : current_surge.c
 
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Code for turning a unemap power distribution unit on and off until a current
@@ -1944,6 +1944,24 @@ Always called so that <module_starting_sample_number> and
 #endif /* defined (NI_DAQ) */
 #endif /* defined (WINDOWS) */
 
+#if defined (WINDOWS)
+#if defined (NI_DAQ)
+static void batt_good_callback(HWND handle,UINT message,WPARAM wParam,
+	LPARAM lParam)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Called when BattGood goes low.
+==============================================================================*/
+{
+	ENTER(batt_good_callback);
+	printf("batt_good_callback\n");
+	LEAVE;
+} /* batt_good_callback */
+#endif /* defined (NI_DAQ) */
+#endif /* defined (WINDOWS) */
+
 static int unemap_set_isolate_record_mode(int channel_number,int isolate)
 /*******************************************************************************
 LAST MODIFIED : 16 August 1999
@@ -2571,6 +2589,7 @@ switched on.
 
 static enum Power_sequence power_sequence=P_ND;
 
+#if defined (OLD_CODE)
 static int unemap_set_power(int on)
 /*******************************************************************************
 LAST MODIFIED : 22 April 2000
@@ -2909,6 +2928,231 @@ on.
 								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
 						} break;
 					}
+				}
+				BattA_setting_UnEmap2vx=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_set_power.  Invalid configuration.  %d %p %d",module_configured,
+			module_NI_CARDS,module_number_of_NI_CARDS);
+	}
+#endif /* defined (NI_DAQ) */
+	LEAVE;
+
+	return (return_code);
+} /* unemap_set_power */
+#endif /* defined (OLD_CODE) */
+
+static int unemap_set_power(int on);
+
+#if defined (WINDOWS)
+DWORD WINAPI batt_good_thread_function(LPVOID stop_flag_address_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	DWORD return_code;
+	int *stop_flag_address;
+	i16 state;
+
+	ENTER(batt_good_thread_function);
+	return_code=0;
+	if (stop_flag_address=(int *)stop_flag_address_void)
+	{
+		state=0;
+		do
+		{
+			Sleep(500);
+			if (module_NI_CARDS&&!(*stop_flag_address))
+			{
+				if ((0==DIG_In_Line(module_NI_CARDS->device_number,(i16)0,
+					battery_good_input_line_UnEmap2vx,&state))&&!state)
+				{
+					unemap_set_power(0);
+				}
+			}
+		} while (state&&module_NI_CARDS&&!(*stop_flag_address));
+		*stop_flag_address=1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* batt_good_thread_function */
+#endif /* defined (WINDOWS) */
+
+static int unemap_set_power(int on)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+The function does not need the hardware to be configured.
+
+If <on> is zero the hardware is powered off, otherwise the hardware is powered
+on.
+==============================================================================*/
+{
+	int return_code;
+#if defined (NI_DAQ)
+	float frequency;
+	int channel_number,i;
+#if defined (WINDOWS)
+	DWORD batt_good_thread_id;
+	HANDLE batt_good_thread;
+	static int stop_flag=1;
+#endif /* defined (WINDOWS) */
+#if defined (NEW_CODE)
+	i16 status;
+	u32 pattern_and_lines;
+#endif /* defined (NEW_CODE) */
+#endif /* defined (NI_DAQ) */
+
+	ENTER(unemap_set_power);
+	return_code=0;
+#if defined (NI_DAQ)
+	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+	{
+		if ((UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)||
+			(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version))
+		{
+			return_code=1;
+			if (on)
+			{
+				if (UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)
+				{
+					DIG_Out_Line(module_NI_CARDS->device_number,(i16)0,
+						battery_A_line_UnEmap2v1,(i16)1);
+				}
+				else
+				{
+#if defined (OLD_CODE)
+					/* turn on the mechanical relays */
+					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,1,
+						1);
+					/* then turn on the solid state relays */
+					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,1,
+						1);
+#endif /* defined (OLD_CODE) */
+					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,1,
+						1);
+				}
+#if defined (NEW_CODE)
+				if (UnEmap_2V1!=module_NI_CARDS->unemap_hardware_version)
+				{
+					/* set up watching of BattGood */
+					pattern_and_lines=0x1;
+					pattern_and_lines <<= battery_good_input_line_UnEmap2vx;
+					status=DIG_Trigger_Config(module_NI_CARDS->device_number,
+						/*group*/(i16)1,
+						/*software start trigger*/(i16)0,
+						/*active high start polarity*/(i16)0,
+						/*digital pattern stop trigger*/(i16)2,
+						/*pattern not matched stop polarity*/(i16)3,
+						/*points after stop trigger*/(u32)0,
+						/*pattern to be matched*/pattern_and_lines,
+						/*DIO lines to be compared with pattern*/pattern_and_lines);
+					status=Config_DAQ_Event_Message(module_NI_CARDS->device_number,
+						/*add message*/(i16)1,
+						/*DIO port 0*/"DI0",
+						/*digital pattern not matched*/(i16)7,
+						/*DIO lines to be compared with pattern*/pattern_and_lines,
+						/*pattern to be matched*/pattern_and_lines,
+						/*number of triggers to skip*/(u32)0,
+						/*number of scans before trigger event*/(u32)0,
+						/*number of scans after trigger event*/(u32)0,
+						/*handle*/(i16)0,
+						/*message*/(i16)0,
+						(u32)batt_good_callback);
+					status=Config_DAQ_Event_Message(ni_card_temp->device_number,
+						/* add message */(i16)1,/* channel string */"AI0",
+						/* send message every N scans */(i16)1,
+						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
+						(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
+				}
+#endif /* defined (NEW_CODE) */
+				channel_number=1;
+				for (i=0;i<module_number_of_NI_CARDS;i++)
+				{
+					/* set power light on (and set other shift registers) */
+					if (UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)
+					{
+						set_shift_register(module_NI_CARDS+i,
+							PC_LED_SHIFT_REGISTER_UnEmap2vx,1,1);
+					}
+					else
+					{
+						set_shift_register(module_NI_CARDS+i,
+							PC_LED_SHIFT_REGISTER_UnEmap2vx,0,1);
+					}
+					if (module_configured)
+					{
+						/* force a reset of the filter frequency */
+						unemap_get_antialiasing_filter_frequency(channel_number,&frequency);
+						module_NI_CARDS[i].anti_aliasing_filter_taps= -1;
+						unemap_set_antialiasing_filter_frequency(channel_number,frequency);
+					}
+					channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
+				}
+				BattA_setting_UnEmap2vx=1;
+				if (UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)
+				{
+#if defined (WINDOWS)
+					/* start watching of BattGood */
+					if (stop_flag)
+					{
+						stop_flag=0;
+						batt_good_thread=CreateThread(/*no security attributes*/NULL,
+							/*use default stack size*/0,batt_good_thread_function,
+							(LPVOID)&stop_flag,/*use default creation flags*/0,
+							&batt_good_thread_id);
+					}
+#endif /* defined (WINDOWS) */
+				}
+			}
+			else
+			{
+#if defined (WINDOWS)
+				/* stop watching of BattGood */
+				if (!stop_flag)
+				{
+					stop_flag=1;
+				}
+#endif /* defined (WINDOWS) */
+				for (i=0;i<module_number_of_NI_CARDS;i++)
+				{
+					/* set power light off */
+					if (UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)
+					{
+						set_shift_register(module_NI_CARDS+i,
+							PC_LED_SHIFT_REGISTER_UnEmap2vx,0,1);
+					}
+					else
+					{
+						set_shift_register(module_NI_CARDS+i,
+							PC_LED_SHIFT_REGISTER_UnEmap2vx,1,1);
+					}
+				}
+				if (UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)
+				{
+					DIG_Out_Line(module_NI_CARDS->device_number,(i16)0,
+						battery_A_line_UnEmap2v1,(i16)0);
+				}
+				else
+				{
+#if defined (OLD_CODE)
+					/* then turn off the solid state relays */
+					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,0,
+						1);
+					/* turn off the mechanical relays */
+					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,0,
+						1);
+#endif /* defined (OLD_CODE) */
+					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,0,
+						1);
 				}
 				BattA_setting_UnEmap2vx=0;
 			}
@@ -4706,11 +4950,16 @@ static void process_keyboard(
 							display_message(ERROR_MESSAGE,
 								"main.  test until error.  Could not retrieve samples");
 						}
+						/* VCC is now regulated to 5V.  Scale ratios so that can use old
+							criteria */
+						ratio_VCCm_VCC /= 6./5.;
+						ratio_VCC_VCCp *= 6./5.;
 						/*???debug */
 						printf("%d.  %g %g\n",count,ratio_VCCm_VCC,ratio_VCC_VCCp);
 						printf("  mean VCC = %g\n",mean_VCC);
 						printf("  mean VCC- = %g\n",mean_VCCm);
 						printf("  mean VCC+ = %g\n",mean_VCCp);
+#if defined (OLD_CODE)
 						/*???DB.  Bug in NIdaq? */
 						if (number_of_samples_acquired>=4000)
 						{
@@ -4729,6 +4978,9 @@ static void process_keyboard(
 #endif /* defined (MOTIF) */
 								(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0);
 						}
+#endif /* defined (OLD_CODE) */
+						/* allow for timing circuit in pdu */
+						Sleep((DWORD)500);
 						/* give time for capacitors to discharge */
 #if defined (WINDOWS)
 						/* in milliseconds */
