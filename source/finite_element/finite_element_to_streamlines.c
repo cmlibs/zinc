@@ -1,13 +1,14 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.c
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
 ???DB.  Put into finite_element_to_graphics_object or split
 	finite_element_to_graphics_object further ?
 ==============================================================================*/
+#include <stdlib.h>
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element_to_graphics_object.h"

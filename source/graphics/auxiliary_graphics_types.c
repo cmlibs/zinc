@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.c
 
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -922,7 +922,7 @@ Triple *Xi_discretization_mode_get_xi_points(
 	enum Xi_discretization_mode xi_discretization_mode,int dimension,
 	int *number_in_xi,Triple exact_xi,int *number_of_xi_points)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 Allocates and returns the set of points for <xi_discretization_mode>
@@ -1061,7 +1061,7 @@ allocated here for a consistent interface.
 								for (i=0;i<number_in_xi[0];i++)
 								{
 									(*xi)[0]=(float)i/(float)number_in_xi[0] +
-										(spread[0]*((float)(random()&0xFFFF))/65536.0);
+										(spread[0]*((float)(rand()&0xFFFF))/65536.0);
 									(*xi)[1]=0.0;
 									(*xi)[2]=0.0;
 									xi++;
@@ -1074,9 +1074,9 @@ allocated here for a consistent interface.
 									for (i=0;i<number_in_xi[0];i++)
 									{
 										(*xi)[0]=(float)i/(float)number_in_xi[0] +
-											(spread[0]*((float)(random()&0xFFFF))/65536.0);
+											(spread[0]*((float)(rand()&0xFFFF))/65536.0);
 										(*xi)[1]=(float)j/(float)number_in_xi[1] +
-											(spread[1]*((float)(random()&0xFFFF))/65536.0);
+											(spread[1]*((float)(rand()&0xFFFF))/65536.0);
 										(*xi)[2]=0.0;
 										xi++;
 									}
@@ -1091,11 +1091,11 @@ allocated here for a consistent interface.
 										for (i=0;i<number_in_xi[0];i++)
 										{
 											(*xi)[0]=(float)i/(float)number_in_xi[0] +
-												(spread[0]*((float)(random()&0xFFFF))/65536.0);
+												(spread[0]*((float)(rand()&0xFFFF))/65536.0);
 											(*xi)[1]=(float)j/(float)number_in_xi[1] +
-												(spread[1]*((float)(random()&0xFFFF))/65536.0);
+												(spread[1]*((float)(rand()&0xFFFF))/65536.0);
 											(*xi)[2]=(float)k/(float)number_in_xi[2] +
-												(spread[2]*((float)(random()&0xFFFF))/65536.0);
+												(spread[2]*((float)(rand()&0xFFFF))/65536.0);
 											xi++;
 										}
 									}

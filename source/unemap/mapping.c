@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -13,8 +13,6 @@ DESCRIPTION :
 #include <X11/Xlib.h>
 #endif /* defined (MOTIF) */
 #include "command/parser.h"
-#include "computed_field/computed_field.h"
-#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 	/*???DB.  For fuzzy_string_compare */
 #include "general/debug.h"
@@ -22,6 +20,8 @@ DESCRIPTION :
 #include "general/postscript.h"
 #include "general/mystring.h"
 #if defined (UNEMAP_USE_NODES)
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "graphics/element_group_settings.h"

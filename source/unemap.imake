@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 24 July 2000
+XCOMM LAST MODIFIED : 26 July 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -170,7 +170,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
-#define Uid2uidhTarget uid2uidh32
+#define Uid2uidhTarget uid2uidh
 #define Makefile unemap_sgi.make
 #define DependMake unemap_sgi.depend
 #define ObjSuffix o
@@ -203,7 +203,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
-#define Uid2uidhTarget uid2uidh32
+#define Uid2uidhTarget uid2uidh
 #define Makefile unemap_sgi_memorycheck.make
 #define DependMake unemap_sgi_memorycheck.depend
 #define ObjSuffix o
@@ -243,7 +243,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_nodes
 #define Tuff2sigTarget unemap/tuff2sig_linux_nodes
 #define UniqueChannelsTarget unemap/unique_channels_linux_nodes
-#define Uid2uidhTarget uid2uidh_linux_nodes
+#define Uid2uidhTarget uid2uidh_linux
 #define Makefile unemap_linux_nodes.make
 #define DependMake unemap_linux_nodes.depend
 #define ObjSuffix o
@@ -693,16 +693,31 @@ depend :
 transfer :
 	tar -cvf - \
 	../unemap.make unemap.imake common.imake unemap.c version.h \
+	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
 	unemap/WildC unemap/WildH unemap/WildUil \
-	unemap_hardware_service/WildC unemap_hardware_service/WildH unemap_hardware_service/WildUil \
+	unemap_hardware_service/WildC unemap_hardware_service/WildH \
+	unemap_hardware_service/WildUil \
 	unemap/utilities/WildC unemap/utilities/WildH unemap/utilities/WildUil \
 	command/parser.c command/parser.h \
-	general/WildC generalWildH general/WildUil \
-	graphics/colour.c graphics/colour.h graphics/material.c graphics/material.h \
-	graphics/spectrum.c graphics/spectrum.h graphics/spectrum_settings.c \
-	graphics/spectrum_settings.h graphics/graphics_library.h graphics/texture.c \
-	graphics/texture.h \
+	computed_field/computed_field.h \
+	curve/control_curve.h \
+	finite_element/field_value_index_ranges.h finite_element/finite_element.h \
+	finite_element/finite_element_to_graphics_object.h \
+	finite_element/finite_element_to_streamlines.h \
+	general/WildC general/WildH general/WildUil \
+	graphics/auxiliary_graphics_types.h graphics/colour.c graphics/colour.h \
+	graphics/element_group_settings.h graphics/environment_map.h \
+	graphics/graphical_element.h graphics/graphics_object.h graphics/material.c \
+	graphics/material.h graphics/selected_graphic.h graphics/spectrum.c \
+	graphics/spectrum.h graphics/spectrum_settings.c \
+	graphics/spectrum_settings.h graphics/graphics_library.h graphics/light.h \
+	graphics/scene.h graphics/element_point_ranges.h graphics/texture.c \
+	graphics/texture.h graphics/volume_texture.h \
+	interaction/interaction_volume.h \
 	io_devices/WildC io_devices/WildH io_devices/WildUil \
+	selection/WildH \
+	time/WildC time/WildH time/WildUil \
+	three_d_drawing/WildH \
 	user_interface/WildC user_interface/WildH user_interface/WildUil \
 	| gzip > unemap_tar.gz
 

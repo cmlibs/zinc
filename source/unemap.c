@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -14,7 +14,6 @@ Main program for unemap.  Based on cmgui.
 #if defined (MOTIF)
 #include <Xm/MessageB.h>
 #endif /* defined (MOTIF) */
-#include "curve/control_curve.h"
 #include "general/debug.h"
 #include "general/error_handler.h"
 #if defined (NOT_ACQUISITION_ONLY)
@@ -23,6 +22,7 @@ Main program for unemap.  Based on cmgui.
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_vector_operations.h"
+#include "curve/control_curve.h"
 #include "graphics/glyph.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"

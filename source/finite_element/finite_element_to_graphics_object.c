@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -3989,7 +3989,7 @@ int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
 	struct MANAGER(FE_node) *data_manager, struct GROUP(FE_node) *data_group,
 	struct MANAGER(FE_field) *fe_field_manager, struct Computed_field *data_density_field)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 This function takes a <voltex> and the corresponding <vtexture> and creates
@@ -4181,7 +4181,7 @@ from the surface of a volume texture.
 						area = sqrt ( area * (area - coordinate_1) *
 							(area - coordinate_2) * (area - coordinate_3));
 						expected_number = area * density_data[0];
-						random_number = (float)random() / (float)0x7fffffff;
+						random_number = (float)rand() / (float)0x7fffffff;
 										
 #if defined (DEBUG)
 						printf("create_surface_data_points_from_GT_voltex.\n\tarea %f expected %f random %f\n",
@@ -4196,8 +4196,8 @@ from the surface of a volume texture.
 						j = 0;
 						while(return_code && (cumulated_probability < random_number))
 						{
-							xi1 = (float)random() / (float)0x7fffffff;
-							xi2 = (float)random() / (float)0x7fffffff;
+							xi1 = (float)rand() / (float)0x7fffffff;
+							xi2 = (float)rand() / (float)0x7fffffff;
 							if(xi1 + xi2 > 1.0)
 							{
 								xi1 = 1.0 - xi1;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 26 July 2000
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -10,11 +10,13 @@ Contains function definitions for unemap package.
 #include <string.h>
 #include <math.h>
 #include "finite_element/finite_element.h"
+#if defined (UNEMAP_USE_NODES)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "graphics/graphical_element.h"
+#endif /* defined (UNEMAP_USE_NODES) */
 #include "general/debug.h"
 #include "graphics/colour.h"
-#include "graphics/graphical_element.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
