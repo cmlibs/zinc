@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager.h
 
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 18 May 2001
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -60,27 +60,20 @@ struct MANAGER(object_type)
 #define MANAGER_CHANGE_NONE( object_type )  MANAGER_CHANGE_NONE_(object_type)
 
 #if defined (FULL_NAMES)
-#define MANAGER_CHANGE_ALL_( object_type )  manager_change_all_ ## object_type
-#else
-#define MANAGER_CHANGE_ALL_( object_type )  mca ## object_type
-#endif
-#define MANAGER_CHANGE_ALL( object_type )  MANAGER_CHANGE_ALL_(object_type)
-
-#if defined (FULL_NAMES)
-#define MANAGER_CHANGE_DELETE_( object_type ) \
-	manager_change_delete_ ## object_type
-#else
-#define MANAGER_CHANGE_DELETE_( object_type )  mcd ## object_type
-#endif
-#define MANAGER_CHANGE_DELETE( object_type ) \
-	MANAGER_CHANGE_DELETE_(object_type)
-
-#if defined (FULL_NAMES)
 #define MANAGER_CHANGE_ADD_( object_type )  manager_change_add_ ## object_type
 #else
 #define MANAGER_CHANGE_ADD_( object_type )  mcp ## object_type
 #endif
 #define MANAGER_CHANGE_ADD( object_type )  MANAGER_CHANGE_ADD_(object_type)
+
+#if defined (FULL_NAMES)
+#define MANAGER_CHANGE_REMOVE_( object_type ) \
+	manager_change_remove_ ## object_type
+#else
+#define MANAGER_CHANGE_REMOVE_( object_type )  mcr ## object_type
+#endif
+#define MANAGER_CHANGE_REMOVE( object_type ) \
+	MANAGER_CHANGE_REMOVE_(object_type)
 
 #if defined (FULL_NAMES)
 #define MANAGER_CHANGE_IDENTIFIER_( object_type ) \
@@ -113,25 +106,25 @@ struct MANAGER(object_type)
 #define DECLARE_MANAGER_CHANGE_TYPE( object_type ) \
 enum MANAGER_CHANGE(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 22 June 2000 \
+LAST MODIFIED : 17 May 2001 \
 \
 DESCRIPTION : \
 The message type sent to clients. \
+MANAGER_MESSAGEs contain one of these enumerated types (except NONE), while \
+the changed_object_list contains the objects affected by the change. \
 ============================================================================*/ \
 { \
 	/* indicates that no changes have been made; no message sent */ \
 	MANAGER_CHANGE_NONE(object_type), \
-	/* sent if a multitude of changes have been made */ \
-	MANAGER_CHANGE_ALL(object_type), \
-	/* sent if there was a single delete */ \
-	MANAGER_CHANGE_DELETE(object_type), \
-	/* sent if there was a single add */ \
+	/* objects have been added to the manager */ \
 	MANAGER_CHANGE_ADD(object_type), \
-	/* sent if only the identifier was modified in one object */ \
+	/* objects have been removed from the manager */ \
+	MANAGER_CHANGE_REMOVE(object_type), \
+	/* identifiers of objects have changed in the manager */ \
 	MANAGER_CHANGE_IDENTIFIER(object_type), \
-	/* if just one whole object was modified (may include identifier) */ \
+	/* identifiers and contents of objects have changed in the manager */ \
 	MANAGER_CHANGE_OBJECT(object_type), \
-	/* if just the data changed in one object */ \
+	/* contents but not identifiers of objects have changed in the manager */ \
 	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) \
 } /* enum MANAGER_CHANGE(object_type) */
 
@@ -145,7 +138,7 @@ The message type sent to clients. \
 #define DECLARE_MANAGER_MESSAGE_TYPE( object_type ) \
 struct MANAGER_MESSAGE(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 27 September 1995 \
+LAST MODIFIED : 17 May 2001 \
 \
 DESCRIPTION : \
 A message that will be sent when one of more of the objects being managed has \
@@ -153,7 +146,7 @@ changed. \
 ============================================================================*/ \
 { \
 	enum MANAGER_CHANGE(object_type) change; \
-	struct object_type *object_changed; \
+	struct LIST(object_type) *changed_object_list; \
 } /* MANAGER_MESSAGE(object_type) */
 
 #if defined (FULL_NAMES)
@@ -302,17 +295,22 @@ Returns the number of items in the <manager>. \
 ==============================================================================*/
 
 #if defined (FULL_NAMES)
-#define MANAGER_MODIFY_( object_type )  manager_modify_ ## object_type
+#define MANAGER_MODIFY_( object_type , identifier_field_name ) \
+	manager_modify_ ## object_type ## identifier_field_name
 #else
-#define MANAGER_MODIFY_( object_type )  hm ## object_type
+#define MANAGER_MODIFY_( object_type , identifier_field_name ) \
+	hm ## object_type ## identifier_field_name
 #endif
-#define MANAGER_MODIFY( object_type )  MANAGER_MODIFY_(object_type)
+#define MANAGER_MODIFY( object_type , identifier_field_name ) \
+	MANAGER_MODIFY_(object_type,identifier_field_name)
 
-#define PROTOTYPE_MANAGER_MODIFY_FUNCTION( object_type ) \
-int MANAGER_MODIFY(object_type)(struct object_type *object, \
-	struct object_type *new_data,struct MANAGER(object_type) *manager) \
+#define PROTOTYPE_MANAGER_MODIFY_FUNCTION( object_type , \
+	identifier_field_name ) \
+int MANAGER_MODIFY(object_type,identifier_field_name)( \
+	struct object_type *object, struct object_type *new_data, \
+	struct MANAGER(object_type) *manager) \
 /***************************************************************************** \
-LAST MODIFIED : 28 September 1995 \
+LAST MODIFIED : 18 May 2001 \
 \
 DESCRIPTION : \
 Copies the <new_data> to the <object>, including the new identifier.  If the \
@@ -607,7 +605,7 @@ PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type)
 #define PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS( object_type , \
 	identifier_field_name , identifier_type ) \
 PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type); \
-PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name); \
 PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(object_type, \
 	identifier_field_name); \
 PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
