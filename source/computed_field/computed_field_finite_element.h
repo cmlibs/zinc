@@ -222,9 +222,10 @@ field is guaranteed to be unchanged from its original state, although its cache
 may be lost.
 ==============================================================================*/
 
-int Computed_field_is_type_xi_coordinates(struct Computed_field *field);
+int Computed_field_is_type_xi_coordinates(struct Computed_field *field,
+	void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 ==============================================================================*/

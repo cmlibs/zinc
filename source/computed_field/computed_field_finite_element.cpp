@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -2481,9 +2481,10 @@ Converts <field> into type COMPUTED_FIELD_ACCESS_COUNT.
 
 static char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
 
-int Computed_field_is_type_xi_coordinates(struct Computed_field *field)
+int Computed_field_is_type_xi_coordinates(struct Computed_field *field,
+	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2491,6 +2492,7 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(Computed_field_is_type_xi_coordinates);
+	USE_PARAMETER(dummy_void);
 	if (field)
 	{
 		return_code = 

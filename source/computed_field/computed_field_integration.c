@@ -12,6 +12,7 @@ and the nodes for 1D elements.
 #include <stdio.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
@@ -1229,7 +1230,8 @@ Returns allocated command string for reproducing field. Includes type.
 		error = 0;
 		if (xi_texture_coordinates = (
 			Computed_field_is_constant_scalar(field->source_fields[0], 1.0) &&
-			Computed_field_is_type_xi_coordinates(field->source_fields[1])))
+			Computed_field_is_type_xi_coordinates(field->source_fields[1],
+				(void *)NULL)))
 		{
 			append_string(&command_string,
 				computed_field_xi_texture_coordinates_type_string, &error);
@@ -1777,7 +1779,7 @@ and allows its contents to be modified.
 static int define_Computed_field_type_xi_texture_coordinates(struct Parse_state *state,
 	void *field_void,void *computed_field_integration_package_void)
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_XI_TEXTURE_COORDINATES (if it is not already)
@@ -1797,8 +1799,9 @@ and allows its contents to be modified.
 			(struct Computed_field_integration_package *)computed_field_integration_package_void))
 	{
 		return_code=1;
-		if (!(coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
-			("xi", computed_field_integration_package->computed_field_manager)))
+		if (!(coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_is_type_xi_coordinates, (void *)NULL,
+			computed_field_integration_package->computed_field_manager)))
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_xi_texture_coordinates.  xi field not found");
