@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -8749,9 +8749,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 									(imaginary_device_2=create_Device(1,imaginary_description_2,
 									imaginary_channel_2,imaginary_signal_2))&&
 									(processed_device=create_Device(0,processed_description,
-									processed_channel,processed_signal))&&(cardiac_interval_device=
-									create_Device(0,cardiac_interval_description,
-									cardiac_interval_channel,cardiac_interval_signal)))
+									processed_channel,processed_signal))&&
+									(cardiac_interval_device=create_Device(0,
+									cardiac_interval_description,cardiac_interval_channel,
+									cardiac_interval_signal)))
 								{
 									trace->real_device_1=real_device_1;
 									trace->imaginary_device_1=imaginary_device_1;
@@ -10261,7 +10262,7 @@ Global functions
 
 int trace_process_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 Calculates the processed device.
@@ -10273,12 +10274,11 @@ Calculates the processed device.
 	return_code=0;
 	if (trace)
 	{
-		switch (*trace->analysis_mode)
+		switch (*(trace->analysis_mode))
 		{
 			case ELECTRICAL_IMAGING:
 			{
 				return_code=process_eimaging(trace);
-
 			} break;
 			case EVENT_DETECTION:
 			{
@@ -10348,7 +10348,6 @@ Calculates the processed device.
 								processed_time++;
 								time_float++;
 							}
-							DEALLOCATE(processed_device->description->name);
 							processed_device->description->name=name;
 							processed_device->description->type=device->description->type;
 							processed_device->highlight=highlight;
@@ -10760,6 +10759,11 @@ Calculates the processed device.
 					(processed_device->signal)&&(processed_device->signal->buffer)&&
 					(trace->correlation.device_1)&&(trace->correlation.device_2))
 				{
+					/* clear the processed device name */
+					if (processed_device->description)
+					{
+						DEALLOCATE(processed_device->description->name);
+					}
 					if (processed_device->signal->next)
 					{
 						destroy_Signal(&(processed_device->signal->next));
