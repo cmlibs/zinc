@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -5100,7 +5100,7 @@ Executes a GFX CREATE NGROUP command.
 static int gfx_create_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Executes a GFX CREATE SCENE command.
@@ -5136,6 +5136,8 @@ Executes a GFX CREATE SCENE command.
 				modify_scene_data.node_group_manager=command_data->node_group_manager;
 				modify_scene_data.data_manager=command_data->data_manager;
 				modify_scene_data.data_group_manager=command_data->data_group_manager;
+				modify_scene_data.element_selection=command_data->element_selection;
+				modify_scene_data.node_selection=command_data->node_selection;
 				modify_scene_data.user_interface=command_data->user_interface;
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -7503,6 +7505,8 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 					command_data->node_group_manager,
 					command_data->data_manager,
 					command_data->data_group_manager,
+					command_data->element_selection,
+					command_data->node_selection,
 					command_data->scene_manager,
 					command_data->default_scene,
 					command_data->spectrum_manager,
@@ -14959,7 +14963,7 @@ Executes a GFX MODIFY NGROUP command.
 static int execute_command_gfx_modify(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 November 1999
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY command.
@@ -15074,6 +15078,8 @@ Executes a GFX MODIFY command.
 				modify_scene_data.node_group_manager=command_data->node_group_manager;
 				modify_scene_data.data_manager=command_data->data_manager;
 				modify_scene_data.data_group_manager=command_data->data_group_manager;
+				modify_scene_data.element_selection=command_data->element_selection;
+				modify_scene_data.node_selection=command_data->node_selection;
 				modify_scene_data.user_interface=command_data->user_interface;
 				(option_table[i]).user_data=(void *)(&modify_scene_data);
 				i++;
@@ -16233,6 +16239,579 @@ Executes a GFX READ command.
 	return (return_code);
 } /* execute_command_gfx_read */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+
+static int execute_command_gfx_select(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Executes a GFX SELECT command.
+==============================================================================*/
+{
+	char *ranges_string;
+	int i,j,number_of_ranges,number_selected,return_code,start,stop,
+		total_number_in_ranges;
+	struct CM_element_information cm;
+	struct Cmiss_command_data *command_data;
+	struct FE_element *element;
+	struct FE_node *node;
+	struct Multi_range *element_ranges,*face_ranges,*line_ranges,*multi_range,
+		*node_ranges;
+	struct Option_table *option_table;
+
+	ENTER(execute_command_gfx_select);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		if (state->current_token)
+		{
+			element_ranges=CREATE(Multi_range)();
+			face_ranges=CREATE(Multi_range)();
+			line_ranges=CREATE(Multi_range)();
+			node_ranges=CREATE(Multi_range)();
+			option_table=CREATE(Option_table)();
+			Option_table_add_entry(option_table,"elements",element_ranges,
+				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"faces",face_ranges,
+				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"lines",line_ranges,
+				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"nodes",node_ranges,
+				(void *)NULL,set_Multi_range);
+			if (return_code=Option_table_multi_parse(option_table,state))
+			{
+				/* elements */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(element_ranges)))
+				{
+					number_selected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(element_ranges);
+						/* take numbers not in the manager away from element_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							add_FE_element_element_number_to_Multi_range,(void *)multi_range,
+							command_data->element_manager))
+						{
+							Multi_range_intersect(element_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_element_selection_begin_cache(command_data->element_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(element_ranges);
+					cm.type=CM_ELEMENT;
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(element_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							cm.number=j;
+							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+								&cm,command_data->element_manager))
+							{
+								if (FE_element_selection_select_element(
+									command_data->element_selection,element))
+								{
+									number_selected++;
+								}
+							}
+						}
+					}
+					if (number_selected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(element_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d element(s) selected from %s",number_selected,ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_element_selection_end_cache(command_data->element_selection);
+				}
+				/* faces */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(face_ranges)))
+				{
+					number_selected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(face_ranges);
+						/* take numbers not in the manager away from face_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							add_FE_element_face_number_to_Multi_range,(void *)multi_range,
+							command_data->element_manager))
+						{
+							Multi_range_intersect(face_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_element_selection_begin_cache(command_data->element_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(face_ranges);
+					cm.type=CM_FACE;
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(face_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							cm.number=j;
+							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+								&cm,command_data->element_manager))
+							{
+								if (FE_element_selection_select_element(
+									command_data->element_selection,element))
+								{
+									number_selected++;
+								}
+							}
+						}
+					}
+					if (number_selected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(face_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d face(s) selected from %s",number_selected,ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_element_selection_end_cache(command_data->element_selection);
+				}
+				/* lines */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(line_ranges)))
+				{
+					number_selected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(line_ranges);
+						/* take numbers not in the manager away from line_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							add_FE_element_line_number_to_Multi_range,(void *)multi_range,
+							command_data->element_manager))
+						{
+							Multi_range_intersect(line_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_element_selection_begin_cache(command_data->element_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(line_ranges);
+					cm.type=CM_LINE;
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(line_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							cm.number=j;
+							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+								&cm,command_data->element_manager))
+							{
+								if (FE_element_selection_select_element(
+									command_data->element_selection,element))
+								{
+									number_selected++;
+								}
+							}
+						}
+					}
+					if (number_selected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(line_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d line(s) selected from %s",number_selected,ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_element_selection_end_cache(command_data->element_selection);
+				}
+				/* nodes */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(node_ranges)))
+				{
+					number_selected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_node)(command_data->node_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(node_ranges);
+						/* take numbers not in the manager away from node_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+							add_FE_node_number_to_Multi_range,(void *)multi_range,
+							command_data->node_manager))
+						{
+							Multi_range_intersect(node_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_node_selection_begin_cache(command_data->node_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(node_ranges);
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(node_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
+								cm_node_identifier)(j,command_data->node_manager))
+							{
+								if (FE_node_selection_select_node(
+									command_data->node_selection,node))
+								{
+									number_selected++;
+								}
+							}
+						}
+					}
+					if (number_selected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(node_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d node(s) selected from %s",number_selected,ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_node_selection_end_cache(command_data->node_selection);
+				}
+			}
+			DESTROY(Option_table)(&option_table);
+			DESTROY(Multi_range)(&node_ranges);
+			DESTROY(Multi_range)(&line_ranges);
+			DESTROY(Multi_range)(&face_ranges);
+			DESTROY(Multi_range)(&element_ranges);
+		}
+		else
+		{
+			set_command_prompt("gfx select",command_data->command_window);
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_select.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_gfx_select */
+
+static int execute_command_gfx_unselect(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Executes a GFX SELECT command.
+==============================================================================*/
+{
+	char *ranges_string;
+	int i,j,number_of_ranges,number_unselected,return_code,start,stop,
+		total_number_in_ranges;
+	struct CM_element_information cm;
+	struct Cmiss_command_data *command_data;
+	struct FE_element *element;
+	struct FE_node *node;
+	struct Multi_range *element_ranges,*face_ranges,*line_ranges,*multi_range,
+		*node_ranges;
+	struct Option_table *option_table;
+
+	ENTER(execute_command_gfx_unselect);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		if (state->current_token)
+		{
+			element_ranges=CREATE(Multi_range)();
+			face_ranges=CREATE(Multi_range)();
+			line_ranges=CREATE(Multi_range)();
+			node_ranges=CREATE(Multi_range)();
+			option_table=CREATE(Option_table)();
+			Option_table_add_entry(option_table,"elements",element_ranges,
+				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"faces",face_ranges,
+				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"lines",line_ranges,
+				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"nodes",node_ranges,
+				(void *)NULL,set_Multi_range);
+			if (return_code=Option_table_multi_parse(option_table,state))
+			{
+				/* elements */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(element_ranges)))
+				{
+					number_unselected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(element_ranges);
+						/* take numbers not in the manager away from element_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							add_FE_element_element_number_to_Multi_range,(void *)multi_range,
+							command_data->element_manager))
+						{
+							Multi_range_intersect(element_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_element_selection_begin_cache(command_data->element_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(element_ranges);
+					cm.type=CM_ELEMENT;
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(element_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							cm.number=j;
+							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+								&cm,command_data->element_manager))
+							{
+								/* only unselect those that are currently selected */
+								if (FE_element_selection_is_element_selected(
+									command_data->element_selection,element)&&
+									FE_element_selection_unselect_element(
+										command_data->element_selection,element))
+								{
+									number_unselected++;
+								}
+							}
+						}
+					}
+					if (number_unselected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(element_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d element(s) unselected from %s",number_unselected,
+							ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_element_selection_end_cache(command_data->element_selection);
+				}
+				/* faces */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(face_ranges)))
+				{
+					number_unselected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(face_ranges);
+						/* take numbers not in the manager away from face_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							add_FE_element_face_number_to_Multi_range,(void *)multi_range,
+							command_data->element_manager))
+						{
+							Multi_range_intersect(face_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_element_selection_begin_cache(command_data->element_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(face_ranges);
+					cm.type=CM_FACE;
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(face_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							cm.number=j;
+							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+								&cm,command_data->element_manager))
+							{
+								/* only unselect those that are currently selected */
+								if (FE_element_selection_is_element_selected(
+									command_data->element_selection,element)&&
+									FE_element_selection_unselect_element(
+										command_data->element_selection,element))
+								{
+									number_unselected++;
+								}
+							}
+						}
+					}
+					if (number_unselected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(face_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d face(s) unselected from %s",number_unselected,
+							ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_element_selection_end_cache(command_data->element_selection);
+				}
+				/* lines */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(line_ranges)))
+				{
+					number_unselected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(line_ranges);
+						/* take numbers not in the manager away from line_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							add_FE_element_line_number_to_Multi_range,(void *)multi_range,
+							command_data->element_manager))
+						{
+							Multi_range_intersect(line_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_element_selection_begin_cache(command_data->element_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(line_ranges);
+					cm.type=CM_LINE;
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(line_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							cm.number=j;
+							if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+								&cm,command_data->element_manager))
+							{
+								/* only unselect those that are currently selected */
+								if (FE_element_selection_is_element_selected(
+									command_data->element_selection,element)&&
+									FE_element_selection_unselect_element(
+										command_data->element_selection,element))
+								{
+									number_unselected++;
+								}
+							}
+						}
+					}
+					if (number_unselected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(line_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d line(s) unselected from %s",number_unselected,
+							ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_element_selection_end_cache(command_data->element_selection);
+				}
+				/* nodes */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(node_ranges)))
+				{
+					number_unselected=0;
+					ranges_string=(char *)NULL;
+					if (NUMBER_IN_MANAGER(FE_node)(command_data->node_manager)<
+						total_number_in_ranges)
+					{
+						/* get ranges_string for later warning since modifying ranges */
+						ranges_string=Multi_range_get_ranges_string(node_ranges);
+						/* take numbers not in the manager away from node_ranges to avoid
+							 excess computation if, say, 1..1000000 entered */
+						multi_range=CREATE(Multi_range)();
+						if (FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+							add_FE_node_number_to_Multi_range,(void *)multi_range,
+							command_data->node_manager))
+						{
+							Multi_range_intersect(node_ranges,multi_range);
+						}
+						DESTROY(Multi_range)(&multi_range);
+					}
+					FE_node_selection_begin_cache(command_data->node_selection);
+					number_of_ranges=Multi_range_get_number_of_ranges(node_ranges);
+					for (i=0;i<number_of_ranges;i++)
+					{
+						Multi_range_get_range(node_ranges,i,&start,&stop);
+						for (j=start;j<=stop;j++)
+						{
+							if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
+								cm_node_identifier)(j,command_data->node_manager))
+							{
+								/* only unselect those that are currently selected */
+								if (FE_node_selection_is_node_selected(
+									command_data->node_selection,node)&&
+									FE_node_selection_unselect_node(
+										command_data->node_selection,node))
+								{
+									number_unselected++;
+								}
+							}
+						}
+					}
+					if (number_unselected < total_number_in_ranges)
+					{
+						if (!ranges_string)
+						{
+							ranges_string=Multi_range_get_ranges_string(node_ranges);
+						}
+						display_message(WARNING_MESSAGE,
+							"%d node(s) unselected from %s",number_unselected,
+							ranges_string);
+						DEALLOCATE(ranges_string);
+					}
+					FE_node_selection_end_cache(command_data->node_selection);
+				}
+			}
+			DESTROY(Option_table)(&option_table);
+			DESTROY(Multi_range)(&line_ranges);
+			DESTROY(Multi_range)(&face_ranges);
+			DESTROY(Multi_range)(&element_ranges);
+		}
+		else
+		{
+			set_command_prompt("gfx unselect",command_data->command_window);
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_unselect.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_gfx_unselect */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_set_axis_length(struct Parse_state *state,
@@ -18218,7 +18797,6 @@ Toggles the visibility of graphics objects on scenes from the command line.
 } /* gfx_set_visibility */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_set(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -18356,7 +18934,6 @@ Executes a GFX SET command.
 
 	return (return_code);
 } /* execute_command_gfx_set */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_smooth(struct Parse_state *state,
@@ -19870,7 +20447,7 @@ Executes a GFX WRITE command.
 static int execute_command_gfx(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Executes a GFX command.
@@ -19900,10 +20477,12 @@ Executes a GFX command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 		{"read",NULL,NULL,execute_command_gfx_read},
 #if !defined (WINDOWS_DEV_FLAG)
+		{"select",NULL,NULL,execute_command_gfx_select},
 		{"set",NULL,NULL,execute_command_gfx_set},
 		{"smooth",NULL,NULL,execute_command_gfx_smooth},
 		{"timekeeper",NULL,NULL,gfx_timekeeper},
 		{"transform",NULL,NULL,execute_command_gfx_transform},
+		{"unselect",NULL,NULL,execute_command_gfx_unselect},
 		{"update",NULL,NULL,execute_command_gfx_update},
 		{"warp",NULL,NULL,execute_command_gfx_warp},
 		{"write",NULL,NULL,execute_command_gfx_write},
@@ -19992,6 +20571,9 @@ Executes a GFX command.
 				(option_table[i]).user_data=command_data_void;
 				i++;
 #if !defined (WINDOWS_DEV_FLAG)
+				/* select */
+				(option_table[i]).user_data=command_data_void;
+				i++;
 				/* set */
 				(option_table[i]).user_data=command_data_void;
 				i++;
@@ -20002,6 +20584,9 @@ Executes a GFX command.
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* transform */
+				(option_table[i]).user_data=command_data_void;
+				i++;
+				/* unselect */
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* update */

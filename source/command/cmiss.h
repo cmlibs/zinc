@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 17 March 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -23,7 +23,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -78,6 +78,9 @@ DESCRIPTION :
 	struct Modifier_entry *set_file_name_option_table;
 	struct Prompt_window *prompt_window;
 	struct Projection_window *projection_window;
+	/* global list of selected objects */
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
 		/*???SAB.  This definitely doesn't belong in here... but where? */
