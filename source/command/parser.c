@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 31 July 2002
+LAST MODIFIED : 6 September 2002
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -633,7 +633,7 @@ same length.
 int process_option(struct Parse_state *state,
 	struct Modifier_entry *modifier_table)
 /*******************************************************************************
-LAST MODIFIED : 21 December 1999
+LAST MODIFIED : 10 September 2002
 
 DESCRIPTION :
 If the <state->current_token> is "?", then the options in the <modifier_table>
@@ -646,132 +646,80 @@ then the modifier function of the entry is called and its return value returned.
 If more than one match is found then the possible matchs are written to the
 command window and 0 is returned.  Note that <process_option> is a modifier
 function.
+Now allows a single option to be matched exactly even if longer tokens start
+with the same text.
 ==============================================================================*/
 {
-	char *current_token,*error_message,*temp_message,**token;
-	int first,i,match_length,number_of_sub_entries,return_code;
-	struct Modifier_entry *entry,*matching_entry,*sub_entry;
+	char *current_token, *error_message, **token;
+	int append_error, exact_match_count, first, i, number_of_sub_entries,
+		partial_match_count, return_code;
+	struct Modifier_entry *entry, *matching_entry, *sub_entry;
 
 	ENTER(process_option);
 	exclusive_option++;
-	if (state&&(entry=modifier_table))
+	if (state && (entry = modifier_table))
 	{
-		if (current_token=state->current_token)
+		if (current_token = state->current_token)
 		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			if (strcmp(PARSER_HELP_STRING, current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				return_code=0;
-				matching_entry=(struct Modifier_entry *)NULL;
-				match_length=strlen(current_token);
-				error_message=(char *)NULL;
-				while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
+				matching_entry = (struct Modifier_entry *)NULL;
+				error_message = (char *)NULL;
+				append_error = 0;
+				/* count the number of entries that are exact and partial matches
+				   matching_entry stores first exact or partial match */
+				exact_match_count = 0;
+				partial_match_count = 0;
+				while ((entry->option) || ((entry->user_data) && !(entry->modifier)))
 				{
 					if (entry->option)
 					{
-						if (fuzzy_string_compare(current_token,entry->option))
+						if (fuzzy_string_compare(current_token, entry->option))
 						{
-							if (matching_entry)
+							if (fuzzy_string_compare_same_length(current_token,
+								entry->option))
 							{
-								if (return_code)
+								exact_match_count++;
+								if (1 == exact_match_count)
 								{
-									return_code=0;
-									if (ALLOCATE(error_message,char,38+match_length+
-										strlen(matching_entry->option)+strlen(entry->option)))
-									{
-										strcpy(error_message,"Ambiguous option <");
-										strcat(error_message,current_token);
-										strcat(error_message,"> could be <");
-										strcat(error_message,matching_entry->option);
-										strcat(error_message,"> or <");
-										strcat(error_message,entry->option);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"process_option.  Multiple match, insufficient memory");
-									}
-								}
-								else
-								{
-									if (error_message)
-									{
-										if (REALLOCATE(temp_message,error_message,char,
-											strlen(error_message)+8+strlen(entry->option)))
-										{
-											error_message=temp_message;
-											strcat(error_message,"> or <");
-											strcat(error_message,entry->option);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"process_option.  Multiple match, insufficient memory");
-											DEALLOCATE(error_message);
-										}
-									}
+									matching_entry = entry;
 								}
 							}
 							else
 							{
-								matching_entry=entry;
-								return_code=1;
+								partial_match_count++;
+								if (!matching_entry)
+								{
+									matching_entry = entry;
+								}
 							}
 						}
 					}
 					else
 					{
 						/* assume that the user_data is another option table */
-						sub_entry=(struct Modifier_entry *)(entry->user_data);
+						sub_entry = (struct Modifier_entry *)(entry->user_data);
 						while (sub_entry->option)
 						{
-							if (fuzzy_string_compare(current_token,sub_entry->option))
+							if (fuzzy_string_compare(current_token, sub_entry->option))
 							{
-								if (matching_entry)
+								if (fuzzy_string_compare_same_length(current_token,
+									sub_entry->option))
 								{
-									if (return_code)
+									exact_match_count++;
+									if (1 == exact_match_count)
 									{
-										return_code=0;
-										if (ALLOCATE(error_message,char,38+match_length+
-											strlen(matching_entry->option)+strlen(sub_entry->option)))
-										{
-											strcpy(error_message,"Ambiguous option <");
-											strcat(error_message,current_token);
-											strcat(error_message,"> could be <");
-											strcat(error_message,matching_entry->option);
-											strcat(error_message,"> or <");
-											strcat(error_message,sub_entry->option);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"process_option.  Multiple match, insufficient memory");
-										}
-									}
-									else
-									{
-										if (error_message)
-										{
-											if (REALLOCATE(temp_message,error_message,char,
-												strlen(error_message)+8+strlen(sub_entry->option)))
-											{
-												error_message=temp_message;
-												strcat(error_message,"> or <");
-												strcat(error_message,sub_entry->option);
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-												"process_option.  Multiple match, insufficient memory");
-												DEALLOCATE(error_message);
-											}
-										}
+										matching_entry = sub_entry;
 									}
 								}
 								else
 								{
-									matching_entry=sub_entry;
-									return_code=1;
+									partial_match_count++;
+									if (!matching_entry)
+									{
+										matching_entry = entry;
+									}
 								}
 							}
 							sub_entry++;
@@ -779,50 +727,106 @@ function.
 					}
 					entry++;
 				}
-				if (return_code)
+				if (matching_entry)
 				{
-					if (shift_Parse_state(state,1))
+					if ((1 == exact_match_count) ||
+						((0 == exact_match_count) && (1 == partial_match_count)))
 					{
-						return_code=(matching_entry->modifier)(state,
-							matching_entry->to_be_modified,matching_entry->user_data);
+						if (shift_Parse_state(state, 1))
+						{
+							return_code = (matching_entry->modifier)(state,
+								matching_entry->to_be_modified, matching_entry->user_data);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"process_option.  Error parsing");
+							return_code = 0;
+						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"process_option.  Error parsing");
-						return_code=0;
+						/* report on ambiguous entries */
+						if (1 < exact_match_count)
+						{
+							append_string(&error_message, "Repeated option table entry <",
+								&append_error);
+							append_string(&error_message, matching_entry->option,
+								&append_error);
+							append_string(&error_message, ">", &append_error);
+							return_code = 0;
+						}
+						else
+						{
+							append_string(&error_message, "Ambiguous option <",
+								&append_error);
+							append_string(&error_message, current_token,
+								&append_error);
+							append_string(&error_message, "> could be <",
+								&append_error);
+							append_string(&error_message, matching_entry->option,
+								&append_error);
+							entry = modifier_table;
+							while ((entry->option) || ((entry->user_data) &&
+								!(entry->modifier)))
+							{
+								if (entry->option)
+								{
+									if (fuzzy_string_compare(current_token, entry->option))
+									{
+										if (entry != matching_entry)
+										{
+											append_string(&error_message, "> or <", &append_error);
+											append_string(&error_message, entry->option,
+												&append_error);
+										}
+									}
+								}
+								else
+								{
+									/* assume that the user_data is another option table */
+									sub_entry = (struct Modifier_entry *)(entry->user_data);
+									while (sub_entry->option)
+									{
+										if (fuzzy_string_compare(current_token, sub_entry->option))
+										{
+											if (sub_entry != matching_entry)
+											{
+												append_string(&error_message, "> or <", &append_error);
+												append_string(&error_message, sub_entry->option,
+													&append_error);
+											}
+										}
+										sub_entry++;
+									}
+								}
+								entry++;
+							}
+							append_string(&error_message, ">", &append_error);
+						}
+						return_code = 0;
 					}
 				}
 				else
 				{
-					if (!matching_entry)
+					/* use the default modifier function if it exists */
+					if (entry->modifier)
 					{
-						/* use the default modifier function if it exists */
-						if (entry->modifier)
-						{
-							return_code=(entry->modifier)(state,entry->to_be_modified,
-								entry->user_data);
-						}
-						else
-						{
-							if (ALLOCATE(error_message,char,18+match_length))
-							{
-								strcpy(error_message,"Unknown option <");
-								strcat(error_message,current_token);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"process_option.  No match, insufficient memory");
-							}
-						}
+						return_code = (entry->modifier)(state,entry->to_be_modified,
+							entry->user_data);
 					}
-					if (error_message)
+					else
 					{
-						strcat(error_message,">");
-						display_message(ERROR_MESSAGE,error_message);
-						DEALLOCATE(error_message);
-						display_parse_state_location(state);
+						append_string(&error_message, "Unknown option <", &append_error);
+						append_string(&error_message, current_token, &append_error);
+						append_string(&error_message, ">", &append_error);
+						return_code = 0;
 					}
+				}
+				if (error_message)
+				{
+					display_message(ERROR_MESSAGE, error_message);
+					DEALLOCATE(error_message);
+					display_parse_state_location(state);
 				}
 			}
 			else
@@ -1631,7 +1635,7 @@ entered.
 
 static int extract_token(char **source_address,char **token_address)
 /*******************************************************************************
-LAST MODIFIED : 18 September 2000
+LAST MODIFIED : 6 September 2002
 
 DESCRIPTION :
 On successful return, <*token_address> will point to a newly-allocated string
@@ -1660,8 +1664,7 @@ as working space in which the token is constructed from the source string.
 		return_code=1;
 		destination = source = *source_address;
 		/* pass over leading white space and other delimiters */
-		while ((*source) && (isspace(*source) ||
-			('=' == *source) || (',' == *source) || (';' == *source)))
+		while ((*source) && (isspace(*source)))
 		{
 			source++;
 		}
