@@ -657,14 +657,14 @@ Perform MIL analysis on the image cache.
 			fprintf(fp,"-----------------------------------------------\n");
 			fprintf(fp, "Bone Parameters:\n");
 			fprintf(fp,"\n");
-			fprintf(fp,"BV(mm^3)         : %.8f\n",bv);
-			fprintf(fp,"TV(mm^3)         : %.8f\n",tv);
-			fprintf(fp,"BS(mm^2)         : %.8f\n",bs);
-			fprintf(fp,"BV/TV(%)         : %.8f\n", vf);
-			fprintf(fp,"BS/BV(mm^2 mm^-3): %.8f\n", sv);
-			fprintf(fp,"Tb.Th(mm)        : %.8f\n", tb);
-			fprintf(fp,"Tb.N(mm^-1)      : %.8f\n", tpd);
-			fprintf(fp,"Tb.Sp(mm)        : %.8f\n", tps);
+			fprintf(fp,"BV(mm^3)         : %f\n",bv);
+			fprintf(fp,"TV(mm^3)         : %f\n",tv);
+			fprintf(fp,"BS(mm^2)         : %f\n",bs);
+			fprintf(fp,"BV/TV(%)         : %f\n", vf);
+			fprintf(fp,"BS/BV(mm^2 mm^-3): %f\n", sv);
+			fprintf(fp,"Tb.Th(mm)        : %f\n", tb);
+			fprintf(fp,"Tb.N(mm^-1)      : %f\n", tpd);
+			fprintf(fp,"Tb.Sp(mm)        : %f\n", tps);
 			fprintf(fp,"Pixel size(mm)   : %f X %f X %f\n",pixsize, pixsize, pixsize);
 			fprintf(fp,"\n");
 			fprintf(fp,"Anisotropy Tensor:\n");
@@ -733,7 +733,7 @@ Perform MIL analysis on the image cache.
 				for (iz = 0; iz < output_sizes[2]; iz++) /* slice_by_slice */
 				{
 					fprintf(fp,"Slice %d\n",iz + 1);
-					fprintf(fp,"Results: BV(mm^2), TV(mm^2), BV/TV(%), BS/BV(mm/mm^2), Tb.Th(mm), Tb.N(/mm), Tb.Sp(mm), TBPf(/mm)\n");
+					fprintf(fp,"Results: BV, TV, BV/TV, BS/BV, Tb.Th, Tb.N, Tb.Sp, TBPf\n");
 					Zctr = (int)(((FE_value)iz / ((FE_value)output_sizes[2] - 1.0)) * ((FE_value)image->sizes[2] - 1.0));
 					tintrsctn = 0;
 				        bv = tv = 0.00;
