@@ -839,7 +839,7 @@ MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
 #else /* defined (MOTIF) */
 MOTIF_LIB =
 #endif /* defined (MOTIF) */
-LIB = $(MOTIF_LIB) -lg2c -lm -ldl-lpthread -lcrypt -lstdc++
+LIB = $(MOTIF_LIB) -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #elif defined(AIX) /* switch OperatingSystem */
 #if defined (MOTIF)
