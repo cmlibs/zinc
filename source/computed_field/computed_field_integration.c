@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_integration.c
 
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 Implements a computed field which integrates along elements, including travelling
@@ -11,6 +11,7 @@ for 1D elements.
 #include <math.h>
 #include <stdio.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_private.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
@@ -1205,7 +1206,7 @@ DESCRIPTION :
 static int list_Computed_field_integration_commands(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1222,7 +1223,7 @@ DESCRIPTION :
 			data->seed_element->cm.number);
 		display_message(INFORMATION_MESSAGE," integrand %s",
 			field->source_fields[0]->name);
-		display_message(INFORMATION_MESSAGE," coordinate %s\n",
+		display_message(INFORMATION_MESSAGE," coordinate %s",
 			field->source_fields[1]->name);
 		return_code = 1;
 	}

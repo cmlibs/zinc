@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -21,6 +21,7 @@ DESCRIPTION :
 #include "general/mystring.h"
 #if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_vector_operations.h"

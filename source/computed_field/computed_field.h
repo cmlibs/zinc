@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -46,19 +46,16 @@ Global types
 
 enum Computed_field_type
 /******************************************************************************
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	COMPUTED_FIELD_INVALID,
-	COMPUTED_FIELD_COMPONENT,          /* component of a Computed_field */
 	COMPUTED_FIELD_COMPOSE,            /* compose three Computed_fields in sequence */
-	COMPUTED_FIELD_CONSTANT,           /* constant N-component field */
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
 	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
-	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
 	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
 };
 
@@ -116,17 +113,26 @@ element in the array.
 	struct Set_Computed_field_conditional_data *conditional_data;
 }; /* struct Set_Computed_field_array_data */
 
+struct List_Computed_field_commands_data
+{
+	char *command_prefix;
+	int listed_fields;
+	struct LIST(Computed_field) *computed_field_list;
+	struct MANAGER(Computed_field) *computed_field_manager;
+}; /* struct List_Computed_field_commands_data */
+
 /*
 Global functions
 ----------------
 */
+
 struct Computed_field *CREATE(Computed_field)(char *name);
 /*******************************************************************************
-LAST MODIFIED : 11 March 1999
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Creates a basic Computed_field with the given <name>. Its type is initially
-COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
+COMPUTED_FIELD_INVALID with no components.
 ==============================================================================*/
 
 int DESTROY(Computed_field)(struct Computed_field **field_address);
@@ -671,154 +677,6 @@ The number of components controls how the field is interpreted:
     normal).
 ==============================================================================*/
 
-int Computed_field_get_type_component(struct Computed_field *field,
-	struct Computed_field **source_field,int *component_no);
-/*******************************************************************************
-LAST MODIFIED : 29 December 1998
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COMPONENT, the source_field/component_no
-used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_component(struct Computed_field *field,
-	struct Computed_field *source_field,int component_no);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COMPONENT, returning the value of
-component <component_no> of <source_field>. Sets number of components to 1.
-coordinate field to return a vector (eg. velocity from the potential scalar).
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_constant(struct Computed_field *field,
-	int *number_of_values,FE_value **values);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CONSTANT, the number_of_values and
-values it contains are returned. The <*values> array is allocated and returned
-by this function - it is up to the calling function to DEALLOCATE it.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_constant(struct Computed_field *field,
-	int number_of_values,FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CONSTANT, returning the given array of
-<values> everywhere.
-Gives the field as many components as the specified <number_of_values>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_rc_coordinate(struct Computed_field *field,
-	struct Computed_field **coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 19 January 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_RC_COORDINATE, the coordinate field used
-by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_rc_coordinate(struct Computed_field *field,
-	struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_RC_COORDINATE, which returns the values
-and derivatives of the coordinate field in rectangular cartesian coordinates.
-Coordinate_system of this type of field need not be RC, although it usually will
-be. The <coordinate_field> must have no more than 3 components.
-Sets the number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_rc_vector(struct Computed_field *field,
-	struct Computed_field **vector_field,
-	struct Computed_field **coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_RC_VECTOR, the vector and coordinate
-fields used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_rc_vector(struct Computed_field *field,
-	struct Computed_field *vector_field,struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_RC_VECTOR, combining a vector field
-supplying a single vector (1,2 or 3 components), two vectors (4 or 6 components)
-or three vectors (9 components) with a coordinate field. This field type ensures
-that each source vector is converted to RC coordinates at the position given by
-the coordinate field - as opposed to RC_COORDINATE which assumes the
-transformation is always based at the origin.
-Sets the number of components to 3 times the number of vectors expected from
-the source vector_field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_sum_components(struct Computed_field *field,
-	struct Computed_field **source_field,FE_value **weights);
-/*******************************************************************************
-LAST MODIFIED : 8 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the source_field and
-weights used by it are returned. Since the number of weights is equal to the
-number of components in the source_field (and you don't know this yet), this
-function returns in *weights a pointer to an allocated array containing the
-FE_values.
-It is up to the calling function to DEALLOCATE the returned <*weights>.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_sum_components(struct Computed_field *field,
-	struct Computed_field *source_field,FE_value *weights);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS, returning a scalar
-weighted sum of the components of <source_field>. The <weights> array must
-contain as many FE_value weights as there are components in <source_field>.
-Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_set_type_xi_coordinates(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XI, defined only over elements and
-returning the xi that is passed to it.
-Sets the number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC May want the number of components to be user-selectable; for now, stick
-with 3.
-==============================================================================*/
-
 int Computed_field_is_in_use(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 26 January 1999
@@ -993,15 +851,18 @@ DESCRIPTION :
 Writes the properties of the <field> to the command window.
 ==============================================================================*/
 
-int Computed_field_commands_ready_to_list(struct Computed_field *field,
-	void *list_of_fields_void);
+int list_Computed_field_commands_if_managed_source_fields_in_list(
+	struct Computed_field *field, void *list_commands_data_void);
 /*******************************************************************************
-LAST MODIFIED : 12 March 1999
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
-Returns true if <field> is not in <list_of_fields>, but it has no source fields
-or all are in the list. Used to ensure field commands are listed in the order
-they must be created (so not referring to a field that is not created yet).
+Calls list_Computed_field_commands if the field is not already in the list,
+has no source fields, or all its source fields are either not managed or
+already in the list. If the field is listed, it is added to the list.
+Ensures field command list comes out in the order they need to be created.
+Note, must be cycled through as many times as it takes till listed_fields -> 0.
+Second argument is a struct List_Computed_field_commands_data.
 ==============================================================================*/
 
 int list_Computed_field_name(struct Computed_field *field,void *dummy_void);

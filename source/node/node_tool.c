@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -15,6 +15,7 @@ Scene input.
 #include "choose/choose_computed_field.h"
 #include "choose/choose_node_group.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
@@ -1692,8 +1693,8 @@ release.
 										if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode) ||
 											(NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))&&
 											edit_info.wrapper_orientation_scale_field&&
-											(!(COMPUTED_FIELD_CONSTANT==Computed_field_get_type(
-												edit_info.orientation_scale_field))))
+											(!Computed_field_is_constant(
+												edit_info.orientation_scale_field)))
 										{
 											/* edit vector */
 											if (FE_node_calculate_delta_vector(

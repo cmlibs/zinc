@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -57,10 +57,6 @@ on itself in any way, to prevent infinite loops.
 - Each computed field has names for its components. If the field is a wrapper
 for an FE_field, the component names will match those for the FE_field,
 otherwise they will be called "1", "2", etc.
-
-- COMPUTED_FIELD_COMPONENT type allows individual components of fields to be
-treated as if they are separate scalar fields, allowing old behaviour for
-scalar plots to be reproduced.
 
 - Handling messages from the MANAGER(Computed_field) is made tricky by the
 possibility of fields depending on each other. If you are informed that field
@@ -195,21 +191,6 @@ Computed_field_clear_type;
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
 
 FULL_DECLARE_MANAGER_TYPE(Computed_field);
-
-struct Computed_field_component
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Used to specify a component of a Computed_field with function
-set_Computed_field_component.
-???RC Note that in its current use the field is NOT assumed to be accessed by
-this structure in set_Computed_field_component.
-==============================================================================*/
-{
-	struct Computed_field *field;
-	int component_no;
-}; /* struct Computed_field_component */
 
 struct Computed_field_type_data
 /*******************************************************************************
@@ -384,9 +365,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEALLOCATE(field->component_names);
 		}
 
-		/* for COMPUTED_FIELD_COMPONENT only */
-		field->component_no=0;
-
 		/* for COMPUTED_FIELD_COMPOSE only */
 		if (field->compose_element_group)
 		{
@@ -491,38 +469,6 @@ Calls Computed_field_clear_cache before clearing the type.
 	return (return_code);
 } /* Computed_field_clear_type */
 
-static int Computed_field_wraps_field_component(struct Computed_field *field,
-	void *field_component_void)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Returns true if <field> is of type COMPUTED_FIELD_COMPONENT returning the
-field.component referred to by <field_component>.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_component *field_component;
-
-	ENTER(Computed_field_wraps_field_component);
-	if (field&&(field_component=
-		(struct Computed_field_component *)field_component_void))
-	{
-		return_code=(COMPUTED_FIELD_COMPONENT==field->type)&&
-			(field->source_fields[0]==field_component->field)&&
-			(field->component_no==field_component->component_no);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_wraps_field_component.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_wraps_field_component */
-
 int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -580,11 +526,11 @@ Global functions
 
 struct Computed_field *CREATE(Computed_field)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Creates a basic Computed_field with the given <name>. Its type is initially
-COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
+COMPUTED_FIELD_INVALID with no components.
 ==============================================================================*/
 {
 	struct Computed_field *field;
@@ -592,32 +538,26 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 	ENTER(CREATE(Computed_field));
 	if (name)
 	{
-		if (ALLOCATE(field,struct Computed_field,1)&&
-			(field->name=duplicate_string(name))&&
-			ALLOCATE(field->source_values,FE_value,1))
+		if (ALLOCATE(field, struct Computed_field, 1) &&
+			(field->name = duplicate_string(name)))
 		{
-			/* initialise all members of computed_field */
-			field->number_of_components=1;
+			/* initialise all members of computed_field */	
+			field->type = COMPUTED_FIELD_INVALID;
+			field->number_of_components = 0;
 			/* allowed to modify/remove from manager until disabled with
 				 Computed_field_set_read_only */
-			field->read_only=0;
-			field->coordinate_system.type=RECTANGULAR_CARTESIAN;
-
-			field->type=COMPUTED_FIELD_CONSTANT;
-
+			field->read_only = 0;
+			field->coordinate_system.type = RECTANGULAR_CARTESIAN;
 			field->component_names = (char **)NULL;
 
 			/* values/derivatives cache and working_values */
-			field->values=(FE_value *)NULL;
-			field->derivatives=(FE_value *)NULL;
-			field->derivatives_valid=0;
-			field->element=(struct FE_element *)NULL;
-			field->node=(struct FE_node *)NULL;
+			field->values = (FE_value *)NULL;
+			field->derivatives = (FE_value *)NULL;
+			field->derivatives_valid = 0;
+			field->element = (struct FE_element *)NULL;
+			field->node = (struct FE_node *)NULL;
 
-			field->find_element_xi_cache=(struct Computed_field_find_element_xi_special_cache *)NULL;
-
-			/* for COMPUTED_FIELD_COMPONENT only */
-			field->component_no=-1;
+			field->find_element_xi_cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
 
 			/* for COMPUTED_FIELD_COMPOSE only */
 			field->compose_element_group = (struct GROUP(FE_element) *)NULL;
@@ -672,13 +612,13 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 			field->type_string = (char *)NULL;
 
 			/* for all types of Computed_field calculated from others */
-			field->source_fields=(struct Computed_field **)NULL;
-			field->number_of_source_fields=0;
-			/* set up the initial, constant [zero] field */
-			field->source_values[0]=0.0;
-			field->number_of_source_values=1;
+			field->source_fields = (struct Computed_field **)NULL;
+			field->number_of_source_fields = 0;
+			/* for all Computed_fields which use real source values */
+			field->source_values = (FE_value *)NULL;
+			field->number_of_source_values = 0;
 
-			field->access_count=0;
+			field->access_count = 0;
 		}
 		else
 		{
@@ -897,9 +837,6 @@ functions to check if read_only flag is set.
 						destination->type=source->type;
 
 						destination->component_names = component_names;
-				
-						/* for COMPUTED_FIELD_COMPONENT only */
-						destination->component_no=source->component_no;
 
 						/* for COMPUTED_FIELD_COMPOSE only */
 						REACCESS(GROUP(FE_element))(&destination->compose_element_group,
@@ -1354,12 +1291,9 @@ any other fields, this function is recursively called for them.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_COMPONENT:
-				case COMPUTED_FIELD_CONSTANT:
 				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 				case COMPUTED_FIELD_EDIT_MASK:
 				case COMPUTED_FIELD_EXTERNAL:
-				case COMPUTED_FIELD_SUM_COMPONENTS:
 				{
 					return_code=1;
 					for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
@@ -1607,7 +1541,7 @@ int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Calculates the values and derivatives (if <calculate_derivatives> set) of
@@ -1637,7 +1571,7 @@ is avoided.
 ==============================================================================*/
 {
 	char buffer[100], *temp_string;
-	FE_value sum,*temp,*temp2,compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_value *temp, *temp2, compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int cache_is_valid,element_dimension,i,index,j,k,number_of_components,
 		return_code,total_values;
 	struct FE_element *compose_element;
@@ -1749,20 +1683,6 @@ is avoided.
 						field->derivatives_valid=calculate_derivatives;
 						switch (field->type)
 						{
-							case COMPUTED_FIELD_COMPONENT:
-							{
-								field->values[0]=
-									field->source_fields[0]->values[field->component_no];
-								if (calculate_derivatives)
-								{
-									temp=field->source_fields[0]->derivatives+
-										field->component_no*element_dimension;
-									for (j=0;j<element_dimension;j++)
-									{
-										field->derivatives[j]=temp[j];
-									}
-								}
-							} break;
 							case COMPUTED_FIELD_COMPOSE:
 							{
 								/* The values from the first source field are inverted in the
@@ -1798,21 +1718,6 @@ is avoided.
 										}
 									}
 								}
-							} break;
-							case COMPUTED_FIELD_CONSTANT:
-							{
-								/* returns constant vector values, zero derivatives (always) */
-								temp=field->derivatives;
-								for (i=0;i<field->number_of_components;i++)
-								{
-									field->values[i]=field->source_values[i];
-									for (j=0;j<element_dimension;j++)
-									{
-										*temp=0.0;
-										temp++;
-									}
-								}
-								field->derivatives_valid=1;
 							} break;
 							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 							{
@@ -1949,31 +1854,6 @@ is avoided.
 										"Computed_field_evaluate_cache_in_element."
 										"  Unable to allocate temporary string");
 									return_code = 0;
-								}
-							} break;
-							case COMPUTED_FIELD_SUM_COMPONENTS:
-							{
-								/* weighted sum of components */
-								temp=field->source_fields[0]->values;
-								sum=0.0;
-								for (i=0;i<field->source_fields[0]->number_of_components;i++)
-								{
-									sum += temp[i]*field->source_values[i];
-								}
-								field->values[0]=sum;
-								if (calculate_derivatives)
-								{
-									for (j=0;j<element_dimension;j++)
-									{
-										temp=field->source_fields[0]->derivatives + j;
-										sum=0.0;
-										for (i=0;i<field->source_fields[0]->number_of_components;i++)
-										{
-											sum += (*temp)*field->source_values[i];
-											temp += element_dimension;
-										}
-										field->derivatives[j]=sum;
-									}
 								}
 							} break;
 							default:
@@ -2387,7 +2267,7 @@ number_of_components
 int Computed_field_evaluate_cache_at_node(
 	struct Computed_field *field,struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Calculates the values of <field> at <node>, if it is defined over the element.
@@ -2404,7 +2284,7 @@ fields with the name 'coordinates' are quite pervasive.
 ==============================================================================*/
 {
 	char *temp_string;
-	FE_value sum,*temp;
+	FE_value *temp;
 	int i,j,k,number_of_components,return_code,total_values;
 	/* For COMPUTED_FIELD_EMBEDDED and COMPUTED_FIELD_COMPOSE only */
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -2483,11 +2363,6 @@ fields with the name 'coordinates' are quite pervasive.
 					{
 						switch (field->type)
 						{
-							case COMPUTED_FIELD_COMPONENT:
-							{
-								field->values[0]=
-									field->source_fields[0]->values[field->component_no];
-							} break;
 							case COMPUTED_FIELD_COMPOSE:
 							{
 								/* The values from the first source field are inverted in the
@@ -2507,14 +2382,6 @@ fields with the name 'coordinates' are quite pervasive.
 									{
 										field->values[i]=field->source_fields[2]->values[i];
 									}
-								}
-							} break;
-							case COMPUTED_FIELD_CONSTANT:
-							{
-								/* returns constant vector values, zero derivatives (always) */
-								for (i=0;i<field->number_of_components;i++)
-								{
-									field->values[i]=field->source_values[i];
 								}
 							} break;
 							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
@@ -2604,17 +2471,6 @@ fields with the name 'coordinates' are quite pervasive.
 										"  Unable to allocate temporary string");
 									return_code = 0;
 								}
-							} break;
-							case COMPUTED_FIELD_SUM_COMPONENTS:
-							{
-								/* weighted sum of components */
-								temp=field->source_fields[0]->values;
-								sum=0.0;
-								for (i=0;i<field->source_fields[0]->number_of_components;i++)
-								{
-									sum += temp[i]*field->source_values[i];
-								}
-								field->values[0]=sum;
 							} break;
 							default:
 							{
@@ -2960,31 +2816,6 @@ should not be managed at the time it is modified by this function.
 			return_code=1;
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_COMPONENT:
-				{
-					/* need current field values to partially set */
-					if (ALLOCATE(source_values,FE_value,
-						field->source_fields[0]->number_of_components))
-					{
-						if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-							/*time*/0,source_values))
-						{
-							/* set value of the component leaving other components intact */
-							source_values[field->component_no] = values[0];
-							return_code=Computed_field_set_values_at_node(
-								field->source_fields[0],node,source_values);
-						}
-						else
-						{
-							return_code=0;
-						}
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
 				case COMPUTED_FIELD_EDIT_MASK:
 				{
 					/* need current field values to partially set */
@@ -3281,29 +3112,6 @@ Note that the values array will not be modified by this function. Also,
 			{
 				switch (field->type)
 				{
-					case COMPUTED_FIELD_COMPONENT:
-					{
-						int offset;
-
-						/* need current field values to partially set */
-						if (Computed_field_get_values_in_element(field->source_fields[0],
-								 element,number_in_xi,&source_values,/*time*/0))
-						{
-							/* insert the component values into this array */
-							offset=number_of_points*field->component_no;
-							for (j=0;j<number_of_points;j++)
-							{
-								source_values[offset+j]=values[j];
-							}
-							return_code=Computed_field_set_values_in_element(
-								field->source_fields[0],element,number_in_xi,source_values);
-							DEALLOCATE(source_values);
-						}
-						else
-						{
-							return_code=0;
-						}
-					} break;
 					case COMPUTED_FIELD_EDIT_MASK:
 					{
 						int offset;
@@ -3484,7 +3292,6 @@ Computed_field_set_values_in_[managed_]element.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_COMPONENT:
 				case COMPUTED_FIELD_EDIT_MASK:
 				{
 					return_code=Computed_field_get_native_discretization_in_element(
@@ -3740,17 +3547,9 @@ The calling function must not deallocate the returned string.
 	ENTER(Computed_field_type_to_string);
 	switch (field->type)
 	{
-		case COMPUTED_FIELD_COMPONENT:
-		{
-			field_type_string="component";
-		} break;
 		case COMPUTED_FIELD_COMPOSE:
 		{
 			field_type_string="compose";
-		} break;
-		case COMPUTED_FIELD_CONSTANT:
-		{
-			field_type_string="constant";
 		} break;
 		case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 		{
@@ -3767,10 +3566,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_NEW_TYPES:
 		{
 			field_type_string=field->type_string;
-		} break;
-		case COMPUTED_FIELD_SUM_COMPONENTS:
-		{
-			field_type_string="sum_components";
 		} break;
 		default:
 		{
@@ -4086,12 +3881,9 @@ Conditional function returning true if <field> depends on time.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_COMPONENT:
-				case COMPUTED_FIELD_CONSTANT:
 				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 				case COMPUTED_FIELD_EDIT_MASK:
 				case COMPUTED_FIELD_EXTERNAL:
-				case COMPUTED_FIELD_SUM_COMPONENTS:
 				{
 					return_code=0;
 					for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
@@ -4201,90 +3993,6 @@ The number of components controls how the field is interpreted:
 
 	return (return_code);
 } /* Computed_field_is_stream_vector_capable */
-
-int Computed_field_get_type_component(struct Computed_field *field,
-	struct Computed_field **source_field,int *component_no)
-/*******************************************************************************
-LAST MODIFIED : 29 December 1998
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COMPONENT, the source_field/component_no
-used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_component);
-	if (field&&(COMPUTED_FIELD_COMPONENT==field->type)&&source_field&&
-		component_no)
-	{
-		*source_field=field->source_fields[0];
-		*component_no=field->component_no;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_component.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_component */
-
-int Computed_field_set_type_component(struct Computed_field *field,
-	struct Computed_field *source_field,int component_no)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COMPONENT, returning the value of
-component <component_no> of <source_field>. Sets number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_component);
-	if (field&&source_field&&(0<=component_no)&&
-		(component_no<source_field->number_of_components))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_COMPONENT;
-			field->number_of_components=1;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->component_no=component_no;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_component.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_component.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_component */
 
 int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
@@ -4412,98 +4120,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_compose */
-
-int Computed_field_get_type_constant(struct Computed_field *field,
-	int *number_of_values,FE_value **values)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CONSTANT, the number_of_values and
-values it contains are returned. The <*values> array is allocated and returned
-by this function - it is up to the calling function to DEALLOCATE it.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_get_type_constant);
-	if (field&&(COMPUTED_FIELD_CONSTANT==field->type)&&number_of_values&&values)
-	{
-		*number_of_values=field->number_of_source_values;
-		if (ALLOCATE(*values,FE_value,*number_of_values))
-		{
-			for (i=0;i<(*number_of_values);i++)
-			{
-				(*values)[i]=field->source_values[i];
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_constant.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_constant.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_constant */
-
-int Computed_field_set_type_constant(struct Computed_field *field,
-	int number_of_values,FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CONSTANT, returning the given array of
-<values> everywhere.
-Gives the field as many components as the specified <number_of_values>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	FE_value *source_values;
-	int i,number_of_source_values,return_code;
-
-	ENTER(Computed_field_set_type_constant);
-	if (field&&(0<number_of_values)&&values)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_values=number_of_values;
-		if (ALLOCATE(source_values,FE_value,number_of_source_values))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_CONSTANT;
-			field->number_of_components=number_of_values;
-			for (i=0;i<number_of_values;i++)
-			{
-				source_values[i]=values[i];
-			}
-			field->source_values=source_values;
-			field->number_of_source_values=number_of_source_values;
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_constant.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_constant */
 
 int Computed_field_get_type_cubic_texture_coordinates(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -5021,115 +4637,6 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_external */
 
-int Computed_field_get_type_sum_components(struct Computed_field *field,
-	struct Computed_field **source_field,FE_value **weights)
-/*******************************************************************************
-LAST MODIFIED : 8 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the source_field and
-weights used by it are returned. Since the number of weights is equal to the
-number of components in the source_field (and you don't know this yet), this
-function returns in *weights a pointer to an allocated array containing the
-FE_values.
-It is up to the calling function to DEALLOCATE the returned <*weights>.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_get_type_sum_components);
-	if (field&&(COMPUTED_FIELD_SUM_COMPONENTS==field->type)&&source_field&&
-		weights)
-	{
-		if (ALLOCATE(*weights,FE_value,
-			field->source_fields[0]->number_of_components))
-		{
-			*source_field=field->source_fields[0];
-			for (i=0;i<field->source_fields[0]->number_of_components;i++)
-			{
-				(*weights)[i]=field->source_values[i];
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_sum_components.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_sum_components.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_sum_components */
-
-int Computed_field_set_type_sum_components(struct Computed_field *field,
-	struct Computed_field *source_field,FE_value *weights)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS, returning a scalar
-weighted sum of the components of <source_field>. The <weights> array must
-contain as many FE_value weights as there are components in <source_field>.
-Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	FE_value *source_values;
-	int i,number_of_source_fields,number_of_source_values,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_sum_components);
-	if (field&&source_field&&weights)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_values=source_field->number_of_components;
-		number_of_source_fields=1;
-		if (ALLOCATE(source_values,FE_value,number_of_source_values)&&
-			ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_SUM_COMPONENTS;
-			field->number_of_components=1;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			for (i=0;i<number_of_source_values;i++)
-			{
-				source_values[i]=weights[i];
-			}
-			field->source_values=source_values;
-			field->number_of_source_values=number_of_source_values;
-		}
-		else
-		{
-			DEALLOCATE(source_values);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_sum_components.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_sum_components */
-
 int Computed_field_is_in_use(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 26 January 1999
@@ -5342,75 +4849,10 @@ a set of values.
 	return (return_code);
 } /* Computed_field_is_find_element_xi_capable */
 
-struct Computed_field *Computed_field_manager_get_component_wrapper(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct Computed_field *field,int component_no)
-/*******************************************************************************
-LAST MODIFIED : 3 December 1999
-
-DESCRIPTION :
-If a COMPONENT wrapper for <field> <component_no> exists in the
-<computed_field_manager>, it is returned, otherwise a new one is made in the
-manager and returned.
-==============================================================================*/
-{
-	char *component_field_name,*component_name;
-	struct Computed_field *component_field;
-	struct Computed_field_component field_component;
-
-	ENTER(Computed_field_manager_get_component_wrapper);
-	component_field=(struct Computed_field *)NULL;
-	if (computed_field_manager&&field&&(0<=component_no)&&
-		(component_no<field->number_of_components))
-	{
-		field_component.field=field;
-		field_component.component_no=component_no;
-		/* try to find an existing wrapper for this component */
-		if (!(component_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-			Computed_field_wraps_field_component,&field_component,
-			computed_field_manager)))
-		{
-			if (component_name=Computed_field_get_component_name(field,component_no))
-			{
-				if (ALLOCATE(component_field_name,char,strlen(field->name)+
-					strlen(component_name)+2))
-				{
-					sprintf(component_field_name,"%s.%s",field->name,component_name);
-					if (component_field=CREATE(Computed_field)(component_field_name))
-					{
-						if (!(Computed_field_set_type_component(component_field,field,
-							component_no)&&
-							ADD_OBJECT_TO_MANAGER(Computed_field)(component_field,
-								computed_field_manager)))
-						{
-							DESTROY(Computed_field)(&component_field);
-						}
-					}
-					DEALLOCATE(component_field_name);
-				}
-				DEALLOCATE(component_name);
-			}
-			if (!component_field)
-			{
-				display_message(WARNING_MESSAGE,
-					"Computed_field_manager_get_component_wrapper.  Failed");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_manager_get_component_wrapper.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (component_field);
-} /* Computed_field_manager_get_component_wrapper */
-
 int set_Computed_field_conditional(struct Parse_state *state,
 	void *field_address_void,void *set_field_data_void)
 /*******************************************************************************
-LAST MODIFIED : 3 December 1999
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Modifier function to set the field from a command. <set_field_data_void> should
@@ -5420,162 +4862,86 @@ range of fields available for selection. If the conditional_function is NULL,
 this function works just like set_Computed_field.
 ==============================================================================*/
 {
-	char *current_token,*field_component_name,*temp_name;
-	int component_no,i,return_code;
-	struct Computed_field **field_address,*selected_field;
+	char *current_token;
+	int return_code;
+	struct Computed_field **field_address, *field;
 	struct Set_Computed_field_conditional_data *set_field_data;
 
 	ENTER(set_Computed_field_conditional);
-	if (state&&(field_address=(struct Computed_field **)field_address_void)&&
-		(set_field_data=
-			(struct Set_Computed_field_conditional_data *)set_field_data_void)&&
+	if (state && (field_address = (struct Computed_field **)field_address_void) &&
+		(set_field_data =
+			(struct Set_Computed_field_conditional_data *)set_field_data_void) &&
 		set_field_data->computed_field_manager)
 	{
-		if (current_token=state->current_token)
+		if (current_token = state->current_token)
 		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (fuzzy_string_compare(current_token,"NONE"))
+				if (fuzzy_string_compare(current_token, "NONE"))
 				{
 					if (*field_address)
 					{
 						DEACCESS(Computed_field)(field_address);
-						*field_address=(struct Computed_field *)NULL;
+						*field_address = (struct Computed_field *)NULL;
 					}
-					return_code=1;
+					return_code = 1;
 				}
 				else
 				{
-					/* component_no = -1 denotes the whole field may be used */
-					component_no=-1;
-					if (!(selected_field=
-						FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(current_token,
-						set_field_data->computed_field_manager)))
+					if (field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
+						current_token, set_field_data->computed_field_manager))
 					{
-						if (field_component_name=strchr(current_token,'.'))
-						{
-							*field_component_name='\0';
-							field_component_name++;
-							if (selected_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-								name)(current_token,set_field_data->computed_field_manager))
-							{
-								/* get the component number */
-								for (i=0;(i<selected_field->number_of_components)&&
-									(0>component_no)&&selected_field;i++)
-								{
-									if (temp_name=
-										Computed_field_get_component_name(selected_field,i))
-									{
-										if (0==strcmp(field_component_name,temp_name))
-										{
-											component_no=i;
-										}
-										DEALLOCATE(temp_name);
-									}
-									else
-									{
-										display_message(WARNING_MESSAGE,
-											"set_Computed_field_component.  Not enough memory");
-										selected_field=(struct Computed_field *)NULL;
-									}
-								}
-								if (0<=component_no)
-								{
-									if (1==selected_field->number_of_components)
-									{
-										/* already a single component field */
-										component_no=-1;
-									}
-									else
-									{
-										/* get or make wrapper for field component */
-										if (!(selected_field=
-											Computed_field_manager_get_component_wrapper(
-												set_field_data->computed_field_manager,
-												selected_field,component_no)))
-										{
-											display_message(WARNING_MESSAGE,
-												"set_Computed_field_component.  "
-												"Could not make component wrapper");
-										}
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Unknown field component: %s.%s",current_token,
-										field_component_name);
-									selected_field=(struct Computed_field *)NULL;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"Unknown field : %s",
-									current_token);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"Unknown field : %s",
-								current_token);
-						}
-					}
-					if (selected_field)
-					{
-						if ((NULL==set_field_data->conditional_function)||
-							((set_field_data->conditional_function)(selected_field,
+						if ((NULL == set_field_data->conditional_function) ||
+							((set_field_data->conditional_function)(field,
 								set_field_data->conditional_function_user_data)))
 						{
-							if (*field_address != selected_field)
-							{
-								DEACCESS(Computed_field)(field_address);
-								*field_address=ACCESS(Computed_field)(selected_field);
-							}
+							REACCESS(Computed_field)(field_address, field);
 							return_code=1;
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"Field of incorrect type : %s",
+							display_message(ERROR_MESSAGE, "Field of incorrect type : %s",
 								current_token);
-							return_code=0;
+							return_code = 0;
 						}
 					}
 					else
 					{
+						display_message(ERROR_MESSAGE,"Unknown field : %s",
+							current_token);
 						return_code=0;
 					}
 				}
-				shift_Parse_state(state,1);
+				shift_Parse_state(state, 1);
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE,
-					" FIELD_NAME[.COMPONENT_NAME]|none");
+				display_message(INFORMATION_MESSAGE, " FIELD_NAME|none");
 				/* if possible, then write the name */
-				if (selected_field= *field_address)
+				if (field = *field_address)
 				{
-					display_message(INFORMATION_MESSAGE,"[%s]",selected_field->name);
+					display_message(INFORMATION_MESSAGE, "[%s]", field->name);
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE,"[none]");
+					display_message(INFORMATION_MESSAGE, "[none]");
 				}
-				return_code=1;
+				return_code = 1;
 			}
 		}
 		else
 		{
-			display_message(WARNING_MESSAGE,"Missing field name");
+			display_message(WARNING_MESSAGE, "Missing field name");
 			display_parse_state_location(state);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"set_Computed_field_conditional.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -5637,204 +5003,6 @@ Works by repeatedly calling set_Computed_field_conditional.
 
 	return (return_code);
 } /* set_Computed_field_array */
-
-static int set_Computed_field_component(struct Parse_state *state,
-	void *field_component_void,void *computed_field_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-Used in command parsing to translate a FIELD_NAME.COMPONENT_NAME into a struct
-Computed_field_component.
-???RC.  Does not ACCESS the field (unlike set_Computed_field).
-==============================================================================*/
-{
-	char *current_token,*field_component_name,*field_name,*temp_name;
-	int component_no,i,return_code;
-	struct Computed_field *field;
-	struct Computed_field_component *field_component;
-	struct MANAGER(Computed_field) *computed_field_manager;
-
-	ENTER(set_Computed_field_component);
-	if (state&&
-		(field_component=(struct Computed_field_component *)field_component_void)&&
-		(computed_field_manager=
-			(struct MANAGER(Computed_field) *)computed_field_manager_void))
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				if (field_component_name=strchr(current_token,'.'))
-				{
-					*field_component_name='\0';
-					field_component_name++;
-				}
-				if (field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-					current_token,computed_field_manager))
-				{
-					if (field_component_name)
-					{
-						return_code=1;
-						component_no=-1;
-						for (i=0;(0>component_no)&&(i<field->number_of_components)&&
-							return_code;i++)
-						{
-							if (temp_name=Computed_field_get_component_name(field,i))
-							{
-								if (0==strcmp(field_component_name,temp_name))
-								{
-									component_no=i;
-								}
-								DEALLOCATE(temp_name);
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE,
-									"set_Computed_field_component.  Not enough memory");
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							if (0 <= component_no)
-							{
-								field_component->field=field;
-								field_component->component_no=component_no;
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE,
-									"Unknown field component %s.%s",current_token,
-									field_component_name);
-								return_code=0;
-							}
-						}
-					}
-					else
-					{
-						field_component->field=field;
-						field_component->component_no=0;
-						return_code=1;
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"Unknown field %s",current_token);
-					return_code=1;
-				}
-				shift_Parse_state(state,1);
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE," FIELD_NAME.COMPONENT_NAME");
-				if (field_component->field&&
-					GET_NAME(Computed_field)(field_component->field,&field_name))
-				{
-					if (1<field_component->field->number_of_components)
-					{
-						if (field_component_name=Computed_field_get_component_name(
-							field_component->field,field_component->component_no))
-						{
-							display_message(INFORMATION_MESSAGE,"[%s.%s]",field_name,
-								field_component_name);
-							DEALLOCATE(field_component_name);
-						}
-					}
-					else
-					{
-						display_message(INFORMATION_MESSAGE,"[%s]",field_name);
-					}
-					DEALLOCATE(field_name);
-				}
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,"Missing field component name");
-			display_parse_state_location(state);
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Computed_field_component.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Computed_field_component */
-
-static int define_Computed_field_type_component(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_COMPONENT (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{NULL,NULL,NULL,set_Computed_field_component}
-	};
-	struct Computed_field *field;
-	struct Computed_field_component field_component;
-	struct Computed_field_package *computed_field_package;
-
-	ENTER(define_Computed_field_type_component);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		field_component.field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_COMPONENT==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_component(field,
-				&field_component.field,&field_component.component_no);
-		}
-		else
-		{
-			if (field_component.field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_package->computed_field_manager))
-			{
-				field_component.component_no=0;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_component.  No fields defined");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			(option_table[0]).to_be_modified= &field_component;
-			(option_table[0]).user_data=
-				computed_field_package->computed_field_manager;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_component(field,field_component.field,
-					field_component.component_no);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_component.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_component */
 
 static int define_Computed_field_type_compose(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
@@ -5989,154 +5157,6 @@ and allows its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_compose */
-
-static int define_Computed_field_type_constant(struct Parse_state *state,
-	void *field_void,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 22 June 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_CONSTANT (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	char *current_token;
-	FE_value *values,*temp_values;
-	int i,number_of_values,return_code,temp_number_of_values;
-	static struct Modifier_entry 
-		number_of_values_option_table[]=
-		{
-			{"number_of_values",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		},
-		values_option_table[]=
-		{
-			{"values",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"number_of_values",NULL,NULL,set_int_positive},
-			{"values",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field;
-
-	ENTER(define_Computed_field_type_constant);
-	USE_PARAMETER(dummy_void);
-	if (state&&(field=(struct Computed_field *)field_void))
-	{
-		return_code=1;
-		/* get valid parameters for constant field */
-		values=(FE_value *)NULL;
-		if (COMPUTED_FIELD_CONSTANT==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_constant(field,
-				&number_of_values,&values);
-		}
-		else
-		{
-			/* ALLOCATE and fill array of values - with zeroes */
-			number_of_values=1;
-			if (ALLOCATE(values,FE_value,number_of_values))
-			{
-				for (i=0;i<number_of_values;i++)
-				{
-					values[i]=0.0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_constant.  Not enough memory");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* try to handle help first */
-			if (current_token=state->current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					(help_option_table[0]).to_be_modified= &number_of_values;
-					(help_option_table[1]).to_be_modified= values;
-					(help_option_table[1]).user_data= &number_of_values;
-					return_code=process_multiple_options(state,help_option_table);
-				}
-			}
-			/* parse the number_of_values... */
-			if (return_code&&(current_token=state->current_token))
-			{
-				/* ... only if the "number_of_values" token is next */
-				if (fuzzy_string_compare(current_token,"number_of_values"))
-				{
-					/* keep the number_of_values to maintain any current ones */
-					temp_number_of_values=number_of_values;
-					(number_of_values_option_table[0]).to_be_modified=
-						&temp_number_of_values;
-					if (return_code=process_option(state,number_of_values_option_table))
-					{
-						if (temp_number_of_values != number_of_values)
-						{
-							if (REALLOCATE(temp_values,values,FE_value,temp_number_of_values))
-							{
-								values=temp_values;
-								/* clear any new values to zero */
-								for (i=number_of_values;i<temp_number_of_values;i++)
-								{
-									values[i]=0.0;
-								}
-								number_of_values=temp_number_of_values;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"define_Computed_field_type_constant.  Not enough memory");
-								return_code=0;
-							}
-						}
-					}
-				}
-			}
-			/* parse the values */
-			if (return_code&&state->current_token)
-			{
-				(values_option_table[0]).to_be_modified= values;
-				(values_option_table[0]).user_data= &number_of_values;
-				return_code=process_multiple_options(state,values_option_table);
-			}
-			if (return_code)
-			{
-				return_code=
-					Computed_field_set_type_constant(field,number_of_values,values);
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_constant.  Failed");
-				}
-			}
-			/* clean up the values array */
-			DEALLOCATE(values);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_constant.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_constant */
 
 static int define_Computed_field_type_cubic_texture_coordinates(
 	struct Parse_state *state,void *field_void,void *computed_field_package_void)
@@ -6630,187 +5650,6 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_external */
 
-int define_Computed_field_type_sum_components(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_SUM_COMPONENTS (if it is not already)
-and allows its contents to be modified.
-Must input the field before the weights since there will be as many weights as
-there are components in field.
-==============================================================================*/
-{
-	auto struct Modifier_entry
-		field_option_table[]=
-		{
-			{"field",NULL,NULL,set_Computed_field_conditional},
-			{NULL,NULL,NULL,NULL}
-		},
-		weights_option_table[]=
-		{
-			{"weights",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"field",NULL,NULL,set_Computed_field_conditional},
-			{"weights",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		};
-	char *current_token;
-	FE_value *temp_weights,*weights;
-	int i,number_of_components,return_code;
-	struct Computed_field *field,*source_field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_field_data;
-
-	ENTER(define_Computed_field_type_sum_components);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		set_field_data.conditional_function=
-			Computed_field_has_numerical_components;
-		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_manager=
-			computed_field_package->computed_field_manager;
-		/* get source_field and weights - from field if of type sum_components */
-		source_field=(struct Computed_field *)NULL;
-		weights=(FE_value *)NULL;
-		if (COMPUTED_FIELD_SUM_COMPONENTS==field->type)
-		{
-			return_code=Computed_field_get_type_sum_components(field,
-				&source_field,&weights);
-		}
-		else
-		{
-			/* get first available field, and set weights for it to 1.0 */
-			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_package->computed_field_manager))&&
-				ALLOCATE(weights,FE_value,source_field->number_of_components))
-			{
-				for (i=0;i<source_field->number_of_components;i++)
-				{
-					weights[i]=1.0;
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* must access source_field for set_Computed_field */
-			ACCESS(Computed_field)(source_field);
-			/* try to handle help first */
-			if (current_token=state->current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					number_of_components=source_field->number_of_components;
-					(help_option_table[0]).to_be_modified= &source_field;
-					(help_option_table[0]).user_data= &set_field_data;
-					(help_option_table[1]).to_be_modified= weights;
-					(help_option_table[1]).user_data= &number_of_components;
-					return_code=process_multiple_options(state,help_option_table);
-				}
-			}
-			/* parse the field ... */
-			if (return_code&&(current_token=state->current_token))
-			{
-				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token,"field"))
-				{
-					/* save the number of components to maintain any current weights */
-					number_of_components=source_field->number_of_components;
-					(field_option_table[0]).to_be_modified= &source_field;
-					(field_option_table[0]).user_data= &set_field_data;
-					if (return_code=process_option(state,field_option_table))
-					{
-						if (source_field)
-						{
-							if (REALLOCATE(temp_weights,weights,FE_value,
-								source_field->number_of_components))
-							{
-								weights=temp_weights;
-								/* make any new weights equal to 1.0 */
-								for (i=number_of_components;
-									i<source_field->number_of_components;i++)
-								{
-									weights[i]=1.0;
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"define_Computed_field_type_sum_components.  Invalid field");
-							return_code=0;
-						}
-					}
-				}
-			}
-			/* parse the weights */
-			if (return_code&&state->current_token)
-			{
-				number_of_components=source_field->number_of_components;
-				(weights_option_table[0]).to_be_modified= weights;
-				(weights_option_table[0]).user_data= &number_of_components;
-				return_code=process_multiple_options(state,weights_option_table);
-			}
-			if (return_code)
-			{
-				return_code=
-					Computed_field_set_type_sum_components(field,source_field,weights);
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_sum_components.  Failed");
-				}
-			}
-			if (source_field)
-			{
-				DEACCESS(Computed_field)(&source_field);
-			}
-			if (weights)
-			{
-				DEALLOCATE(weights);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"define_Computed_field_type_sum_components.  "
-				"Could not get source_field or weights");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_sum_components.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_sum_components */
-
 struct Add_type_to_option_table_data
 {
 	struct Option_table *option_table;
@@ -6875,15 +5714,9 @@ and its parameter fields and values.
 		if (state->current_token)
 		{
 			option_table=CREATE(Option_table)();
-			/* component */
-			Option_table_add_entry(option_table,"component",field_void,
-				computed_field_package_void,define_Computed_field_type_component);
 			/* compose */
 			Option_table_add_entry(option_table,"compose",field_void,
 				computed_field_package_void,define_Computed_field_type_compose);
-			/* constant */
-			Option_table_add_entry(option_table,"constant",field_void,
-				computed_field_package_void,define_Computed_field_type_constant);
 			/* cubic_texture_coordinates */
 			Option_table_add_entry(option_table,"cubic_texture_coordinates",
 				field_void,computed_field_package_void,
@@ -6894,9 +5727,6 @@ and its parameter fields and values.
 			/* external */
 			Option_table_add_entry(option_table,"external",field_void,
 				computed_field_package_void,define_Computed_field_type_external);
-			/* sum_components */
-			Option_table_add_entry(option_table,"sum_components",field_void,
-				computed_field_package_void,define_Computed_field_type_sum_components);
 			/* new_types */
 			data.option_table = option_table;
 			data.field_void = field_void;
@@ -7281,20 +6111,6 @@ Writes the properties of the <field> to the command window.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_COMPONENT:
-				{
-					if (component_name=Computed_field_get_component_name(
-						field->source_fields[0],field->component_no))
-					{
-						display_message(INFORMATION_MESSAGE,"    component : %s.%s\n",
-							field->source_fields[0]->name,component_name);
-						DEALLOCATE(component_name);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
 				case COMPUTED_FIELD_COMPOSE:
 				{
 					display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
@@ -7306,17 +6122,6 @@ Writes the properties of the <field> to the command window.
 					display_message(INFORMATION_MESSAGE,"    calculate values field :");
 					display_message(INFORMATION_MESSAGE," %s\n",
 						field->source_fields[2]->name);
-				} break;
-				case COMPUTED_FIELD_CONSTANT:
-				{
-					display_message(INFORMATION_MESSAGE,"    number_of_values : %d\n",
-						field->number_of_source_values);
-					display_message(INFORMATION_MESSAGE,"    values :");
-					for (i=0;i<field->number_of_source_values;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-					display_message(INFORMATION_MESSAGE,"\n");
 				} break;
 				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 				{
@@ -7364,17 +6169,6 @@ Writes the properties of the <field> to the command window.
 					}
 					display_message(INFORMATION_MESSAGE,"    timeout %d\n",
 						field->timeout);
-				} break;
-				case COMPUTED_FIELD_SUM_COMPONENTS:
-				{
-					display_message(INFORMATION_MESSAGE,"    field : %s\n",
-						field->source_fields[0]->name);
-					display_message(INFORMATION_MESSAGE,"    weights :");
-					for (i=0;i<field->source_fields[0]->number_of_components;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-					display_message(INFORMATION_MESSAGE,"\n");
 				} break;
 				default:
 				{
@@ -7435,7 +6229,7 @@ are created automatically by the program.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *command_prefix,*component_name,*temp_string;
+	char *command_prefix, *temp_string;
 	int i,return_code;
 
 	ENTER(list_Computed_field_commands);
@@ -7470,35 +6264,12 @@ are created automatically by the program.
 			{
 				switch (field->type)
 				{
-					case COMPUTED_FIELD_COMPONENT:
-					{
-						if (component_name=Computed_field_get_component_name(
-							field->source_fields[0],field->component_no))
-						{
-							display_message(INFORMATION_MESSAGE," %s.%s",
-								field->source_fields[0]->name,component_name);
-							DEALLOCATE(component_name);
-						}
-						else
-						{
-							return_code=0;
-						}
-					} break;
 					case COMPUTED_FIELD_COMPOSE:
 					{
 						display_message(INFORMATION_MESSAGE," texture_coordinates_field %s"
 							" find_element_xi_field %s calculate_values_field %s",
 							field->source_fields[0]->name, field->source_fields[1]->name,
 							field->source_fields[2]->name);
-					} break;
-					case COMPUTED_FIELD_CONSTANT:
-					{
-						display_message(INFORMATION_MESSAGE," number_of_values %d values",
-							field->number_of_source_values);
-						for (i=0;i<field->number_of_source_values;i++)
-						{
-							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-						}
 					} break;
 					case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 					{
@@ -7543,15 +6314,6 @@ are created automatically by the program.
 						display_message(INFORMATION_MESSAGE," timeout %d",
 							field->timeout);
 					} break;
-					case COMPUTED_FIELD_SUM_COMPONENTS:
-					{
-						display_message(INFORMATION_MESSAGE," field %s weights",
-							field->source_fields[0]->name);
-						for (i=0;i<field->source_fields[0]->number_of_components;i++)
-						{
-							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-						}
-					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,
@@ -7575,41 +6337,64 @@ are created automatically by the program.
 	return (return_code);
 } /* list_Computed_field_commands */
 
-int Computed_field_commands_ready_to_list(struct Computed_field *field,
-	void *list_of_fields_void)
+int list_Computed_field_commands_if_managed_source_fields_in_list(
+	struct Computed_field *field, void *list_commands_data_void)
 /*******************************************************************************
-LAST MODIFIED : 12 March 1999
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
-Returns true if <field> is not in <list_of_fields>, but it has no source fields
-or all are in the list. Used to ensure field commands are listed in the order
-they must be created - so not referring to a field that is not created yet.
+Calls list_Computed_field_commands if the field is not already in the list,
+has no source fields, or all its source fields are either not managed or
+already in the list. If the field is listed, it is added to the list.
+Ensures field command list comes out in the order they need to be created.
+Note, must be cycled through as many times as it takes till listed_fields -> 0.
+Second argument is a struct List_Computed_field_commands_data.
 ==============================================================================*/
 {
-	int i,return_code;
-	struct LIST(Computed_field) *list_of_fields;
+	int i, list_field, return_code;
+	struct List_Computed_field_commands_data *list_commands_data;
 
-	ENTER(Computed_field_commands_ready_to_list);
-	if (field&&(list_of_fields=
-		(struct LIST(Computed_field) *)list_of_fields_void))
+	ENTER(list_Computed_field_commands_if_managed_source_fields_in_list);
+	if (field && (list_commands_data =
+		(struct List_Computed_field_commands_data *)list_commands_data_void))
 	{
-		return_code = !IS_OBJECT_IN_LIST(Computed_field)(field,list_of_fields);
-		for (i=0;return_code&&(i<field->number_of_source_fields);i++)
+		return_code = 1;
+		/* is the field not listed yet? */
+		if (!IS_OBJECT_IN_LIST(Computed_field)(field,
+			list_commands_data->computed_field_list))
 		{
-			return_code=IS_OBJECT_IN_LIST(Computed_field)(field->source_fields[i],
-				list_of_fields);
+			list_field = 1;
+			for (i = 0; list_field && (i < field->number_of_source_fields); i++)
+			{
+				if ((!IS_OBJECT_IN_LIST(Computed_field)(
+					field->source_fields[i], list_commands_data->computed_field_list)) &&
+					IS_MANAGED(Computed_field)(field->source_fields[i],
+						list_commands_data->computed_field_manager))
+				{
+					list_field = 0;
+				}
+			}
+			if (list_field)
+			{
+				return_code = list_Computed_field_commands(field,
+					(void *)list_commands_data->command_prefix) &&
+					ADD_OBJECT_TO_LIST(Computed_field)(field,
+						list_commands_data->computed_field_list);
+				list_commands_data->listed_fields++;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_commands_ready_to_list.  Invalid argument(s)");
-		return_code=0;
+			"list_Computed_field_commands_if_managed_source_fields_in_list.  "
+			"Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_commands_ready_to_list */
+} /* list_Computed_field_commands_if_managed_source_fields_in_list */
 
 int list_Computed_field_name(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************

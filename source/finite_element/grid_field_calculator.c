@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : grid_field_calculator.c
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 An editor for setting values of grid fields in elements based on
@@ -16,6 +16,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor_dialog.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_control_curve.h"
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_update.h"
@@ -323,10 +324,10 @@ DESCRIPTION :
 
 int grid_field_calculator_apply(struct Grid_field_calculator *grid_calc)
 /*******************************************************************************
-LAST MODIFIED : 3 December 1999
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
-Applies the
+Applies the computed field to the grid field.
 ==============================================================================*/
 {
 	char tmp_string[20];
@@ -369,8 +370,9 @@ Applies the
 						} break;
 					}
 					/* get or make wrapper for field component */
-					coordinate_component[i]=Computed_field_manager_get_component_wrapper(
-						computed_field_manager,coordinate_field,i);
+					coordinate_component[i] =
+						Computed_field_manager_get_component_wrapper(
+							computed_field_manager, coordinate_field, i);
 					sprintf(tmp_string,"curve_lookup%d",axis);
 					if (curve_lookup[i]=CREATE(Computed_field)(tmp_string))
 					{

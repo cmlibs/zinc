@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_composite.c
 
-LAST MODIFIED : 31 October 2000
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
@@ -14,6 +14,26 @@ and real values in any order into a single vector field.
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
+
+/*
+Module types
+------------
+*/
+
+struct Computed_field_component
+/*******************************************************************************
+LAST MODIFIED : 22 January 1999
+
+DESCRIPTION :
+Used to specify a component of a Computed_field with function
+set_Computed_field_component.
+???RC Note that in its current use the field is NOT assumed to be accessed by
+this structure in set_Computed_field_component.
+==============================================================================*/
+{
+	struct Computed_field *field;
+	int component_no;
+}; /* struct Computed_field_component */
 
 struct Computed_field_composite_package 
 {
@@ -1078,7 +1098,7 @@ Data structure filled by set_Computed_field_composite_source_data.
 static int set_Computed_field_composite_source_data(struct Parse_state *state,
 	void *source_data_void,void *computed_field_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 Note that fields are not ACCESSed by this function and should not be
@@ -1355,7 +1375,7 @@ ACCESSed in the initial source_data.
 static int define_Computed_field_type_composite(struct Parse_state *state,
 	void *field_void,void *computed_field_composite_package_void)
 /*******************************************************************************
-LAST MODIFIED : 31 October 2000
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_COMPOSITE (if it is not 
@@ -1396,14 +1416,25 @@ already) and allows its contents to be modified.
 		if (return_code)
 		{
 			/*???RC begin temporary code */
-			/*???RC swallow up old "number_of_scalars # scalars" tokens so
-				Mark Sagar can continue to use old command format */
+			/*???RC swallow up old "number_of_scalars # scalars" tokens used by old
+				composite field command for backward compatibility */
 			if (((state->current_index+2) < state->number_of_tokens) &&
 				(fuzzy_string_compare(state->tokens[state->current_index],
 					"number_of_scalars")) &&
 				(0<atoi(state->tokens[state->current_index+1])) &&
 				(fuzzy_string_compare(state->tokens[state->current_index+2],
 					"scalars")))
+			{
+				shift_Parse_state(state,3);
+			}
+			/*???RC swallow up old "number_of_values # values" tokens used by old
+				constant field command for backward compatibility */
+			else if (((state->current_index+2) < state->number_of_tokens) &&
+				(fuzzy_string_compare(state->tokens[state->current_index],
+					"number_of_values")) &&
+				(0<atoi(state->tokens[state->current_index+1])) &&
+				(fuzzy_string_compare(state->tokens[state->current_index+2],
+					"values")))
 			{
 				shift_Parse_state(state,3);
 			}
@@ -1452,10 +1483,370 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_composite */
 
+int Computed_field_set_type_constant(struct Computed_field *field,
+	int number_of_values, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+Changes <field> into type composite with <number_of_values> values listed in
+the <values> array.
+Since a constant field performs a subset of the capabilities of the composite
+field type but the latter is somewhat complicated to set up, this is a
+convenience function for building a composite field which has <number_of_values>
+<values>. This function handles sorting so that no values are repeated.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int i, return_code, *source_field_numbers, *source_value_numbers;
+
+	ENTER(Computed_field_set_type_constant);
+	if (field && (0 < number_of_values) && values)
+	{
+		ALLOCATE(source_field_numbers, int, number_of_values);
+		ALLOCATE(source_value_numbers, int, number_of_values);
+		if (source_field_numbers && source_value_numbers)
+		{
+			for (i = 0; i < number_of_values; i++)
+			{
+				source_field_numbers[i] = -1;
+				source_value_numbers[i] = i;
+			}
+			return_code = Computed_field_set_type_composite(field,
+				/*number_of_components*/number_of_values,
+				/*number_of_source_fields*/0,
+				/*source_fields*/(struct Computed_field **)NULL,
+				/*number_of_source_values*/number_of_values, /*source_values*/values,
+				source_field_numbers, source_value_numbers);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_constant.  Not enough memory");
+			return_code = 0;
+		}
+		DEALLOCATE(source_field_numbers);
+		DEALLOCATE(source_value_numbers);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_constant.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_constant */
+
+int Computed_field_is_constant(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+Returns true if the field is of type composite but with no source_fields, only
+source_values.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_constant);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_composite_type_string) &&
+			(0 == field->number_of_source_fields);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_constant.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_constant */
+
+int Computed_field_set_type_component(struct Computed_field *field,
+	struct Computed_field *source_field, int component_number)
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+Changes <field> into type composite returning the single field component.
+Since a component field performs a subset of the capabilities of the composite
+field type but the latter is somewhat complicated to set up, this is a
+convenience function for building a composite field for a scalar component.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code, source_field_number;
+
+	ENTER(Computed_field_set_type_component);
+	if (field && source_field && (0 <= component_number) &&
+		(component_number < source_field->number_of_components))
+	{
+		source_field_number = 0;
+		return_code = Computed_field_set_type_composite(field,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, /*source_fields*/&source_field,
+			/*number_of_source_values*/0, /*source_values*/(FE_value *)NULL,
+			&source_field_number, &component_number);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_component.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_component */
+
+int Computed_field_is_component_wrapper(struct Computed_field *field,
+	void *field_component_void)
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+Returns true if the field is of type composite with a single component matching
+the passed Computed_field_component.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_component *field_component;
+	struct Computed_field_composite_type_specific_data *data;
+
+	ENTER(Computed_field_is_component_wrapper);
+	if (field && (field_component =
+		(struct Computed_field_component *)field_component_void))
+	{
+		return_code = (
+			(field->type_string == computed_field_composite_type_string) &&
+			(1 == field->number_of_components) &&
+			(1 == field->number_of_source_fields) &&
+			(field_component->field == field->source_fields[0]) &&
+			(data = (struct Computed_field_composite_type_specific_data *)
+				field->type_specific_data) &&
+			(0 == data->source_field_numbers[0]) &&
+			(field_component->component_no == data->source_value_numbers[0]));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_component_wrapper.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_component_wrapper */
+
+struct Computed_field *Computed_field_manager_get_component_wrapper(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct Computed_field *field, int component_number)
+/*******************************************************************************
+LAST MODIFIED : 14 December 2001
+
+DESCRIPTION :
+Returns a composite field that computes <component_number> of <field>. First
+tries to find one in the manager that does this, otherwise makes one of name
+'field.component_name', adds it to the manager and returns it.
+==============================================================================*/
+{
+	char *component_field_name, *component_name;
+	struct Computed_field *component_field;
+	struct Computed_field_component field_component;
+
+	ENTER(Computed_field_manager_get_component_wrapper);
+	component_field = (struct Computed_field *)NULL;
+	if (computed_field_manager && field && (0 <= component_number) &&
+		(component_number < field->number_of_components))
+	{
+		field_component.field = field;
+		field_component.component_no = component_number;
+		/* try to find an existing wrapper for this component */
+		if (!(component_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_is_component_wrapper, &field_component,
+			computed_field_manager)))
+		{
+			if (component_name =
+				Computed_field_get_component_name(field, component_number))
+			{
+				if (ALLOCATE(component_field_name, char,
+					strlen(field->name) + strlen(component_name) + 2))
+				{
+					sprintf(component_field_name, "%s.%s", field->name, component_name);
+					if (component_field = CREATE(Computed_field)(component_field_name))
+					{
+						if (!(Computed_field_set_type_component(component_field, field,
+							component_number) &&
+							ADD_OBJECT_TO_MANAGER(Computed_field)(component_field,
+								computed_field_manager)))
+						{
+							DESTROY(Computed_field)(&component_field);
+						}
+					}
+					DEALLOCATE(component_field_name);
+				}
+				DEALLOCATE(component_name);
+			}
+			if (!component_field)
+			{
+				display_message(WARNING_MESSAGE,
+					"Computed_field_manager_get_component_wrapper.  Failed");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_manager_get_component_wrapper.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (component_field);
+} /* Computed_field_manager_get_component_wrapper */
+
+#if defined (OLD_CODE)
+static int set_Computed_field_component(struct Parse_state *state,
+	void *field_component_void,void *computed_field_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 25 January 1999
+
+DESCRIPTION :
+Used in command parsing to translate a FIELD_NAME.COMPONENT_NAME into a struct
+Computed_field_component.
+???RC.  Does not ACCESS the field (unlike set_Computed_field).
+==============================================================================*/
+{
+	char *current_token,*field_component_name,*field_name,*temp_name;
+	int component_no,i,return_code;
+	struct Computed_field *field;
+	struct Computed_field_component *field_component;
+	struct MANAGER(Computed_field) *computed_field_manager;
+
+	ENTER(set_Computed_field_component);
+	if (state&&
+		(field_component=(struct Computed_field_component *)field_component_void)&&
+		(computed_field_manager=
+			(struct MANAGER(Computed_field) *)computed_field_manager_void))
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (field_component_name=strchr(current_token,'.'))
+				{
+					*field_component_name='\0';
+					field_component_name++;
+				}
+				if (field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+					current_token,computed_field_manager))
+				{
+					if (field_component_name)
+					{
+						return_code=1;
+						component_no=-1;
+						for (i=0;(0>component_no)&&(i<field->number_of_components)&&
+							return_code;i++)
+						{
+							if (temp_name=Computed_field_get_component_name(field,i))
+							{
+								if (0==strcmp(field_component_name,temp_name))
+								{
+									component_no=i;
+								}
+								DEALLOCATE(temp_name);
+							}
+							else
+							{
+								display_message(WARNING_MESSAGE,
+									"set_Computed_field_component.  Not enough memory");
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							if (0 <= component_no)
+							{
+								field_component->field=field;
+								field_component->component_no=component_no;
+							}
+							else
+							{
+								display_message(WARNING_MESSAGE,
+									"Unknown field component %s.%s",current_token,
+									field_component_name);
+								return_code=0;
+							}
+						}
+					}
+					else
+					{
+						field_component->field=field;
+						field_component->component_no=0;
+						return_code=1;
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"Unknown field %s",current_token);
+					return_code=1;
+				}
+				shift_Parse_state(state,1);
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," FIELD_NAME.COMPONENT_NAME");
+				if (field_component->field&&
+					GET_NAME(Computed_field)(field_component->field,&field_name))
+				{
+					if (1<field_component->field->number_of_components)
+					{
+						if (field_component_name=Computed_field_get_component_name(
+							field_component->field,field_component->component_no))
+						{
+							display_message(INFORMATION_MESSAGE,"[%s.%s]",field_name,
+								field_component_name);
+							DEALLOCATE(field_component_name);
+						}
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE,"[%s]",field_name);
+					}
+					DEALLOCATE(field_name);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,"Missing field component name");
+			display_parse_state_location(state);
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Computed_field_component.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Computed_field_component */
+#endif /* defined (OLD_CODE) */
+
 int Computed_field_register_types_composite(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1473,6 +1864,15 @@ DESCRIPTION :
 			computed_field_composite_type_string,
 			define_Computed_field_type_composite,
 			&computed_field_composite_package);
+		/* "constant" = alias for composite included for backward compatibility */
+		return_code = Computed_field_package_add_type(computed_field_package,
+			"constant", define_Computed_field_type_composite,
+			&computed_field_composite_package);
+		/* "component" = alias for composite included for backward compatibility */
+		return_code = Computed_field_package_add_type(computed_field_package,
+			"component", define_Computed_field_type_composite,
+			&computed_field_composite_package);
+		
 	}
 	else
 	{
