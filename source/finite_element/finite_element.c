@@ -5546,7 +5546,7 @@ Outputs the information contained by the element field.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int list_FE_node_field(struct FE_node_field *node_field,void *node_void)
+static int list_FE_node_field (struct FE_node_field *node_field,void *node_void)
 /*******************************************************************************
 LAST MODIFIED : 31 July 2000
 
@@ -5673,7 +5673,7 @@ Outputs the information contained by the node field.
 									display_message(INFORMATION_MESSAGE,"\n");
 								}											
 							}	
-							display_message(INFORMATION_MESSAGE,"\n");																						
+							display_message(INFORMATION_MESSAGE,"\n");
 						} break;
 						default:
 						{
@@ -5796,15 +5796,7 @@ Outputs the information contained by the node field.
 										number_of_values=get_FE_nodal_array_number_of_elements(node,
 											&component,0,FE_NODAL_VALUE);
 										if(number_of_values>0)
-										{
-											return_code=1;
-										}
-										else
-										{
-											return_code=0;
-										}
-										if(return_code)
-										{
+										{									
 											if(ALLOCATE(array,double,number_of_values))
 											{
 												get_FE_nodal_double_array_value(node,&component,0,
@@ -5827,9 +5819,15 @@ Outputs the information contained by the node field.
 												display_message(ERROR_MESSAGE,"list_FE_node_field."
 													" Out of memory");
 												return_code =0;
-											}								
-										}								
-										DEALLOCATE(array);
+											}	
+											DEALLOCATE(array);							
+										}	
+										else
+										{
+											/* this is NOT an error */
+											display_message(INFORMATION_MESSAGE,"array length 0");
+										}
+										
 									} break;	
 									case FE_VALUE_ARRAY_VALUE:
 									{
@@ -5842,15 +5840,7 @@ Outputs the information contained by the node field.
 										number_of_values=get_FE_nodal_array_number_of_elements(node,&component,
 											0,FE_NODAL_VALUE);
 										if(number_of_values>0)
-										{
-											return_code=1;
-										}
-										else
-										{
-											return_code=0;
-										}
-										if(return_code)
-										{
+										{																			
 											if(ALLOCATE(array,FE_value,number_of_values))
 											{
 												get_FE_nodal_FE_value_array(node,&component,0,
@@ -5873,9 +5863,14 @@ Outputs the information contained by the node field.
 												display_message(ERROR_MESSAGE,"list_FE_node_field."
 													" Out of memory");
 												return_code =0;
-											}								
-										}								
-										DEALLOCATE(array);
+											}
+											DEALLOCATE(array);								
+										}
+										else
+										{
+											/* this is NOT an error */
+											display_message(INFORMATION_MESSAGE,"array length 0");
+										}										
 									} break;	
 									case SHORT_ARRAY_VALUE:
 									{
@@ -5888,15 +5883,7 @@ Outputs the information contained by the node field.
 										number_of_values=get_FE_nodal_array_number_of_elements(node,&component,
 											0,FE_NODAL_VALUE);
 										if(number_of_values>0)
-										{
-											return_code=1;
-										}
-										else
-										{
-											return_code=0;
-										}
-										if(return_code)										
-										{
+										{								
 											if(ALLOCATE(array,short,number_of_values))
 											{
 												get_FE_nodal_short_array(node,&component,0,
@@ -5918,9 +5905,14 @@ Outputs the information contained by the node field.
 												display_message(ERROR_MESSAGE,"list_FE_node_field."
 													" Out of memory");
 												return_code =0;
-											}								
-										}								
-										DEALLOCATE(array);
+											}
+											DEALLOCATE(array);									
+										}																		
+										else
+										{
+											/* this is NOT an error */
+											display_message(INFORMATION_MESSAGE,"array length 0");
+										}
 									} break;									
 									default:
 									{
@@ -11074,7 +11066,7 @@ int set_FE_nodal_FE_value_array(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,FE_value *array,int number_of_array_values)
 /*******************************************************************************
-LAST MODIFIED : 8 June 1999
+LAST MODIFIED : 13 September 2000
 
 DESCRIPTION :
 Finds any existing FE_value array at the place specified by (<version>, <type>) 
@@ -11085,6 +11077,7 @@ Allocates a new array, according to number_of_array_values.
 Copies the contents of the passed array to this allocated one.
 Copies number of array values, and the pointer to the allocated array to the specified 
 place in the node->values_storage. 
+Can pass a null <array>, with <number_of_array_values>=0.
 
 Therefore, should free the passed array, after passing it to this function.
 
@@ -11118,20 +11111,29 @@ define_FE_field_at_node.
 			*((int *)values_storage) = number_of_array_values;
 			/* Allocate the space for the array, and copy the data in */
 			array_size = number_of_array_values*sizeof(FE_value);
-			if(ALLOCATE(the_array,FE_value,array_size))
+			if(array_size)
 			{
-				memcpy(the_array,array,array_size);
-				/*copy the pointer to the array into field->values_storage  */
-				*array_address = the_array;				
-				return_code=1;
+				if(ALLOCATE(the_array,FE_value,array_size))
+				{
+					memcpy(the_array,array,array_size);
+					/*copy the pointer to the array into field->values_storage  */
+					*array_address = the_array;				
+					return_code=1;
+				}
+				else
+				{
+					*array_address = (FE_value *)NULL;	
+					*((int *)values_storage) = 0;
+					display_message(ERROR_MESSAGE,
+						"set_FE_nodal_FE_value_array. Out of Memory )");
+					return_code=0;
+				}
 			}
 			else
 			{
-				*array_address = (FE_value *)NULL;	
+				/* no array set yet. This is a valid thing to do*/
+				*array_address =(FE_value *)NULL;
 				*((int *)values_storage) = 0;
-				display_message(ERROR_MESSAGE,
-					"set_FE_nodal_FE_value_array. Out of Memory )");
-				return_code=0;
 			}
 		}
 		else
