@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_composite.cpp
 
-LAST MODIFIED : 14 June 2004
+LAST MODIFIED : 29 November 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function composite object.
@@ -18,7 +18,7 @@ Global functions
 Cmiss_function_id Cmiss_function_composite_create(
 	Cmiss_function_list_id functions)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2004
+LAST MODIFIED : 29 November 2004
 
 DESCRIPTION :
 Creates a Cmiss_function composite with the supplied <functions>.
@@ -31,9 +31,16 @@ Creates a Cmiss_function composite with the supplied <functions>.
 	if (functions_address=reinterpret_cast<std::list<Function_handle> *>(
     functions))
 	{
-		result=reinterpret_cast<Cmiss_function_id>(
-			new Function_composite_handle(new Function_composite(
-			*functions_address)));
+		try
+		{
+			result=reinterpret_cast<Cmiss_function_id>(
+				new Function_composite_handle(new Function_composite(
+				*functions_address)));
+		}
+		catch (Function_composite::Construction_exception)
+		{
+			result=0;
+		}
 	}
 
 	return (result);
