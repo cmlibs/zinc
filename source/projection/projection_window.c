@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : projection_window.c
 
-LAST MODIFIED : 29 January 1999
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 ???DB.  Started as mapping_window.c in emap
@@ -1164,24 +1164,88 @@ the projection_window.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"write_projection_postscript_fil.  Could not open printer");
+				"write_projection_postscript_file.  Could not open printer");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"write_projection_postscript_fil.  Missing projection_window or projection or user_interface");
+"write_projection_postscript_file.  Missing projection_window or projection or user_interface");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_projection_postscript_fil */
+} /* write_projection_postscript_file */
+
+static int write_projection_file(char *file_name,
+	enum Image_file_format image_file_format, struct Projection_window *window)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+This function writes the image associated with the projection <window> to
+<file_name> using the requested <image_file_format>.
+==============================================================================*/
+{
+	int bytes_per_pixel, height, number_of_bytes_per_component,
+		number_of_components, return_code, width;
+	unsigned long *image;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
+
+	ENTER(write_projection_file);
+	if (file_name && window)
+	{
+		if (image = get_Drawing_2d_image(window->projection_drawing))
+		{
+			width = window->projection_drawing->width;
+			height = window->projection_drawing->height;
+			number_of_components = 3;
+			number_of_bytes_per_component = 1;
+			bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+			if (cmgui_image = Cmgui_image_constitute(
+				width, height, number_of_components, number_of_bytes_per_component,
+				width*bytes_per_pixel, (unsigned char *)image))
+			{
+				cmgui_image_information = CREATE(Cmgui_image_information)();
+				Cmgui_image_information_add_file_name(cmgui_image_information,
+					file_name);
+				Cmgui_image_information_set_image_file_format(cmgui_image_information,
+					image_file_format);
+				Cmgui_image_write(cmgui_image, cmgui_image_information);
+				DESTROY(Cmgui_image_information)(&cmgui_image_information);
+				DESTROY(Cmgui_image)(&cmgui_image);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"write_projection_file.  Could not constitute image");
+			}
+			DEALLOCATE(image);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"write_projection_file.  Could not get image");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_projection_file.  Missing projection_window or projection");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_projection_file */
 
 static int write_projection_rgb_file(char *file_name,void *projection_window)
 /*******************************************************************************
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 This function writes the rgb for drawing the projection associated with the
@@ -1189,54 +1253,10 @@ projection_window.
 ==============================================================================*/
 {
 	int return_code;
-	struct Projection_window *window;
-	unsigned long *image;
 
 	ENTER(write_projection_rgb_file);
-	if ((window = (struct Projection_window *)projection_window) &&
-		 window->projection)
-	{
-		if (image=get_Drawing_2d_image(window->projection_drawing))
-		{
-			/* write the file */
-#if defined (IMAGEMAGICK)
-			char *extended_filename;
-
-			if ((!strchr(file_name, ':'))&&
-				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
-			{
-				sprintf(extended_filename, "sgi:%s", file_name);
-				return_code=write_image_file(extended_filename,/*components*/3, /*bytes_per_component*/1,
-					window->projection_drawing->height,window->projection_drawing->width,
-					0, image);
-				DEALLOCATE(extended_filename);
-			}
-			else
-			{
-				return_code=write_image_file(file_name,/*components*/3, /*bytes_per_component*/1,
-					window->projection_drawing->height,window->projection_drawing->width,
-					0, image);
-			}
-#else /* defined (IMAGEMAGICK) */
-			return_code=write_rgb_image_file(file_name,/*components*/3, /*bytes_per_component*/1,
-				window->projection_drawing->height,window->projection_drawing->width,
-				0, image);
-#endif /* defined (IMAGEMAGICK) */
-			DEALLOCATE(image);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_projection_rgb_file.  Could not get image");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_projection_rgb_file.  Missing projection_window or projection");
-		return_code=0;
-	}
+	return_code = write_projection_file(file_name, RGB_FILE_FORMAT,
+		(struct Projection_window *)projection_window);
 	LEAVE;
 
 	return (return_code);
@@ -1244,7 +1264,7 @@ projection_window.
 
 static int write_projection_tiff_file(char *file_name,void *projection_window)
 /*******************************************************************************
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 This function writes the tiff for drawing the projection associated with the
@@ -1252,54 +1272,10 @@ projection_window.
 ==============================================================================*/
 {
 	int return_code;
-	struct Projection_window *window;
-	unsigned long *image;
 
-	ENTER(write_projection_tiff_file);
-	if ((window = (struct Projection_window *)projection_window) &&
-		window->projection)
-	{
-		if (image=get_Drawing_2d_image(window->projection_drawing))
-		{
-			/* write the file */
-#if defined (IMAGEMAGICK)
-			char *extended_filename;
-
-			if ((!strchr(file_name, ':'))&&
-				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
-			{
-				sprintf(extended_filename, "tiff:%s", file_name);
-				return_code=write_image_file(extended_filename,/*components*/3, /*bytes_per_component*/1,
-					window->projection_drawing->height,window->projection_drawing->width,
-					0, image);
-				DEALLOCATE(extended_filename);
-			}
-			else
-			{
-				return_code=write_image_file(file_name,/*components*/3, /*bytes_per_component*/1,
-					window->projection_drawing->height,window->projection_drawing->width,
-					0, image);
-			}
-#else /* defined (IMAGEMAGICK) */
-			return_code=write_tiff_image_file(file_name,/*components*/3, /*bytes_per_component*/1,
-				window->projection_drawing->height,window->projection_drawing->width,
-				0, TIFF_PACK_BITS_COMPRESSION,image);
-#endif /* defined (IMAGEMAGICK) */
-			DEALLOCATE(image);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_projection_tiff_file.  Could not get image");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_projection_tiff_file.  Missing projection_window or projection");
-		return_code=0;
-	}
+	ENTER(write_projection_rgb_file);
+	return_code = write_projection_file(file_name, TIFF_FILE_FORMAT,
+		(struct Projection_window *)projection_window);
 	LEAVE;
 
 	return (return_code);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 28 January 2002
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -4046,9 +4046,73 @@ mapping_window.
 	return (return_code);
 } /* write_map_postscript_file */
 
-static int write_map_rgb_file(char *file_name,void *mapping_window)
+static int write_map_file(char *file_name,
+	enum Image_file_format image_file_format, struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+This function writes the image map associated with the <mapping> window to
+<file_name> using the requested <image_file_format>.
+==============================================================================*/
+{
+	int bytes_per_pixel, height, number_of_bytes_per_component,
+		number_of_components, return_code, width;
+	unsigned long *image;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
+
+	ENTER(write_map_file);
+	if (file_name && mapping)
+	{
+		if (image = get_Drawing_2d_image(mapping->map_drawing))
+		{
+			width = mapping->map_drawing->width;
+			height = mapping->map_drawing->height;
+			number_of_components = 3;
+			number_of_bytes_per_component = 1;
+			bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+			if (cmgui_image = Cmgui_image_constitute(
+				width, height, number_of_components, number_of_bytes_per_component,
+				width*bytes_per_pixel, (unsigned char *)image))
+			{
+				cmgui_image_information = CREATE(Cmgui_image_information)();
+				Cmgui_image_information_add_file_name(cmgui_image_information,
+					file_name);
+				Cmgui_image_information_set_image_file_format(cmgui_image_information,
+					image_file_format);
+				return_code=Cmgui_image_write(cmgui_image, cmgui_image_information);
+				DESTROY(Cmgui_image_information)(&cmgui_image_information);
+				DESTROY(Cmgui_image)(&cmgui_image);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"write_map_file.  Could not constitute image");
+				return_code = 0;
+			}
+			DEALLOCATE(image);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "write_map_file.  Could not get image");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_map_file.  Missing file_name or mapping_window");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_map_file */
+
+static int write_map_rgb_file(char *file_name, void *mapping_window)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 This function writes the rgb for drawing the map associated with the
@@ -4056,60 +4120,18 @@ mapping_window.
 ==============================================================================*/
 {
 	int return_code;
-	struct Mapping_window *mapping;
-	unsigned long *image;
 
 	ENTER(write_map_rgb_file);
-	if (mapping=(struct Mapping_window *)mapping_window)
-	{
-		if (image=get_Drawing_2d_image(mapping->map_drawing))
-		{
-			/* write the file */
-#if defined (IMAGEMAGICK)
-			char *extended_filename;
-			if ((!strchr(file_name, ':'))&&
-				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
-			{
-				sprintf(extended_filename, "sgi:%s", file_name);
-				return_code=write_image_file(extended_filename,/*components*/3,
-					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
-				DEALLOCATE(extended_filename);
-			}
-			else
-			{
-				return_code=write_image_file(file_name,/*components*/3,
-					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
-			}
-#else /* defined (IMAGEMAGICK) */
-			return_code=write_rgb_image_file(file_name,/*components*/3,
-				/*bytes_per_component*/1,
-				mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
-#endif /* defined (IMAGEMAGICK) */
-			DEALLOCATE(image);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_map_rgb_file.  Could not get image");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_map_rgb_file.  Missing mapping_window or map");
-		return_code=0;
-	}
+	return_code = write_map_file(file_name, RGB_FILE_FORMAT,
+		(struct Mapping_window *)mapping_window);
 	LEAVE;
 
 	return (return_code);
 } /* write_map_rgb_file */
 
-static int write_map_tiff_file(char *file_name,void *mapping_window)
+static int write_map_tiff_file(char *file_name, void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 This function writes the tiff for drawing the map associated with the
@@ -4117,61 +4139,18 @@ mapping_window.
 ==============================================================================*/
 {
 	int return_code;
-	struct Mapping_window *mapping;
-	unsigned long *image;
 
-	ENTER(write_map_tiff_file);
-	if (mapping=(struct Mapping_window *)mapping_window)
-	{
-		if (image=get_Drawing_2d_image(mapping->map_drawing))
-		{
-			/* write the file */
-#if defined (IMAGEMAGICK)
-			char *extended_filename;
-			if ((!strchr(file_name, ':'))&&
-				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
-			{
-				sprintf(extended_filename, "tiff:%s", file_name);
-				return_code=write_image_file(extended_filename,/*components*/3,
-					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
-				DEALLOCATE(extended_filename);
-			}
-			else
-			{
-				return_code=write_image_file(file_name,/*components*/3,
-					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
-			}
-#else /* defined (IMAGEMAGICK) */
-			return_code=write_tiff_image_file(file_name,/*components*/3,
-				/*bytes_per_component*/1,
-				mapping->map_drawing->height,mapping->map_drawing->width,
-				/*row_padding*/0,TIFF_PACK_BITS_COMPRESSION,image);
-#endif /* defined (IMAGEMAGICK) */
-			DEALLOCATE(image);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_map_tiff_file.  Could not get image");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_map_tiff_file.  Missing mapping_window or map");
-		return_code=0;
-	}
+	ENTER(write_map_rgb_file);
+	return_code = write_map_file(file_name, TIFF_FILE_FORMAT,
+		(struct Mapping_window *)mapping_window);
 	LEAVE;
 
 	return (return_code);
 } /* write_map_tiff_file */
 
-static int write_map_jpg_file(char *file_name,void *mapping_window)
+static int write_map_jpg_file(char *file_name, void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 This function writes the jpg for drawing the map associated with the
@@ -4179,53 +4158,10 @@ mapping_window.
 ==============================================================================*/
 {
 	int return_code;
-	struct Mapping_window *mapping;
-	unsigned long *image;
 
-	ENTER(write_map_jpg_file);
-	if (mapping=(struct Mapping_window *)mapping_window)
-	{
-		if (image=get_Drawing_2d_image(mapping->map_drawing))
-		{
-			/* write the file */
-#if defined (IMAGEMAGICK)
-			char *extended_filename;
-			if ((!strchr(file_name, ':'))&&
-				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
-			{
-				sprintf(extended_filename, "jpg:%s", file_name);
-				return_code=write_image_file(extended_filename,/*components*/3,
-					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
-				DEALLOCATE(extended_filename);
-			}
-			else
-			{
-				return_code=write_image_file(file_name,/*components*/3,
-					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
-			}
-#else /* defined (IMAGEMAGICK) */
-			USE_PARAMETER(file_name);
-			display_message(ERROR_MESSAGE,
-				"write_map_jpg_file. Need to compile with IMAGEMAGICK for JPG");
-			return_code=0;
-#endif /* defined (IMAGEMAGICK) */
-			DEALLOCATE(image);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_map_jpg_file.  Could not get image");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_map_jpg_file.  Missing mapping_window or map");
-		return_code=0;
-	}
+	ENTER(write_map_rgb_file);
+	return_code = write_map_file(file_name, JPG_FILE_FORMAT,
+		(struct Mapping_window *)mapping_window);
 	LEAVE;
 
 	return (return_code);
