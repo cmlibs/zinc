@@ -5109,6 +5109,8 @@ be specified in the <width> and <height> arguments.
 					sprintf(magick_image_info->size, "%ldx%ld", *width, *height);
 				}
 			}
+			/* make the default depth 8 bits for raw files */
+			magick_image_info->depth = 8;
 			magick_image=ReadImage(magick_image_info,&magick_exception);
 			if (magick_image)
 			{
