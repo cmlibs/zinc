@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 22 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -12,24 +12,23 @@
 #include "computed_variable/function_matrix.hpp"
 #endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
-#if !defined (AIX)
 template<>
 bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
-	boost::intrusive_ptr< Function_variable_matrix_coefficients<Scalar> >
+	boost::intrusive_ptr< Function_variable_matrix<Scalar> >
 		atomic_dependent_variable,atomic_independent_variable;
 
 	result=false;
 	if ((atomic_dependent_variable=boost::dynamic_pointer_cast<
-		Function_variable_matrix_coefficients<Scalar>,Function_variable>(
+		Function_variable_matrix<Scalar>,Function_variable>(
 		atomic_variable))&&
 		equivalent(Function_handle(this),atomic_dependent_variable->function())&&
 		(1==atomic_dependent_variable->number_differentiable()))
@@ -37,7 +36,7 @@ bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 		result=true;
 		if ((1==atomic_independent_variables.size())&&
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
-			Function_variable_matrix_coefficients<Scalar>,Function_variable>(
+			Function_variable_matrix<Scalar>,Function_variable>(
 			atomic_independent_variables.front()))&&
 			equivalent(atomic_dependent_variable,atomic_independent_variable))
 		{
@@ -51,4 +50,3 @@ bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 
 	return (result);
 }
-#endif // !defined (AIX)
