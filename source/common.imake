@@ -89,11 +89,11 @@ CC = gcc -c
 CPP = g++ -c
 FORTRAN = g77 -c
 #if defined (DYNAMIC_GL_LINUX)
-LINK = g++ -rdynamic -L/usr/X11R6/lib
+LINK = gcc -rdynamic
 /* LINK = egcs -shared -L/usr/X11R6/lib -v */
 /* LINK = gcc -L/usr/X11R6/lib -v */
 #else /* defined (DYNAMIC_GL_LINUX) */
-LINK = g++ -static -L/usr/X11R6/lib -v
+LINK = gcc -static -L/usr/X11R6/lib
 /*LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #if defined (OPTIMISED)
