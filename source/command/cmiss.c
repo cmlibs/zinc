@@ -24580,11 +24580,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(MANAGER(Movie_graphics))(&command_data->movie_graphics_manager);
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
 
-		if (command_data->emoter_slider_dialog)
-		{
-			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
-		}
-
 #if defined (CELL)
 		/*created in execute_command_cell_open in command/cmiss.c */
 		if (command_data->cell_interface)
@@ -24607,6 +24602,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		if (command_data->node_viewer)
 		{
 			DESTROY(Node_viewer)(&(command_data->node_viewer));
+		}
+		if (command_data->emoter_slider_dialog)
+		{
+			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
 		}
 		if (command_data->element_point_viewer)
 		{
