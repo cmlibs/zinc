@@ -440,6 +440,11 @@ Applies the
 					}
 				}
 			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"Could not set grid values - field may not be grid based");
+			}
 		}
 		else
 		{
@@ -458,7 +463,6 @@ Applies the
 
 	return (return_code);
 } /* grid_field_calculator_apply */
-
 
 static void grid_field_calculator_ok_button_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
