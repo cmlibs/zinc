@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : map_dialog.uil
 !
-!LAST MODIFIED : 23 April 2004
+!LAST MODIFIED : 3 May 2004
 !
 !DESCRIPTION :
 !The widgets/gadgets for the map dialog in the mapping work area.
@@ -64,6 +64,7 @@ procedure
 	identify_map_dialog_landmarks_b;
 	identify_map_dialog_extrema_but;
 	identify_map_dialog_aspect_rati;
+	identify_map_dialog_same_coordi;
 	identify_map_dialog_print_spect;
 	id_map_dialog_animation_frame_n;
 	id_map_dialog_animation_num_fra;
@@ -229,6 +230,21 @@ object
 					XmNseparatorType = XmNO_LINE;
 					XmNleftAttachment = XmATTACH_WIDGET;
 					XmNleftWidget = XmToggleButtonGadget map_dialog_aspect_ratio_button;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmToggleButtonGadget map_dialog_same_coordinates_but;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButtonGadget map_dialog_same_coordinates_but;
 					XmNleftOffset = 0;
 					XmNrightAttachment = XmATTACH_FORM;
 					XmNrightOffset = widget_spacing;
@@ -1491,6 +1507,32 @@ object
 				};
 			};
 		};
+	map_dialog_same_coordinates_but : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Regions use same coordinates");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNfillOnSelect = true;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButtonGadget map_dialog_aspect_ratio_button;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_same_coordi(map_dialog_structure);
+				};
+			};
+		};
 	map_dialog_print_spectrum_butto : XmToggleButtonGadget
 		{
 		arguments
@@ -1505,7 +1547,7 @@ object
 			XmNleftOffset = widget_spacing;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = XmToggleButtonGadget map_dialog_aspect_ratio_button;
+			XmNtopWidget = XmToggleButtonGadget map_dialog_same_coordinates_but;
 			XmNtopOffset = widget_spacing;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};

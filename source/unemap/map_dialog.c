@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 23 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1471,6 +1471,31 @@ Finds the id of the maintain aspect ratio button in the map dialog.
 	LEAVE;
 } /* identify_map_dialog_aspect_rati */
 
+static void identify_map_dialog_same_coordi(Widget *widget_id,
+	XtPointer map_dialog_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2004
+
+DESCRIPTION :
+Finds the id of the regions use same coordinates button in the map dialog.
+==============================================================================*/
+{
+	struct Map_dialog *map_dialog;
+
+	ENTER(identify_map_dialog_same_coordi);
+	USE_PARAMETER(call_data);
+	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
+	{
+		map_dialog->regions_use_same_coordinates_toggle= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_map_dialog_same_coordi.  Missing map_dialog_structure");
+	}
+	LEAVE;
+} /* identify_map_dialog_same_coordi */
+
 static void identify_map_dialog_print_spect(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
@@ -1698,7 +1723,7 @@ Finds the id of the ok button in the map dialog.
 
 static int update_dialog_from_map(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 Updates the dialog based on the map settings.
@@ -2020,6 +2045,16 @@ Updates the dialog based on the map settings.
 				XmToggleButtonGadgetSetState(map_dialog->maintain_aspect_ratio_toggle,
 					False,False);
 			}
+			if (map->regions_use_same_coordinates)
+			{
+				XmToggleButtonGadgetSetState(
+					map_dialog->regions_use_same_coordinates_toggle,True,False);
+			}
+			else
+			{
+				XmToggleButtonGadgetSetState(
+					map_dialog->regions_use_same_coordinates_toggle,False,False);
+			}
 			if (map->print_spectrum)
 			{
 				XmToggleButtonGadgetSetState(map_dialog->print_spectrum_toggle,True,
@@ -2120,7 +2155,7 @@ Global functions
 struct Map_dialog *create_Map_dialog(struct Map_dialog **map_dialog_address,
 	struct Map **map,Widget activation,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 Allocates the memory for a map dialog.  Retrieves the necessary widgets and
@@ -2219,6 +2254,8 @@ initializes the appropriate fields.
 			(XtPointer)identify_map_dialog_extrema_but},
 		{"identify_map_dialog_aspect_rati",
 			(XtPointer)identify_map_dialog_aspect_rati},
+		{"identify_map_dialog_same_coordi",
+			(XtPointer)identify_map_dialog_same_coordi},
 		{"identify_map_dialog_print_spect",
 			(XtPointer)identify_map_dialog_print_spect},
 		{"identify_map_dialog_fibre_hide",
@@ -2319,6 +2356,7 @@ initializes the appropriate fields.
 				map_dialog->show_landmarks_toggle=(Widget)NULL;
 				map_dialog->show_extrema_toggle=(Widget)NULL;
 				map_dialog->maintain_aspect_ratio_toggle=(Widget)NULL;
+				map_dialog->regions_use_same_coordinates_toggle=(Widget)NULL;
 				map_dialog->print_spectrum_toggle=(Widget)NULL;
 				map_dialog->animation.row_column=(Widget)NULL;
 				map_dialog->animation.start_time_text=(Widget)NULL;

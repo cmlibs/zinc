@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 24 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -999,6 +999,31 @@ necessary.
 					recalculate=2;
 				}
 				map->maintain_aspect_ratio=0;
+			}
+		}
+		if (XmToggleButtonGadgetGetState(
+			map_dialog->regions_use_same_coordinates_toggle))
+		{
+			if (!(map->regions_use_same_coordinates))
+			{
+				map_settings_changed=1;
+				if (recalculate<2)
+				{
+					recalculate=2;
+				}
+				map->regions_use_same_coordinates=1;
+			}
+		}
+		else
+		{
+			if (map->regions_use_same_coordinates)
+			{
+				map_settings_changed=1;
+				if (recalculate<2)
+				{
+					recalculate=2;
+				}
+				map->regions_use_same_coordinates=0;
 			}
 		}
 		if (XmToggleButtonGadgetGetState(map_dialog->print_spectrum_toggle))
@@ -3370,8 +3395,9 @@ The callback for redrawing part of a mapping drawing area.
 									XtWindow(mapping->map_drawing_area_2d),&attributes);
 								/* create a pixel map */
 								if (drawing=
-									create_Drawing_2d(mapping->map_drawing_area_2d,attributes.width,
-									attributes.height,NO_DRAWING_IMAGE,mapping->user_interface))
+									create_Drawing_2d(mapping->map_drawing_area_2d,
+									attributes.width,attributes.height,NO_DRAWING_IMAGE,
+									mapping->user_interface))
 								{
 									mapping->map_drawing=drawing;
 									/* clear the map drawing area */
@@ -3390,7 +3416,8 @@ The callback for redrawing part of a mapping drawing area.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"expose_mapping_drawing_area_2d.  Could not create drawing");
+										"expose_mapping_drawing_area_2d.  "
+										"Could not create drawing");
 								}
 							}
 							/* redisplay the specified part of the pixmap */
@@ -4038,7 +4065,7 @@ and frees the memory for the mapping window.
 
 static int write_map_postscript_file(char *file_name,void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 21 June 1997
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 This function writes the postscript for drawing the map associated with the
@@ -4059,7 +4086,8 @@ mapping_window.
 	{
 		if (open_printer(&printer,mapping->user_interface))
 		{
-			if (XGetWindowAttributes(User_interface_get_display(mapping->user_interface),
+			if (XGetWindowAttributes(
+				User_interface_get_display(mapping->user_interface),
 				XtWindow(mapping->map_drawing_area_2d),&window_attributes))
 			{
 				/* open the postscript file */
@@ -4111,7 +4139,7 @@ mapping_window.
 						}
 						else
 						{
-							set_postscript_display_transfor (0,0,postscript_page_width,
+							set_postscript_display_transfor(0,0,postscript_page_width,
 								0.85*postscript_page_height,0,0,
 								(float)(mapping->map_drawing->width),
 								(float)(mapping->map_drawing->height));
@@ -5339,9 +5367,10 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Mapping_window **current_mapping_window_address,char *open,
 	enum Mapping_associate *current_associate,enum Map_type *map_type,
 	enum Colour_option colour_option,enum Contours_option contours_option,
-	enum Electrodes_label_type electrodes_label_type,enum Fibres_option fibres_option,
-	enum Landmarks_option landmarks_option,enum Extrema_option extrema_option,
-	int maintain_aspect_ratio,int print_spectrum,
+	enum Electrodes_label_type electrodes_label_type,
+	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
+	enum Extrema_option extrema_option,int maintain_aspect_ratio,
+	int regions_use_same_coordinates,int print_spectrum,
 	enum Projection_type projection_type,enum Contour_thickness contour_thickness,
 	struct Rig **rig_address,int *event_number_address,
 	int *potential_time_address,int *datum_address,int *start_search_interval,
@@ -5361,7 +5390,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Electrical_imaging_event **first_eimaging_event,
 	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2003
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 If the mapping window does not exist then it is created with the specified
@@ -5440,8 +5469,9 @@ properties.  Then the mapping window is opened.
 			{
 				if (create_Mapping_window(mapping_address,open,
 					current_mapping_window_address,activation,*outer_form,
-					create_Map(map_type,colour_option,contours_option,electrodes_label_type,
-					fibres_option,landmarks_option,extrema_option,maintain_aspect_ratio,
+					create_Map(map_type,colour_option,contours_option,
+					electrodes_label_type,fibres_option,landmarks_option,extrema_option,
+					maintain_aspect_ratio,regions_use_same_coordinates,
 					print_spectrum,projection_type,contour_thickness,rig_address,
 					event_number_address,potential_time_address,datum_address,
 					start_search_interval,end_search_interval,map_drawing_information,

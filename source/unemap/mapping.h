@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -190,7 +190,7 @@ map_drawing_information.
 
 struct Map_drawing_information
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 Information needed for drawing a map.  Windowing system dependent
@@ -200,7 +200,7 @@ from here.
 ==============================================================================*/
 {
 #if defined (MOTIF)
-	Boolean maintain_aspect_ratio;
+	Boolean maintain_aspect_ratio,regions_use_same_coordinates;
 	Colormap colour_map;
 	int read_only_colour_map;
 #endif /* defined (MOTIF) */
@@ -298,7 +298,7 @@ Data unique to each sub map, passed from calculate step to show step.
 
 struct Map
 /*******************************************************************************
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 The Map.
@@ -327,6 +327,7 @@ The Map.
 	enum Extrema_option extrema_option;
 	enum Projection_type projection_type;
 	int maintain_aspect_ratio;
+	int regions_use_same_coordinates;
 	int print_spectrum;
 	char undecided_accepted;
 	struct Rig **rig_pointer;
@@ -404,16 +405,17 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	enum Electrodes_label_type electrodes_label_type,
 	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
 	enum Extrema_option extrema_option,int maintain_aspect_ratio,
-	int print_spectrum,enum Projection_type projection_type,
-	enum Contour_thickness contour_thickness,struct Rig **rig_pointer,
-	int *event_number_address,int *potential_time_address,int *datum_address,
+	int regions_use_same_coordinates,int print_spectrum,
+	enum Projection_type projection_type,enum Contour_thickness contour_thickness,
+	struct Rig **rig_pointer,int *event_number_address,
+	int *potential_time_address,int *datum_address,
 	int *start_search_interval_address,int *end_search_interval_address,
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface,struct Unemap_package *package,
 	struct Electrical_imaging_event **eimaging_event_list,
 	enum Signal_analysis_mode *analysis_mode);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2001
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the

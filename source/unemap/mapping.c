@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 24 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6238,16 +6238,17 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	enum Electrodes_label_type electrodes_label_type,
 	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
 	enum Extrema_option extrema_option,int maintain_aspect_ratio,
-	int print_spectrum,enum Projection_type projection_type,
-	enum Contour_thickness contour_thickness,struct Rig **rig_pointer,
-	int *event_number_address,int *potential_time_address,int *datum_address,
+	int regions_use_same_coordinates,int print_spectrum,
+	enum Projection_type projection_type,enum Contour_thickness contour_thickness,
+	struct Rig **rig_pointer,int *event_number_address,
+	int *potential_time_address,int *datum_address,
 	int *start_search_interval_address,int *end_search_interval_address,
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package,
 	struct Electrical_imaging_event **eimaging_event_list,
 	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 3 May 2003
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the
@@ -6469,6 +6470,7 @@ NULL if not successful.
 			map->landmarks_option=landmarks_option;
 			map->extrema_option=extrema_option;
 			map->maintain_aspect_ratio=maintain_aspect_ratio;
+			map->regions_use_same_coordinates=regions_use_same_coordinates;
 			map->print_spectrum=print_spectrum;
 			map->projection_type=projection_type;
 			map->contour_thickness=contour_thickness;
@@ -12333,16 +12335,17 @@ static int draw_2d_calc_map_to_screen_transform(struct Map *map,
 	struct Sub_map *sub_map,Display *display,int screen_region_width,
 	int screen_region_height,int x_border,int y_border,int ascent,int descent)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 Calculate the screen to map transform for the 2d Map.
 ==============================================================================*/
 {
-	float *min_x,*max_x,*min_y,*max_y,*stretch_x,*stretch_y,
-		pixel_aspect_ratio;
-	int i,map_height,map_width,number_of_drawn_regions,return_code,*start_x,
-		*start_y;
+	float all_regions_max_x,all_regions_max_y,all_regions_min_x,all_regions_min_y,
+		all_regions_stretch_x,all_regions_stretch_y,*min_x,*max_x,*min_y,*max_y,
+		*stretch_x,*stretch_y,pixel_aspect_ratio;
+	int all_regions_start_x,all_regions_start_y,i,map_height,map_width,
+		number_of_drawn_regions,return_code,*start_x,*start_y;
 
 	ENTER(draw_2d_calc_map_to_screen_transform);
 	if (map&&display&&sub_map)
@@ -12359,84 +12362,181 @@ Calculate the screen to map transform for the 2d Map.
 		start_y=sub_map->start_y;
 		stretch_x=sub_map->stretch_x;
 		stretch_y=sub_map->stretch_y;
-		/* calculate the transformation from map coordinates to screen coordinates */
+		/* calculate the transformation from map coordinates to screen
+			coordinates */
 		pixel_aspect_ratio=get_pixel_aspect_ratio(display);
-		for (i=0;i<number_of_drawn_regions;i++)
+		if (map->regions_use_same_coordinates)
 		{
-			if ((map->maintain_aspect_ratio)&&(max_x[i]!=min_x[i])&&
-				(screen_region_width>2*x_border+1)&&(max_y[i]!=min_y[i])&&
+			all_regions_min_x=min_x[0];
+			all_regions_max_x=max_x[0];
+			all_regions_min_y=min_y[0];
+			all_regions_max_y=max_y[0];
+			for (i=1;i<number_of_drawn_regions;i++)
+			{
+				if (min_x[i]<all_regions_min_x)
+				{
+					all_regions_min_x=min_x[i];
+				}
+				if (max_x[i]>all_regions_max_x)
+				{
+					all_regions_max_x=max_x[i];
+				}
+				if (min_y[i]<all_regions_min_y)
+				{
+					all_regions_min_y=min_y[i];
+				}
+				if (max_y[i]>all_regions_max_y)
+				{
+					all_regions_max_y=max_y[i];
+				}
+			}
+			if ((map->maintain_aspect_ratio)&&(all_regions_max_x!=all_regions_min_x)&&
+				(screen_region_width>2*x_border+1)&&
+				(all_regions_max_y!=all_regions_min_y)&&
 				(screen_region_height>2*y_border+1))
 			{
-				if ((float)((max_y[i]-min_y[i])*(screen_region_width-
-					(2*x_border+1)))<(float)((max_x[i]-min_x[i])*
-						(screen_region_height-(2*y_border+ascent+descent+1)))*
+				if ((float)((all_regions_max_y-all_regions_min_y)*(screen_region_width-
+					(2*x_border+1)))<(float)((all_regions_max_x-all_regions_min_x)*
+					(screen_region_height-(2*y_border+ascent+descent+1)))*
 					pixel_aspect_ratio)
 				{
 					/* fill width */
-					start_x[i]=x_border;
-					stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
-						(max_x[i]-min_x[i]);
-					stretch_y[i]=stretch_x[i]/pixel_aspect_ratio;
-					start_y[i]=(screen_region_height+
-						(int)((max_y[i]-min_y[i])*stretch_y[i]))/2;
+					all_regions_start_x=x_border;
+					all_regions_stretch_x=((float)(screen_region_width-(2*x_border+1)))/
+						(all_regions_max_x-all_regions_min_x);
+					all_regions_stretch_y=all_regions_stretch_x/pixel_aspect_ratio;
+					all_regions_start_y=(screen_region_height+
+						(int)((all_regions_max_y-all_regions_min_y)*
+						all_regions_stretch_y))/2;
 				}
 				else
 				{
 					/* fill height */
-					start_y[i]=screen_region_height-(y_border+1);
-					stretch_y[i]=((float)(screen_region_height-
-						(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
-					stretch_x[i]=stretch_y[i]*pixel_aspect_ratio;
-					start_x[i]=(screen_region_width-
-						(int)((max_x[i]-min_x[i])*stretch_x[i]))/2;
+					all_regions_start_y=screen_region_height-(y_border+1);
+					all_regions_stretch_y=((float)(screen_region_height-
+						(2*y_border+ascent+descent+1)))/
+						(all_regions_max_y-all_regions_min_y);
+					all_regions_stretch_x=all_regions_stretch_y*pixel_aspect_ratio;
+					all_regions_start_x=(screen_region_width-
+						(int)((all_regions_max_x-all_regions_min_x)*all_regions_stretch_x))/
+						2;
 				}
 			}
 			else
 			{
-				if ((max_x[i]==min_x[i])||(screen_region_width<=2*x_border+1))
+				if ((all_regions_max_x==all_regions_min_x)||
+					(screen_region_width<=2*x_border+1))
 				{
-					start_x[i]=(screen_region_width)/2;
-					stretch_x[i]=0;
+					all_regions_start_x=(screen_region_width)/2;
+					all_regions_stretch_x=0;
 				}
 				else
 				{
-					start_x[i]=x_border;
-					stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
-						(max_x[i]-min_x[i]);
+					all_regions_start_x=x_border;
+					all_regions_stretch_x=((float)(screen_region_width-(2*x_border+1)))/
+						(all_regions_max_x-all_regions_min_x);
 				}
-				if ((max_y[i]==min_y[i])||(screen_region_height<=2*y_border+1))
+				if ((all_regions_max_y==all_regions_min_y)||
+					(screen_region_height<=2*y_border+1))
 				{
-					start_y[i]=(screen_region_height)/2;
-					stretch_y[i]=0;
+					all_regions_start_y=(screen_region_height)/2;
+					all_regions_stretch_y=0;
 				}
 				else
 				{
-					start_y[i]=screen_region_height-(y_border+1);
-					stretch_y[i]=((float)(screen_region_height-
-						(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
+					all_regions_start_y=screen_region_height-(y_border+1);
+					all_regions_stretch_y=((float)(screen_region_height-
+						(2*y_border+ascent+descent+1)))/
+						(all_regions_max_y-all_regions_min_y);
 				}
 			}
-			start_x[i] += ((i/map->number_of_region_rows)*map_width)/
-				map->number_of_region_columns;
-			start_y[i] += ((i%map->number_of_region_rows)*map_height)/
-				map->number_of_region_rows;
-		}/* for (i=0;i<number_of_drawn_regions;i++) */
+			for (i=0;i<number_of_drawn_regions;i++)
+			{
+				start_x[i]=all_regions_start_x+(int)(min_x[i]*all_regions_stretch_x);
+				stretch_x[i]=all_regions_stretch_x;
+				start_y[i]=all_regions_start_y+(int)(min_y[i]*all_regions_stretch_y);
+				stretch_y[i]=all_regions_stretch_y;
+			}
+		}
+		else
+		{
+			for (i=0;i<number_of_drawn_regions;i++)
+			{
+				if ((map->maintain_aspect_ratio)&&(max_x[i]!=min_x[i])&&
+					(screen_region_width>2*x_border+1)&&(max_y[i]!=min_y[i])&&
+					(screen_region_height>2*y_border+1))
+				{
+					if ((float)((max_y[i]-min_y[i])*(screen_region_width-
+						(2*x_border+1)))<(float)((max_x[i]-min_x[i])*
+						(screen_region_height-(2*y_border+ascent+descent+1)))*
+						pixel_aspect_ratio)
+					{
+						/* fill width */
+						start_x[i]=x_border;
+						stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
+							(max_x[i]-min_x[i]);
+						stretch_y[i]=stretch_x[i]/pixel_aspect_ratio;
+						start_y[i]=(screen_region_height+
+							(int)((max_y[i]-min_y[i])*stretch_y[i]))/2;
+					}
+					else
+					{
+						/* fill height */
+						start_y[i]=screen_region_height-(y_border+1);
+						stretch_y[i]=((float)(screen_region_height-
+							(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
+						stretch_x[i]=stretch_y[i]*pixel_aspect_ratio;
+						start_x[i]=(screen_region_width-
+							(int)((max_x[i]-min_x[i])*stretch_x[i]))/2;
+					}
+				}
+				else
+				{
+					if ((max_x[i]==min_x[i])||(screen_region_width<=2*x_border+1))
+					{
+						start_x[i]=(screen_region_width)/2;
+						stretch_x[i]=0;
+					}
+					else
+					{
+						start_x[i]=x_border;
+						stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
+							(max_x[i]-min_x[i]);
+					}
+					if ((max_y[i]==min_y[i])||(screen_region_height<=2*y_border+1))
+					{
+						start_y[i]=(screen_region_height)/2;
+						stretch_y[i]=0;
+					}
+					else
+					{
+						start_y[i]=screen_region_height-(y_border+1);
+						stretch_y[i]=((float)(screen_region_height-
+							(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
+					}
+				}
+				start_x[i] += ((i/map->number_of_region_rows)*map_width)/
+					map->number_of_region_columns;
+				start_y[i] += ((i%map->number_of_region_rows)*map_height)/
+					map->number_of_region_rows;
+			}
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"draw_2d_calc_map_to_screen_transform Invalid arguments");
+			"draw_2d_calc_map_to_screen_transform.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	
 	return (return_code);
-}/* draw_2d_calc_map_to_screen_transform */
+} /* draw_2d_calc_map_to_screen_transform */
 
 static int triangle_rc_to_cp_vertex(int triangle_vertex_index,float *vertices,
 	float *r,float *theta,float *z_cp)
 /*******************************************************************************
-LAST MODIFIED :7 November 2001
+LAST MODIFIED : 7 November 2001
 
 DESCRIPTION :
 Given a triangle's vertex given by the offset <triangle_vertex_index> into the
@@ -13221,8 +13321,9 @@ Construct a colour map image for colour map or contours or  values  in the
 	float background_pixel_value,boundary_pixel_value,max_f,min_f,*pixel_value;
 	int bit_map_pad,bit_map_unit,contour_areas_in_x,contour_areas_in_y,
 		*draw_region_number,i,map_width,map_height,maximum_x,maximum_y,minimum_x,
-		minimum_y,number_of_contour_areas,number_of_regions,number_of_spectrum_colours,
-		region_number,return_code,scan_line_bytes,temp_region_number;
+		minimum_y,number_of_contour_areas,number_of_regions,
+		number_of_spectrum_colours,region_number,return_code,scan_line_bytes,
+		temp_region_number;
 	short int *contour_x,*contour_y;
 	struct Map_drawing_information *drawing_information;
 	struct Map_frame *frame;
@@ -13690,8 +13791,9 @@ to the drawing or writes to a postscript file.
 						draw_region_number[i]=0;
 					}
 					current_region=get_Rig_current_region(rig);
-					/* determine the number of regions to draw and count the electrodes */
-					/*include rejected electrodes, as want to draw these under some circumstances*/
+					/* determine the number of regions to draw and count the electrodes
+						include rejected electrodes, as want to draw these under some
+						circumstances */
 					number_of_electrodes=0;
 					device=rig->devices;
 					number_of_devices=rig->number_of_devices;
@@ -13718,7 +13820,7 @@ to the drawing or writes to a postscript file.
 						{
 							draw_region_number[i]= -1;
 						}
-					}/* for (i=0;i<number_of_regions;i++) */
+					}
 					map->number_of_electrodes=number_of_electrodes;
 					map->number_of_drawn_regions=number_of_drawn_regions;
 					map->draw_region_number=draw_region_number;
@@ -13746,8 +13848,9 @@ to the drawing or writes to a postscript file.
 										(buffer=(*(rig->devices))->signal->buffer)&&
 										(times=buffer->times))
 									{
-										sub_map->frame_time=(float)((times)[*(map->potential_time)])*
-											1000./(buffer->frequency);
+										sub_map->frame_time=
+											(float)((times)[*(map->potential_time)])*1000./
+											(buffer->frequency);
 									}
 									else
 									{
@@ -13806,20 +13909,21 @@ to the drawing or writes to a postscript file.
 										/* calculate electrode value */
 										f_value=0;
 										*electrode_drawn=0;
-										draw_2d_calculate_electrode_value(map,sub_map,electrode_drawn,
-											electrode,&f_value);
+										draw_2d_calculate_electrode_value(map,sub_map,
+											electrode_drawn,electrode,&f_value);
 										*electrode_value=f_value;
 										electrode_value++;
 										electrode_drawn++;
 										electrode++;
 										x_item++;
 										y_item++;
-									}/* if ((ELECTRODE==(description=(*device)->description)->type)&& */
+									}
 									device++;
 									number_of_devices--;
-								}/* while (number_of_devices>0) */
+								}
 								draw_2d_set_min_x_max_x(map,sub_map,&a,map->projection_type);
-								map->number_of_region_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
+								map->number_of_region_columns=
+									(int)(0.5+sqrt((double)number_of_drawn_regions));
 								if (map->number_of_region_columns<1)
 								{
 									map->number_of_region_columns=1;
@@ -13831,18 +13935,28 @@ to the drawing or writes to a postscript file.
 									map->number_of_region_rows=1;
 								}
 								/* equalize the columns */
-								if ((number_of_drawn_regions>1)&&(map->number_of_region_columns>1)&&
+								if ((number_of_drawn_regions>1)&&
+									(map->number_of_region_columns>1)&&
 									((i=map->number_of_region_rows*map->number_of_region_columns-
-										number_of_drawn_regions-1)>0))
+									number_of_drawn_regions-1)>0))
 								{
-									map->number_of_region_rows -= i/(map->number_of_region_columns-1);
+									map->number_of_region_rows -=
+										i/(map->number_of_region_columns-1);
 								}
 								/* make the regions fill the width and the height */
-								screen_region_width=(map_width)/map->number_of_region_columns;
-								screen_region_height=(map_height)/map->number_of_region_rows;
+								if (map->regions_use_same_coordinates)
+								{
+									screen_region_width=map_width;
+									screen_region_height=map_height;
+								}
+								else
+								{
+									screen_region_width=(map_width)/map->number_of_region_columns;
+									screen_region_height=(map_height)/map->number_of_region_rows;
+								}
 								draw_2d_calc_map_to_screen_transform(map,sub_map,display,
-									screen_region_width,screen_region_height,x_border,y_border,ascent,
-									descent);
+									screen_region_width,screen_region_height,x_border,y_border,
+									ascent,descent);
 								/* calculate the electrode screen locations */
 								electrode=map->electrodes;
 								x_item=x;
@@ -13856,16 +13970,16 @@ to the drawing or writes to a postscript file.
 									/* calculate screen position */
 									*screen_x=start_x[region_number]+
 										(int)(((*x_item)-min_x[region_number])*
-											stretch_x[region_number]) +map_x_offset;
+										stretch_x[region_number])+map_x_offset;
 									*screen_y=start_y[region_number]-
 										(int)(((*y_item)-min_y[region_number])*
-											stretch_y[region_number]) +map_y_offset;
+										stretch_y[region_number])+map_y_offset;
 									electrode++;
 									x_item++;
 									y_item++;
 									screen_x++;
 									screen_y++;
-								}/* for (i=number_of_electrodes;i>0;i--) */
+								}
 								/* construct a colour map image for colour map or contours or
 									values */
 								/* draw colour map and contours first (background) */
@@ -13875,7 +13989,7 @@ to the drawing or writes to a postscript file.
 									{
 										draw_2d_construct_image_map(map,sub_map,drawing,recalculate,
 											screen_region_height,screen_region_width);
-									}/* (NO_INTERPOLATION!=map->interpolation_type) */
+									}
 									else
 									{
 										if (1<recalculate)
@@ -13883,8 +13997,8 @@ to the drawing or writes to a postscript file.
 											set_map_2d_no_interpolation_min_max(map,sub_map);
 										}
 									}
-								}/* if (NO_MAP_FIELD!=map_type) */
-							}/* if (x&&y&&electrode&&screen_x&&screen_y&&electrode_value&& */
+								}
+							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
@@ -13897,8 +14011,8 @@ to the drawing or writes to a postscript file.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"draw_2d_make_map. out of memory for electrode/electrode_drawnx/y/first");
+							display_message(ERROR_MESSAGE,"draw_2d_make_map.  "
+								"Out of memory for electrode/electrode_drawnx/y/first");
 							return_code=0;
 						}
 					}
@@ -13912,12 +14026,12 @@ to the drawing or writes to a postscript file.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"draw_2d_make_map. out of memory for draw_region_number");
+						"draw_2d_make_map.  Out of memory for draw_region_number");
 					return_code=0;
 				}
-			} /* if ((rig= *(map->rig_pointer))&& */
-		}/* if (map->rig_pointer) */
-	}/* if (map&&drawing&&(drawing_information=map->drawing_information)&& */
+			}
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"draw_2d_make_map.  Invalid argument(s)");
@@ -13988,8 +14102,8 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 				/* set the sub_map's times from the electrical imaging events */
 				frame_time=(int)((float)((times)[eimaging_event->time])
 					*1000./buffer->frequency+0.5);
-				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
-					map_x_offset,map_y_offset,frame_time,0);
+				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
+					map_height,map_x_offset,map_y_offset,frame_time,0);
 				map_x_offset+=x_step;
 				count++;
 				j++;
@@ -14733,7 +14847,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 #endif /* defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2003
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -14764,6 +14878,8 @@ DESCRIPTION :
 #define XmCMapBackgroundColour "MapBackgroundColour"
 #define XmNpixelsBetweenContourValues "pixelsBetweenContourValues"
 #define XmCPixelsBetweenContourValues "PixelsBetweenContourValues"
+#define XmNregionsUseSameCoordinates "regionsUseSameCoordinates"
+#define XmCRegionsUseSameCoordinates "RegionsUseSameCoordinates"
 #define XmNunhighlightedColour "unhighlightedColour"
 #define XmCUnhighlightedColour "UnhighlightedColour"
 	static XtResource background_colour_default_resource[]=
@@ -14852,6 +14968,15 @@ DESCRIPTION :
 			XmRBoolean,
 			sizeof(Boolean),
 			XtOffsetOf(Map_drawing_information_settings,maintain_aspect_ratio),
+			XmRString,
+			"false"
+		},
+		{
+			XmNregionsUseSameCoordinates,
+			XmCRegionsUseSameCoordinates,
+			XmRBoolean,
+			sizeof(Boolean),
+			XtOffsetOf(Map_drawing_information_settings,regions_use_same_coordinates),
 			XmRString,
 			"false"
 		},

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 27 November 2003
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -153,13 +153,13 @@ Finds the id of the system acquisition button.
 static void associate_mapping_acquisition(Widget widget,XtPointer system_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 Associate the mapping window with the acquisition work area
 ==============================================================================*/
 {
-	int maintain_aspect_ratio;
+	int maintain_aspect_ratio,regions_use_same_coordinates;
 	struct Map_drawing_information *drawing_information=
 		(struct Map_drawing_information *)NULL;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
@@ -190,6 +190,14 @@ Associate the mapping window with the acquisition work area
 			else
 			{
 				maintain_aspect_ratio=0;
+			}
+			if (drawing_information->regions_use_same_coordinates)
+			{
+				regions_use_same_coordinates=1;
+			}
+			else
+			{
+				regions_use_same_coordinates=0;
 			}
 #if defined (UNEMAP_USE_NODES)
 			spectrum=system->map_drawing_information->spectrum;
@@ -237,13 +245,14 @@ Associate the mapping window with the acquisition work area
 				&(system->mapping.open),&(system->mapping.associate),
 				&(system->analysis.map_type),/* (enum Map_type *)NULL,*/
 				HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,
-				HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,1,
-				HAMMER_PROJECTION,VARIABLE_THICKNESS,&(system->acquisition.rig),
-				(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,
-				system->acquisition_colour,ACQUISITION_ASSOCIATE,
-				(XtPointer)set_mapping_acquisition_region,(XtPointer)NULL,
-				(XtPointer)NULL,(XtPointer)&(system->acquisition),
-				User_interface_get_screen_width(user_interface),User_interface_get_screen_height(user_interface),
+				HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,
+				regions_use_same_coordinates,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
+				&(system->acquisition.rig),(int *)NULL,(int *)NULL,(int *)NULL,
+				(int *)NULL,(int *)NULL,system->acquisition_colour,
+				ACQUISITION_ASSOCIATE,(XtPointer)set_mapping_acquisition_region,
+				(XtPointer)NULL,(XtPointer)NULL,(XtPointer)&(system->acquisition),
+				User_interface_get_screen_width(user_interface),
+				User_interface_get_screen_height(user_interface),
 				system->configuration_file_extension,system->postscript_file_extension,
 				system->map_drawing_information,user_interface,
 				system->unemap_package,&((system->analysis).first_eimaging_event),
@@ -574,13 +583,13 @@ Finds the id of the system analysis button.
 static void associate_mapping_analysis(Widget widget,XtPointer system_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2003
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 Associate the mapping window with the analysis work area
 ==============================================================================*/
 {
-	int maintain_aspect_ratio;
+	int maintain_aspect_ratio,regions_use_same_coordinates;
 	struct Map_drawing_information *drawing_information
 		=(struct Map_drawing_information *)NULL;
 	struct System_window *system;
@@ -610,6 +619,14 @@ Associate the mapping window with the analysis work area
 			else
 			{
 				maintain_aspect_ratio=0;
+			}
+			if (drawing_information->regions_use_same_coordinates)
+			{
+				regions_use_same_coordinates=1;
+			}
+			else
+			{
+				regions_use_same_coordinates=0;
 			}
 			/* Don't want to reset the spectrum when using the analysis window */
 			if (system->mapping.associate!=ANALYSIS_ASSOCIATE)
@@ -675,10 +692,10 @@ Associate the mapping window with the analysis work area
 					&(system->mapping.open),&(system->mapping.associate),
 					&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
 					SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
-					maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
-					&(system->analysis.rig),&(system->analysis.event_number),
-					&(system->analysis.potential_time),&(system->analysis.datum),
-					&(system->analysis.start_search_interval),
+					maintain_aspect_ratio,regions_use_same_coordinates,1,
+					HAMMER_PROJECTION,VARIABLE_THICKNESS,&(system->analysis.rig),
+					&(system->analysis.event_number),&(system->analysis.potential_time),
+					&(system->analysis.datum),&(system->analysis.start_search_interval),
 					&(system->analysis.end_search_interval),system->analysis_colour,
 					ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
 					(XtPointer)analysis_select_map_drawing_are,
@@ -797,13 +814,13 @@ Finds the id of the system mapping button.
 static void open_mapping_work_area(Widget widget,XtPointer system_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 Opens the windows associated with the mapping work area.
 ==============================================================================*/
 {
-	int maintain_aspect_ratio;
+	int maintain_aspect_ratio,regions_use_same_coordinates;
 	static MrmRegisterArg callback_list[]={
 		{"associate_mapping_analysis",(XtPointer)associate_mapping_analysis},
 		{"associate_mapping_acquisition",(XtPointer)associate_mapping_acquisition}};
@@ -848,6 +865,14 @@ Opens the windows associated with the mapping work area.
 				else
 				{
 					maintain_aspect_ratio=0;
+				}
+				if (drawing_information->regions_use_same_coordinates)
+				{
+					regions_use_same_coordinates=1;
+				}
+				else
+				{
+					regions_use_same_coordinates=0;
 				}
 				switch (system->mapping.associate)
 				{
@@ -918,12 +943,14 @@ Opens the windows associated with the mapping work area.
 							&(system->mapping.open),&(system->mapping.associate),
 							&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
 							SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
-							maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
-							&(system->acquisition.rig),(int *)NULL,(int *)NULL,(int *)NULL,
-							(int *)NULL,(int *)NULL,system->acquisition_colour,
-							ACQUISITION_ASSOCIATE,(XtPointer)set_mapping_acquisition_region,
-							(XtPointer)NULL,(XtPointer)NULL,(XtPointer)&(system->acquisition),
-							User_interface_get_screen_width(user_interface),User_interface_get_screen_height(user_interface),
+							maintain_aspect_ratio,regions_use_same_coordinates,1,
+							HAMMER_PROJECTION,VARIABLE_THICKNESS,&(system->acquisition.rig),
+							(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,
+							system->acquisition_colour,ACQUISITION_ASSOCIATE,
+							(XtPointer)set_mapping_acquisition_region,(XtPointer)NULL,
+							(XtPointer)NULL,(XtPointer)&(system->acquisition),
+							User_interface_get_screen_width(user_interface),
+							User_interface_get_screen_height(user_interface),
 							system->configuration_file_extension,
 							system->postscript_file_extension,system->map_drawing_information,
 							user_interface,system->unemap_package,
@@ -1018,8 +1045,9 @@ Opens the windows associated with the mapping work area.
 							&(system->mapping.open),&(system->mapping.associate),
 							&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
 							SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
-							maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
-							&(system->analysis.rig),&(system->analysis.event_number),
+							maintain_aspect_ratio,regions_use_same_coordinates,1,
+							HAMMER_PROJECTION,VARIABLE_THICKNESS,&(system->analysis.rig),
+							&(system->analysis.event_number),
 							&(system->analysis.potential_time),&(system->analysis.datum),
 							&(system->analysis.start_search_interval),
 							&(system->analysis.end_search_interval),
@@ -1027,7 +1055,8 @@ Opens the windows associated with the mapping work area.
 							(XtPointer)set_mapping_analysis_region,
 							(XtPointer)analysis_select_map_drawing_are,
 							(XtPointer)analysis_select_auxiliary_drawi,
-							(XtPointer)&(system->analysis),User_interface_get_screen_width(user_interface),
+							(XtPointer)&(system->analysis),
+							User_interface_get_screen_width(user_interface),
 							User_interface_get_screen_height(user_interface),
 							system->configuration_file_extension,
 							system->postscript_file_extension,system->map_drawing_information,

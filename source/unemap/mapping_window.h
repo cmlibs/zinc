@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.h
 
-LAST MODIFIED : 18 August 2002
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -177,9 +177,10 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Mapping_window **current_mapping_window_address,char *open,
 	enum Mapping_associate *current_associate,enum Map_type *map_type,
 	enum Colour_option colour_option,enum Contours_option contours_option,
-	enum Electrodes_label_type electrodes_label_type,enum Fibres_option fibres_option,
-	enum Landmarks_option landmarks_option,enum Extrema_option extrema_option,
-	int maintain_aspect_ratio,int print_spectrum,
+	enum Electrodes_label_type electrodes_label_type,
+	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
+	enum Extrema_option extrema_option,int maintain_aspect_ratio,
+	int regions_use_same_coordinates,int print_spectrum,
 	enum Projection_type projection_type,enum Contour_thickness contour_thickness,
 	struct Rig **rig_address,int *event_number_address,
 	int *potential_time_address,int *datum_address,int *start_search_interval,
@@ -199,7 +200,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Electrical_imaging_event **first_eimaging_event,
 	enum Signal_analysis_mode *analysis_mode);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2001
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 If the mapping window does not exist then it is created with the specified

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.h
 
-LAST MODIFIED : 23 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -22,7 +22,7 @@ Global types
 */
 struct Map_dialog
 /*******************************************************************************
-LAST MODIFIED : 23 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 The dialog box for configuring a map.
@@ -133,6 +133,7 @@ The dialog box for configuring a map.
 	Widget show_landmarks_toggle;
 	Widget show_extrema_toggle;
 	Widget maintain_aspect_ratio_toggle;
+	Widget regions_use_same_coordinates_toggle;
 	Widget print_spectrum_toggle;
 	struct
 	{

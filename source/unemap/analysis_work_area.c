@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 22 April 2004
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -240,7 +240,7 @@ rig->current_region->type are compatible.
 static void display_map(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 3 May 2004
 
 DESCRIPTION :
 ??? colour bar ?
@@ -248,7 +248,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	enum Projection_type projection_type;
-	int maintain_aspect_ratio;
+	int maintain_aspect_ratio,regions_use_same_coordinates;
 	struct Analysis_window *analysis_window;
 	struct Analysis_work_area *analysis;
 	struct Map *map;
@@ -309,9 +309,16 @@ DESCRIPTION :
 		{
 			maintain_aspect_ratio=0;
 		}
-		/*ensure projection_type matches region type */
+		if (analysis->map_drawing_information->regions_use_same_coordinates)
+		{
+			regions_use_same_coordinates=1;
+		}
+		else
+		{
+			regions_use_same_coordinates=0;
+		}
+		/* ensure projection_type matches region type */
 		projection_type=ensure_projection_type_matches_region_type(analysis);
-		/*???should create mapping window and map if not present */
 		if (open_mapping_window(&(analysis->mapping_window),
 			*(analysis->mapping_work_area->activation),
 			*(analysis->mapping_work_area->parent),
@@ -321,12 +328,12 @@ DESCRIPTION :
 			&(analysis->mapping_work_area->open),
 			&(analysis->mapping_work_area->associate),&(analysis->map_type),
 			SHOW_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_VALUES,HIDE_FIBRES,
-			HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,1,projection_type,
-			VARIABLE_THICKNESS,&(analysis->rig),&(analysis->event_number),
-			&(analysis->potential_time),&(analysis->datum),
-			&(analysis->start_search_interval),&(analysis->end_search_interval),
-			analysis->identifying_colour,ANALYSIS_ASSOCIATE,
-			(XtPointer)set_mapping_analysis_region,
+			HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,
+			regions_use_same_coordinates,1,projection_type,VARIABLE_THICKNESS,
+			&(analysis->rig),&(analysis->event_number),&(analysis->potential_time),
+			&(analysis->datum),&(analysis->start_search_interval),
+			&(analysis->end_search_interval),analysis->identifying_colour,
+			ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
 			(XtPointer)analysis_select_map_drawing_are,
 			(XtPointer)analysis_select_auxiliary_drawi,analysis_work_area,
 			User_interface_get_screen_width(user_interface),
