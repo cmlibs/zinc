@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 21 March 2001
+LAST MODIFIED : 04 May 2001
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -90,6 +90,9 @@ DESCRIPTION :
 #include "view/coord.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "unemap/unemap_package.h"
+#if defined (CELL)
+#include "cell/cell_interface.h"
+#endif /* defined (CELL) */
 #if defined (F90_INTERPRETER)
 #include "command/f90_interpreter.h"
 #else /* defined (F90_INTERPRETER) */
@@ -1952,6 +1955,14 @@ Main program for the CMISS Graphical User Interface
 #if defined (SGI_MOVIE_FILE)
 				DESTROY(MANAGER(Movie_graphics))(&command_data.movie_graphics_manager);
 #endif /* defined (SGI_MOVIE_FILE) */
+
+#if defined (CELL)
+				/*created in execute_command_cell_open in command/cmiss.c */
+        if (command_data.cell_interface)
+        {
+          DESTROY(Cell_interface)(&command_data.cell_interface);
+        }
+#endif /* defined (CELL) */
 
 #if defined (UNEMAP)
 				/*created in execute_command_unemap_open in command/cmiss.c */
