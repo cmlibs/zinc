@@ -1187,7 +1187,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -1212,7 +1212,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple exact_xi,glyph_centre,glyph_scale_factors,glyph_size;
 
 	ENTER(gfx_create_element_points);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -1232,6 +1232,9 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 				graphics_object_name=(char *)NULL;
 			}
 			number_of_components=3;
+			exact_xi[0]=0.5;
+			exact_xi[1]=0.5;
+			exact_xi[2]=0.5;
 			glyph_centre[0]=0.0;
 			glyph_centre[1]=0.0;
 			glyph_centre[2]=0.0;
@@ -1353,6 +1356,9 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&use_element_type_string);
 			DEALLOCATE(valid_strings);
+			/* xi */
+			Option_table_add_entry(option_table,"xi",
+				exact_xi,&number_of_components,set_float_vector);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				face_number -= 2;
@@ -1430,6 +1436,9 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 						native_discretization_field;
 					element_to_glyph_set_data.glyph=glyph;
 					element_to_glyph_set_data.graphics_object=graphics_object;
+					element_to_glyph_set_data.exact_xi[0]=exact_xi[0];
+					element_to_glyph_set_data.exact_xi[1]=exact_xi[1];
+					element_to_glyph_set_data.exact_xi[2]=exact_xi[2];
 					element_to_glyph_set_data.glyph_centre[0]=glyph_centre[0];
 					element_to_glyph_set_data.glyph_centre[1]=glyph_centre[1];
 					element_to_glyph_set_data.glyph_centre[2]=glyph_centre[2];
