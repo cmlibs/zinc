@@ -777,7 +777,7 @@ $(DSO_PATH)/andre.DSOSuffix :
 	@if [ ! -d $(DSO_PATH) ]; then \
 		mkdir -p $(DSO_PATH); \
 	fi
-	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o /tmp/andre.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/cell_model_routines/andre.f ;
+	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o /tmp/andre.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/cell_model_routines/andre.f ;
 	@set -x ; $(DSO_LINK) /tmp/andre.ObjSuffix -o $(DSO_PATH)/andre.DSOSuffix ;
 	@rm -f /tmp/andre.ObjSuffix ;
 
@@ -787,7 +787,7 @@ $(DSO_PATH)/hmt.DSOSuffix : $(SOURCE_PATH)/cell/cell_model_routines/hmt.f
 	@if [ ! -d $(DSO_PATH) ]; then \
 		mkdir -p $(DSO_PATH); \
 	fi
-	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o /tmp/hmt.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/cell_model_routines/hmt.f ;
+	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o /tmp/hmt.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/cell_model_routines/hmt.f ;
 	@set -x ; $(DSO_LINK) /tmp/hmt.ObjSuffix -o $(DSO_PATH)/hmt.DSOSuffix ;
 	@rm -f /tmp/hmt.ObjSuffix ;
 
@@ -797,7 +797,7 @@ $(DSO_PATH)/euler.DSOSuffix :
 	@if [ ! -d $(DSO_PATH) ]; then \
 		mkdir -p $(DSO_PATH); \
 	fi
-	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o /tmp/euler.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/integrator_routines/euler.f ;
+	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o /tmp/euler.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/integrator_routines/euler.f ;
 	@set -x ; $(DSO_LINK) /tmp/euler.ObjSuffix -o $(DSO_PATH)/euler.DSOSuffix ;
 	@rm -f /tmp/euler.ObjSuffix ;
 
