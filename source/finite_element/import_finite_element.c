@@ -2159,6 +2159,7 @@ Some examples of basis descriptions in an input file are:
 			if (basis_type=FE_basis_string_to_type_array(basis_description_string))
 			{
 				basis=FE_region_get_FE_basis_matching_basis_type(fe_region,basis_type);
+				DEALLOCATE(basis_type);
 			}
 			else
 			{
