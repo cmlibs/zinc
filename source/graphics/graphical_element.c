@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 6 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -188,7 +188,7 @@ changed.
 static int GT_element_group_update_default_coordinate(
 	struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 30 November 2001
+LAST MODIFIED : 6 December 2001
 
 DESCRIPTION :
 If the <gt_element_group> doesn't have a default coordinate yet then it 
@@ -204,38 +204,44 @@ finally in the data group.
 	if (gt_element_group)
 	{
 		return_code = 1;
-		if (gt_element_group->default_coordinate_field)
+		/* if we don't have a computed_field_manager, we are working on an
+			 "editor copy" which does not update graphics; the
+			 default_coordinate_field will have been supplied by the global object */
+		if (gt_element_group->computed_field_manager)
 		{
-			/* Don't second guess, just keep what we have */
-		}
-		else
-		{
-			/* Try to find one */
-			fe_field = (struct FE_field *)NULL;
-			FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
-				FE_element_find_default_coordinate_field_iterator,
-				(void *)&fe_field, gt_element_group->element_group);
-			if (!fe_field)
+			if (gt_element_group->default_coordinate_field)
 			{
-				FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-					FE_node_find_default_coordinate_field_iterator,
-					(void *)&fe_field, gt_element_group->node_group);
+				/* Don't second guess, just keep what we have */
 			}
-			if (!fe_field)
+			else
 			{
-				FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-					FE_node_find_default_coordinate_field_iterator,
-					(void *)&fe_field, gt_element_group->data_group);
-			}
-			if (fe_field)
-			{
-				/* Find the computed_field wrapper */
-				if (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_is_read_only_with_fe_field,
-					(void *)fe_field, gt_element_group->computed_field_manager))
+				/* Try to find one */
+				fe_field = (struct FE_field *)NULL;
+				FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
+					FE_element_find_default_coordinate_field_iterator,
+					(void *)&fe_field, gt_element_group->element_group);
+				if (!fe_field)
 				{
-					gt_element_group->default_coordinate_field = 
-						ACCESS(Computed_field)(computed_field);
+					FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+						FE_node_find_default_coordinate_field_iterator,
+						(void *)&fe_field, gt_element_group->node_group);
+				}
+				if (!fe_field)
+				{
+					FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+						FE_node_find_default_coordinate_field_iterator,
+						(void *)&fe_field, gt_element_group->data_group);
+				}
+				if (fe_field)
+				{
+					/* Find the computed_field wrapper */
+					if (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+						Computed_field_is_read_only_with_fe_field,
+						(void *)fe_field, gt_element_group->computed_field_manager))
+					{
+						gt_element_group->default_coordinate_field = 
+							ACCESS(Computed_field)(computed_field);
+					}
 				}
 			}
 		}
