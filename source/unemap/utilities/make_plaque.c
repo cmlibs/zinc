@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : make_plaque.c
 
-LAST MODIFIED : 26 September 2000
+LAST MODIFIED : 1 October 2000
 
 DESCRIPTION :
 Make a unemap configuration file for multiple flexible pcb plaques in a row.
@@ -30,56 +30,65 @@ int main()
 		electrode_number=0;
 		do
 		{
-			printf("Number of 64 channel modules for strip/region %d (0 to end)?\n",
+			printf("Number of 64 channel modules for strip/region %d (0 to end, negative to skip)?\n",
 				region_number);
 			scanf("%d",&number_of_pcbs);
-			if (0<number_of_pcbs)
+			if (0!=number_of_pcbs)
 			{
-				fprintf(cnfg_file,"patch : region %d\n",region_number);
-				for (i=0;i<number_of_pcbs;i++)
+				if (0<number_of_pcbs)
 				{
-					if (ecg_module==(electrode_number/64)+i+1)
+					fprintf(cnfg_file,"patch : region %d\n",region_number);
+					for (i=0;i<number_of_pcbs;i++)
 					{
-						start1=2;
-						start2=1;
+						if (ecg_module==(electrode_number/64)+i+1)
+						{
+							start1=2;
+							start2=1;
+						}
+						else
+						{
+							start1=0;
+							start2=0;
+						}
+						for (j=start1;j<16;j++)
+						{
+							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+1);
+							fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+32-2*j);
+							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
+								(number_of_pcbs-i-1)*4+3);
+						}
+						for (j=0;j<16;j++)
+						{
+							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+17);
+							fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+64-2*j);
+							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
+								(number_of_pcbs-i-1)*4+2);
+						}
+						for (j=start2;j<16;j++)
+						{
+							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+33);
+							fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+31-2*j);
+							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
+								(number_of_pcbs-i-1)*4+1);
+						}
+						for (j=0;j<16;j++)
+						{
+							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+49);
+							fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+63-2*j);
+							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
+								(number_of_pcbs-i-1)*4);
+						}
 					}
-					else
-					{
-						start1=0;
-						start2=0;
-					}
-					for (j=start1;j<16;j++)
-					{
-						fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+1);
-						fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+32-2*j);
-						fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
-							(number_of_pcbs-i-1)*4+3);
-					}
-					for (j=0;j<16;j++)
-					{
-						fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+17);
-						fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+64-2*j);
-						fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
-							(number_of_pcbs-i-1)*4+2);
-					}
-					for (j=start2;j<16;j++)
-					{
-						fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+33);
-						fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+31-2*j);
-						fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
-							(number_of_pcbs-i-1)*4+1);
-					}
-					for (j=0;j<16;j++)
-					{
-						fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+49);
-						fprintf(cnfg_file,"channel : %d\n",electrode_number+i*64+63-2*j);
-						fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
-							(number_of_pcbs-i-1)*4);
-					}
+					region_number++;
+				}
+				else
+				{
+					number_of_pcbs= -number_of_pcbs;
 				}
 				if ((electrode_number/64<ecg_module)&&
 					(ecg_module<=(electrode_number/64)+number_of_pcbs))
 				{
+					fprintf(cnfg_file,"patch : ecg\n");
 					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+30);
 					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+30);
 					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+31);
@@ -105,10 +114,9 @@ int main()
 					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
 						(ecg_module-1)*64+32,(ecg_module-1)*64+30,(ecg_module-1)*64+31);
 				}
-				region_number++;
 				electrode_number += number_of_pcbs*64;
 			}
-		} while (number_of_pcbs>0);
+		} while (number_of_pcbs!=0);
 		fclose(cnfg_file);
 	}
 	else
