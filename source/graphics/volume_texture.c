@@ -1458,8 +1458,17 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 																		(triangle->iso_poly_cop)[j][k]=
 																			(source_triangle->iso_poly_cop)[j][k];
 																	}
-																	(triangle->material)[j]=ACCESS(Graphical_material)(
-																		(source_triangle->material)[j]);
+																	if ((source_triangle->material)[j])
+																	{
+																		(triangle->material)[j]=
+																			ACCESS(Graphical_material)(
+																				(source_triangle->material)[j]);
+																	}
+																	else
+																	{
+																		(triangle->material)[j]=
+																			(struct Graphical_material *)NULL;
+																	}
 																	(triangle->env_map_index)[j]=
 																		(source_triangle->env_map_index)[j];
 																	if (env_map=(source_triangle->env_map)[j])
@@ -3092,10 +3101,17 @@ printf("det_map = %p\n", texture->mc_iso_surface->detail_map);
 						(cell->cop)[0]=0.5;
 						(cell->cop)[1]=0.5;
 						(cell->cop)[2]=0.5;
-						if (index>0)
+						if (0<index)
 						{
-							cell->material=
-								ACCESS(Graphical_material)(index_to_material[index-1]);
+							if (index_to_material[index-1])
+							{
+								cell->material=
+									ACCESS(Graphical_material)(index_to_material[index-1]);
+							}
+							else
+							{
+								cell->material=(struct Graphical_material *)NULL;
+							}
 							cell->scalar_value=1.0;
 						}
 						else
@@ -3131,7 +3147,7 @@ printf("det_map = %p\n", texture->mc_iso_surface->detail_map);
 							}
 							/* temporarily set cop values */
 							node->cop[0]=node->cop[1]=node->cop[2]=0.5;
-							if (index>0)
+							if ((0<index)&&index_to_material[index-1])
 							{
 								node->material=
 									ACCESS(Graphical_material)(index_to_material[index-1]);

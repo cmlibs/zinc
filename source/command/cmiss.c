@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -3520,7 +3520,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -3541,6 +3541,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 	struct FE_element *first_element;
 	struct FE_field *native_discretization_field;
 	struct FE_node *data_to_destroy;
+	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *surface_data_group;
 	struct GT_object *graphics_object;
@@ -3576,8 +3577,8 @@ Executes a GFX CREATE ISO_SURFACES command.
 			surface_data_group = (struct GROUP(FE_node) *)NULL;
 			surface_data_density_field=(struct Computed_field *)NULL;
 			time=0;
-			element_to_iso_scalar_data.material=
-				ACCESS(Graphical_material)(command_data->default_graphical_material);
+			material=ACCESS(Graphical_material)(
+				command_data->default_graphical_material);
 			element_group=(struct GROUP(FE_element) *)NULL;
 			clipping=(struct Clipping *)NULL;
 			scalar_field=(struct Computed_field *)NULL;
@@ -3636,8 +3637,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 			Option_table_add_entry(option_table,"iso_value",
 				&(element_to_iso_scalar_data.iso_value),NULL,set_double);
 			/* material */
-			Option_table_add_entry(option_table,"material",
-				&(element_to_iso_scalar_data.material),
+			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* native_discretization */
 			Option_table_add_entry(option_table,"native_discretization",
@@ -3773,7 +3773,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 					else
 					{
 						if (!((graphics_object=CREATE(GT_object)(graphics_object_name,
-							graphics_object_type,element_to_iso_scalar_data.material))&&
+							graphics_object_type,material))&&
 							ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
 								command_data->graphics_object_list)))
 						{
@@ -3909,8 +3909,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 				DEACCESS(GROUP(FE_element))(&element_group);
 			}
 			DEACCESS(Spectrum)(&spectrum);
-			DEACCESS(Graphical_material)(
-				&(element_to_iso_scalar_data.material));
+			DEACCESS(Graphical_material)(&material);
 			DEALLOCATE(graphics_object_name);
 		}
 		else
@@ -11371,7 +11370,7 @@ struct Scene_add_graphics_object_iterator_data
 static int Scene_add_graphics_object_iterator(struct GT_object *graphics_object,
 	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11394,7 +11393,7 @@ DESCRIPTION :
 		else
 		{
 			return_code=Scene_add_graphics_object(scene,graphics_object,0,
-				graphics_object->name);
+				graphics_object->name,/*fast_changing*/0);
 		}
 		if (1<GT_object_get_number_of_times(graphics_object))
 		{
@@ -11500,7 +11499,7 @@ Executes a GFX DRAW command.
 							strcpy(scene_object_name,graphics_object->name);
 						}
 						return_code=Scene_add_graphics_object(scene,graphics_object,0,
-							scene_object_name);
+							scene_object_name,/*fast_changing*/0);
 						if (time_object_name)
 						{
 							/* SAB A new time_object is created and associated with the named

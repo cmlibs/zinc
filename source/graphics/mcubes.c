@@ -5422,7 +5422,14 @@ printVT(t);
 				}
 				else
 				{
-					node->dominant_material=ACCESS(Graphical_material)(materials[m]);
+					if (materials[m])
+					{
+						node->dominant_material=ACCESS(Graphical_material)(materials[m]);
+					}
+					else
+					{
+						node->dominant_material=(struct Graphical_material *)NULL;
+					}
 				}
 #endif
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -172,7 +172,7 @@ Data for converting a 3-D element into a volume.
 
 struct Element_to_iso_scalar_data
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Data for converting a 3-D element into an iso_surface (via a volume_texture).
@@ -188,7 +188,6 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 	struct Computed_field *surface_data_density_field;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_field *native_discretization_field;
-	struct Graphical_material *material;
 	struct GT_object *graphics_object;
 	enum Render_type render_type;
 	struct GROUP(FE_element) *element_group;
@@ -755,15 +754,15 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,int *number_in_xi,
-	struct Graphical_material *material,struct GT_object *graphics_object,
-	enum Render_type render_type,
+	struct GT_object *graphics_object,enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(FE_field) *fe_field_manager);
 /*******************************************************************************
-LAST MODIFIED : 4 May 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
 ==============================================================================*/
+
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */

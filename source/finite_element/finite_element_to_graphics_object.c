@@ -7520,7 +7520,6 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								element_to_iso_scalar_data->scalar_field,
 								element_to_iso_scalar_data->surface_data_density_field,
 								number_in_xi,
-								element_to_iso_scalar_data->material,
 								element_to_iso_scalar_data->graphics_object,
 								element_to_iso_scalar_data->render_type,
 								element_to_iso_scalar_data->surface_data_group,
@@ -7584,13 +7583,12 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,int *number_in_xi,
-	struct Graphical_material *material,struct GT_object *graphics_object,
-	enum Render_type render_type,
+	struct GT_object *graphics_object,enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(FE_field) *fe_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
@@ -7610,7 +7608,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 	ENTER(create_iso_surfaces_from_FE_element);
 	/* default return_code */
 	return_code=0;
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&material&&
+	if (element&&(element->shape)&&(3==element->shape->dimension)&&
 		number_in_xi&&(0<number_in_xi[0])&&(0<number_in_xi[1])&&(0<number_in_xi[2])
 		&&scalar_field&&(1==Computed_field_get_number_of_components(scalar_field)))
 	{
@@ -7718,7 +7716,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 					(cell->cop)[0]=0.5;
 					(cell->cop)[1]=0.5;
 					(cell->cop)[2]=0.5;
-					cell->material=ACCESS(Graphical_material)(material);
+					cell->material=(struct Graphical_material *)NULL;
 					cell->scalar_value=1.0;
 					cell->env_map=(struct Environment_map *)NULL;
 					cell->detail=0;
@@ -7744,8 +7742,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 							(node->cop)[0]=0.5;
 							(node->cop)[1]=0.5;
 							(node->cop)[2]=0.5;
-							node->material=ACCESS(Graphical_material)(
-								material);
+							node->material=(struct Graphical_material *)NULL;
 							node->dominant_material=(struct Graphical_material *)NULL;
 							node->scalar_value=(double)scalar_value;
 							/*???RC no clipping function for now */
