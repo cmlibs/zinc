@@ -33,7 +33,7 @@ static char *required_extensions[] = {"GL_NV_register_combiners",
 												  "GL_NV_texture_shader",
 												  "GL_SGIX_depth_texture",
 												  "GL_SGIX_shadow"};
-#if ! defined (WIN32_SYSTEM)
+#if ! defined (WIN32_SYSTEM) && ! defined (AIX)
 #if defined GL_NV_register_combiners && defined GL_NV_register_combiners2 \
    && defined GL_NV_texture_rectangle && defined GL_NV_texture_shader \
    && defined GL_SGIX_depth_texture && defined GL_SGIX_shadow
