@@ -824,12 +824,12 @@ NOTE: currently does not tolerate having a variable_scale_field.
 			if (0.0 != edit_info->glyph_centre[0])
 			{
 				display_message(ERROR_MESSAGE,
-					"To edit orientation vectors your main direction base glyph size must be zero.");
+					"To edit orientation vectors your main direction glyph centre must be zero.");
 			}
 			if (0.0 != edit_info->glyph_size[0])
 			{
 				display_message(ERROR_MESSAGE,
-					"To edit orientation vectors your main direction glyph centre must be zero.");
+					"To edit orientation vectors your main direction base glyph size must be zero.");
 			}
 			if (0.0 == (scale_factor=edit_info->glyph_scale_factors[0]))
 			{
