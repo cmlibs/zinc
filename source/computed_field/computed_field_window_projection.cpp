@@ -172,27 +172,27 @@ DESCRIPTION :
 							if ((i == 0) && (k == 0))
 							{
 								viewport_matrix[i * 4 + j] += 
-									viewport_width * viewport_pixels_per_unit_x * 0.5 *
+									0.5 * viewport_width / viewport_pixels_per_unit_x  *
 									total_projection_matrix[k * 4 + j];
 							}
 							else if((i == 1) && (k == 1))
 							{
 								viewport_matrix[i * 4 + j] += 
-									viewport_height * viewport_pixels_per_unit_y * 0.5 *
+									0.5 * viewport_height / viewport_pixels_per_unit_y *
 									total_projection_matrix[k * 4 + j];
 							}
 							else if((i == 0) && (k == 3))
 							{
 								viewport_matrix[i * 4 + j] += 
-									(viewport_width * viewport_pixels_per_unit_x * 0.5 
-										+ viewport_left) *
+									(viewport_left + 0.5 * viewport_width 
+										/ viewport_pixels_per_unit_x) *
 									total_projection_matrix[k * 4 + j];
 							}
 							else if((i == 1) && (k == 3))
 							{
 								viewport_matrix[i * 4 + j] += 
-									(viewport_height * viewport_pixels_per_unit_y * 0.5
-										+ viewport_top + viewport_height) *
+									(viewport_top - 0.5 * viewport_height
+										/ viewport_pixels_per_unit_y) *
 									total_projection_matrix[k * 4 + j];
 							}
 							else if((i == 2) && (k == 2))
