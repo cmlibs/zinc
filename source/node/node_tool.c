@@ -2085,7 +2085,6 @@ Node group manager change callback.  Makes sure we don't hold onto a
 reference to an invalid node group.
 ==============================================================================*/
 {
-	int return_code;
 	struct Node_tool *node_tool;
 
 	ENTER(Node_tool_node_group_change);
@@ -2104,14 +2103,12 @@ reference to an invalid node group.
 					node_tool->node_group = (struct GROUP(FE_node) *)NULL;
 					Node_tool_set_create_enabled(node_tool, /*false*/0);
 				}
-				return_code = 1;
 			} break;
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
 			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
 			case MANAGER_CHANGE_ADD(GROUP(FE_node)):
 			{
-				return_code = 1;
 			} break;
 		}
 	}
