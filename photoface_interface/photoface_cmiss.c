@@ -72,6 +72,7 @@ struct Marker_struct *markers;
 
 #define COMMAND_STRING_SIZE 10000
 static char command_string[COMMAND_STRING_SIZE];
+static char command_string2[COMMAND_STRING_SIZE];
 
 #if defined (ERROR_MESSAGE)
 #define ERROR_MESSAGE_SIZE 10000
@@ -207,6 +208,71 @@ used.
 
 	return (return_code);
 } /* linux_execute */
+
+static int linux_execute2(char *format, ... )
+/*******************************************************************************
+LAST MODIFIED : 16 February 2001
+
+DESCRIPTION :
+A function for executing a command under linux.  The printf form of arguments is
+used.
+==============================================================================*/
+{
+	char *connection;
+	int return_code;
+	va_list ap;
+
+	ENTER(linux_execute);
+	return_code=0;
+	va_start(ap,format);
+	if (connection=getenv("PF_CMISS_CONNECTION"))
+	{
+//		sprintf(command_string2,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY :3.0;",host);
+//		sprintf(command_string2,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY esu48:0.0;",host);
+		strcpy(command_string2, connection);
+	}
+	else
+	{
+		strcpy(command_string2, "");
+	}
+
+#if ! defined (WIN32)
+	if (connection)
+	{
+		sprintf(command_string2+strlen(command_string2)," '");
+	}
+#endif /* ! defined (WIN32) */
+
+		vsprintf(command_string2+strlen(command_string2),format,ap);
+
+#if ! defined (WIN32)
+	if (connection)
+	{
+		sprintf(command_string2+strlen(command_string2)," '");
+	}
+#endif /* ! defined (WIN32) */
+
+#if defined (DEBUG)
+	printf (command_string2);
+	printf ("\n");
+#endif /* defined (DEBUG) */
+
+	return_code = system(command_string2);
+	/* Translate this into a internal return code */
+	if (0==return_code)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	va_end(ap);
+	LEAVE;
+
+	return (return_code);
+} /* linux_execute2 */
 
 static int read_line(FILE *file,char *buff,int buff_limit)
 /*******************************************************************************
@@ -2188,7 +2254,7 @@ DWORD WINAPI start_cmgui_thread_function(LPVOID pf_job_id_ptr)
 	ENTER(start_cmgui_thread_function);
 	return_code=0;
 	pf_job_id = *((int *)pf_job_id_ptr);
-	linux_execute("%sbin/cmgui_bg -id %06d",photoface_remote_path,pf_job_id);
+	linux_execute2("%sbin/cmgui_bg -id %06d",photoface_remote_path,pf_job_id);
 	LEAVE;
 
 	return (return_code);
@@ -2292,20 +2358,24 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 									}
 									else
 									{
+#if defined (WIN32)
+										delay = 15;
+#else /* defined (WIN32) */
 										delay = 2;
+#endif /* defined (WIN32) */
 									}
 
 									/* Start cmgui in a forked thread and load this model */
 #if defined (WIN32)
 									CreateThread(/*no security attributes*/NULL,
 										/*use default stack size*/0,start_cmgui_thread_function,
-										(LPVOID)NULL,/*use default creation flags*/0,
+										(LPVOID)pf_job_id,/*use default creation flags*/0,
 										&start_cmgui_thread_id);
 									/* Main process comes here */
 #else /* defined (WIN32) */
 									if (!(pid = fork()))
 									{
-										if (linux_execute("%sbin/cmgui_bg -id %06d", 
+										if (linux_execute2("%sbin/cmgui_bg -id %06d", 
 											photoface_remote_path, *pf_job_id))
 										{
 											return_code=PF_SUCCESS_RC;
