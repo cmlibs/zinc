@@ -31,21 +31,21 @@ cmgui-debug :
 
 #Separating these rules allow the command line options to propogate and
 #variables that are not defined not to propogate.
-cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=$(USER_INTERFACE)
+cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
-cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX_OPTION=$(DYNAMIC_GL_LINUX)
+cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX_OPTION=DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX)
 cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=true
-cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=$(DEBUG)
+cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=DEBUG=$(DEBUG)
 cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG=false
-cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG_OPTION=$(DEBUG)
+cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
 cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG=true
-cmgui64 cmgui64-debug utilities64 : ABI_OPTION=$(ABI)
+cmgui64 cmgui64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
 cmgui64 cmgui64-debug utilities64 : ABI=64
-cmgui-debug-memorycheck : MEMORYCHECK_OPTION=$(MEMORYCHECK)
+cmgui-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
 cmgui-debug-memorycheck : MEMORYCHECK=true
-cmgui-console : USER_INTERFACE_OPTION=$(USER_INTERFACE)
+cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
-cmgui-gtk : USER_INTERFACE_OPTION=$(USER_INTERFACE)
+cmgui-gtk : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-gtk : USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities utilities64 : TARGET_OPTION=utilities
@@ -69,13 +69,7 @@ endif
 ifdef MEMORYCHECK
    MEMORYCHECK_OPTION = MEMORYCHECK=$(MEMORYCHECK)
 endif
-ifdef USE_UNEMAP_NODES
-   USE_UNEMAP_NODES_OPTION = USE_UNEMAP_NODES=$(USE_UNEMAP_NODES)
-endif
-ifdef USE_UNEMAP_3D
-   USE_UNEMAP_3D_OPTION = USE_UNEMAP_3D=$(USE_UNEMAP_3D)
-endif
-OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(DYNAMIC_GL_LINUX_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION) $(USE_UNEMAP_NODES_OPTION) $(USE_UNEMAP_3D_OPTION)
+OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(DYNAMIC_GL_LINUX_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION)
 
 cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
 	cd source ; \
