@@ -645,15 +645,6 @@ The number of components controls how the field is interpreted:
     normal).
 ==============================================================================*/
 
-int Computed_field_is_in_use(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Returns true if the field is accessed more than once; ie. it is in use somewhere
-else in the program (apart from being accessed by its manager).
-==============================================================================*/
-
 int Computed_field_is_read_only(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 26 January 1999

@@ -429,8 +429,8 @@ Calls Computed_field_clear_cache before clearing the type.
 			(Computed_field_is_defined_at_node_function)NULL;
 		field->computed_field_has_numerical_components_function =
 			(Computed_field_has_numerical_components_function)NULL;
-		field->computed_field_can_be_destroyed_function =
-			(Computed_field_can_be_destroyed_function)NULL;
+		field->computed_field_not_in_use_function =
+			(Computed_field_not_in_use_function)NULL;
 		field->computed_field_evaluate_cache_at_node_function =
 			(Computed_field_evaluate_cache_at_node_function)NULL; 
 		field->computed_field_evaluate_cache_in_element_function =
@@ -579,8 +579,8 @@ COMPUTED_FIELD_INVALID with no components.
 				(Computed_field_is_defined_at_node_function)NULL;
 			field->computed_field_has_numerical_components_function =
 				(Computed_field_has_numerical_components_function)NULL;
-			field->computed_field_can_be_destroyed_function =
-				(Computed_field_can_be_destroyed_function)NULL;
+			field->computed_field_not_in_use_function =
+				(Computed_field_not_in_use_function)NULL;
 	   	field->computed_field_evaluate_cache_at_node_function =
 				(Computed_field_evaluate_cache_at_node_function)NULL; 
 	   	field->computed_field_evaluate_cache_in_element_function =
@@ -776,183 +776,145 @@ functions to check if read_only flag is set.
 		}
 		else
 		{
-			/* check not changing number of components while field is in use */
-			if ((source->number_of_components!=destination->number_of_components)&&
-				Computed_field_is_in_use(destination))
+			source_fields=(struct Computed_field **)NULL;
+			source_values=(FE_value *)NULL;
+			type_specific_data = NULL;
+			component_names = (char **)NULL;
+			/* 1. make dynamic allocations for any new type-specific data */
+			return_code = 1;
+			if (source->component_names)
 			{
-				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-					"Cannot change number of components while field is in use");
-				return_code=0;		
-			}
-			else
-			{
-				source_fields=(struct Computed_field **)NULL;
-				source_values=(FE_value *)NULL;
-				type_specific_data = NULL;
-				component_names = (char **)NULL;
-				/* 1. make dynamic allocations for any new type-specific data */
-				return_code = 1;
-				if (source->component_names)
+				if (ALLOCATE(component_names, char *, 
+					source->number_of_components))
 				{
-					if (ALLOCATE(component_names, char *, 
-						source->number_of_components))
+					for (i = 0 ; i < source->number_of_components; i++)
 					{
-						for (i = 0 ; i < source->number_of_components; i++)
+						if (!(component_names[i]=duplicate_string(
+							source->component_names[i])))
 						{
-							if (!(component_names[i]=duplicate_string(
-								source->component_names[i])))
-							{
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				if (return_code&&
-					((0==source->number_of_source_fields)||ALLOCATE(source_fields,
-					struct Computed_field *,source->number_of_source_fields))&&
-					((0==source->number_of_source_values)||ALLOCATE(source_values,
-						FE_value,source->number_of_source_values)))
-				{
-					if ((!source->type_specific_data)||
-						(!source->computed_field_copy_type_specific_function)||
-						(type_specific_data = 
-							source->computed_field_copy_type_specific_function(source)))
-					{
-						/* 2. free current type-specific data */
-						Computed_field_clear_type(destination);
-						/* 3. establish the new type */
-						destination->number_of_components=source->number_of_components;
-						destination->read_only=source->read_only;
-						COPY(Coordinate_system)(&destination->coordinate_system,
-							&source->coordinate_system);
-						destination->type=source->type;
-
-						destination->component_names = component_names;
-
-						/* for COMPUTED_FIELD_COMPOSE only */
-						REACCESS(GROUP(FE_element))(&destination->compose_element_group,
-							source->compose_element_group);
-
-						/* for COMPUTED_FIELD_EXTERNAL only */
-						if (source->child_filename)
-						{
-							ALLOCATE(destination->child_filename, char,
-								strlen(source->child_filename) + 1);
-							strcpy(destination->child_filename, source->child_filename);
-						}
-						destination->timeout = source->timeout;
-						if (source->child_process)
-						{
-							destination->child_process = 
-								ACCESS(Child_process)(source->child_process);
-						}
-
-						/* for COMPUTED_FIELD_NEW_TYPES */
-						destination->computed_field_clear_type_specific_function = 
-							source->computed_field_clear_type_specific_function;
-						destination->computed_field_copy_type_specific_function =
-							source->computed_field_copy_type_specific_function;
-						destination->computed_field_type_specific_contents_match_function = 
-							source->computed_field_type_specific_contents_match_function;
-						destination->computed_field_is_defined_in_element_function =
-							source->computed_field_is_defined_in_element_function;
-						destination->computed_field_is_defined_at_node_function =
-							source->computed_field_is_defined_at_node_function;
-						destination->computed_field_has_numerical_components_function =
-							source->computed_field_has_numerical_components_function;
-						destination->computed_field_evaluate_cache_at_node_function =
-							source->computed_field_evaluate_cache_at_node_function;
-						destination->computed_field_evaluate_cache_in_element_function =
-							source->computed_field_evaluate_cache_in_element_function;
-						destination->computed_field_evaluate_as_string_in_element_function =
-							source->computed_field_evaluate_as_string_in_element_function;
-						destination->computed_field_evaluate_as_string_at_node_function =
-							source->computed_field_evaluate_as_string_at_node_function;
-						destination->computed_field_set_values_at_node_function =
-							source->computed_field_set_values_at_node_function;
-						destination->computed_field_set_values_in_element_function =
-							source->computed_field_set_values_in_element_function;
-						destination->computed_field_get_native_discretization_in_element_function =	
-							source->computed_field_get_native_discretization_in_element_function;
-						destination->computed_field_find_element_xi_function =	
-							source->computed_field_find_element_xi_function;
-						destination->list_Computed_field_function =
-							source->list_Computed_field_function;
-						destination->computed_field_get_command_string_function =
-							source->computed_field_get_command_string_function;
-						if (source->type_specific_data)
-						{
-							destination->type_specific_data = type_specific_data;
-						}
-						destination->type_string = source->type_string;
-						
-
-						/* for all Computed_field_types calculated from others */
-						destination->number_of_source_fields=
-							source->number_of_source_fields;
-						for (i=0;i<source->number_of_source_fields;i++)
-						{
-							source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
-						}
-						destination->source_fields=source_fields;
-
-						destination->number_of_source_values=
-							source->number_of_source_values;
-						for (i=0;i<source->number_of_source_values;i++)
-						{
-							source_values[i]=source->source_values[i];
-						}
-						destination->source_values=source_values;
-						return_code=1;
-					}
-					else
-					{
-						if (source->computed_field_copy_type_specific_function)
-						{
-							display_message(ERROR_MESSAGE,
-								"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-								"Type specific copy function failed.");
-							return_code=0;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-								"Type specific data but no copy function.");
-							return_code=0;
-						}
-						if (source_fields)
-						{
-							DEALLOCATE(source_fields);
-						}
-						if (source_values)
-						{
-							DEALLOCATE(source_values);
-						}
-						if (component_names)
-						{
-							for (i = 0 ; i < source->number_of_components ; i++)
-							{
-								if (component_names[i])
-								{
-									DEALLOCATE(component_names[i]);
-								}
-							}
-							DEALLOCATE(component_names);
+							return_code = 0;
 						}
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-						"Not enough memory");
-					return_code=0;
+					return_code = 0;
+				}
+			}
+			if (return_code&&
+				((0==source->number_of_source_fields)||ALLOCATE(source_fields,
+					struct Computed_field *,source->number_of_source_fields))&&
+				((0==source->number_of_source_values)||ALLOCATE(source_values,
+					FE_value,source->number_of_source_values)))
+			{
+				if ((!source->type_specific_data)||
+					(!source->computed_field_copy_type_specific_function)||
+					(type_specific_data = 
+						source->computed_field_copy_type_specific_function(source)))
+				{
+					/* 2. free current type-specific data */
+					Computed_field_clear_type(destination);
+					/* 3. establish the new type */
+					destination->number_of_components=source->number_of_components;
+					destination->read_only=source->read_only;
+					COPY(Coordinate_system)(&destination->coordinate_system,
+						&source->coordinate_system);
+					destination->type=source->type;
+
+					destination->component_names = component_names;
+
+					/* for COMPUTED_FIELD_COMPOSE only */
+					REACCESS(GROUP(FE_element))(&destination->compose_element_group,
+						source->compose_element_group);
+
+					/* for COMPUTED_FIELD_EXTERNAL only */
+					if (source->child_filename)
+					{
+						ALLOCATE(destination->child_filename, char,
+							strlen(source->child_filename) + 1);
+						strcpy(destination->child_filename, source->child_filename);
+					}
+					destination->timeout = source->timeout;
+					if (source->child_process)
+					{
+						destination->child_process = 
+							ACCESS(Child_process)(source->child_process);
+					}
+
+					/* for COMPUTED_FIELD_NEW_TYPES */
+					destination->computed_field_clear_type_specific_function = 
+						source->computed_field_clear_type_specific_function;
+					destination->computed_field_copy_type_specific_function =
+						source->computed_field_copy_type_specific_function;
+					destination->computed_field_type_specific_contents_match_function = 
+						source->computed_field_type_specific_contents_match_function;
+					destination->computed_field_is_defined_in_element_function =
+						source->computed_field_is_defined_in_element_function;
+					destination->computed_field_is_defined_at_node_function =
+						source->computed_field_is_defined_at_node_function;
+					destination->computed_field_has_numerical_components_function =
+						source->computed_field_has_numerical_components_function;
+					destination->computed_field_evaluate_cache_at_node_function =
+						source->computed_field_evaluate_cache_at_node_function;
+					destination->computed_field_evaluate_cache_in_element_function =
+						source->computed_field_evaluate_cache_in_element_function;
+					destination->computed_field_evaluate_as_string_in_element_function =
+						source->computed_field_evaluate_as_string_in_element_function;
+					destination->computed_field_evaluate_as_string_at_node_function =
+						source->computed_field_evaluate_as_string_at_node_function;
+					destination->computed_field_set_values_at_node_function =
+						source->computed_field_set_values_at_node_function;
+					destination->computed_field_set_values_in_element_function =
+						source->computed_field_set_values_in_element_function;
+					destination->computed_field_get_native_discretization_in_element_function =	
+						source->computed_field_get_native_discretization_in_element_function;
+					destination->computed_field_find_element_xi_function =	
+						source->computed_field_find_element_xi_function;
+					destination->list_Computed_field_function =
+						source->list_Computed_field_function;
+					destination->computed_field_get_command_string_function =
+						source->computed_field_get_command_string_function;
+					if (source->type_specific_data)
+					{
+						destination->type_specific_data = type_specific_data;
+					}
+					destination->type_string = source->type_string;
+						
+
+					/* for all Computed_field_types calculated from others */
+					destination->number_of_source_fields=
+						source->number_of_source_fields;
+					for (i=0;i<source->number_of_source_fields;i++)
+					{
+						source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
+					}
+					destination->source_fields=source_fields;
+
+					destination->number_of_source_values=
+						source->number_of_source_values;
+					for (i=0;i<source->number_of_source_values;i++)
+					{
+						source_values[i]=source->source_values[i];
+					}
+					destination->source_values=source_values;
+					return_code=1;
+				}
+				else
+				{
+					if (source->computed_field_copy_type_specific_function)
+					{
+						display_message(ERROR_MESSAGE,
+							"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+							"Type specific copy function failed.");
+						return_code=0;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+							"Type specific data but no copy function.");
+						return_code=0;
+					}
 					if (source_fields)
 					{
 						DEALLOCATE(source_fields);
@@ -972,6 +934,32 @@ functions to check if read_only flag is set.
 						}
 						DEALLOCATE(component_names);
 					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+					"Not enough memory");
+				return_code=0;
+				if (source_fields)
+				{
+					DEALLOCATE(source_fields);
+				}
+				if (source_values)
+				{
+					DEALLOCATE(source_values);
+				}
+				if (component_names)
+				{
+					for (i = 0 ; i < source->number_of_components ; i++)
+					{
+						if (component_names[i])
+						{
+							DEALLOCATE(component_names[i]);
+						}
+					}
+					DEALLOCATE(component_names);
 				}
 			}
 		}
@@ -1035,7 +1023,253 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,char *)
 
 DECLARE_MANAGER_FUNCTIONS(Computed_field)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,char *)
+PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Computed_field)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Computed_field requires a special version of this function mainly due to the
+finite_element type which automatically wraps FE_fields. If the computed field
+is not itself in use, it calls the field's optional computed_field_not_in_use
+function and bases its result on that.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(MANAGED_OBJECT_NOT_IN_USE(Computed_field));
+	return_code = 0;
+	if (manager && object)
+	{
+		if (!(manager->locked))
+		{
+			if (IS_OBJECT_IN_LIST(Computed_field)(object, manager->object_list))
+			{
+				if ((1 == object->access_count) ||
+					((2 == object->access_count) &&
+						IS_OBJECT_IN_LIST(Computed_field)(object,
+							manager->message->changed_object_list)))
+				{
+					if ((object->type == COMPUTED_FIELD_NEW_TYPES) &&
+						(object->computed_field_not_in_use_function))
+					{
+						return_code = object->computed_field_not_in_use_function(object);
+					}
+					else
+					{
+						return_code = 1;
+					}
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Object is not managed");
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Manager is locked");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGED_OBJECT_NOT_IN_USE(Computed_field) */
+
+DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(Computed_field,name)
+
+PROTOTYPE_MANAGER_MODIFY_FUNCTION(Computed_field, name)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Computed_field type needs a special versions of MANAGER_MODIFY
+since changes to number_of_components are not permitted unless it is NOT_IN_USE.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name)
+		*identifier_change_data;
+	struct Computed_field *tmp_object;
+
+	ENTER(MANAGER_MODIFY(Computed_field,name));
+	if (manager && object && new_data)
+	{
+		if (!(manager->locked))
+		{
+			if (IS_OBJECT_IN_LIST(Computed_field)(object, manager->object_list))
+			{
+				/* can only change number_of_components if field NOT_IN_USE */
+				if ((new_data->number_of_components == object->number_of_components) ||
+					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
+				{
+					if (tmp_object =
+						FIND_BY_IDENTIFIER_IN_LIST(Computed_field, name)(
+							new_data->name, manager->object_list))
+					{
+						if (tmp_object == object)
+						{
+							/* don't need to copy object over itself */
+							return_code = 1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_MODIFY(Computed_field,name).  "
+								"Source object is also in manager");
+							return_code = 0;
+						}
+					}
+					else
+					{
+						/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and
+							 END_CHANGE calls; manager message must not be sent while object
+							 is part changed and/or temporarily out of the manager! */
+						MANAGER_BEGIN_CHANGE(Computed_field)(manager,
+							MANAGER_CHANGE_OBJECT(Computed_field), object);
+						if (identifier_change_data =
+							LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(object))
+						{
+							if (!(return_code = MANAGER_COPY_WITH_IDENTIFIER(Computed_field,
+								name)(object, new_data)))
+							{
+								display_message(ERROR_MESSAGE,
+									"MANAGER_MODIFY(Computed_field,name).  "
+									"Could not copy object");
+							}
+							if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,
+								name)(&identifier_change_data))
+							{
+								display_message(ERROR_MESSAGE,
+									"MANAGER_MODIFY(Computed_field,name).  "
+									"Could not restore object to all indexed lists");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_MODIFY(Computed_field,name).  "
+								"Could not safely change identifier in indexed lists");
+							return_code = 0;
+						}
+						MANAGER_END_CHANGE(Computed_field)(manager);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"MANAGER_MODIFY(Computed_field,name).  "
+						"Cannot change number of components while field is in use");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"MANAGER_MODIFY(Computed_field,name).  Object is not managed");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"MANAGER_MODIFY(Computed_field,name).  Manager locked");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_MODIFY(Computed_field,name).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_MODIFY(Computed_field,name) */
+
+PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(Computed_field, name)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Computed_field type needs a special versions of MANAGER_MODIFY_NOT_IDENTIFIER
+since changes to number_of_components are not permitted unless it is NOT_IN_USE.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name));
+	if (manager && object && new_data)
+	{
+		if (!(manager->locked))
+		{
+			if (IS_OBJECT_IN_LIST(Computed_field)(object,manager->object_list))
+			{
+				/* can only change number_of_components if field NOT_IN_USE */
+				if ((new_data->number_of_components == object->number_of_components) ||
+					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
+				{
+					MANAGER_BEGIN_CHANGE(Computed_field)(manager,
+						MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field), object);
+					if (MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,
+						name)(object, new_data))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+							"Could not copy object");
+						return_code = 0;
+					}
+					MANAGER_END_CHANGE(Computed_field)(manager);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+						"Cannot change number of components while field is in use");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+					"Object is not managed");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+				"Manager is locked");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name) */
+
+DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, char *)
+DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, char *)
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager)
@@ -4376,32 +4610,6 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_external */
 
-int Computed_field_is_in_use(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Returns true if the field is accessed more than once; ie. it is in use somewhere
-else in the program - apart from being accessed by its manager.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_in_use);
-	if (field)
-	{
-		return_code=(1 < field->access_count);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Computed_field_is_in_use.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_in_use */
-
 int Computed_field_is_read_only(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 26 January 1999
@@ -5601,120 +5809,109 @@ Writes the properties of the <field> to the command window.
 int list_Computed_field_commands(struct Computed_field *field,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 16 January 2002
 
 DESCRIPTION :
-Writes the commands needed to reproduce <field> to the command window. Note that
-only fields without the read_only flag set are written out, since the others
-are created automatically by the program.
-#### Must ensure implemented correctly for new Computed_field_type. ####
+Writes the commands needed to reproduce <field> to the command window.
 ==============================================================================*/
 {
 	char *command_prefix, *command_string, *field_name, *temp_string;
-	int i,return_code;
+	int i, return_code;
 
 	ENTER(list_Computed_field_commands);
-	if (field&&(command_prefix=(char *)command_prefix_void))
+	if (field && (command_prefix = (char *)command_prefix_void))
 	{
-		/* don't list fields if read-only = automatically created by cmgui */
-		if (!field->read_only)
+		if (field_name = duplicate_string(field->name))
 		{
-			if (field_name = duplicate_string(field->name))
-			{
-				make_valid_token(&field_name);
-				display_message(INFORMATION_MESSAGE,"%s%s",command_prefix,field_name);
-				DEALLOCATE(field_name);
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE,"%s%s",command_prefix,field->name);
-			}
-			if (temp_string=Coordinate_system_string(&field->coordinate_system))
-			{
-				display_message(INFORMATION_MESSAGE," coordinate_system %s",
-					temp_string);
-				DEALLOCATE(temp_string);
-			}
-			if (COMPUTED_FIELD_NEW_TYPES == field->type)
-			{
-				if (field->computed_field_get_command_string_function)
-				{
-					if (command_string =
-						field->computed_field_get_command_string_function(field))
-					{
-						display_message(INFORMATION_MESSAGE, " %s", command_string);
-						DEALLOCATE(command_string);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "list_Computed_field_commands.  "
-						"Command string function not defined");
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, " %s",
-					Computed_field_type_to_string(field));
-				switch (field->type)
-				{
-					case COMPUTED_FIELD_COMPOSE:
-					{
-						display_message(INFORMATION_MESSAGE," texture_coordinates_field %s"
-							" find_element_xi_field %s calculate_values_field %s",
-							field->source_fields[0]->name, field->source_fields[1]->name,
-							field->source_fields[2]->name);
-					} break;
-					case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-					{
-						display_message(INFORMATION_MESSAGE,
-							" field %s",field->source_fields[0]->name);
-					} break;
-					case COMPUTED_FIELD_EXTERNAL:
-					{
-						display_message(INFORMATION_MESSAGE," number_of_values %d",
-							field->number_of_source_values);
-						display_message(INFORMATION_MESSAGE," number_of_fields %d",
-							field->number_of_source_fields);
-						display_message(INFORMATION_MESSAGE," filename %s",
-							field->child_filename);
-						if (field->number_of_source_values)
-						{
-							display_message(INFORMATION_MESSAGE," values");
-							for (i=0;i<field->number_of_source_values;i++)
-							{
-								display_message(INFORMATION_MESSAGE," %f",
-									field->source_values[i]);
-							}
-						}
-						if (field->number_of_source_fields)
-						{				
-							display_message(INFORMATION_MESSAGE," fields");
-							for (i=0;i<field->number_of_source_fields;i++)
-							{
-								display_message(INFORMATION_MESSAGE," %s",
-									field->source_fields[i]->name);
-							}
-						}
-						display_message(INFORMATION_MESSAGE," timeout %d",
-							field->timeout);
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"list_Computed_field.  Unknown field type");
-					}
-				}
-			}
-			display_message(INFORMATION_MESSAGE,";\n");
+			make_valid_token(&field_name);
+			display_message(INFORMATION_MESSAGE, "%s%s", command_prefix, field_name);
+			DEALLOCATE(field_name);
 		}
-		return_code=1;
+		if (temp_string = Coordinate_system_string(&field->coordinate_system))
+		{
+			display_message(INFORMATION_MESSAGE, " coordinate_system %s",
+				temp_string);
+			DEALLOCATE(temp_string);
+		}
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		{
+			if (field->computed_field_get_command_string_function)
+			{
+				if (command_string =
+					field->computed_field_get_command_string_function(field))
+				{
+					display_message(INFORMATION_MESSAGE, " %s", command_string);
+					DEALLOCATE(command_string);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "list_Computed_field_commands.  "
+					"Command string function not defined");
+			}
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE, " %s",
+				Computed_field_type_to_string(field));
+			switch (field->type)
+			{
+				case COMPUTED_FIELD_COMPOSE:
+				{
+					display_message(INFORMATION_MESSAGE," texture_coordinates_field %s"
+						" find_element_xi_field %s calculate_values_field %s",
+						field->source_fields[0]->name, field->source_fields[1]->name,
+						field->source_fields[2]->name);
+				} break;
+				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
+				{
+					display_message(INFORMATION_MESSAGE,
+						" field %s",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_EXTERNAL:
+				{
+					display_message(INFORMATION_MESSAGE," number_of_values %d",
+						field->number_of_source_values);
+					display_message(INFORMATION_MESSAGE," number_of_fields %d",
+						field->number_of_source_fields);
+					display_message(INFORMATION_MESSAGE," filename %s",
+						field->child_filename);
+					if (field->number_of_source_values)
+					{
+						display_message(INFORMATION_MESSAGE," values");
+						for (i=0;i<field->number_of_source_values;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %f",
+								field->source_values[i]);
+						}
+					}
+					if (field->number_of_source_fields)
+					{				
+						display_message(INFORMATION_MESSAGE," fields");
+						for (i=0;i<field->number_of_source_fields;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %s",
+								field->source_fields[i]->name);
+						}
+					}
+					display_message(INFORMATION_MESSAGE," timeout %d",
+						field->timeout);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"list_Computed_field.  Unknown field type");
+				}
+			}
+		}
+		display_message(INFORMATION_MESSAGE, ";\n");
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_commands.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -5760,10 +5957,13 @@ Second argument is a struct List_Computed_field_commands_data.
 			}
 			if (list_field)
 			{
-				return_code = list_Computed_field_commands(field,
-					(void *)list_commands_data->command_prefix) &&
+				/* do not list commands for read-only computed fields created
+					 automatically by cmgui */
+				return_code = ((field->read_only ||
+					list_Computed_field_commands(field,
+						(void *)list_commands_data->command_prefix)) &&
 					ADD_OBJECT_TO_LIST(Computed_field)(field,
-						list_commands_data->computed_field_list);
+						list_commands_data->computed_field_list));
 				list_commands_data->listed_fields++;
 			}
 		}
@@ -5865,7 +6065,6 @@ its name matches the contents of the <other_computed_field_void>.
 			{
 				if (field->type_string == other_computed_field->type_string)
 				{
-					
 					if (field->computed_field_type_specific_contents_match_function)
 					{
 						return_code = 
@@ -6051,38 +6250,3 @@ define_Computed_field_type option table when parsing commands.
 
 	return (return_code);
 } /* Computed_field_package_add_type */
-
-int Computed_field_can_be_destroyed(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 10 May 2000
-
-DESCRIPTION :
-Returns true if the <field> is only accessed once - assumed by its manager. If
-it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
-be destroyed, assuming it is only accessed by this field and its manager.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_can_be_destroyed);
-	if (field)
-	{
-		if (return_code=!Computed_field_is_in_use(field))
-		{
-			if ((field->type == COMPUTED_FIELD_NEW_TYPES) &&
-				(field->computed_field_can_be_destroyed_function))
-			{
-				return_code = field->computed_field_can_be_destroyed_function(field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_can_be_destroyed.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_can_be_destroyed */

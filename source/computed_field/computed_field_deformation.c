@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_deformation.c
 
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics deformation operations on
@@ -205,13 +205,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_2d_strain_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_2d_strain_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 13 October 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 #define Computed_field_2d_strain_evaluate_cache_at_node \
@@ -530,12 +530,21 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_2d_strain_get_command_string */
 
+#define Computed_field_2d_strain_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_2d_strain(struct Computed_field *field,
 	struct Computed_field *deformed_coordinate_field,
 	struct Computed_field *undeformed_coordinate_field,
 	struct Computed_field *fibre_angle_field)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_2D_STRAIN, combining a 
@@ -578,43 +587,7 @@ The <coordinate_field>s must have no more than 3 components.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_2d_strain_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_2d_strain_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_2d_strain_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_2d_strain_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_2d_strain_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_2d_strain_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_2d_strain_has_numerical_components;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_2d_strain_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_2d_strain_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_2d_strain_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_2d_strain_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_2d_strain_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_2d_strain_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_2d_strain_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_2d_strain_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_2d_strain;
-			field->computed_field_get_command_string_function = 
-				Computed_field_2d_strain_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
-			return_code=1;
+			COMPUTED_FIELD_ESTABLISH_METHODS(2d_strain);
 		}
 		else
 		{

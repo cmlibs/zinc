@@ -55,15 +55,17 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Computed_field_set_type_finite_element(struct Computed_field *field,
-  struct FE_field *fe_field);
+	struct FE_field *fe_field, struct MANAGER(FE_field) *fe_field_manager);
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
 <fe_field>. Makes the number of components the same as in the <fe_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
+Need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
+Computed_field_finite_element_not_in_use.
 ==============================================================================*/
 
 int Computed_field_get_type_finite_element(struct Computed_field *field,

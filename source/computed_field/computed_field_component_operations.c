@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -164,13 +164,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_multiply_components_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_multiply_components_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_multiply_components_evaluate_cache_at_node(
@@ -404,11 +404,20 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_multiply_components_get_command_string */
 
+#define Computed_field_multiply_components_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_multiply_components(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_MULTIPLY_COMPONENTS with the supplied
@@ -444,44 +453,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_multiply_components_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_multiply_components_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_multiply_components_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_multiply_components_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_multiply_components_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_multiply_components_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_multiply_components_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_multiply_components_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_multiply_components_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_multiply_components_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_multiply_components_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_multiply_components_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_multiply_components_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_multiply_components_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_multiply_components_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_multiply_components_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_multiply_components;
-			field->computed_field_get_command_string_function = 
-				Computed_field_multiply_components_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(multiply_components);
 		}
 		else
 		{
@@ -783,13 +755,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_divide_components_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_divide_components_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_divide_components_evaluate_cache_at_node(
@@ -1026,11 +998,20 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_divide_components_get_command_string */
 
+#define Computed_field_divide_components_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_divide_components(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DIVIDE_COMPONENTS with the supplied
@@ -1066,44 +1047,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_divide_components_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_divide_components_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_divide_components_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_divide_components_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_divide_components_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_divide_components_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_divide_components_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_divide_components_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_divide_components_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_divide_components_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_divide_components_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_divide_components_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_divide_components_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_divide_components_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_divide_components_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_divide_components_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_divide_components;
-			field->computed_field_get_command_string_function = 
-				Computed_field_divide_components_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(divide_components);
 		}
 		else
 		{
@@ -1405,13 +1349,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_add_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_add_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_add_evaluate_cache_at_node(
@@ -1652,11 +1596,20 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_add_get_command_string */
 
+#define Computed_field_add_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_add(struct Computed_field *field,
 	struct Computed_field *source_field_one, FE_value scale_factor1,
 	struct Computed_field *source_field_two, FE_value scale_factor2)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ADD with the supplied
@@ -1699,44 +1652,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_add_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_add_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_add_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_add_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_add_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_add_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_add_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_add_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_add_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_add_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_add_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_add_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_add_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_add_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_add_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_add_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_add;
-			field->computed_field_get_command_string_function = 
-				Computed_field_add_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(add);
 		}
 		else
 		{
@@ -2050,13 +1966,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_scale_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_scale_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_scale_evaluate_cache_at_node(
@@ -2410,10 +2326,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_scale_get_command_string */
 
+#define Computed_field_scale_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_scale(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *scale_factors)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SCALE which scales the values of the
@@ -2456,44 +2381,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_scale_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_scale_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_scale_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_scale_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_scale_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_scale_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_scale_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_scale_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_scale_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_scale_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_scale_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_scale_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_scale_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_scale_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_scale_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_scale_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_scale;
-			field->computed_field_get_command_string_function = 
-				Computed_field_scale_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(scale);
 		}
 		else
 		{
@@ -2846,13 +2734,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_clamp_maximum_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_clamp_maximum_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_clamp_maximum_evaluate_cache_at_node(
@@ -3213,10 +3101,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_clamp_maximum_get_command_string */
 
+#define Computed_field_clamp_maximum_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_clamp_maximum(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *maximums)
 /*******************************************************************************
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CLAMP_MAXIMUM with the supplied
@@ -3261,44 +3158,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_clamp_maximum_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_clamp_maximum_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_clamp_maximum_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_clamp_maximum_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_clamp_maximum_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_clamp_maximum_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_clamp_maximum_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_clamp_maximum_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_clamp_maximum_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_clamp_maximum_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_clamp_maximum_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_clamp_maximum_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_clamp_maximum_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_clamp_maximum_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_clamp_maximum_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_clamp_maximum_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_clamp_maximum;
-			field->computed_field_get_command_string_function = 
-				Computed_field_clamp_maximum_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(clamp_maximum);
 		}
 		else
 		{
@@ -3651,13 +3511,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_clamp_minimum_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_clamp_minimum_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_clamp_minimum_evaluate_cache_at_node(
@@ -4017,10 +3877,19 @@ DESCRIPTION :
 	return (command_string);
 } /* Computed_field_clamp_minimum_get_command_string */
 
+#define Computed_field_clamp_minimum_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_clamp_minimum(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *minimums)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CLAMP_MINIMUM with the supplied
@@ -4065,44 +3934,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_clamp_minimum_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_clamp_minimum_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_clamp_minimum_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_clamp_minimum_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_clamp_minimum_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_clamp_minimum_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_clamp_minimum_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_clamp_minimum_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_clamp_minimum_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_clamp_minimum_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_clamp_minimum_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_clamp_minimum_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_clamp_minimum_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_clamp_minimum_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_clamp_minimum_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_clamp_minimum_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_clamp_minimum;
-			field->computed_field_get_command_string_function = 
-				Computed_field_clamp_minimum_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(clamp_minimum);
 		}
 		else
 		{
@@ -4455,13 +4287,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_offset_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_offset_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_offset_evaluate_cache_at_node(
@@ -4787,10 +4619,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_offset_get_command_string */
 
+#define Computed_field_offset_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_offset(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *offsets)
 /*******************************************************************************
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
@@ -4834,44 +4675,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_offset_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_offset_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_offset_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_offset_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_offset_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_offset_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_offset_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_offset_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_offset_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_offset_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_offset_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_offset_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_offset_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_offset_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_offset_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_offset_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_offset;
-			field->computed_field_get_command_string_function = 
-				Computed_field_offset_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(offset);
 		}
 		else
 		{
@@ -5231,13 +5035,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_sum_components_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_sum_components_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_sum_components_evaluate_cache_at_node(
@@ -5485,10 +5289,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_sum_components_get_command_string */
 
+#define Computed_field_sum_components_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_sum_components(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *weights)
 /*******************************************************************************
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
@@ -5532,44 +5345,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_sum_components_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_sum_components_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_sum_components_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_sum_components_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_sum_components_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_sum_components_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_sum_components_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_sum_components_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_sum_components_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_sum_components_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_sum_components_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_sum_components_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_sum_components_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_sum_components_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_sum_components_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_sum_components_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_sum_components;
-			field->computed_field_get_command_string_function = 
-				Computed_field_sum_components_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(sum_components);
 		}
 		else
 		{
@@ -5922,13 +5698,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_edit_mask_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_edit_mask_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_edit_mask_evaluate_cache_at_node(
@@ -6273,10 +6049,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_edit_mask_get_command_string */
 
+#define Computed_field_edit_mask_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_edit_mask(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *edit_mask)
 /*******************************************************************************
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EDIT_MASK, returning the <source_field>
@@ -6322,44 +6107,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_edit_mask_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_edit_mask_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_edit_mask_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_edit_mask_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_edit_mask_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_edit_mask_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_edit_mask_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_edit_mask_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_edit_mask_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_edit_mask_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_edit_mask_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_edit_mask_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_edit_mask_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_edit_mask_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_edit_mask_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_edit_mask_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_edit_mask;
-			field->computed_field_get_command_string_function = 
-				Computed_field_edit_mask_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(edit_mask);
 		}
 		else
 		{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_composite.c
 
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
@@ -243,13 +243,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_composite_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_composite_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_composite_evaluate_cache_at_node(
@@ -748,13 +748,22 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_composite_get_command_string */
 
+#define Computed_field_composite_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_composite(struct Computed_field *field,
 	int number_of_components,
 	int number_of_source_fields,struct Computed_field **source_fields,
 	int number_of_source_values,FE_value *source_values,
 	int *source_field_numbers,int *source_value_numbers)
 /*******************************************************************************
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> into a composite field which returns a combination of field
@@ -934,44 +943,7 @@ although its cache may be lost.
 				data->source_value_numbers = temp_source_value_numbers;
 
 				/* Set all the methods */
-				field->computed_field_clear_type_specific_function =
-					Computed_field_composite_clear_type_specific;
-				field->computed_field_copy_type_specific_function =
-					Computed_field_composite_copy_type_specific;
-				field->computed_field_clear_cache_type_specific_function =
-					Computed_field_composite_clear_cache_type_specific;
-				field->computed_field_type_specific_contents_match_function =
-					Computed_field_composite_type_specific_contents_match;
-				field->computed_field_is_defined_in_element_function =
-					Computed_field_composite_is_defined_in_element;
-				field->computed_field_is_defined_at_node_function =
-					Computed_field_composite_is_defined_at_node;
-				field->computed_field_has_numerical_components_function =
-					Computed_field_composite_has_numerical_components;
-				field->computed_field_can_be_destroyed_function =
-					Computed_field_composite_can_be_destroyed;
-				field->computed_field_evaluate_cache_at_node_function =
-					Computed_field_composite_evaluate_cache_at_node;
-				field->computed_field_evaluate_cache_in_element_function =
-					Computed_field_composite_evaluate_cache_in_element;
-				field->computed_field_evaluate_as_string_at_node_function =
-					Computed_field_composite_evaluate_as_string_at_node;
-				field->computed_field_evaluate_as_string_in_element_function =
-					Computed_field_composite_evaluate_as_string_in_element;
-				field->computed_field_set_values_at_node_function =
-					Computed_field_composite_set_values_at_node;
-				field->computed_field_set_values_in_element_function =
-					Computed_field_composite_set_values_in_element;
-				field->computed_field_get_native_discretization_in_element_function =
-					Computed_field_composite_get_native_discretization_in_element;
-				field->computed_field_find_element_xi_function =
-					Computed_field_composite_find_element_xi;
-				field->list_Computed_field_function = 
-					list_Computed_field_composite;
-				field->computed_field_get_command_string_function = 
-					Computed_field_composite_get_command_string;
-				field->computed_field_has_multiple_times_function =
-					Computed_field_default_has_multiple_times;
+				COMPUTED_FIELD_ESTABLISH_METHODS(composite);
 			}
 			else
 			{

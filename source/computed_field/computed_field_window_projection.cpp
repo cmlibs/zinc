@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -700,13 +700,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_window_projection_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_window_projection_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_evaluate_projection_matrix(
@@ -1110,6 +1110,15 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_window_projection_get_command_string */
 
+#define Computed_field_window_projection_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_window_projection(struct Computed_field *field,
 	struct Computed_field *source_field, struct Graphics_window *graphics_window,
 	int pane_number, enum Computed_field_window_projection_type projection_type,
@@ -1162,44 +1171,7 @@ although its cache may be lost.
 			data->package = package;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_window_projection_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_window_projection_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_window_projection_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_window_projection_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_window_projection_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_window_projection_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_window_projection_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_window_projection_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_window_projection_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_window_projection_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_window_projection_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_window_projection_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_window_projection_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_window_projection_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_window_projection_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_window_projection_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_window_projection;
-			field->computed_field_get_command_string_function = 
-				Computed_field_window_projection_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(window_projection);
 		}
 		else
 		{

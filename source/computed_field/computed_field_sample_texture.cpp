@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_sample_texture.c
 
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -211,13 +211,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_sample_texture_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_sample_texture_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_sample_texture_evaluate_cache_at_node(
@@ -505,11 +505,20 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_sample_texture_get_command_string */
 
+#define Computed_field_sample_texture_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_sample_texture(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Texture *texture,
 	float minimum, float maximum)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SAMPLE_TEXTURE with the supplied
@@ -552,44 +561,7 @@ although its cache may be lost.
 				data->maximum = maximum;
 
 				/* Set all the methods */
-				field->computed_field_clear_type_specific_function =
-					Computed_field_sample_texture_clear_type_specific;
-				field->computed_field_copy_type_specific_function =
-					Computed_field_sample_texture_copy_type_specific;
-				field->computed_field_clear_cache_type_specific_function =
-					Computed_field_sample_texture_clear_cache_type_specific;
-				field->computed_field_type_specific_contents_match_function =
-					Computed_field_sample_texture_type_specific_contents_match;
-				field->computed_field_is_defined_in_element_function =
-					Computed_field_sample_texture_is_defined_in_element;
-				field->computed_field_is_defined_at_node_function =
-					Computed_field_sample_texture_is_defined_at_node;
-				field->computed_field_has_numerical_components_function =
-					Computed_field_sample_texture_has_numerical_components;
-				field->computed_field_can_be_destroyed_function =
-					Computed_field_sample_texture_can_be_destroyed;
-				field->computed_field_evaluate_cache_at_node_function =
-					Computed_field_sample_texture_evaluate_cache_at_node;
-				field->computed_field_evaluate_cache_in_element_function =
-					Computed_field_sample_texture_evaluate_cache_in_element;
-				field->computed_field_evaluate_as_string_at_node_function =
-					Computed_field_sample_texture_evaluate_as_string_at_node;
-				field->computed_field_evaluate_as_string_in_element_function =
-					Computed_field_sample_texture_evaluate_as_string_in_element;
-				field->computed_field_set_values_at_node_function =
-					Computed_field_sample_texture_set_values_at_node;
-				field->computed_field_set_values_in_element_function =
-					Computed_field_sample_texture_set_values_in_element;
-				field->computed_field_get_native_discretization_in_element_function =
-					Computed_field_sample_texture_get_native_discretization_in_element;
-				field->computed_field_find_element_xi_function =
-					Computed_field_sample_texture_find_element_xi;
-				field->list_Computed_field_function = 
-					list_Computed_field_sample_texture;
-				field->computed_field_get_command_string_function = 
-					Computed_field_sample_texture_get_command_string;
-				field->computed_field_has_multiple_times_function = 
-					Computed_field_default_has_multiple_times;
+				COMPUTED_FIELD_ESTABLISH_METHODS(sample_texture);
 			}
 			else
 			{

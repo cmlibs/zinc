@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.h
 
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -22,7 +22,7 @@ typedef int (*Computed_field_is_defined_at_node_function)(
 	struct Computed_field *field,struct FE_node *node);
 typedef int (*Computed_field_has_numerical_components_function)(
 	struct Computed_field *field);
-typedef int (*Computed_field_can_be_destroyed_function)(
+typedef int (*Computed_field_not_in_use_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_evaluate_cache_at_node_function)(
 	struct Computed_field *field,struct FE_node *node,FE_value time);
@@ -141,8 +141,8 @@ DESCRIPTION :
 	   computed_field_is_defined_at_node_function;
 	Computed_field_has_numerical_components_function
 	   computed_field_has_numerical_components_function;
-	Computed_field_can_be_destroyed_function
-	   computed_field_can_be_destroyed_function;
+	Computed_field_not_in_use_function
+	   computed_field_not_in_use_function;
 	Computed_field_evaluate_cache_at_node_function 
 	   computed_field_evaluate_cache_at_node_function;
 	Computed_field_evaluate_cache_in_element_function 
@@ -181,6 +181,55 @@ DESCRIPTION :
 
 	int access_count;
 }; /* struct Computed_field */
+
+#define COMPUTED_FIELD_ESTABLISH_METHODS( field_type ) \
+/***************************************************************************** \
+LAST MODIFIED : 21 January 2002 \
+\
+DESCRIPTION : \
+Each Computed_field_set_type function should call this macro to establish the \
+virtual functions that give the field its particular behaviour; Each function \
+must therefore be defined for each field type, even if it is set to NULL or \
+some default function. \
+============================================================================*/ \
+field->computed_field_clear_type_specific_function = \
+	Computed_field_ ## field_type ## _clear_type_specific; \
+field->computed_field_copy_type_specific_function = \
+	Computed_field_ ## field_type ## _copy_type_specific; \
+field->computed_field_clear_cache_type_specific_function = \
+	Computed_field_ ## field_type ## _clear_cache_type_specific; \
+field->computed_field_type_specific_contents_match_function = \
+	Computed_field_ ## field_type ## _type_specific_contents_match; \
+field->computed_field_is_defined_in_element_function = \
+	Computed_field_ ## field_type ## _is_defined_in_element; \
+field->computed_field_is_defined_at_node_function = \
+	Computed_field_ ## field_type ## _is_defined_at_node; \
+field->computed_field_has_numerical_components_function = \
+	Computed_field_ ## field_type ## _has_numerical_components; \
+field->computed_field_not_in_use_function = \
+	Computed_field_ ## field_type ## _not_in_use; \
+field->computed_field_evaluate_cache_at_node_function = \
+	Computed_field_ ## field_type ## _evaluate_cache_at_node; \
+field->computed_field_evaluate_cache_in_element_function = \
+	Computed_field_ ## field_type ## _evaluate_cache_in_element; \
+field->computed_field_evaluate_as_string_at_node_function = \
+	Computed_field_ ## field_type ## _evaluate_as_string_at_node; \
+field->computed_field_evaluate_as_string_in_element_function = \
+	Computed_field_ ## field_type ## _evaluate_as_string_in_element; \
+field->computed_field_set_values_at_node_function = \
+	Computed_field_ ## field_type ## _set_values_at_node; \
+field->computed_field_set_values_in_element_function = \
+	Computed_field_ ## field_type ## _set_values_in_element; \
+field->computed_field_get_native_discretization_in_element_function = \
+	Computed_field_ ## field_type ## _get_native_discretization_in_element; \
+field->computed_field_find_element_xi_function = \
+	Computed_field_ ## field_type ## _find_element_xi; \
+field->list_Computed_field_function = \
+	list_Computed_field_ ## field_type; \
+field->computed_field_get_command_string_function =  \
+	Computed_field_ ## field_type ## _get_command_string; \
+field->computed_field_has_multiple_times_function =  \
+	Computed_field_ ## field_type ## _has_multiple_times
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);

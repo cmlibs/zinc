@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 15 January 2002
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Implements computed_fields for calculating various derivative quantities such
@@ -251,13 +251,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_derivative_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_derivative_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 #define Computed_field_derivative_evaluate_cache_at_node \
@@ -457,10 +457,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_derivative_get_command_string */
 
+#define Computed_field_derivative_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_derivative(struct Computed_field *field,
 	struct Computed_field *source_field, int xi_index)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DERIVATIVE with the supplied
@@ -495,44 +504,7 @@ although its cache may be lost.
 			data->xi_index = xi_index;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_derivative_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_derivative_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_derivative_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_derivative_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_derivative_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_derivative_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_derivative_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_derivative_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_derivative_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_derivative_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_derivative_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_derivative_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_derivative_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_derivative_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_derivative_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_derivative_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_derivative;
-			field->computed_field_get_command_string_function = 
-				Computed_field_derivative_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(derivative);
 		}
 		else
 		{
@@ -838,13 +810,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_curl_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_curl_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_evaluate_curl(struct Computed_field *field,
@@ -1128,10 +1100,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_curl_get_command_string */
 
+#define Computed_field_curl_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_curl(struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CURL, combining a vector and
@@ -1173,44 +1154,7 @@ element and the number of components in coordinate_field & vector_field differ.
 				field->type_specific_data = (void *)1;
 
 				/* Set all the methods */
-				field->computed_field_clear_type_specific_function =
-					Computed_field_curl_clear_type_specific;
-				field->computed_field_copy_type_specific_function =
-					Computed_field_curl_copy_type_specific;
-				field->computed_field_clear_cache_type_specific_function =
-					Computed_field_curl_clear_cache_type_specific;
-				field->computed_field_type_specific_contents_match_function =
-					Computed_field_curl_type_specific_contents_match;
-				field->computed_field_is_defined_in_element_function =
-					Computed_field_curl_is_defined_in_element;
-				field->computed_field_is_defined_at_node_function =
-					Computed_field_curl_is_defined_at_node;
-				field->computed_field_has_numerical_components_function =
-					Computed_field_curl_has_numerical_components;
-				field->computed_field_can_be_destroyed_function =
-					Computed_field_curl_can_be_destroyed;
-				field->computed_field_evaluate_cache_at_node_function =
-					Computed_field_curl_evaluate_cache_at_node;
-				field->computed_field_evaluate_cache_in_element_function =
-					Computed_field_curl_evaluate_cache_in_element;
-				field->computed_field_evaluate_as_string_at_node_function =
-					Computed_field_curl_evaluate_as_string_at_node;
-				field->computed_field_evaluate_as_string_in_element_function =
-					Computed_field_curl_evaluate_as_string_in_element;
-				field->computed_field_set_values_at_node_function =
-					Computed_field_curl_set_values_at_node;
-				field->computed_field_set_values_in_element_function =
-					Computed_field_curl_set_values_in_element;
-				field->computed_field_get_native_discretization_in_element_function =
-					Computed_field_curl_get_native_discretization_in_element;
-				field->computed_field_find_element_xi_function =
-					Computed_field_curl_find_element_xi;
-				field->list_Computed_field_function = 
-					list_Computed_field_curl;
-				field->computed_field_get_command_string_function = 
-					Computed_field_curl_get_command_string;
-				field->computed_field_has_multiple_times_function = 
-					Computed_field_default_has_multiple_times;
+				COMPUTED_FIELD_ESTABLISH_METHODS(curl);
 			}
 			else
 			{
@@ -1535,13 +1479,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_divergence_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_divergence_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 static int Computed_field_evaluate_divergence(struct Computed_field *field,
@@ -1826,10 +1770,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_divergence_get_command_string */
 
+#define Computed_field_divergence_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_divergence(struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DIVERGENCE, combining a vector and
@@ -1874,44 +1827,7 @@ element and the number of components in coordinate_field & vector_field differ.
 				field->type_specific_data = (void *)1;
 
 				/* Set all the methods */
-				field->computed_field_clear_type_specific_function =
-					Computed_field_divergence_clear_type_specific;
-				field->computed_field_copy_type_specific_function =
-					Computed_field_divergence_copy_type_specific;
-				field->computed_field_clear_cache_type_specific_function =
-					Computed_field_divergence_clear_cache_type_specific;
-				field->computed_field_type_specific_contents_match_function =
-					Computed_field_divergence_type_specific_contents_match;
-				field->computed_field_is_defined_in_element_function =
-					Computed_field_divergence_is_defined_in_element;
-				field->computed_field_is_defined_at_node_function =
-					Computed_field_divergence_is_defined_at_node;
-				field->computed_field_has_numerical_components_function =
-					Computed_field_divergence_has_numerical_components;
-				field->computed_field_can_be_destroyed_function =
-					Computed_field_divergence_can_be_destroyed;
-				field->computed_field_evaluate_cache_at_node_function =
-					Computed_field_divergence_evaluate_cache_at_node;
-				field->computed_field_evaluate_cache_in_element_function =
-					Computed_field_divergence_evaluate_cache_in_element;
-				field->computed_field_evaluate_as_string_at_node_function =
-					Computed_field_divergence_evaluate_as_string_at_node;
-				field->computed_field_evaluate_as_string_in_element_function =
-					Computed_field_divergence_evaluate_as_string_in_element;
-				field->computed_field_set_values_at_node_function =
-					Computed_field_divergence_set_values_at_node;
-				field->computed_field_set_values_in_element_function =
-					Computed_field_divergence_set_values_in_element;
-				field->computed_field_get_native_discretization_in_element_function =
-					Computed_field_divergence_get_native_discretization_in_element;
-				field->computed_field_find_element_xi_function =
-					Computed_field_divergence_find_element_xi;
-				field->list_Computed_field_function = 
-					list_Computed_field_divergence;
-				field->computed_field_get_command_string_function = 
-					Computed_field_divergence_get_command_string;
-				field->computed_field_has_multiple_times_function = 
-					Computed_field_default_has_multiple_times;
+				COMPUTED_FIELD_ESTABLISH_METHODS(divergence);
 			}
 			else
 			{
@@ -2236,13 +2152,13 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_gradient_can_be_destroyed \
-	(Computed_field_can_be_destroyed_function)NULL
+#define Computed_field_gradient_not_in_use \
+	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-No special criteria on the destroy
+No special criteria.
 ==============================================================================*/
 
 #define Computed_field_gradient_evaluate_cache_at_node \
@@ -2504,10 +2420,19 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_gradient_get_command_string */
 
+#define Computed_field_gradient_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
 int Computed_field_set_type_gradient(struct Computed_field *field,
 	struct Computed_field *source_field,struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Converts <field> to type 'gradient' which returns the gradient of <source_field>
@@ -2551,44 +2476,7 @@ although its cache may be lost.
 			field->type_specific_data = (void *)1;
 
 			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_gradient_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_gradient_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_gradient_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_gradient_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_gradient_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_gradient_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_gradient_has_numerical_components;
-			field->computed_field_can_be_destroyed_function =
-				Computed_field_gradient_can_be_destroyed;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_gradient_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_gradient_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_gradient_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_gradient_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_gradient_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_gradient_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_gradient_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_gradient_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_gradient;
-			field->computed_field_get_command_string_function = 
-				Computed_field_gradient_get_command_string;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+			COMPUTED_FIELD_ESTABLISH_METHODS(gradient);
 		}
 		else
 		{
