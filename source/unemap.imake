@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 26 December 2000
+XCOMM LAST MODIFIED : 4 March 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -46,6 +46,7 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #define CombineSignalsTarget unemap/combine_signals64
 #define DifferenceSignalsTarget unemap/difference_signals64
 #define ExtractSignalTarget unemap/extract_signal64
+#define FixEcgTarget unemap/fix_ecg64
 #define Img2sigTarget unemap/img2sig64
 #define MakePlaqueTarget unemap/make_plaque64
 #define OpticalSignalsTarget unemap/optical_signals64
@@ -86,6 +87,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define CombineSignalsTarget unemap/combine_signals_optimised
 #define DifferenceSignalsTarget unemap/difference_signals_optimised
 #define ExtractSignalTarget unemap/extract_signal_optimised
+#define FixEcgTarget unemap/fix_ecg_optimised
 #define Img2sigTarget unemap/img2sig_optimised
 #define MakePlaqueTarget unemap/make_plaque_optimised
 #define OpticalSignalsTarget unemap/optical_signals_optimised
@@ -126,6 +128,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define CombineSignalsTarget unemap/combine_signals_nodes
 #define DifferenceSignalsTarget unemap/difference_signals_nodes
 #define ExtractSignalTarget unemap/extract_signal_nodes
+#define FixEcgTarget unemap/fix_ecg_nodes
 #define Img2sigTarget unemap/img2sig_nodes
 #define MakePlaqueTarget unemap/make_plaque_nodes
 #define OpticalSignalsTarget unemap/optical_signals_nodes
@@ -166,6 +169,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define CombineSignalsTarget unemap/combine_signals_3d
 #define DifferenceSignalsTarget unemap/difference_signals_3d
 #define ExtractSignalTarget unemap/extract_signal_3d
+#define FixEcgTarget unemap/fix_ecg_3d
 #define Img2sigTarget unemap/img2sig_3d
 #define MakePlaqueTarget unemap/make_plaque_3d
 #define OpticalSignalsTarget unemap/optical_signals_3d
@@ -207,6 +211,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define CombineSignalsTarget unemap/combine_signals32
 #define DifferenceSignalsTarget unemap/difference_signals32
 #define ExtractSignalTarget unemap/extract_signal32
+#define FixEcgTarget unemap/fix_ecg32
 #define Img2sigTarget unemap/img2sig32
 #define MakePlaqueTarget unemap/make_plaque32
 #define OpticalSignalsTarget unemap/optical_signals32
@@ -244,6 +249,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define CombineSignalsTarget unemap/combine_signals32
 #define DifferenceSignalsTarget unemap/difference_signals32
 #define ExtractSignalTarget unemap/extract_signal32
+#define FixEcgTarget unemap/fix_ecg32
 #define Img2sigTarget unemap/img2sig32
 #define MakePlaqueTarget unemap/make_plaque32
 #define OpticalSignalsTarget unemap/optical_signals32
@@ -290,6 +296,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define CombineSignalsTarget unemap/combine_signals_linux_nodes
 #define DifferenceSignalsTarget unemap/difference_signals_linux_nodes
 #define ExtractSignalTarget unemap/extract_signal_linux_nodes
+#define FixEcgTarget unemap/fix_ecg_linux_nodes
 #define Img2sigTarget unemap/img2sig_linux_nodes
 #define MakePlaqueTarget unemap/make_plaque_linux_nodes
 #define OpticalSignalsTarget unemap/optical_signals_linux_nodes
@@ -331,6 +338,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 #define CombineSignalsTarget unemap/combine_signals_linux_3d
 #define DifferenceSignalsTarget unemap/difference_signals_linux_3d
 #define ExtractSignalTarget unemap/extract_signal_linux_3d
+#define FixEcgTarget unemap/fix_ecg_linux_3d
 #define Img2sigTarget unemap/img2sig_linux_3d
 #define MakePlaqueTarget unemap/make_plaque_linux_3d
 #define OpticalSignalsTarget unemap/optical_signals_linux_3d
@@ -369,6 +377,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
 #define CombineSignalsTarget unemap/combine_signals_linux
 #define DifferenceSignalsTarget unemap/difference_signals_linux
 #define ExtractSignalTarget unemap/extract_signal_linux
+#define FixEcgTarget unemap/fix_ecg_linux_linux
 #define Img2sigTarget unemap/img2sig_linux
 #define MakePlaqueTarget unemap/make_plaque_linux
 #define OpticalSignalsTarget unemap/optical_signals_linux
@@ -887,10 +896,11 @@ general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
 utilities : AffineTarget Bmsi2sigTarget Biosense2sigTarget Biosense2vrmlTarget \
 CalculateEventsTarget ChangeCalibrationTarget ChangeChannelsTarget \
 ChangeConfigurationTarget ChangeEventsTarget ChangeFrequencyTarget \
-CombineSignalsTarget DifferenceSignalsTarget ExtractSignalTarget Img2sigTarget \
-MakePlaqueTarget OpticalSignalsTarget Plt2cnfgTarget Posdat2sigTarget \
-RatioSignalsTarget RegisterTarget Sig2textTarget TestDelauneyTarget \
-TestUnemapHardwareTarget Text2sigTarget Tuff2sigTarget UniqueChannelsTarget
+CombineSignalsTarget DifferenceSignalsTarget ExtractSignalTarget FixEcgTarget \
+Img2sigTarget MakePlaqueTarget OpticalSignalsTarget Plt2cnfgTarget \
+Posdat2sigTarget RatioSignalsTarget RegisterTarget Sig2textTarget \
+TestDelauneyTarget TestUnemapHardwareTarget Text2sigTarget Tuff2sigTarget \
+UniqueChannelsTarget
 
 AFFINE_SRCS = \
 	unemap/utilities/affine.c \
@@ -1062,6 +1072,20 @@ EXTRACT_SIGNAL_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(ExtractSignalTarget,$(UTILITIES_PATH),EXTRACT_SIGNAL_SRCS,EXTRACT_SIGNAL_OBJSA,EXTRACT_SIGNAL_OBJSB,EXTRACT_SIGNAL_OBJS,-lm) 
+
+FIX_ECG_SRCS = \
+	unemap/utilities/fix_ecg.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/interpolate.c \
+	unemap/rig.c \
+	user_interface/message.c
+
+BuildNormalTarget(FixEcgTarget,$(UTILITIES_PATH),FIX_ECG_SRCS,FIX_ECG_OBJSA,FIX_ECG_OBJSB,FIX_ECG_OBJS,-lm) 
 
 IMG2SIG_SRCS = \
 	unemap/utilities/img2sig.c \
