@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text2sig.c
 
-LAST MODIFIED : 12 September 2003
+LAST MODIFIED : 24 September 2003
 
 DESCRIPTION :
 Reads in a text signal file.  Finds the end of the header as the last line
@@ -36,6 +36,7 @@ int main(int argc,char *argv[])
 		number_of_sample_lines,number_of_signals,return_code,*time,
 		time_column_absent;
 	struct Device **device;
+	struct Region_list_item *region_list_item,*region_list_item_previous;
 	struct Rig *signal_rig;
 	struct Signal_buffer *buffer;
 
@@ -75,7 +76,7 @@ int main(int argc,char *argv[])
 				number_of_good_sample_lines=0;
 				number_of_bad_sample_lines=0;
 				while ((EOF!=fscanf(input_file,"%*[ \t]"))&&
-					(EOF!=(return_code=fscanf(input_file,"%[^ \t\n]",device_name))))
+					(EOF!=(return_code=fscanf(input_file,"%[^ \t\n\r]",device_name))))
 				{
 					if (1==return_code)
 					{
@@ -154,11 +155,19 @@ int main(int argc,char *argv[])
 				else
 				{
 					/* skip "time" */
-					fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+					fscanf(input_file," %[^ \t\n\r]%c",device_name,&end_of_line);
+					if ('\r'==end_of_line)
+					{
+						end_of_line=(char)fgetc(input_file);
+					}
 					if ('\n'!=end_of_line)
 					{
 						fscanf(input_file,"%*[ \t]");
 						end_of_line=(char)fgetc(input_file);
+						if ('\r'==end_of_line)
+						{
+							end_of_line=(char)fgetc(input_file);
+						}
 						if ('\n'!=end_of_line)
 						{
 							ungetc((int)end_of_line,input_file);
@@ -168,11 +177,19 @@ int main(int argc,char *argv[])
 				while ('\n'!=end_of_line)
 				{
 					number_of_signals++;
-					fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+					fscanf(input_file," %[^ \t\n\r]%c",device_name,&end_of_line);
+					if ('\r'==end_of_line)
+					{
+						end_of_line=(char)fgetc(input_file);
+					}
 					if ('\n'!=end_of_line)
 					{
 						fscanf(input_file,"%*[ \t]");
 						end_of_line=(char)fgetc(input_file);
+						if ('\r'==end_of_line)
+						{
+							end_of_line=(char)fgetc(input_file);
+						}
 						if ('\n'!=end_of_line)
 						{
 							ungetc((int)end_of_line,input_file);
@@ -203,21 +220,37 @@ int main(int argc,char *argv[])
 							{
 								fscanf(input_file,"%*[^\n] ");
 							}
-							if (!time_column_absent)
+							if (0<header_end)
 							{
-								/* skip "time" column */
-								fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+								if (!time_column_absent)
+								{
+									/* skip "time" column */
+									fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+								}
 							}
 							i=0;
 							while (return_code&&(i<number_of_signals))
 							{
-								fscanf(input_file," %[^ \t\n]",device_name);
 								device=signal_rig->devices;
 								j=number_of_devices;
-								while ((j>0)&&strcmp(device_name,(*device)->description->name))
+								if (0<header_end)
 								{
-									device++;
-									j--;
+									fscanf(input_file," %[^ \t\n]",device_name);
+									while ((j>0)&&strcmp(device_name,
+										(*device)->description->name))
+									{
+										device++;
+										j--;
+									}
+								}
+								else
+								{
+									while ((j>0)&&(!(*device)||!((*device)->channel)||
+										(i+1!=(*device)->channel->number)))
+									{
+										device++;
+										j--;
+									}
 								}
 								if (j>0)
 								{
@@ -230,9 +263,69 @@ int main(int argc,char *argv[])
 								}
 								else
 								{
-									printf("WARNING.  Unknown device.  %s\n",device_name);
+									if (0<header_end)
+									{
+										printf("WARNING.  Unknown device.  %s\n",device_name);
+									}
+									else
+									{
+										printf("WARNING.  Unknown channel.  %d\n",i+1);
+									}
 								}
 								i++;
+							}
+							/* get rid of devices without signals */
+							region_list_item=signal_rig->region_list;
+							while (region_list_item)
+							{
+								if (region_list_item->region)
+								{
+									region_list_item->region->number_of_devices=0;
+								}
+								region_list_item=region_list_item->next;
+							}
+							j=0;
+							device=signal_rig->devices;
+							for (i=0;i<number_of_devices;i++)
+							{
+								if ((device[i])->signal)
+								{
+									if (i!=j)
+									{
+										device[j]=device[i];
+									}
+									if ((device[i]->description)&&
+										(device[i]->description->region))
+									{
+										(device[i]->description->region->number_of_devices)++;
+									}
+									j++;
+								}
+							}
+							signal_rig->number_of_devices=j;
+							region_list_item=signal_rig->region_list;
+							region_list_item_previous=NULL;
+							signal_rig->number_of_regions=0;
+							while (region_list_item)
+							{
+								if ((region_list_item->region)&&
+									(0<region_list_item->region->number_of_devices))
+								{
+									(signal_rig->number_of_regions)++;
+									region_list_item_previous=region_list_item;
+								}
+								else
+								{
+									if (region_list_item_previous)
+									{
+										region_list_item_previous->next=region_list_item->next;
+									}
+									else
+									{
+										signal_rig->region_list=region_list_item->next;
+									}
+								}
+								region_list_item=region_list_item->next;
 							}
 						}
 						else
@@ -267,7 +360,7 @@ int main(int argc,char *argv[])
 								number_of_columns=0;
 								/* time */
 								if (time_column_absent||
-									((2==fscanf(input_file," %[^ \t\n]%c",device_name,
+									((2==fscanf(input_file," %[^ \t\n\r]%c",device_name,
 									&end_of_line))&&(1==sscanf(device_name,"%f",&time_float))))
 								{
 									if (time_column_absent)
@@ -275,6 +368,10 @@ int main(int argc,char *argv[])
 										*time=number_of_good_sample_lines;
 										fscanf(input_file,"%*[ \t]");
 										end_of_line=(char)fgetc(input_file);
+										if ('\r'==end_of_line)
+										{
+											end_of_line=(char)fgetc(input_file);
+										}
 										if ('\n'!=end_of_line)
 										{
 											ungetc((int)end_of_line,input_file);
@@ -290,21 +387,33 @@ int main(int argc,char *argv[])
 									{
 										fscanf(input_file,"%*[ \t]");
 										end_of_line=(char)fgetc(input_file);
+										if ('\r'==end_of_line)
+										{
+											end_of_line=(char)fgetc(input_file);
+										}
 										if ('\n'!=end_of_line)
 										{
 											ungetc((int)end_of_line,input_file);
 										}
 									}
 									while (('\n'!=end_of_line)&&(2==fscanf(input_file,
-										" %[^ \t\n]%c",device_name,&end_of_line))&&
+										" %[^ \t\n\r]%c",device_name,&end_of_line))&&
 										(1==sscanf(device_name,"%f",value)))
 									{
 										value++;
 										number_of_columns++;
+										if ('\r'==end_of_line)
+										{
+											end_of_line=(char)fgetc(input_file);
+										}
 										if ('\n'!=end_of_line)
 										{
 											fscanf(input_file,"%*[ \t]");
 											end_of_line=(char)fgetc(input_file);
+											if ('\r'==end_of_line)
+											{
+												end_of_line=(char)fgetc(input_file);
+											}
 											if ('\n'!=end_of_line)
 											{
 												ungetc((int)end_of_line,input_file);
