@@ -22,8 +22,10 @@ DESCRIPTION :
 #if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_component_operations.h"
+#include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
@@ -1273,6 +1275,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 	return(the_field_order_info);
 }/* create_mapping_fields */
 #endif /* #if defined (UNEMAP_USE_3D) */
+
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *create_mapping_template_node(enum Region_type region_type,
 	struct FE_field_order_info *field_order_info,
@@ -2818,7 +2821,7 @@ LAST MODIFIED : 10 November 2000
 DESCRIPTION :
 Makes the node and element groups for the mapped torso.
 Does by adding all the nodes/elements from the loaded default torso that have
-their z position within the z range of the map_node_group nodes. map_node_group
+their z position within the z range of the node_group nodes. node_group
 nodes z values are defined by the electrodes.
 ==============================================================================*/
 {
@@ -2827,12 +2830,12 @@ nodes z values are defined by the electrodes.
 	char mapped_torso_group_name[]="mapped_torso";
 	FE_value min_x,max_x,min_y,max_y,min_z,max_z;
 	struct Element_torso_data element_torso_data;
-	struct FE_field *map_position_field,*torso_position_field;
+	struct FE_field *electrode_position_field,*torso_position_field;
 	struct FE_node *torso_node;	
 	struct FE_node_list_conditional_data list_conditional_data;	
 	struct GROUP(FE_element) *default_torso_element_group,
 		*mapped_torso_element_group;	
-	struct GROUP(FE_node) *map_node_group,*mapped_torso_node_group,
+	struct GROUP(FE_node) *node_group,*mapped_torso_node_group,
 		*default_torso_node_group;
 	struct LIST(FE_node) *torso_correct_z_node_list;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
@@ -2848,9 +2851,9 @@ nodes z values are defined by the electrodes.
 	element_manager=(struct MANAGER(FE_element) *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
-	map_node_group=(struct GROUP(FE_node) *)NULL;
+	node_group=(struct GROUP(FE_node) *)NULL;
 	default_torso_node_group=(struct GROUP(FE_node) *)NULL;
-	map_position_field=(struct FE_field *)NULL;
+	electrode_position_field=(struct FE_field *)NULL;
 	torso_position_field=(struct FE_field *)NULL;
 	torso_node=(struct FE_node *)NULL;
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
@@ -2868,15 +2871,15 @@ nodes z values are defined by the electrodes.
 		name)(default_torso_group_name,element_group_manager)))
 	{
 		return_code=1;
-		map_3d_package=get_Region_map_3d_package(region);	
+		map_3d_package=get_Region_map_3d_package(region);
 		/* get min and max of cylinder */
-		map_node_group=get_map_3d_package_node_group(map_3d_package);
-		map_position_field=get_map_3d_package_position_field(map_3d_package);
-		get_node_group_position_min_max(map_node_group,map_position_field,
+		node_group=get_Region_unrejected_node_group(region);
+		electrode_position_field=get_Region_electrode_position_field(region);
+		get_node_group_position_min_max(node_group,electrode_position_field,
 			&min_x,&max_x,&min_y,&max_y,&min_z,&max_z);
 		/* now have min,max z to work with */
 		default_torso_node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
-			name)(default_torso_group_name,node_group_manager);			
+			name)(default_torso_group_name,node_group_manager);
 		torso_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
 			((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,default_torso_node_group);
 		torso_position_field=get_FE_node_default_coordinate_field(torso_node);				
@@ -3443,7 +3446,7 @@ do similar with the mapped torso node group
 				if (map_3d_package)
 				{
 					/*this will do a deaccess*/
-					set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
+					set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);				
 				}
 				/* rebuild  map & node and element groups */	
 				interpolation_function_to_node_group(&node_order_info,field_order_info,
@@ -3628,9 +3631,10 @@ static int map_show_surface(struct Scene *scene,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
 	struct Colour *no_interpolation_colour, struct Time_object *time_object,
 	struct User_interface *user_interface,int direct_interpolation,
-	int autoranging_spectrum)
+	int autoranging_spectrum,struct Texture *skin_texture,
+	struct Computed_field *skin_texture_coords)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
 Adds map's surfaces in the given <material> to the graphical finite element for
@@ -3646,35 +3650,45 @@ Also applies <number_of_contours> contours to surface.
 {
 	int existing_autorange_spectrum_flag,maximum_discretization,
 		required_discretization,return_code,update_settings;
+	struct Colour white;
 	struct Element_discretization discretization;
 	struct GT_element_group *gt_element_group;
-	struct Computed_field *existing_data_field;
+	struct Computed_field *existing_data_field,*new_data_field,
+		*new_skin_texture_coords;
 	struct Graphical_material *default_selected_material,
 		*material_copy;
-	struct GT_element_settings *settings,*new_settings;
+	struct GT_element_settings *old_settings,*new_settings;
 	struct Scene_object *scene_object;
 	struct Spectrum *existing_spectrum;
+	struct Texture *new_skin_texture;
 
 	ENTER(map_make_surfaces);
+	new_data_field=( struct Computed_field *)NULL;
+	new_skin_texture_coords=( struct Computed_field *)NULL;
+	new_skin_texture=(struct Texture *)NULL;
 	gt_element_group=(struct GT_element_group *)NULL;
-	settings=(struct GT_element_settings *)NULL;
+	old_settings=(struct GT_element_settings *)NULL;
 	new_settings=(struct GT_element_settings *)NULL;
 	material_copy=(struct Graphical_material *)NULL;	
 	default_selected_material=(struct Graphical_material *)NULL;
 	existing_data_field=(struct Computed_field *)NULL;
 	existing_spectrum=(struct Spectrum *)NULL;	
 	if (scene&&element_group&&material&&user_interface&&
-		((spectrum&&data_field&&!no_interpolation_colour)
-		||(!spectrum&&!data_field&&no_interpolation_colour)))
+		((spectrum&&data_field&&!no_interpolation_colour&&!skin_texture&&!skin_texture_coords)
+		||(!spectrum&&!data_field&&no_interpolation_colour&&!skin_texture&&!skin_texture_coords)
+			||(spectrum&&!data_field&&direct_interpolation&&skin_texture&&skin_texture_coords)))
 	{				
 		if ((scene_object=Scene_get_scene_object_with_element_group(scene,element_group))&&
 			(gt_element_group=Scene_object_get_graphical_element_group(scene_object))&&			 
 			 (default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 			 ("default_selected",graphical_material_manager)))
 		{
+			white.red=1.0;
+			white.green=1.0;
+			white.blue=1.0;
 			GT_element_group_get_element_discretization(gt_element_group,
 				&discretization);			
-			if (direct_interpolation)
+			if ((direct_interpolation)&&(!skin_texture))
 			{
 				required_discretization=1;
 			}
@@ -3695,175 +3709,108 @@ Also applies <number_of_contours> contours to surface.
 			}		
 			MANAGER_BEGIN_CACHE(Graphical_material)(graphical_material_manager);			 
 			/* do we already have settings, ie already created graphical element group?*/
-			if (settings=first_settings_in_GT_element_group_that(gt_element_group,
+			if (old_settings=first_settings_in_GT_element_group_that(gt_element_group,
 				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_SURFACES))
-			{				
+			{	
 				return_code=1;
-				GT_element_settings_get_data_spectrum_parameters(settings,&existing_data_field,
+				GT_element_settings_get_data_spectrum_parameters(old_settings,&existing_data_field,
 					&existing_spectrum);
-				existing_autorange_spectrum_flag = GT_element_settings_get_autorange_spectrum_flag(settings);				
-				/* did we use a spectrum and data_field last time?*/
-				update_settings = 0;
-				if (existing_spectrum&&existing_data_field)
+				existing_autorange_spectrum_flag =
+					GT_element_settings_get_autorange_spectrum_flag(old_settings);				
+				update_settings = 0;			
+				if(skin_texture)
 				{
-					if (data_field&&spectrum)
-					{
-						/* change the spectrum, if it's different from the existing one */
-						if (!((data_field==existing_data_field)&&(spectrum==existing_spectrum)&&
-							(existing_autorange_spectrum_flag==autoranging_spectrum)))
-						{
-							update_settings = 1;
-						}
-					}/* if (data_field&&spectrum) */
-					else
-					{
-						update_settings = 1;
-					}/* if (!(data_field&&spectrum))	*/			
+					update_settings = 1;
 				}
 				else
 				{
-					if (data_field&&spectrum)
+					/* change the spectrum, if it's different from the existing one */
+					if (!((data_field==existing_data_field)&&(spectrum==existing_spectrum)&&
+						(existing_autorange_spectrum_flag==autoranging_spectrum)))
 					{
 						update_settings = 1;
-					}
-				}
-				if (update_settings)
-				{
-					if (data_field&&spectrum)
-					{
-						/*change the material's colour to white */
-						material_copy=CREATE(Graphical_material)("");
-						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
-						if (material_copy&&new_settings&&
-							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
-							(material_copy,material))
-						{																								
-							if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
-								material,material_copy,graphical_material_manager))
-							{
-								/* use the spectrum and data_field*/									
-								GT_element_settings_set_material(new_settings,material);							
-								GT_element_settings_set_selected_material(new_settings,
-									default_selected_material);
-								GT_element_settings_set_data_spectrum_parameters(new_settings,data_field,
-									spectrum);							
-								GT_element_settings_set_autorange_spectrum_flag(new_settings, 
-									autoranging_spectrum);
-								GT_element_group_modify_settings(gt_element_group,settings,
-									new_settings);	
-								/* Do this after the appropriate stuff has been put in the GT_element_group */
-								Scene_object_set_time_object(scene_object, time_object);
-							}	/* if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name */
-							else
-							{	
-								display_message(ERROR_MESSAGE,
-									"map_show_surface.MANAGER_MODIFY failed ");
-								return_code=0;
-							}
-						}
-						else
-						{	
-							display_message(ERROR_MESSAGE,
-							"map_show_surface. Couldn't copy material ");							
-							return_code=0;
-						}		
-					}
-					else
-					{
-						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
-						/* change the material colour to our no_interpolation_colour */
-						material_copy=CREATE(Graphical_material)("");							
-						if (new_settings&&material_copy&&
-							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
-							(material_copy,material))
-						{																	
-							Graphical_material_set_ambient(material_copy,no_interpolation_colour);
-							Graphical_material_set_diffuse(material_copy,no_interpolation_colour);
-							if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
-								material,material_copy,graphical_material_manager))
-							{
-								/* following removes spectrum from element group,*/
-								/* as new_settings don't use it*/
-								GT_element_settings_set_material(new_settings,material);							
-								GT_element_settings_set_selected_material(new_settings,
-									default_selected_material);
-								GT_element_group_modify_settings(gt_element_group,settings,
-									new_settings);
-								/* Do this after the appropriate stuff has been put in the GT_element_group */
-								Scene_object_set_time_object(scene_object, time_object);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"map_show_surface. MANAGER_MODIFY failed ");
-								return_code=0;
-							}
-						}
-						else
-						{	
-							display_message(ERROR_MESSAGE,
-							"map_show_surface. Couldn't copy material ");							
-							return_code=0;
-						}
-					}/* if (data_field&&spectrum) */
-				}	/* if (update_settings) */
-			}	/* if (settings=first_settings_in_*/
-			else
-			{
-				/* create graphical element group, settings, objects, etc*/
-				if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
-				{			
-					return_code=1;
-					/* use the spectrum and data field*/
-					if (data_field&&spectrum)
-					{
-						GT_element_settings_set_data_spectrum_parameters(settings,data_field,
-							spectrum);
-						GT_element_settings_set_autorange_spectrum_flag(settings, 
-							/*autorange_spectrum_flag*/1);
-					}
-					else
-					/* change the material to our neutral colour  */	
-					{
-						material_copy=CREATE(Graphical_material)("");
-						if (material_copy&&MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
-							(material_copy,material))
-						{							
-							/* just chose a neutral colour. Need to store somewhere*/					
-							Graphical_material_set_ambient(material_copy,no_interpolation_colour);
-							Graphical_material_set_diffuse(material_copy,no_interpolation_colour);
-							if (!MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
-								material,material_copy,graphical_material_manager))							
-							{	
-								display_message(ERROR_MESSAGE,
-									"map_show_surface.MANAGER_MODIFY failed ");
-								return_code=0;
-							}	
-						}				
-						else
-						{	
-							display_message(ERROR_MESSAGE,
-								"map_show_surface. Couldn't copy material ");							
-							return_code=0;
-						}		
 					}	
-					GT_element_settings_set_selected_material(settings,default_selected_material);
-					GT_element_settings_set_material(settings,material);
-					if (!GT_element_group_add_settings(gt_element_group, settings, 0))
+				}
+			}/* if (old_settings=f*/
+			if((old_settings&&update_settings)||(!old_settings))
+			{
+				new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
+				material_copy=CREATE(Graphical_material)("");
+				if (new_settings&&material_copy&&
+					MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
+					(material_copy,material))
+				{
+					if(data_field&&spectrum)
 					{
-						DESTROY(GT_element_settings)(&settings);
-						return_code = 0; 
+						/*remove any skin texture*/	
+						new_skin_texture=(struct Texture *)NULL;
+						new_skin_texture_coords=( struct Computed_field *)NULL;
+						new_data_field=data_field;	
+						Graphical_material_set_ambient(material_copy,&white);
+						Graphical_material_set_diffuse(material_copy,&white);
 					}
-					/* Do this after the appropriate stuff has been put in the GT_element_group */
-					Scene_object_set_time_object(scene_object, time_object);
+					else if(skin_texture)
+					{
+						/* set the skin texture*/	
+						new_skin_texture=skin_texture;
+						new_skin_texture_coords=skin_texture_coords;
+						new_data_field=( struct Computed_field *)NULL;
+						Graphical_material_set_ambient(material_copy,&white);
+						Graphical_material_set_diffuse(material_copy,&white);
+					}
+					else
+					{
+						/*remove any skin texture*/
+						new_skin_texture=(struct Texture *)NULL;
+						new_skin_texture_coords=( struct Computed_field *)NULL;	
+						new_data_field=( struct Computed_field *)NULL;
+						Graphical_material_set_ambient(material_copy,no_interpolation_colour);
+						Graphical_material_set_diffuse(material_copy,no_interpolation_colour);							
+					}
+					/* set the skin texture*/
+					Graphical_material_set_texture(material_copy,new_skin_texture);
+					if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
+						material,material_copy,graphical_material_manager))
+					{
+						GT_element_settings_set_texture_coordinate_field(new_settings,
+							new_skin_texture_coords);															
+						GT_element_settings_set_material(new_settings,material);							
+						GT_element_settings_set_selected_material(new_settings,
+							default_selected_material);	
+						GT_element_settings_set_autorange_spectrum_flag(new_settings, 
+							autoranging_spectrum);
+						GT_element_settings_set_data_spectrum_parameters(new_settings,
+							new_data_field,spectrum);
+						if(old_settings)
+						{
+							GT_element_group_modify_settings(gt_element_group,old_settings,
+							new_settings);
+						}
+						else
+						{
+							if (!GT_element_group_add_settings(gt_element_group,new_settings, 0))
+							{
+								DESTROY(GT_element_settings)(&new_settings);
+								return_code = 0; 
+							}
+						}	
+						/* Do this after the appropriate stuff has been put in the GT_element_group */
+						Scene_object_set_time_object(scene_object, time_object);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"map_show_surface. MANAGER_MODIFY failed ");
+						return_code=0;
+					}						
 				}
 				else
-				{
+				{	
 					display_message(ERROR_MESSAGE,
-						"map_show_surface. CREATE(GT_element_settings) failed ");
+						"map_show_surface. Couldn't copy material ");							
 					return_code=0;
 				}
-			}/* if (old_settings=first_settings_in_GT_element_group_that */
+			}/* (update_settings) */				
 			MANAGER_END_CACHE(Graphical_material)(graphical_material_manager);
 		}
 		else
@@ -3879,16 +3826,11 @@ Also applies <number_of_contours> contours to surface.
 			"map_show_surface.  Invalid argument(s)");
 		return_code=0;
 	}	
-	if (new_settings)
-	{
-		DESTROY(GT_element_settings)(&new_settings);
-	}
 	if (material_copy)
 	{
 		DESTROY(Graphical_material)(&material_copy);
 	}
 	LEAVE;
-
 	return (return_code);
 } /* map_show_surface */
 #endif /* #if defined (UNEMAP_USE_3D) */
@@ -4694,6 +4636,8 @@ static int map_is_delauney(struct Map *map)
 LAST MODIFIED : 5 February 2002
 
 DESCRIPTION :
+Determines if a map is delauney, baed upton projection type and if the default 
+torso is loaded
 ==============================================================================*/
 {
 	int return_code;
@@ -6428,11 +6372,11 @@ Draws (or erases) the map contours
 				(map_3d_package = get_Region_map_3d_package(region)))
 			{			
 				data_field = map_get_data_field_for_3d_map(map, map_3d_package);
-				delauney_map = map_is_delauney(map);
+				delauney_map = map_is_delauney(map);								
 				/* draw/remove CONSTANT_THICKNESS contours */
 				map_draw_constant_thickness_contours(scene,map->drawing_information,
 					data_field,number_of_constant_contours,map->contour_minimum,
-					map->contour_maximum,region,default_torso_loaded,delauney_map);					
+					map->contour_maximum,region,default_torso_loaded,delauney_map);				
 			}				
 			region_item=get_Region_list_item_next(region_item);
 		}/* while(region_item)*/
@@ -6650,8 +6594,12 @@ NULL if not successful.
 			map->contour_y_spacing=0;
 			map->number_of_region_rows=1;
 			map->number_of_region_columns=1;
-			map->number_of_2d_triangles=0;
+			map->number_of_gouraud_triangles=0;
 			map->triangle_electrode_indices=(int *)NULL;
+			map->electrode_tex_x=(int *)NULL;
+			map->electrode_tex_y=(int *)NULL;
+			map->electrode_rgbs=(unsigned char *)NULL;
+			map->texture_image=(unsigned char *)NULL;
 			/* assign fields */		
 			map->analysis_mode=analysis_mode;
 			map->first_eimaging_event=eimaging_event_list;
@@ -6791,7 +6739,7 @@ NULL if not successful.
 
 int Map_flush_cache(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2001
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Clear the cached information stored in the map
@@ -6804,7 +6752,11 @@ Clear the cached information stored in the map
 	if (map) 
 	{
 		DEALLOCATE(map->triangle_electrode_indices);
-		map->number_of_2d_triangles=0;
+		map->number_of_gouraud_triangles=0;
+		DEALLOCATE(map->electrode_tex_x);
+		DEALLOCATE(map->electrode_tex_y);
+		DEALLOCATE(map->texture_image);
+		DEALLOCATE(map->electrode_rgbs);
 		DEALLOCATE(map->electrodes);
 		map->number_of_electrodes=0;
 		DEALLOCATE(map->electrode_drawn);
@@ -6844,6 +6796,206 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 
 	return (return_code);
 } /* destroy_Map */
+
+static int map_2d_delauney(struct Map *map) 
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+given <map>, do a delauney triangluarisation of map->electrodes.
+Assumes the map is of type TORSO, and hence is cylindrical, and centred about 
+the z axis. 
+The results are stored as map->number_of_gouraud_triangles, the number of delauney 
+triagles formed by the electrodes, and map->triangle_electrode_indices,
+and array of length 3*number_of_gouraud_triangles containing indices into 
+map->electrodes of pointing to the triangle's electrodes.
+No cutting of the cylinder for 2d projection is done. This happens after 2d 
+projection is performed, in  draw_2d_construct_2d_gouraud_image_map
+*******************************************************************************/
+{
+	char undecided_accepted;
+	float *vertex,*vertices;
+	int found,i,index,j,*map_electrode_triangles,number_of_electrodes,
+		number_of_triangles,number_of_accepted_triangles,number_of_vertices,
+		return_code,*triangles,*triangle_vertex,triangle_v0_index,
+		triangle_v1_index,triangle_v2_index;
+	struct Device **accepted_triangle_electrodes,**electrode,**triangle_electrodes,
+		**triangle_electrode,*device;
+	struct Device_description *description;	
+
+	ENTER(map_2d_delauney);
+	device=(struct Device *)NULL;
+	electrode=(struct Device **)NULL;
+	accepted_triangle_electrodes=(struct Device **)NULL;
+	triangle_electrodes=(struct Device **)NULL;
+	triangle_electrode=(struct Device **)NULL;
+	description=(struct Device_description *)NULL;
+	vertices=(float *)NULL;
+	vertex=(float *)NULL;
+	triangles =(int *)NULL;	
+	triangle_vertex =(int *)NULL;
+	if(map)
+	{
+		undecided_accepted=map->undecided_accepted;
+		/* clear out any old stuff */
+		map->number_of_gouraud_triangles=0;
+		if(map->triangle_electrode_indices)
+		{
+			DEALLOCATE(map->triangle_electrode_indices);
+		}
+		return_code=1;		
+		number_of_vertices=0;
+		electrode=map->electrodes;
+		number_of_electrodes=0;
+		/*count the number of vertices = number of unrejected electrodes in map */
+		while(number_of_electrodes<map->number_of_electrodes)
+		{
+			/*if we've got an unrejected electrode */ 			
+			if (((*electrode)->signal->status==ACCEPTED)||
+				(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
+			{						 
+				number_of_vertices++;
+			}					
+			electrode++;
+			number_of_electrodes++;
+		}/*while(number_of_devices<rig->number_of_devices)*/
+		/*allocate space for x,y,z vertices and the triangle_electrodes */
+		if(ALLOCATE(vertices,float,number_of_vertices*3)&&
+			ALLOCATE(triangle_electrodes,struct Device *,number_of_vertices))
+		{
+			/*for unrejected electrodes,store the vertex values & electrode/device*/
+			electrode=map->electrodes;
+			number_of_electrodes=0;
+			vertex=vertices;
+			triangle_electrode=triangle_electrodes;
+			while(number_of_electrodes<map->number_of_electrodes)
+			{
+				description=(*electrode)->description;
+				/*if we've got an unrejected electrode */				
+				if (((*electrode)->signal->status==ACCEPTED)||
+					(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
+				{					
+					*vertex=(description->properties).electrode.position.x;
+					vertex++;
+					*vertex=(description->properties).electrode.position.y;
+					vertex++;
+					*vertex=(description->properties).electrode.position.z;
+					vertex++;
+					*triangle_electrode=*electrode;
+					triangle_electrode++;
+				}
+				electrode++;
+				number_of_electrodes++;
+			}/*while(number_of_devices<rig->number_of_devices)*/
+			/*perform deluaney triangularization */
+			if(return_code=cylinder_delauney(number_of_vertices,vertices,
+				&number_of_triangles,&triangles))								
+			{
+				/*accepted_triangles contains the Device's of the vertices triangles */
+				if(ALLOCATE(accepted_triangle_electrodes,struct Device *,
+					number_of_triangles*3))
+				{									
+					triangle_vertex=triangles;				
+					number_of_accepted_triangles=0;
+					for(i=0;i<number_of_triangles;i++)
+					{
+						triangle_v0_index=*triangle_vertex;
+						triangle_vertex++;
+						triangle_v1_index=*triangle_vertex;
+						triangle_vertex++;
+						triangle_v2_index=*triangle_vertex;
+						triangle_vertex++;
+						/*store Device's triangle electrodes*/
+						number_of_accepted_triangles++;																	
+						index=(number_of_accepted_triangles-1)*3;
+						/*vertex 0,1,2*/
+						accepted_triangle_electrodes[index]=
+							triangle_electrodes[triangle_v0_index];
+						accepted_triangle_electrodes[index+1]=
+							triangle_electrodes[triangle_v1_index];
+						accepted_triangle_electrodes[index+2]=
+							triangle_electrodes[triangle_v2_index];						
+					}										
+					/*map_electrode_triangles contains index in map->electrodes array of */
+					/*triangle's vertices/electrodes */
+					if(ALLOCATE(map_electrode_triangles,int,number_of_triangles*3))
+					{
+						return_code=1;
+						/*match device->number to position in map->electrodes array */
+						i=0;
+						while((i<number_of_accepted_triangles*3)&&(return_code))
+						{
+							device=accepted_triangle_electrodes[i];
+							j=0;
+							found=0;
+							electrode=map->electrodes;
+							while((j<map->number_of_electrodes)&&(!found))
+							{
+								if((*electrode)==device)
+								{
+									map_electrode_triangles[i]=j;
+									found=1;									
+								}
+								else
+								{
+									j++;
+									electrode++;
+								}
+							}/* while((j<map->number_of_electrodes)&&(!found)) */
+							if(!found)
+							{
+								display_message(ERROR_MESSAGE,
+									"map_2d_delauney. unmatched triangle vertex");
+								return_code=0;
+							}
+							i++;
+						}/* while((i<number_of_accepted_triangles*3)&&(return_code)) */
+						if(return_code)
+						{
+							map->number_of_gouraud_triangles=number_of_accepted_triangles;
+							map->triangle_electrode_indices=map_electrode_triangles;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"map_2d_delauney. Out of memory for map_electrode_triangles");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"map_2d_delauney. Out of memory for accepted_triangles");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"map_2d_delauney. cylinder_delauney failed");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"map_2d_delauney. Out of memory for vertices/electrode_numbers");
+			return_code=0;
+		}	
+		DEALLOCATE(vertices);
+		DEALLOCATE(triangle_electrodes);
+		DEALLOCATE(triangles);
+		DEALLOCATE(accepted_triangle_electrodes);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"map_2d_delauney. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_2d_delauney */
 
 int update_colour_map_unemap_original(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************
@@ -7313,10 +7465,1078 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 }/* map_remove_torso_arm_labels */
 #endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_3D)
-int draw_map_3d(struct Map *map)
+static int get_triangle_line_end_vertex_num_from_start_num(int start_vertex_num)
 /*******************************************************************************
-LAST MODIFIED : 17 September 2001
+LAST MODIFIED 14 November 2001
+
+DESCRIPTION :
+Given <start_vertex_num>, the start vertex number of an edge of a triangle,
+returns end_vertex_num, the corresponding end vertex number of the same edge.
+<start_vertex_num> most be from 0->2. 
+Sets end_vertex_num according to:
+start_vertex_num 0 : end_vertex_num 1 (triangle edge 0)
+start_vertex_num 1 end_vertex_num 2 (triangle edge 1)
+start_vertex_num 2 end_vertex_num 0 (triangle edge 2)
+Returns -1 on error.
+A helper function for get_triangle_scan_line_intersection,
+draw_2d_construct_2d_gouraud_image_map,
+get_tri_scan_line_intersection_rgb_triple
+*******************************************************************************/
+{
+	int end_vertex_num;
+
+	ENTER(get_triangle_line_end_vertex_num_from_start_num);
+	if((start_vertex_num>-1)&&(start_vertex_num<3))
+	{
+		if(start_vertex_num<2)
+		{
+			end_vertex_num=start_vertex_num+1;
+		}
+		else
+		{
+			end_vertex_num=0;
+		}	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_triangle_line_end_vertex_num_from_start_num. Invalid arguments");
+		end_vertex_num=-1;
+	}
+	return(end_vertex_num);
+	LEAVE;
+}/*get_triangle_line_end_vertex_num_from_start_num */
+
+#if defined (UNEMAP_USE_3D)
+static int get_tri_scan_line_intersection_rgb_triple(int triangle_egde_number,
+	 int scan_line_y,int *vertex_x,int *vertex_y,float *gradient,
+	float *inv_edge_y_length,unsigned char *vertex_rgb_value,int *x_intersection,
+	unsigned char *rgb_value)
+/*******************************************************************************
+LAST MODIFIED 22 February 2002
+
+DESCRIPTION :
+Given <triangle_egde_number> (from 0-2) and scan_line_y, the y value of the 
+intersecting "scan line" and <vertex_x> <vertex_y>  arrays of length 3 and
+<vertex_rgb_value> array of length 9 (rgb for 3 points) of the x,y, rgb value at 
+the triangle's vertices and	
+<gradient> an array of length 3 of the gradients of the triangle's edges, 
+and <inv_edge_y_length> an array of length 3 of the 1/(triangle's edges y length)
+returns <x_intersection>, the x value of the intersection 
+of the triangle edge with the "scan line" and <rgb_value>, the 3 interpolated rgb 
+values at this point (x_intersection,y).
+Returns an error if scan_line_y isn't btwn the y's of the triangle edge's ends,
+or if the y's of the triangle edge's end are the same, i.e you're supposed to
+check for these conditions before calling this function.
+This function is a quite specific (i.e. non-generic) helper function, called by 
+construct_rgb_triple_gouraud_map
+cf get_triangle_scan_line_intersection
+*******************************************************************************/
+{
+	float grad,inverse_y_length,value_0r,value_0g,value_0b,value_1r,value_1g,
+		value_1b;
+	int a_x,b_x,a_y,b_y,end_vertex_num,return_code,start_vertex_num;
+
+	ENTER(get_tri_scan_line_intersection_rgb_triple);
+	if((triangle_egde_number>-1)&&(triangle_egde_number<3)&&vertex_x&&vertex_y&&
+		gradient&&inv_edge_y_length&&vertex_rgb_value&&x_intersection&&rgb_value)
+	{
+		return_code=1;
+		start_vertex_num=triangle_egde_number;
+		end_vertex_num=
+			get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);		
+		a_x=vertex_x[start_vertex_num];
+		a_y=vertex_y[start_vertex_num];	
+		b_x=vertex_x[end_vertex_num];
+		b_y=vertex_y[end_vertex_num];	
+		if(a_y!=b_y)
+		{
+			if(((scan_line_y>=a_y)&&(scan_line_y<=b_y))||
+				((scan_line_y>=b_y)&&(scan_line_y<=a_y)))
+			{
+				grad=gradient[triangle_egde_number];
+				inverse_y_length=inv_edge_y_length[triangle_egde_number];
+				/*line_start_x or	line_end_x	*/
+				if(a_x==b_x)
+				{
+					/*infinite gradient*/
+					*x_intersection=a_x;
+				}
+				else
+				{
+					*x_intersection=(((float)scan_line_y-(float)a_y)/grad)+a_x;
+				}
+				/*rgb values at start of triangle edge*/
+				value_0r=vertex_rgb_value[start_vertex_num*3];
+				value_0g=vertex_rgb_value[(start_vertex_num*3)+1];
+				value_0b=vertex_rgb_value[(start_vertex_num*3)+2];
+				/*value at end of triangle edge*/						
+				value_1r=vertex_rgb_value[end_vertex_num*3];
+				value_1g=vertex_rgb_value[(end_vertex_num*3)+1];
+				value_1b=vertex_rgb_value[(end_vertex_num*3)+2];
+				/* inverse_y_length= 1/(b_y-ay), but we cached it earlier	*/
+				rgb_value[0]=value_1r*(((float)scan_line_y-(float)a_y)*inverse_y_length)+
+					value_0r*(((float)b_y-(float)scan_line_y)*inverse_y_length);
+				rgb_value[1]=value_1g*(((float)scan_line_y-(float)a_y)*inverse_y_length)+
+					value_0g*(((float)b_y-(float)scan_line_y)*inverse_y_length);			
+				rgb_value[2]=value_1b*(((float)scan_line_y-(float)a_y)*inverse_y_length)+
+					value_0b*(((float)b_y-(float)scan_line_y)*inverse_y_length);	
+			}
+			else
+			{	
+				display_message(ERROR_MESSAGE,
+					"get_tri_scan_line_intersection_rgb_triple. scan_line_y not btwn a_y and b_y ");
+				return_code=0;			
+			}	
+		}/* if(a_y!=b_y) */
+		else
+		{	
+			display_message(ERROR_MESSAGE,
+			"get_tri_scan_line_intersection_rgb_triple. ay==by ");
+			return_code=0;			
+		}		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_tri_scan_line_intersection_rgb_triple. Invalid arguments");
+		return_code=0;	
+	}
+	if(return_code==0)
+	{
+		rgb_value[0]=0;
+		rgb_value[1]=0;
+		rgb_value[2]=0;
+		*x_intersection=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_tri_scan_line_intersection_rgb_triple */
+
+static int construct_rgb_triple_gouraud_map(int image_width,int number_of_triangles,
+	int *triangles,int *electrode_x,int*electrode_y,unsigned char *electrode_rgbs,
+	unsigned char *texture)
+/*******************************************************************************
+LAST MODIFIED 26 February 2002
+
+DESCRIPTION :
+Construct a <texture> of rgbs  using gouraud shading btwn the electrodes 
+specified by <electrode_x> <electrode_y>, <electrode_rgbs>, connected by
+<triangles>, <number_of_triangles>. <triangles> contains indices into 
+<electrode_x> <electrode_y>, <electrode_rgbs>.
+cf draw_2d_construct_2d_gouraud_image_map, which works with floats not 
+rgb triples.
+*******************************************************************************/
+{	
+	unsigned char vertex_rgb_value[9]/*rgb for 3 vertices*/,start_rgb_value[3],
+		end_rgb_value[3];
+	float delta_rgb_value[3],delta_y,gradient[3],
+		inv_edge_y_length[3],rgb_value[3];
+	int adjusted_x,end_vertex_num,found,i,index,
+		intersected_edges[3],k,line_start_x,line_end_x,line_length,
+		number_of_intersected_edges,return_code,start_vertex_num,
+		triangle_egde_number,tri_min_x,tri_min_y,tri_max_x,
+		tri_max_y,tri_width,vertex_x[3],vertex_y[3],x,y;
+#if  defined (DEBUG)
+	int edge_flag;
+#endif 	/*  defined (DEBUG)	*/
+
+	ENTER(construct_rgb_triple_gouraud_map);	
+	if(electrode_x&&electrode_y&&electrode_rgbs&&texture&&triangles)
+	{															
+		k=0;		
+		while(k<number_of_triangles*3)
+		{	
+			/* for each triangle vertex*/
+			for(i=0;i<3;i++)
+			{
+				index=triangles[k];
+				vertex_x[i]=electrode_x[index];
+				vertex_y[i]=electrode_y[index];					
+				/*rgb*/
+				vertex_rgb_value[i*3]=electrode_rgbs[index*3];	
+				vertex_rgb_value[(i*3)+1]=electrode_rgbs[(index*3)+1];			
+				vertex_rgb_value[(i*3)+2]=electrode_rgbs[(index*3)+2];	
+				/*get min and max x and y of triangle*/
+				if(i==0)
+				{
+					tri_min_x=tri_max_x=vertex_x[0];
+					tri_min_y=tri_max_y=vertex_y[0];
+				}
+				if(vertex_x[i]>tri_max_x)
+				{
+					tri_max_x=vertex_x[i];
+				}
+				if(vertex_x[i]<tri_min_x)
+				{
+					tri_min_x=vertex_x[i];
+				}
+				if(vertex_y[i]>tri_max_y)
+				{
+					tri_max_y=vertex_y[i];
+				}
+				if(vertex_y[i]<tri_min_y)
+				{
+					tri_min_y=vertex_y[i];
+				}				
+				k++;					
+			}/* for(i=0;i<3;i++)*/
+			/*wide  triangles have wrapped around the back and in cp coords, crossed*/
+			/*PI/-PI. Extend these wrapped triangles in rc x, so that they'll be drawn */
+			/*at the edge of the map, not behind it.*/
+			tri_width=abs(tri_max_x-tri_min_x);
+			if(tri_width>(image_width/2))
+			{			
+				for(i=0;i<3;i++)
+				{						
+					if(vertex_x[i]<(image_width/2))
+					{							
+						vertex_x[i]+=image_width;
+					}
+				}				
+			}			
+			/*determine and cache the gradient and inverse of the y_length of the*/
+			/* triangle's edges*/
+			for(i=0;i<3;i++)
+			{
+				start_vertex_num=i;
+				end_vertex_num=
+					get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
+				delta_y=(float)vertex_y[end_vertex_num]-(float)vertex_y[start_vertex_num];
+				if(vertex_x[start_vertex_num]==vertex_x[end_vertex_num])
+				{
+					/*infinite gradient. Put in a large number! Anyway, we check for*/
+					/* start_x=end_x when consume gradient[] in */
+					/*get_tri_scan_line_intersection_rgb_triple, so never use */
+					gradient[i]=1000000.0;					
+				}
+				else
+				{						
+					gradient[i]=delta_y/
+						((float)vertex_x[end_vertex_num]-(float)vertex_x[start_vertex_num]);
+				}
+				if(delta_y==0.0)
+				{
+					/* zero length. Put in a large number for 1/length. This is never used*/
+					inv_edge_y_length[i]=1000000.0;					
+				}
+				else
+				{
+					inv_edge_y_length[i]=1.0/(delta_y);
+				}
+			}/* for(i=0;i<3;i++) */							
+			/*for each constant y "scan line"*/				
+			for(y=tri_min_y;y<=tri_max_y;y++)
+			{
+				number_of_intersected_edges=0;
+				/*check and store which of the triangle's edges  are intersected*/
+				/*by the constant y "scan line". There should be 2 or 3 edges */
+				/*intersected. 2 edges, including the case of a single vertex,or 3 */
+				/*if one of the edges is the "scan line", gradient==0 or if a vertex and */
+				/*an edge are intersected. */
+				if((y>=vertex_y[0]&&y<=vertex_y[1])||(y>=vertex_y[1]&&y<=vertex_y[0]))
+				{
+					/*intersects 1st triangle edge, from vertex 0 to 1*/
+					intersected_edges[number_of_intersected_edges]=0;
+					number_of_intersected_edges++;
+				}
+				if((y>=vertex_y[1]&&y<=vertex_y[2])||(y>=vertex_y[2]&&y<=vertex_y[1]))
+				{
+					/*intersects 2nd triangle edge from vertex 1 to 2*/
+					intersected_edges[number_of_intersected_edges]=1;
+					number_of_intersected_edges++;
+				}	
+				if((y>=vertex_y[2]&&y<=vertex_y[0])||(y>=vertex_y[0]&&y<=vertex_y[2]))
+				{
+					/*intersects 3rd triangle edgefrom  vertex 2 to 0 */
+					intersected_edges[number_of_intersected_edges]=2;
+					number_of_intersected_edges++;
+				}																				
+				/*find line across triangle*/
+				if(number_of_intersected_edges==3)
+				{
+					/*If one of triangle edges has gradient==0,This is our line across triangle*/
+					i=0;
+					found=0;
+					while((i<3)&&(!found))
+					{
+						if(gradient[i]==0)
+						{
+							found=1;
+						}
+						else
+						{
+							i++;
+						}
+					}
+					if(found)
+					{	
+						return_code=1;
+						start_vertex_num=i;
+						end_vertex_num=
+							get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
+						line_start_x=vertex_x[start_vertex_num];
+						line_end_x=vertex_x[end_vertex_num];
+						/*rgb*/
+						start_rgb_value[0]=vertex_rgb_value[start_vertex_num*3];
+						start_rgb_value[1]=vertex_rgb_value[(start_vertex_num*3)+1];
+						start_rgb_value[2]=vertex_rgb_value[(start_vertex_num*3)+2];
+						/*rgb*/
+						end_rgb_value[0]=vertex_rgb_value[end_vertex_num*3];
+						end_rgb_value[1]=vertex_rgb_value[(end_vertex_num*3)+1];
+						end_rgb_value[2]=vertex_rgb_value[(end_vertex_num*3)+2];					
+					}/* if(found) */
+					else
+					{
+						/*2 of the intersections will at a common vertex, the third in the middle*/
+						/* of an edge (including the degenerate case, where this middle edge is a*/
+						/* point, and the triangle is a line*) */
+						for(i=0;i<3;i++)
+						{
+							triangle_egde_number=intersected_edges[i];
+							start_vertex_num=triangle_egde_number;
+							end_vertex_num=
+								get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
+							if(vertex_y[start_vertex_num]==y)
+							{
+								return_code=1;
+								/*start intersection at a vertex */
+								line_start_x=vertex_x[start_vertex_num];
+								/*rgb*/
+								start_rgb_value[0]=vertex_rgb_value[start_vertex_num*3];
+								start_rgb_value[1]=vertex_rgb_value[(start_vertex_num*3)+1];
+								start_rgb_value[2]=vertex_rgb_value[(start_vertex_num*3)+2];
+								if(vertex_y[end_vertex_num]==y)
+								{
+									/*end intersection at a vertex */
+									line_end_x=vertex_x[end_vertex_num];
+									/*rgb*/
+									end_rgb_value[0]=vertex_rgb_value[end_vertex_num*3];
+									end_rgb_value[1]=vertex_rgb_value[(end_vertex_num*3)+1];
+									end_rgb_value[2]=vertex_rgb_value[(end_vertex_num*3)+2];
+								}
+							}													
+							else if(vertex_y[end_vertex_num]!=y)
+							{	
+								/*end intersection in the middle of an edge */
+								return_code=get_tri_scan_line_intersection_rgb_triple(intersected_edges[i],
+									y,vertex_x,vertex_y,gradient,inv_edge_y_length,vertex_rgb_value,
+									&line_end_x,end_rgb_value);
+							}														
+						}/* for(i=0;i<3;i++)*/
+					} /* if(found) */
+				}
+				else if(number_of_intersected_edges==2)
+				{
+					/*both of the intersections in the middle of an edge */						
+					return_code=(get_tri_scan_line_intersection_rgb_triple(intersected_edges[0],
+						y,vertex_x,vertex_y,gradient,inv_edge_y_length,vertex_rgb_value,
+						&line_start_x,start_rgb_value)&&
+						get_tri_scan_line_intersection_rgb_triple(intersected_edges[1],
+							y,vertex_x,vertex_y,gradient,inv_edge_y_length,vertex_rgb_value,
+							&line_end_x,end_rgb_value));						
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"construct_rgb_triple_gouraud_map. Wrong number of intersections");
+					return_code=0;
+				}	
+				if(return_code)
+				{
+					if(line_end_x==line_start_x)
+					{
+						/*rgb*/
+						delta_rgb_value[0]=0;
+						delta_rgb_value[1]=0;
+						delta_rgb_value[2]=0;
+					}
+					else
+					{
+						line_length=line_end_x-line_start_x;
+						/*rgb*/
+						delta_rgb_value[0]=(end_rgb_value[0]-start_rgb_value[0])/(line_length);
+						delta_rgb_value[1]=(end_rgb_value[1]-start_rgb_value[1])/(line_length);
+						delta_rgb_value[2]=(end_rgb_value[2]-start_rgb_value[2])/(line_length);
+					}
+					/*ensure line_start_x>line_end_x*/
+					if(line_start_x>line_end_x)
+					{
+						x=line_start_x;
+						line_start_x=line_end_x;
+						line_end_x=x;					
+						/*rgb*/
+						rgb_value[0]=start_rgb_value[0];
+						rgb_value[1]=start_rgb_value[1];
+						rgb_value[2]=start_rgb_value[2];
+						start_rgb_value[0]=end_rgb_value[0];
+						start_rgb_value[1]=end_rgb_value[1];
+						start_rgb_value[2]=end_rgb_value[2];
+						end_rgb_value[0]=rgb_value[0];
+						end_rgb_value[1]=rgb_value[1];
+						end_rgb_value[2]=rgb_value[2];
+					}																	
+					/*do line of pixels across the triangle*/
+					/*rgb*/
+					rgb_value[0]=start_rgb_value[0];
+					rgb_value[1]=start_rgb_value[1];
+					rgb_value[2]=start_rgb_value[2];
+					for(x=line_start_x;x<=line_end_x;x++)
+					{		
+#if defined (DEBUG) 
+						/*flag pixels at the triangle's edges*/
+						if((x==line_start_x)||(x==line_end_x)||
+							(y==tri_min_y)||(y==tri_max_y))
+						{
+							edge_flag=1;
+						}
+						else
+						{
+							edge_flag=0;
+						}	
+#endif /* defined (DEBUG)*/
+						/*ensure the pixels of (wrapped) triangles at RH edge wrap to LH edge*/	
+						if(x>=(image_width))
+						{
+							adjusted_x=x-image_width;
+						}
+						else
+						{
+							adjusted_x=x;
+						}															
+#if defined (DEBUG)
+						/* draw pixels at triangle's edges red, so can see easily*/
+						if(edge_flag)
+						{
+							/*rgb*/
+							texture[(y*image_width+adjusted_x)*3]=255;/*red*/
+							texture[(y*image_width+adjusted_x)*3+1]=0;
+							texture[(y*image_width+adjusted_x)*3+2]=0;
+						}
+						else
+#endif /* defined (DEBUG)*/
+						{		
+							/*rgb*/
+							texture[(y*image_width+adjusted_x)*3]=rgb_value[0];
+							texture[(y*image_width+adjusted_x)*3+1]=rgb_value[1];
+							texture[(y*image_width+adjusted_x)*3+2]=rgb_value[2];
+						}					
+						rgb_value[0]+=delta_rgb_value[0];
+						rgb_value[1]+=delta_rgb_value[1];
+						rgb_value[2]+=delta_rgb_value[2];						
+					}	/* for(x=line_start_x;x<=line_end_x;x++) */
+				}/* if(return_code)*/
+			}/* for(y=tri_min_y;y<=tri_max_y;y++) */					
+		}/* (k=0;k<number_of_triangles;k++) */								
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"construct_rgb_triple_gouraud_map. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* construct_rgb_triple_gouraud_map*/
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int make_skin_texture(unsigned char *texture_image,
+	int texture_x_length,int texture_y_length,unsigned char skin_r,
+	unsigned char skin_g,unsigned char skin_b)
+/*******************************************************************************
+LAST MODIFIED : 7 March 2002
+
+DESCRIPTION : Given the (already allocated) <texture_image> of rgb triples size
+<image_x_length>*<image_y_length>*3, 
+fills in the texture with the colour  specified by <skin_r>, <skin_g>, <skin_b> 
+==============================================================================*/
+{
+	unsigned char *texture_image_ptr;
+	int i,j,return_code;
+
+	ENTER(make_skin_and_electrodes_texture);
+	if(texture_image)
+	{
+		return_code=1;
+		/*pink skin colour*/	
+		texture_image_ptr=texture_image;
+		for(i=0;i<texture_y_length;i++)
+		{
+			for(j=0;j<texture_x_length;j++)
+			{	
+				*texture_image_ptr=skin_r;
+				texture_image_ptr++;
+				*texture_image_ptr=skin_g;
+				texture_image_ptr++;
+				*texture_image_ptr=skin_b;
+				texture_image_ptr++;
+			}	
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"make_skin_and_electrodes_texture. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}	/* make_skin_and_electrodes_texture */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int make_skin_and_electrodes_texture(unsigned char *texture_image,
+	int *electrode_x,int *electrode_y,unsigned char *electrode_rgbs,
+	int image_x_length,	int image_y_length,int number_of_electrodes,
+	unsigned char skin_r,unsigned char skin_g,unsigned char skin_b)
+/*******************************************************************************
+LAST MODIFIED : 26 February 2001
+
+DESCRIPTION : Given the (already allocated) <texture_image> of rgb triples size
+<image_x_length>*<image_y_length>*3, and <number_of_electrodes> electrodes 
+specified by <electrode_x> <electrode_y> (range 0->image_>_length), 
+fills in the texture with the colour  specified by <skin_r>, <skin_g>, <skin_b> 
+and draws the electrodes with the colours in <electrode_rgbs> 
+(size 3*number_of_electrodes).
+==============================================================================*/
+{
+	int k,return_code;
+	unsigned char *texture_image_ptr;
+
+	ENTER(make_skin_and_electrodes_texture);
+	if(texture_image&&electrode_x&&electrode_y)
+	{		
+		return_code=make_skin_texture(texture_image,image_x_length,
+			image_y_length,skin_r,skin_g,skin_b);
+		/*electrodes colours */
+		for(k=0;k<number_of_electrodes;k++)
+		{										
+			texture_image_ptr=texture_image+
+				(electrode_x[k]+electrode_y[k]*image_x_length)*3;											
+			*texture_image_ptr=electrode_rgbs[k*3];
+			texture_image_ptr++;
+			*texture_image_ptr=electrode_rgbs[(k*3)+1];
+			texture_image_ptr++;
+			*texture_image_ptr=electrode_rgbs[(k*3)+2];
+		}				
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"make_skin_and_electrodes_texture. Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* make_skin_and_electrodes_texture */
+#endif/* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static struct Texture *make_gouraud_texture_from_torso_map(struct Map *map, 
+	struct Region *region,FE_value time,FE_value z_min,FE_value z_range,
+	float minimum,float maximum,int texture_x_length,int texture_y_length,
+	int draw_skin)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Given <map>,<region>,<time>, <z_min> and <z_range>, <minimum> and <maximum> 
+the signal min max at <time> and creates <the_skin_texture> of size
+<texture_x_length>, <texture_x_length>. This texture is a gouraud shading
+of the rgb values  at the map's electrodes.
+Will work only with torso maps.
+
+Note: texture_x_length,texture_y_length should bed 2^n, eg 128,256,512 for 
+opengl texture reasons (at least on the SGI).
+
+==============================================================================*/
+{	
+	FE_value value,red,green,blue,x,y,z_rc,r,theta,z_cp,x_offset,y_offset;
+	float *vertices;							
+	int i,number_of_electrodes,nodes_rejected_or_accepted,success;
+	struct Colour black = {0,0,0},result;			
+	struct Computed_field *scaled_offset_signal_value_at_time_field;
+	struct FE_field *electrode_postion_field;
+	struct FE_field_component component;
+	struct FE_node *electrode_node;	
+	struct FE_node_order_info *node_order_info;
+	struct Graphical_material *material;
+	struct GROUP(FE_node) *unrejected_node_group;
+	struct Map_3d_package *map_3d_package;
+	struct Map_drawing_information *drawing_information;	
+	struct MANAGER(Texture) *texture_manager;		
+	struct MANAGER(Spectrum) *spectrum_manager;
+	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;
+	struct Texture *skin_texture;
+	struct Unemap_package *unemap_package;	
+	struct Vertices_data vertices_data;
+	unsigned char *the_rgb;
+	unsigned short blue_short,green_short,red_short;
+
+	ENTER(make_gouraud_texture_from_torso_map);
+	vertices=(float *)NULL;
+	scaled_offset_signal_value_at_time_field=(struct Computed_field *)NULL;
+	electrode_postion_field=(struct FE_field *)NULL;
+	electrode_node=(struct FE_node *)NULL;
+	material=(struct Graphical_material *)NULL;
+	texture_manager=(struct MANAGER(Texture) *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	spectrum=(struct Spectrum *)NULL;
+	spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	skin_texture=(struct Texture *)NULL;
+	drawing_information=(struct Map_drawing_information *)NULL;
+	node_order_info=(struct FE_node_order_info *)NULL;
+	map_3d_package=(struct Map_3d_package *)NULL;
+	if(map&&region&&(region->type==TORSO)&&(unemap_package=map->unemap_package)&&
+		(unrejected_node_group=get_Region_unrejected_node_group(region))&&
+		(drawing_information=map->drawing_information)&&
+		(texture_manager=drawing_information->texture_manager)&&
+		(spectrum=drawing_information->spectrum)&&
+		(spectrum_manager=get_map_drawing_information_spectrum_manager(drawing_information)))
+	{	
+		success=1;
+    nodes_rejected_or_accepted=
+			get_map_drawing_information_electrodes_accepted_or_rejected(drawing_information);
+		map_3d_package=get_Region_map_3d_package(region);		
+		if(nodes_rejected_or_accepted)
+		{
+			/* free up existing information */
+			if (map->triangle_electrode_indices)
+			{
+				DEALLOCATE(map->triangle_electrode_indices);
+			}			
+			if(map->electrode_tex_x)
+			{
+				DEALLOCATE(map->electrode_tex_x);
+			}		
+			if(map->electrode_tex_y)
+			{
+				DEALLOCATE(map->electrode_tex_y);
+			}	
+			if(map->electrode_rgbs);
+			{
+				DEALLOCATE(map->electrode_rgbs);
+			}									
+			if(map->texture_image)
+			{
+				DEALLOCATE(map->texture_image);
+			}		
+			/* need to delauney/gouraud information */	
+			x_offset=(texture_x_length)/2;/*-(-PI*texture_x_length/2PI)*/
+			y_offset=-((z_min*(texture_y_length))/z_range);
+			electrode_postion_field=get_Region_electrode_position_field(region);
+			component.field=electrode_postion_field;			
+			number_of_electrodes=(NUMBER_IN_GROUP(FE_node)(unrejected_node_group));
+			if(ALLOCATE(vertices,float,/*x,y,z*/3*number_of_electrodes)&&
+				ALLOCATE(map->electrode_tex_x,int,number_of_electrodes)&&
+				ALLOCATE(map->electrode_tex_y,int,number_of_electrodes)&&
+				ALLOCATE(map->electrode_rgbs,unsigned char,/*r,g,b*/3*number_of_electrodes)&&
+				ALLOCATE(map->texture_image,unsigned char,
+					3*texture_x_length*texture_y_length))				
+			{	
+				map->texture_x_length=texture_x_length;
+				map->texture_y_length=texture_y_length;			
+				/* put the nodal position field data into the vertex array*/
+				vertices_data.current_element=0;
+				vertices_data.vertices=vertices;
+				vertices_data.position_field=electrode_postion_field;
+				if ((success=FOR_EACH_OBJECT_IN_GROUP(FE_node)
+					(put_electrode_pos_into_vertices,
+						(void *)&vertices_data,unrejected_node_group))&&
+					/*perform the delauney triangularisation*/
+					(success=cylinder_delauney(number_of_electrodes,vertices,
+						&map->number_of_gouraud_triangles,&map->triangle_electrode_indices)))
+				{	
+					/* make a node_order_info, so can match nodes to vertices  */
+					if ((node_order_info=CREATE(FE_node_order_info)(0))&&
+						(FOR_EACH_OBJECT_IN_GROUP(FE_node)(fill_FE_node_order_info,
+							(void *)node_order_info,unrejected_node_group)))
+					{									
+						set_map_3d_package_node_order_info(map_3d_package,node_order_info);
+						/* set up array of  map->electrode_tex_x,y */
+						for(i=0;i<number_of_electrodes;i++)
+						{						
+							electrode_node=get_FE_node_order_info_node(node_order_info,i);
+							/*set up map->electrode_tex_x, map->electrode_tex_y*/
+							component.number=0;
+							get_FE_nodal_FE_value_value(electrode_node,&component,0,FE_NODAL_VALUE,
+								/*time*/0,&x);
+							component.number=1;
+							get_FE_nodal_FE_value_value(electrode_node,&component,0,FE_NODAL_VALUE,
+								/*time*/0,&y);
+							component.number=2;
+							get_FE_nodal_FE_value_value(electrode_node,&component,0,FE_NODAL_VALUE,
+								/*time*/0,&z_rc);
+							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
+							map->electrode_tex_x[i]=
+								(int)(((texture_x_length-1)/(2*PI))*theta+x_offset);
+							map->electrode_tex_y[i]=
+								(int)(((texture_y_length-1)/z_range)*z_cp+y_offset);
+						}	/* for(i=0;i<number_of_electrodes;i++) */						
+					}	
+					else
+					{
+						success=0;
+						display_message(ERROR_MESSAGE,"make_gouraud_texture_from_torso_map. "
+							"CREATE(FE_node_order_info/"
+							"fill_FE_node_order_info failed");
+					}
+				}	/* if ((success=FOR_EACH_OBJECT_IN_GROUP(FE_node)	 */
+			}	/*	if(ALLOCATE(vertices,float, */ 
+			else
+			{
+				success=0;
+				display_message(ERROR_MESSAGE,"make_gouraud_texture_from_torso_map."
+					" out of memory for vertices etc");
+			}
+		} /* if(nodes_rejected_or_accepted) */
+		/* alter the spectrum for spectrum_render_value_on_material below */
+		if(success)
+		{			
+			if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+			{
+				if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+					("spectrum_modify_temp"))
+				{
+					MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+						(spectrum_to_be_modified_copy,spectrum);
+					Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
+						minimum,maximum);						
+					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+						spectrum_to_be_modified_copy,spectrum_manager);
+					DESTROY(Spectrum)(&spectrum_to_be_modified_copy);							
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"make_gouraud_texture_from_torso_map.  Could not create spectrum copy.");
+					success=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"make_gouraud_texture_from_torso_map.  Spectrum is not in manager!");
+				success=0;
+			}				
+		}/* if(success)*/
+		if(success)
+		{
+			/*create a material to get the rgb values on */
+			if (material = CREATE(Graphical_material)("value_to_rgb_material"))
+			{
+				success=Graphical_material_set_diffuse(material,&black);			
+			}
+			else
+			{
+				success=0;
+			}
+		}		
+		if(success)
+		{
+			node_order_info=get_map_3d_package_node_order_info(map_3d_package);
+			number_of_electrodes=get_FE_node_order_info_number_of_nodes(node_order_info);
+			scaled_offset_signal_value_at_time_field=
+				get_unemap_package_scaled_offset_signal_value_at_time_field(unemap_package);
+			/* set up array of rgbs at electrodes */
+			the_rgb=map->electrode_rgbs;
+			for(i=0;i<number_of_electrodes;i++)
+			{
+				/*set up rgb values */
+				electrode_node=get_FE_node_order_info_node(node_order_info,i);
+				Computed_field_evaluate_at_node(scaled_offset_signal_value_at_time_field,
+					electrode_node,time,&value/*assume 1 component*/);
+				/* convert pixel_value float data to RGB*/										
+				spectrum_render_value_on_material(spectrum,material,
+					/*number_of_data_components*/1,&value);
+				Graphical_material_get_diffuse(material,&result);
+				red = result.red;
+				green = result.green;
+				blue = result.blue;
+				red_short=(unsigned short)(255*red);
+				*the_rgb=red_short;
+				the_rgb++;
+				green_short=(unsigned short)(255*green);
+				*the_rgb=green_short;
+				the_rgb++; 
+				blue_short=(unsigned short)(255*blue);
+				*the_rgb=blue_short;
+				the_rgb++;								
+			}	/* for(i=0;i<number_of_electrodes;i++) */
+			Computed_field_clear_cache(scaled_offset_signal_value_at_time_field);			
+			if(draw_skin)
+			{
+				/* draw a pink texture before adding the potential map.*/
+				/* do this as their may be gaps in the texture generated by */
+				/*construct_rgb_triple_gouraud_map. This will low things slightly*/
+				/* and is unnecessary if there are no gaps in the potential map texture*/
+				success=make_skin_texture(map->texture_image,
+					texture_x_length,texture_y_length,255,128,128);			
+			}
+			success=construct_rgb_triple_gouraud_map(texture_x_length,
+				map->number_of_gouraud_triangles,
+				map->triangle_electrode_indices,map->electrode_tex_x,map->electrode_tex_y,
+				map->electrode_rgbs,map->texture_image);
+		}														
+		if(success)
+		{																			
+			/*find CMGUI texture, and set it with the map->texture_image*/
+			if (skin_texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)
+				("2d_unemap",texture_manager))
+			{
+				/*texture will retain its other properties, eg combine_mode?*/
+				managed_Texture_set_image(skin_texture,texture_manager,
+					(unsigned long *)map->texture_image,TEXTURE_RGB,
+					/* number_of_bytes_per_component */1,texture_x_length,
+					texture_y_length,TEXTURE_BOTTOM_TO_TOP,"from_2d_unemap",
+					/*crop_left_margin*/0,/*crop_bottom_margin*/0,
+					/*crop_width*/0,/*crop_height*/0,/*perform_crop*/0);			
+			}	/* if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(	*/
+			else
+			{
+				/*create a CMGUI texture, and set it with the map->texture_image*/
+				if (skin_texture=CREATE(Texture)("2d_unemap"))
+				{
+					if(Texture_set_image(skin_texture,(unsigned long *)map->texture_image,
+						TEXTURE_RGB,/* number_of_bytes_per_component */1,
+						texture_x_length,texture_y_length,TEXTURE_BOTTOM_TO_TOP,
+						"from_2d_unemap",/*crop_left_margin*/0,/*crop_bottom_margin*/0,
+						/*crop_width*/0,/*crop_height*/0,/*perform_crop*/0)&&
+						Texture_set_filter_mode(skin_texture,TEXTURE_NEAREST_FILTER)&&
+						Texture_set_combine_mode(skin_texture,TEXTURE_MODULATE))
+					{
+						ADD_OBJECT_TO_MANAGER(Texture)(skin_texture,texture_manager);
+						success=1;					
+					}
+					else
+					{
+						DESTROY(Texture)(&skin_texture);
+						success=0;
+					}
+				}/*if (texture=CREATE(Texture)*/
+				else
+				{
+					display_message(ERROR_MESSAGE,"make_gouraud_texture_from_torso_map. "
+						"Could not create texture ");
+					success=0;
+				}
+			}/* if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(	*/
+		}/* if(success) */
+		if(material)
+		{
+			DESTROY(Graphical_material)(&material);	
+		}
+		if (vertices)
+		{
+			DEALLOCATE(vertices);
+		}
+		if(!success)
+		{
+			/* free any set up info, as we failed */
+			if (map->triangle_electrode_indices)
+			{
+				DEALLOCATE(map->triangle_electrode_indices);
+			}			
+			if(map->electrode_tex_x)
+			{
+				DEALLOCATE(map->electrode_tex_x);
+			}		
+			if(map->electrode_tex_y)
+			{
+				DEALLOCATE(map->electrode_tex_y);
+			}	
+			if(map->electrode_rgbs);
+			{
+				DEALLOCATE(map->electrode_rgbs);
+			}									
+			if(map->texture_image)
+			{
+				DEALLOCATE(map->texture_image);
+			}
+			map->texture_x_length=0;
+			map->texture_y_length=0;
+			map->number_of_gouraud_triangles=0;
+		}/* if(!success) */
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"make_gouraud_texture_from_torso_map . Invalid arguments");
+		success=0;
+	}
+	LEAVE;
+	return(skin_texture);
+}/* make_gouraud_texture_from_torso_map */
+#endif/* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+struct Computed_field *make_texture_coord_computed_field(
+	struct Unemap_package *unemap_package,char *cp_coords_name,
+	FE_value z_min,FE_value z_range)
+/*******************************************************************************
+LAST MODIFIED : 27 February 2002
+
+DESCRIPTION :
+Make and return the Computed field texture_coordinates given <cp_coords_name>, 
+the name of the cylindrical polar computed field, <z_min> and <z_range>
+==============================================================================*/
+{		
+	int success;
+	struct Computed_field *cylindrical,*scale_factors,
+		*normalised_cylindrical,*reordered,*texture_coords;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	FE_value scalers[3],offsets[3];
+	struct Coordinate_system coordinate_system;
+
+	ENTER(make_texture_coord_computed_field);	
+	cylindrical=(struct Computed_field *)NULL;
+	scale_factors=(struct Computed_field *)NULL;
+	normalised_cylindrical=(struct Computed_field *)NULL;
+	reordered=(struct Computed_field *)NULL;
+	texture_coords=(struct Computed_field *)NULL;
+	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+	if(unemap_package&&(computed_field_manager=computed_field_manager=
+		get_unemap_package_Computed_field_manager(unemap_package)))
+	{	
+		success=1;
+		/*set up the computed fields to put the texture on the mapped_torso*/										
+		if (cylindrical=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)
+			(cp_coords_name,computed_field_manager))
+		{	
+			/*assume that if computed_field "um_texture_coords" was undefined,*/
+			/*so are the rest*/
+			if(!(texture_coords=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)
+				("um_texture_coords",computed_field_manager)))
+			{
+				coordinate_system.type=CYLINDRICAL_POLAR;		
+				if(scale_factors=CREATE(Computed_field)("um_scale_factors"))
+				{
+					coordinate_system.type=RECTANGULAR_CARTESIAN;
+					scalers[0]=1;
+					scalers[1]= 2*PI;
+					scalers[2]=z_range+1;
+					if(!(Computed_field_set_read_only(scale_factors)&&
+						Computed_field_set_coordinate_system(scale_factors,
+							&coordinate_system)&&
+						Computed_field_set_type_constant(scale_factors,
+							3,scalers)&&
+						ADD_OBJECT_TO_MANAGER(Computed_field)(scale_factors,
+							computed_field_manager)))
+					{
+						DESTROY(Computed_field)(&scale_factors);
+						success=0;
+					}
+				}
+				else
+				{	
+					display_message(ERROR_MESSAGE,
+						"make_texture_coord_computed_field. failed to create um_scale_factors ");
+					success=0;
+				}
+				if(success)
+				{
+					if(normalised_cylindrical=CREATE(Computed_field)("um_normalised_cylindrical"))
+					{
+						coordinate_system.type=RECTANGULAR_CARTESIAN;
+										
+						if(!(Computed_field_set_read_only(normalised_cylindrical)&&
+							Computed_field_set_coordinate_system(normalised_cylindrical,
+								&coordinate_system)&&	
+							Computed_field_set_type_divide_components(normalised_cylindrical,
+								cylindrical,scale_factors)&&								
+							ADD_OBJECT_TO_MANAGER(Computed_field)(normalised_cylindrical,
+								computed_field_manager)))
+						{
+							DESTROY(Computed_field)(&normalised_cylindrical);
+							success=0;
+						}
+					}
+					else
+					{	
+						display_message(ERROR_MESSAGE,
+							"make_texture_coord_computed_field. failed to create um_normalised_cylindrical");
+						success=0;
+					}
+				}
+				if(success)
+				{
+					if(reordered=CREATE(Computed_field)("um_reordered"))
+					{
+						int source_field_numbers[3] = { 0, 0, 0 };
+						int source_value_numbers[3] = { 1, 2, 0 };
+
+						coordinate_system.type=RECTANGULAR_CARTESIAN;										
+						if(!(Computed_field_set_read_only(reordered)&&
+							Computed_field_set_coordinate_system(reordered,
+								&coordinate_system)&&	
+							Computed_field_set_type_composite(reordered,
+								/*number_of_components*/3,
+								/*number_of_source_fields*/1,
+								/*source_fields*/&normalised_cylindrical,
+								/*number_of_source_values*/0,
+								/*source_values*/0,
+								source_field_numbers,
+								source_value_numbers) &&
+							ADD_OBJECT_TO_MANAGER(Computed_field)(reordered,
+								computed_field_manager)))
+						{
+							DESTROY(Computed_field)(&reordered);
+							success=0;
+						}
+					}
+					else
+					{	
+						display_message(ERROR_MESSAGE,
+							"make_texture_coord_computed_field. failed to create um_reordered");
+						success=0;
+					}
+				}	
+				if(success)
+				{
+					if(texture_coords=CREATE(Computed_field)("um_texture_coords"))
+					{
+						offsets[0]=0.5;
+						offsets[1]=-(z_min/z_range);
+						offsets[2]=0.5;
+						coordinate_system.type=RECTANGULAR_CARTESIAN;	
+						if(!(Computed_field_set_read_only(texture_coords)&&
+							Computed_field_set_coordinate_system(texture_coords,
+								&coordinate_system)&&	
+							Computed_field_set_type_offset(texture_coords,reordered,offsets)&&
+							ADD_OBJECT_TO_MANAGER(Computed_field)(texture_coords,
+								computed_field_manager)))
+						{
+							DESTROY(Computed_field)(&texture_coords);
+							success=0;
+						}
+					}
+					else
+					{	
+						display_message(ERROR_MESSAGE,
+							"make_texture_coord_computed_field. failed to create um_texture_coords");
+						success=0;
+					}
+				}/*if(success)*/
+			}/* if(texture_coords=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name) */
+		}	/* if (!FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)("um_cylindrical",*/	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"make_texture_coord_computed_field invalid arguments");
+		success=0;
+	}
+	LEAVE;
+	return(texture_coords);
+}/* make_texture_coord_computed_field */
+#endif/* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int draw_map_3d(struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
@@ -7327,16 +8547,16 @@ Removes 3d drawing for non-current region(s).
 	/* up vector for the scene. */
 	double z_up[3]={0.0,0.0,1.0};
 	double *up_vector;
-	FE_value focus,time;
+	FE_value focus,time,z_min,z_max,z_range;
 	struct Device *device;
 	struct FE_field *map_position_field;
 	struct FE_field_order_info *field_order_info;
-	struct Computed_field *data_field;
+	struct Computed_field *data_field,*texture_coords;
 	float frame_time,minimum,maximum;
-	int default_torso_loaded,delauney_map,display_all_regions,
+	int default_torso_loaded,delauney_map,direct_on_smooth_torso,display_all_regions,
 		nodes_rejected_or_accepted,range_set,return_code,*times;
 	enum Map_type map_type;
-	char undecided_accepted;
+	char undecided_accepted;	
 	struct Map_drawing_information *drawing_information;
 	struct Rig *rig;
 	struct Region_list_item *region_item;
@@ -7346,7 +8566,8 @@ Removes 3d drawing for non-current region(s).
 	struct Scene *scene;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
-	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;	
+	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;
+	struct Texture *skin_texture;	
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
 	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
@@ -7355,9 +8576,10 @@ Removes 3d drawing for non-current region(s).
 
 	ENTER(draw_map_3d);
 	buffer=(struct Signal_buffer *)NULL;
+	skin_texture=(struct Texture *)NULL;
 	fit_name=(char *)NULL;
 	field_order_info=(struct FE_field_order_info *)NULL;	
-	map_position_field=(struct FE_field *)NULL;
+	map_position_field=(struct FE_field *)NULL;	
 	data_field=(struct Computed_field *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	rig=(struct Rig *)NULL;
@@ -7382,7 +8604,7 @@ Removes 3d drawing for non-current region(s).
 	{
 		/*destroy the (2d) sub_maps */
 		/*??JW need to sort out sub maps for 3D*/		
-		map_destroy_Sub_maps(map); 		
+		map_destroy_Sub_maps(map);
 		range_set=0;		
 		display_all_regions=0;
 		unemap_package=map->unemap_package;
@@ -7402,8 +8624,7 @@ Removes 3d drawing for non-current region(s).
 		else
 		{
 			map_type=NO_MAP_FIELD;
-		}
-		delauney_map = map_is_delauney(map);
+		}	 
 		/* have any electrode nodes been accepted or rejected recently?*/		
 		nodes_rejected_or_accepted=
 			get_map_drawing_information_electrodes_accepted_or_rejected
@@ -7419,7 +8640,7 @@ Removes 3d drawing for non-current region(s).
 			times=buffer->times;
 			frame_time=(int)((float)((times)[*(map->potential_time)])*1000./buffer->frequency);
 			undecided_accepted=map->undecided_accepted;
-			current_region=get_Rig_current_region(rig);				
+			current_region=get_Rig_current_region(rig);			
 			/*if current_region NULL, displaying all regions*/
 			if (!current_region)
 			{
@@ -7435,7 +8656,19 @@ Removes 3d drawing for non-current region(s).
 					region=get_Region_list_item_region(region_item);
 					rig_node_group=get_Region_rig_node_group(region);
 					unrejected_node_group=get_Region_unrejected_node_group(region);
-					map_3d_package=get_Region_map_3d_package(region);	
+					map_3d_package=get_Region_map_3d_package(region);						
+					if((default_torso_loaded)&&(region->type==TORSO)&&
+						(map->interpolation_type==DIRECT_INTERPOLATION))
+					{
+						direct_on_smooth_torso=1;
+						delauney_map =0;
+					}
+					else
+					{
+						delauney_map = map_is_delauney(map);
+						direct_on_smooth_torso=0;
+					}
+	
 					/* free everything except the current region(s) map_3d_package*/
 					if ((region!=current_region)&&(!display_all_regions))
 					{	
@@ -7498,49 +8731,93 @@ Removes 3d drawing for non-current region(s).
 						} /* if (map->interpolation_type==NO_INTERPOLATION)	*/
 						else
 						{
-							/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
-							if (delauney_map)
-							{
-								make_and_set_delauney(region,unemap_package,time,
-									nodes_rejected_or_accepted);						
-							}
+							if(direct_on_smooth_torso)
+							{		
+								if(nodes_rejected_or_accepted)
+								{																
+									if (map_3d_package)
+									{
+										/*this will do a deaccess*/
+										set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
+									}
+									/* Create the new Map_3d_package*/
+									map_3d_package=CREATE(Map_3d_package)(				
+										get_unemap_package_FE_field_manager(unemap_package),
+										get_unemap_package_element_group_manager(unemap_package),
+										get_unemap_package_data_manager(unemap_package),
+										get_unemap_package_data_group_manager(unemap_package),
+										get_unemap_package_node_manager(unemap_package),
+										get_unemap_package_node_group_manager(unemap_package),
+										get_unemap_package_element_manager(unemap_package),
+										get_unemap_package_Computed_field_manager(unemap_package));
+									set_Region_map_3d_package(region,map_3d_package);
+									/*  set up the mapped torso node and element groups */											
+									make_mapped_torso_node_and_element_groups(region,unemap_package);	
+									map_define_scaled_offset_signal_at_time(unemap_package);
+								}											
+								get_rig_node_group_signal_min_max_at_time(unrejected_node_group,				
+									get_unemap_package_scaled_offset_signal_value_at_time_field(unemap_package),
+									get_unemap_package_signal_status_field(unemap_package),					
+									time,&minimum,&maximum);																
+								z_min=get_map_3d_package_electrodes_min_z(map_3d_package);
+								z_max=get_map_3d_package_electrodes_max_z(map_3d_package);
+								z_range=z_max-z_min;								
+								skin_texture=make_gouraud_texture_from_torso_map(map,region,time,
+									z_min,z_range,minimum,maximum,256/*texture_x_length*/,
+									256/*texture_y_length*/,1/*draw_skin*/);
+								/* range set in make_gouraud_texture_from_torso_map, so don't*/
+								/* want to do it again below*/	
+								range_set=0;
+								texture_coords=make_texture_coord_computed_field(unemap_package,
+									"um_cylindrical_polar_coords",z_min,z_range);
+							}/* if(direct_on_smooth_torso)*/
 							else
-							{
-								if (function=calculate_interpolation_functio(map_type,
-									rig,region,	map->event_number,frame_time,map->datum,
-									map->start_search_interval,map->end_search_interval,undecided_accepted,
-									map->finite_element_mesh_rows,
-									map->finite_element_mesh_columns,map->membrane_smoothing,
-									map->plate_bending_smoothing))
+							{								
+								if (delauney_map)
 								{
-									/* Now we have the interpolation_function struct */
-									/* make the node and element groups from it.*/
-									/* 1st node_group is 'all_devices_node_group */							
-									make_fit_node_and_element_groups(field_order_info,function,
-										unemap_package,rig->name,FIT_SOCK_LAMBDA,
-										FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,FIT_PATCH_Z,region,
-										nodes_rejected_or_accepted);	
-									destroy_Interpolation_function(&function);
+									/* DIRECT_INTERPOLATION */
+									make_and_set_delauney(region,unemap_package,time,
+										nodes_rejected_or_accepted);						
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,
-										"draw_map_3d. calculate_interpolation_functio failed  ");
-									return_code=0;
+									/* BICUBIC_INTERPOLATION */
+									if (function=calculate_interpolation_functio(map_type,
+										rig,region,	map->event_number,frame_time,map->datum,
+										map->start_search_interval,map->end_search_interval,undecided_accepted,
+										map->finite_element_mesh_rows,
+										map->finite_element_mesh_columns,map->membrane_smoothing,
+										map->plate_bending_smoothing))
+									{
+										/* Now we have the interpolation_function struct */
+										/* make the node and element groups from it.*/
+										/* 1st node_group is 'all_devices_node_group */							
+										make_fit_node_and_element_groups(field_order_info,function,
+											unemap_package,rig->name,FIT_SOCK_LAMBDA,
+											FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,FIT_PATCH_Z,region,
+											nodes_rejected_or_accepted);	
+										destroy_Interpolation_function(&function);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"draw_map_3d. calculate_interpolation_functio failed  ");
+										return_code=0;
+									}
 								}
-							}
+							}/*direct_on_smooth_torso*/
 							/* get map_3d_package again, it may have changed */
-							map_3d_package=get_Region_map_3d_package(region);
+							map_3d_package=get_Region_map_3d_package(region);							
 							if (delauney_map)
 							{
-								/* do gouraund torso surface*/
+								/* do gouraud torso surface*/
 								element_group=
 									get_map_3d_package_delauney_torso_element_group(map_3d_package);
 							}
 							else
 							{
 								/* Show the map element surface */							
-								if ((region->type==TORSO)&&default_torso_loaded)
+								if (((region->type==TORSO)&&default_torso_loaded)||direct_on_smooth_torso)
 								{	
 									/* do smooth torso surface*/
 									element_group=
@@ -7551,7 +8828,7 @@ Removes 3d drawing for non-current region(s).
 									/* do cylinder surface */
 									element_group=get_map_3d_package_element_group(map_3d_package);
 								}
-							}					
+							}															
 							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
 							if ((map->interpolation_type==NO_INTERPOLATION)||
 								(map->colour_option==HIDE_COLOUR))
@@ -7564,14 +8841,30 @@ Removes 3d drawing for non-current region(s).
 									(drawing_information),
 									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
 									get_map_drawing_information_no_interpolation_colour
-									(drawing_information), 
+									(drawing_information),
 									get_unemap_package_potential_time_object(unemap_package),
 									get_map_drawing_information_user_interface(drawing_information),
-									delauney_map, !(map->fixed_range));
+									delauney_map,!(map->fixed_range),
+									(struct Texture *)NULL,(struct Computed_field *)NULL);
 							}
-							/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
+							else if(direct_on_smooth_torso)
+							{
+								/* texture on smooth torso*/
+								map_show_surface(scene,element_group,
+									get_map_drawing_information_map_graphical_material
+									(drawing_information),
+									get_map_drawing_information_Graphical_material_manager
+									(drawing_information),
+									spectrum,(struct Computed_field *)NULL,
+									get_map_drawing_information_no_interpolation_colour
+									(drawing_information),
+									get_unemap_package_potential_time_object(unemap_package),
+									get_map_drawing_information_user_interface(drawing_information),
+									1/*direct_interpolation*/,!(map->fixed_range),skin_texture,texture_coords);
+							}
 							else 
 							{
+								/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
 								data_field = map_get_data_field_for_3d_map(map, map_3d_package);
 								map_show_surface(scene,element_group,
 									get_map_drawing_information_map_graphical_material
@@ -7581,20 +8874,21 @@ Removes 3d drawing for non-current region(s).
 									spectrum,data_field,(struct Colour*)NULL,
 									get_unemap_package_potential_time_object(unemap_package),
 									get_map_drawing_information_user_interface(drawing_information),
-									delauney_map, !(map->fixed_range));
-							}					
-
-						} 
+									delauney_map, !(map->fixed_range),
+									(struct Texture *)NULL,(struct Computed_field *)NULL);
+							}											
+						} /*if (map->interpolation_type==NO_INTERPOLATION)*/
 						/* can't do electrodes on default_torso surface yet*/	
 						/*(possibly)  make the map_electrode_position_field, add to the rig nodes*/
-						if ((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
+						if ((region->type!=TORSO)||(!(default_torso_loaded&&
+							(!delauney_map)&&direct_on_smooth_torso)))
 						{
 							make_and_add_map_electrode_position_field(unemap_package,
 								rig_node_group,region,delauney_map);
 						}
-						/*draw (or remove) the arms  */				
+						/*draw (or remove) the arm labels  */				
 						if ((region->type==TORSO)&&(!default_torso_loaded)&&
-							(!delauney_map)/*&&map_3d_package*/)/*FOR AJP*/
+							(!delauney_map))/*FOR AJP*/
 						{
 							draw_torso_arm_labels(drawing_information,region);	
 						}
@@ -7606,8 +8900,7 @@ Removes 3d drawing for non-current region(s).
 					}/* if (unemap_package_rig_node_group_has_electrodes */					
 					region_item=get_Region_list_item_next(region_item);
 				} /* while */
-				/* Alter the spectrum */
-										
+				/* Alter the spectrum */										
 				/* spectrum range changed and fixed */
 				if (map->fixed_range)
 				{		
@@ -7616,15 +8909,8 @@ Removes 3d drawing for non-current region(s).
 						map->range_changed=0;	
 						minimum=map->minimum_value;
 						maximum=map->maximum_value;	
-						range_set=1;
+						range_set=1;					
 					}
-#if defined (OLD_CODE)
-					/* remove electrode on default_torso*/
-					if ((default_torso_loaded)&&(!delauney_map))
-					{
-						map_remove_all_electrodes(map);
-					}
-#endif /* defined (OLD_CODE) */
 				}
 				/* spectrum range automatic */
 				else					
@@ -7634,26 +8920,15 @@ Removes 3d drawing for non-current region(s).
 					/*range from surface(s). Similarly for DIRECT, as the electrodes*/
 					/* include rejected signals, whcih will mess up range. */
 					/* Also remove electodes for default torso surface, as can't display these yet */
-#if defined (OLD_CODE)
-					/* Electrodes added below. This is a little inefficient, as must then */
-					/* re-add electrodes. */
-					if ((map->interpolation_type==BICUBIC_INTERPOLATION)||
-						(map->interpolation_type==DIRECT_INTERPOLATION)||
-						(default_torso_loaded))
-					{
-						map_remove_all_electrodes(map);
-					}
-#endif /* defined (OLD_CODE) */
 					/* NO_INTERPOLATION-map range comes from the signals (i.e electrodes) */
 					if (map->interpolation_type==NO_INTERPOLATION)
-					{													
+					{	
+						map_define_scaled_offset_signal_at_time(unemap_package);												
 						get_rig_node_group_signal_min_max_at_time(
-							get_Rig_all_devices_rig_node_group(rig),								
-							get_unemap_package_signal_field(unemap_package),
-							get_unemap_package_signal_status_field(unemap_package),
-							get_unemap_package_channel_gain_field(unemap_package),
-							get_unemap_package_channel_offset_field(unemap_package),
-							time,&minimum,&maximum);
+							get_Rig_all_devices_rig_node_group(rig),				
+							get_unemap_package_scaled_offset_signal_value_at_time_field(unemap_package),
+							get_unemap_package_signal_status_field(unemap_package),					
+							time,&minimum,&maximum);					
 						map->minimum_value=minimum;
 						map->maximum_value=maximum;	
 						map->contour_minimum=minimum;
@@ -7663,12 +8938,10 @@ Removes 3d drawing for non-current region(s).
 					}
 					/* BICUBIC_INTERPOLATION	or DIRECT_INTERPOLATION */
 					else 						
-					{
-#if defined (OLD_CODE)
-						Scene_get_data_range_for_spectrum(scene,spectrum,&minimum,&maximum,
-							&range_set);														
-#endif /* defined (OLD_CODE) */
-					}
+					{		
+						/*nothing to do*/
+						;
+					}		
 				}	/* if (map->fixed_range) */
 				if (range_set)
 				{
@@ -7709,7 +8982,11 @@ Removes 3d drawing for non-current region(s).
 				{
 					map_remove_all_electrodes(map);
 				}
-				map_draw_contours(map,spectrum,unemap_package);
+				if(!direct_on_smooth_torso)
+				{
+					/*can't yet do for this case */
+					map_draw_contours(map,spectrum,unemap_package);
+				}
 				/* First time the scene's viewed  do "view_all"*/
 				if (!get_map_drawing_information_viewed_scene(drawing_information))				
 				{						
@@ -7740,7 +9017,7 @@ Removes 3d drawing for non-current region(s).
 	{
 		display_message(ERROR_MESSAGE,"draw_map_3d.  Invalid argument(s)");
 		return_code=0;
-	}
+	}	
 	LEAVE;
 	return (return_code);
 } /* draw_map_3d */
@@ -9875,7 +11152,7 @@ LAST MODIFIED : 9 November 2001
 DESCRIPTION :
 Draws lines of delauney triangles. 
 Really a debugging function.
-Could be more efficient, as most lines as shared and will be drawn twice.
+Could be more efficient, as most lines are shared and will be drawn twice.
 Must call map_2d_delauney first.
 *******************************************************************************/
 {	
@@ -9897,7 +11174,7 @@ Must call map_2d_delauney first.
 	  graphics_context=(drawing_information->graphics_context).highlighted_colour;
 	  electrode_x=sub_map->electrode_x;
 	  electrode_y=sub_map->electrode_y;
-	  for (k=0;k<map->number_of_2d_triangles*3;k+=3)
+	  for (k=0;k<map->number_of_gouraud_triangles*3;k+=3)
 	  {
 		  v0_index=map->triangle_electrode_indices[k];
       v1_index=map->triangle_electrode_indices[k+1];
@@ -9920,7 +11197,7 @@ Must call map_2d_delauney first.
 			x1=electrode_x[v0_index];
 			y1=electrode_y[v0_index];
 			XPSDrawLine(display,drawing->pixel_map,graphics_context,x0,y0,x1,y1);
-		}/* (k=0;k<map->number_of_2d_triangles;k++) */
+		}/* (k=0;k<map->number_of_gouraud_triangles;k++) */
 	}
 	else
 	{
@@ -11147,206 +12424,6 @@ and I don't see a need.
 	return(return_code);
 }/*triangle_cut_by_angle*/
 
-static int map_2d_delauney(struct Map *map)
-/*******************************************************************************
-LAST MODIFIED : 19 November 2001
-
-DESCRIPTION :
-given <map>, do a delauney triangluarisation of map->electrodes.
-Assumes the map is of type TORSO, and hence is cylindrical, and centred about 
-the z axis. 
-The results are stored as map->number_of_2d_triangles, the number of delauney 
-triagles formed by the electrodes, and map->triangle_electrode_indices,
-and array of length 3*number_of_2d_triangles containing indices into 
-map->electrodes of pointing to the triangle's electrodes.
-No cutting of the cylinder for 2d projection is done. This happens after 2d 
-projection is performed, in  draw_2d_construct_2d_gouraud_image_map
-*******************************************************************************/
-{
-	char undecided_accepted;
-	float *vertex,*vertices;
-	int found,i,index,j,*map_electrode_triangles,number_of_electrodes,
-		number_of_triangles,number_of_accepted_triangles,number_of_vertices,
-		return_code,*triangles,*triangle_vertex,triangle_v0_index,
-		triangle_v1_index,triangle_v2_index;
-	struct Device **accepted_triangle_electrodes,**electrode,**triangle_electrodes,
-		**triangle_electrode,*device;
-	struct Device_description *description;	
-
-	ENTER(map_2d_delauney);
-	device=(struct Device *)NULL;
-	electrode=(struct Device **)NULL;
-	accepted_triangle_electrodes=(struct Device **)NULL;
-	triangle_electrodes=(struct Device **)NULL;
-	triangle_electrode=(struct Device **)NULL;
-	description=(struct Device_description *)NULL;
-	vertices=(float *)NULL;
-	vertex=(float *)NULL;
-	triangles =(int *)NULL;	
-	triangle_vertex =(int *)NULL;
-	if(map)
-	{
-		undecided_accepted=map->undecided_accepted;
-		/* clear out any old stuff */
-		map->number_of_2d_triangles=0;
-		if(map->triangle_electrode_indices)
-		{
-			DEALLOCATE(map->triangle_electrode_indices);
-		}
-		return_code=1;		
-		number_of_vertices=0;
-		electrode=map->electrodes;
-		number_of_electrodes=0;
-		/*count the number of vertices = number of unrejected electrodes in map */
-		while(number_of_electrodes<map->number_of_electrodes)
-		{
-			/*if we've got an unrejected electrode */ 			
-			if (((*electrode)->signal->status==ACCEPTED)||
-				(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
-			{						 
-				number_of_vertices++;
-			}					
-			electrode++;
-			number_of_electrodes++;
-		}/*while(number_of_devices<rig->number_of_devices)*/
-		/*allocate space for x,y,z vertices and the triangle_electrodes */
-		if(ALLOCATE(vertices,float,number_of_vertices*3)&&
-			ALLOCATE(triangle_electrodes,struct Device *,number_of_vertices))
-		{
-			/*for unrejected electrodes,store the vertex values & electrode/device*/
-			electrode=map->electrodes;
-			number_of_electrodes=0;
-			vertex=vertices;
-			triangle_electrode=triangle_electrodes;
-			while(number_of_electrodes<map->number_of_electrodes)
-			{
-				description=(*electrode)->description;
-				/*if we've got an unrejected electrode */				
-				if (((*electrode)->signal->status==ACCEPTED)||
-					(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
-				{					
-					*vertex=(description->properties).electrode.position.x;
-					vertex++;
-					*vertex=(description->properties).electrode.position.y;
-					vertex++;
-					*vertex=(description->properties).electrode.position.z;
-					vertex++;
-					*triangle_electrode=*electrode;
-					triangle_electrode++;
-				}
-				electrode++;
-				number_of_electrodes++;
-			}/*while(number_of_devices<rig->number_of_devices)*/
-			/*perform deluaney triangularization */
-			if(return_code=cylinder_delauney(number_of_vertices,vertices,
-				&number_of_triangles,&triangles))								
-			{
-				/*accepted_triangles contains the Device's of the vertices triangles */
-				if(ALLOCATE(accepted_triangle_electrodes,struct Device *,
-					number_of_triangles*3))
-				{									
-					triangle_vertex=triangles;				
-					number_of_accepted_triangles=0;
-					for(i=0;i<number_of_triangles;i++)
-					{
-						triangle_v0_index=*triangle_vertex;
-						triangle_vertex++;
-						triangle_v1_index=*triangle_vertex;
-						triangle_vertex++;
-						triangle_v2_index=*triangle_vertex;
-						triangle_vertex++;
-						/*store Device's triangle electrodes*/
-						number_of_accepted_triangles++;																	
-						index=(number_of_accepted_triangles-1)*3;
-						/*vertex 0,1,2*/
-						accepted_triangle_electrodes[index]=
-							triangle_electrodes[triangle_v0_index];
-						accepted_triangle_electrodes[index+1]=
-							triangle_electrodes[triangle_v1_index];
-						accepted_triangle_electrodes[index+2]=
-							triangle_electrodes[triangle_v2_index];						
-					}										
-					/*map_electrode_triangles contains index in map->electrodes array of */
-					/*triangle's vertices/electrodes */
-					if(ALLOCATE(map_electrode_triangles,int,number_of_triangles*3))
-					{
-						return_code=1;
-						/*match device->number to position in map->electrodes array */
-						i=0;
-						while((i<number_of_accepted_triangles*3)&&(return_code))
-						{
-							device=accepted_triangle_electrodes[i];
-							j=0;
-							found=0;
-							electrode=map->electrodes;
-							while((j<map->number_of_electrodes)&&(!found))
-							{
-								if((*electrode)==device)
-								{
-									map_electrode_triangles[i]=j;
-									found=1;									
-								}
-								else
-								{
-									j++;
-									electrode++;
-								}
-							}/* while((j<map->number_of_electrodes)&&(!found)) */
-							if(!found)
-							{
-								display_message(ERROR_MESSAGE,
-									"map_2d_delauney. unmatched triangle vertex");
-								return_code=0;
-							}
-							i++;
-						}/* while((i<number_of_accepted_triangles*3)&&(return_code)) */
-						if(return_code)
-						{
-							map->number_of_2d_triangles=number_of_accepted_triangles;
-							map->triangle_electrode_indices=map_electrode_triangles;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"map_2d_delauney. Out of memory for map_electrode_triangles");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"map_2d_delauney. Out of memory for accepted_triangles");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"map_2d_delauney. cylinder_delauney failed");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"map_2d_delauney. Out of memory for vertices/electrode_numbers");
-			return_code=0;
-		}	
-		DEALLOCATE(vertices);
-		DEALLOCATE(triangle_electrodes);
-		DEALLOCATE(triangles);
-		DEALLOCATE(accepted_triangle_electrodes);		
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"map_2d_delauney. Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* map_2d_delauney */
-
 static int draw_2d_get_min_max(float value,float *min_value,float *max_value,
 	struct Region **maximum_region,struct Region **minimum_region,
 	struct Region *region,int *minimum_x,int *minimum_y,int *maximum_x,
@@ -11563,47 +12640,6 @@ Construct a colour map image for colour map or contours or  values  in the
 	return(return_code);
 }/* draw_2d_construct_interpolated_image_map*/
 
-static int get_triangle_line_end_vertex_num_from_start_num(int start_vertex_num)
-/*******************************************************************************
-LAST MODIFIED 14 November 2001
-
-DESCRIPTION :
-Given <start_vertex_num>, the start vertex number of an edge of a triangle,
-returns end_vertex_num, the corresponding end vertex number of the same edge.
-<start_vertex_num> most be from 0->2. 
-Sets end_vertex_num according to:
-start_vertex_num 0 : end_vertex_num 1 (triangle edge 0)
-start_vertex_num 1 end_vertex_num 2 (triangle edge 1)
-start_vertex_num 2 end_vertex_num 0 (triangle edge 2)
-Returns -1 on error.
-A helper function for get_triangle_scan_line_intersection,
- draw_2d_construct_2d_gouraud_image_map.
-*******************************************************************************/
-{
-	int end_vertex_num;
-
-	ENTER(get_triangle_line_end_vertex_num_from_start_num);
-	if((start_vertex_num>-1)&&(start_vertex_num<3))
-	{
-		if(start_vertex_num<2)
-		{
-			end_vertex_num=start_vertex_num+1;
-		}
-		else
-		{
-			end_vertex_num=0;
-		}	
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_triangle_line_end_vertex_num_from_start_num. Invalid arguments");
-		end_vertex_num=-1;
-	}
-	return(end_vertex_num);
-	LEAVE;
-}/*get_triangle_line_end_vertex_num_from_start_num */
-
 static int get_triangle_scan_line_intersection(int triangle_egde_number,
 	 int scan_line_y,int *vertex_x,int *vertex_y,float *gradient,
 	float *inv_edge_y_length,float *vertex_value,int *x_intersection,float *value)
@@ -11625,6 +12661,7 @@ or if the y's of the triangle edge's end are the same, i.e you're supposed to
 check for these conditions before calling this function.
 This function is a quite specific (i.e. non-generic) helper function, called by 
 draw_2d_construct_2d_gouraud_image_map.
+cf get_tri_scan_line_intersection_rgb_triple
 *******************************************************************************/
 {
 	float grad,inverse_y_length,value_0,value_1;
@@ -11702,13 +12739,14 @@ static int draw_2d_construct_2d_gouraud_image_map(struct Map *map,
 	int *minimum_x,int *minimum_y,int *maximum_x,int *maximum_y,float *max_f,
 	float *min_f,char *background_map_boundary_base)
 /*******************************************************************************
-LAST MODIFIED 19 November 2001
+LAST MODIFIED 26 February 2002
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
 <sub_map> frame, using gouraud shading btwn the electrodes.
 Only works for TORSOs, requires that the  electrodes are approximately a 
 cylinder with z axis  up centre.
+cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 *******************************************************************************/
 {
 	enum Map_type map_type;	
@@ -11756,7 +12794,7 @@ cylinder with z axis  up centre.
 		{
 			map_type=NO_MAP_FIELD;
 		}				
-		if(	map_type==POTENTIAL)
+		if(map_type==POTENTIAL)
 		{
 			frame=&(sub_map->frame);						
 			pixel_value=frame->pixel_values;
@@ -11770,7 +12808,7 @@ cylinder with z axis  up centre.
 				electrode_y=sub_map->electrode_y;
 				electrode_value=sub_map->electrode_value;
 				k=0;		
-				while(k<map->number_of_2d_triangles*3)
+				while(k<map->number_of_gouraud_triangles*3)
 				{						
 					/* for each triangle vertex*/
 					for(i=0;i<3;i++)
@@ -11900,7 +12938,8 @@ cylinder with z axis  up centre.
 								}
 							}
 							if(found)
-							{									
+							{	
+								return_code=1;								
 								start_vertex_num=i;
 								end_vertex_num=
 									get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
@@ -11922,10 +12961,10 @@ cylinder with z axis  up centre.
 										get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
 									if(vertex_y[start_vertex_num]==y)
 									{
+										return_code=1;
 										/*start intersection at a vertex */
 										line_start_x=vertex_x[start_vertex_num];
 										start_value=vertex_value[start_vertex_num];
-
 										if(vertex_y[end_vertex_num]==y)
 										{
 											/*end intersection at a vertex */
@@ -11935,7 +12974,7 @@ cylinder with z axis  up centre.
 									}													
 									else if(vertex_y[end_vertex_num]!=y)
 									{	
-										/*end intersection n the middle of an edge */
+										/*end intersection in the middle of an edge */
 										return_code=get_triangle_scan_line_intersection(intersected_edges[i],
 											y,vertex_x,vertex_y,gradient,inv_edge_y_length,vertex_value,
 											&line_end_x,&end_value);
@@ -11985,7 +13024,7 @@ cylinder with z axis  up centre.
 							{		
 #if defined (DEBUG)
 								/*flag pixels at the triangle's edges*/
-								if((x==line_start_x)||(x==line_end_x))
+								if((x==line_start_x)||(x==line_end_x)||(y==tri_min_y)||(y==tri_max_y))
 								{
 									edge_flag=1;
 								}
@@ -11995,7 +13034,7 @@ cylinder with z axis  up centre.
 								}	
 #endif /* defined (DEBUG)*/
 								/*ensure the pixels of (wrapped) triangles at RH edge wrap to LH edge*/	
-								if(x>(map_width-x_offset))
+								if(x>=(map_width-x_offset))
 								{
 									adjusted_x=x-map_width+2*x_offset;
 								}
@@ -12019,7 +13058,7 @@ cylinder with z axis  up centre.
 							}	/* for(x=line_start_x;x<=line_end_x;x++) */
 						}/* if(return_code)*/
 					}/* for(y=tri_min_y;y<=tri_max_y;y++) */					
-				}/* (k=0;k<map->number_of_2d_triangles;k++) */						
+				}/* (k=0;k<map->number_of_gouraud_triangles;k++) */						
 			}/* if ((0!=stretch_x[region_number])&& */
 		}/* if(	map_type==POTENTIAL)*/
 	}
@@ -12673,7 +13712,6 @@ to the drawing or writes to a postscript file.
 									screen_x++;
 									screen_y++;
 								}/* for (i=number_of_electrodes;i>0;i--) */
-
 								/* construct a colour map image for colour map or contours or
 									 values */
 								/* draw colour map and contours first (background) */
@@ -13946,6 +14984,7 @@ int destroy_Map_drawing_information(
 LAST MODIFIED : 10 July 1998
 
 DESCRIPTION :
+destroys the map_drawing_information
 ==============================================================================*/
 {
 	Display *display;
@@ -14926,9 +15965,9 @@ sets the node_order_info for map_3d_package
 
 	ENTER(set_map_3d_package_node_order_info);	
 	if (map_3d_package&&node_order_info)	
-	{		
-		map_3d_package->node_order_info=ACCESS(FE_node_order_info)
-				(node_order_info);
+	{				
+		REACCESS(FE_node_order_info)
+			(&(map_3d_package->node_order_info),node_order_info);
 		return_code=1;	
 	}
 	else
@@ -14981,7 +16020,8 @@ sets the map_position_field for map_3d_package
 	if (map_3d_package)	
 	{	
 		return_code=1;
-		map_3d_package->map_position_field=ACCESS(FE_field)(position_field);	
+		REACCESS(FE_field)
+			(&(map_3d_package->map_position_field),position_field);				
 	}
 	else
 	{
@@ -15033,7 +16073,7 @@ sets the map_fit_field for map_3d_package
 	if (map_3d_package)	
 	{	
 		return_code=1;
-		map_3d_package->map_fit_field=ACCESS(FE_field)(fit_field);	
+		REACCESS(FE_field)(&(map_3d_package->map_fit_field),fit_field);			
 	}
 	else
 	{
@@ -15083,8 +16123,8 @@ sets the node_group for map_3d_package
 
 	ENTER(set_map_3d_package_node_group);
 	if (map_3d_package)	
-	{		
-		map_3d_package->node_group=ACCESS(GROUP(FE_node))(map_node_group);
+	{	
+		REACCESS(GROUP(FE_node))(&(map_3d_package->node_group),map_node_group);				
 		return_code=1;		
 	}
 	else
@@ -16530,4 +17570,466 @@ creates a 1 component  <field_name>
 }/* create_mapping_type_fe_field */
 #endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D) 
+struct Torso_node_data
+{	
+	struct Computed_field *cylindrical_polar_coords_wrapper,
+		*transformed_rect_cart_coords,*rect_cart_coords_wrapper;
+	struct FE_field *cylindrical_polar_coords,*rect_cart_coords;	
+	struct MANAGER(FE_node) *node_manager;
+	struct FE_time_version *time_version;
+	struct LIST(Computed_field) *computed_field_list;
+}; /* Torso_node_data */
+
+int iterative_add_cylindrical_info_to_cartesian_torso_node(
+	struct FE_node *torso_node,void *torso_node_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 February 2002
+
+DESCRIPTION :
+Add cylindrical polar information to a node of the the default torso, 
+so can do a seamless texture map.
+Called by 
+===============================================================================*/
+{
+	char **computed_field_names,**current_computed_field_name,*type_str,
+		end_string[10],version_num_string[20];
+	enum FE_nodal_value_type *nodal_derivative_types,nodal_value_type;
+	int i,j,*max_versions,number_of_computed_fields,number_of_derivative_versions,
+		number_of_derivatives,number_of_name_allocations,return_code,string_error,
+		version_display_number;
+	struct Computed_field *cylindrical_polar_coords_wrapper,
+		*transformed_rect_cart_coords,*rect_cart_coords_wrapper,*source,*dest,
+		*trans_source;
+	struct Coordinate_system coordinate_system;
+	struct FE_field *cylindrical_polar_coords,*rect_cart_coords;	
+	struct FE_node *node_copy;
+	struct FE_node_field_creator *node_field_creator;
+	struct FE_time_version *time_version;
+	struct MANAGER(FE_node) *node_manager;
+	struct Torso_node_data  *torso_node_data;
+	struct LIST(Computed_field) *computed_field_list;
+
+	ENTER(iterative_add_cylindrical_info_to_cartesian_torso_node);
+	source=(struct Computed_field *)NULL;
+	dest=(struct Computed_field *)NULL;
+	trans_source=(struct Computed_field *)NULL;
+	max_versions=(int *)NULL;
+	computed_field_names=(char ** )NULL;
+	current_computed_field_name=(char ** )NULL;
+	nodal_derivative_types=(enum FE_nodal_value_type *)NULL;
+	cylindrical_polar_coords=(struct FE_field *)NULL;
+	node_copy=(struct FE_node *)NULL;
+	torso_node_data=(struct Torso_node_data  *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
+	time_version = (struct FE_time_version *)NULL;
+	computed_field_list=(struct LIST(Computed_field) *)NULL;
+	if (torso_node&&torso_node_data_void&&(torso_node_data=
+		(struct Torso_node_data *)torso_node_data_void))
+	{	
+		coordinate_system.type=CYLINDRICAL_POLAR;
+		computed_field_list=torso_node_data->computed_field_list;
+		rect_cart_coords=torso_node_data->rect_cart_coords;
+		rect_cart_coords_wrapper=torso_node_data->rect_cart_coords_wrapper;
+		transformed_rect_cart_coords=torso_node_data->transformed_rect_cart_coords;
+		cylindrical_polar_coords=torso_node_data->cylindrical_polar_coords;
+		cylindrical_polar_coords_wrapper=torso_node_data->cylindrical_polar_coords_wrapper;
+		node_manager=torso_node_data->node_manager;
+		time_version=torso_node_data->time_version;
+		if (FE_field_is_defined_at_node(rect_cart_coords,torso_node))
+		{	
+			/* create a node to work with */
+			if (node_copy = CREATE(FE_node)(0, torso_node))
+			{
+				/*define the cylindrical_polar_coords at the node*/
+				if (node_field_creator = create_FE_node_field_creator_from_node_field(
+					node_copy, rect_cart_coords))
+				{
+					if (define_FE_field_at_node(node_copy, cylindrical_polar_coords,
+						time_version, node_field_creator))
+					{
+						if (Computed_field_copy_values_at_node(node_copy,
+							cylindrical_polar_coords_wrapper,
+							transformed_rect_cart_coords, /*time*/0.0))
+						{	
+							/* determine the number of derivative_types, and number of versions of each*/
+							if(return_code =FE_node_field_creator_get_nodal_derivative_versions(
+								node_field_creator,&number_of_derivatives,&nodal_derivative_types,
+									&max_versions))
+							{
+								number_of_derivative_versions=0;
+								for(i=0;i<number_of_derivatives;i++)
+								{
+									for(j=0;j<max_versions[i];j++)
+									{
+										number_of_derivative_versions++;
+									}
+								}
+								number_of_computed_fields=number_of_derivative_versions*3;
+								/*allocate space for pointers to computed field names*/
+								if(ALLOCATE(computed_field_names,char *,number_of_computed_fields))
+								{
+									number_of_name_allocations=0;
+									current_computed_field_name=computed_field_names;
+									/*allocate space computed field names */
+									for(i=0;(i<number_of_computed_fields)&&return_code;i++)
+									{
+										if(ALLOCATE(*current_computed_field_name,char,30))
+										{											
+											current_computed_field_name++;
+											number_of_name_allocations++;
+										}	
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"iterative_add_cylindrical_info_to_cartesian_torso_node.  "
+												"Could not allocate current_computed_field_names");
+											return_code = 0;
+										}
+									}
+									/*construct the names*/
+									if(return_code)
+									{
+										current_computed_field_name=computed_field_names;
+										for(i=0;(i<number_of_derivatives)&&return_code;i++)
+										{
+											for(j=0;(j<max_versions[i])&&return_code;j++)
+											{			
+												version_display_number=j+1;
+												nodal_value_type=nodal_derivative_types[i];
+												type_str=ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type);
+												strcpy(end_string,type_str);
+												sprintf(version_num_string,"_v%d",version_display_number);												
+												strcat(end_string,version_num_string);
+												strcpy(*current_computed_field_name,"src_");
+												append_string(current_computed_field_name,end_string,&string_error);
+												if(!(source=FIND_BY_IDENTIFIER_IN_LIST(Computed_field, name)
+													(*current_computed_field_name,computed_field_list)))
+												{
+													/*create computed field and add to list*/
+													if(source=CREATE(Computed_field)(*current_computed_field_name))
+													{
+														if(!((Computed_field_set_type_node_value(source,
+															rect_cart_coords,nodal_value_type,/* version_number*/j))&&
+															(ADD_OBJECT_TO_LIST(Computed_field)(source,computed_field_list))))
+														{
+															return_code=0;
+															DESTROY(Computed_field)(&source);
+														}
+													}
+													else
+													{
+														return_code=0;
+													}												
+												}
+												current_computed_field_name++;
+
+												if(return_code)
+												{
+													strcpy(*current_computed_field_name,"trans_src_");
+													append_string(current_computed_field_name,end_string,&string_error);	
+													if(!(trans_source=FIND_BY_IDENTIFIER_IN_LIST(Computed_field, name)
+														(*current_computed_field_name,computed_field_list)))
+													{
+														/*create computed field and add to list*/
+														if(trans_source=CREATE(Computed_field)(*current_computed_field_name))
+														{
+															if(!((Computed_field_set_type_vector_coordinate_transformation(
+																trans_source,source,rect_cart_coords_wrapper))&&
+																(Computed_field_set_coordinate_system(trans_source,
+																	&coordinate_system))&&
+																(ADD_OBJECT_TO_LIST(Computed_field)(trans_source,
+																	computed_field_list))))
+															{
+																return_code=0;
+																DESTROY(Computed_field)(&source);
+															}
+														}
+														else
+														{
+															return_code=0;
+														}	
+													}
+												}
+												current_computed_field_name++;
+
+												if(return_code)
+												{
+													strcpy(*current_computed_field_name,"dest_");
+													append_string(current_computed_field_name,end_string,&string_error);	
+													if(!(dest=FIND_BY_IDENTIFIER_IN_LIST(Computed_field, name)
+														(*current_computed_field_name,computed_field_list)))
+													{
+														/*create computed field and add to list*/
+														if(dest=CREATE(Computed_field)(*current_computed_field_name))
+														{
+															if(!((Computed_field_set_type_node_value(dest,
+																cylindrical_polar_coords,nodal_value_type,/* version_number*/j))&&
+																(ADD_OBJECT_TO_LIST(Computed_field)(dest,computed_field_list))))
+															{
+																return_code=0;
+																DESTROY(Computed_field)(&source);
+															}
+														}
+														else
+														{
+															return_code=0;
+														}
+													}
+													if (return_code)
+													{
+														/* copy the nodal derivatives  */
+														Computed_field_copy_values_at_node(node_copy,
+															dest, trans_source, 0/*time is zero*/);
+													}
+												}/* if(return_code)*/
+												current_computed_field_name++;
+											}/* for(j=0;(j<max_versions[i])&&return_code;j++) */
+										} /* for(i=0;(i<number_of_derivatives)&&return_code;i++)*/
+									}/* if(return_code) */
+
+									/*deallocate names*/
+									current_computed_field_name=computed_field_names;
+									for(i=0;i<number_of_name_allocations;i++)
+									{
+										DEALLOCATE(*current_computed_field_name);
+										current_computed_field_name++;
+									}
+									DEALLOCATE(computed_field_names);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"iterative_add_cylindrical_info_to_cartesian_torso_node.  "
+										"Could not allocate computed_field_names");
+									return_code = 0;
+								}
+							}														
+							DEALLOCATE(nodal_derivative_types);
+							DEALLOCATE(max_versions);						
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"iterative_add_cylindrical_info_to_cartesian_torso_node.  "
+								"Could not transform coordinates");
+							return_code = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"iterative_add_cylindrical_info_to_cartesian_torso_node.  "
+							"Could not define field at node");
+						return_code = 0;
+					}
+					DESTROY(FE_node_field_creator)(&node_field_creator);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"iterative_add_cylindrical_info_to_cartesian_torso_node.  "
+						"Could not create node field creator");
+					return_code = 0;
+				}
+				/* copy it back into the manager */
+				MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+					(torso_node,node_copy,node_manager);
+				DESTROY(FE_node)(&node_copy);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"iterative_add_cylindrical_info_to_cartesian_torso_node.  Could not create node copy");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"iterative_add_cylindrical_info_to_cartesian_torso_node.  Source coordinates not defined");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"iterative_add_cylindrical_info_to_cartesian_torso_node."
+			" Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* iterative_add_cylindrical_info_to_cartesian_torso_node*/
+
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D) 
+int add_cylindrical_info_to_cartesian_torso(char *torso_name,
+	struct Unemap_package *unemap_package)
+/*******************************************************************************
+LAST MODIFIED : 5 February 2002
+
+DESCRIPTION :
+Add cylindrical polar information to the default torso, so can do a seamless 
+texture map.
+==============================================================================*/
+{	
+	char *cylindrical_polar_component_names[3]=
+	{
+		"r","theta","z"
+	};
+	int return_code;
+	struct Coordinate_system coordinate_system;	
+	struct Computed_field *torso_position_field_wrapper,*transformed_rect_cart_coords;
+	struct FE_field *cylindrical_polar_coords,*torso_position_field;
+	struct FE_node *torso_node;
+	struct FE_time *fe_time;
+	struct GROUP(FE_node) *torso_node_group;	
+	struct GROUP(FE_element) *torso_element_group;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct Torso_node_data  torso_node_data;	
+
+	ENTER(add_cylindrical_info_to_cartesian_torso);
+	torso_element_group=(struct GROUP(FE_element) *)NULL;
+	torso_node=(struct FE_node *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
+	element_manager=(struct MANAGER(FE_element) *)NULL;
+	cylindrical_polar_coords=(struct FE_field *)NULL;
+	fe_time=(struct FE_time *)NULL;
+	torso_node_group=(struct GROUP(FE_node)  *)NULL;
+	fe_field_manager=(struct  MANAGER(FE_field) *)NULL;
+	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
+	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+	torso_position_field_wrapper=(struct Computed_field *)NULL;
+	transformed_rect_cart_coords=(struct Computed_field *)NULL;
+	if(torso_name&&
+		(fe_field_manager=get_unemap_package_FE_field_manager(unemap_package))
+		&&(node_manager=get_unemap_package_node_manager(unemap_package))	
+		&&(element_manager=get_unemap_package_element_manager(unemap_package))
+		&&(node_group_manager=get_unemap_package_node_group_manager(unemap_package))
+		&&(element_group_manager=get_unemap_package_element_group_manager(unemap_package))
+		&&(computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package))
+		&&(torso_node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
+			(torso_name,node_group_manager))
+		&&(torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
+			(torso_name,element_group_manager)))
+	{
+		return_code=1;		
+		fe_time=get_unemap_package_FE_time(unemap_package);
+		coordinate_system.type=CYLINDRICAL_POLAR;
+		/* create the cylindrical_polar_coords field, */
+		if (!(cylindrical_polar_coords=get_FE_field_manager_matched_field(
+			fe_field_manager,"um_cylindrical_polar_coords",
+			GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
+			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
+			&coordinate_system,FE_VALUE_VALUE,
+			/*number_of_components*/3,cylindrical_polar_component_names,
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+			(struct FE_field_external_information *)NULL)))
+		{
+			display_message(ERROR_MESSAGE,
+				"add_cylindrical_info_to_cartesian_torso. Could not retrieve um_cylindrical_polar_coords");
+			return_code=0;			
+		}
+		if((torso_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
+			((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,torso_node_group))&&
+		(torso_position_field=get_FE_node_default_coordinate_field(torso_node)))
+		{
+			if(torso_position_field_wrapper=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)
+				(Computed_field_is_read_only_with_fe_field,(void *)
+					(torso_position_field),computed_field_manager))
+			{
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"add_cylindrical_info_to_cartesian_torso."
+					" Couldn't retrieve torso_position_field_wrapper");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"add_cylindrical_info_to_cartesian_torso. erro finding torso_node/field");
+			return_code=0;
+		}
+		if(return_code)
+		{			
+			coordinate_system.type=CYLINDRICAL_POLAR;
+			if (!((transformed_rect_cart_coords=CREATE(Computed_field)
+				("um_transformed_rect_cart_coords")) &&
+				Computed_field_set_coordinate_system(transformed_rect_cart_coords,
+					&coordinate_system) &&
+				Computed_field_set_type_coordinate_transformation(transformed_rect_cart_coords,
+					torso_position_field_wrapper)))
+			{
+				DESTROY(Computed_field)(&transformed_rect_cart_coords);
+			}
+			torso_node_data.rect_cart_coords=torso_position_field;
+			torso_node_data.rect_cart_coords_wrapper=torso_position_field_wrapper;
+			torso_node_data.cylindrical_polar_coords=cylindrical_polar_coords;
+			torso_node_data.node_manager=node_manager;
+			torso_node_data.time_version=
+				(struct FE_time_version *)NULL;
+			torso_node_data.cylindrical_polar_coords_wrapper=
+				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)
+				(Computed_field_is_read_only_with_fe_field,(void *)
+					(cylindrical_polar_coords),computed_field_manager);
+			torso_node_data.transformed_rect_cart_coords=transformed_rect_cart_coords;
+			torso_node_data.computed_field_list=CREATE(LIST(Computed_field))();
+			if (torso_node_data.transformed_rect_cart_coords &&
+				torso_node_data.cylindrical_polar_coords_wrapper &&
+				torso_node_data.computed_field_list)
+			{
+				/*define the cylindrical_polar_coords field at all the torso nodes*/
+				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+					iterative_add_cylindrical_info_to_cartesian_torso_node,
+					(void *)(&torso_node_data),torso_node_group);
+				MANAGER_END_CACHE(FE_node)(node_manager);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"add_cylindrical_info_to_cartesian_torso.  Failed");
+				return_code = 0;
+			}
+			/*destroy stuff in torso_node_data*/
+			DESTROY(Computed_field)(&transformed_rect_cart_coords);
+			DESTROY(LIST(Computed_field))(&(torso_node_data.computed_field_list));
+			if(return_code)
+			{
+				/*add the cylindrical_polar_coords field to the elements*/
+				struct Dfn_FE_field_at_elem_frm_template_data 
+					dfn_FE_field_at_elem_frm_template_data;
+		
+				dfn_FE_field_at_elem_frm_template_data.field=cylindrical_polar_coords;
+				dfn_FE_field_at_elem_frm_template_data.template_field=torso_position_field;
+				dfn_FE_field_at_elem_frm_template_data.element_manager=element_manager;			
+				MANAGER_BEGIN_CACHE(FE_element)(element_manager);	
+				FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+					iterative_define_FE_field_cp_at_element_from_template_field_modify_theta,
+					(void *)&dfn_FE_field_at_elem_frm_template_data,torso_element_group);
+				MANAGER_END_CACHE(FE_element)(element_manager);	
+			}/* if(return_code)*/
+		}
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+				"add_cylindrical_info_to_cartesian_torso. invalid argument");
+	}
+	LEAVE; 
+	return(return_code);
+}/*add_cylindrical_info_to_cartesian_torso*/
+#endif /* defined (UNEMAP_USE_3D) */
 

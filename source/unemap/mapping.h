@@ -333,9 +333,23 @@ DESCRIPTION : The Map.
 	struct Rig **rig_pointer;
 	int number_of_electrodes;
 	struct Device **electrodes;
-	int number_of_2d_triangles;
-	/* an array of 3 x number_of_2d_triangles. Conts are indices into map->electrodes*/
+
+	/* number_of_gouraud_triangles,triangle_electrode_indices for 2D and 3D gouraud maps */
+	int number_of_gouraud_triangles;
+	/* an array of 3 x number_of_gouraud_triangles. Conts are indices into map->electrodes*/
 	int *triangle_electrode_indices;
+
+	/* *electrode_tex_x to electrode_rgbs for generating gouraud texure for 3D maps*/
+	/* electrode_tex_x,y of length number_of_electrodes*/
+	int *electrode_tex_x,*electrode_tex_y;
+	int texture_x_length,texture_y_length;
+	/*??JW texture_image,electrode_rgbs should be in sub_map but haven't */
+	/* implemented sub maps for 3D yet*/
+	/* texture_image of length texture_x_length*texture_y_length*3 */
+	unsigned char *texture_image;
+	/* electrode_rgbs of length number_of_electrodes*3*/
+	unsigned char *electrode_rgbs;
+	
 	int number_of_auxiliary;
 	char *electrode_drawn;
 	int *draw_region_number,number_of_drawn_regions;
@@ -454,16 +468,6 @@ Removes the torso arm labels from the scene.
 and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-int draw_map_3d(struct Map *map);
-/*******************************************************************************
-LAST MODIFIED :17 September 2001
-
-DESCRIPTION :
-This function draws the <map> in as a 3D CMGUI scene.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES)*/
 
 int get_number_of_maps_x_step_y_step_rows_cols(struct Map *map,
 	struct Drawing_2d *drawing,int *number_of_maps,int *x_step, int *y_step, 
@@ -1259,6 +1263,18 @@ creates a 1 component  <field_name>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D) 
+int add_cylindrical_info_to_cartesian_torso(char *torso_name,
+	struct Unemap_package *unemap_package);
+/*******************************************************************************
+LAST MODIFIED : 5 February 2002
+
+DESCRIPTION :
+Add cylindrical polar information to the default torso, so can do a seamless 
+texture map.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
 enum Projection_type ensure_map_projection_type_matches_region_type(
 	struct Map *map);
 /*******************************************************************************
@@ -1267,6 +1283,5 @@ LAST MODIFIED : 20 September 2001
 DESCRIPTION : Ensure that the map->projection_type and the 
 rig->current_region->type are compatible.
 ==============================================================================*/
-
 #endif /* !defined (MAPPING_H) */
 
