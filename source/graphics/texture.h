@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.h
 
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 11 March 2002
 
 DESCRIPTION :
 The data structures used for representing textures.
@@ -10,6 +10,7 @@ The data structures used for representing textures.
 #define TEXTURE_H
 
 #include <stdio.h>
+#include "general/enumerator.h"
 #include "general/image_utilities.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -22,30 +23,9 @@ Global types
 ------------
 */
 
-enum Texture_storage_type
-/*******************************************************************************
-LAST MODIFIED : 29 June 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	TEXTURE_UNDEFINED_STORAGE,
-	TEXTURE_TYPE_BEFORE_FIRST,
-	TEXTURE_LUMINANCE,
-	TEXTURE_LUMINANCE_ALPHA,
-	TEXTURE_RGB,
-	TEXTURE_RGBA,
-	TEXTURE_ABGR,
-	/* The last two types are special and cannot be normally selected */
-	TEXTURE_TYPE_AFTER_LAST_NORMAL,
-	TEXTURE_DMBUFFER,
-	TEXTURE_PBUFFER,
-	TEXTURE_TYPE_AFTER_LAST
-}; /* enum Texture_storage_type */
-
 enum Texture_combine_mode
 /*******************************************************************************
-LAST MODIFIED : 11 October 2000
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
 How the texture is combined with the material.
@@ -53,46 +33,71 @@ How the texture is combined with the material.
 {
 	TEXTURE_BLEND,
 	TEXTURE_DECAL,
-	TEXTURE_MODULATE,
-	TEXTURE_COMBINE_MODE_INVALID
+	TEXTURE_MODULATE
 }; /* enum Texture_combine_mode */
 
 enum Texture_filter_mode
 /*******************************************************************************
-LAST MODIFIED : 11 October 2000
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
 What happens to when the screen and texture are at different resolutions.
 ==============================================================================*/
 {
 	TEXTURE_LINEAR_FILTER,
-	TEXTURE_NEAREST_FILTER,
-	TEXTURE_FILTER_MODE_INVALID
+	TEXTURE_NEAREST_FILTER
 }; /* enum Texture_filter_mode */
+
+enum Texture_resize_filter_mode
+/*******************************************************************************
+LAST MODIFIED : 28 February 2002
+
+DESCRIPTION :
+Controls how a texture is downsampled to fit texture hardware.
+==============================================================================*/
+{
+	TEXTURE_RESIZE_LINEAR_FILTER,  /* high quality, but slow */
+	TEXTURE_RESIZE_NEAREST_FILTER  /* fast but low quality */
+}; /* enum Texture_resize_filter_mode */
+
+enum Texture_storage_type
+/*******************************************************************************
+LAST MODIFIED : 28 February 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	TEXTURE_LUMINANCE,
+	TEXTURE_LUMINANCE_ALPHA,
+	TEXTURE_RGB,
+	TEXTURE_RGBA,
+	TEXTURE_ABGR,
+	/* The last two types are special and are not user-selectable */
+	TEXTURE_DMBUFFER,
+	TEXTURE_PBUFFER
+}; /* enum Texture_storage_type */
 
 enum Texture_wrap_mode
 /*******************************************************************************
-LAST MODIFIED : 11 October 2000
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
 What happens to a texture when the texture coordinates are outside [0,1].
 ==============================================================================*/
 {
 	TEXTURE_CLAMP_WRAP,
-	TEXTURE_REPEAT_WRAP,
-	TEXTURE_WRAP_MODE_INVALID
+	TEXTURE_REPEAT_WRAP
 }; /* enum Texture_wrap_mode */
 
 enum Texture_row_order 
 /*******************************************************************************
-LAST MODIFIED : 4 May 2001
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	TEXTURE_TOP_TO_BOTTOM,
-	TEXTURE_BOTTOM_TO_TOP,
-	TEXTURE_ROW_ORDER_INVALID
+	TEXTURE_BOTTOM_TO_TOP
 }; /* enum Texture_row_order */
 
 struct Texture;
@@ -112,93 +117,25 @@ Global functions
 ----------------
 */
 
-char *Texture_combine_mode_string(enum Texture_combine_mode combine_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_combine_mode);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_filter_mode);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_resize_filter_mode);
+
+int Texture_storage_type_is_user_selectable(
+	enum Texture_storage_type storage, void *dummy);
 /*******************************************************************************
-LAST MODIFIED : 10 October 2000
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
-Returns a pointer to a static string describing the combine_mode,
-eg. TEXTURE_DECAL = "decal". This string should match the command
-used to set the type. The returned string must not be DEALLOCATEd!
+Returns true if <storage> is one of the basic storage types that users can
+select, ie. not a digital media buffer.
 ==============================================================================*/
 
-char **Texture_combine_mode_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 10 October 2000
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_storage_type);
 
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for valid
-Texture_combine_modes.
-Strings are obtained from function Texture_combine_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Texture_combine_mode Texture_combine_mode_from_string(
-	char *combine_mode_string);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2000
-
-DESCRIPTION :
-Returns the <Texture_combine_mode> described by <combine_mode_string>.
-==============================================================================*/
-
-char *Texture_filter_mode_string(enum Texture_filter_mode filter_mode);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the filter_mode,
-eg. TEXTURE_LINEAR_FILTER = "linear_filter". This string should match the
-command used to set the type. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **Texture_filter_mode_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for valid
-Texture_filter_modes.
-Strings are obtained from function Texture_filter_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Texture_filter_mode Texture_filter_mode_from_string(
-	char *filter_mode_string);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2000
-
-DESCRIPTION :
-Returns the <Texture_filter_mode> described by <filter_mode_string>.
-==============================================================================*/
-
-char *Texture_wrap_mode_string(enum Texture_wrap_mode wrap_mode);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the wrap_mode,
-eg. TEXTURE_CLAMP_WRAP = "clamp_wrap". This string should match the command
-used to set the type. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **Texture_wrap_mode_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for valid
-Texture_wrap_modes. Strings are obtained from function Texture_wrap_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Texture_wrap_mode Texture_wrap_mode_from_string(char *wrap_mode_string);
-/*******************************************************************************
-LAST MODIFIED : 11 October 2000
-
-DESCRIPTION :
-Returns the <Texture_wrap_mode> described by <wrap_mode_string>.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_wrap_mode);
 
 struct Texture *CREATE(Texture)(char *name);
 /*******************************************************************************
@@ -232,41 +169,13 @@ PROTOTYPE_MANAGER_FUNCTIONS(Texture);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,char *);
 
-char *Texture_storage_type_string(enum Texture_storage_type texture_storage_type);
-/*******************************************************************************
-LAST MODIFIED : 29 June 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the texture storage, eg.
-TEXTURE_STORAGE == "rgba". This string should match the command used
-to create that type of texture. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **Texture_storage_type_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 29 June 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Texture_storage_types - obtained from function Texture_storage_type_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Texture_storage_type Texture_storage_type_from_string(char *texture_type_string);
-/*******************************************************************************
-LAST MODIFIED : 29 June 2000
-
-DESCRIPTION :
-Returns the <Texture_storage_type> described by <texture_type_string>.
-==============================================================================*/
-
-int Texture_get_number_of_components_from_storage_type(
+int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage);
 /*******************************************************************************
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
-Returns the number of bytes used per texel in the image.
+Returns the number of components used per texel for <storage> type.
 ==============================================================================*/
 
 int Texture_get_combine_alpha(struct Texture *texture,float *alpha);
@@ -335,55 +244,84 @@ DESCRIPTION :
 Sets the texture filter: linear or nearest.
 ==============================================================================*/
 
-int Texture_set_image(struct Texture *texture,unsigned long *image,
-	enum Texture_storage_type storage,int number_of_bytes_per_component,
-	int image_width,int image_height, enum Texture_row_order row_order,
-	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
-	int crop_width,int crop_height,int perform_crop);
+enum Texture_resize_filter_mode Texture_get_resize_filter_mode(
+	struct Texture *texture);
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
-Puts the <image> in the texture. The image is left unchanged by this function.
-The <image_file_name> is specified purely so that it may be recorded with the
-texture, and must be given a value. Similarly, the four crop parameters should
-be set to record any cropping already done on the image so that it may be
-recorded with the texture - not however that if perform_crop is true then the
-crop is performed as the image is put into the texture.
+Returns the texture filter: linear or nearest.
 ==============================================================================*/
 
-int managed_Texture_set_image(struct Texture *texture,
-	struct MANAGER(Texture) *texture_manager,unsigned long *image,
-	enum Texture_storage_type storage,int number_of_bytes_per_component,
-	int image_width,int image_height, enum Texture_row_order row_order,
-	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
-	int crop_width,int crop_height,int perform_crop);
+int Texture_set_resize_filter_mode(struct Texture *texture,
+	enum Texture_resize_filter_mode resize_filter_mode);
 /*******************************************************************************
-LAST MODIFIED : 25 January 2002
+LAST MODIFIED : 28 February 2002
 
 DESCRIPTION :
-Does Texture_set_image on the managed <texture>.
-Returns an error if <texture> is not managed.
+Sets the texture filter: linear or nearest.
 ==============================================================================*/
 
-
-int Texture_set_image_file(struct Texture *texture,char *image_file_name,
-	int specify_width,int specify_height,enum Raw_image_storage raw_image_storage,
-	int crop_left_margin,int crop_bottom_margin,int crop_width,
-	int crop_height,double radial_distortion_centre_x,
-	double radial_distortion_centre_y,double radial_distortion_factor_k1);
+int Texture_allocate_image(struct Texture *texture,
+	int width, int height, int depth, enum Texture_storage_type storage,
+	int number_of_bytes_per_component);
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
-Reads the image for <texture> from file <image_file_name> and then crops it
-using <left_margin_texels>, <bottom_margin_texels>, <width_texels> and
-<height_texels>.  If <width_texels> and <height_texels> are not both positive or
-if <left_margin_texels> and <bottom_margin_texels> are not both non-negative or
-if the cropping region is not contained in the image then no cropping is
-performed.
-<specify_width> and <specify_height> allow the width and height to be specified
-for formats that do not have a header, eg. RAW and YUV.
+Establishes the texture image as <width>*<height>*<depth> with the storage and
+number_of_components specified in the <storage_type>, and
+<number_of_bytes_per_component> may currently be 1 or 2.
+The allocated space is cleared to values of 0 = black.
+Call Texture_set_image_block to add texel data.
+Clears image_file_name, crop and other parameters.
+==============================================================================*/
+
+struct Cmgui_image *Texture_get_image(struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Creates and returns a Cmgui_image from the image in <texture>, usually for
+writing. Depth planes are stored as subimages of the returned structure.
+Up to the calling function to DESTROY the returned Cmgui_image.
+==============================================================================*/
+
+int Texture_set_image(struct Texture *texture,
+	struct Cmgui_image *cmgui_image,
+	char *image_file_name, char *file_number_pattern,
+	int start_file_number, int stop_file_number, int file_number_increment,
+	int	crop_left, int crop_bottom, int crop_width, int crop_height);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Puts <cmgui_image> into <texture>. If the <cmgui_image> contains
+more than one image, these are put together into a 3-D texture. All other
+parameters are merely recorded with the texture to be able to reproduce the
+command for it later. The exception is the crop parameters, which must
+which are used to cut the image size if <crop_width> and <crop_height> are
+positive. Cropping is not available in the depth direction.
+==============================================================================*/
+
+int Texture_set_image_block(struct Texture *texture,
+	int left, int bottom, int width, int height, int depth_plane,
+	int source_width_bytes, unsigned char *source_pixels);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Over-writes a block of texels in <texture>. The block is one texel in depth
+and is placed in the given <depth_plane> which ranges from 0 to one
+less than depth_texels. The block is placed offset from the left by <left> and
+from the bottom by <bottom> and is <width>*<height> in size. The block must be
+wholly within the texture width_texels and height_texels.
+Image data is taken from <source_pixels> which is expected to match the
+texture's current storage type and number_of_bytes_per_component. Source pixels
+are expected in rows from bottom to top, and within rows from left to right.
+The <source_width_bytes> is the offset between row data in <source_pixels>
+and must be at least width*number_of_components*number_of_bytes_per_component
+in size.
 ==============================================================================*/
 
 struct X3d_movie;
@@ -440,10 +378,35 @@ is constant from the half texel location to the edge.
 
 char *Texture_get_image_file_name(struct Texture *texture);
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 8 February 2002
 
 DESCRIPTION :
 Returns the name of the file from which the current texture image was read.
+Note: returned file_number_pattern may be NULL if not set yet.
+User must not modify the returned value!
+==============================================================================*/
+
+char *Texture_get_file_number_pattern(struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 8 February 2002
+
+DESCRIPTION :
+Returns the file number pattern substituted in the image_file_name with the
+image_file_number when 3-D image series are read in.
+Note: returned file_number_pattern may be NULL if not set yet.
+User must not modify the returned value!
+==============================================================================*/
+
+int Texture_get_image_series_file_numbers(struct Texture *texture,
+	int *start_file_number, int *stop_file_number, int *file_number_increment);
+/*******************************************************************************
+LAST MODIFIED : 8 February 2002
+
+DESCRIPTION :
+Returns the start, stop and increment of file_numbers which together with the
+image_file_name and file_number_pattern determine the files read in for
+3-D textures. The returned values are meaningless if the texture is not
+three dimensional = depth_texels greater than 1.
 ==============================================================================*/
 
 int Texture_uses_image_file_name(struct Texture *texture,
@@ -455,37 +418,46 @@ DESCRIPTION :
 Returns true if <texture> contains the image from file <image_file_name>.
 ==============================================================================*/
 
-int Texture_get_number_of_components(struct Texture *texture);
+int Texture_get_number_of_bytes_per_component(struct Texture *texture);
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 March 2002
 
 DESCRIPTION :
-Returns the number of 8-bit components used per texel (1,2,3 or 4) in the image.
+Returns the number bytes in each component of the texture: 1 or 2.
+==============================================================================*/
+
+int Texture_get_number_of_components(struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
 ==============================================================================*/
 
 int Texture_get_original_size(struct Texture *texture,
-	int *original_width_texels,int *original_height_texels);
+	int *original_width_texels, int *original_height_texels, 
+	int *original_depth_texels);
 /*******************************************************************************
-LAST MODIFIED : 12 February 1998
+LAST MODIFIED : 8 February 2002
 
 DESCRIPTION :
-Returns the width and height of the image from which the texture was read. May
-differ from the dimensions of the texture which is in powers of 2.
+Returns the width, height and depth of the image from which the texture was
+read. May differ from the dimensions of the texture which is in powers of 2.
 ==============================================================================*/
 
-int Texture_get_physical_size(struct Texture *texture,
-	float *width,float *height);
+int Texture_get_physical_size(struct Texture *texture,float *width,
+	float *height, float *depth);
 /*******************************************************************************
-LAST MODIFIED : 5 March 1998
+LAST MODIFIED : 8 February 2002
 
 DESCRIPTION :
 Returns the physical size in model coordinates of the original texture image.
 ==============================================================================*/
 
 int Texture_set_physical_size(struct Texture *texture,
-	float width,float height);
+	float width, float height, float depth);
 /*******************************************************************************
-LAST MODIFIED : 5 March 1998
+LAST MODIFIED : 8 February 2002
 
 DESCRIPTION :
 Sets the physical size in model coordinates of the original texture image. The
@@ -519,14 +491,14 @@ physical size of the image, from (0.0,0.0) to (texture->width,texture->height).
 ==============================================================================*/
 
 int Texture_get_size(struct Texture *texture,
-	int *width_texels,int *height_texels);
+	int *width_texels, int *height_texels, int *depth_texels);
 /*******************************************************************************
-LAST MODIFIED : 12 February 1998
+LAST MODIFIED : 8 February 2002
 
 DESCRIPTION :
-Returns the dimensions of the texture image in powers of 2. The width and height
-returned are at least as large as those of the original image read into the
-texture.
+Returns the dimensions of the texture image in powers of 2. The width, height
+and depth returned are at least as large as those of the original image read
+into the texture.
 ==============================================================================*/
 
 enum Texture_wrap_mode Texture_get_wrap_mode(struct Texture *texture);
@@ -592,16 +564,6 @@ display lists. To switch to direct rendering this routine should just call
 direct_render_Texture.
 ==============================================================================*/
 
-#if defined (OLD_CODE)
-int activate_Texture(struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 19 November 1994
-
-DESCRIPTION :
-Activates the <texture> as part of the rendering loop.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 int set_Texture(struct Parse_state *state,void *texture_address_void,
 	void *texture_manager_void);
 /*******************************************************************************
@@ -611,42 +573,4 @@ DESCRIPTION :
 Modifier function to set the texture from a command.
 ==============================================================================*/
 
-#if defined (IMAGEMAGICK)
-int Texture_write_to_file(struct Texture *texture, char *file_name);
-#else /* defined (IMAGEMAGICK) */
-int Texture_write_to_file(struct Texture *texture, char *file_name,
-	enum Image_file_format file_format);
-#endif /* defined (IMAGEMAGICK) */
-/*******************************************************************************
-LAST MODIFIED : 27 November 2001
-
-DESCRIPTION :
-Writes the image stored in the texture to a file.
-==============================================================================*/
-
-#if defined (OLD_CODE)
-#if defined (OPENGL_API)
-/*???DB.  This should not be here.  Textures should not have to know about
-	scenes.  OPENGL_API is not the ideal flag, but I want to prevent scenes
-	having to be included in unemap.  I tried shifting it to scene, but then
-	knowledge of DM_buffers and Textures is needed.  What should be done is:
-	- move DM_buffers into there own module (?)
-	- extend texture by adding functions for getting and setting DM_buffers
-	- move set_Texture_image_from_scene to scene_viewer
-	*/
-struct Scene;
-
-int set_Texture_image_from_scene(struct Texture *texture, struct Scene *scene,
-	enum Texture_storage_type storage,int image_width,int image_height,
-	char *image_file_name,int crop_left_margin,int crop_bottom_margin,
-	int crop_width,int crop_height, struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 14 July 1999
-
-DESCRIPTION :
-Creates the image in the format given by attempting to render it into the
-texture.
-==============================================================================*/
-#endif /* defined (OPENGL_API) */
-#endif /* defined (OLD_CODE) */
 #endif /* !defined (TEXTURE_H) */
