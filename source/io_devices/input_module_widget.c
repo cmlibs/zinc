@@ -401,6 +401,9 @@ certain client.
 		display_message(ERROR_MESSAGE,
 			"create_input_module_widget.  Could not open hierarchy");
 	}
+#else /* defined (EXT_INPUT) */
+	USE_PARAMETER(input_module_widget);
+	USE_PARAMETER(parent);
 #endif /* defined (EXT_INPUT) */
 	LEAVE;
 
@@ -447,6 +450,9 @@ occur in the <input_module_widget>.
 		return_code=0;
 	}
 #else
+	USE_PARAMETER(input_module_widget);
+	USE_PARAMETER(function);
+	USE_PARAMETER(user_data);
 	return_code = 0;
 #endif
 	LEAVE;
@@ -495,6 +501,9 @@ occur in the <input_module_widget>.
 		return_code=0;
 	}
 #else
+	USE_PARAMETER(input_module_widget);
+	USE_PARAMETER(function);
+	USE_PARAMETER(user_data);
 	return_code = 0;
 #endif
 	LEAVE;
@@ -542,6 +551,9 @@ occur in the <input_module_widget>.
 		return_code=0;
 	}
 #else
+	USE_PARAMETER(input_module_widget);
+	USE_PARAMETER(function);
+	USE_PARAMETER(user_data);
 	return_code = 0;
 #endif
 	LEAVE;
@@ -590,6 +602,9 @@ events occur in the <input_module_widget>.
 		return_code=0;
 	}
 #else
+	USE_PARAMETER(input_module_widget);
+	USE_PARAMETER(function);
+	USE_PARAMETER(user_data);
 	return_code = 0;
 #endif
 	LEAVE;
