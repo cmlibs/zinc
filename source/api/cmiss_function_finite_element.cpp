@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_finite_element.cpp
 
-LAST MODIFIED : 17 February 2005
+LAST MODIFIED : 8 March 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_function_element, Cmiss_function_element_xi
@@ -89,7 +89,7 @@ DEACCESS(Cmiss_element) to manage the lifetime of the returned element
 Cmiss_function_id Cmiss_function_element_xi_create(Cmiss_element_id element,
 	unsigned int number_of_xi,Scalar *xi)
 /*******************************************************************************
-LAST MODIFIED : 5 May 2004
+LAST MODIFIED : 8 March 2005
 
 DESCRIPTION :
 Creates a Cmiss_function which represents the <element>/<xi> location.  The
@@ -112,8 +112,15 @@ be equal.
 			{
 				xi_vector[i]=xi[i];
 			}
-			result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
-				new Function_element_xi(element,xi_vector)));
+			try
+			{
+				result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
+					new Function_element_xi(element,xi_vector)));
+			}
+			catch (Function_element_xi::Invalid_element_xi)
+			{
+				result=0;
+			}
 		}
 	}
 
