@@ -274,7 +274,7 @@ Target: $(OBJS)                                                                 
 	rm -f product_object ; \                                                          @@\
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \                                   @@\
 	(ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \ @@\
-	$(LINK) -o $(UTILITIES_PATH)/Target `cat object.list` LIBS
+	$(LINK) -o UTILITIES_PATH/Target `cat object.list` LIBS
 #endif /* switch OperatingSystem */
 
 UID2UIDH_SRCS = \
