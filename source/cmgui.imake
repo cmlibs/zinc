@@ -610,7 +610,7 @@ CFLAGS = /float=ieee /standard=ansi89
 CFLAGS =
 CFLAGS = -ansi -pedantic -fullwarn -woff 841 -wlint,-faivu
 #if defined (IRIX) /* switch OperatingSystem */
-CFLAGS = -ansi -pedantic -woff 1521,1048
+CFLAGS = -ansi -pedantic -woff 1521
 #elif defined(LINUX) /* switch OperatingSystem */
 CFLAGS =
 #endif /* switch OperatingSystem */
