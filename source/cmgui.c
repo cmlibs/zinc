@@ -680,8 +680,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.scene_editor = (struct Scene_editor *)NULL;
 	/*???RC.  Temporary - should allow more than one */
 	command_data.spectrum_editor_dialog=(Widget)NULL;
-	command_data.time_editor_dialog=(Widget)NULL;
-		/*???RC.  Temporary - should allow more than one */
+	command_data.time_editor_dialog=(struct Time_editor_dialog_struct *)NULL;
+	/*???RC.  Temporary - should allow more than one */
 #if defined (UNEMAP)
 	command_data.unemap_system_window=(struct System_window *)NULL;
 #endif /* defined (UNEMAP) */
@@ -1096,7 +1096,7 @@ Main program for the CMISS Graphical User Interface
 		Computed_field_register_types_component_operations(
 			command_data.computed_field_package);
 		Computed_field_register_types_composite(
-			command_data.computed_field_package);
+			command_data.computed_field_package);		
 		if (command_data.control_curve_manager)
 		{
 			Computed_field_register_types_control_curve(

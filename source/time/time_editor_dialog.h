@@ -13,6 +13,12 @@ Header description for time_editor_dialog widget.
 #include "user_interface/user_interface.h"
 
 /*
+Global Types
+------------
+*/
+struct Time_editor_dialog_struct;
+
+/*
 Global Functions
 ----------------
 */
@@ -56,14 +62,23 @@ If <time_editor_dialog_widget> is not NULL, then change the data item on
 <time_editor_dialog>.
 ==============================================================================*/
 
-int bring_up_time_editor_dialog(Widget *time_editor_dialog_address,
+int bring_up_time_editor_dialog(
+	struct Time_editor_dialog_struct **time_editor_dialog,
 	Widget parent, struct Time_keeper *time_keeper,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 If there is a time_editor dialog in existence, then bring it to the front,
 else create a new one.
+==============================================================================*/
+
+int  time_editor_dialog_destroy(
+	struct Time_editor_dialog_struct *time_editor_dialog);
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :Destroys the <time_editor_dialog> - tidies up all details - mem etc
 ==============================================================================*/
 #endif

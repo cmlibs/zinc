@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : time_editor_d.uil
 !
-! LAST MODIFIED : 8 December 1998
+! LAST MODIFIED : 13 December 2001
 !
 ! DESCRIPTION :
 ! The widgets for the time_editor_d time_editor_d widget.
@@ -10,7 +10,6 @@ module time_editor_dialog
 	version = 'v1.0'
 
 procedure
-	time_editor_d_destroy_CB          ();
 	time_editor_d_identify_widget (integer);
 	
 value
@@ -53,11 +52,7 @@ object
 		controls
 			{
 			XmForm time_editor_d_editor;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure time_editor_d_destroy_CB();
-			};
+			};		
 		};
 	time_editor_d_editor: XmForm
 		{

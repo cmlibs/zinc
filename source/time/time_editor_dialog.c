@@ -7,6 +7,8 @@ DESCRIPTION :
 This module creates a time_editor_dialog.
 ==============================================================================*/
 #include <stdio.h>
+#include <Xm/Xm.h>
+#include <Xm/Protocols.h>
 #include "general/callback.h"
 #include "general/debug.h"
 #include "time/time_keeper.h"
@@ -28,18 +30,19 @@ Global Types
 */
 struct Time_editor_dialog_struct
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Contains all the information carried by the time_editor_dialog widget.
-Note that we just hold a pointer to the time_editor_dialog, and must access
-and deaccess it.
+Note that we just hold a pointer to the time_editor_dialog.
 ==============================================================================*/
 {
 	struct Callback_data update_callback;
+	/*store the address of pointer, so can set to null from callback*/
+	struct Time_editor_dialog_struct **time_editor_dialog_address;
 	struct Time_keeper *current_value;
 	Widget editor_form, editor_widget;
-	Widget *dialog_address,dialog,widget,dialog_parent;
+	Widget dialog,widget,dialog_parent;
 	struct User_interface *user_interface;
 }; /* time_editor_dialog_struct */
 
@@ -56,36 +59,6 @@ static MrmHierarchy time_editor_dialog_hierarchy;
 Module functions
 ----------------
 */
-#if defined (OLD_CODE)
-static void time_editor_dialog_update(
-	struct Time_editor_dialog_struct *time_editor_dialog)
-/*******************************************************************************
-LAST MODIFIED : 8 December 1998
-
-DESCRIPTION :
-Tells CMGUI about the current values. Returns a pointer to the time.
-==============================================================================*/
-{
-	ENTER(time_editor_dialog_update);
-	if (time_editor_dialog)
-	{
-		if (time_editor_dialog->update_callback.procedure)
-		{
-			/* now call the procedure with the user data and the position data */
-			(time_editor_dialog->update_callback.procedure)
-				(time_editor_dialog->widget,
-				time_editor_dialog->update_callback.data,
-				time_editor_dialog->current_value);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"time_editor_dialog_update.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* time_editor_dialog_update */
-#endif /* defined (OLD_CODE) */
 
 static void time_editor_dialog_identify_widget(Widget widget,int widget_num,
 	unsigned long *reason)
@@ -117,65 +90,100 @@ Finds the id of the widgets on the time_editor_dialog widget.
 	LEAVE;
 } /* time_editor_dialog_identify_widget */
 
-static void time_editor_dialog_destroy_CB(Widget w,int *tag,
-	unsigned long *reason)
+int  time_editor_dialog_destroy(
+	struct Time_editor_dialog_struct *time_editor_dialog)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :Destroys the <time_editor_dialog> - tidies up all details - mem etc
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(time_editor_dialog_destroy);	
+	if(time_editor_dialog)
+	{
+		return_code=1;
+		destroy_Shell_list_item_from_shell(&time_editor_dialog->dialog,
+			time_editor_dialog->user_interface);
+		/* deaccess the time_editor_dialog */
+		XtDestroyWidget(time_editor_dialog->dialog);
+		time_editor_dialog->dialog=(Widget)NULL;	
+		/* set the pointer to the time_editor_dialog to NULL */
+		if (time_editor_dialog->time_editor_dialog_address)
+		{
+			*(time_editor_dialog->time_editor_dialog_address)=
+				(struct Time_editor_dialog_struct *)NULL;
+		}		
+		/* deallocate the memory for the user data */
+		DEALLOCATE(time_editor_dialog);	
+		LEAVE;
+	}
+	else
+	{	
+		return_code=0;
+		display_message(WARNING_MESSAGE,
+				"time_editor_dialog_destroy. Invalid argument");
+	}
+	return(return_code);
+}/* time_editor_dialog_destroy */
+
+
+static void time_editor_dialog_close_CB(Widget caller,
+	void *time_editor_dialog_void,void *cbs)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
-Callback for the time_editor_dialog dialog - tidies up all details - mem etc
+Callback for the time_editor_dialog dialog
 ==============================================================================*/
 {
 	struct Time_editor_dialog_struct *time_editor_dialog;
 
-	ENTER(time_editor_dialog_destroy_CB);
-	USE_PARAMETER(tag);
-	USE_PARAMETER(reason);
-	/* Get the pointer to the data for the time_editor_dialog widget */
-	XtVaGetValues(w,XmNuserData,&time_editor_dialog,NULL);
-
-	destroy_Shell_list_item_from_shell(time_editor_dialog->dialog_address,
-		time_editor_dialog->user_interface);
-
-	/* deaccess the time_editor_dialog */
-	*(time_editor_dialog->dialog_address)=(Widget)NULL;
-	/* deallocate the memory for the user data */
-	DEALLOCATE(time_editor_dialog);
+	ENTER(time_editor_dialog_close_CB);
+	USE_PARAMETER(caller);
+	USE_PARAMETER(cbs);
+	if (time_editor_dialog=(struct Time_editor_dialog_struct *)time_editor_dialog_void)
+	{	
+		time_editor_dialog_destroy(time_editor_dialog);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"time_editor_dialog_close_CB.  Missing time_editor_dialog");
+	}
 	LEAVE;
-} /* time_editor_dialog_destroy_CB */
+} /* time_editor_dialog_close_CB */
 
-static Widget create_time_editor_dialog(
-	Widget *time_editor_dialog_widget, Widget parent,
-	struct Time_keeper *time_keeper,
-	struct User_interface *user_interface)
+int create_time_editor_dialog(
+	struct Time_editor_dialog_struct **address,Widget parent,
+	struct Time_keeper *time_keeper,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to edit time.
 ==============================================================================*/
 {
-	int init_widgets;
+	Atom WM_DELETE_WINDOW;
+	int init_widgets,return_code;
 	MrmType time_editor_dialog_dialog_class;
 	struct Time_editor_dialog_struct *time_editor_dialog=NULL;
 	static MrmRegisterArg callback_list[]=
-	{
-		{"time_editor_d_destroy_CB",
-			(XtPointer)time_editor_dialog_destroy_CB},
+	{		
 		{"time_editor_d_identify_widget",
 			(XtPointer)time_editor_dialog_identify_widget}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
+
 		{"time_editor_d_structure",(XtPointer)NULL},
 		{"time_editor_d_editor_form_ID",
 		 (XtPointer)time_editor_dialog_editor_form_ID}
 	};
-	Widget return_widget;
 
 	ENTER(create_time_editor_dialog);
-
-	return_widget=(Widget)NULL;
+	return_code=0;
 	if (parent && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(time_editor_dialog_uidh,
@@ -186,9 +194,12 @@ Creates a dialog widget that allows the user to edit time.
 				struct Time_editor_dialog_struct,1))
 			{
 				/* initialise the structure */
-				time_editor_dialog->dialog_parent=parent;
-				time_editor_dialog->dialog_address=
-					time_editor_dialog_widget;
+				time_editor_dialog->time_editor_dialog_address=address;
+				if(address)
+				{
+					*address=time_editor_dialog;
+				}
+				time_editor_dialog->dialog_parent=parent;				
 				/* current_value set in time_editor_dialog_set_time */
 				time_editor_dialog->current_value=
 					(struct Time_keeper *)NULL;
@@ -241,10 +252,15 @@ Creates a dialog widget that allows the user to edit time.
 											time_editor_dialog->dialog, time_keeper);
 									}
 									XtRealizeWidget(time_editor_dialog->dialog);
-									XtPopup(time_editor_dialog->dialog, XtGrabNone);
-									create_Shell_list_item(time_editor_dialog->dialog_address,
+									XtPopup(time_editor_dialog->dialog, XtGrabNone);									
+									create_Shell_list_item(&time_editor_dialog->dialog,
 										user_interface);
-									return_widget=time_editor_dialog->dialog;
+									/* Set up window manager callback for close window message */
+									WM_DELETE_WINDOW=XmInternAtom(
+										XtDisplay(time_editor_dialog->dialog),"WM_DELETE_WINDOW",False);
+									XmAddWMProtocolCallback(time_editor_dialog->dialog,
+										WM_DELETE_WINDOW,time_editor_dialog_close_CB,time_editor_dialog);	
+									return_code=1;
 								}
 								else
 								{
@@ -295,14 +311,10 @@ Creates a dialog widget that allows the user to edit time.
 	{
 		display_message(ERROR_MESSAGE,
 			"create_time_editor_dialog.  Invalid argument(s)");
-	}
-	if (time_editor_dialog_widget&&return_widget)
-	{
-		*time_editor_dialog_widget=return_widget;
-	}
+	}	
 	LEAVE;
 
-	return (return_widget);
+	return (return_code);
 } /* create_time_editor_dialog */
 
 /*
@@ -540,11 +552,12 @@ If <time_editor_dialog_widget> is not NULL, then change the data item on
 	return (return_code);
 } /* time_editor_dialog_set_time_keeper */
 
-int bring_up_time_editor_dialog(Widget *time_editor_dialog_address,
+int bring_up_time_editor_dialog(
+	struct Time_editor_dialog_struct **the_time_editor_dialog,
 	Widget parent, struct Time_keeper *time_keeper,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 If there is a time_editor dialog in existence, then bring it to the front,
@@ -552,20 +565,21 @@ else create a new one.
 ==============================================================================*/
 {
 	int return_code;
+	struct Time_editor_dialog_struct *time_editor_dialog;
 
 	ENTER(bring_up_time_editor_dialog);
-	if (time_editor_dialog_address)
+	if (the_time_editor_dialog&&time_keeper&&user_interface)
 	{
-		if (*time_editor_dialog_address)
+		if ((time_editor_dialog=*the_time_editor_dialog)&&time_editor_dialog->dialog)
 		{
-			time_editor_dialog_set_time_keeper(*time_editor_dialog_address,
+			time_editor_dialog_set_time_keeper(time_editor_dialog->dialog,
 				time_keeper);
-			XtPopup(*time_editor_dialog_address,XtGrabNone);
+			XtPopup(time_editor_dialog->dialog,XtGrabNone);
 			return_code=1;
 		}
 		else
 		{
-			if (create_time_editor_dialog(time_editor_dialog_address,parent,
+			if (create_time_editor_dialog(the_time_editor_dialog,parent,
 				time_keeper, user_interface))
 			{
 				return_code=1;
