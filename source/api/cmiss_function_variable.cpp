@@ -124,6 +124,7 @@ See the include file.
 	return (result);
 }
 
+#if defined (NOT_DEBUG)
 Cmiss_function_id Cmiss_function_variable_evaluate_derivative(
 	Cmiss_function_variable_id variable,
 	Cmiss_function_variable_list_id independent_variables,
@@ -165,6 +166,25 @@ See the include file.
 
 	return (result);
 }
+#else // defined (NOT_DEBUG)
+Cmiss_function_id Cmiss_function_variable_evaluate_derivative(
+	Cmiss_function_variable_id,
+	Cmiss_function_variable_list_id,
+	Cmiss_function_variable_id,Cmiss_function_id)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2004
+
+DESCRIPTION :
+See the include file.
+==============================================================================*/
+{
+	Cmiss_function_id result;
+
+	result=0;
+
+	return (result);
+}
+#endif // defined (NOT_DEBUG)
 
 int Cmiss_function_variable_set_value(Cmiss_function_variable_id variable,
 	Cmiss_function_id value)
@@ -201,10 +221,15 @@ DESCRIPTION :
 Creates an variable list.
 ==============================================================================*/
 {
+#if defined (NOT_DEBUG)
 	return (reinterpret_cast<Cmiss_function_variable_list_id>(
 		new std::list<Function_variable_handle>));
+#else // defined (NOT_DEBUG)
+	return (reinterpret_cast<Cmiss_function_variable_list_id>(0));
+#endif // defined (NOT_DEBUG)
 }
 
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_list_destroy(
 	Cmiss_function_variable_list_id *list_address)
 /*******************************************************************************
@@ -231,7 +256,25 @@ Destroys an variable list.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
+int Cmiss_function_variable_list_destroy(
+	Cmiss_function_variable_list_id *)
+/*******************************************************************************
+LAST MODIFIED : 23 February 2004
 
+DESCRIPTION :
+Destroys an variable list.
+==============================================================================*/
+{
+	int return_code;
+
+	return_code=0;
+
+	return (return_code);
+}
+#endif // defined (NOT_DEBUG)
+
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_list_add(Cmiss_function_variable_list_id list,
 	Cmiss_function_variable_id variable)
 /*******************************************************************************
@@ -257,3 +300,20 @@ Adds a <variable> to a <list>.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
+int Cmiss_function_variable_list_add(Cmiss_function_variable_list_id,
+	Cmiss_function_variable_id)
+/*******************************************************************************
+LAST MODIFIED : 23 February 2004
+
+DESCRIPTION :
+Adds a <variable> to a <list>.
+==============================================================================*/
+{
+	int return_code;
+
+	return_code=0;
+
+	return (return_code);
+}
+#endif // defined (NOT_DEBUG)
