@@ -244,7 +244,7 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 #if defined (DYNAMIC_GL_LINUX)
-GRAPHICS_LIB = -lGL -lGLU 
+GRAPHICS_LIB = -L/usr/X11R6/lib -lGL -lGLU 
 #else /* defined (DYNAMIC_GL_LINUX) */
 GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 /*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
