@@ -741,18 +741,4 @@ LAST MODIFIED : 4 May 2000
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
 ==============================================================================*/
-
-int set_Texture_image_from_field(struct Texture *texture, struct Computed_field *field,
-	struct Computed_field *texture_coordinate_field, struct Spectrum *spectrum,
-	enum Texture_storage_type storage,int image_width,int image_height,
-	char *image_file_name,int crop_left_margin,int crop_bottom_margin,
-	int crop_width,int crop_height);
-/*******************************************************************************
-LAST MODIFIED : 26 May 1999
-
-DESCRIPTION :
-Creates the image in the format given by sampling the <field> according to the
-reverse mapping of the <texture_coordinate_field>.  The values returned by
-field are converted to "colours" by applying the <spectrum>
-==============================================================================*/
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */
