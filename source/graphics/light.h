@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.h
 
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 The data structures used for representing graphical lights.
@@ -252,4 +252,13 @@ LAST MODIFIED : 9 December 1997
 DESCRIPTION :
 Light iterator function for duplicating lists of lights.
 ==============================================================================*/
+
+int Light_is_in_list(struct Light *light, void *light_list_void);
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Returns true if <light> is in <light_list>.
+==============================================================================*/
+
 #endif

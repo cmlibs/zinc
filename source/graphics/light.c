@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 The functions for manipulating lights.
@@ -2015,3 +2015,30 @@ Light iterator function for duplicating lists of lights.
 
 	return (return_code);
 } /* Light_to_list */
+
+int Light_is_in_list(struct Light *light, void *light_list_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Returns true if <light> is in <light_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(Light) *light_list;
+
+	ENTER(Light_is_in_list);
+	if (light && (light_list = (struct LIST(Light) *)light_list_void))
+	{
+		return_code = IS_OBJECT_IN_LIST(Light)(light, light_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Light_is_in_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Light_is_in_list */
