@@ -16431,7 +16431,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 void analysis_select_map_drawing_are(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 December 1996
+LAST MODIFIED : 29 September 2000
 
 DESCRIPTION :
 The callback for selecting a device in the analysis work area (signals drawing
@@ -16462,7 +16462,11 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 						event= &(callback->event->xbutton);
 						if ((map=mapping->map)&&(map->number_of_electrodes>0))
 						{
+							/* the sensitivity depends on the size of the electrode marker */
+							pointer_sensitivity=map->electrodes_marker_size;					
+#if defined (OLD_CODE) 
 							pointer_sensitivity=analysis->pointer_sensitivity;
+#endif/*defined (OLD_CODE) */
 							/* determine the electrode number */
 							electrode_number=0;
 							electrode_x=map->electrode_x;
@@ -16485,9 +16489,17 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 								(struct FE_node *)NULL,(int *)NULL,&electrode_number,
 								(int *)NULL,analysis);
 #else
-							highlight_analysis_device((event->state)&ShiftMask,
+							if(!highlight_analysis_device((event->state)&ShiftMask,
 								(struct Device **)NULL,(int *)NULL,&electrode_number,
-								(int *)NULL,analysis);
+								(int *)NULL,analysis))
+							{	
+#if defined (UNEMAP_USE_3D)							
+								/*highlight analysis_device_node has failed, */
+								/* The mouse click wasn't on an electrode. Unselect everything */						
+								FE_node_selection_clear(get_unemap_package_FE_node_selection
+									(analysis->unemap_package));
+#endif /* defined (UNEMAP_USE_3D)	*/
+							}
 #endif /*  defined (UNEMAP_USE_NODES) */
 						}
 					}
