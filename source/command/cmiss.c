@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 29 August 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -10260,101 +10260,6 @@ Executes a GFX DESTROY CMISS_CONNECTION command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int FE_node_is_in_Multi_range_and_can_be_destroyed(struct FE_node *node,
-	void *multi_range_void)
-/*******************************************************************************
-LAST MODIFIED : 16 April 1999
-
-DESCRIPTION :
-Returns true if the <node> cm_node_identifier is in the <multi_range> and
-Fe_node_can_be_destroyed returns true for it.
-==============================================================================*/
-{
-	int return_code;
-	struct Multi_range *multi_range;
-
-	ENTER(FE_node_is_in_Multi_range_and_can_be_destroyed);
-	if (node&&(multi_range=(struct Multi_range *)multi_range_void))
-	{
-		return_code=FE_node_can_be_destroyed(node)&&
-			Multi_range_is_value_in_range(multi_range,
-				get_FE_node_cm_node_identifier(node));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_is_in_Multi_range_and_can_be_destroyed.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_is_in_Multi_range_and_can_be_destroyed */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_destroy_data(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 April 1999
-
-DESCRIPTION :
-Executes a GFX DESTROY DATA command.
-==============================================================================*/
-{
-	int number_of_data_destroyed,return_code;
-	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{NULL,NULL,NULL,set_Multi_range}
-	};
-	struct FE_node *data_to_destroy;
-	struct Multi_range *data_ranges;
-
-	ENTER(gfx_destroy_data);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
-	{
-		/* initialise defaults */
-		data_ranges=CREATE(Multi_range)();
-		(option_table[0]).to_be_modified=data_ranges;
-		return_code=process_multiple_options(state,option_table);
-		/* no errors, not asking for help */
-		if (return_code)
-		{
-			number_of_data_destroyed=0;
-			while (return_code&&(data_to_destroy=
-				FIRST_OBJECT_IN_MANAGER_THAT(FE_node)(
-					FE_node_is_in_Multi_range_and_can_be_destroyed,
-					(void *)data_ranges,command_data->data_manager)))
-			{
-				if (REMOVE_OBJECT_FROM_MANAGER(FE_node)(data_to_destroy,
-					command_data->data_manager))
-				{
-					number_of_data_destroyed++;
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			display_message(INFORMATION_MESSAGE,"%d data destroyed\n",
-				number_of_data_destroyed);
-		}
-		DESTROY(Multi_range)(&data_ranges);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_destroy_data.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_destroy_data */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_data_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10935,26 +10840,45 @@ element groups are destroyed together.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_destroy_nodes(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 29 August 2000
 
 DESCRIPTION :
-Executes a GFX DESTROY NODES command.
+Executes a GFX DESTROY NODES/DATA command.
+If <used_data_flag> is set, use data_manager and data_selection, otherwise
+use node_manager and node_selection.
 ==============================================================================*/
 {
 	char all_flag,ranges_flag,selected_flag;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct FE_node_list_conditional_data list_conditional_data;
+	struct FE_node_selection *node_selection;
 	struct LIST(FE_node) *destroy_node_list;
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Multi_range *node_ranges;
 	struct Option_table *option_table;
 
 	ENTER(gfx_destroy_nodes);
-	USE_PARAMETER(dummy_to_be_modified);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
+		if (use_data)
+		{
+			element_manager=(struct MANAGER(FE_element) *)NULL;
+			node_manager=command_data->data_manager;
+			node_group_manager=command_data->data_group_manager;
+			node_selection=command_data->data_selection;
+		}
+		else
+		{
+			element_manager=command_data->element_manager;
+			node_manager=command_data->node_manager;
+			node_group_manager=command_data->node_group_manager;
+			node_selection=command_data->node_selection;
+		}
 		/* initialise defaults */
 		all_flag=0;
 		selected_flag=0;
@@ -10979,7 +10903,7 @@ Executes a GFX DESTROY NODES command.
 					/* add the selected nodes to destroy_node_list, and if node_ranges
 						 given, intersect with them */
 					return_code=COPY_LIST(FE_node)(destroy_node_list,
-						FE_node_selection_get_node_list(command_data->node_selection))&&
+						FE_node_selection_get_node_list(node_selection))&&
 						((!ranges_flag)||REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
 							FE_node_is_not_in_Multi_range,node_ranges,destroy_node_list));
 				}
@@ -10991,28 +10915,27 @@ Executes a GFX DESTROY NODES command.
 					list_conditional_data.user_data=node_ranges;
 					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
 						ensure_FE_node_is_in_list_conditional,
-						(void *)&list_conditional_data,command_data->node_manager);
+						(void *)&list_conditional_data,node_manager);
 				}
 				else if (all_flag)
 				{
 					/* add all nodes to destroy_node_list */
 					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
 						ensure_FE_node_is_in_list,(void *)destroy_node_list,
-						command_data->node_manager);
+						node_manager);
 				}
 				if (return_code)
 				{
 					if (0<NUMBER_IN_LIST(FE_node)(destroy_node_list))
 					{
 						return_code=destroy_listed_nodes(destroy_node_list,
-							command_data->node_manager,command_data->node_group_manager,
-							command_data->element_manager,command_data->node_selection);
+							node_manager,node_group_manager,
+							element_manager,node_selection);
 					}
 					else
 					{
 						display_message(WARNING_MESSAGE,
 							"gfx destroy nodes:  No nodes specified");
-						return_code=0;
 					}
 				}
 				else
@@ -11204,7 +11127,7 @@ Executes a GFX DESTROY VTEXTURES command.
 static int execute_command_gfx_destroy(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 29 August 2000
 
 DESCRIPTION :
 Executes a GFX DESTROY command.
@@ -11216,7 +11139,7 @@ Executes a GFX DESTROY command.
 	{
 		{"cmiss_connection",NULL,NULL,gfx_destroy_cmiss},
 		{"curve",NULL,NULL,gfx_destroy_Control_curve},
-		{"data",NULL,NULL,gfx_destroy_data},
+		{"data",NULL,NULL,gfx_destroy_nodes},
 		{"dgroup",NULL,NULL,gfx_destroy_data_group},
 		{"egroup",NULL,NULL,gfx_destroy_element_group},
 		{"elements",NULL,NULL,gfx_destroy_elements},
@@ -11246,6 +11169,7 @@ Executes a GFX DESTROY command.
 				(option_table[i]).user_data=command_data->control_curve_manager;
 				i++;
 				/* data */
+				(option_table[i]).to_be_modified=(void *)1;
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* dgroup */
@@ -11267,6 +11191,7 @@ Executes a GFX DESTROY command.
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* nodes */
+				(option_table[i]).to_be_modified=(void *)0;
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* spectrum */
@@ -13390,71 +13315,114 @@ Executes a GFX LIST ELEMENT.
 } /* gfx_list_FE_element */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_FE_node(struct Parse_state *state,
-	void *dummy_to_be_modified,void *node_manager_void)
+	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 May 1998
+LAST MODIFIED : 29 August 2000
 
 DESCRIPTION :
-Executes a GFX LIST NODE.
+Executes a GFX LIST NODES.
+If <used_data_flag> is set, use data_manager and data_selection, otherwise
+use node_manager and node_selection.
 ==============================================================================*/
 {
-	char *current_token;
-	int node_number,return_code;
-	struct FE_node *node;
+	char all_flag,ranges_flag,selected_flag;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct FE_node_list_conditional_data list_conditional_data;
+	struct FE_node_selection *node_selection;
+	struct LIST(FE_node) *node_list;
 	struct MANAGER(FE_node) *node_manager;
+	struct Multi_range *node_ranges;
+	struct Option_table *option_table;
 
 	ENTER(gfx_list_FE_node);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		if (node_manager=(struct MANAGER(FE_node) *)node_manager_void)
+		if (use_data)
 		{
-			if (current_token=state->current_token)
+			node_manager=command_data->data_manager;
+			node_selection=command_data->data_selection;
+		}
+		else
+		{
+			node_manager=command_data->node_manager;
+			node_selection=command_data->node_selection;
+		}
+		/* initialise defaults */
+		all_flag=0;
+		selected_flag=0;
+		node_ranges=CREATE(Multi_range)();
+
+		option_table=CREATE(Option_table)();
+		/* all */
+		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+		/* selected */
+		Option_table_add_entry(option_table,"selected",&selected_flag,
+			NULL,set_char_flag);
+		/* default option: node number ranges */
+		Option_table_add_entry(option_table,(char *)NULL,(void *)node_ranges,
+			NULL,set_Multi_range);
+		if (return_code=Option_table_multi_parse(option_table,state))
+		{
+			if (node_list=CREATE(LIST(FE_node))())
 			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				ranges_flag=(0<Multi_range_get_number_of_ranges(node_ranges));
+				if (selected_flag)
 				{
-					if (1==sscanf(current_token,"%d",&node_number))
+					/* add the selected nodes to node_list, and if node_ranges
+						 given, intersect with them */
+					return_code=COPY_LIST(FE_node)(node_list,
+						FE_node_selection_get_node_list(node_selection))&&
+						((!ranges_flag)||REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+							FE_node_is_not_in_Multi_range,node_ranges,node_list));
+				}
+				else if (ranges_flag)
+				{
+					/* add nodes with numbers in node_ranges to node_list */
+					list_conditional_data.node_list=node_list;
+					list_conditional_data.function=FE_node_is_in_Multi_range;
+					list_conditional_data.user_data=node_ranges;
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+						ensure_FE_node_is_in_list_conditional,
+						(void *)&list_conditional_data,node_manager);
+				}
+				else if (all_flag)
+				{
+					/* add all nodes to node_list */
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+						ensure_FE_node_is_in_list,(void *)node_list,
+						node_manager);
+				}
+				if (return_code)
+				{
+					if (0<NUMBER_IN_LIST(FE_node)(node_list))
 					{
-						if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-							node_number,node_manager))
-						{
-							return_code=list_FE_node(node,(void *)1);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"Unknown node: %d",node_number);
-							return_code=0;
-						}
+						return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
+							(void *)1,node_list);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Invalid node number: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
+						display_message(WARNING_MESSAGE,
+							"gfx list nodes:  No nodes specified");
 					}
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE," NODE#{integer}");
-					return_code=1;
+					display_message(ERROR_MESSAGE,
+						"gfx_list_FE_node.  Could not fill node_list");
 				}
+				DESTROY(LIST(FE_node))(&node_list);
 			}
 			else
 			{
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(list_FE_node,
-					(void *)1,node_manager);
+				display_message(ERROR_MESSAGE,
+					"gfx_list_FE_node.  Could not make node_list");
+				return_code=0;
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_FE_node.  Missing node_manager_void");
-			return_code=0;
-		}
+		DESTROY(Option_table)(&option_table);
+		DESTROY(Multi_range)(&node_ranges);
 	}
 	else
 	{
@@ -13465,84 +13433,6 @@ Executes a GFX LIST NODE.
 
 	return (return_code);
 } /* gfx_list_FE_node */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_list_data(struct Parse_state *state,
-	void *dummy_to_be_modified,void *data_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 26 May 1998
-
-DESCRIPTION :
-Executes a GFX LIST DATA.
-==============================================================================*/
-{
-	char *current_token;
-	int data_number,return_code;
-	struct FE_node *data;
-	struct MANAGER(FE_node) *data_manager;
-
-	ENTER(gfx_list_data);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (data_manager=(struct MANAGER(FE_node) *)data_manager_void)
-		{
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (1==sscanf(current_token,"%d",&data_number))
-					{
-						if (data=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-							data_number,data_manager))
-						{
-							return_code=list_FE_node(data,(void *)1);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"Unknown data: %d",data_number);
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Invalid data number: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE," NODE#{integer}");
-					return_code=1;
-				}
-			}
-			else
-			{
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(list_FE_node,
-					(void *)1,data_manager);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_data.  Missing data_manager_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_list_data.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_list_data */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_list_graphical_material(struct Parse_state *state,
 	void *dummy_to_be_modified,void *graphical_material_manager_void)
@@ -15035,7 +14925,7 @@ Executes a GFX LIST WINDOW.
 static int execute_command_gfx_list(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 29 August 2000
 
 DESCRIPTION :
 Executes a GFX LIST command.
@@ -15046,7 +14936,7 @@ Executes a GFX LIST command.
 	static struct Modifier_entry option_table[]=
 	{
 		{"curve",NULL,NULL,gfx_list_Control_curve},
-		{"data",NULL,NULL,gfx_list_data},
+		{"data",NULL,NULL,gfx_list_FE_node},
 		{"dgroup",NULL,NULL,gfx_list_group_data},
 		{"egroup",NULL,NULL,gfx_list_group_FE_element},
 		{"element",NULL,NULL,gfx_list_FE_element},
@@ -15063,7 +14953,7 @@ Executes a GFX LIST command.
 		{"movie",NULL,NULL,gfx_list_movie_graphics},
 #endif /* defined (SGI_MOVIE_FILE) */
 		{"ngroup",NULL,NULL,gfx_list_group_FE_node},
-		{"node",NULL,NULL,gfx_list_FE_node},
+		{"nodes",NULL,NULL,gfx_list_FE_node},
 		{"slider",NULL,NULL,list_node_group_slider},
 		{"scene",NULL,NULL,gfx_list_scene},
 		{"spectrum",NULL,NULL,gfx_list_spectrum},
@@ -15090,7 +14980,8 @@ Executes a GFX LIST command.
 					(void *)(command_data->control_curve_manager);
 				i++;
 				/* data */
-				(option_table[i]).user_data=command_data->data_manager;
+				(option_table[i]).to_be_modified=(void *)1;
+				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* dgroup */
 				(option_table[i]).user_data=command_data->data_group_manager;
@@ -15136,8 +15027,9 @@ Executes a GFX LIST command.
 				/* ngroup */
 				(option_table[i]).user_data=command_data->node_group_manager;
 				i++;
-				/* node */
-				(option_table[i]).user_data=command_data->node_manager;
+				/* nodes */
+				(option_table[i]).to_be_modified=(void *)0;
+				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* slider */
 				(option_table[i]).user_data=command_data->node_group_slider_dialog;
