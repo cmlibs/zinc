@@ -465,6 +465,8 @@ Creates the array of cells containing field component names and values.
 			/* unmanage component_rowcol to avoid geometry requests, then destroy */
 			XtUnmanageChild(element_point_field_viewer->component_rowcol);
 			XtDestroyWidget(element_point_field_viewer->component_rowcol);
+			/* must clear widget as we compare against it later */
+			element_point_field_viewer->component_rowcol = (Widget)NULL;
 		}
 		if ((element=element_point_field_viewer->element_point_identifier.element)&&
 			(field=element_point_field_viewer->current_field)&&
