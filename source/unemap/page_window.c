@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 
@@ -2257,7 +2257,7 @@ DWORD WINAPI save_write_signal_file_process(
 	LPVOID save_write_signal_file_background_data_void)
 #endif /* defined (WIN32_SYSTEM) */
 /*******************************************************************************
-LAST MODIFIED : 11 August 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
@@ -2285,135 +2285,148 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
-	if ((save_write_signal_file_background_data=
+	if (save_write_signal_file_background_data=
 		(struct Save_write_signal_file_background_data *)
-		save_write_signal_file_background_data_void)&&
-		(0==save_write_signal_file_background_data->all_channels)&&
-		(0<(number_of_samples=save_write_signal_file_background_data->
-		number_of_samples))&&
-		(samples=save_write_signal_file_background_data->samples)&&
-		(page_window=save_write_signal_file_background_data->page_window)&&
-		(page_window->rig_address)&&(rig= *(page_window->rig_address))&&
-		unemap_get_number_of_channels(&number_of_channels)&&
-		(save_write_signal_file_background_data->file_name)&&
-		(save_write_signal_file_background_data->temp_file_name)&&
-		(output_file=fopen(save_write_signal_file_background_data->file_name,"wb")))
+		save_write_signal_file_background_data_void)
 	{
-		i=rig->number_of_devices;
-		device=rig->devices;
-		while (i>0)
-		{
-			if ((*device)&&((*device)->signal)&&((*device)->channel)&&
-				(signal_buffer=(*device)->signal->buffer))
-			{
-				signal_buffer->start=0;
-				signal_buffer->end=(int)(number_of_samples-1);
-				channel_number=((*device)->channel->number)-1;
-				number_of_signals=signal_buffer->number_of_signals;
-				destination=((signal_buffer->signals).short_int_values)+
-					((*device)->signal->index);
-				if ((0<=channel_number)&&(channel_number<number_of_channels))
-				{
-					source=(short *)samples+channel_number;
-					for (j=(int)number_of_samples;j>0;j--)
-					{
-						*destination= *source;
-						source += number_of_channels;
-						destination += number_of_signals;
-					}
-				}
-				else
-				{
-					for (j=(int)number_of_samples;j>0;j--)
-					{
-						*destination=0;
-						destination += number_of_signals;
-					}
-				}
-			}
-			i--;
-			device++;
-		}
-#if defined (DEBUG)
-		/*???debug */
-		printf("after reordering\n");
-#endif /* defined (DEBUG) */
-#if !defined (MIRADA)
-#if defined (OLD_CODE)
-		gains=(float *)NULL;
-		i=rig->number_of_devices;
-		if (ALLOCATE(gains,float,i))
-		{
-			device=rig->devices;
-			while (i>0)
-			{
-				if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
-					((*device)->channel))
-				{
-					gains[i-1]=(*device)->channel->gain;
-					if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
-						&post_filter_gain))
-					{
-						/*???DB.  Changes size of scrolling signal when saving in
-							background */
-						(*device)->channel->gain /= pre_filter_gain*post_filter_gain;
-					}
-				}
-				i--;
-				device++;
-			}
-		}
-#endif /* defined (OLD_CODE) */
-#endif /* !defined (MIRADA) */
-		return_code=write_signal_file(output_file,rig);
-#if !defined (MIRADA)
-#if defined (OLD_CODE)
-		if (gains)
+		if ((0==save_write_signal_file_background_data->all_channels)&&
+			(0<(number_of_samples=save_write_signal_file_background_data->
+			number_of_samples))&&
+			(samples=save_write_signal_file_background_data->samples)&&
+			(page_window=save_write_signal_file_background_data->page_window)&&
+			(page_window->rig_address)&&(rig= *(page_window->rig_address))&&
+			unemap_get_number_of_channels(&number_of_channels)&&
+			(save_write_signal_file_background_data->file_name)&&
+			(save_write_signal_file_background_data->temp_file_name)&&
+			(output_file=fopen(save_write_signal_file_background_data->file_name,
+			"wb")))
 		{
 			i=rig->number_of_devices;
 			device=rig->devices;
 			while (i>0)
 			{
-				if ((*device)&&((*device)->signal)&&((*device)->signal->buffer))
+				if ((*device)&&((*device)->signal)&&((*device)->channel)&&
+					(signal_buffer=(*device)->signal->buffer))
 				{
-					(*device)->channel->gain=gains[i-1];
+					signal_buffer->start=0;
+					signal_buffer->end=(int)(number_of_samples-1);
+					channel_number=((*device)->channel->number)-1;
+					number_of_signals=signal_buffer->number_of_signals;
+					destination=((signal_buffer->signals).short_int_values)+
+						((*device)->signal->index);
+					if ((0<=channel_number)&&(channel_number<number_of_channels))
+					{
+						source=(short *)samples+channel_number;
+						for (j=(int)number_of_samples;j>0;j--)
+						{
+							*destination= *source;
+							source += number_of_channels;
+							destination += number_of_signals;
+						}
+					}
+					else
+					{
+						for (j=(int)number_of_samples;j>0;j--)
+						{
+							*destination=0;
+							destination += number_of_signals;
+						}
+					}
 				}
 				i--;
 				device++;
 			}
-			DEALLOCATE(gains);
-		}
+#if defined (DEBUG)
+			/*???debug */
+			printf("after reordering\n");
+#endif /* defined (DEBUG) */
+#if !defined (MIRADA)
+#if defined (OLD_CODE)
+			gains=(float *)NULL;
+			i=rig->number_of_devices;
+			if (ALLOCATE(gains,float,i))
+			{
+				device=rig->devices;
+				while (i>0)
+				{
+					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
+						((*device)->channel))
+					{
+						gains[i-1]=(*device)->channel->gain;
+						if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
+							&post_filter_gain))
+						{
+							/*???DB.  Changes size of scrolling signal when saving in
+								background */
+							(*device)->channel->gain /= pre_filter_gain*post_filter_gain;
+						}
+					}
+					i--;
+					device++;
+				}
+			}
 #endif /* defined (OLD_CODE) */
 #endif /* !defined (MIRADA) */
-		fclose(output_file);
-		if (return_code)
-		{
-			page_window->data_saved=1;
-			rename(save_write_signal_file_background_data->temp_file_name,
-				save_write_signal_file_background_data->file_name);
+			return_code=write_signal_file(output_file,rig);
+#if !defined (MIRADA)
+#if defined (OLD_CODE)
+			if (gains)
+			{
+				i=rig->number_of_devices;
+				device=rig->devices;
+				while (i>0)
+				{
+					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer))
+					{
+						(*device)->channel->gain=gains[i-1];
+					}
+					i--;
+					device++;
+				}
+				DEALLOCATE(gains);
+			}
+#endif /* defined (OLD_CODE) */
+#endif /* !defined (MIRADA) */
+			fclose(output_file);
+			if (return_code)
+			{
+				page_window->data_saved=1;
+				rename(save_write_signal_file_background_data->temp_file_name,
+					save_write_signal_file_background_data->file_name);
+			}
+			else
+			{
+				remove(save_write_signal_file_background_data->temp_file_name);
+			}
 		}
 		else
 		{
-			remove(save_write_signal_file_background_data->temp_file_name);
+			display_message(ERROR_MESSAGE,
+				"save_write_signal_file_process.  Invalid arguments %d %d %p %p",
+				save_write_signal_file_background_data->all_channels,number_of_samples,
+				samples);
+			return_code=0;
+		}
+		if (page_window=save_write_signal_file_background_data->page_window)
+		{
+#if defined (MOTIF)
+			XtVaSetValues(page_window->shell,XmNtitle,"Acquisition",NULL);
+			/* force X to action the title change */
+			XFlush(User_interface_get_display(page_window->user_interface));
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+			SetWindowText(page_window->window,"Acquisition");
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		DEALLOCATE(save_write_signal_file_background_data->samples);
 		DEALLOCATE(save_write_signal_file_background_data->temp_file_name);
 		DEALLOCATE(save_write_signal_file_background_data->file_name);
 		DEALLOCATE(save_write_signal_file_background_data);
-#if defined (MOTIF)
-		XtVaSetValues(page_window->shell,XmNtitle,"Acquisition",NULL);
-		/* force X to action the title change */
-		XFlush(User_interface_get_display(page_window->user_interface));
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-		SetWindowText(page_window->window,"Acquisition");
-#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"save_write_signal_file_process.  Invalid arguments %d %p %p",
-			number_of_samples,samples,save_write_signal_file_background_data_void);
+		display_message(ERROR_MESSAGE,"save_write_signal_file_process.  "
+			"Missing save_write_signal_file_background_data");
 		return_code=0;
 	}
 #if defined (DEBUG)
