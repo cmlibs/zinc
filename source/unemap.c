@@ -388,8 +388,6 @@ Main program for unemap
 	struct Coordinate_system rect_coord_system;
 	struct Element_point_ranges_selection *element_point_ranges_selection=
 		(struct Element_point_ranges_selection *)NULL;
-	struct Event_dispatcher *event_dispatcher=
-		(struct Event_dispatcher *)NULL;
 	struct FE_element_selection *element_selection=(struct FE_element_selection *)NULL;
 	struct FE_field *map_fit_field=(struct FE_field *)NULL;
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
@@ -460,7 +458,10 @@ Main program for unemap
 #endif /* defined (WINDOWS) */
 #endif /* defined (OLD_CODE) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
-	struct User_interface *user_interface;
+	struct Event_dispatcher *event_dispatcher=
+		(struct Event_dispatcher *)NULL;
+	struct User_interface *user_interface=
+		(struct User_interface *)NULL;
 #if defined (MOTIF)
 #define XmNidentifyingColour "identifyingColour"
 #define XmCIdentifyingColour "IdentifyingColour"
