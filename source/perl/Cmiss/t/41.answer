@@ -1,9 +1,8 @@
-matrix[1:2,1:3]*matrix[1:3,1:2] matrix[1:2,1:2]
-Could not create Cmiss::Function::Matrix::Product
-undefined
-matrix[1:2,1:2]*matrix[1:2,1:2] matrix[1:2,1:2]
+matrix[1:2,1:3]*matrix[1:3,1:2] matrix[1:0,1:0]
+matrix[1:2,1:3]*matrix[1:2,1:2]
+matrix[1:2,1:2]*matrix[1:0,1:0] matrix[1:0,1:0]
 
-[2,2]((0,0),(0,0))
+[0,0]()
 
 [2,2]((-140,585),(40,-66))
 

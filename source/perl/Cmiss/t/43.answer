@@ -1,6 +1,5 @@
 determinant(matrix[1:3,1:3]) matrix[1,1]
-Could not create Cmiss::Function::Matrix::Determinant
-undefined
+determinant(matrix[1:3,1:2])
 
 [1,1]((500))
 
