@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -406,17 +406,6 @@ LAST MODIFIED : 5 July 1999
 DESCRIPTION :
 ==============================================================================*/
 
-int GT_element_group_clear_picked(struct GT_element_group *gt_element_group);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2000
-
-DESCRIPTION :
-Clears all the picked objects in the <gt_element_group>.
-Only parent scene is authorised to do this.
-Should only be called by Scene_object_clear_picked, otherwise need callback to
-inform it of change.
-==============================================================================*/
-
 int GT_element_group_clear_selected(struct GT_element_group *gt_element_group);
 /*******************************************************************************
 LAST MODIFIED : 14 February 2000
@@ -428,27 +417,13 @@ Should only be called by Scene_object_clear_selected, otherwise need callback to
 inform it of change.
 ==============================================================================*/
 
-int GT_element_group_pick_subobject(struct GT_element_group *gt_element_group,
-	int number_of_subobject_names,int *subobject_names);
+int GT_element_group_is_node_selected(
+	struct GT_element_group *gt_element_group,struct FE_node *node);
 /*******************************************************************************
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
-Finds the settings with the position/identifier given in the first position in
-the <subobject_names> in <gt_element_group>, picking any objects it refers to
-based on the remainder of the subobject names.
-For example, if there are "node_points" in the first position, and there are
-three subobject_names 1 0 5, node 5 will be added to the picked list.
-==============================================================================*/
-
-int GT_element_group_get_picked_nodes(
-	struct GT_element_group *gt_element_group,struct LIST(FE_node) *node_list);
-/*******************************************************************************
-LAST MODIFIED : 15 February 2000
-
-DESCRIPTION :
-Ensures all the picked nodes in <gt_element_group> are in <node_list>. Does
-not clear <node_list> first.
+Returns true if <node> is in the selected nodes list of <gt_element_group>.
 ==============================================================================*/
 
 int GT_element_group_get_selected_nodes(
@@ -471,23 +446,5 @@ LAST MODIFIED : 15 February 2000
 DESCRIPTION :
 Modifies the list of selected nodes in <gt_element_group> with <node_list>
 according to the <modify_mode>: add, remove, replace, toggle etc.
-==============================================================================*/
-
-struct FE_node *GT_element_group_get_nearest_node(
-	struct GT_element_group *gt_element_group,FE_value centre[3],
-	struct GT_element_settings **settings_address,int *edit_vector);
-/*******************************************************************************
-LAST MODIFIED : 15 February 2000
-
-DESCRIPTION :
-Returns the picked node in <gt_element_group> closest to <centre>. Evaluates the
-coordinate field for each node with every NODE_POINTS settings, as well as the
-end point of the vector if an orientation_scale field is used. Note that the end
-of the node vector will be chosen first if it is at the same location as the
-node coordinates. The <settings> with the nearest node are returned, and the
-<edit_vector> flag will be set if the end of the node vector was selected over
-the node coordinates.
-Note that the centre given must be in the coordinate area of <gt_element_group>,
-ie. any transformations of the graphics must be inverted.
 ==============================================================================*/
 #endif /* !defined (GRAPHICAL_ELEMENT_H) */
