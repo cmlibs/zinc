@@ -5,7 +5,7 @@ MAILFILE_PATH=mailfiles
 
 #Build defaults
 USER_INTERFACE=MOTIF_USER_INTERFACE
-DYNAMIC_GL_LINUX=false
+STATIC_LINK=true
 DEBUG=true
 ABI=
 MEMORYCHECK=
@@ -74,7 +74,7 @@ endif
 ifdef USE_UNEMAP_3D
    USE_UNEMAP_3D_OPTION = USE_UNEMAP_3D=$(USE_UNEMAP_3D)
 endif
-OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(DYNAMIC_GL_LINUX_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION) $(USE_UNEMAP_NODES_OPTION) $(USE_UNEMAP_3D_OPTION)
+OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION) $(USE_UNEMAP_NODES_OPTION) $(USE_UNEMAP_3D_OPTION)
 
 unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug utilities :
 	cd source ; \
@@ -94,10 +94,16 @@ update_sources :
 	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update' && \
 	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH)/source ; cvs update' ;
 
+#If not already cmiss become cmiss first and then propogate so that the user
+#only has to authenticate as cmiss once at the start.
 update :
-	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
-	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' ;
+	if [ "$(USER)" = "cmiss" ] ; then \
+		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
+		ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
+	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' ; \
+	else \
+		ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) update' ; \
+	fi
 
 cronjob: update_sources
 	if [ "$(USER)" = "cmiss" ]; then \
