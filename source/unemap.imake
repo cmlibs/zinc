@@ -835,26 +835,6 @@ OBJSB = $(OBJSA:.cpp=.ObjSuffix)
 OBJS = $(OBJSB:.f=.ObjSuffix)
 #endif /* defined (MEMORY_CHECK) */
 
-depend :
-	echo -n > DependMake
-	(makedepend -f DependMake -Y -o.ObjSuffix -- $(ALL_FLAGS) -- unemap.c 2> DependMake.tmp)
-	(makedepend -f DependMake -a -Y -o.ObjSuffix -- $(ALL_FLAGS) -- $(SRCS) 2>> DependMake.tmp)
-	/* The uidh get their full path in the dependencies which stops the VPATH
-	.uil.uidh rule from picking up dependencies so I remove this PATH */
-	sed "s%$(UIDH_PATH)/%%g" DependMake > DependMake.tmp2
-	mv DependMake.tmp2 DependMake
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(SRCS) 2>&1 | sed "s%ls: %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
-#endif /* switch OperatingSystem */
-	/* Try and make a rule for the uidhs if they don't exist already,
-	It is bad, based on the format of the error output from makedepend and it only
-	gets the first inclusion.  If it fails then you can get the correct makedepend 
-	by ensuring all the uidh files already exist before you makedepend */
-	( grep uidh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
-	rm DependMake.tmp
-
 transfer :
 	tar -cvf - \
 	../unemap.make unemap.imake common.imake unemap.c version.h \
@@ -1280,6 +1260,55 @@ UNIQUE_CHANNELS_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(UniqueChannelsTarget,$(UTILITIES_PATH),UNIQUE_CHANNELS_SRCS,UNIQUE_CHANNELS_OBJSA,UNIQUE_CHANNELS_OBJSB,UNIQUE_CHANNELS_OBJS,-lm) 
+
+UTILITIES_SRCS = \
+	$(UNIQUE_CHANNELS_SRCS) \
+	$(TUFF2SIG_SRCS) \
+	$(TEXT2SIG_SRCS) \
+	$(TEST_UNEMAP_HARDWARE_SRCS) \
+	$(TEST_DELAUNEY_SRCS) \
+	$(SIG2TEXT_SRCS) \
+	$(REGISTER_SRCS) \
+	$(RATIO_SIGNALS_SRCS) \
+	$(PLT2CNFG_SRCS) \
+	$(OPTICAL_SIGNALS_SRCS) \
+	$(MAKE_PLAQUE_SRCS) \
+	$(IMG2SIG_SRCS) \
+	$(FIX_ECG_SRCS) \
+	$(EXTRACT_SIGNAL_SRCS) \
+	$(DIFFERENCE_SIGNALS_SRCS) \
+	$(COMBINE_SIGNALS_SRCS) \
+	$(CHANGE_FREQUENCY_SRCS) \
+	$(CHANGE_EVENTS_SRCS) \
+	$(CHANGE_CONFIGURATION_SRCS) \
+	$(CHANGE_CHANNELS_SRCS) \
+	$(CHANGE_CALIBRATION_SRCS) \
+	$(CALCULATE_EVENTS_SRCS) \
+	$(BIOSENSE2VRML_SRCS) \
+	$(BIOSENSE2SIG_SRCS) \
+	$(BMSI2SIG_SRCS) \
+	$(AFFINE_SRCS) \
+
+depend :
+	echo -n > DependMake
+	(makedepend -f DependMake -Y -o.ObjSuffix -- $(ALL_FLAGS) -- unemap.c 2> DependMake.tmp)
+	(makedepend -f DependMake -a -Y -o.ObjSuffix -- $(ALL_FLAGS) -- $(SRCS) 2>> DependMake.tmp)	
+	(makedepend -f DependMake -a -Y -o.ObjSuffix -- $(ALL_FLAGS) -- $(UTILITIES_SRCS) 2>> DependMake.tmp)
+	/* The uidh get their full path in the dependencies which stops the VPATH
+	.uil.uidh rule from picking up dependencies so I remove this PATH */
+	sed "s%$(UIDH_PATH)/%%g" DependMake > DependMake.tmp2
+	mv DependMake.tmp2 DependMake
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(SRCS) 2>&1 | sed "s%ls: %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
+#endif /* switch OperatingSystem */
+	/* Try and make a rule for the uidhs if they don't exist already,
+	It is bad, based on the format of the error output from makedepend and it only
+	gets the first inclusion.  If it fails then you can get the correct makedepend 
+	by ensuring all the uidh files already exist before you makedepend */
+	( grep uidh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
+	rm DependMake.tmp
 
 /* sinclude used so that the makefile can be run when the dependency file doesn't exist,
  it should then make one */
