@@ -4,10 +4,67 @@
 #include <math.h>
 #include <ctype.h> /*???DB.  Contains definition of BYTE_ORDER for Linux */
 #include <libgen.h>
+#if __GLIBC__ >= 2
+#include <gnu/libc-version.h>
+#endif
 
 /* These functions are not ANSI so don't get included in stdlib.h */
 extern long a64l(const char *);
 extern char *l64a(long);
+
+#if defined (BYTE_ORDER)
+#if (1234==BYTE_ORDER)
+static int glibc_version_greater_than_2_2_4(void)
+/*******************************************************************************
+LAST MODIFIED : 26 November 2002
+
+DESCRIPTION :
+Need to read the glibc version so that we can determine if we need to 
+swap the endianness of values going into a64l
+==============================================================================*/
+{
+#if __GLIBC__ >= 2
+	char *version_string;
+	int major_version, minor_version, minor_sub_version;
+#endif /* __GLIBC__ >= 2 */
+	static int return_code = -1;
+
+	ENTER(get_glibc_version);
+
+	/* This gets called a lot so lets make it fast */
+	if (return_code == -1)
+	{
+#if __GLIBC__ >= 2
+		version_string = (char *)gnu_get_libc_version();
+		if (sscanf(version_string, "%d.%d.%d", &major_version, &minor_version, 
+			&minor_sub_version))
+		{
+			
+			if ((major_version > 2) ||
+				((major_version == 2) && (minor_version > 2)) ||
+				((major_version == 2) && (minor_version == 2) && (minor_sub_version > 4)))
+			{
+				return_code = 1;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+#else /* __GLIBC__ >= 2 */
+		return_code = 0;
+#endif/* __GLIBC__ >= 2 */
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* get_glibc_version */
+#endif /* (1234==BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 
 int main(int argc, char *argv[])	  
 {
@@ -75,38 +132,45 @@ int main(int argc, char *argv[])
 								       char_data[4], char_data[5]);
 #endif /* defined (DEBUG) */
 #if (defined (BYTE_ORDER)) && (1234==BYTE_ORDER)
-								for(i = 0 ; i < 6 ; i++)
+								if (!glibc_version_greater_than_2_2_4())
 								{
-									if(char_data[i])
+									for(i = 0 ; i < 6 ; i++)
 									{
-										out_data[5 - i] = char_data[i];
-									}
-									else
-									{
-										for (j = 0 ; j < i ; j++)
+										if(char_data[i])
 										{
-											out_data[j] = out_data[6 - i + j];
+											out_data[5 - i] = char_data[i];
 										}
-										for ( ; i < 6 ; i++)
+										else
 										{
-											out_data[i] = '.';
+											for (j = 0 ; j < i ; j++)
+											{
+												out_data[j] = out_data[6 - i + j];
+											}
+											for ( ; i < 6 ; i++)
+											{
+												out_data[i] = '.';
+											}
 										}
 									}
-								}							
-#else /* (defined (BYTE_ORDER)) && (1234==BYTE_ORDER) */
-								for( i = 0 ; i < 6 ; i++)
+								}
+								else
 								{
-									if(char_data[i])
+#endif /* (defined (BYTE_ORDER)) && (1234==BYTE_ORDER) */
+									for( i = 0 ; i < 6 ; i++)
 									{
-										out_data[i] = char_data[i];
-									}
-									else
-									{
-										for ( ; i < 6 ; i++)
+										if(char_data[i])
 										{
-											out_data[i] = '.';
+											out_data[i] = char_data[i];
+										}
+										else
+										{
+											for ( ; i < 6 ; i++)
+											{
+												out_data[i] = '.';
+											}
 										}
 									}
+#if (defined (BYTE_ORDER)) && (1234==BYTE_ORDER)
 								}
 #endif /* (defined (BYTE_ORDER)) && (1234==BYTE_ORDER) */
 							}
