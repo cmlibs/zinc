@@ -362,7 +362,7 @@ int This_fft1d(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
 	FE_value tempr,tempi;
 	FE_value  *data;
 	int return_code;
-	ENTER(fft1d);
+	ENTER(This_fft1d);
 	size = data_size;
 	if (!inverse)
 	{
@@ -479,7 +479,7 @@ int This_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out
 	FE_value  *f1_re, *f1_im, *f2_re, *f2_im;
 	FE_value  *f3_re, *f3_im, *f4_re, *f4_im;
 	FE_value  *tmp_re, *tmp_im;
-	ENTER(fft2d);
+	ENTER(This_fft2d);
 	p = xsize;
 	n = ysize;
 	if (ALLOCATE(f1_re, FE_value, p) &&
@@ -555,7 +555,125 @@ int This_fft2d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out
 }/* This_fft2d */
 
 
-void This_gaussian_kernel(FE_value *kernel,double g, int xsize, int ysize)
+int This_fft3d(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
+         char *i_flag, int xsize, int ysize, int zsize)
+/****************************************************************************
+      LAST MODIFIED: 17 February 2005
+
+      DESCRIPTION: Implement 3D fast Fourier transform
+============================================================================*/
+{
+        int      i, j, k, n, p, q;
+	int return_code;
+	FE_value  *f1_re, *f1_im, *f2_re, *f2_im;
+	FE_value  *f3_re, *f3_im, *f4_re, *f4_im;
+	FE_value  *f5_re, *f5_im, *f6_re, *f6_im;
+	FE_value  *tmp1_re, *tmp1_im;
+	FE_value  *tmp2_re, *tmp2_im;
+	ENTER(This_fft3d);
+	p = xsize;
+	n = ysize;
+	q = zsize;
+	if (ALLOCATE(f1_re, FE_value, p) &&
+	     ALLOCATE(f1_im, FE_value, p) &&
+	     ALLOCATE(f2_re, FE_value, p) &&
+	     ALLOCATE(f2_im, FE_value, p) &&
+	     ALLOCATE(tmp1_re, FE_value, xsize*ysize*zsize) &&
+	     ALLOCATE(tmp1_im, FE_value, xsize*ysize*zsize) &&
+	     ALLOCATE(tmp2_re, FE_value, xsize*ysize*zsize) &&
+	     ALLOCATE(tmp2_im, FE_value, xsize*ysize*zsize) &&
+	     ALLOCATE(f3_re, FE_value, n) &&
+	     ALLOCATE(f3_im, FE_value, n) &&
+	     ALLOCATE(f4_re, FE_value, n) &&
+	     ALLOCATE(f4_im, FE_value, n) &&
+	     ALLOCATE(f5_re, FE_value, q) &&
+	     ALLOCATE(f5_im, FE_value, q) &&
+	     ALLOCATE(f6_re, FE_value, q) &&
+	     ALLOCATE(f6_im, FE_value, q))
+	{
+	        return_code = 1;
+
+		for (i=0;i<q;i++)
+		{
+		        for (j=0;j<n;j++)
+			{
+			        for (k=0;k<p;k++)
+				{
+			                f1_re[k] = in_re[p*n*i+p*j+k];
+					f1_im[k] = in_im[p*n*i+p*j+k];
+				}
+				This_fft1d(f1_re,f1_im,f2_re,f2_im,i_flag, p);
+				for (k=0;k<p;k++)
+				{
+			        	tmp1_re[p*n*i+p*j+k] = f2_re[k];
+					tmp1_im[p*n*i+p*j+k] = f2_im[k];
+				}
+			}
+		}
+		DEALLOCATE(f1_re);
+		DEALLOCATE(f1_im);
+		DEALLOCATE(f2_re);
+		DEALLOCATE(f2_im);
+		for (i=0;i<q;i++)
+		{
+			for (k=0;k<p;k++)
+			{
+			        for (j=0;j<n;j++)
+				{
+				        f3_re[j] = tmp1_re[p*n*i+p*j+k];
+				        f3_im[j] = tmp1_im[p*n*i+p*j+k];
+				}
+				This_fft1d(f3_re,f3_im,f4_re,f4_im,i_flag, n);
+				for (j=0;j<n;j++)
+				{
+					tmp2_re[p*n*i+p*j+k] = f4_re[j];
+					tmp2_im[p*n*i+p*j+k] = f4_im[j];
+				}
+			}
+		}
+		DEALLOCATE(f3_re);
+		DEALLOCATE(f3_im);
+		DEALLOCATE(f4_re);
+		DEALLOCATE(f4_im);
+		for (j=0;j<n;j++)
+		{
+			for (k=0;k<p;k++)
+			{
+			        for (i=0;i<q;i++)
+				{
+				        f5_re[i] = tmp2_re[p*n*i+p*j+k];
+				        f5_im[i] = tmp2_im[p*n*i+p*j+k];
+				}
+				This_fft1d(f5_re,f5_im,f6_re,f6_im,i_flag, q);
+				for (i=0;i<q;i++)
+				{
+					out_re[p*n*i+p*j+k] = f6_re[i];
+					out_im[p*n*i+p*j+k] = f6_im[i];
+				}
+			}
+		}
+		DEALLOCATE(f5_re);
+		DEALLOCATE(f5_im);
+		DEALLOCATE(f6_re);
+		DEALLOCATE(f6_im);
+		DEALLOCATE(tmp1_re);
+		DEALLOCATE(tmp1_im);
+		DEALLOCATE(tmp2_re);
+		DEALLOCATE(tmp2_im);
+	}
+	else
+	{
+	        display_message(ERROR_MESSAGE,
+				"In function fft2d.  "
+				"Unable to allocate memory.");
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
+}/* This_fft3d */
+
+
+void This_gaussian_kernel2d(FE_value *kernel,double g, int xsize, int ysize)
 /***********************************************************************
    LAST MODIFIED: 1 June 2004
 
@@ -576,10 +694,37 @@ void This_gaussian_kernel(FE_value *kernel,double g, int xsize, int ysize)
 			kernel[adr] = (FE_value)exp(-cx*(FE_value)(x*x)-cy*(FE_value)(y*y));
 		}
 	}
-}/* This_gaussian_kernel */
+}/* This_gaussian_kernel2d */
 
+void This_gaussian_kernel3d(FE_value *kernel,double g, int xsize, int ysize, int zsize)
+/***********************************************************************
+   LAST MODIFIED: 1 June 2004
 
-int This_wiener(FE_value *data_index, FE_value *result_index, double g, double lambda,
+   DESCRIPTION: Build a Gaussian kernel with std g in Fourier domain
+========================================================================*/
+{
+        int nx,ny,nz,x,y,z,adr;
+	FE_value cx,cy,cz;
+	nx = xsize;
+	ny = ysize;
+	nz = zsize;
+	cx = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(nx*nx);
+	cy = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(ny*ny);
+	cz = (FE_value)(g*g)*2.*M_PI*M_PI/(FE_value)(nz*nz);
+	for (z=-nz/2;z<nz/2;z++)
+	{
+		for (y=-ny/2;y<ny/2;y++)
+		{
+			for (x=-nx/2;x<nx/2;x++)
+			{
+			         adr = (z<0?nz+z:z)*nx*ny+(y<0?ny+y:y)*nx+(x<0?nx+x:x);
+				 kernel[adr] = (FE_value)exp(-cx*(FE_value)(x*x)-cy*(FE_value)(y*y)-cz*(FE_value)(z*z));
+			}
+		}
+	}
+}/* This_gaussian_kernel3d */
+
+int This_wiener2d(FE_value *data_index, FE_value *result_index, double g, double lambda,
           int xsize, int ysize)
 /************************************************************************
     LAST MODIFIED: 1 June 2004
@@ -593,7 +738,7 @@ int This_wiener(FE_value *data_index, FE_value *result_index, double g, double l
 	int storage_size;
 	int return_code;
 	int i;
-	ENTER(wiener);
+	ENTER(This_wiener2d);
 	storage_size = xsize * ysize;
 
         if(ALLOCATE(re, FE_value, storage_size) &&
@@ -611,7 +756,7 @@ int This_wiener(FE_value *data_index, FE_value *result_index, double g, double l
 
 		This_fft2d(data_index, nothing, re, im, (char *)0, nx, ny);
 
-		This_gaussian_kernel(kernel, g, xsize, ysize);
+		This_gaussian_kernel2d(kernel, g, xsize, ysize);
 
 		cx = M_PI*M_PI/(FE_value)(nx*nx);
 		cy = M_PI*M_PI/(FE_value)(ny*ny);
@@ -642,8 +787,77 @@ int This_wiener(FE_value *data_index, FE_value *result_index, double g, double l
 	}
 	LEAVE;
 	return(return_code);
-}/* This_wiener */
+}/* This_wiener2d */
 
+int This_wiener3d(FE_value *data_index, FE_value *result_index, double g, double lambda,
+          int xsize, int ysize, int zsize)
+/************************************************************************
+    LAST MODIFIED: 17 February 2005
+
+    DESCRIPTION: Implement 3D Wiener filtering
+=========================================================================*/
+{
+        FE_value *re, *im, *kernel, *nothing;
+	int x,y,z, nx,ny,nz,adr;
+	FE_value c,k,rho2,cx,cy,cz;
+	int storage_size;
+	int return_code;
+	int i;
+	ENTER(This_wiener3d);
+	storage_size = xsize * ysize * zsize;
+
+        if(ALLOCATE(re, FE_value, storage_size) &&
+	         ALLOCATE(im, FE_value, storage_size) &&
+		 ALLOCATE(nothing, FE_value, storage_size) &&
+		 ALLOCATE(kernel, FE_value, storage_size))
+	{
+	        return_code = 1;
+		nx = xsize;
+		ny = ysize;
+		nz = zsize;
+		for (i = 0; i < storage_size; i++)
+		{
+		        nothing[i] = 0.0;
+		}
+
+		This_fft3d(data_index, nothing, re, im, (char *)0, nx, ny, nz);
+
+		This_gaussian_kernel3d(kernel, g, xsize, ysize, zsize);
+
+		cx = M_PI*M_PI/(FE_value)(nx*nx);
+		cy = M_PI*M_PI/(FE_value)(ny*ny);
+		cz = M_PI*M_PI/(FE_value)(nz*nz);
+		for (z=-nz/2;z<nz/2;z++)
+		{
+		        for (y=-ny/2;y<ny/2;y++)
+			{
+			         for (x=-nx/2;x<nx/2;x++)
+				 {
+			                 adr = (z<0?nz+z:z)*nx*ny+(y<0?ny+y:y)*nx+(x<0?nx+x:x);
+				         rho2 = cx*(FE_value)(x*x)+cy*(FE_value)(y*y)+cz*(FE_value)(z*z);
+				         k = kernel[adr];
+				         c = lambda * k/(lambda*k*k+rho2);
+				         re[adr] *= c;
+				         im[adr] *= c;
+				 }
+			}
+		}
+		This_fft3d(re, im, result_index, nothing, (char *)1, nx,ny,nz);
+		DEALLOCATE(re);
+		DEALLOCATE(im);
+		DEALLOCATE(nothing);
+		DEALLOCATE(kernel);
+	}
+	else
+	{
+	        display_message(ERROR_MESSAGE,
+				"In function wiener.  "
+				"Unable to allocate memory.");
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
+}/* This_wiener3d */
 
 static int Image_cache_wiener_filter(struct Image_cache *image, double sigma, double lambda)
 /*******************************************************************************
@@ -658,7 +872,7 @@ DESCRIPTION : Implement deconvolution with Wiener filter.
 	int i, return_code, storage_size, k;
 
 	ENTER(Image_cache_wiener_filter);
-	if (image && (image->dimension == 2) && (image->depth > 0))
+	if (image && (image->dimension == 2 ||image->dimension==3 ) && (image->depth > 0))
 	{
 		return_code = 1;
 
@@ -688,8 +902,16 @@ DESCRIPTION : Implement deconvolution with Wiener filter.
 					 data_index += image->depth;
 					 result_index += image->depth;
 			        }
-			        This_wiener(data_index1, result_index1, sigma, lambda,
-			               image->sizes[0], image->sizes[1]);
+				if (image->dimension == 2)
+				{
+			                 This_wiener2d(data_index1, result_index1, sigma, lambda,
+			                       image->sizes[0], image->sizes[1]);
+			        }
+				else if (image->dimension == 3)
+				{
+				         This_wiener3d(data_index1, result_index1, sigma, lambda,
+			                       image->sizes[0], image->sizes[1], image->sizes[2]);
+				}
 				for (i = (storage_size/image->depth)-1; i >= 0; i--)
 			        {
 				         data_index -= image->depth;
@@ -899,8 +1121,8 @@ the <field>. These parameters will be used in image processing.
 		/* Texture_coordinate_field from source fields */
 		if (*texture_coordinate_field)
 		{
-			/* DEACCESS(Computed_field)(&(*texture_coordinate_field));
-			*texture_coordinate_field = ACCESS(Computed_field)(field->source_fields[1]); */
+		        /* nothing to do, just use the texture coordinate field of the 
+			source field as the default texture coordinate field. */
 		}
 		else
 		{

@@ -403,7 +403,9 @@ Perform sterologic parameters extraction on the image cache.
 
         /*  Variables required to generate random numbers  */
 	#if defined(UNIX)
-        static long state1[32] = {
+	#define STATE_ARRAY_SIZE 256
+	static long state1[STATE_ARRAY_SIZE];
+       /* static long state1[32] = {
         	3,
         	0x9a319039, 0x32d9c024, 0x9b663182, 0x5da1f342,
         	0x7449e56b, 0xbeb1dbb0, 0xab5c5918, 0x946554fd,
@@ -414,7 +416,8 @@ Perform sterologic parameters extraction on the image cache.
         	0x36413f93, 0xc622c298, 0xf5a42ab8, 0x8a88d77b,
         	0xf5ad9d0e, 0x8999220b, 0x27fb47b9
         	};
-	int	n;				/* for random number gen.	*/
+	int	n;
+	*/
 	#endif
 
         int  xsize, ysize, zsize;	        /* size of data_index1			*/
@@ -527,8 +530,9 @@ Perform sterologic parameters extraction on the image cache.
                         /*   Generate the random rotations */
 			#if defined(UNIX)
                 	seed = 1;
-                	n = 256;
-                	initstate(seed, (char *) state1, n);
+                	/* n = 256;*/
+			initstate(seed, (char *) state1, STATE_ARRAY_SIZE);
+                	/* initstate(seed, (char *) state1, n);*/
                 	setstate((char *) state1);
 
 	                for(irot = 0; irot < number_of_dirs; irot++)
