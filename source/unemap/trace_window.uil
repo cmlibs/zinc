@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 25 February 2000
+!LAST MODIFIED : 25 April 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -48,6 +48,8 @@ procedure
 	set_objective_positive_slope;
 	identify_objective_negative_but;
 	set_objective_negative_slope;
+	identify_objective_value_button;
+	set_objective_value;
 	identify_trace_enlarge_calculat;
 	calculate_all_event_markers;
 	identify_trace_enlarge_datum_ch;
@@ -766,6 +768,26 @@ object
 							XmNactivateCallback = procedures
 								{
 								set_objective_negative_slope(analysis_work_area_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Value");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_objective_value_button(trace_window_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								set_objective_value(analysis_work_area_structure);
 								};
 							};
 						};

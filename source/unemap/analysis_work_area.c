@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 17 March 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -196,9 +196,6 @@ DESCRIPTION :
 	struct Map_frame *frame;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
-	struct Spectrum *spectrum=(struct Spectrum *)NULL;
-	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
-	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct User_interface *user_interface;
 
 	ENTER(display_map);
@@ -206,11 +203,6 @@ DESCRIPTION :
 		(analysis_window=analysis->window)&&
 		(user_interface=analysis->user_interface))
 	{
-		/* need map to do unemap version. See below*/
-#if !defined (UNEMAP_USE_NODES)
-		USE_PARAMETER(spectrum);
-		USE_PARAMETER(spectrum_to_be_modified_copy);
-		USE_PARAMETER(spectrum_manager);
 		switch (analysis->map_type)
 		{
 			case SINGLE_ACTIVATION:
@@ -224,9 +216,7 @@ DESCRIPTION :
 				Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
 					BLUE_TO_RED_SPECTRUM);
 			} break;
-		}		
-#endif /* defined (UNEMAP_USE_NODES) */
-
+		}
 		if (widget==analysis_window->display_map_warning_box)
 		{
 			busy_cursor_off(analysis_window->display_map_warning_box_shell,
@@ -264,53 +254,6 @@ DESCRIPTION :
 		{
 			mapping=analysis->mapping_window;
 			map=mapping->map;
-#if defined (UNEMAP_USE_NODES)	
-		spectrum=analysis->map_drawing_information->spectrum;
-		if(spectrum_manager=get_unemap_package_spectrum_manager(map->unemap_package))
-		{
-		if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
-		{
-			if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-				("spectrum_modify_temp"))
-			{
-				MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-					(spectrum_to_be_modified_copy,spectrum);			
-				switch (analysis->map_type)
-				{
-					case SINGLE_ACTIVATION:
-					case MULTIPLE_ACTIVATION:
-					{
-						Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-							RED_TO_BLUE_SPECTRUM);
-					} break;
-					default:
-					{
-						Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-							BLUE_TO_RED_SPECTRUM);
-					} break;
-				}				
-				MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-					spectrum_to_be_modified_copy,spectrum_manager);
-				DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"display_map. Could not create spectrum copy.");				
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"display_map. Spectrum is not in manager!");		
-		}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"display_map. Spectrum_manager not present");
-		}
-#endif/* defined (UNEMAP_USE_NODES)	*/
 			Mapping_window_set_potential_time_object(mapping,
 				analysis->potential_time_object);
 			/* determine if undecided events are accepted or rejected */
@@ -1806,6 +1749,91 @@ Sets the objective for the detection algorithm to negative slope.
 	}
 	LEAVE;
 } /* set_objective_negative_slope */
+
+static void set_objective_value(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2000
+
+DESCRIPTION :
+Sets the objective for the detection algorithm to negative slope.
+==============================================================================*/
+{
+	struct Analysis_work_area *analysis;
+	struct Enlarge_area *enlarge;
+	struct Device *processed_device;
+	struct Signal_buffer *processed_buffer;
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+	struct Map *map;
+	struct Mapping_window *mapping;
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+
+	ENTER(set_objective_value);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis->user_interface))
+	{
+		if (VALUE_OBJECTIVE!=analysis->objective)
+		{
+			analysis->objective=VALUE_OBJECTIVE;
+			if (analysis->trace)
+			{
+				/* enlarge area */
+				enlarge= &(analysis->trace->area_1.enlarge);
+				XtVaSetValues(enlarge->objective_choice,
+					XmNmenuHistory,enlarge->objective.value_button,
+					NULL);
+			}
+			if ((analysis->trace)&&
+				(processed_device=analysis->trace->processed_device)&&
+				(processed_device->signal)&&(processed_device->signal->next)&&
+				(processed_buffer=processed_device->signal->next->buffer))
+			{
+				/* calculate objective function */
+				calculate_device_objective(processed_device,analysis->detection,
+					analysis->objective,((processed_buffer->signals).float_values)+
+					(processed_device->signal->next->index),
+					processed_buffer->number_of_samples,
+					processed_buffer->number_of_signals,analysis->average_width);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)(analysis->trace),
+					(XtPointer)NULL);
+			}
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+			/* clear the present markers */
+				/* ???signals area only ? */
+			draw_all_markers(0,0,analysis);
+			destroy_all_events(analysis->rig);
+			/* update the mapping window */
+			if (((SINGLE_ACTIVATION==analysis->map_type)||
+				(MULTIPLE_ACTIVATION==analysis->map_type))&&(analysis->mapping_window)&&
+				(map=analysis->mapping_window->map))
+			{
+				analysis->map_type=NO_MAP_FIELD;
+				map->colour_option=HIDE_COLOUR;
+				map->contours_option=HIDE_CONTOURS;
+				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				/* clear the colour map */
+				map->activation_front= -1;
+				update_mapping_drawing_area(analysis->mapping_window,2);
+				update_mapping_colour_or_auxili(analysis->mapping_window);
+				XtSetSensitive(analysis->mapping_window->animate_button,False);
+			}
+			XtSetSensitive(analysis->window->file_menu.save_times_button,True);
+			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
+			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+				True);
+			analysis->calculate_events=0;
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_objective_value.  Missing analysis_work_area");
+	}
+	LEAVE;
+} /* set_objective_value */
 
 static int analysis_write_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
@@ -11368,14 +11396,14 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2000
+LAST MODIFIED : 21 April 2000
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
 ==============================================================================*/
 {
 	float beat_width,*imaginary_value,*processed_value,*real_value,*value,
-		value_end,value_start,*value_1,*value_2;
+		value_end,value_start,*value_1,*value_2,x,y;
 	int average_end,average_start,average_width,*beat_count,*beat_counts,beat_end,
 		beat_number,beat_start,buffer_offset_1,buffer_offset_2,*divisions,end,
 		high_pass,i,j,low_pass,notch,max_times,number_of_beats,number_of_samples,
@@ -12050,6 +12078,157 @@ Applies the current analysis mode settings to all signals.
 					}
 				}
 			} break;
+			case POWER_SPECTRA:
+			{
+				/* create processed rig */
+				if (analysis->raw_rig)
+				{
+					/* reset the signal range to automatic */
+					device=rig->devices;
+					for (i=rig->number_of_devices;i>0;i--)
+					{
+						(*device)->signal_maximum=0;
+						(*device)->signal_minimum=1;
+						device++;
+					}
+				}
+				else
+				{
+					if (rig=create_processed_rig(analysis->rig))
+					{
+						analysis->raw_rig=analysis->rig;
+						analysis->rig=rig;
+						/* reset the highlighted device */
+						if (highlight= *(analysis->highlight))
+						{
+							highlight->highlight=0;
+							device=analysis->raw_rig->devices;
+							i=analysis->raw_rig->number_of_devices;
+							while ((i>0)&&(*device!=highlight))
+							{
+								i--;
+								device++;
+							}
+							if (i>0)
+							{
+								analysis->highlight=(rig->devices)+
+									(device-(analysis->raw_rig->devices));
+								(*(analysis->highlight))->highlight=1;
+							}
+							else
+							{
+								*(analysis->highlight)=(struct Device *)NULL;
+							}
+						}
+						/* unghost the reset button */
+						XtSetSensitive(analysis->window->interval.reset_button,True);
+					}
+				}
+				/* check that rig and signals exist */
+				if (rig&&(device=rig->devices)&&(*device)&&
+					(buffer=get_Device_signal_buffer(*device))&&
+					(0<(number_of_samples=buffer->number_of_samples)))
+				{
+					buffer_offset_1=buffer->number_of_signals;
+					transform_buffer=trace->real_device_1->signal->buffer;
+					transform_buffer_offset=transform_buffer->number_of_signals;
+					transform_number_of_samples=transform_buffer->number_of_samples;
+					/* set frequency and times */
+					buffer->frequency=transform_buffer->frequency;
+					time=buffer->times;
+					for (i=0;i<transform_number_of_samples;i++)
+					{
+						*time=i;
+						time++;
+					}
+					/* run through all the signals */
+					for (i=rig->number_of_devices;i>0;i--)
+					{
+						if (fourier_transform(SQUARE_WINDOW,*device,(struct Device *)NULL,
+							trace->real_device_1,trace->imaginary_device_1))
+						{
+							/* calculate power spectrum (square of magnitude of FT, which is
+								the FT of the auto-correlation) */
+							real_value=((transform_buffer->signals).float_values)+
+								(trace->real_device_1->signal->index);
+							imaginary_value=((transform_buffer->signals).float_values)+
+								(trace->imaginary_device_1->signal->index);
+							value_1=((buffer->signals).float_values)+
+								((*device)->signal->index);
+							/* remove DC */
+							*value_1=0.;
+							/* the number of samples for the processed device will be the
+								largest power of 2 <= (buffer->end)-(buffer->start)+1 */
+							for (j=transform_number_of_samples-1;j>0;j--)
+							{
+								value_1 += buffer_offset_1;
+								real_value += transform_buffer_offset;
+								imaginary_value += transform_buffer_offset;
+								x= *real_value;
+								y= *imaginary_value;
+								*value_1=x*x+y*y;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+					"trace_analysis_mode_apply.  Could not calculate Fourier transform");
+						}
+						device++;
+					}
+					buffer->start=0;
+					buffer->end=transform_number_of_samples-1;
+					buffer->number_of_samples=transform_number_of_samples;
+					(analysis->trace->power_spectra).maximum_frequency= -1;
+					(analysis->trace->power_spectra).minimum_frequency= -1;
+					analysis->datum=(buffer->end)/3;
+					analysis->potential_time=(2*(buffer->end))/3;
+					(trace->area_3).edit.first_data=buffer->start;
+					(trace->area_3).edit.last_data=buffer->end;
+					analysis->start_search_interval=buffer->start;
+					analysis->end_search_interval=buffer->end;
+					DEALLOCATE(analysis->search_interval_divisions);
+					if (1!=analysis->number_of_events)
+					{
+						analysis->number_of_events=1;
+						/*???DB.  Should this \/ be here ? */
+						XtUnmanageChild(
+							trace->area_1.enlarge.number_of_events.down_arrow);
+						XtUnmanageChild(
+							trace->area_1.beat_averaging.number_of_beats.down_arrow);
+						XtManageChild(trace->area_1.enlarge.number_of_events.up_arrow);
+						XtManageChild(
+							trace->area_1.beat_averaging.number_of_beats.up_arrow);
+						xm_string=XmStringCreate("1",XmSTRING_DEFAULT_CHARSET);
+						XtVaSetValues(trace->area_1.enlarge.number_of_events.label,
+							XmNlabelString,xm_string,
+							NULL);
+						XtVaSetValues(trace->area_1.beat_averaging.number_of_beats.label,
+							XmNlabelString,xm_string,
+							NULL);
+						XmStringFree(xm_string);
+						analysis->event_number=1;
+					}
+					/* update the display */
+					update_signals_drawing_area(analysis->window);
+					update_interval_drawing_area(analysis->window);
+					trace_change_signal(analysis->trace);
+					/* update the mapping window */
+					if ((NO_MAP_FIELD==analysis->map_type)&&
+						(mapping=analysis->mapping_window)&&(map=mapping->map))
+					{
+						analysis->map_type=NO_MAP_FIELD;
+						map->colour_option=HIDE_COLOUR;
+						map->contours_option=HIDE_CONTOURS;
+						map->electrodes_option=SHOW_ELECTRODE_NAMES;
+						/* clear the colour map */
+						map->activation_front= -1;
+						update_mapping_drawing_area(mapping,2);
+						update_mapping_colour_or_auxili(mapping);
+						XtSetSensitive(mapping->animate_button,False);
+					}
+				}
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -12349,10 +12528,6 @@ Responds to update callbacks from the time object.
 
 	ENTER(analysis_potential_time_update_callback);
 	USE_PARAMETER(time_object);
-#if defined (UNEMAP_USE_NODES)
-	interpolation=NO_INTERPOLATION;
-	USE_PARAMETER(interpolation);
-#endif /* defined (UNEMAP_USE_NODES)*/
 	return_code=0;
 	if ((analysis=(struct Analysis_work_area *)analysis_void)&&
 		(analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
@@ -12444,8 +12619,8 @@ Responds to update callbacks from the time object.
 								if (-1!=map->activation_front)
 								{
 									/* playing movie */
-									/* fix the range when playing the movie */								
-									map->fixed_range=1;									
+									/* fix the range when playing the movie */
+									map->fixed_range=1;
 #if defined (UNEMAP_USE_NODES)
 									/* 3d map */
 									map->frame_start_time=map_potential_time;
@@ -13929,7 +14104,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -13962,6 +14137,7 @@ Creates the windows associated with the analysis work area.
 		{"set_objective_absolute_slope",(XtPointer)set_objective_absolute_slope},
 		{"set_objective_positive_slope",(XtPointer)set_objective_positive_slope},
 		{"set_objective_negative_slope",(XtPointer)set_objective_negative_slope},
+		{"set_objective_value",(XtPointer)set_objective_value},
 		{"decrement_number_of_events",(XtPointer)decrement_number_of_events},
 		{"increment_number_of_events",(XtPointer)increment_number_of_events},
 		{"analysis_previous_event",(XtPointer)analysis_previous_event},

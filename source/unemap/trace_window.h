@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -54,7 +54,7 @@ The order in which the events are traversed while editing.
 
 struct Enlarge_area
 /*******************************************************************************
-LAST MODIFIED : 4 January 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 The area of the trace window where the enlarged signal is drawn.
@@ -75,6 +75,7 @@ The area of the trace window where the enlarged signal is drawn.
 		Widget absolute_slope_button;
 		Widget positive_slope_button;
 		Widget negative_slope_button;
+		Widget value_button;
 	} objective;
 	Widget datum_choice;
 	struct

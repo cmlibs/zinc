@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 19 March 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -319,7 +319,7 @@ Saves the id of the trace event detection button in the analysis mode menu.
 static void set_analysis_event_detection(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Sets the analysis mode to event detection.
@@ -344,6 +344,7 @@ Sets the analysis mode to event detection.
 				} break;
 				case POWER_SPECTRA:
 				{
+					XtUnmanageChild(trace->menu.apply_button);
 					XtUnmanageChild(trace->area_3.power_spectra.menu);
 				} break;
 				case CROSS_CORRELATION:
@@ -428,7 +429,7 @@ Saves the id of the trace frequency domain button in the analysis mode menu.
 static void set_analysis_frequency_domain(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Sets the analysis mode to frequency domain.
@@ -457,6 +458,7 @@ Sets the analysis mode to frequency domain.
 				} break;
 				case POWER_SPECTRA:
 				{
+					XtUnmanageChild(trace->menu.apply_button);
 					XtUnmanageChild(trace->area_3.power_spectra.menu);
 				} break;
 				case CROSS_CORRELATION:
@@ -533,7 +535,7 @@ Saves the id of the trace power spectra button in the analysis mode menu.
 static void set_analysis_power_spectra(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Sets the analysis mode to power spectra.
@@ -559,10 +561,12 @@ Sets the analysis mode to power spectra.
 						XmNtopAttachment,XmATTACH_FORM,
 						NULL);
 					XtUnmanageChild(trace->area_3.edit.menu);
+					XtManageChild(trace->menu.apply_button);
 				} break;
 				case FREQUENCY_DOMAIN:
 				{
 					XtUnmanageChild(trace->area_3.frequency_domain.menu);
+					XtManageChild(trace->menu.apply_button);
 				} break;
 				case CROSS_CORRELATION:
 				{
@@ -572,19 +576,19 @@ Sets the analysis mode to power spectra.
 						NULL);
 					XtUnmanageChild(trace->area_2.pane);
 					XtUnmanageChild(trace->area_3.correlation.menu);
+					XtManageChild(trace->menu.apply_button);
 				} break;
 				case AUTO_CORRELATION:
 				{
 					XtUnmanageChild(trace->area_3.correlation.menu);
+					XtManageChild(trace->menu.apply_button);
 				} break;
 				case FILTERING:
 				{
-					XtUnmanageChild(trace->menu.apply_button);
 					XtUnmanageChild(trace->area_3.filtering.menu);
 				} break;
 				case BEAT_AVERAGING:
 				{
-					XtUnmanageChild(trace->menu.apply_button);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_FORM,
 						NULL);
@@ -643,7 +647,7 @@ Saves the id of the trace cross correlation button in the analysis mode menu.
 static void set_analysis_cross_correlation(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Sets the analysis mode to cross correlation.
@@ -690,6 +694,7 @@ Sets the analysis mode to cross correlation.
 				} break;
 				case POWER_SPECTRA:
 				{
+					XtUnmanageChild(trace->menu.apply_button);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_WIDGET,
 						XmNtopWidget,trace->area_1.correlation_time_domain.menu,
@@ -791,7 +796,7 @@ Saves the id of the trace auto correlation button in the analysis mode menu.
 static void set_analysis_auto_correlation(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 16 April 2000
 
 DESCRIPTION :
 Sets the analysis mode to auto correlation.
@@ -967,7 +972,6 @@ Sets the analysis mode to filtering.
 						XmNtopWidget,trace->area_3.filtering.menu,
 						NULL);
 					XtManageChild(trace->area_3.filtering.menu);
-					XtManageChild(trace->menu.apply_button);
 				} break;
 				case CROSS_CORRELATION:
 				{
@@ -1111,7 +1115,6 @@ Sets the analysis mode to beat averaging.
 						XmNtopWidget,trace->area_3.beat_averaging.menu,
 						NULL);
 					XtManageChild(trace->area_3.beat_averaging.menu);
-					XtManageChild(trace->menu.apply_button);
 				} break;
 				case CROSS_CORRELATION:
 				{
@@ -1553,6 +1556,31 @@ Saves the id of the trace enlarge objective negative slope button.
 	}
 	LEAVE;
 } /* identify_objective_negative_but */
+
+static void identify_objective_value_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 April 2000
+
+DESCRIPTION :
+Saves the id of the trace enlarge objective value button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_objective_value_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.enlarge.objective.value_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_objective_value_button.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_objective_value_button */
 
 static void identify_trace_enlarge_datum_ch(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -4648,7 +4676,7 @@ static struct Trace_window *create_Trace_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -4710,6 +4738,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_objective_positive_but},
 		{"identify_objective_negative_but",
 			(XtPointer)identify_objective_negative_but},
+		{"identify_objective_value_button",
+			(XtPointer)identify_objective_value_button},
 		{"identify_trace_enlarge_calculat",
 			(XtPointer)identify_trace_enlarge_calculat},
 		{"identify_trace_enlarge_datum_ch",
@@ -4957,6 +4987,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.enlarge.objective.absolute_slope_button=(Widget)NULL;
 				trace->area_1.enlarge.objective.positive_slope_button=(Widget)NULL;
 				trace->area_1.enlarge.objective.negative_slope_button=(Widget)NULL;
+				trace->area_1.enlarge.objective.value_button=(Widget)NULL;
 				trace->area_1.enlarge.datum_choice=(Widget)NULL;
 				trace->area_1.enlarge.datum.automatic_button=(Widget)NULL;
 				trace->area_1.enlarge.datum.fixed_button=(Widget)NULL;
@@ -5402,7 +5433,6 @@ the created trace window.  If unsuccessful, NULL is returned.
 								} break;
 								case POWER_SPECTRA:
 								{
-									XtUnmanageChild(trace->menu.apply_button);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -5880,6 +5910,12 @@ the created trace window.  If unsuccessful, NULL is returned.
 									XtVaSetValues(trace->area_1.enlarge.objective_choice,
 										XmNmenuHistory,
 										trace->area_1.enlarge.objective.negative_slope_button,NULL);
+								} break;
+								case VALUE_OBJECTIVE:
+								{
+									XtVaSetValues(trace->area_1.enlarge.objective_choice,
+										XmNmenuHistory,
+										trace->area_1.enlarge.objective.value_button,NULL);
 								} break;
 								default:
 								{
@@ -6704,6 +6740,7 @@ Calculates the processed device.
 						device,(struct Device *)NULL,trace->real_device_1,
 						trace->imaginary_device_1))
 					{
+						strcpy(trace->real_device_1->description->name,"Pr");
 						buffer=trace->real_device_1->signal->buffer;
 						if ((trace->power_spectra).maximum_frequency<0)
 						{
@@ -6738,7 +6775,8 @@ Calculates the processed device.
 							XmNvalue,(int)(((trace->power_spectra).minimum_frequency)*
 							(buffer->frequency)*100./(buffer->number_of_samples)+0.5),
 							NULL);
-						/* calculate power spectrum */
+						/* calculate power spectrum (square of magnitude of FT, which is the
+							FT of the auto-correlation) */
 						real_value=((buffer->signals).float_values)+
 							(trace->real_device_1->signal->index);
 						imaginary_value=((buffer->signals).float_values)+
@@ -6752,7 +6790,7 @@ Calculates the processed device.
 							imaginary_value += buffer_offset;
 							x= *real_value;
 							y= *imaginary_value;
-							*real_value=sqrt(x*x+y*y);
+							*real_value=x*x+y*y;
 						}
 					}
 				}

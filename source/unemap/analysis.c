@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1884,12 +1884,130 @@ the the start and end times, the number of events and the search algorithm.
 } /* calculate_device_event_markers */
 #endif /* defined (OLD_CODE) */
 
+static int calculate_moving_average(float *objective_values,
+	int number_of_objective_values,int objective_values_step,int average_width)
+/*******************************************************************************
+LAST MODIFIED : 25 April 2000
+
+DESCRIPTION :
+Calculates the moving average of the <objective_values>.
+==============================================================================*/
+{
+	float average_after,*average_after_value,average_before,first_value,
+		last_value,*objective_value,*save_value,*save_values,temp_value;
+	int i,return_code;
+
+	ENTER(calculate_moving_average);
+	return_code=0;
+	if (objective_values&&(0<number_of_objective_values)&&
+		(0<objective_values_step)&&(0<average_width))
+	{
+		if (ALLOCATE(save_values,float,average_width))
+		{
+			objective_value=objective_values;
+			first_value=objective_values[0];
+			last_value=
+				objective_values[(number_of_objective_values-1)*objective_values_step];
+			save_value=save_values;
+			for (i=average_width;i>0;i--)
+			{
+				*save_value=first_value;
+				save_value++;
+			}
+			save_value=save_values;
+			average_before=first_value*(float)average_width;
+			average_after=0;
+			if (average_width<number_of_objective_values)
+			{
+				for (i=average_width;i>0;i--)
+				{
+					objective_value += objective_values_step;
+					average_after += *objective_value;
+				}
+				objective_value=objective_values;
+				average_after_value=objective_value+
+					(average_width*objective_values_step);
+				for (i=number_of_objective_values-average_width-1;i>0;i--)
+				{
+					temp_value=average_after+(*objective_value)+average_before;
+					average_before += (*objective_value)-(*save_value);
+					*save_value= *objective_value;
+					save_value++;
+					if (save_value-save_values>=average_width)
+					{
+						save_value=save_values;
+					}
+					*objective_value=temp_value;
+					objective_value += objective_values_step;
+					average_after_value += objective_values_step;
+					average_after += (*average_after_value)-(*objective_value);
+				}
+				for (i=average_width+1;i>0;i--)
+				{
+					temp_value=average_after+(*objective_value)+average_before;
+					average_before += (*objective_value)-(*save_value);
+					*save_value= *objective_value;
+					save_value++;
+					if (save_value-save_values>=average_width)
+					{
+						save_value=save_values;
+					}
+					*objective_value=temp_value;
+					objective_value += objective_values_step;
+					average_after += last_value-(*objective_value);
+				}
+			}
+			else
+			{
+				for (i=number_of_objective_values-1;i>0;i--)
+				{
+					objective_value += objective_values_step;
+					average_after += *objective_value;
+				}
+				average_after +=
+					last_value*(float)(average_width-(number_of_objective_values-1));
+				objective_value=objective_values;
+				for (i=number_of_objective_values;i>0;i--)
+				{
+					temp_value=average_after+(*objective_value)+average_before;
+					average_before += (*objective_value)-first_value;
+					*objective_value=temp_value;
+					objective_value += objective_values_step;
+					average_after += last_value-(*objective_value);
+				}
+			}
+			objective_value=objective_values;
+			temp_value=(float)(2*average_width+1);
+			for (i=number_of_objective_values;i>0;i--)
+			{
+				*objective_value /= temp_value;
+				objective_value += objective_values_step;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_moving_average.  Could not allocate save_values");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_moving_average.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* calculate_moving_average */
+
 int calculate_device_objective(struct Device *device,
 	enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2000
+LAST MODIFIED : 25 April 2000
 
 DESCRIPTION :
 Calculates the specified <objective>/<detection> function for the <device>.
@@ -1973,165 +2091,175 @@ Storing the values in the array (<objective_values> every
 				case EDA_INTERVAL:
 				case EDA_THRESHOLD:
 				{
-					first_value=objective_values[0];
-					last_value=
-						objective_values[(number_of_samples-1)*objective_values_step];
-					save_value=save_values;
-					for (i=average_width;i>0;i--)
+					if (VALUE_OBJECTIVE==objective)
 					{
-						*save_value=first_value;
-						save_value++;
+						/* take moving average */
+						return_code=calculate_moving_average(objective_values,
+							number_of_samples,objective_values_step,average_width);
 					}
-					save_value=save_values;
-					average_before=first_value*(float)average_width;
-					average_after=0;
-					if (average_width<number_of_samples)
+					else
 					{
+						first_value=objective_values[0];
+						last_value=
+							objective_values[(number_of_samples-1)*objective_values_step];
+						save_value=save_values;
 						for (i=average_width;i>0;i--)
 						{
-							objective_value += objective_values_step;
-							average_after += *objective_value;
-						}
-						objective_value=objective_values;
-						average_after_value=objective_value+
-							(average_width*objective_values_step);
-						for (i=number_of_samples-average_width-1;i>0;i--)
-						{
-							temp_value=average_after-average_before;
-							average_before += (*objective_value)-(*save_value);
-							*save_value= *objective_value;
+							*save_value=first_value;
 							save_value++;
-							if (save_value-save_values>=average_width)
+						}
+						save_value=save_values;
+						average_before=first_value*(float)average_width;
+						average_after=0;
+						if (average_width<number_of_samples)
+						{
+							for (i=average_width;i>0;i--)
 							{
-								save_value=save_values;
+								objective_value += objective_values_step;
+								average_after += *objective_value;
 							}
-							*objective_value=temp_value;
-							objective_value += objective_values_step;
-							average_after_value += objective_values_step;
-							average_after += (*average_after_value)-(*objective_value);
-						}
-						for (i=average_width+1;i>0;i--)
-						{
-							temp_value=average_after-average_before;
-							average_before += (*objective_value)-(*save_value);
-							*save_value= *objective_value;
-							save_value++;
-							if (save_value-save_values>=average_width)
-							{
-								save_value=save_values;
-							}
-							*objective_value=temp_value;
-							objective_value += objective_values_step;
-							average_after += last_value-(*objective_value);
-						}
-					}
-					else
-					{
-						for (i=number_of_samples-1;i>0;i--)
-						{
-							objective_value += objective_values_step;
-							average_after += *objective_value;
-						}
-						average_after +=
-							last_value*(float)(average_width-(number_of_samples-1));
-						objective_value=objective_values;
-						for (i=number_of_samples;i>0;i--)
-						{
-							temp_value=average_after-average_before;
-							average_before += (*objective_value)-first_value;
-							*objective_value=temp_value;
-							objective_value += objective_values_step;
-							average_after += last_value-(*objective_value);
-						}
-					}
-					switch (objective)
-					{
-						case ABSOLUTE_SLOPE:
-						{
 							objective_value=objective_values;
-							objective_minimum=0;
-							objective_maximum=0;
+							average_after_value=objective_value+
+								(average_width*objective_values_step);
+							for (i=number_of_samples-average_width-1;i>0;i--)
+							{
+								temp_value=average_after-average_before;
+								average_before += (*objective_value)-(*save_value);
+								*save_value= *objective_value;
+								save_value++;
+								if (save_value-save_values>=average_width)
+								{
+									save_value=save_values;
+								}
+								*objective_value=temp_value;
+								objective_value += objective_values_step;
+								average_after_value += objective_values_step;
+								average_after += (*average_after_value)-(*objective_value);
+							}
+							for (i=average_width+1;i>0;i--)
+							{
+								temp_value=average_after-average_before;
+								average_before += (*objective_value)-(*save_value);
+								*save_value= *objective_value;
+								save_value++;
+								if (save_value-save_values>=average_width)
+								{
+									save_value=save_values;
+								}
+								*objective_value=temp_value;
+								objective_value += objective_values_step;
+								average_after += last_value-(*objective_value);
+							}
+						}
+						else
+						{
+							for (i=number_of_samples-1;i>0;i--)
+							{
+								objective_value += objective_values_step;
+								average_after += *objective_value;
+							}
+							average_after +=
+								last_value*(float)(average_width-(number_of_samples-1));
+							objective_value=objective_values;
 							for (i=number_of_samples;i>0;i--)
 							{
-								if (*objective_value<0)
+								temp_value=average_after-average_before;
+								average_before += (*objective_value)-first_value;
+								*objective_value=temp_value;
+								objective_value += objective_values_step;
+								average_after += last_value-(*objective_value);
+							}
+						}
+						switch (objective)
+						{
+							case ABSOLUTE_SLOPE:
+							{
+								objective_value=objective_values;
+								objective_minimum=0;
+								objective_maximum=0;
+								for (i=number_of_samples;i>0;i--)
+								{
+									if (*objective_value<0)
+									{
+										*objective_value= -(*objective_value);
+									}
+									if (*objective_value>objective_maximum)
+									{
+										objective_maximum= *objective_value;
+									}
+									objective_value += objective_values_step;
+								}
+							} break;
+							case NEGATIVE_SLOPE:
+							{
+								objective_value=objective_values;
+								objective_minimum= -(*objective_value);
+								objective_maximum=objective_minimum;
+								for (i=number_of_samples;i>0;i--)
 								{
 									*objective_value= -(*objective_value);
-								}
-								if (*objective_value>objective_maximum)
-								{
-									objective_maximum= *objective_value;
-								}
-								objective_value += objective_values_step;
-							}
-						} break;
-						case NEGATIVE_SLOPE:
-						{
-							objective_value=objective_values;
-							objective_minimum= -(*objective_value);
-							objective_maximum=objective_minimum;
-							for (i=number_of_samples;i>0;i--)
-							{
-								*objective_value= -(*objective_value);
-								if (*objective_value>objective_maximum)
-								{
-									objective_maximum= *objective_value;
-								}
-								else
-								{
-									if (*objective_value<objective_minimum)
+									if (*objective_value>objective_maximum)
 									{
-										objective_minimum= *objective_value;
+										objective_maximum= *objective_value;
 									}
-								}
-								objective_value += objective_values_step;
-							}
-						} break;
-						case POSITIVE_SLOPE:
-						{
-							objective_value=objective_values;
-							objective_minimum= *objective_value;
-							objective_maximum=objective_minimum;
-							for (i=number_of_samples;i>0;i--)
-							{
-								if (*objective_value>objective_maximum)
-								{
-									objective_maximum= *objective_value;
-								}
-								else
-								{
-									if (*objective_value<objective_minimum)
+									else
 									{
-										objective_minimum= *objective_value;
+										if (*objective_value<objective_minimum)
+										{
+											objective_minimum= *objective_value;
+										}
 									}
+									objective_value += objective_values_step;
 								}
-								objective_value += objective_values_step;
-							}
-						} break;
-					}
-					if (signal_maximum==signal_minimum)
-					{
-						signal_minimum -= 1;
-						signal_maximum += 1;
-					}
-					if (objective_maximum==objective_minimum)
-					{
-						objective_value=objective_values;
-						for (i=number_of_samples;i>0;i--)
-						{
-							*objective_value=signal_minimum;
-							objective_value += objective_values_step;
+							} break;
+							case POSITIVE_SLOPE:
+							case VALUE_OBJECTIVE:
+							{
+								objective_value=objective_values;
+								objective_minimum= *objective_value;
+								objective_maximum=objective_minimum;
+								for (i=number_of_samples;i>0;i--)
+								{
+									if (*objective_value>objective_maximum)
+									{
+										objective_maximum= *objective_value;
+									}
+									else
+									{
+										if (*objective_value<objective_minimum)
+										{
+											objective_minimum= *objective_value;
+										}
+									}
+									objective_value += objective_values_step;
+								}
+							} break;
 						}
-					}
-					else
-					{
-						objective_value=objective_values;
-						scale=(signal_maximum-signal_minimum)/
-							(objective_maximum-objective_minimum);
-						for (i=number_of_samples;i>0;i--)
+						if (signal_maximum==signal_minimum)
 						{
-							*objective_value=signal_minimum+
-								scale*((*objective_value)-objective_minimum);
-							objective_value += objective_values_step;
+							signal_minimum -= 1;
+							signal_maximum += 1;
+						}
+						if (objective_maximum==objective_minimum)
+						{
+							objective_value=objective_values;
+							for (i=number_of_samples;i>0;i--)
+							{
+								*objective_value=signal_minimum;
+								objective_value += objective_values_step;
+							}
+						}
+						else
+						{
+							objective_value=objective_values;
+							scale=(signal_maximum-signal_minimum)/
+								(objective_maximum-objective_minimum);
+							for (i=number_of_samples;i>0;i--)
+							{
+								*objective_value=signal_minimum+
+									scale*((*objective_value)-objective_minimum);
+								objective_value += objective_values_step;
+							}
 						}
 					}
 				} break;
@@ -2147,85 +2275,8 @@ Storing the values in the array (<objective_values> every
 						objective_value += objective_values_step;
 					}
 					/* take moving average */
-					objective_value=objective_values;
-					first_value=objective_values[0];
-					last_value=
-						objective_values[(number_of_samples-1)*objective_values_step];
-					save_value=save_values;
-					for (i=average_width;i>0;i--)
-					{
-						*save_value=first_value;
-						save_value++;
-					}
-					save_value=save_values;
-					average_before=first_value*(float)average_width;
-					average_after=0;
-					if (average_width<number_of_samples)
-					{
-						for (i=average_width;i>0;i--)
-						{
-							objective_value += objective_values_step;
-							average_after += *objective_value;
-						}
-						objective_value=objective_values;
-						average_after_value=objective_value+
-							(average_width*objective_values_step);
-						for (i=number_of_samples-average_width-1;i>0;i--)
-						{
-							temp_value=average_after+(*objective_value)+average_before;
-							average_before += (*objective_value)-(*save_value);
-							*save_value= *objective_value;
-							save_value++;
-							if (save_value-save_values>=average_width)
-							{
-								save_value=save_values;
-							}
-							*objective_value=temp_value;
-							objective_value += objective_values_step;
-							average_after_value += objective_values_step;
-							average_after += (*average_after_value)-(*objective_value);
-						}
-						for (i=average_width+1;i>0;i--)
-						{
-							temp_value=average_after+(*objective_value)+average_before;
-							average_before += (*objective_value)-(*save_value);
-							*save_value= *objective_value;
-							save_value++;
-							if (save_value-save_values>=average_width)
-							{
-								save_value=save_values;
-							}
-							*objective_value=temp_value;
-							objective_value += objective_values_step;
-							average_after += last_value-(*objective_value);
-						}
-					}
-					else
-					{
-						for (i=number_of_samples-1;i>0;i--)
-						{
-							objective_value += objective_values_step;
-							average_after += *objective_value;
-						}
-						average_after +=
-							last_value*(float)(average_width-(number_of_samples-1));
-						objective_value=objective_values;
-						for (i=number_of_samples;i>0;i--)
-						{
-							temp_value=average_after+(*objective_value)+average_before;
-							average_before += (*objective_value)-first_value;
-							*objective_value=temp_value;
-							objective_value += objective_values_step;
-							average_after += last_value-(*objective_value);
-						}
-					}
-					objective_value=objective_values;
-					temp_value=(float)(2*average_width+1);
-					for (i=number_of_samples;i>0;i--)
-					{
-						*objective_value /= temp_value;
-						objective_value += objective_values_step;
-					}
+					return_code=calculate_moving_average(objective_values,
+						number_of_samples,objective_values_step,average_width);
 				} break;
 			}
 			DEALLOCATE(save_values);
