@@ -258,7 +258,7 @@ END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	derivative_matrix)
 /*******************************************************************************
-LAST MODIFIED : 23 July 2003
+LAST MODIFIED : 24 July 2003
 
 DESCRIPTION :
 This function implements the chain rule for differentiation.
@@ -362,20 +362,33 @@ In this function
 			ALLOCATE(column_numbers_2,int,order+1);
 			ALLOCATE(matrices_2,Cmiss_value_id,order+1);
 			value_type=CREATE(Cmiss_value)();
-			if (Cmiss_variable_same_variable(data_1->dependent_variable,
-				data_total->dependent_variable)&&(order==data_2->order)&&
-				(order==data_total->order)&&numbers_of_independent_values&&
-				index_1&&index_2&&mapping_total&&mapping_2&&
-				order_2&&sub_order_2&&not_used&&product_orders&&column_numbers_2&&
-				matrices_2&&value_type&&
+			if ((order==data_2->order)&&(order==data_total->order)&&
+				numbers_of_independent_values&&index_1&&index_2&&mapping_total&&
+				mapping_2&&order_2&&sub_order_2&&not_used&&product_orders&&
+				column_numbers_2&&matrices_2&&value_type&&
 				Cmiss_variable_get_value_type(data_1->dependent_variable,value_type))
 			{
 				if (return_code=Cmiss_value_FE_value_vector_get_type(value_type,
 					&number_of_rows,(FE_value **)NULL)&&(return_code=
 					Cmiss_variable_get_value_type(data_2->dependent_variable,value_type)))
 				{
-					return_code=Cmiss_value_FE_value_vector_get_type(value_type,
-						&number_of_intermediate_values,(FE_value **)NULL);
+					if (return_code=Cmiss_value_FE_value_vector_get_type(value_type,
+						&number_of_intermediate_values,(FE_value **)NULL)&&(return_code=
+						Cmiss_variable_get_value_type(data_total->dependent_variable,
+						value_type)))
+					{
+						if (return_code=Cmiss_value_FE_value_vector_get_type(value_type,
+							&temp_int,(FE_value **)NULL))
+						{
+							if (number_of_rows!=temp_int)
+							{
+								display_message(ERROR_MESSAGE,
+									"Cmiss_value_derivative_matrix_multiply_and_accumulate_type_specific.  "
+									"Dependent variables mis-match");
+								return_code=0;
+							}
+						}
+					}
 				}
 				i=0;
 				number_of_matrices=1;

@@ -5,9 +5,9 @@ d(coordinates)/d(element_xi_var)=[-0.0101274,-0.0569796,0.163236
 d(prolate_spheroidal_to_rectangular_cartesian)/d(coordinates)=[30.7904,-22.8438,0
 20.8282,28.0737,-6.58307
 9.38222,12.646,14.6142]
-d(prolate_spheroidal_to_rectangular_cartesian)/d(element_xi_var)=[-0.311827,-23.6829,5.0261
+d(rectangular_cartesian_coordinates_var)/d(element_xi_var)=[-0.311827,-23.6829,5.0261
 2.02966,25.762,3.39992
 -5.06906,11.6047,1.53151]
-d(prolate_spheroidal_to_rectangular_cartesian)/d(element_xi_var)=[-0.311827,-23.6829,5.0261
+d(rectangular_cartesian_coordinates_var)/d(element_xi_var)=[-0.311827,-23.6829,5.0261
 2.02966,25.762,3.39992
 -5.06906,11.6047,1.53151]

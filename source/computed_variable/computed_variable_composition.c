@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_composition.c
 
-LAST MODIFIED : 20 July 2003
+LAST MODIFIED : 24 July 2003
 
 DESCRIPTION :
 Implements the composition computed variable - independent variables, for a
@@ -1233,7 +1233,7 @@ h(x)=f(g(x))
 								independent_variable_address[i]=independent_variables[i];
 							}
 							if (return_code=Cmiss_value_derivative_matrix_set_type(value,
-								dependent_variable,order,independent_variable_address,matrices))
+								variable,order,independent_variable_address,matrices))
 							{
 								/* independent_variable_address and matrices are now managed by
 									value */
