@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -4075,7 +4075,7 @@ int Graphics_window_get_frame_pixels(struct Graphics_window *window,
 	enum Texture_storage_type storage, int *width, int *height, char **frame_data,
 	int force_onscreen)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Returns the contents of the graphics window as pixels.  <width> and <height>
@@ -4088,7 +4088,7 @@ graphics window on screen.
 	int components, return_code;
 	struct Dm_buffer *dmbuffer;
 
-	ENTER(Graphics_window_update_for_read);
+	ENTER(Graphics_window_get_frame_pixels);
 	if (window && width && height)
 	{
 		if ((!*width) || (!*height))
@@ -4098,7 +4098,8 @@ graphics window on screen.
 		}
 		/* Update the window or offscreen area if possible */
 		if ((!force_onscreen) && (dmbuffer = CREATE(Dm_buffer)(*width, *height, 
-			/*depth_buffer_flag*/1, /*shared_display_buffer_flag*/1, window->user_interface)))
+			/*depth_buffer_flag*/1, /*shared_display_buffer_flag*/1,
+			window->user_interface)))
 		{
 			Dm_buffer_glx_make_current(dmbuffer);
 			switch (window->layout_mode)
@@ -4139,6 +4140,7 @@ graphics window on screen.
 					return_code=1;
 				} break;
 				case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
+				case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 				case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
 				{
 #if defined (OPENGL_API)
@@ -4151,19 +4153,20 @@ graphics window on screen.
 						/*left*/0, /*bottom*/0, /*right*/(*width / 2 - 1), /*top*/*height);
 					Scene_viewer_render_scene_in_viewport(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/1),
-						/*left*/(*width / 2 + 1), /*bottom*/0, /*right*/*width, /*top*/*height);
+						/*left*/(*width / 2 + 1), /*bottom*/0,
+						/*right*/*width, /*top*/*height);
 					return_code=1;
 				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Graphics_window_update_get_frame_pixels.  Unknown layout_mode");
+						"Graphics_window_get_frame_pixels.  Unknown layout_mode");
 					return_code=0;
 				} break;
 			}
 			if (return_code)
 			{
-				components = Texture_get_number_of_components_from_storage_type(storage);
+				components=Texture_get_number_of_components_from_storage_type(storage);
 				if (ALLOCATE(*frame_data, char, components * *width * *height))
 				{
 					if (!(return_code=Graphics_window_read_pixels(*frame_data, *width,
@@ -4175,7 +4178,7 @@ graphics window on screen.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Graphics_window_update_get_frame_pixels.  Unable to allocate pixels");
+						"Graphics_window_get_frame_pixels.  Unable to allocate pixels");
 					return_code=0;
 				}
 			}
@@ -4184,7 +4187,8 @@ graphics window on screen.
 		else
 		{
 			/* bring the graphics window to the front so image is not obscured */
-			XRaiseWindow(XtDisplay(window->window_shell), XtWindow(window->window_shell));
+			XRaiseWindow(XtDisplay(window->window_shell),
+				XtWindow(window->window_shell));
 			/* Always use the window size if grabbing from screen */
 			Graphics_window_get_viewing_area_size(window, width, height);
 			Graphics_window_update_now(window);
@@ -4207,22 +4211,23 @@ graphics window on screen.
 					case GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO:
 					{
 						/* Four panes */
-						display_message(ERROR_MESSAGE,
-							"Graphics_window_update_get_frame_pixels.  Can only grab single pane windows onscreen currently");
+						display_message(ERROR_MESSAGE,"Graphics_window_get_frame_pixels.  "
+							"Can only grab single pane windows onscreen currently");
 						return_code=1;
 					} break;
 					case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
+					case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 					case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
 					{
 						/* Two panes, side by side */
-						display_message(ERROR_MESSAGE,
-							"Graphics_window_update_get_frame_pixels.  Can only grab single pane windows onscreen currently");
+						display_message(ERROR_MESSAGE,"Graphics_window_get_frame_pixels.  "
+							"Can only grab single pane windows onscreen currently");
 						return_code=1;
 					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,
-							"Graphics_window_update_get_frame_pixels.  Unknown layout_mode");
+							"Graphics_window_get_frame_pixels.  Unknown layout_mode");
 						DEALLOCATE(*frame_data);
 						return_code=0;
 					} break;
@@ -4231,7 +4236,7 @@ graphics window on screen.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Graphics_window_update_get_frame_pixels.  Unable to allocate pixels");
+					"Graphics_window_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
 		}
@@ -4239,13 +4244,13 @@ graphics window on screen.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphics_window_update_get_frame_pixels.  Invalid argument(s)");
+			"Graphics_window_get_frame_pixels.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return return_code;
-} /* Graphics_window_update_get_frame_pixels */
+} /* Graphics_window_get_frame_pixels */
 
 int Graphics_window_view_all(struct Graphics_window *window)
 /*******************************************************************************
