@@ -1841,6 +1841,7 @@ and then interpret the resulting material how you want.
 			*red = result.red;
 			*green = result.green;
 			*blue = result.blue;
+			return_code = 1;
 		}
 		else
 		{
