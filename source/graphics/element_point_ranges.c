@@ -1,10 +1,11 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
+#include <stdlib.h>
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -521,3 +522,234 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 
 	return (return_code);
 } /* Element_point_ranges_toggle_in_list */
+
+int set_Element_point_ranges(struct Parse_state *state,
+	void *element_point_ranges_address_void,void *element_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION :
+Modifier function to set an element_point_ranges. <element_point_ranges_address>
+should point to a currently-NULL pointer to a struct Element_point_ranges. Upon
+successful return an Element_point_ranges will be created and the pointer to it
+returned in this location, for the calling function to use or destroy.
+==============================================================================*/
+{
+	char *current_token,**valid_strings,*xi_discretization_mode_string;
+	int dimension,i,number_of_xi_points,number_of_valid_strings,return_code,start,
+		stop;
+	struct CM_element_information cm;
+	struct Element_point_ranges *element_point_ranges,
+		**element_point_ranges_address;
+	struct Element_point_ranges_identifier element_point_ranges_identifier;
+	struct MANAGER(FE_element) *element_manager;
+	struct Option_table *option_table;
+
+	ENTER(set_Element_point_ranges);
+	if (state&&(element_point_ranges_address=
+		(struct Element_point_ranges **)element_point_ranges_address_void)&&
+		((struct Element_point_ranges *)NULL == *element_point_ranges_address)&&
+		(element_manager=(struct MANAGER(FE_element) *)element_manager_void))
+	{
+		return_code=1;
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				/* element type */
+				if (fuzzy_string_compare(current_token,"element"))
+				{
+					cm.type=CM_ELEMENT;
+				}
+				else if (fuzzy_string_compare(current_token,"face"))
+				{
+					cm.type=CM_FACE;
+				}
+				else if (fuzzy_string_compare(current_token,"line"))
+				{
+					cm.type=CM_LINE;
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"Missing element|face|line");
+					display_parse_state_location(state);
+					return_code=0;
+				}
+				/* element number */
+				if (return_code)
+				{
+					shift_Parse_state(state,1);
+					if (current_token=state->current_token)
+					{
+						if (strcmp(PARSER_HELP_STRING,current_token)&&
+							strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+						{
+							cm.number=atoi(current_token);
+							if (element_point_ranges_identifier.element=
+								FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(&cm,
+									element_manager))
+							{
+								shift_Parse_state(state,1);
+							}
+							else
+							{
+								display_message(WARNING_MESSAGE,"Unknown element: %s %d",
+									CM_element_type_string(cm.type),cm.number);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(INFORMATION_MESSAGE," NUMBER");
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,"Missing %s number",
+							CM_element_type_string(cm.type));
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				/* xi_discretization_mode */
+				if (return_code)
+				{
+					option_table=CREATE(Option_table)();
+					xi_discretization_mode_string=
+						Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
+					valid_strings=
+						Xi_discretization_mode_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&xi_discretization_mode_string);
+					DEALLOCATE(valid_strings);
+					if (return_code=Option_table_parse(option_table,state))
+					{
+						element_point_ranges_identifier.xi_discretization_mode=
+							Xi_discretization_mode_from_string(xi_discretization_mode_string);
+					}
+					DESTROY(Option_table)(&option_table);
+				}
+				/* number_in_xi */
+				if (return_code)
+				{
+					dimension=
+						get_FE_element_dimension(element_point_ranges_identifier.element);
+					for (i=0;i<dimension;i++)
+					{
+						element_point_ranges_identifier.number_in_xi[0]=1;
+					}
+					if (return_code=set_int_vector(state,
+						(void *)element_point_ranges_identifier.number_in_xi,
+						(void *)&dimension))
+					{
+						/* check number_in_xi are all > 0 */
+						if (1>(number_of_xi_points=
+							Xi_discretization_mode_get_number_of_xi_points(
+								element_point_ranges_identifier.xi_discretization_mode,
+								dimension,element_point_ranges_identifier.number_in_xi)))
+						{
+							display_message(WARNING_MESSAGE,"Invalid number in xi");
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+				}
+				/* ranges */
+				if (return_code)
+				{
+					/* create the element_point_ranges */
+					if (element_point_ranges=CREATE(Element_point_ranges)(
+						&element_point_ranges_identifier))
+					{
+						if (set_Multi_range(state,(void *)(element_point_ranges->ranges),
+							(void *)NULL))
+						{
+							if ((0<Multi_range_get_number_of_ranges(
+								element_point_ranges->ranges))&&
+								(!Multi_range_get_last_start_value(
+									element_point_ranges->ranges,0,&start))&&
+								(!Multi_range_get_next_stop_value(
+									element_point_ranges->ranges,number_of_xi_points-1,&stop)))
+							{
+								*element_point_ranges_address=element_point_ranges;
+							}
+							else
+							{
+								display_message(WARNING_MESSAGE,"Invalid ranges");
+								display_parse_state_location(state);
+								DESTROY(Element_point_ranges)(&element_point_ranges);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"set_Element_point_ranges.  Could not build ranges");
+							DESTROY(Element_point_ranges)(&element_point_ranges);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_Element_point_ranges.  Could not create object");
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," element|face|line #"
+					" cell_centres|cell_corners etc. #xi1 #xi2.. #xiN "
+					"[#|#..#[,#|#..#[,etc.]]]");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,"Missing element|face|line");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Element_point_ranges.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Element_point_ranges */
+
+int Element_point_ranges_element_is_in_group(
+	struct Element_point_ranges *element_point_ranges,void *element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION :
+Returns true if the element for <element_point_ranges> is in <element_group>.
+==============================================================================*/
+{
+	int return_code;
+	struct GROUP(FE_element) *element_group;
+
+	ENTER(Element_point_ranges_element_is_in_group);
+	if (element_point_ranges&&
+		(element_group=(struct GROUP(FE_element) *)element_group_void))
+	{
+		return_code=(struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
+				element_point_ranges->id.element,element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_element_is_in_group.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_ranges_element_is_in_group */

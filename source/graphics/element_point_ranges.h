@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -132,5 +132,26 @@ LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Toggles the <element_point_ranges> in <element_point_ranges_list>.
+==============================================================================*/
+
+int set_Element_point_ranges(struct Parse_state *state,
+	void *element_point_ranges_address_void,void *element_manager_void);
+/*******************************************************************************
+LAST MODIFIED : 27 March 2000
+
+DESCRIPTION :
+Modifier function to set an element_point_ranges. <element_point_ranges_address>
+should point to a currently-NULL pointer to a struct Element_point_ranges. Upon
+successful return an Element_point_ranges will be created and the pointer to it
+returned in this location, for the calling function to use or destroy.
+==============================================================================*/
+
+int Element_point_ranges_element_is_in_group(
+	struct Element_point_ranges *element_point_ranges,void *element_group_void);
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION :
+Returns true if the element for <element_point_ranges> is in <element_group>.
 ==============================================================================*/
 #endif /* !defined (ELEMENT_POINT_RANGES_H) */
