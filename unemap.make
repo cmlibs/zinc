@@ -73,6 +73,19 @@ $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.mak
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgioptimised.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
+#SGI debug memory check version
+unemap_memorycheck : $(SOURCE_PATH)/unemap_sgi_memorycheck.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f unemap_sgi_memorycheck.make ]; then \
+		$(MAKE) -f unemap_sgi_memorycheck.make ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi_memorycheck.make ; \
+	fi
+
+$(SOURCE_PATH)/unemap_sgi_memorycheck.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DIRIX -DMEMORY_CHECK $${CMISS_ROOT_DEF} -s unemap_sgi_memorycheck.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
 #SGI 64bit version
 unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
 	$(COMMON_MAKE_RULE) \

@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM  FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 3 January 2000
+XCOMM LAST MODIFIED : 6 January 2000
 XCOMM
 XCOMM  DESCRIPTION :
 XCOMM  Makefile for unemap
@@ -119,6 +119,10 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #else /* defined (USE_UNEMAP_NODES) */
 /* 1.2.2.2 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES */
+/* The normal debug and memory check versions keep the same extension as they
+	only differ in one file */
+#if !defined (MEMORY_CHECK)
+/* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-!MEMORY_CHECK */
 #define Target unemap32
 #define Bmsi2sigTarget unemap/bmsi2sig32
 #define ChangeCalibrationTarget unemap/change_calibration32
@@ -142,6 +146,32 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_nonodes
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_nonodes
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+#else /* !defined (MEMORY_CHECK) */
+/* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-MEMORY_CHECK */
+#define Target unemap_memorycheck
+#define Bmsi2sigTarget unemap/bmsi2sig32
+#define ChangeCalibrationTarget unemap/change_calibration32
+#define ChangeChannelsTarget unemap/change_channels32
+#define ChangeConfigurationTarget unemap/change_configuration32
+#define ChangeEventsTarget unemap/change_events32
+#define ChangeFrequencyTarget unemap/change_frequency32
+#define CombineSignalsTarget unemap/combine_signals32
+#define DifferenceSignalsTarget unemap/difference_signals32
+#define ExtractSignalTarget unemap/extract_signal32
+#define Img2sigTarget unemap/img2sig32
+#define Plt2cnfgTarget unemap/plt2cnfg32
+#define Posdat2sigTarget unemap/posdat2sig32
+#define RegisterTarget unemap/register32
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define Uid2uidhTarget uid2uidh32
+#define Makefile unemap_sgi_memorycheck.make
+#define DependMake unemap_sgi_memorycheck.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_nonodes
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_nonodes
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+#endif /* !defined (MEMORY_CHECK) */
 #endif /* defined (USE_UNEMAP_NODES) */
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
@@ -504,9 +534,17 @@ SRCS = \
 	$(UNEMAP_SRCS) \
 	$(USER_INTERFACE_SRCS)
 
+#if defined (MEMORY_CHECK)
+OBJSA = $(SRCS:.c=.ObjSuffix)
+OBJSB = $(OBJSA:.cpp=.ObjSuffix)
+/* Override the one changed file in the source list */
+OBJSC = $(OBJSB:general/debug.ObjSuffix=general/debug_memory_check.ObjSuffix)
+OBJS = $(OBJSC:.f=.ObjSuffix)
+#else /* defined (MEMORY_CHECK) */
 OBJSA = $(SRCS:.c=.ObjSuffix)
 OBJSB = $(OBJSA:.cpp=.ObjSuffix)
 OBJS = $(OBJSB:.f=.ObjSuffix)
+#endif /* defined (MEMORY_CHECK) */
 
 depend :
 	echo -n > DependMake
@@ -574,6 +612,22 @@ Target : $(OBJS) unemap.ObjSuffix
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+
+#if defined (MEMORY_CHECK)
+/* Specify rule for making a memory checking object with the normal c file.
+	This allows us to make a memory checking version without creating a new
+	extension */
+general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
+	if [ ! -d $(OBJECT_PATH)/general ]; \
+		mkdir -p $(OBJECT_PATH)/general; \
+	fi
+	if [ -f general/debug.c ]; \
+	then \
+		$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.ObjSuffix $(ALL_FLAGS) -DMEMORY_CHECKING general/debug.c; \
+	else \
+		$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.ObjSuffix $(ALL_FLAGS) -DMEMORY_CHECKING $(PRODUCT_PATH)/general/debug.c; \
+	fi
+#endif /* defined (MEMORY_CHECK) */
 
 utilities : Bmsi2sigTarget ChangeCalibrationTarget ChangeChannelsTarget \
 ChangeConfigurationTarget ChangeEventsTarget ChangeFrequencyTarget \
