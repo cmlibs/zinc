@@ -4016,6 +4016,7 @@ Must call after read_signal_FE_node_group
 				while (return_code&&(i<number_of_devices))
 				{				
 					/* read the status and range */
+					/* if no signal_status,  a linear comb auxiliary device. Do nothing*/
 					if ((1==BINARY_FILE_READ((char *)&(signal_status),
 						sizeof(enum Event_signal_status),1,input_file))&&
 						(1==BINARY_FILE_READ((char *)&(signal_minimum),
@@ -4034,7 +4035,7 @@ Must call after read_signal_FE_node_group
 									(1==BINARY_FILE_READ((char *)&(event_status),
 										sizeof(enum Event_signal_status),1,input_file)))
 								{
-									number_of_events--;;
+									number_of_events--;
 								}
 								else
 								{
@@ -4052,69 +4053,65 @@ Must call after read_signal_FE_node_group
 								"read_event_settings_and_signal_status_FE_node_group."
 								"  Error reading number of events");
 						}
-					}
-					else
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"read_event_settings_and_signal_status_FE_node_group."
-							"  Error reading signal range/status");
-					}
-					/* put (some of!) the read info into the node */
-					node_managed =get_FE_node_order_info_node(node_order_info,i);
-					/* create a node to work with */
-					node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-					if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-						(node,node_managed))
-					{
-						component.number=0;
-						component.field=signal_minimum_field;
-						/* fields have already been defined at the node in read_signal_FE_node_group*/
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-							signal_minimum);
-						component.field=signal_maximum_field;
-						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-							signal_maximum);
-						switch(signal_status)
+
+						/* this */
+						/* put (some of!) the read info into the node */
+						node_managed =get_FE_node_order_info_node(node_order_info,i);
+						/* create a node to work with */
+						node=CREATE(FE_node)(0,(struct FE_node *)NULL);
+						if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+							(node,node_managed))
 						{
-							case ACCEPTED:
+							component.number=0;
+							component.field=signal_minimum_field;
+							/* fields have already been defined at the node in read_signal_FE_node_group*/
+							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								signal_minimum);
+							component.field=signal_maximum_field;
+							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								signal_maximum);
+							switch(signal_status)
 							{
-								set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
-									"ACCEPTED");
-							}break;	
-							case REJECTED:
-							{
-								set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
-									"REJECTED");
-							}break;	
-							case UNDECIDED:						
-							{
-								set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
-									"UNDECIDED");
-							}break;		
-							default:	
-							{								
-								display_message(ERROR_MESSAGE,
-									"read_event_settings_and_signal_status_FE_node_group."
-									"  incorrect signal_status");
-								return_code=0;							
-							}break;					
+								case ACCEPTED:
+								{
+									set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
+										"ACCEPTED");
+								}break;	
+								case REJECTED:
+								{
+									set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
+										"REJECTED");
+								}break;	
+								case UNDECIDED:						
+								{
+									set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
+										"UNDECIDED");
+								}break;		
+								default:	
+								{								
+									display_message(ERROR_MESSAGE,
+										"read_event_settings_and_signal_status_FE_node_group."
+										"  incorrect signal_status");
+									return_code=0;							
+								}break;					
+							}
+							/* copy node back into the manager */
+							MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+								(node_managed,node,node_manager);
+						}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"read_event_settings_and_signal_status_FE_node_group."
+								"  MANAGER_COPY_WITH_IDENTIFIER failed");
+							return_code=0;
 						}
-						/* copy node back into the manager */
-						MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-							(node_managed,node,node_manager);
-					}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_event_settings_and_signal_status_FE_node_group."
-							"  MANAGER_COPY_WITH_IDENTIFIER failed");
-						return_code=0;
+						/* destroy the working copy */
+						DESTROY(FE_node)(&node);
+
 					}
-					/* destroy the working copy */
-					DESTROY(FE_node)(&node);
 					i++;
-				}
+				}/* while (return_code&&(i<number_of_devices))*/
 				MANAGER_END_CACHE(FE_node)(node_manager);
 			}
 			else

@@ -1983,77 +1983,82 @@ named file.
 						}
 						/* for each signal write the status, range and events */
 						while (return_code&&(i>0))
-						{
+						{						
 							/* write the status and range */
 							/*???DB.  Originally the unscaled maximum and minimum were
 								stored.  This has to be maintained for backward compatability */
-							signal_minimum=(*device)->signal_minimum;
-							signal_maximum=(*device)->signal_maximum;
-							if (0!=((*device)->channel)->gain)
+							/* if no (*device)->channel, a linear comb auxiliary device. Do nothing*/
+							if((*device)->channel)
 							{
-								signal_minimum=(((*device)->channel)->offset)+
-									signal_minimum/(((*device)->channel)->gain);
-								signal_maximum=(((*device)->channel)->offset)+
-									signal_maximum/(((*device)->channel)->gain);
-							}
-							if ((1==BINARY_FILE_WRITE((char *)&((*device)->signal->status),
-								sizeof(enum Event_signal_status),1,output_file))&&
-								(1==BINARY_FILE_WRITE((char *)&signal_minimum,
-								sizeof(float),1,output_file))&&
-								(1==BINARY_FILE_WRITE((char *)&signal_maximum,
-								sizeof(float),1,output_file)))
-							{
-								/* write the events */
-								start_event=(*device)->signal->first_event;
-								while (start_event&&(start_event->time<buffer_start))
+								signal_minimum=(*device)->signal_minimum;
+								signal_maximum=(*device)->signal_maximum;
+								if (0!=((*device)->channel)->gain)
 								{
-									start_event=start_event->next;
-								}
-								event=start_event;
-								number_of_events=0;
-								while (event&&(event->time<=buffer_end))
+									signal_minimum=(((*device)->channel)->offset)+
+										signal_minimum/(((*device)->channel)->gain);
+									signal_maximum=(((*device)->channel)->offset)+
+										signal_maximum/(((*device)->channel)->gain);
+								
+								}						
+								if ((1==BINARY_FILE_WRITE((char *)&((*device)->signal->status),
+									sizeof(enum Event_signal_status),1,output_file))&&
+									(1==BINARY_FILE_WRITE((char *)&signal_minimum,
+										sizeof(float),1,output_file))&&
+									(1==BINARY_FILE_WRITE((char *)&signal_maximum,
+										sizeof(float),1,output_file)))
 								{
-									number_of_events++;
-									event=event->next;
-								}
-								if (1==BINARY_FILE_WRITE((char *)&number_of_events,sizeof(int),
-									1,output_file))
-								{
-									event=start_event;
-									while (return_code&&event&&(event->time<=buffer_end))
+									/* write the events */
+									start_event=(*device)->signal->first_event;
+									while (start_event&&(start_event->time<buffer_start))
 									{
-										event_number=(event->number)-(start_event->number)+1;
-										event_time=(event->time)-buffer_start;
-										if ((1==BINARY_FILE_WRITE((char *)&(event_time),sizeof(int),
-											1,output_file))&&
-											(1==BINARY_FILE_WRITE((char *)&(event_number),sizeof(int),
-											1,output_file))&&
-											(1==BINARY_FILE_WRITE((char *)&(event->status),
-											sizeof(enum Event_signal_status),1,output_file)))
+										start_event=start_event->next;
+									}
+									event=start_event;
+									number_of_events=0;
+									while (event&&(event->time<=buffer_end))
+									{
+										number_of_events++;
+										event=event->next;
+									}
+									if (1==BINARY_FILE_WRITE((char *)&number_of_events,sizeof(int),
+										1,output_file))
+									{
+										event=start_event;
+										while (return_code&&event&&(event->time<=buffer_end))
 										{
-											event=event->next;
+											event_number=(event->number)-(start_event->number)+1;
+											event_time=(event->time)-buffer_start;
+											if ((1==BINARY_FILE_WRITE((char *)&(event_time),sizeof(int),
+												1,output_file))&&
+												(1==BINARY_FILE_WRITE((char *)&(event_number),sizeof(int),
+													1,output_file))&&
+												(1==BINARY_FILE_WRITE((char *)&(event->status),
+													sizeof(enum Event_signal_status),1,output_file)))
+											{
+												event=event->next;
+											}
+											else
+											{
+												return_code=0;
+												display_message(ERROR_MESSAGE,
+													"analysis_write_signal_file.  Error writing event");
+											}
 										}
-										else
-										{
-											return_code=0;
-											display_message(ERROR_MESSAGE,
-												"analysis_write_signal_file.  Error writing event");
-										}
+									}
+									else
+									{
+										return_code=0;
+										display_message(ERROR_MESSAGE,
+											"analysis_write_signal_file.  Error writing number of events");
 									}
 								}
 								else
 								{
 									return_code=0;
 									display_message(ERROR_MESSAGE,
-								"analysis_write_signal_file.  Error writing number of events");
+										"analysis_write_signal_file.  Error writing signal range");
 								}
-							}
-							else
-							{
-								return_code=0;
-								display_message(ERROR_MESSAGE,
-									"analysis_write_signal_file.  Error writing signal range");
-							}
+							} /* if((*device)->channel) */
 							device++;
 							i--;
 						}
@@ -2631,6 +2636,7 @@ Sets up the analysis work area for analysing a set of signals.
 						while (return_code&&(i>0))
 						{
 							/* read the status and range */
+							/* if no event_status,  a linear comb auxiliary device. Do nothing*/
 							if ((1==BINARY_FILE_READ((char *)&event_status,
 								sizeof(enum Event_signal_status),1,input_file))&&
 								(1==BINARY_FILE_READ((char *)&((*device)->signal_minimum),
@@ -2706,16 +2712,10 @@ Sets up the analysis work area for analysing a set of signals.
 									display_message(ERROR_MESSAGE,
 										"analysis_read_signal_file.  Invalid signal status");
 								}
-							}
-							else
-							{
-								return_code=0;
-								display_message(ERROR_MESSAGE,
-							"analysis_read_signal_file.  Error reading signal range/status");
-							}
+							}/* if ((1==BINARY_FILE_READ((char *)&event_status, */
 							device++;
 							i--;
-						}
+						} /* while */
 					}
 					else
 					{
@@ -12510,120 +12510,124 @@ Applies the current analysis mode settings to all signals.
 					transform_buffer_offset=transform_buffer->number_of_signals;
 					/* run through all the signals */
 					for (i=rig->number_of_devices;i>0;i--)
-					{
-						if (fourier_transform(SQUARE_WINDOW,*device,(struct Device *)NULL,
-							trace->real_device_1,trace->imaginary_device_1))
+					{	
+						/* if (*device)->channel== NULL, then a linear combination auxilliary. */
+						/* Do nothing. */
+						if((*device)->channel)
 						{
-							/* perform filtering */
-							real_value=((transform_buffer->signals).float_values)+
-								(trace->real_device_1->signal->index);
-							imaginary_value=((transform_buffer->signals).float_values)+
-								(trace->imaginary_device_1->signal->index);
-							/* remove DC */
-							*real_value=0.;
-							*imaginary_value=0.;
-							if ((trace->filtering).notch_on)
+							if (fourier_transform(SQUARE_WINDOW,*device,(struct Device *)NULL,
+								trace->real_device_1,trace->imaginary_device_1))
 							{
-								notch=(int)floor(((trace->filtering).notch_frequency)*
-									(transform_buffer->frequency));
-								if ((0<=notch)&&(notch<(transform_buffer->number_of_samples)-1))
+								/* perform filtering */
+								real_value=((transform_buffer->signals).float_values)+
+									(trace->real_device_1->signal->index);
+								imaginary_value=((transform_buffer->signals).float_values)+
+									(trace->imaginary_device_1->signal->index);
+								/* remove DC */
+								*real_value=0.;
+								*imaginary_value=0.;
+								if ((trace->filtering).notch_on)
 								{
-									real_value[notch*transform_buffer_offset]=0;
-									imaginary_value[notch*transform_buffer_offset]=0;
-									real_value[(notch+1)*transform_buffer_offset]=0;
-									imaginary_value[(notch+1)*transform_buffer_offset]=0;
+									notch=(int)floor(((trace->filtering).notch_frequency)*
+										(transform_buffer->frequency));
+									if ((0<=notch)&&(notch<(transform_buffer->number_of_samples)-1))
+									{
+										real_value[notch*transform_buffer_offset]=0;
+										imaginary_value[notch*transform_buffer_offset]=0;
+										real_value[(notch+1)*transform_buffer_offset]=0;
+										imaginary_value[(notch+1)*transform_buffer_offset]=0;
+									}
 								}
-							}
-							low_pass=(int)(((trace->filtering).low_pass_frequency)*
-								(transform_buffer->frequency)+0.5);
-							if (low_pass<0)
-							{
-								low_pass=0;
-							}
-							else
-							{
-								if (low_pass>transform_buffer->number_of_samples)
+								low_pass=(int)(((trace->filtering).low_pass_frequency)*
+									(transform_buffer->frequency)+0.5);
+								if (low_pass<0)
 								{
-									low_pass=transform_buffer->number_of_samples;
+									low_pass=0;
 								}
-							}
-							high_pass=(int)(((trace->filtering).high_pass_frequency)*
-								(transform_buffer->frequency)+0.5);
-							if (high_pass<0)
-							{
-								high_pass=0;
-							}
-							else
-							{
-								if (high_pass>transform_buffer->number_of_samples)
+								else
 								{
-									high_pass=transform_buffer->number_of_samples;
+									if (low_pass>transform_buffer->number_of_samples)
+									{
+										low_pass=transform_buffer->number_of_samples;
+									}
 								}
-							}
-							if (high_pass<low_pass)
-							{
-								for (j=high_pass;j>0;j--)
+								high_pass=(int)(((trace->filtering).high_pass_frequency)*
+									(transform_buffer->frequency)+0.5);
+								if (high_pass<0)
 								{
-									*real_value=0.;
-									real_value += transform_buffer_offset;
-									*imaginary_value=0.;
-									imaginary_value += transform_buffer_offset;
+									high_pass=0;
 								}
-								real_value += (low_pass-high_pass)*transform_buffer_offset;
-								imaginary_value += (low_pass-high_pass)*transform_buffer_offset;
-								for (j=(transform_buffer->number_of_samples)-low_pass-1;j>0;j--)
+								else
 								{
-									*real_value=0.;
-									real_value += transform_buffer_offset;
-									*imaginary_value=0.;
-									imaginary_value += transform_buffer_offset;
+									if (high_pass>transform_buffer->number_of_samples)
+									{
+										high_pass=transform_buffer->number_of_samples;
+									}
 								}
-							}
-							else
-							{
-								real_value += low_pass*transform_buffer_offset;
-								imaginary_value += low_pass*transform_buffer_offset;
-								for (j=high_pass-low_pass-2;j>0;j--)
+								if (high_pass<low_pass)
 								{
-									*real_value=0.;
-									real_value += transform_buffer_offset;
-									*imaginary_value=0.;
-									imaginary_value += transform_buffer_offset;
+									for (j=high_pass;j>0;j--)
+									{
+										*real_value=0.;
+										real_value += transform_buffer_offset;
+										*imaginary_value=0.;
+										imaginary_value += transform_buffer_offset;
+									}
+									real_value += (low_pass-high_pass)*transform_buffer_offset;
+									imaginary_value += (low_pass-high_pass)*transform_buffer_offset;
+									for (j=(transform_buffer->number_of_samples)-low_pass-1;j>0;j--)
+									{
+										*real_value=0.;
+										real_value += transform_buffer_offset;
+										*imaginary_value=0.;
+										imaginary_value += transform_buffer_offset;
+									}
 								}
-							}
-							/* transform back */
-							if (inverse_fourier_transform(trace->real_device_1,
-								trace->imaginary_device_1,trace->processed_device,
-								(struct Device *)NULL))
-							{
-								/* set the gain and offset */
-								(*device)->channel->gain=trace->processed_device->channel->gain;
-								(*device)->channel->offset=
-									trace->processed_device->channel->offset;
-								/* the number of samples for the processed device will be the
-									smallest power of 2 >= transform_number_of_samples */
-								value_1=((buffer->signals).float_values)+
-									((*device)->signal->index);
-								value_2=((trace->processed_device->signal->buffer->signals).
-									float_values)+(trace->processed_device->signal->index);
-								for (j=transform_number_of_samples;j>0;j--)
+								else
 								{
-									*value_1= *value_2;
-									value_1 += buffer_offset_1;
-									value_2 += buffer_offset_2;
+									real_value += low_pass*transform_buffer_offset;
+									imaginary_value += low_pass*transform_buffer_offset;
+									for (j=high_pass-low_pass-2;j>0;j--)
+									{
+										*real_value=0.;
+										real_value += transform_buffer_offset;
+										*imaginary_value=0.;
+										imaginary_value += transform_buffer_offset;
+									}
+								}
+								/* transform back */
+								if (inverse_fourier_transform(trace->real_device_1,
+									trace->imaginary_device_1,trace->processed_device,
+									(struct Device *)NULL))
+								{								
+									(*device)->channel->gain=trace->processed_device->channel->gain;
+									(*device)->channel->offset=
+										trace->processed_device->channel->offset;								
+									/* the number of samples for the processed device will be the
+										 smallest power of 2 >= transform_number_of_samples */
+									value_1=((buffer->signals).float_values)+
+										((*device)->signal->index);
+									value_2=((trace->processed_device->signal->buffer->signals).
+										float_values)+(trace->processed_device->signal->index);
+									for (j=transform_number_of_samples;j>0;j--)
+									{
+										*value_1= *value_2;
+										value_1 += buffer_offset_1;
+										value_2 += buffer_offset_2;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"trace_analysis_mode_apply.  Could not calculate inverse Fourier transform");
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-	"trace_analysis_mode_apply.  Could not calculate inverse Fourier transform");
+									"trace_analysis_mode_apply.  Could not calculate Fourier transform");
 							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-					"trace_analysis_mode_apply.  Could not calculate Fourier transform");
-						}
+						} 
 						device++;
 					}
 					buffer->start=0;
