@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 27 March 2001
+LAST MODIFIED : 27 April 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -3028,8 +3028,8 @@ uses them to find faces and lines for elements without them, if they exist.
 				}
 #if defined (DEBUG)
 				/*???debug*/
-				printf("Element %d: type %d nodes =",element->cm.number,
-					element_type_node_sequence->identifier->cm_type);
+				printf("FE_element_type_node_sequence  %s %d has nodes: ",
+					CM_element_type_string(element->cm.type), element->cm.number);
 				for (i=0;i<number_of_nodes;i++)
 				{
 					printf(" %d",node_numbers[i]);
@@ -20848,7 +20848,7 @@ Frees the memory for the node, scale and field information and sets
 
 struct FE_element_shape *CREATE(FE_element_shape)(int dimension,int *type)
 /*******************************************************************************
-LAST MODIFIED : 7 January 1998
+LAST MODIFIED : 27 April 2001
 
 DESCRIPTION :
 Searchs the list of all shapes (all_FE_element_shape) for a shape with the
@@ -21266,11 +21266,19 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 										{
 											linked_coordinate += linked_offsets[linked_coordinate];
 										}
-										k=xi_coordinate+1;
-										if (k>=dimension)
+#if defined (RC_CODE_IN_PROGRESS)
+										k = 1;
+#else /* defined (RC_CODE_IN_PROGRESS) */
+										/* ???RC this screws up simplex(2)*simplex*line as
+											 leaves an all-zero column. Face keeps the same order
+											 of xi as for parent, only one is missing and some
+											 are slightly different on diagonals */
+										k = xi_coordinate + 1;
+										if (k >= dimension)
 										{
-											k=1;
+											k = 1;
 										}
+#endif /* defined (RC_CODE_IN_PROGRESS) */
 										for (j=0;j<dimension;j++)
 										{
 											if (j==simplex_coordinate)
@@ -21343,11 +21351,19 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 											simplex_coordinate=xi_coordinate+
 												linked_offsets[xi_coordinate];
 											linked_coordinate=simplex_coordinate;
-											k=xi_coordinate+1;
-											if (k>=dimension)
+#if defined (RC_CODE_IN_PROGRESS)
+											k = 1;
+#else /* defined (RC_CODE_IN_PROGRESS) */
+											/* ???RC this screws up simplex(2)*simplex*line as
+												 leaves an all-zero column. Face keeps the same order
+												 of xi as for parent, only one is missing and some
+												 are slightly different on diagonals */
+											k = xi_coordinate + 1;
+											if (k >= dimension)
 											{
-												k=1;
+												k = 1;
 											}
+#endif /* defined (RC_CODE_IN_PROGRESS) */
 											for (j=0;j<dimension;j++)
 											{
 												if (j==simplex_coordinate)
@@ -21478,23 +21494,25 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 								}
 								shape_type += dimension-xi_coordinate;
 							}
-/*???debug */
-/*face_to_element=shape->face_to_element;
-face=shape->faces;
-for (i=1;i<=number_of_faces;i++)
-{
-	printf("face %d %d:\n",i,*face);
-	face++;
-	for (j=dimension;j>0;j--)
-	{
-		for (k=dimension;k>0;k--)
-		{
-			printf(" %g",*face_to_element);
-			face_to_element++;
-		}
-		printf("\n");
-	}
-}*/
+#if defined (DEBUG)
+							/*???debug */
+							face_to_element = shape->face_to_element;
+							face = shape->faces;
+							for (i=1;i<=number_of_faces;i++)
+							{
+								printf("face %d %d:\n",i,*face);
+								face++;
+								for (j=dimension;j>0;j--)
+								{
+									for (k=dimension;k>0;k--)
+									{
+										printf(" %g",*face_to_element);
+										face_to_element++;
+									}
+									printf("\n");
+								}
+							}
+#endif /* defined (DEBUG) */
 						}
 						else
 						{
@@ -32139,19 +32157,27 @@ NOTE: recursive to handle 1-D to 3-D case.
 							element_to_top_level[i*size+1]*face_to_element[1]+
 							element_to_top_level[i*size+2]*face_to_element[3];
 					}
-#if defined (DEBUG)
-					if (1==element->shape->dimension)
-					{
-						printf("\n");
-						printf("[%6.3f %6.3f]\n",element_to_top_level[0],
-							element_to_top_level[1]);
-						printf("[%6.3f %6.3f]\n",element_to_top_level[2],
-							element_to_top_level[3]);
-						printf("[%6.3f %6.3f]\n",element_to_top_level[4],
-							element_to_top_level[5]);
-					}
-#endif /* defined (DEBUG) */
 				}
+#if defined (DEBUG)
+				/*???debug*/
+				{
+					FE_value *value;
+					int a, b;
+					
+					value = element_to_top_level;
+					for (b = 0; b < top_level_element->shape->dimension; b++)
+					{
+						printf("[");
+						for (a = 0; a <= element->shape->dimension; a++)
+						{
+							printf(" %6.2f", *value);
+							value++;
+						}
+						printf(" ]\n");
+					}
+					printf("\n");
+				}
+#endif /* defined (DEBUG) */
 			}
 			else
 			{
@@ -32181,7 +32207,7 @@ int get_FE_element_discretization_from_top_level(struct FE_element *element,
 	int *number_in_xi,struct FE_element *top_level_element,
 	int *top_level_number_in_xi,FE_value *element_to_top_level)
 /*******************************************************************************
-LAST MODIFIED : 21 December 1999
+LAST MODIFIED : 26 April 2001
 
 DESCRIPTION :
 Returns in <number_in_xi> the equivalent discretization of <element> for its
@@ -32192,7 +32218,7 @@ FE_element_get_top_level_element_conversion.
 as remaining values up to this size are cleared to zero.
 ==============================================================================*/
 {
-	int dimension,i,j,return_code,top_level_dimension;
+	int dimension, i, j, maximum_number_in_xi, return_code, top_level_dimension;
 
 	ENTER(get_FE_element_discretization_from_top_level);
 	if (element&&number_in_xi&&top_level_element&&top_level_number_in_xi)
@@ -32209,22 +32235,28 @@ as remaining values up to this size are cleared to zero.
 		else if (element_to_top_level)
 		{
 			top_level_dimension=get_FE_element_dimension(top_level_element);
+			/* use largest number_in_xi of any linked xi directions */
 			for (i=0;(i<dimension)&&return_code;i++)
 			{
+				maximum_number_in_xi = 0;
 				number_in_xi[i]=0;
-				for (j=0;(0==number_in_xi[i])&&(j<top_level_dimension);j++)
+				for (j = 0; j < top_level_dimension; j++)
 				{
-					if (0.1<fabs(element_to_top_level[j*(dimension+1)+i+1]))
+					if (0.0 != fabs(element_to_top_level[j*(dimension + 1) + i + 1]))
 					{
-						number_in_xi[i]=top_level_number_in_xi[j];
+						if (top_level_number_in_xi[j] > maximum_number_in_xi)
+						{
+							maximum_number_in_xi = top_level_number_in_xi[j];
+						}
 					}
 				}
-				if (0==number_in_xi[i])
+				number_in_xi[i] = maximum_number_in_xi;
+				if (0 == maximum_number_in_xi)
 				{
 					display_message(ERROR_MESSAGE,
 						"get_FE_element_discretization_from_top_level.  "
 						"Could not get discretization");
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			for (i=dimension;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
