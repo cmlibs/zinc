@@ -20,8 +20,6 @@ CmissCmguicommanddata_get_cmgui_command_data_cpointer(PyObject* self, PyObject* 
 	PyObject *return_code;
 	struct Cmiss_command_data *command_data;
 
-	printf("CmissCmguicommanddata_get_cmgui_command_data_cpointer\n");
-
 	if (_CmissCmguicommanddata_check(self))
 	{
 		object = (CmissCmguicommanddataObject *)self;
@@ -94,8 +92,6 @@ CmissCmguicommanddata_new(PyObject* self, PyObject* args)
 		return NULL;
 	}
 
-	printf("Creating new CmissCmguicommanddata\n");
-
 	return (PyObject*)cmgui_command_data;
 }
 
@@ -124,8 +120,6 @@ CmissCmguicommanddata_check(PyObject* self, PyObject* args)
 
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
-
-	printf("Checking CmissCmguicommanddata\n");
 
 	if (_CmissCmguicommanddata_check(object))
 	{
@@ -189,7 +183,5 @@ initCmgui_command_data(void)
 {
 	CmissCmguicommanddataType.ob_type = &PyType_Type;
 	
-	printf ("In initCmgui_command_data\n");
-
 	Py_InitModule("Cmgui_command_data", CmissCmguicommanddataType_methods);
 }

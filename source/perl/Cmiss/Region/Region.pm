@@ -52,6 +52,9 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
+use Cmiss;
+Cmiss::require_library('cmgui_finite_element');
+
 sub new
 {
 	my ($class) = @_;

@@ -19,8 +19,6 @@ CmissFEfield_get_fe_field_cpointer(PyObject* self, PyObject* args)
 	CmissFEfieldObject *cmiss_fe_field;
 	PyObject *object, *return_code;
 
-	printf("CmissFEfield_get_fe_field_cpointer\n");
-
 	if (_CmissFEfield_check(self))
 	{
 		cmiss_fe_field = (CmissFEfieldObject *)self;
@@ -68,8 +66,6 @@ CmissFEfield_check(PyObject* self, PyObject* args)
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
 
-	printf("Checking CmissFEfield\n");
-
 	if (_CmissFEfield_check(object))
 	{
 		return_code = PyInt_FromLong(1);
@@ -103,8 +99,6 @@ CmissFEfield_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract FE_field pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping Cmiss.FE_field\n");
 
 	return (PyObject*)cmiss_fe_field;
 }
@@ -164,7 +158,5 @@ initFE_field(void)
 {
 	CmissFEfieldType.ob_type = &PyType_Type;
 	
-	printf ("In initFE_field\n");
-
 	Py_InitModule("FE_field", CmissFEfieldType_methods);
 }

@@ -480,11 +480,11 @@ define BuildNormalTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(1).exe $(ALL_FLAGS) `cat object.list` $(4) ; \
+	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat object.list` $(4) ; \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
 	fi ; \
-	cp $(1).exe $(2)/$(1) ;
+	cp $(1).tmp $(2)/$(1) ;
 endef
 
 define BuildStaticLibraryTarget
@@ -499,11 +499,11 @@ define BuildStaticLibraryTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	ar $(AR_FLAGS) cr $(1) `cat object.list` ; \
+	ar $(AR_FLAGS) cr $(1).tmp `cat object.list` && \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
 	fi ; \
-	cp $(1) $(2)/$(1) ;
+	cp $(1).tmp $(2)/$(1) ;
 endef
 
 define BuildSharedLibraryTarget
@@ -518,9 +518,9 @@ define BuildSharedLibraryTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -shared -o $(1) $(ALL_FLAGS) `cat object.list` $(4) ; \
+	$(LINK) -shared -o $(1).tmp $(ALL_FLAGS) `cat object.list` $(4) -Wl,-soname,$(5) && \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
-	fi ; \
-	cp $(1) $(2)/$(1) ;
+	fi && \
+	cp $(1).tmp $(2)/$(1) ;
 endef

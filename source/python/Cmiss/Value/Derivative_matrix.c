@@ -26,8 +26,6 @@ CmissValueDerivativematrix_matrix(PyObject* self, PyObject* args)
 	PyObject *independent_variable, *independent_variables_array, *return_code,
 		*value_matrix_module, *variable_cpointer, *variable_module;
 
-	printf("CmissValueDerivativematrix_matrix\n");
-
 	return_code = (PyObject *)NULL;
 
 	if (!PyArg_ParseTuple(args,"O:new", &independent_variables_array))
@@ -210,7 +208,6 @@ CmissValueDerivativematrix_new(PyObject* self, PyObject* args)
 						}
 						if (cmiss_value->value)
 						{
-							printf ("Creating new derivative matrix\n");
 							if (!Cmiss_value_derivative_matrix_set_type(cmiss_value->value,
 								dependent_variable_ptr, order, independent_variables, matrices))
 							{
@@ -275,8 +272,6 @@ CmissValueDerivativematrix_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Value pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissValueDerivativematrix\n");
 
 	return (PyObject*)cmiss_value;
 }
@@ -441,7 +436,5 @@ initDerivative_matrix(void)
 {
 	CmissValueDerivativematrixType.ob_type = &PyType_Type;
 	
-	printf ("In initDerivativematrix\n");
-
 	Py_InitModule("Derivative_matrix", CmissValueDerivativematrixType_methods);
 }

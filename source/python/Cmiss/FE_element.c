@@ -19,8 +19,6 @@ CmissFEelement_get_fe_element_cpointer(PyObject* self, PyObject* args)
 	CmissFEelementObject *cmiss_fe_element;
 	PyObject *object, *return_code;
 
-	printf("CmissFEelement_get_fe_element_cpointer\n");
-
 	if (_CmissFEelement_check(self))
 	{
 		cmiss_fe_element = (CmissFEelementObject *)self;
@@ -68,8 +66,6 @@ CmissFEelement_check(PyObject* self, PyObject* args)
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
 
-	printf("Checking CmissFEelement\n");
-
 	if (_CmissFEelement_check(object))
 	{
 		return_code = PyInt_FromLong(1);
@@ -103,8 +99,6 @@ CmissFEelement_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract FE_element pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping Cmiss.FE_element\n");
 
 	return (PyObject*)cmiss_fe_element;
 }
@@ -164,7 +158,5 @@ initFE_element(void)
 {
 	CmissFEelementType.ob_type = &PyType_Type;
 	
-	printf ("In initFE_element\n");
-
 	Py_InitModule("FE_element", CmissFEelementType_methods);
 }

@@ -23,8 +23,6 @@ CmissRegion_get_region_cpointer(PyObject* self, PyObject* args)
 	CmissRegionObject *cmiss_region;
 	PyObject *object, *return_code;
 
-	printf("CmissRegion_get_region_cpointer\n");
-
 	if (_CmissRegion_check(self))
 	{
 		cmiss_region = (CmissRegionObject *)self;
@@ -56,8 +54,6 @@ CmissRegion_get_sub_region(PyObject* self, PyObject* args)
 	if (_CmissRegion_check(self))
 	{
 		cmiss_region = (CmissRegionObject *)self;
-		printf("CmissRegion_get_sub_region %p %s\n", cmiss_region->region, region_path);
-
 		sub_cmiss_region = PyObject_New(CmissRegionObject, &CmissRegionType);
 		if (Cmiss_region_get_region_from_path(cmiss_region->region, region_path,
 			&sub_cmiss_region->region) && sub_cmiss_region->region)
@@ -105,7 +101,6 @@ CmissRegion_get_field(PyObject* self, PyObject* args)
 	if (_CmissRegion_check(self))
 	{
 		cmiss_region = (CmissRegionObject *)self;
-		printf("CmissRegion_get_field %p\n", cmiss_region->region);
 		if (fe_region = Cmiss_region_get_FE_region(cmiss_region->region))
 		{
 			fe_field_ptr = FE_region_get_FE_field_from_name(fe_region, name);
@@ -152,7 +147,6 @@ CmissRegion_get_element(PyObject* self, PyObject* args)
 	if (_CmissRegion_check(self))
 	{
 		cmiss_region = (CmissRegionObject *)self;
-		printf("CmissRegion_get_element %p\n", cmiss_region->region);
 		if (fe_region = Cmiss_region_get_FE_region(cmiss_region->region))
 		{
 			identifier.type = CM_ELEMENT;
@@ -201,7 +195,6 @@ CmissRegion_get_node(PyObject* self, PyObject* args)
 	if (_CmissRegion_check(self))
 	{
 		cmiss_region = (CmissRegionObject *)self;
-		printf("CmissRegion_get_node %p\n", cmiss_region->region);
 		if (fe_region = Cmiss_region_get_FE_region(cmiss_region->region))
 		{
 			fe_node_ptr = FE_region_get_FE_node_from_identifier(fe_region, node_number);
@@ -242,7 +235,6 @@ CmissRegion_read_file(PyObject* self, PyObject* args)
 	if (_CmissRegion_check(self))
 	{
 		cmiss_region = (CmissRegionObject *)self;
-		printf("CmissRegion_read_file %p\n", cmiss_region->region);
 		if (cmiss_region->region&&file_name&&
 			(basis_manager=FE_region_get_basis_manager(Cmiss_region_get_FE_region(cmiss_region->region)))&&
 			(element_shape_list=FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(
@@ -321,8 +313,6 @@ CmissRegion_new(PyObject* self, PyObject* args)
 		}
 	}
 
-	printf("Creating new CmissRegion\n");
-
 	return (PyObject*)cmiss_region;
 }
 
@@ -351,8 +341,6 @@ CmissRegion_check(PyObject* self, PyObject* args)
 
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
-
-	printf("Checking CmissRegion\n");
 
 	if (_CmissRegion_check(object))
 	{
@@ -387,8 +375,6 @@ CmissRegion_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Region pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissRegion\n");
 
 	return (PyObject*)cmiss_region;
 }
@@ -460,8 +446,6 @@ CmissRegion_command_data_get_root_region(PyObject* self, PyObject* args)
 		return NULL;			 
 	}
 
-	printf("command_data_get_root_region CmissRegion\n");
-
 	return (PyObject*)cmiss_region;
 }
 
@@ -501,7 +485,5 @@ initRegion(void)
 {
 	CmissRegionType.ob_type = &PyType_Type;
 	
-	printf ("In initRegion\n");
-
 	Py_InitModule("Region", CmissRegionType_methods);
 }

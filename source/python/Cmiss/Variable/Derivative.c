@@ -20,8 +20,6 @@ CmissVariableDerivative_get_variable_cpointer(PyObject* self, PyObject* args)
 	CmissVariableDerivativeObject *cmiss_variable;
 	PyObject *object, *return_code;
 
-	printf("CmissVariableDerivative_get_variable_cpointer\n");
-
 	if (_CmissVariableDerivative_check(self))
 	{
 		cmiss_variable = (CmissVariableDerivativeObject *)self;
@@ -40,8 +38,6 @@ CmissVariableDerivative_evaluate(PyObject* self, PyObject* args)
 {
 	CmissVariableDerivativeObject *cmiss_variable;
 	PyObject *generic_variable, *object, *return_code, *variable_module, *value_variable_list;
-
-	printf("CmissVariableDerivative_evaluate\n");
 
 	if (!PyArg_ParseTuple(args,"O:evaluate", &value_variable_list)) 
 		return NULL;
@@ -166,8 +162,6 @@ CmissVariableDerivative_new(PyObject* self, PyObject* args)
 		}
 	}
 
-	printf("Creating new CmissVariableDerivative\n");
-
 	return (PyObject*)cmiss_variable;
 }
 
@@ -196,8 +190,6 @@ CmissVariableDerivative_check(PyObject* self, PyObject* args)
 
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
-
-	printf("Checking CmissVariableDerivative\n");
 
 	if (_CmissVariableDerivative_check(object))
 	{
@@ -232,8 +224,6 @@ CmissVariableDerivative_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.VariableDerivative pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissVariableDerivative\n");
 
 	return (PyObject*)cmiss_variable;
 }
@@ -295,7 +285,5 @@ initDerivative(void)
 {
 	CmissVariableDerivativeType.ob_type = &PyType_Type;
 	
-	printf ("In initDerivative\n");
-
 	Py_InitModule("Derivative", CmissVariableDerivativeType_methods);
 }

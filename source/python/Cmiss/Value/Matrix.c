@@ -22,8 +22,6 @@ CmissValueMatrix_get_matrix_cpointer(PyObject* self, PyObject* args)
 	PyObject *return_code;
 	struct Matrix *matrix;
 
-	printf("CmissValueMatrix_get_value_matrix_cpointer\n");
-
 	if (_CmissValueMatrix_check(self))
 	{
 		cmiss_value_matrix = (CmissValueMatrixObject *)self;
@@ -45,8 +43,6 @@ CmissValueMatrix_sub_matrix(PyObject* self, PyObject* args, PyObject *keywds)
 		row_low;
 	static char *kwlist[] = {"row_low", "row_high", "column_low", "column_high", NULL};
 
-
-	printf("CmissValueMatrix_sub_matrix\n");
 
 	return_code = (CmissValueMatrixObject *)NULL;
 	if (_CmissValueMatrix_check(self))
@@ -204,8 +200,6 @@ CmissValueMatrix_check(PyObject* self, PyObject* args)
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
 
-	printf("Checking CmissValueMatrix\n");
-
 	if (_CmissValueMatrix_check(object))
 	{
 		return_code = PyInt_FromLong(1);
@@ -239,8 +233,6 @@ CmissValueMatrix_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Value pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissValueMatrix\n");
 
 	return (PyObject*)cmiss_value;
 }
@@ -459,7 +451,5 @@ initMatrix(void)
 {
 	CmissValueMatrixType.ob_type = &PyType_Type;
 	
-	printf ("In initMatrix\n");
-
 	Py_InitModule("Matrix", CmissValueMatrixType_methods);
 }

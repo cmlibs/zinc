@@ -53,6 +53,9 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
+use Cmiss;
+Cmiss::require_library('cmgui_computed_variable');
+
 # Class attributes and methods
 {
 	my $string_convert_max_rows=8;

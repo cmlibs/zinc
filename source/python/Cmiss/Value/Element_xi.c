@@ -19,8 +19,6 @@ CmissValueElementxi_get_value_cpointer(PyObject* self, PyObject* args)
 	PyObject *return_code;
 	struct Elementxi *value;
 
-	printf("CmissValueElementxi_get_value_cpointer\n");
-
 	if (_CmissValueElementxi_check(self))
 	{
 		cmiss_value_elementxi = (CmissValueElementxiObject *)self;
@@ -148,8 +146,6 @@ CmissValueElementxi_check(PyObject* self, PyObject* args)
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
 
-	printf("Checking CmissValueElement_xi\n");
-
 	if (_CmissValueElementxi_check(object))
 	{
 		return_code = PyInt_FromLong(1);
@@ -183,8 +179,6 @@ CmissValueElementxi_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Value pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissValueElement_xi\n");
 
 	return (PyObject*)cmiss_value;
 }
@@ -289,7 +283,5 @@ initElement_xi(void)
 {
 	CmissValueElementxiType.ob_type = &PyType_Type;
 	
-	printf ("In initElement_xi\n");
-
 	Py_InitModule("Element_xi", CmissValueElementxiType_methods);
 }

@@ -3,7 +3,6 @@
 #include "XSUB.h"
 
 #include <stdio.h>
-#include "command/cmiss.h"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"

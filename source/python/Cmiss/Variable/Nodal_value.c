@@ -20,8 +20,6 @@ CmissVariableNodalvalue_get_variable_cpointer(PyObject* self, PyObject* args)
 	CmissVariableNodalvalueObject *cmiss_variable;
 	PyObject *object, *return_code;
 
-	printf("CmissVariableNodalvalue_get_variable_cpointer\n");
-
 	if (_CmissVariableNodalvalue_check(self))
 	{
 		cmiss_variable = (CmissVariableNodalvalueObject *)self;
@@ -166,8 +164,6 @@ CmissVariableNodalvalue_new(PyObject* self, PyObject* args)
 		}
 	}
 
-	printf("Creating new CmissVariableNodalvalue\n");
-
 	return (PyObject *)cmiss_variable;
 }
 
@@ -196,8 +192,6 @@ CmissVariableNodalvalue_check(PyObject* self, PyObject* args)
 
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
-
-	printf("Checking CmissVariableNodalvalue\n");
 
 	if (_CmissVariableNodalvalue_check(object))
 	{
@@ -232,8 +226,6 @@ CmissVariableNodalvalue_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.VariableNodalvalue pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissVariableNodalvalue\n");
 
 	return (PyObject*)cmiss_variable;
 }
@@ -295,7 +287,5 @@ initNodal_value(void)
 {
 	CmissVariableNodalvalueType.ob_type = &PyType_Type;
 	
-	printf ("In initNodal_value\n");
-
 	Py_InitModule("Nodal_value", CmissVariableNodalvalueType_methods);
 }

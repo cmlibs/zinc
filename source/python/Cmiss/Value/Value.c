@@ -22,8 +22,6 @@ CmissValue_new(PyObject* self, PyObject* args)
 		 ACCESS(Cmiss_value)(cmiss_value->value);
 	 }
 
-	 printf("Creating new CmissValue\n");
-
     return (PyObject*)cmiss_value;
 }
 
@@ -66,7 +64,5 @@ initValue(void)
 {
 	CmissValueType.ob_type = &PyType_Type;
 	
-	printf ("In initValue\n");
-
 	Py_InitModule("Value", CmissValue_methods);
 }

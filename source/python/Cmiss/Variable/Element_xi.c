@@ -19,8 +19,6 @@ CmissVariableElementxi_get_variable_cpointer(PyObject* self, PyObject* args)
 	CmissVariableElementxiObject *cmiss_variable;
 	PyObject *object, *return_code;
 
-	printf("CmissVariableElementxi_get_variable_cpointer\n");
-
 	if (_CmissVariableElementxi_check(self))
 	{
 		cmiss_variable = (CmissVariableElementxiObject *)self;
@@ -64,8 +62,6 @@ CmissVariableElementxi_new(PyObject* self, PyObject* args)
 		}
 	}
 
-	printf("Creating new CmissVariableElementxi\n");
-
 	return (PyObject *)cmiss_variable;
 }
 
@@ -94,8 +90,6 @@ CmissVariableElementxi_check(PyObject* self, PyObject* args)
 
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
-
-	printf("Checking CmissVariableElementxi\n");
 
 	if (_CmissVariableElementxi_check(object))
 	{
@@ -130,8 +124,6 @@ CmissVariableElementxi_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.VariableElementxi pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissVariableElementxi\n");
 
 	return (PyObject*)cmiss_variable;
 }
@@ -192,8 +184,6 @@ DL_EXPORT(void)
 initElement_xi(void) 
 {
 	CmissVariableElementxiType.ob_type = &PyType_Type;
-	
-	printf ("In initElement_xi\n");
 
 	Py_InitModule("Element_xi", CmissVariableElementxiType_methods);
 }

@@ -20,8 +20,6 @@ CmissVariableFiniteelement_get_variable_cpointer(PyObject* self, PyObject* args)
 	CmissVariableFiniteelementObject *cmiss_variable;
 	PyObject *object, *return_code;
 
-	printf("CmissVariableFiniteelement_get_variable_cpointer\n");
-
 	if (_CmissVariableFiniteelement_check(self))
 	{
 		cmiss_variable = (CmissVariableFiniteelementObject *)self;
@@ -40,8 +38,6 @@ CmissVariableFiniteelement_evaluate(PyObject* self, PyObject* args)
 {
 	CmissVariableFiniteelementObject *cmiss_variable;
 	PyObject *generic_variable, *object, *return_code, *variable_module, *value_variable_list;
-
-	printf("CmissVariableFiniteelement_evaluate\n");
 
 	if (!PyArg_ParseTuple(args,"O:evaluate", &value_variable_list)) 
 		return NULL;
@@ -167,8 +163,6 @@ CmissVariableFiniteelement_new(PyObject* self, PyObject* args)
 		}
 	}
 
-	printf("Creating new CmissVariableFiniteelement\n");
-
 	return (PyObject*)cmiss_variable;
 }
 
@@ -197,8 +191,6 @@ CmissVariableFiniteelement_check(PyObject* self, PyObject* args)
 
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
-
-	printf("Checking CmissVariableFiniteelement\n");
 
 	if (_CmissVariableFiniteelement_check(object))
 	{
@@ -233,8 +225,6 @@ CmissVariableFiniteelement_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.VariableFiniteelement pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissVariableFiniteelement\n");
 
 	return (PyObject*)cmiss_variable;
 }
@@ -296,7 +286,5 @@ initFinite_element(void)
 {
 	CmissVariableFiniteelementType.ob_type = &PyType_Type;
 	
-	printf ("In initFinite_element\n");
-
 	Py_InitModule("Finite_element", CmissVariableFiniteelementType_methods);
 }

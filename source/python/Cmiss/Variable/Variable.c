@@ -19,8 +19,6 @@ CmissVariable_get_variable_cpointer(PyObject* self, PyObject* args)
 	CmissVariableObject *cmiss_variable;
 	PyObject *object, *return_code;
 
-	printf("CmissVariable_get_variable_cpointer\n");
-
 	if (_CmissVariable_check(self))
 	{
 		cmiss_variable = (CmissVariableObject *)self;
@@ -45,8 +43,6 @@ CmissVariable_evaluate(PyObject* self, PyObject* args)
 	struct Cmiss_variable *variable_ptr;
 	struct Cmiss_variable_value *variable_value;
 	struct LIST(Cmiss_variable_value) *values;
-
-	printf("CmissVariable_evaluate\n");
 
 	new_value = (struct Cmiss_value *)NULL;
 	return_code = (PyObject *)NULL;
@@ -148,7 +144,6 @@ CmissVariable_evaluate(PyObject* self, PyObject* args)
 				}
 				if (class_string)
 				{
-					printf ("Creating a result in class %s\n", class_string);
 					/* Load the module of the class that we want to cast the pointer into */
 					if (value_module = PyImport_ImportModule(class_string))
 					{
@@ -197,8 +192,6 @@ CmissVariable_new(PyObject* self, PyObject* args)
 		ACCESS(Cmiss_variable)(cmiss_variable->variable);
 	}
 
-	printf("Creating new CmissVariable\n");
-
 	return (PyObject*)cmiss_variable;
 }
 
@@ -227,8 +220,6 @@ CmissVariable_check(PyObject* self, PyObject* args)
 
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
-
-	printf("Checking CmissVariable\n");
 
 	if (_CmissVariable_check(object))
 	{
@@ -263,8 +254,6 @@ CmissVariable_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Variable pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissVariable\n");
 
 	return (PyObject*)cmiss_variable;
 }
@@ -326,7 +315,5 @@ initVariable(void)
 {
 	CmissVariableType.ob_type = &PyType_Type;
 	
-	printf ("In initVariable\n");
-
 	Py_InitModule("Variable", CmissVariableType_methods);
 }

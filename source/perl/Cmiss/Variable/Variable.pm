@@ -52,6 +52,9 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
+use Cmiss;
+Cmiss::require_library('cmgui_computed_variable');
+
 sub new
 {
 	my ($class, %arg) = @_;

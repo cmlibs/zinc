@@ -19,8 +19,6 @@ CmissFEnode_get_fe_node_cpointer(PyObject* self, PyObject* args)
 	CmissFEnodeObject *cmiss_fe_node;
 	PyObject *object, *return_code;
 
-	printf("CmissFEnode_get_fe_node_cpointer\n");
-
 	if (_CmissFEnode_check(self))
 	{
 		cmiss_fe_node = (CmissFEnodeObject *)self;
@@ -68,8 +66,6 @@ CmissFEnode_check(PyObject* self, PyObject* args)
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
 
-	printf("Checking CmissFEnode\n");
-
 	if (_CmissFEnode_check(object))
 	{
 		return_code = PyInt_FromLong(1);
@@ -103,8 +99,6 @@ CmissFEnode_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract FE_node pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping Cmiss.FE_node\n");
 
 	return (PyObject*)cmiss_fe_node;
 }
@@ -164,7 +158,5 @@ initFE_node(void)
 {
 	CmissFEnodeType.ob_type = &PyType_Type;
 	
-	printf ("In initFE_node\n");
-
 	Py_InitModule("FE_node", CmissFEnodeType_methods);
 }

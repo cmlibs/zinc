@@ -20,8 +20,6 @@ CmissValueFEvaluevector_get_matrix_cpointer(PyObject* self, PyObject* args)
 	PyObject *object, *return_code;
 	struct FEvaluevector *matrix;
 
-	printf("CmissValueFEvaluevector_get_value_matrix_cpointer\n");
-
 	if (_CmissValueFEvaluevector_check(self))
 	{
 		cmiss_value_matrix = (CmissValueFEvaluevectorObject *)self;
@@ -130,8 +128,6 @@ CmissValueFEvaluevector_check(PyObject* self, PyObject* args)
 	if (!PyArg_ParseTuple(args,"O:check", &object)) 
 		return NULL;
 
-	printf("Checking CmissValueFEvaluevector\n");
-
 	if (_CmissValueFEvaluevector_check(object))
 	{
 		return_code = PyInt_FromLong(1);
@@ -165,8 +161,6 @@ CmissValueFEvaluevector_wrap(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Value pointer.");
 		return NULL;			 
 	}
-
-	printf("Wrapping CmissValueFEvaluevector\n");
 
 	return (PyObject*)cmiss_value;
 }
@@ -263,7 +257,5 @@ initFE_value_vector(void)
 {
 	CmissValueFEvaluevectorType.ob_type = &PyType_Type;
 	
-	printf ("In initFE_value_vector\n");
-
 	Py_InitModule("FE_value_vector", CmissValueFEvaluevectorType_methods);
 }
