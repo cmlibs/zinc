@@ -18,6 +18,10 @@ the rig and signal information. rather that special structures.
 Global types
 ------------
 */
+
+/* else get those figure 8 shaped torsos*/
+#define ROUND_TORSO 1
+
 #if defined (UNEMAP_USE_NODES)
 struct Rig_node_sort
 /*******************************************************************************
@@ -811,14 +815,14 @@ configuration info.
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-int get_rig_node_group_map_electrode_position_min_max(struct GROUP(FE_node) *node_group,
+int get_node_group_position_min_max(struct GROUP(FE_node) *node_group,
 	struct FE_field *map_electrode_position_field,FE_value *min_x,FE_value *max_x,
   FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z);
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-Finds the min and max coordinates of the  <map_electrode_position_field>
+Finds the min and max coordinates of the  <position_field>
 in the <node_group>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
@@ -966,50 +970,6 @@ Given a <node>, finds the corresponding Device in <rig>.
 Currently matches the names.
 Does by matching the names. Therefore assume's device/node names are unique.
 If they're not, you'll get the first match.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int read_exnode_or_exelem_file_from_string(char *exnode_string,char *exelem_string,
-	char *name,struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node))*node_group_manager,
-	struct MANAGER(GROUP(FE_node))*data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager);
-/*******************************************************************************
-LAST MODIFIED :9 October 2000
-
-DESCRIPTION : given a string <exnode_string> containing an entire exnode file,
-XOR a string <exelem_string> containing an entire exelem file, reads in the node 
-or element group(s). Renames the first node or element group <name> 
-(i.e ignores the first node or element group name in <exnode_string>/<exelem_string>)
-Does all this by writing out <exnode_string>/<exelem_string> to a temporary file, 
-and reading it back in with read_FE_node_group/read_FE_element_group
-This is generally done so we can statically include an exnode or exelem file (in
-<exnode_string>/<exelem_string>)
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int read_exnode_and_exelem_file_from_string_and_offset(
-	char *exnode_string,char *exelem_string,
-	char *name,struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node))*node_group_manager,
-	struct MANAGER(GROUP(FE_node))*data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager);
-/*******************************************************************************
-LAST MODIFIED :9 October 2000
-
-DESCRIPTION :
-Given a string <exnode_string> containing an entire exnode file,and a string 
-<exelem_string> containing an entire exelem file, reads in the node and 
-element group(s), names them <name>, and shifts the node and element identifier 
-numbers to the end of the legal number range (INT_MAX).
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 

@@ -80,12 +80,12 @@ struct Position_min_max_iterator
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-used by get_rig_node_map_electrode_position_min_max
+used by get_node_position_min_max
 ==============================================================================*/
 {
 	FE_value max_x,min_x,max_y,min_y,max_z,min_z;
 	int count;
-	struct FE_field *map_electrode_position_field;
+	struct FE_field *position_field;
 };
 
 struct Set_map_electrode_position_info
@@ -6095,41 +6095,50 @@ cf file_read_FE_node_group() in import_finite_element.c
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int get_rig_node_map_electrode_position_min_max(struct FE_node *node,
+static int get_node_position_min_max(struct FE_node *node,
 	void *position_min_max_iterator_void)
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-Finds the min and max coordinates of the  <map_electrode_position_field>
+Finds the min and max coordinates of the  <position_field>
 in the <node>.
-Note: map_electrode_position_field  is cylindrical polar, convert to rc.
 ==============================================================================*/
 {	
 	struct FE_field_component component;
-	FE_value c0,c1,c2,x_value,y_value,z_value;
+	FE_value c0,c1,c2,dest_coordinates[3],source_coordinates[3],x_value,
+		y_value,z_value;
 	int return_code;			
 	struct Position_min_max_iterator *position_min_max_iterator;
-	
+	struct Coordinate_system *source_coordinate_system,dest_coordinate_system;
+
 	return_code=1;
-	ENTER(get_rig_node_map_electrode_position_min_max);
+	ENTER(get_node_position_min_max);
+	source_coordinate_system=(struct Coordinate_system *)NULL;
 	if((node)&&(position_min_max_iterator_void))
 	{
 		position_min_max_iterator=(struct Position_min_max_iterator *)
 			position_min_max_iterator_void;	
-		if(position_min_max_iterator&&position_min_max_iterator->map_electrode_position_field)
+		if(position_min_max_iterator&&position_min_max_iterator->position_field)
 		{													 
-			component.field=position_min_max_iterator->map_electrode_position_field;
+			component.field=position_min_max_iterator->position_field;
 			component.number=0;
 			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c0);
 			component.number=1;
 			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c1);
 			component.number=2;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c2);
-			/*map_electrode_position_field is cylindrical polar */
-			/*perhaps should perform check*/
-			cylindrical_polar_to_cartesian(c0,c1,c2,&x_value,&y_value,&z_value,
-				(FE_value *)NULL);						
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c2);			
+			source_coordinate_system=get_FE_field_coordinate_system(component.field);
+			dest_coordinate_system.type=RECTANGULAR_CARTESIAN;
+			source_coordinates[0]=c0;
+			source_coordinates[1]=c1;
+			source_coordinates[2]=c2;
+			convert_Coordinate_system(source_coordinate_system,source_coordinates,
+				&dest_coordinate_system,dest_coordinates,(float *)NULL);
+			x_value=dest_coordinates[0];
+			y_value=dest_coordinates[1];
+			z_value=dest_coordinates[2];
+
 			if(x_value>position_min_max_iterator->max_x)
 			{
 				position_min_max_iterator->max_x=x_value;
@@ -6158,69 +6167,77 @@ Note: map_electrode_position_field  is cylindrical polar, convert to rc.
 		}	/* if(min_max_iterator */
 		else
 		{
-			display_message(ERROR_MESSAGE,"get_rig_node_map_electrode_position_min_max."
+			display_message(ERROR_MESSAGE,"get_node_position_min_max."
 				" min_max_iterator NULL ");
 			return_code=0;
 		}	
 	}/* if((node)&&(position_min_max_iterator_void)) */
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_rig_node_map_electrode_position_min_max."
+		display_message(ERROR_MESSAGE,"get_node_position_min_max."
 			" Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}/* get_rig_node_map_electrode_position_min_max*/
+}/* get_node_position_min_max*/
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-int get_rig_node_group_map_electrode_position_min_max(struct GROUP(FE_node) *node_group,
-	struct FE_field *map_electrode_position_field,FE_value *min_x,FE_value *max_x,
+int get_node_group_position_min_max(struct GROUP(FE_node) *node_group,
+	struct FE_field *position_field,FE_value *min_x,FE_value *max_x,
   FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 16 October 2000
 
 DESCRIPTION :
-Finds the min and max coordinates of the  <map_electrode_position_field>
+Finds the min and max coordinates of the  <position_field>
 in the <node_group>. Note: Not necessarily rectangular catresian coords!
 ==============================================================================*/
 {	
 
-	FE_value value;
+	FE_value dest_coordinates[3],source_coordinates[3];
 	int return_code;
+	struct Coordinate_system *source_coordinate_system,dest_coordinate_system;
 	struct Position_min_max_iterator position_min_max_iterator;
 	struct FE_node *node;
 	struct FE_field_component component;
 
-	ENTER(get_rig_node_group_map_electrode_position_min_max);
+	ENTER(get_node_group_position_min_max);
 	if (node_group&&min_x&&max_x&&min_y&&max_y&&min_z&&max_z
-		&&map_electrode_position_field)
+		&&position_field)
 	{	
 		position_min_max_iterator.count=0;
-		position_min_max_iterator.map_electrode_position_field=
-			map_electrode_position_field;	
+		position_min_max_iterator.position_field=position_field;	
 		component.number=0;
-		component.field=map_electrode_position_field;
+		component.field=position_field;
 		if(node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
 			(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group))
 		{
-			value=0;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-			position_min_max_iterator.min_x=value;
+			source_coordinates[0]=0;
+			component.number=0;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&source_coordinates[0]);
+			source_coordinates[1]=0;
+			component.number=1;		
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&source_coordinates[1]);
+			source_coordinates[2]=0;
+			component.number=2;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&source_coordinates[2]);
+			source_coordinate_system=get_FE_field_coordinate_system(position_field);
+			dest_coordinate_system.type=RECTANGULAR_CARTESIAN;
+			convert_Coordinate_system(source_coordinate_system,source_coordinates,
+				&dest_coordinate_system,dest_coordinates,(float *)NULL);
+			position_min_max_iterator.min_x=dest_coordinates[0];
 			position_min_max_iterator.max_x=position_min_max_iterator.min_x;
-			component.number=1;	
-			value=0;			
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-			position_min_max_iterator.min_y=value;
+			component.number=1;				
+			position_min_max_iterator.min_y=dest_coordinates[1];
 			position_min_max_iterator.max_y=position_min_max_iterator.min_y;
 			component.number=2;
-			value=0;
-			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-			position_min_max_iterator.min_z=value;
+			position_min_max_iterator.min_z=dest_coordinates[2];
 			position_min_max_iterator.max_z=position_min_max_iterator.min_z;
+
 			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
-				(get_rig_node_map_electrode_position_min_max,
+				(get_node_position_min_max,
 					(void *)&position_min_max_iterator,node_group);	
 			*min_x= position_min_max_iterator.min_x;
 			*max_x= position_min_max_iterator.max_x;
@@ -6231,14 +6248,14 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"get_rig_node_group_map_electrode_position_min_max."
+			display_message(ERROR_MESSAGE,"get_node_group_position_min_max."
 			" can't get node");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_rig_node_group_map_electrode_position_min_max."
+		display_message(ERROR_MESSAGE,"get_node_group_position_min_max."
 			" Invalid argument");
 		return_code=0;
 	}
@@ -6254,7 +6271,7 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 	LEAVE;
 
 	return (return_code);
-} /* get_rig_node_group_map_electrode_position_min_max */
+} /* get_node_group_position_min_max */
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_NODES)
@@ -6895,8 +6912,7 @@ This function is called iteratively by
 rig_node_group_set_map_electrode_position_lambda_r
 ==============================================================================*/
 {
-	FE_value c,torso_x,lambda,mu,s,t,theta,torso_major_r,torso_minor_r,
-		r,torso_y,x,y,z_cp,z_rc;	
+	FE_value lambda,mu,theta,r,x,y,z_cp,z_rc;	
 	int return_code;	
 	struct FE_field_component component;	
 	struct FE_field *electrode_position_field,*map_electrode_position_field;
@@ -6904,7 +6920,10 @@ rig_node_group_set_map_electrode_position_lambda_r
 	struct MANAGER(FE_field) *field_manager;
 	struct MANAGER(FE_node) *node_manager;
 	struct Set_map_electrode_position_info *set_map_electrode_position_info;
-
+	/* ROUND_TORSO defined in rig_node.h */
+#if !defined (ROUND_TORSO) /*FOR AJP*/
+	FE_value c,torso_x,s,t,torso_major_r,torso_minor_r,torso_y;
+#endif /* defined (ROUND_TORSO)*/
 	ENTER(iterative_rig_node_set_map_electrode_position_lambda_r);
 	return_code=1;
 	node_unmanaged=(struct FE_node *)NULL;
@@ -6981,6 +7000,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 							/* convert coords to cylindrical polar */
 							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
 							/* change the r */
+							/* ROUND_TORSO defined in rig_node.h */
 #if defined (ROUND_TORSO) /*FOR AJP*/
 							r=set_map_electrode_position_info->value1;/* r_major */
 #else		
@@ -7502,261 +7522,4 @@ If they're not, you'll get the first match.
 }/* find_device_given_rig_node */
 #endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_3D)
-int read_exnode_or_exelem_file_from_string(char *exnode_string,char *exelem_string,
-	char *name,struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node))*node_group_manager,
-	struct MANAGER(GROUP(FE_node))*data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager)
-/*******************************************************************************
-LAST MODIFIED :9 October 2000
 
-DESCRIPTION : given a string <exnode_string> containing an entire exnode file,
-XOR a string <exelem_string> containing an entire exelem file, reads in the node 
-or element group(s). Renames the first node or element group <name> 
-(i.e ignores the first node or element group name in <exnode_string>/<exelem_string>)
-Does all this by writing out <exnode_string>/<exelem_string> to a temporary file, 
-and reading it back in with read_FE_node_group/read_FE_element_group
-This is generally done so we can statically include an exnode or exelem file (in
-<exnode_string>/<exelem_string>)
-==============================================================================*/
-{
-	int string_len;
-	char group_name_str[]=" Group name: ";
-	char *exnode_or_exelem_string,*line_str,*outstr;		
-	FILE *input_file,*output_file;
-	int return_code;
-
-	ENTER(read_exnode_or_exelem_file_from_string);
-	input_file=(FILE *)NULL;
-	output_file=(FILE *)NULL;
-	outstr=(char *)NULL;
-	line_str=(char *)NULL;		
-	return_code=0;
-	/* exnode_string XOR exelem_string defined, other NULL*/
-	if(((exnode_string&&!exelem_string)||(!exnode_string&&exelem_string))&&
-		fe_field_manager&&node_manager&&element_manager&&node_group_manager&&
-		data_group_manager&&element_group_manager)
-	{	
-		if(exnode_string)
-		{
-			exnode_or_exelem_string=exnode_string;
-		}
-		else
-		/* exelem_string */
-		{
-			exnode_or_exelem_string=exelem_string;
-		}
-		/* set up the new node group name */	
-		string_len = strlen(group_name_str);
-		string_len++;
-		string_len+=strlen(name);
-		string_len++;
-		ALLOCATE(line_str,char,string_len);
-		strcpy(line_str,group_name_str);
-		strcat(line_str,name);
-		strcat(line_str,"\n");	
-		/* open a temp file to write to */
-		if(output_file=fopen("temp_exnode_or_exelem_file", "w"))
-		{
-			/*write out the new group name */
-			if(fwrite(line_str,1,strlen(line_str),output_file))
-			{
-				/*move the start of the string to to the start of the second line (after the \n) */
-				/*(The first line is the group name and we've  just replaced this)*/
-				outstr=exnode_or_exelem_string;
-				while(*outstr!='\n')
-				{		
-					outstr++;				
-				}
-				/*move past the \n */
-				outstr++;
-				/*write the string to the temp file*/
-				if(fwrite(outstr,1,strlen(outstr),output_file))
-				{
-					fclose(output_file);
-					/* read the temp file in to a node or element group */
-					if (input_file=fopen("temp_exnode_or_exelem_file","r"))
-					{
-						if(exnode_string)
-						{
-							return_code=read_FE_node_group(input_file,fe_field_manager,
-								node_manager,element_manager,node_group_manager,data_group_manager,
-								element_group_manager);			
-						}
-						else
-						/* exelem_string */
-						{
-							return_code=read_FE_element_group(input_file,element_manager,
-								element_group_manager,fe_field_manager,node_manager,
-								node_group_manager,data_group_manager,basis_manager);	
-						}
-						fclose(input_file);
-					}
-				}
-				else
-				{
-					return_code=0;
-					fclose(output_file);
-					display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. failed to write file");
-				}
-			}
-			else
-			{
-				return_code=0;
-				fclose(output_file);
-				display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. failed to write name to file");
-			}			
-			/*remove the temp file*/						
-			remove("temp_exnode_or_exelem_file");				
-		}
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. faled to open file");
-		}	
-		DEALLOCATE(line_str);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. Invalid arguments");
-	}
-	LEAVE;
-	return(return_code);
-} /* read_exnode_or_exelem_file_from_string */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-int read_exnode_and_exelem_file_from_string_and_offset(
-	char *exnode_string,char *exelem_string,
-	char *name,struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node))*node_group_manager,
-	struct MANAGER(GROUP(FE_node))*data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager)
-/*******************************************************************************
-LAST MODIFIED :9 October 2000
-
-DESCRIPTION :
-Given a string <exnode_string> containing an entire exnode file,and a string 
-<exelem_string> containing an entire exelem file, reads in the node and 
-element group(s), names them <name>, and shifts the node and element identifier 
-numbers to the end of the legal number range (INT_MAX).
-==============================================================================*/
-{	
-	int number_of_elements,number_of_nodes,offset,return_code;
-	struct Change_identifier_data data;
-	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *node_group;
-
-	ENTER(read_exnode_and_exelem_file_from_string_and_offset);
-	node_group=(struct GROUP(FE_node) *)NULL;
-	element_group = (struct GROUP(FE_element) *) NULL;
-	data.node_manager = (struct MANAGER(FE_node) *)NULL;
-	data.element_manager = (struct MANAGER(FE_element) *)NULL;
-	if(exnode_string&&exelem_string&&fe_field_manager&&node_manager&&element_manager&&
-		node_group_manager&&data_group_manager&&element_group_manager&&basis_manager)
-	{
-		/* for now, can only change identifiers of nodes/elements if there's only ONE*/	
-		/* node/element group */
-		if((0==NUMBER_IN_MANAGER(GROUP(FE_element))(element_group_manager))&&
-			(0==NUMBER_IN_MANAGER(GROUP(FE_node))(node_group_manager)))
-		{				
-			/* read in the default torso mesh nodes and elements */
-			/* (cleaned up when the program shuts down) */		
-			return_code=read_exnode_or_exelem_file_from_string(exnode_string,
-				(char *)NULL,name,fe_field_manager,node_manager,element_manager,
-				node_group_manager,data_group_manager,element_group_manager,basis_manager);
-			return_code=read_exnode_or_exelem_file_from_string((char *)NULL,
-				exelem_string,name,fe_field_manager,node_manager,
-				element_manager,node_group_manager,data_group_manager,element_group_manager
-				,basis_manager);
-			/* now shift the nodes and elements */
-			if(return_code&&(node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
-				(name,node_group_manager))&&				
-			(number_of_nodes=NUMBER_IN_GROUP(FE_node)(node_group))&&
-			(element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-				(name,element_group_manager))&&
-			(number_of_elements=NUMBER_IN_GROUP(FE_element)(element_group)))
-			{				
-				/* offset the nodes and elements to INT_MAX-max(number_of_nodes,number_of_elements)*/
-				/*i.e right to the end of the legal numbers */
-				if(number_of_nodes>=number_of_elements)
-				{
-					offset=number_of_nodes;
-				}
-				else
-				{
-					offset=number_of_elements;
-				}
-				offset=INT_MAX-offset;			
-				data.element_offset = offset;
-				data.face_offset = 0;
-				data.line_offset = 0;
-				data.node_offset = offset;
-				/* shift nodes */
-				if (node_group)
-				{
-					data.count = 0;
-					data.node_manager = node_manager;
-					MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-					FOR_EACH_OBJECT_IN_GROUP(FE_node)(FE_node_change_identifier_sub,
-						(void *)&data, node_group);
-					MANAGER_END_CACHE(FE_node)(node_manager);
-					if (data.count != NUMBER_IN_GROUP(FE_node)(node_group))
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
-							"  Only able to update node numbers for %d nodes out of %d\n",
-							data.count, NUMBER_IN_GROUP(FE_node)(node_group));
-					}
-				}	
-				/* shift elements */		
-				if (element_group)
-				{
-					data.count = 0;
-					data.element_manager = element_manager;
-					MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-					FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-						FE_element_change_identifier_sub,
-						(void *)&data, element_group);
-					MANAGER_END_CACHE(FE_element)(element_manager);
-					if (data.count != NUMBER_IN_GROUP(FE_element)(element_group))
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"read_exnode_and_exelem_file_from_string_and_offset."
-							"  Only able to update element numbers for %d elements out of %d\n",
-							data.count, NUMBER_IN_GROUP(FE_element)(element_group));
-					}
-				}
-			}
-			else
-			{
-				return_code=0;
-				display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
-					" node or element groups empty");
-			}
-		}						
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
-				" Must be NO pre exisitng node and element groups when start unemap");
-		}
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
-			" Invalid arguments");
-	}
-	LEAVE;
-	return(return_code);
-}
-#endif /* defined (UNEMAP_USE_3D) */
