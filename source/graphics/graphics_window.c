@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 29 September 2000
+LAST MODIFIED : 2 November 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -2398,7 +2398,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 2 November 2000
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -2675,6 +2675,8 @@ will be printed on the windows title bar.
 								}
 								else
 								{
+									install_accelerators(graphics_window->window_shell,
+										graphics_window->window_shell);
 									/* turn on callbacks */
 									callback.procedure=Graphics_window_time_edit_CB;
 									callback.data=graphics_window;
