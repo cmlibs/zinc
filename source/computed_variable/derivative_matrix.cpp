@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : derivative_matrix.cpp
 //
-// LAST MODIFIED : 11 January 2005
+// LAST MODIFIED : 4 April 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -152,7 +152,7 @@ Derivative_matrix::~Derivative_matrix()
 Derivative_matrix Derivative_matrix::operator*(
 	const Derivative_matrix& derivative_g) const
 //******************************************************************************
-// LAST MODIFIED : 23 December 2004
+// LAST MODIFIED : 4 April 2005
 //
 // DESCRIPTION :
 // This function implements the chain rule for differentiation.
@@ -343,6 +343,33 @@ Derivative_matrix Derivative_matrix::operator*(
 									product_orders[l]=1;
 								}
 								product_orders[j]=order_result-j;
+								// initialize the variable assigment
+								// for each of the independent variables being differentiated
+								//   with respect to in the product have:
+								//   mapping_g - a reordering of the variables without
+								//     changing the orders of the partial derivatives.  It is
+								//     a location in order_g and sub_order_g
+								//   order_g - the order of the partial derivative they're in
+								//   sub_order_g - their position in the variables in partial
+								//     derivatives of the same order
+								r=0;
+								l=0;
+								while (l<=j)
+								{
+									q=0;
+									do
+									{
+										for (p=0;p<product_orders[l];p++)
+										{
+											mapping_g[r]=r;
+											order_g[r]=product_orders[l];
+											sub_order_g[r]=q;
+											r++;
+											q++;
+										}
+										l++;
+									} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
+								}
 								// loop over the possible ways of dividing the order_result
 								//   independent variables, in mapping_result, into j+1
 								//   non-empty sets, where the order of the sets and the order
@@ -355,6 +382,8 @@ Derivative_matrix Derivative_matrix::operator*(
 								//   - add the result to result
 								do
 								{
+#if defined (OLD_CODE)
+//???DB.  Shifted to before loop and when product_orders is changed
 									// initialize the variable assigment
 									// for each of the independent variables being differentiated
 									//   with respect to in the product have:
@@ -382,10 +411,12 @@ Derivative_matrix Derivative_matrix::operator*(
 											l++;
 										} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
 									}
+#endif // defined (OLD_CODE)
 									// find the column numbers of matrix g for the partial
 									//   derivatives in the product
 									// r is the number of the partial derivative within partial
 									//   derivatives of the same order
+#if defined (OLD_CODE)
 									r=0;
 									for (l=0;l<=j;l++)
 									{
@@ -452,6 +483,85 @@ Derivative_matrix Derivative_matrix::operator*(
 											r=0;
 										}
 									}
+#else // defined (OLD_CODE)
+									r=order_result-1;
+									l=j+1;
+									while (l>0)
+									{
+										l--;
+										// initialize the value position within the partial
+										//   derivative of f
+										index_f[l]=0;
+										// determine which independent variables are used in the
+										//   partial derivative of g
+										matrix_g=derivative_g.begin();
+										matrix_g--;
+										offset_g=1;
+#if defined (OLD_CODE)
+										for (p=0;p<order;p++)
+										{
+											offset_g *= 2;
+										}
+										column_numbers_g[l]=0;
+										p=order;
+										q=product_orders[l];
+										while (p>0)
+										{
+											p--;
+											offset_g /= 2;
+											if ((q>0)&&(p==mapping_result[mapping_g[r]]))
+											{
+												column_numbers_g[l]=numbers_of_independent_values[p]*
+													column_numbers_g[l]+index_g[mapping_g[r]];
+												q--;
+												r--;
+											}
+											else
+											{
+												//???DB.  matrix_g -= offset_g;
+												for (s=offset_g;s>0;s--)
+												{
+													matrix_g--;
+												}
+											}
+										}
+#else // defined (OLD_CODE)
+										q=product_orders[l];
+										column_numbers_g[l]=0;
+										for (p=0;p<order;p++)
+										{
+											offset_g *= 2;
+											if ((q>0)&&(p==mapping_result[mapping_g[r-q+1]]))
+											{
+												column_numbers_g[l]=numbers_of_independent_values[p]*
+													column_numbers_g[l]+index_g[mapping_g[r-q+1]];
+												q--;
+											}
+										}
+										p=order;
+										q=product_orders[l];
+										while (p>0)
+										{
+											p--;
+											offset_g /= 2;
+											if ((q>0)&&(p==mapping_result[mapping_g[r]]))
+											{
+												q--;
+												r--;
+											}
+											else
+											{
+												//???DB.  matrix_g -= offset_g;
+												for (s=offset_g;s>0;s--)
+												{
+													matrix_g--;
+												}
+											}
+										}
+#endif // defined (OLD_CODE)
+										matrices_g[l]=matrix_g;
+									}
+#endif // defined (OLD_CODE)
 									number_of_columns_f=matrix_f->size2();
 									// loop across the row of matrix_f and down the columns of
 									//   matrix_g
@@ -614,6 +724,26 @@ Derivative_matrix Derivative_matrix::operator*(
 												// have found a new choice of set sizes re-initialize
 												//   the variable assignment
 												(product_orders[l-1])++;
+												// initialize the variable assigment
+												r=0;
+												s=0;
+												while (s<=j)
+												{
+													q=0;
+													do
+													{
+														for (p=0;p<product_orders[s];p++)
+														{
+															mapping_g[r]=r;
+															order_g[r]=product_orders[s];
+															sub_order_g[r]=q;
+															r++;
+															q++;
+														}
+														s++;
+													} while ((s<=j)&&
+														(product_orders[s]==product_orders[s-1]));
+												}
 											}
 										}
 									}
@@ -680,7 +810,7 @@ Derivative_matrix Derivative_matrix::operator*(
 
 Derivative_matrix Derivative_matrix::inverse()
 //******************************************************************************
-// LAST MODIFIED : 23 December 2004
+// LAST MODIFIED : 4 April 2005
 //
 // DESCRIPTION :
 // Compute the composition inverse from the chain rule and the relation
@@ -891,6 +1021,35 @@ Derivative_matrix Derivative_matrix::inverse()
 								product_orders[l]=1;
 							}
 							product_orders[j]=order_result-j;
+							// initialize the variable assigment
+							// for each of the independent variables being
+							//   differentiated with respect to in the product have:
+							//   mapping_g - a reordering of the variables without
+							//     changing the orders of the partial derivatives.  It
+							//     is a location in order_g and sub_order_g
+							//   order_g - the order of the partial derivative they're
+							//     in
+							//   sub_order_g - their position in the variables in
+							//     partial derivatives of the same order
+							r=0;
+							l=0;
+							while (l<=j)
+							{
+								q=0;
+								do
+								{
+									for (p=0;p<product_orders[l];p++)
+									{
+										mapping_g[r]=r;
+										order_g[r]=product_orders[l];
+										sub_order_g[r]=q;
+										r++;
+										q++;
+									}
+									l++;
+								} while ((l<=j)&&
+									(product_orders[l]==product_orders[l-1]));
+							}
 							// loop over the possible ways of dividing the order_result
 							//   independent variables into j+1 non-empty sets, where the
 							//   order of the sets and the order within the sets are not
@@ -903,6 +1062,8 @@ Derivative_matrix Derivative_matrix::inverse()
 							//   - add the result to result
 							do
 							{
+#if defined (OLD_CODE)
+//???DB.  Shifted to before loop and when product_orders is changed
 								// initialize the variable assigment
 								// for each of the independent variables being
 								//   differentiated with respect to in the product have:
@@ -932,6 +1093,7 @@ Derivative_matrix Derivative_matrix::inverse()
 									} while ((l<=j)&&
 										(product_orders[l]==product_orders[l-1]));
 								}
+#endif // defined (OLD_CODE)
 								// find the column numbers of matrix g for the partial
 								//   derivatives in the product
 								// r is the number of the partial derivative within partial
@@ -1166,6 +1328,26 @@ Derivative_matrix Derivative_matrix::inverse()
 											// have found a new choice of set sizes re-initialize
 											//   the variable assignment
 											(product_orders[l-1])++;
+											// initialize the variable assigment
+											r=0;
+											s=0;
+											while (s<=j)
+											{
+												q=0;
+												do
+												{
+													for (p=0;p<product_orders[s];p++)
+													{
+														mapping_g[r]=r;
+														order_g[r]=product_orders[s];
+														sub_order_g[r]=q;
+														r++;
+														q++;
+													}
+													s++;
+												} while ((s<=j)&&
+													(product_orders[s]==product_orders[s-1]));
+											}
 										}
 									}
 								}
