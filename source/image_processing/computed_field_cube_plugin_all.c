@@ -653,7 +653,7 @@ Perform MIL analysis on the image cache.
 						fprintf(fp,"BV(mm^3)         : %f\n",bv);
 						fprintf(fp,"TV(mm^3)         : %f\n",tv);
 						fprintf(fp,"BS(mm^2)         : %f\n",bs);
-						fprintf(fp,"BV/TV(%)         : %f\n",vf);
+						fprintf(fp,"BV/TV(percentage): %f\n",vf);
 						fprintf(fp,"BS/BV(mm^2 mm^-3): %f\n",sv);
 						fprintf(fp,"Tb.Th(mm)        : %f\n",tb);
 						fprintf(fp,"Tb.N(mm^-1)      : %f\n",tpd);
