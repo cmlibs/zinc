@@ -120,34 +120,38 @@ static void print_menu(void)
 	printf("b) unemap_get_isolate_record_mode\n");
 	printf("c) unemap_get_maximum_number_of_samples  ");
 	printf("d) unemap_get_number_of_channels\n");
-	printf("e) unemap_get_number_of_samples_acquired  ");
-	printf("f) unemap_get_number_of_stimulators\n");
-	printf("g) unemap_get_power  ");
-	printf("h) unemap_get_sample_range  ");
-	printf("i) unemap_get_samples_acquired\n");
-	printf("j) unemap_get_samples_acquired_background  ");
-	printf("k) unemap_get_sampling\n");
-	printf("l) unemap_get_sampling_frequency  ");
-	printf("m) unemap_get_voltage_range\n");
-	printf("n) unemap_load_current_stimulating  ");
-	printf("o) unemap_load_voltage_stimulating\n");
-	printf("p) unemap_set_antialiasing_filter_frequency  ");
-	printf("q) unemap_set_channel_stimulating\n");
-	printf("r) unemap_set_gain  ");
-	printf("s) unemap_set_isolate_record_mode  ");
-	printf("t) unemap_set_power\n");
-	printf("u) unemap_set_powerup_antialiasing_filter_frequency\n");
-	printf("v) unemap_set_scrolling_channel  ");
-	printf("w) unemap_shutdown\n");
-	printf("x) unemap_start_calibrating  ");
-	printf("y) unemap_start_sampling\n");
-	printf("z) unemap_start_scrolling  ");
-	printf("A) unemap_start_stimulating\n");
-	printf("B) unemap_stop_calibrating  ");
-	printf("C) unemap_stop_sampling  ");
-	printf("D) unemap_stop_scrolling\n");
-	printf("E) unemap_stop_stimulating  ");
-	printf("F) unemap_write_samples_acquired  ");
+	printf("e) unemap_get_number_of_configured_channels\n");
+	printf("f) unemap_get_number_of_samples_acquired  ");
+	printf("g) unemap_get_number_of_stimulators\n");
+	printf("h) unemap_get_power  ");
+	printf("i) unemap_get_sample_range  ");
+	printf("j) unemap_get_samples_acquired\n");
+	printf("k) unemap_get_samples_acquired_background  ");
+	printf("l) unemap_get_sampling\n");
+	printf("m) unemap_get_sampling_frequency  ");
+	printf("n) unemap_get_scrolling_callback_frequency\n");
+	printf("o) unemap_get_scrolling_frequency  ");
+	printf("p) unemap_get_software_version\n");
+	printf("q) unemap_get_voltage_range  ");
+	printf("r) unemap_load_current_stimulating\n");
+	printf("s) unemap_load_voltage_stimulating  ");
+	printf("t) unemap_set_antialiasing_filter_frequency\n");
+	printf("u) unemap_set_channel_stimulating  ");
+	printf("v) unemap_set_gain\n");
+	printf("w) unemap_set_isolate_record_mode  ");
+	printf("x) unemap_set_power\n");
+	printf("y) unemap_set_powerup_antialiasing_filter_frequency  ");
+	printf("z) unemap_set_scrolling_channel\n");
+	printf("A) unemap_shutdown  ");
+	printf("B) unemap_start_calibrating  ");
+	printf("C) unemap_start_sampling\n");
+	printf("D) unemap_start_scrolling  ");
+	printf("E) unemap_start_stimulating  ");
+	printf("F) unemap_stop_calibrating\n");
+	printf("G) unemap_stop_sampling  ");
+	printf("H) unemap_stop_scrolling  ");
+	printf("I) unemap_stop_stimulating\n");
+	printf("J) unemap_write_samples_acquired  ");
 	printf("?\n");
 } /* print_menu */
 
@@ -360,6 +364,16 @@ static int process_keyboard(
 				} break;
 				case 'e':
 				{
+					int number_of_configured_channels;
+
+					return_code=unemap_get_number_of_configured_channels(
+						&number_of_configured_channels);
+					printf("return_code=%d\n",return_code);
+					printf("number_of_configured_channels=%d\n",
+						number_of_configured_channels);
+				} break;
+				case 'f':
+				{
 					unsigned long number_of_samples;
 
 					return_code=unemap_get_number_of_samples_acquired(
@@ -367,7 +381,7 @@ static int process_keyboard(
 					printf("return_code=%d\n",return_code);
 					printf("number_of_samples=%lu\n",number_of_samples);
 				} break;
-				case 'f':
+				case 'g':
 				{
 					int number_of_stimulators;
 
@@ -375,7 +389,7 @@ static int process_keyboard(
 					printf("return_code=%d\n",return_code);
 					printf("number_of_stimulators=%d\n",number_of_stimulators);
 				} break;
-				case 'g':
+				case 'h':
 				{
 					int on;
 
@@ -383,7 +397,7 @@ static int process_keyboard(
 					printf("return_code=%d\n",return_code);
 					printf("on=%d\n",on);
 				} break;
-				case 'h':
+				case 'i':
 				{
 					int channel_number;
 					long maximum_sample_value,minimum_sample_value;
@@ -396,7 +410,7 @@ static int process_keyboard(
 					printf("minimum_sample_value=%ld\n",minimum_sample_value);
 					printf("maximum_sample_value=%ld\n",maximum_sample_value);
 				} break;
-				case 'i':
+				case 'j':
 				{
 					int channel_number,number_of_channels,number_of_samples,
 						number_of_samples_returned;
@@ -440,7 +454,7 @@ static int process_keyboard(
 							number_of_samples_returned);
 					}
 				} break;
-				case 'j':
+				case 'k':
 				{
 					int channel_number,number_of_samples;
 
@@ -479,12 +493,12 @@ static int process_keyboard(
 						printf("\n");
 					}
 				} break;
-				case 'k':
+				case 'l':
 				{
 					return_code=unemap_get_sampling();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'l':
+				case 'm':
 				{
 					float frequency;
 
@@ -492,7 +506,31 @@ static int process_keyboard(
 					printf("return_code=%d\n",return_code);
 					printf("frequency=%g\n",frequency);
 				} break;
-				case 'm':
+				case 'n':
+				{
+					float frequency;
+
+					return_code=unemap_get_scrolling_callback_frequency(&frequency);
+					printf("return_code=%d\n",return_code);
+					printf("frequency=%g\n",frequency);
+				} break;
+				case 'o':
+				{
+					float frequency;
+
+					return_code=unemap_get_scrolling_frequency(&frequency);
+					printf("return_code=%d\n",return_code);
+					printf("frequency=%g\n",frequency);
+				} break;
+				case 'p':
+				{
+					int software_version;
+
+					return_code=unemap_get_software_version(&software_version);
+					printf("return_code=%d\n",return_code);
+					printf("software_version=%d\n",software_version);
+				} break;
+				case 'q':
 				{
 					float maximum_voltage,minimum_voltage;
 					int channel_number;
@@ -505,7 +543,7 @@ static int process_keyboard(
 					printf("minimum_voltage=%g\n",minimum_voltage);
 					printf("maximum_voltage=%g\n",maximum_voltage);
 				} break;
-				case 'n':
+				case 'r':
 				{
 					char file_name[121];
 					float *values,values_per_second;
@@ -539,7 +577,7 @@ static int process_keyboard(
 						printf("Error reading %s\n",file_name);
 					}
 				} break;
-				case 'o':
+				case 's':
 				{
 					char file_name[121];
 					float *values,values_per_second;
@@ -573,7 +611,7 @@ static int process_keyboard(
 						printf("Error reading %s\n",file_name);
 					}
 				} break;
-				case 'p':
+				case 't':
 				{
 					float frequency;
 					int channel_number;
@@ -586,7 +624,7 @@ static int process_keyboard(
 						frequency);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'q':
+				case 'u':
 				{
 					int channel_number,stimulating;
 
@@ -598,7 +636,7 @@ static int process_keyboard(
 						stimulating);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'r':
+				case 'v':
 				{
 					float pre_filter_gain,post_filter_gain;
 					int channel_number;
@@ -613,7 +651,7 @@ static int process_keyboard(
 						post_filter_gain);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 's':
+				case 'w':
 				{
 					int channel_number,isolate;
 
@@ -624,7 +662,7 @@ static int process_keyboard(
 					return_code=unemap_set_isolate_record_mode(channel_number,isolate);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 't':
+				case 'x':
 				{
 					int on;
 
@@ -633,7 +671,7 @@ static int process_keyboard(
 					return_code=unemap_set_power(on);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'u':
+				case 'y':
 				{
 					int channel_number;
 
@@ -643,7 +681,7 @@ static int process_keyboard(
 						channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'v':
+				case 'z':
 				{
 					int channel_number;
 
@@ -652,12 +690,12 @@ static int process_keyboard(
 					return_code=unemap_set_scrolling_channel(channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'w':
+				case 'A':
 				{
 					return_code=unemap_shutdown();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'x':
+				case 'B':
 				{
 					char file_name[121];
 					float *values,values_per_second;
@@ -719,17 +757,17 @@ static int process_keyboard(
 					}
 				} break;
 #endif /* defined (OLD_CODE) */
-				case 'y':
+				case 'C':
 				{
 					return_code=unemap_start_sampling();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'z':
+				case 'D':
 				{
 					return_code=unemap_start_scrolling();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'A':
+				case 'E':
 				{
 					return_code=unemap_start_stimulating();
 					printf("return_code=%d\n",return_code);
@@ -766,7 +804,7 @@ static int process_keyboard(
 					}
 				} break;
 #endif /* defined (OLD_CODE) */
-				case 'B':
+				case 'F':
 				{
 					int channel_number;
 
@@ -775,18 +813,18 @@ static int process_keyboard(
 					return_code=unemap_stop_calibrating(channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'C':
+				case 'G':
 				{
 					return_code=unemap_stop_sampling();
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'D':
+				case 'H':
 				{
 					return_code=unemap_stop_scrolling();
 					printf("return_code=%d\n",return_code);
 					number_of_scrolling_callbacks=0;
 				} break;
-				case 'E':
+				case 'I':
 				{
 					int channel_number;
 
@@ -795,7 +833,7 @@ static int process_keyboard(
 					return_code=unemap_stop_stimulating(channel_number);
 					printf("return_code=%d\n",return_code);
 				} break;
-				case 'F':
+				case 'J':
 				{
 					char file_name[81];
 					FILE *out_file;
