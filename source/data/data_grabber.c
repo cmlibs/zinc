@@ -434,18 +434,17 @@ Accepts input from one of the devices.
 #endif /* defined (EXT_INPUT) */
 
 #if defined (EXT_INPUT)
-static void dg_change_device(Widget input_module_widget,void *user_data,
-	void *temp_device)
+static void dg_change_device(Widget input_module_widget,
+	struct Input_module_widget_data *device_change,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 14 May 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Receives information from the input_module_widget to say which device is now
-being received to this client.
+being received by this client.
 ==============================================================================*/
 {
 	struct DG_struct *temp_data_grabber=user_data;
-	struct Input_module_widget_data *device_change=temp_device;
 
 	ENTER(dg_change_device);
 	USE_PARAMETER(input_module_widget);
@@ -1554,7 +1553,7 @@ Global Functions
 Widget create_data_grabber_widget(Widget *data_grabber_widget,Widget parent,
 	int mode)
 /*******************************************************************************
-LAST MODIFIED : 14 May 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Creates a data_grabber widget that will allow the user to choose an object based
@@ -1563,7 +1562,6 @@ upon its name.
 {
 	int i,init_widgets,n;
 	MrmType data_grabber_dialog_class;
-	struct Callback_data callback;
 	struct DG_struct *temp_data_grabber=NULL;
 	static MrmRegisterArg callback_list[]=
 	{
@@ -1691,10 +1689,9 @@ upon its name.
 						if (init_widgets)
 						{
 #if defined (EXT_INPUT)
-							callback.procedure=dg_change_device;
-							callback.data=temp_data_grabber;
-							input_module_widget_set_data(temp_data_grabber->
-								input_module_widget,INPUT_MODULE_DEVICE_CB,&callback);
+							Input_module_add_device_change_callback(
+								temp_data_grabber->input_module_widget,
+								dg_change_device,(void *)temp_data_grabber);
 #endif /* defined (EXT_INPUT) */
 							/* all of these use the same procedure, different data */
 							XtManageChild(temp_data_grabber->widget);
