@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 15 April 2002
+LAST MODIFIED : 6 May 2002
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -1464,7 +1464,7 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	int number_of_segments_along,int number_of_segments_around,
 	struct FE_element *top_level_element,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 6 May 2002
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
@@ -1481,11 +1481,12 @@ Notes:
 ==============================================================================*/
 {
 	FE_value coordinate_1,coordinate_2,coordinate_3,coordinates[3],cos_theta,
-		derivative_xi[3],distance,dS_dxi,end_aligned_normal[3],jacobian[9],
-		length,minimum_distance,normal_1,normal_2,normal_3,*radius_array,
-		radius_derivative,radius_value,sin_theta,theta,theta_change,vector[3],xi;
+		derivative_xi[3],distance,dS_dxi,end_aligned_normal[3],facet_angle,
+		jacobian[9],length,normal_1,normal_2,normal_3,
+		*radius_array,radius_derivative,radius_value,sin_theta,theta,theta_change,
+		xi,x,y;
 	GTDATA *data, *datum;
-	int i,j,k,minimum_offset,n_data_components,number_of_points;
+	int facet_offset,i,j,k,n_data_components,number_of_points;
 	struct GT_surface *surface;
 	Triple *derivative, *normal,*normalpoints,*point,*points,*point_s,
 		*point_t,*previous_point,*previous_normal,*texturepoints,*texture_coordinate,
@@ -1553,7 +1554,7 @@ Notes:
 					(*point)[1]=coordinates[1];
 					(*point)[2]=coordinates[2];
 					/* normalize the line direction (derivative) */
-					/* keep dS/dxi in the radius_aray for converting derivatives later */
+					/* keep dS/dxi in the radius_array for converting derivatives later */
 					dS_dxi = sqrt(derivative_xi[0]*derivative_xi[0]+
 						derivative_xi[1]*derivative_xi[1]+
 						derivative_xi[2]*derivative_xi[2]);
@@ -1606,7 +1607,7 @@ Notes:
 			{
 				/* Calculate the normals at the first and last points as we must line
 					up at these points so that the next elements join on correctly */
-				for (i=0;i<=number_of_segments_along;i+=number_of_segments_along)
+				for (i=0; i<=number_of_segments_along; i+=number_of_segments_along)
 				{
 					point = points + i * (number_of_segments_around+1);
 					derivative = normalpoints + i * (number_of_segments_around+1);
@@ -1614,46 +1615,80 @@ Notes:
 					derivative_xi[0] = (*derivative)[0];
 					derivative_xi[1] = (*derivative)[1];
 					derivative_xi[2] = (*derivative)[2];
+					dS_dxi = radius_array[3*i+2];
+					/* if the derivative is zero, use the change in location between
+						 this and the nearest point along the element so that the normal
+						 will at least remain normal to the axis of the cylinder */
+					if (0.0 == dS_dxi)
+					{
+						if (0 == i)
+						{
+							previous_point = point;
+							point = points + (i + 1) * (number_of_segments_around + 1);
+						}
+						else
+						{
+							previous_point =
+								points + (i - 1) * (number_of_segments_around + 1);
+						}
+						derivative_xi[0] = (*point)[0] - (*previous_point)[0];
+						derivative_xi[1] = (*point)[1] - (*previous_point)[1];
+						derivative_xi[2] = (*point)[2] - (*previous_point)[2];
+						/* normalise this pseudo derivative */
+						if (0.0 < (length = sqrt(derivative_xi[0]*derivative_xi[0] +
+							derivative_xi[1]*derivative_xi[1] +
+							derivative_xi[2]*derivative_xi[2])))
+						{
+							derivative_xi[0] /= length;
+							derivative_xi[1] /= length;
+							derivative_xi[2] /= length;
+						}
+						/* put it back in the derivatives; we know it is a zero derivative
+							 from the stored dS_dxi */
+						(*derivative)[0] = derivative_xi[0];
+						(*derivative)[1] = derivative_xi[1];
+						(*derivative)[2] = derivative_xi[2];
+					}
 					/* get any vector not aligned with derivative */
-					jacobian[0]=0.0;
-					jacobian[1]=0.0;
-					jacobian[2]=0.0;
+					jacobian[0] = 0.0;
+					jacobian[1] = 0.0;
+					jacobian[2] = 0.0;
 					/* make jacobian have 1.0 in the component with the least absolute
 						value in derivative_xi */
 					if (fabs(derivative_xi[0]) < fabs(derivative_xi[1]))
 					{
 						if (fabs(derivative_xi[2]) < fabs(derivative_xi[0]))
 						{
-							jacobian[2]=1.0;
+							jacobian[2] = 1.0;
 						}
 						else
 						{
-							jacobian[0]=1.0;
+							jacobian[0] = 1.0;
 						}
 					}
 					else
 					{
 						if (fabs(derivative_xi[2]) < fabs(derivative_xi[1]))
 						{
-							jacobian[2]=1.0;
+							jacobian[2] = 1.0;
 						}
 						else
 						{
-							jacobian[1]=1.0;
+							jacobian[1] = 1.0;
 						}
 					}
 					/* get cross product of the derivative and this vector
 						= vector normal to derivative */
 					/* Put this in the normal, we don't need the derivative anymore */
-					jacobian[3]=
-						derivative_xi[1]*jacobian[2]-derivative_xi[2]*jacobian[1];
-					jacobian[4]=
-						derivative_xi[2]*jacobian[0]-derivative_xi[0]*jacobian[2];
-					jacobian[5]=
-						derivative_xi[0]*jacobian[1]-derivative_xi[1]*jacobian[0];
+					jacobian[3] =
+						derivative_xi[1]*jacobian[2] - derivative_xi[2]*jacobian[1];
+					jacobian[4] =
+						derivative_xi[2]*jacobian[0] - derivative_xi[0]*jacobian[2];
+					jacobian[5] =
+						derivative_xi[0]*jacobian[1] - derivative_xi[1]*jacobian[0];
 					/* make normal into a unit vector */
-					if (0.0<(length=(float)sqrt((double)(jacobian[3]*jacobian[3]+
-						jacobian[4]*jacobian[4]+jacobian[5]*jacobian[5]))))
+					if (0.0 < (length = (float)sqrt((double)(jacobian[3]*jacobian[3] +
+						jacobian[4]*jacobian[4] + jacobian[5]*jacobian[5]))))
 					{
 						jacobian[3] /= length;
 						jacobian[4] /= length;
@@ -1718,6 +1753,8 @@ Notes:
 				derivative = normalpoints + number_of_segments_along * (number_of_segments_around+1);
 				normal = normalpoints + number_of_segments_along * (number_of_segments_around+1) + 1;
 
+				/* calculate theta, the angle from the end_aligned_normal to the
+					 propagated normal in a right hand sense about the derivative */
 				jacobian[0] = end_aligned_normal[0];
 				jacobian[1] = end_aligned_normal[1];
 				jacobian[2] = end_aligned_normal[2];
@@ -1726,50 +1763,32 @@ Notes:
 				jacobian[4]= (*derivative)[2]*jacobian[0]-(*derivative)[0]*jacobian[2];
 				jacobian[5]= (*derivative)[0]*jacobian[1]-(*derivative)[1]*jacobian[0];
 
-				for (j = 0 ; j < number_of_segments_around ; j++)
+				x = (*normal)[0] * jacobian[0] +
+				    (*normal)[1] * jacobian[1] +
+				    (*normal)[2] * jacobian[2];
+				y = (*normal)[0] * jacobian[3] +
+				    (*normal)[1] * jacobian[4] +
+				    (*normal)[2] * jacobian[5];
+				theta = atan2(y, x);
+				if (theta < 0.0)
 				{
-					theta=PI*2.*((float)j)/((float)number_of_segments_around);
-					cos_theta=cos(theta);
-					sin_theta=sin(theta);
-					vector[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-					vector[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-					vector[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-					distance=
-						(vector[0]-(*normal)[0])*(vector[0]-(*normal)[0])+
-						(vector[1]-(*normal)[1])*(vector[1]-(*normal)[1])+
-						(vector[2]-(*normal)[2])*(vector[2]-(*normal)[2]);
-					if ((j==0) || (distance<minimum_distance))
-					{
-						minimum_distance=distance;
-						minimum_offset=j;
-					}
+					theta += 2*PI;
 				}
-				theta = PI*2.*((float)minimum_offset)/((float)number_of_segments_around);
-				cos_theta=cos(theta);
-				sin_theta=sin(theta);
-				vector[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-				vector[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-				vector[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-				distance = vector[0] * (*normal)[0] +
-					vector[1] * (*normal)[1] + vector[2] * (*normal)[2];
-				/* Combat small rounding errors */
-				if (distance > 1.0)
+				facet_angle = 2*PI/number_of_segments_around;
+				/* calculate the number of times facet_angle can occur before theta */
+				facet_offset = theta / facet_angle;
+				/* get angle from the next lowest whole facet to propagated normal */
+				theta -= facet_offset*facet_angle;
+				/* nearest facet could be on the otherside of the propagated normal so
+					 handle this case; theta_change to nearest facet has opposite sign */
+				if (theta > 0.5*facet_angle)
 				{
-					distance = 1.0;
+					theta_change = facet_angle - theta;
+					facet_offset++;
 				}
-				if (distance < -1.0)
+				else
 				{
-					distance = -1.0;
-				}
-				theta_change = acos(distance);
-				/* Cross the vectors and dot with derivative to find sign */
-				jacobian[0] = vector[1] * (*normal)[2] - vector[2] * (*normal)[1];
-				jacobian[1] = vector[2] * (*normal)[0] - vector[0] * (*normal)[2];
-				jacobian[2] = vector[0] * (*normal)[1] - vector[1] * (*normal)[0];
-				if ((jacobian[0] * (*derivative)[0] + jacobian[1] * (*derivative)[1] + 
-					jacobian[2] * (*derivative)[2]) > 0)
-				{
-					theta_change *= -1.0;
+					theta_change = -theta;
 				}
 
 				/* Calculate the actual points and normals */
@@ -1793,18 +1812,18 @@ Notes:
 						jacobian[2] = end_aligned_normal[2];
 					}
 
-					jacobian[3]= (*derivative)[1]*jacobian[2]-(*derivative)[2]*jacobian[1];
-					jacobian[4]= (*derivative)[2]*jacobian[0]-(*derivative)[0]*jacobian[2];
-					jacobian[5]= (*derivative)[0]*jacobian[1]-(*derivative)[1]*jacobian[0];
+					derivative_xi[0] = (*derivative)[0];
+					derivative_xi[1] = (*derivative)[1];
+					derivative_xi[2] = (*derivative)[2];
+
+					jacobian[3]=derivative_xi[1]*jacobian[2]-derivative_xi[2]*jacobian[1];
+					jacobian[4]=derivative_xi[2]*jacobian[0]-derivative_xi[0]*jacobian[2];
+					jacobian[5]=derivative_xi[0]*jacobian[1]-derivative_xi[1]*jacobian[0];
 
 					/* Get the other stored values */
 					radius_value = radius_array[3*i];
 					radius_derivative = radius_array[3*i+1];
 					dS_dxi = radius_array[3*i+2];
-
-					derivative_xi[0] = (*derivative)[0];
-					derivative_xi[1] = (*derivative)[1];
-					derivative_xi[2] = (*derivative)[2];
 
 					/* Write the true normals and positions */
 					normal = normalpoints + i * (number_of_segments_around+1);				
@@ -1817,7 +1836,7 @@ Notes:
 						}
 						else
 						{
-							theta = PI*2.*((float)(j + minimum_offset))/
+							theta = PI*2.*((float)(j + facet_offset))/
 								((float)number_of_segments_around);
 						}
 						cos_theta=cos(theta);
@@ -1828,11 +1847,31 @@ Notes:
 						(point[j])[0]=(point[0])[0]+radius_value*(normal[j])[0];
 						(point[j])[1]=(point[0])[1]+radius_value*(normal[j])[1];
 						(point[j])[2]=(point[0])[2]+radius_value*(normal[j])[2];
-						if ((0<radius_derivative) && (0<dS_dxi))
+						if (radius_field && (0.0 != radius_derivative))
 						{
-							(normal[j])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
-							(normal[j])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
-							(normal[j])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
+							if (0.0 < dS_dxi)
+							{
+								(normal[j])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
+								(normal[j])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
+								(normal[j])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
+							}
+							else
+							{
+								/* a finite change of radius is happening in an infinitessimal
+									 space. Hence, make normal aligned with derivative */
+								if (radius_derivative < 0.0)
+								{
+									(normal[j])[0] = derivative_xi[0];
+									(normal[j])[1] = derivative_xi[1];
+									(normal[j])[2] = derivative_xi[2];
+								}
+								else
+								{
+									(normal[j])[0] = -derivative_xi[0];
+									(normal[j])[1] = -derivative_xi[1];
+									(normal[j])[2] = -derivative_xi[2];
+								}
+							}
 						}
 					}
 				}
