@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer.c
 
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
@@ -58,7 +58,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_viewer,Node_viewer,viewer_form)
 
 static int Node_viewer_set_viewer_node(struct Node_viewer *node_viewer)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Gets the current node from the select widget, makes a copy of it if not NULL,
@@ -66,24 +66,34 @@ and passes it to the node_viewer.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node *node,*node_copy,*temp_node;
+	struct FE_node *node, *node_copy, *temp_node;
 
 	ENTER(Node_viewer_set_viewer_node);
 	if (node_viewer)
 	{
-		if (node=SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget))
+		if (node = SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget))
 		{
-			node_copy=CREATE(FE_node)(get_FE_node_cm_node_identifier(node),node);
+			node_copy = CREATE(FE_node)(get_FE_node_cm_node_identifier(node), node);
 		}
 		else
 		{
-			node_copy=(struct FE_node *)NULL;
+			node_copy = (struct FE_node *)NULL;
 		}
 		/* make sure previous node is around while setting new one */
-		REACCESS(FE_node)(&temp_node,node_viewer->node_copy);
-		REACCESS(FE_node)(&(node_viewer->node_copy),node_copy);
-		node_viewer_widget_set_node(node_viewer->viewer_widget,node_copy);
-		REACCESS(FE_node)(&temp_node,(struct FE_node *)NULL);
+		if (node_viewer->node_copy)
+		{
+			temp_node = ACCESS(FE_node)(node_viewer->node_copy);
+		}
+		else
+		{
+			temp_node = (struct FE_node *)NULL;
+		}
+		REACCESS(FE_node)(&(node_viewer->node_copy), node_copy);
+		node_viewer_widget_set_node(node_viewer->viewer_widget, node_copy);
+		if (temp_node)
+		{
+			DEACCESS(FE_node)(&temp_node);
+		}
 		return_code=1;
 	}
 	else
@@ -98,9 +108,9 @@ and passes it to the node_viewer.
 } /* Node_viewer_set_viewer_node */
 
 static void Node_viewer_update_select_widget(Widget select_widget,
-	void *node_viewer_void,void *node_void)
+	void *node_viewer_void, void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Callback for change of selected node from select widget. Clears the global node
@@ -113,13 +123,17 @@ then passes it to the viewer.
 
 	ENTER(Node_viewer_update_select_widget);
 	USE_PARAMETER(select_widget);
-	if (node_viewer=(struct Node_viewer *)node_viewer_void)
+	if (node_viewer = (struct Node_viewer *)node_viewer_void)
 	{
 		FE_node_selection_begin_cache(node_viewer->node_selection);
 		FE_node_selection_clear(node_viewer->node_selection);
-		if (node=(struct FE_node *)node_void)
+		if (node = (struct FE_node *)node_void)
 		{
-			FE_node_selection_select_node(node_viewer->node_selection,node);
+			FE_node_selection_select_node(node_viewer->node_selection, node);
+		}
+		else
+		{
+			Node_viewer_set_viewer_node(node_viewer);
 		}
 		FE_node_selection_end_cache(node_viewer->node_selection);
 	}
@@ -135,13 +149,13 @@ static void Node_viewer_node_selection_change(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *changes,void *node_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Callback for change in the global node selection.
 ==============================================================================*/
 {
-	struct FE_node *last_selected_node,*select_node,*viewer_node;
+	struct FE_node *last_selected_node, *select_node;
 	struct Node_viewer *node_viewer;
 
 	ENTER(Node_viewer_node_selection_change);
@@ -149,16 +163,14 @@ Callback for change in the global node selection.
 		(node_viewer=(struct Node_viewer *)node_viewer_void))
 	{
 		/* get the last selected node and put it in the viewer */
-		select_node=
-			SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget);
-		viewer_node=node_viewer_widget_get_node(node_viewer->viewer_widget);
-		if ((last_selected_node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-			changes->newly_selected_node_list))||
-			((last_selected_node=select_node)&&IS_OBJECT_IN_LIST(FE_node)(
-				select_node,FE_node_selection_get_node_list(node_selection)))||
-			(last_selected_node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+		select_node = SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget);
+		if ((last_selected_node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
+			changes->newly_selected_node_list)) ||
+			((last_selected_node = select_node) && IS_OBJECT_IN_LIST(FE_node)(
+				select_node, FE_node_selection_get_node_list(node_selection))) ||
+			(last_selected_node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
 				FE_node_selection_get_node_list(node_selection))))
 		{
 			if (last_selected_node != select_node)
@@ -166,10 +178,7 @@ Callback for change in the global node selection.
 				SELECT_SET_SELECT_ITEM(FE_node)(node_viewer->select_widget,
 					last_selected_node);
 			}
-			if (last_selected_node != viewer_node)
-			{
-				Node_viewer_set_viewer_node(node_viewer);
-			}
+			Node_viewer_set_viewer_node(node_viewer);
 		}
 	}
 	else
@@ -446,13 +455,13 @@ Creates a dialog for choosing nodes and displaying and editing their fields.
 				}
 				if (initial_node)
 				{
-					node_viewer->node_copy=ACCESS(FE_node)(
-						CREATE(FE_node)(get_FE_node_cm_node_identifier(
-							initial_node),initial_node));
+					node_viewer->node_copy = ACCESS(FE_node)(
+						CREATE(FE_node)(get_FE_node_cm_node_identifier(initial_node),
+							initial_node));
 				}
 				else
 				{
-					node_viewer->node_copy=(struct FE_node *)NULL;
+					node_viewer->node_copy = (struct FE_node *)NULL;
 				}
 				node_viewer->node_viewer_address=
 					node_viewer_address;
