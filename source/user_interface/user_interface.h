@@ -264,7 +264,8 @@ DESCRIPTION :
 
 #if defined (MOTIF)
 int set_property_notify_callback(struct User_interface *user_interface,
-	Property_notify_callback property_notify_callback,void *property_notify_data);
+	Property_notify_callback property_notify_callback,void *property_notify_data,
+	Widget widget);
 /*******************************************************************************
 LAST MODIFIED : 18 November 1997
 

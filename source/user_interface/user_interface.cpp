@@ -448,54 +448,6 @@ for the <list_item> and sets <*(list_item->address)> to NULL.
 } /* destroy_window_shell */
 #endif /* defined (MOTIF) */
 
-#if defined (NEW_BUSY_CURSOR)
-int busy_cursor_on(
-#if defined (MOTIF)
-	Widget excluded_shell,
-#endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 29 April 1998
-
-DESCRIPTION :
-Switchs from the default cursor to the busy cursor for all shells except the
-<excluded_shell>.
-???DB.  Move in with windowing macros ?
-???SAB.  Trying to avoid the need to have a list maintained by us, rather just
-	get the available shells.  The problem is that although the parent of each
-	shell is the application shell the application shell has no children!
-???DB.  Doesn't currently work
-==============================================================================*/
-{
-	int i,number_of_children,return_code;
-#if defined (MOTIF)
-	Widget *child_list;
-	Window window;
-#endif /* defined (MOTIF) */
-
-	ENTER(busy_cursor_on);
-#if defined (MOTIF)
-	XtVaGetValues(user_interface->application_shell,
-		XmNchildren,&child_list,
-		XmNnumChildren,&number_of_children,
-		NULL);
-	for (i=0;i<number_of_children;i++)
-	{
-		if ((excluded_shell!=child_list[i])&&(window=XtWindow(child_list[i])))
-		{
-			XDefineCursor(XtDisplay(child_list[i]),window,busy_cursor);
-		}
-	}
-	return_code=1;
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
-	return_code=0;
-#endif /* defined (WINDOWS) */
-	LEAVE;
-
-	return (return_code);
-} /* busy_cursor_on */
-#else /* defined (NEW_BUSY_CURSOR) */
 int busy_cursor_on(
 #if defined (MOTIF)
 	Widget excluded_shell,
@@ -582,54 +534,7 @@ Switchs from the default cursor to the busy cursor for all shells except the
 
 	return (return_code);
 } /* busy_cursor_on */
-#endif /* defined (NEW_BUSY_CURSOR) */
 
-#if defined (NEW_BUSY_CURSOR)
-int busy_cursor_off(
-#if defined (MOTIF)
-	Widget excluded_shell,
-#endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 29 April 1998
-
-DESCRIPTION :
-Switchs from the busy cursor to the default cursor for all shells except the
-<excluded_shell>.
-???DB.  Move in with windowing macros ?
-???DB.  Doesn't currently work
-==============================================================================*/
-{
-	int i,number_of_children,return_code;
-#if defined (MOTIF)
-	Widget *child_list;
-	Window window;
-#endif /* defined (MOTIF) */
-
-	ENTER(busy_cursor_off);
-#if defined (MOTIF)
-	XtVaGetValues(user_interface->application_shell,
-		XmNchildren,&child_list,
-		XmNnumChildren,&number_of_children,
-		NULL);
-	for (i=0;i<number_of_children;i++)
-	{
-		if ((excluded_shell!=child_list[i])&&(window=XtWindow(child_list[i])))
-		{
-			XDefineCursor(XtDisplay(child_list[i]),window,None);
-		}
-	}
-	return_code=1;
-
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
-	return_code=0;
-#endif /* defined (WINDOWS) */
-	LEAVE;
-
-	return (return_code);
-} /* busy_cursor_off */
-#else /* defined (NEW_BUSY_CURSOR) */
 int busy_cursor_off(
 #if defined (MOTIF)
 	Widget excluded_shell,
@@ -754,7 +659,6 @@ Switchs from the busy cursor to the default cursor for all shells except the
 
 	return (return_code);
 } /* busy_cursor_off */
-#endif /* defined (NEW_BUSY_CURSOR) */
 
 #if defined (MOTIF)
 #if defined (TEST_TRUE_COLOUR_VISUAL)
@@ -1158,14 +1062,20 @@ for a response from a modal dialog).
 ==============================================================================*/
 {
 	int return_code;
+#if defined (OLD_CODE)
 #if defined (MOTIF)
 	XEvent event;
 #endif /* defined (MOTIF) */
+#endif /* defined (OLD_CODE) */
 
 	ENTER(application_main_step);
+#if defined (OLD_CODE)
 #if defined (MOTIF)
+	/* SAB We want the function not to block after processing a timer
+		event or an input event so I use XtAppProcessEvent instead */
 	XtAppNextEvent(user_interface->application_context,&event);
 	/* for communication with other applications */
+	/* SAB Replaced with an XtEventHandler registered with the correct shell */
 	if ((user_interface->property_notify_callback)&&
 		(PropertyNotify==event.type))
 	{
@@ -1173,10 +1083,13 @@ for a response from a modal dialog).
 			user_interface->property_notify_data,user_interface);
 	}
 #if defined (EXT_INPUT)
+	/* Spaceball and dials so not used */
 	input_module_process(&event,user_interface);
 #endif
 	XtDispatchEvent(&event);
 #endif /* defined (MOTIF) */
+#endif /* defined (OLD_CODE) */
+	XtAppProcessEvent(user_interface->application_context, XtIMAll);
 	return_code=1;
 	LEAVE;
 
@@ -1206,8 +1119,6 @@ DESCRIPTION :
 	if (user_interface)
 	{
 #if defined (MOTIF)
-		/* infinite loop */
-			/*???DB.  This should not be an infinite loop.  Set exit ? */
 		while (user_interface->continue_interface)
 		{
 			application_main_step(user_interface);
@@ -1256,9 +1167,44 @@ DESCRIPTION :
 	return (return_code);
 } /* application_main_loop */
 
+static void User_interface_property_notify_callback(Widget w, 
+	XtPointer user_interface_void, XEvent *event, Boolean *f)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Wrap the old callback so that we can use the XtEvent mechanism instead but keep
+the interface basically the same.
+==============================================================================*/
+{
+	struct User_interface *user_interface;
+
+	USE_PARAMETER(w);
+	USE_PARAMETER(f);
+	ENTER(User_interface_property_notify_callback);
+	if (user_interface = (struct User_interface *)user_interface_void)
+	{
+		if ((user_interface->property_notify_callback)&&
+			(PropertyNotify==event->type))
+		{
+			(user_interface->property_notify_callback)((XPropertyEvent *)(event),
+				user_interface->property_notify_data,user_interface);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_property_notify_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+
+} /* User_interface_property_notify_callback */
+
+
 #if defined (MOTIF)
 int set_property_notify_callback(struct User_interface *user_interface,
-	Property_notify_callback property_notify_callback,void *property_notify_data)
+	Property_notify_callback property_notify_callback,void *property_notify_data,
+	Widget widget)
 /*******************************************************************************
 LAST MODIFIED : 18 November 1997
 
@@ -1277,6 +1223,8 @@ communication with other applications.
 	{
 		user_interface->property_notify_callback=property_notify_callback;
 		user_interface->property_notify_data=property_notify_data;
+		XtAddEventHandler(widget, PropertyChangeMask, False, 
+			User_interface_property_notify_callback, (XtPointer)user_interface);
 		return_code=1;
 	}
 	else
