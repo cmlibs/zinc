@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 16 August 2000
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -2573,15 +2573,22 @@ already) and allows its contents to be modified.
 		}
 		else
 		{
-			/* get first available field, and set scale_factors for it to 1.0 */
-			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			/* get first available field, and set scale_factors for it to 0.0 */
+			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))&&
-				ALLOCATE(scale_factors,FE_value,source_field->number_of_components))
+				computed_field_component_operations_package->computed_field_manager))
 			{
-				for (i=0;i<source_field->number_of_components;i++)
+				number_of_scale_factors=source_field->number_of_components;
+			}
+			else
+			{
+				number_of_scale_factors=1;
+			}
+			if (ALLOCATE(scale_factors,FE_value,number_of_scale_factors))
+			{
+				for (i=0;i<number_of_scale_factors;i++)
 				{
-					scale_factors[i]=1.0;
+					scale_factors[i]=0.0;
 				}
 			}
 			else
@@ -2591,6 +2598,10 @@ already) and allows its contents to be modified.
 		}
 		if (return_code)
 		{
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
 			if ((current_token=state->current_token) &&
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
@@ -2611,12 +2622,6 @@ already) and allows its contents to be modified.
 				if (fuzzy_string_compare(current_token,"field"))
 				{
 					number_of_scale_factors=source_field->number_of_components;
-					/* must access objects for set functions */
-					if (source_field)
-					{
-						ACCESS(Computed_field)(source_field);
-					}
-
 					option_table = CREATE(Option_table)();
 					/* fields */
 					set_source_field_data.computed_field_manager=
@@ -3350,7 +3355,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the
 static int define_Computed_field_type_clamp_maximum(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 16 August 2000
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CLAMP_MAXIMUM (if it is not 
@@ -3388,13 +3393,20 @@ already) and allows its contents to be modified.
 		}
 		else
 		{
-			/* get first available field, and set maximums for it to 1.0 */
-			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			/* get first available field, and set maximums for it to 0.0 */
+			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))&&
-				ALLOCATE(maximums,FE_value,source_field->number_of_components))
+				computed_field_component_operations_package->computed_field_manager))
 			{
-				for (i=0;i<source_field->number_of_components;i++)
+				number_of_maximums=source_field->number_of_components;
+			}
+			else
+			{
+				number_of_maximums=1;
+			}
+			if (ALLOCATE(maximums,FE_value,number_of_maximums))
+			{
+				for (i=0;i<number_of_maximums;i++)
 				{
 					maximums[i]=0.0;
 				}
@@ -3406,6 +3418,10 @@ already) and allows its contents to be modified.
 		}
 		if (return_code)
 		{
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
 			if ((current_token=state->current_token) &&
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
@@ -3426,12 +3442,6 @@ already) and allows its contents to be modified.
 				if (fuzzy_string_compare(current_token,"field"))
 				{
 					number_of_maximums=source_field->number_of_components;
-					/* must access objects for set functions */
-					if (source_field)
-					{
-						ACCESS(Computed_field)(source_field);
-					}
-
 					option_table = CREATE(Option_table)();
 					/* fields */
 					set_source_field_data.computed_field_manager=
@@ -4165,7 +4175,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the
 static int define_Computed_field_type_clamp_minimum(struct Parse_state *state,
 	void *field_void,void *computed_field_component_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 16 August 2000
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CLAMP_MINIMUM (if it is not 
@@ -4203,13 +4213,20 @@ already) and allows its contents to be modified.
 		}
 		else
 		{
-			/* get first available field, and set minimums for it to 1.0 */
-			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			/* get first available field, and set minimums for it to 0.0 */
+			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))&&
-				ALLOCATE(minimums,FE_value,source_field->number_of_components))
+				computed_field_component_operations_package->computed_field_manager))
 			{
-				for (i=0;i<source_field->number_of_components;i++)
+				number_of_minimums=source_field->number_of_components;
+			}
+			else
+			{
+				number_of_minimums=1;
+			}
+			if (ALLOCATE(minimums,FE_value,number_of_minimums))
+			{
+				for (i=0;i<number_of_minimums;i++)
 				{
 					minimums[i]=0.0;
 				}
@@ -4221,6 +4238,10 @@ already) and allows its contents to be modified.
 		}
 		if (return_code)
 		{
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
 			if ((current_token=state->current_token) &&
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
@@ -4241,12 +4262,6 @@ already) and allows its contents to be modified.
 				if (fuzzy_string_compare(current_token,"field"))
 				{
 					number_of_minimums=source_field->number_of_components;
-					/* must access objects for set functions */
-					if (source_field)
-					{
-						ACCESS(Computed_field)(source_field);
-					}
-
 					option_table = CREATE(Option_table)();
 					/* fields */
 					set_source_field_data.computed_field_manager=
@@ -4987,13 +5002,20 @@ already) and allows its contents to be modified.
 		}
 		else
 		{
-			/* get first available field, and set offsets for it to 1.0 */
-			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			/* get first available field, and set offsets for it to 0.0 */
+			if (source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_component_operations_package->computed_field_manager))&&
-				ALLOCATE(offsets,FE_value,source_field->number_of_components))
+				computed_field_component_operations_package->computed_field_manager))
 			{
-				for (i=0;i<source_field->number_of_components;i++)
+				number_of_offsets=source_field->number_of_components;
+			}
+			else
+			{
+				number_of_offsets=1;
+			}
+			if (ALLOCATE(offsets,FE_value,number_of_offsets))
+			{
+				for (i=0;i<number_of_offsets;i++)
 				{
 					offsets[i]=0.0;
 				}
@@ -5005,6 +5027,10 @@ already) and allows its contents to be modified.
 		}
 		if (return_code)
 		{
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
 			if ((current_token=state->current_token) &&
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
@@ -5027,12 +5053,6 @@ already) and allows its contents to be modified.
 				if (fuzzy_string_compare(current_token,"field"))
 				{
 					number_of_offsets=source_field->number_of_components;
-					/* must access objects for set functions */
-					if (source_field)
-					{
-						ACCESS(Computed_field)(source_field);
-					}
-
 					option_table = CREATE(Option_table)();
 					/* field */
 					Option_table_add_entry(option_table,"field",&source_field,
