@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 18 October 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -3093,7 +3093,7 @@ Always called so that <module_starting_sample_number> and
 #if defined (NI_DAQ)
 static int set_NI_gain(struct NI_card *ni_card,int gain)
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Convenience function for setting the <ni_card> <gain>.  Doesn't change the gain
@@ -3102,92 +3102,123 @@ field of <ni_card>.
 {
 	int return_code,sampling_on;
 	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
-		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],i,status;
+		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],i,j,status;
+	struct NI_card *ni_card_temp;
 
 	ENTER(set_NI_gain);
 	return_code=0;
 	if (ni_card)
 	{
-		for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-		{
-			channel_vector[i]=i;
-			gain_vector[i]=(i16)gain;
-		}
 		if (sampling_on=module_sampling_on)
 		{
 			unemap_stop_sampling();
 		}
-		status=DAQ_Clear(ni_card->device_number);
-		if (0==status)
+		/* would like to be able to restart the rolling buffer for just <ni_card>,
+			but because the rolling buffer can only be restarted at the beginning,
+			all the cards have to be restarted, otherwise they'd be out of synch */
+		module_sample_buffer_size=0;
+		module_starting_sample_number=0;
+		ni_card_temp=module_NI_CARDS;
+		status=0;
+		j=module_number_of_NI_CARDS;
+		for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
 		{
-			if (module_NI_CARDS==ni_card)
+			channel_vector[i]=i;
+		}
+		while ((0==status)&&(j>0))
+		{
+			if (ni_card==ni_card_temp)
 			{
-				status=Config_DAQ_Event_Message(ni_card->device_number,
-					/* add message */(i16)1,/* channel string */"AI0",
-					/* send message every N scans */(i16)1,
-					(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
-					(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
-				if (0!=status)
+				for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
 				{
-					display_message(ERROR_MESSAGE,
-						"set_NI_gain.  Config_DAQ_Event_Message 1 failed.  %d %d",status,
-						module_scrolling_refresh_period);
-				}
-			}
-			status=DAQ_DB_Config(ni_card->device_number,/* enable */(i16)1);
-			if (0==status)
-			{
-				status=SCAN_Setup(ni_card->device_number,
-					NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
-				if (0==status)
-				{
-					status=SCAN_Start(ni_card->device_number,
-						(i16 *)(ni_card->hardware_buffer),
-						(u32)(ni_card->hardware_buffer_size),ni_card->time_base,
-						ni_card->sampling_interval,(i16)0,(u16)0);
-					if (0==status)
-					{
-						if (module_NI_CARDS==ni_card)
-						{
-							/*???DB.  I don't understand why this is needed, but if it is not
-								present, then get lots of extraneous callbacks (lParam is
-								wrong) */
-							status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
-								/* clear all messages */(i16)0,/* channel string */(char *)NULL,
-								/* send message every N scans */(i16)0,
-								(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,
-								(HWND)NULL,(i16)0,(u32)0);
-							if (0!=status)
-							{
-								display_message(ERROR_MESSAGE,
-									"set_NI_gain.  Config_DAQ_Event_Message 2 failed.  %d",
-									status);
-							}
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"set_NI_gain.  SCAN_Start failed.  %d",status);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"set_NI_gain.  SCAN_Setup failed.  %d",
-						status);
+					gain_vector[i]=(i16)gain;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"set_NI_gain.  DAQ_DB_Config failed.  %d",
+				for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
+				{
+					gain_vector[i]=(i16)(ni_card_temp->gain);
+				}
+			}
+			status=DAQ_Clear(ni_card_temp->device_number);
+			if (0==status)
+			{
+				if (module_NI_CARDS==ni_card_temp)
+				{
+					status=Config_DAQ_Event_Message(ni_card_temp->device_number,
+						/* add message */(i16)1,/* channel string */"AI0",
+						/* send message every N scans */(i16)1,
+						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
+						(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
+					if (0!=status)
+					{
+						display_message(ERROR_MESSAGE,
+							"set_NI_gain.  Config_DAQ_Event_Message 1 failed.  %d %d",status,
+							module_scrolling_refresh_period);
+					}
+				}
+				status=DAQ_DB_Config(ni_card_temp->device_number,/* enable */(i16)1);
+				if (0==status)
+				{
+					status=SCAN_Setup(ni_card_temp->device_number,
+						NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
+					if (0==status)
+					{
+						status=SCAN_Start(ni_card_temp->device_number,
+							(i16 *)(ni_card_temp->hardware_buffer),
+							(u32)(ni_card_temp->hardware_buffer_size),ni_card_temp->time_base,
+							ni_card_temp->sampling_interval,(i16)0,(u16)0);
+						if (0==status)
+						{
+							if (module_NI_CARDS==ni_card_temp)
+							{
+								/*???DB.  I don't understand why this is needed, but if it is
+									not present, then get lots of extraneous callbacks (lParam is
+									wrong) */
+								status=Config_DAQ_Event_Message(
+									module_NI_CARDS[0].device_number,
+									/* clear all messages */(i16)0,
+									/* channel string */(char *)NULL,
+									/* send message every N scans */(i16)0,
+									(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,(HWND)NULL,(i16)0,(u32)0);
+								if (0!=status)
+								{
+									display_message(ERROR_MESSAGE,
+										"set_NI_gain.  Config_DAQ_Event_Message 2 failed.  %d",
+										status);
+								}
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"set_NI_gain.  SCAN_Start failed.  %d",status);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_NI_gain.  SCAN_Setup failed.  %d",status);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_NI_gain.  DAQ_DB_Config failed.  %d",status);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"set_NI_gain.  DAQ_Clear failed.  %d",
 					status);
 			}
+			j--;
+			ni_card_temp++;
 		}
-		else
+		if (0==status)
 		{
-			display_message(ERROR_MESSAGE,"set_NI_gain.  DAQ_Clear failed.  %d",
-				status);
+			return_code=1;
 		}
 		if (sampling_on)
 		{
@@ -6608,7 +6639,6 @@ Otherwise the function fails.
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_get_samples_acquired);
-	return_code=0;
 #if defined (NI_DAQ)
 	/* check arguments */
 	if ((sample=samples)&&(0<=channel_number)&&
