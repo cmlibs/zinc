@@ -24,6 +24,7 @@ Functions for executing cmiss commands.
 #include "command/cmiss.h"
 #if !defined (WINDOWS_DEV_FLAG)
 #include "command/command_window.h"
+#include "command/example_path.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "command/parser.h"
 #if !defined (WINDOWS_DEV_FLAG)
@@ -118,6 +119,13 @@ Functions for executing cmiss commands.
 #include "view/coord_trans.h"
 #include "xvg/include/xvg_interface.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+#if defined (F90_INTERPRETER)
+#include "command/f90_interpreter.h"
+#else /* defined (F90_INTERPRETER) */
+#if defined (PERL_INTERPRETER)
+#include "command/perl_interpreter.h"
+#endif /* defined (PERL_INTERPRETER) */
+#endif /* defined (F90_INTERPRETER) */
 
 /*
 Module variables
@@ -159,7 +167,7 @@ Does not report any errors if the element is already in the list.
 {
 	int return_code;
 	struct Add_FE_element_to_list_if_in_range_data *element_in_range_data;
-
+	
 	ENTER(add_FE_element_to_list_if_in_range);
 	if (element&&(element_in_range_data=
 		(struct Add_FE_element_to_list_if_in_range_data *)
@@ -15281,8 +15289,8 @@ movie is being created.
 			/* width */
 			Option_table_add_entry(option_table,"width",&width,
 				NULL,set_int_non_negative);
-			/* graphics_window */
-			Option_table_add_entry(option_table,"graphics_window",&graphics_window,
+			/* window */
+			Option_table_add_entry(option_table,"window",&graphics_window,
 				command_data->graphics_window_manager,set_Graphics_window);
 			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors,not asking for help */
@@ -22079,7 +22087,24 @@ Executes a SET DIR command.
 					if (example_flag)
 					{
 						if (directory_name)
-						{
+						{							
+							/* Lookup the example path */
+							if (example_directory = 
+								resolve_example_path(command_data->examples_directory, directory_name))
+							{
+								if (command_data->example_directory)
+								{
+									DEALLOCATE(command_data->example_directory);
+								}
+								command_data->example_directory=example_directory;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"set_dir.  Unable to resolve example path.");
+								return_code = 0;
+							}
+#if defined (OLD_CODE)
 							/* construct the example directory path */
 							if ((directory_name_length=strlen(directory_name))>0)
 							{
@@ -22125,6 +22150,7 @@ Executes a SET DIR command.
 								display_message(ERROR_MESSAGE,
 									"set_dir.  Invalid example name");
 							}
+#endif /* defined (OLD_CODE) */
 						}
 						else
 						{
@@ -22366,6 +22392,194 @@ Executes a VARIABLE command.
 Global functions
 ----------------
 */
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+int cmiss_actually_execute_command(char *command_string,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION:
+==============================================================================*/
+{
+#if !defined (WINDOWS_DEV_FLAG)
+	char **token;
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+	int i,return_code;
+	struct Cmiss_command_data *command_data;
+#if !defined (WINDOWS_DEV_FLAG)
+	static struct Modifier_entry option_table[]=
+	{
+		{"assign","assign",NULL,execute_command_assign},
+		{"cell","cell",NULL,execute_command_cell},
+		{"command_window","command_window",NULL,modify_Command_window},
+		{"create","create",NULL,execute_command_create},
+		{"fem","fem",NULL,execute_command_cm},
+		{"gen","gen",NULL,execute_command_cm},
+		{"gfx",NULL,NULL,execute_command_gfx},
+#if !defined (NO_HELP)
+		{"help",NULL,NULL,execute_command_help},
+#endif /* !defined (NO_HELP) */
+		{"imp","imp",NULL,execute_command_imp},
+		{"open",NULL,NULL,execute_command_open},
+		{"quit",NULL,NULL,execute_command_quit},
+		{"list_memory",NULL,NULL,execute_command_list_memory},
+		{"read",NULL,NULL,execute_command_read},
+		{"set","set",NULL,execute_command_set},
+		{"system","system",NULL,execute_command_system},
+		{"unemap","unemap",NULL,execute_command_unemap},
+		{"var","var",NULL,execute_command_variable},
+		{NULL,NULL,NULL,execute_command_cm}
+	};
+	struct Parse_state *state;
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+	ENTER(cmiss_execute_command);
+	if (command_data=(struct Cmiss_command_data *)command_data_void)
+	{
+#if !defined (WINDOWS_DEV_FLAG)
+		if (state=create_Parse_state(command_string))
+			/*???DB.  create_Parse_state has to be extended */
+		{
+			i=state->number_of_tokens;
+			/* check for comment */
+			if (i>0)
+			{
+				/* add command to command history */
+				/*???RC put out processed tokens instead? */
+				display_message(INFORMATION_MESSAGE,
+					"%s\n", command_string);
+				/* check for a "<" as one of the of the tokens */
+					/*???DB.  Include for backward compatability.  Remove ? */
+				token=state->tokens;
+				while ((i>0)&&strcmp(*token,"<"))
+				{
+					i--;
+					token++;
+				}
+				if (i>0)
+				{
+					/* return to tree root */
+					return_code=set_command_prompt("",command_data->command_window);
+				}
+				else
+				{
+					/* assign */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* cell */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* command_window */
+					(option_table[i]).user_data=command_data->command_window;
+					i++;
+					/* create */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* fem */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* gen */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* gfx */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+#if !defined (NO_HELP)
+					/* help */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+#endif /* !defined (NO_HELP) */
+					/* imp */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* open */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* quit */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* list_memory */
+					(option_table[i]).user_data=NULL;
+					i++;
+					/* read */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* set */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* system */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* unemap */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* var */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					/* default */
+					(option_table[i]).user_data=command_data_void;
+					i++;
+					return_code=process_option(state,option_table);
+				}
+			}
+			if (command_data->command_window)
+			{
+				reset_command_box(command_data->command_window);
+			}
+			destroy_Parse_state(&state);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"cmiss_execute_command.  Could not create parse state");
+			return_code=0;
+		}
+#else
+		return_code=1;
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"cmiss_execute_command.  Missing command_data");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cmiss_execute_command */
+
+int cmiss_execute_command(char *command_string,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 24 March 2000
+
+DESCRIPTION:
+Takes a <command_string>, processes this through the F90 interpreter
+and then executes the returned strings
+==============================================================================*/
+{
+	int i,return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(cmiss_execute_command);
+	if (command_data=(struct Cmiss_command_data *)command_data_void)
+	{
+		if (command_data->command_window)
+		{
+			add_to_command_list(command_string,command_data->command_window);
+		}
+		cmiss_interpreter_execute_command(command_string, command_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"cmiss_execute_command.  Missing command_data");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cmiss_execute_command */
+#else /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 int cmiss_execute_command(char *command_string,void *command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 16 June 1999
@@ -22523,6 +22737,7 @@ Execute a <command_string>. If there is a command
 
 	return (return_code);
 } /* cmiss_execute_command */
+#endif  /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 int cmiss_set_command(char *command_string,void *command_data_void)
 /*******************************************************************************

@@ -126,6 +126,16 @@ DESCRIPTION :
 Execute a <command_string>.
 ==============================================================================*/
 
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+int cmiss_actually_execute_command(char *command_string,void *command_data);
+/*******************************************************************************
+LAST MODIFIED : 27 March 2000
+
+DESCRIPTION:
+Execute a <command_string>. If there is a command
+==============================================================================*/
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
+
 int cmiss_set_command(char *command_string,void *command_data_void);
 /*******************************************************************************
 LAST MODIFIED : 27 April 1999
