@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.h
 
-LAST MODIFIED : 20 March 2003
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -166,7 +166,7 @@ The columns are:
 		d(independent_variables[1]) ... d(independent_variables[order-1])
 ==============================================================================*/
 
-PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(FE_value);
+PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(derivative_matrix);
 
 int Computed_value_get_type_derivative_matrix(struct Computed_value *value,
 	struct Computed_variable **dependent_variable_address,int *order_address,
@@ -426,16 +426,16 @@ Evaluates the <derivative_matrix> for the <order> degree derivative of
 
 int Computed_variable_set_type_derivative(
 	struct Computed_variable *derivative,
-	struct Computed_variable *dependent_variable,
-	struct Computed_variable *independent_variable);
+	struct Computed_variable *dependent_variable,int order,
+	struct Computed_variable **independent_variables);
 /*******************************************************************************
-LAST MODIFIED : 7 March 2003
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Sets <derivative> to be the derivative of the <dependent_variable> with respect
-to the <independent_variable>.
-
-???DB.  Have an <order> and <independent_variables>?
+to the <independent_variables>.  This function ACCESSes the <dependent_variable>
+and <independent_variables>.  After success, the <derivative> is responsible for
+DEACCESS/DEALLOCATEing <dependent_variable> and <independent_variables>.
 ==============================================================================*/
 
 int Computed_variable_set_type_divergence(

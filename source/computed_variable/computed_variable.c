@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.c
 
-LAST MODIFIED : 20 March 2003
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -764,7 +764,7 @@ static char computed_variable_derivative_type_string[]="derivative";
 
 struct Computed_variable_derivative_type_specific_data
 /*******************************************************************************
-LAST MODIFIED : 10 February 2003
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -772,22 +772,46 @@ DESCRIPTION :
 	/* differentiate */
 	struct Computed_variable *variable;
 	/* with respect to */
-	struct Computed_variable *independent_variable;
+	int order;
+	struct Computed_variable **independent_variables;
 }; /* struct Computed_variable_derivative_type_specific_data */
 
 static START_COMPUTED_VARIABLE_CLEAR_TYPE_SPECIFIC_FUNCTION(derivative)
 {
+	int i;
+
 	DEACCESS(Computed_variable)(&(data->variable));
-	DEACCESS(Computed_variable)(&(data->independent_variable));
+	if (data->independent_variables)
+	{
+		for (i=0;i<data->order;i++)
+		{
+			DEACCESS(Computed_variable)(&((data->independent_variables)[i]));
+		}
+		DEALLOCATE(data->independent_variables);
+	}
 	return_code=1;
 }
 END_COMPUTED_VARIABLE_CLEAR_TYPE_SPECIFIC_FUNCTION(derivative)
 
 static START_COMPUTED_VARIABLE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(derivative)
 {
-	destination->variable=ACCESS(Computed_variable)(source->variable);
-	destination->independent_variable=
-		ACCESS(Computed_variable)(source->independent_variable);
+	int i;
+
+	if ((0<source->order)&&ALLOCATE(destination->independent_variables,
+		struct Computed_variable *,source->order))
+	{
+		destination->variable=ACCESS(Computed_variable)(source->variable);
+		destination->order=source->order;
+		for (i=0;i<source->order;i++)
+		{
+			(destination->independent_variables)[i]=
+				ACCESS(Computed_variable)((source->independent_variables)[i]);
+		}
+	}
+	else
+	{
+		DEALLOCATE(destination);
+	}
 }
 END_COMPUTED_VARIABLE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(derivative)
 
@@ -800,18 +824,24 @@ static START_COMPUTED_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 
 	data=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable);
-	ASSERT_IF(data&&(data->variable)&&(data->independent_variable),return_code,0)
+	ASSERT_IF(data&&(data->variable)&&(0<data->order)&&
+		(data->independent_variables),return_code,0)
 	{
 		if (ALLOCATE(augmented_independent_variables,struct Computed_variable *,
-			order+1))
+			order+(data->order)))
 		{
+			/*???DB.  Should be ACCESSing? */
 			for (i=0;i<order;i++)
 			{
 				augmented_independent_variables[i]=independent_variables[i];
 			}
-			augmented_independent_variables[order]=data->independent_variable;
-			return_code=Computed_variable_evaluate_derivative(data->variable,order+1,
-				augmented_independent_variables,
+			for (i=0;i<data->order;i++)
+			{
+				augmented_independent_variables[order+i]=
+					(data->independent_variables)[i];
+			}
+			return_code=Computed_variable_evaluate_derivative(data->variable,
+				order+(data->order),augmented_independent_variables,
 				(struct LIST(Computed_variable_value) *)NULL,value);
 			DEALLOCATE(augmented_independent_variables);
 		}
@@ -827,20 +857,21 @@ END_COMPUTED_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(derivative)
 
 struct Computed_variable_add_source_derivative_data
 /*******************************************************************************
-LAST MODIFIED : 11 February 2003
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	int order;
 	struct Computed_value *total_value;
-	struct Computed_variable *independent_variable;
+	struct Computed_variable **independent_variables;
 }; /* struct Computed_variable_add_source_derivative_data */
 
 static int Computed_variable_add_source_derivative(
 	struct Computed_variable *variable,struct Computed_variable *source_variable,
 	struct Computed_variable *independent_variable,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2003
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -863,8 +894,8 @@ DESCRIPTION :
 					&independent_variable,(struct LIST(Computed_variable_value) *)NULL,
 					value_1))
 				{
-					if (Computed_variable_evaluate_derivative(source_variable,1,
-						&(data->independent_variable),
+					if (Computed_variable_evaluate_derivative(source_variable,
+						data->order,data->independent_variables,
 						(struct LIST(Computed_variable_value) *)NULL,value_2))
 					{
 						return_code=Computed_value_multiply_and_accumulate(value_1,value_2,
@@ -921,20 +952,21 @@ static START_COMPUTED_VARIABLE_EVALUATE_TYPE_SPECIFIC_FUNCTION(derivative)
 	data=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable);
 	value=Computed_variable_value_get_value(variable_value);
-	ASSERT_IF(data&&(data->variable)&&(data->independent_variable)&&value,
-		return_code,0)
+	ASSERT_IF(data&&(data->variable)&&(0<data->order)&&
+		(data->independent_variables)&&value,return_code,0)
 	{
 		/* derivative=
 			d(data->variable)/d(data->independent_variables)+
 			sum{d(data->variable)/d(data->variable->independent_variable)*
 			d(data->variable->source_variable)/d(data->independent_variables)}
 			*/
-		if (return_code=Computed_variable_evaluate_derivative(data->variable,1,
-			&(data->independent_variable),
+		if (return_code=Computed_variable_evaluate_derivative(data->variable,
+			data->order,data->independent_variables,
 			(struct LIST(Computed_variable_value) *)NULL,value))
 		{
 			source_variable_data.total_value=value;
-			source_variable_data.independent_variable=data->independent_variable;
+			source_variable_data.order=data->order;
+			source_variable_data.independent_variables=data->independent_variables;
 			return_code=Computed_variable_for_each_source_variable(variable,
 				Computed_variable_add_source_derivative,(void *)&source_variable_data);
 		}
@@ -972,104 +1004,131 @@ END_COMPUTED_VARIABLE_GET_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION(
 
 static START_COMPUTED_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION(derivative)
 {
-	int number_of_columns,number_of_rows;
-	struct Computed_value *type_1,*type_2;
+	int i,number_of_columns,number_of_rows,temp_number_of_columns;
+	struct Computed_value *temp_type_1,*temp_type_2;
+	struct Computed_variable **independent_variables;
 	struct Computed_variable_derivative_type_specific_data *data;
 
 	data=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable);
-	ASSERT_IF(data&&(data->variable),return_code,0)
+	ASSERT_IF(data&&(data->variable)&&(0<data->order)&&
+		(data->independent_variables),return_code,0)
 	{
-		if (type_1=CREATE(Computed_value)())
+		if (temp_type_1=CREATE(Computed_value)())
 		{
-			if (type_2=CREATE(Computed_value)())
+			if (return_code=Computed_variable_get_value_type(data->variable,
+				temp_type_1))
 			{
-				if (return_code=Computed_variable_get_value_type(data->variable,type_1))
+				/*???DB.  Not general, but hopefully OK for a while */
+				number_of_rows=0;
+				number_of_columns=1;
+				if (Computed_value_is_type_FE_value(temp_type_1))
 				{
-					if (return_code=Computed_variable_get_value_type(data->variable,
-						type_2))
+					number_of_rows=1;
+				}
+				else
+				{
+					if (Computed_value_is_type_FE_value_vector(temp_type_1))
 					{
-						/*???DB.  Not general, but hopefully OK for a while */
-						number_of_rows=0;
-						if (Computed_value_is_type_FE_value(type_1))
+						if (!Computed_value_get_type_FE_value_vector(temp_type_1,
+							&number_of_rows,(FE_value **)NULL))
 						{
-							number_of_rows=1;
+							number_of_rows=0;
 						}
-						else
+					}
+					else
+					{
+						if (Computed_value_is_type_derivative_matrix(temp_type_1))
 						{
-							if (Computed_value_is_type_FE_value_vector(type_1))
+							if (Computed_value_get_type_derivative_matrix(temp_type_1,
+								(struct Computed_variable **)NULL,(int *)NULL,
+								(struct Computed_variable ***)NULL,&temp_type_2))
 							{
-								if (!Computed_value_get_type_FE_value_vector(type_1,
-									&number_of_rows,(FE_value **)NULL))
+								if (Computed_value_is_type_FE_value_matrix(temp_type_2))
 								{
-									number_of_rows=0;
-								}
-							}
-						}
-						if (0<number_of_rows)
-						{
-							if (Computed_value_is_type_FE_value(type_2))
-							{
-								number_of_columns=1;
-							}
-							else
-							{
-								if (Computed_value_is_type_FE_value_vector(type_2))
-								{
-									if (!Computed_value_get_type_FE_value_vector(type_2,
-										&number_of_columns,(FE_value **)NULL))
+									if (!Computed_value_get_type_FE_value_matrix(temp_type_2,
+										&number_of_rows,&number_of_columns,(FE_value **)NULL))
 									{
-										number_of_columns=0;
+										number_of_rows=0;
 									}
 								}
 							}
-							if (0<number_of_columns)
-							{
-								if (1==number_of_columns)
-								{
-									if (1==number_of_rows)
-									{
-										return_code=Computed_value_set_type_FE_value(type,
-											(FE_value)0);
-									}
-									else
-									{
-										return_code=Computed_value_set_type_FE_value_vector(type,
-											number_of_rows,(FE_value *)NULL);
-									}
-								}
-								else
-								{
-									return_code=Computed_value_set_type_FE_value_matrix(type,
-										number_of_rows,number_of_columns,(FE_value *)NULL);
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							return_code=0;
 						}
 					}
 				}
-				DESTROY(Computed_value)(&type_2);
+				if (0<number_of_rows)
+				{
+					i=0;
+					do
+					{
+						if (return_code=Computed_variable_get_value_type(
+							(data->independent_variables)[i],temp_type_1))
+						{
+							if (Computed_value_is_type_FE_value(temp_type_1))
+							{
+								number_of_columns=2*number_of_columns+1;
+							}
+							else
+							{
+								if (Computed_value_is_type_FE_value_vector(temp_type_1))
+								{
+									if (return_code=Computed_value_get_type_FE_value_vector(
+										temp_type_1,&temp_number_of_columns,(FE_value **)NULL))
+									{
+										number_of_columns=
+											number_of_columns*(temp_number_of_columns+1)+
+											temp_number_of_columns;
+									}
+								}
+							}
+						}
+						i++;
+					} while (return_code&&(i<data->order));
+					if (return_code&&(0<number_of_columns))
+					{
+						if (ALLOCATE(independent_variables,struct Computed_variable *,
+							data->order))
+						{
+							for (i=0;i<data->order;i++)
+							{
+								independent_variables[i]=(data->independent_variables)[i];
+							}
+							if (return_code=Computed_value_set_type_FE_value_matrix(
+								temp_type_1,number_of_rows,number_of_columns,(FE_value *)NULL))
+							{
+								if (!Computed_value_set_type_derivative_matrix(type,
+									data->variable,data->order,independent_variables,
+									temp_type_1))
+								{
+									return_code=0;
+								}
+							}
+							if (!return_code)
+							{
+								DEALLOCATE(independent_variables);
+							}
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
 			}
-			else
+			if (!return_code)
 			{
-				display_message(ERROR_MESSAGE,
-					"Computed_variable_derivative_get_value_type_type_specific.  "
-					"Could not create <type_2>");
+				DESTROY(Computed_value)(&temp_type_1);
 			}
-			DESTROY(Computed_value)(&type_1);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_variable_derivative_get_value_type_type_specific.  "
-				"Could not create <type_1>");
+				"Could not create <temp_type_1>");
 		}
 	}
 }
@@ -1105,15 +1164,21 @@ END_COMPUTED_VARIABLE_IS_INDEPENDENT_VARIABLE_OF_TYPE_SPECIFIC_FUNCTION(derivati
 
 static START_COMPUTED_VARIABLE_NOT_IN_USE_TYPE_SPECIFIC_FUNCTION(derivative)
 {
+	int i;
 	struct Computed_variable_derivative_type_specific_data *data;
 
 	data=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable);
-	ASSERT_IF(data&&(data->variable)&&(data->independent_variable),return_code,0)
+	ASSERT_IF(data&&(data->variable)&&(0<data->order)&&
+		(data->independent_variables),return_code,0)
 	{
-		if (return_code=Computed_variable_not_in_use(data->variable))
+		return_code=Computed_variable_not_in_use(data->variable);
+		i=0;
+		while (return_code&&(i<data->order))
 		{
-			return_code=Computed_variable_not_in_use(data->independent_variable);
+			return_code=Computed_variable_not_in_use(
+				(data->independent_variables)[i]);
+			i++;
 		}
 	}
 }
@@ -1121,20 +1186,33 @@ END_COMPUTED_VARIABLE_NOT_IN_USE_TYPE_SPECIFIC_FUNCTION(derivative)
 
 static START_COMPUTED_VARIABLE_OVERLAP_TYPE_SPECIFIC_FUNCTION(derivative)
 {
+	int i,j;
 	struct Computed_variable_derivative_type_specific_data *data_1,*data_2;
 
 	data_1=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable_1);
 	data_2=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable_2);
-	ASSERT_IF(data_1&&(data_1->variable)&&(data_1->independent_variable)&&
-		data_2&&(data_2->variable)&&(data_2->independent_variable),return_code,0)
+	ASSERT_IF(data_1&&(data_1->variable)&&(0<data_1->order)&&
+		(data_1->independent_variables)&&data_2&&(data_2->variable)&&
+		(0<data_2->order)&&(data_2->independent_variables),return_code,0)
 	{
 		if (return_code=Computed_variable_overlap(data_1->variable,
 			data_2->variable))
 		{
-			return_code=Computed_variable_overlap(data_1->independent_variable,
-				data_2->independent_variable);
+			i=0;
+			do
+			{
+				j=0;
+				do
+				{
+					return_code=Computed_variable_overlap(
+						(data_1->independent_variables)[i],
+						(data_2->independent_variables)[j]);
+					j++;
+				} while (!return_code&&(j<data_2->order));
+				i++;
+			} while (!return_code&&(i<data_1->order));
 		}
 	}
 }
@@ -1142,20 +1220,36 @@ END_COMPUTED_VARIABLE_OVERLAP_TYPE_SPECIFIC_FUNCTION(derivative)
 
 static START_COMPUTED_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION(derivative)
 {
+	int i,j;
 	struct Computed_variable_derivative_type_specific_data *data_1,*data_2;
 
 	data_1=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable_1);
 	data_2=(struct Computed_variable_derivative_type_specific_data *)
 		Computed_variable_get_type_specific_data(variable_2);
-	ASSERT_IF(data_1&&(data_1->variable)&&(data_1->independent_variable)&&
-		data_2&&(data_2->variable)&&(data_2->independent_variable),return_code,0)
+	ASSERT_IF(data_1&&(data_1->variable)&&(0<data_1->order)&&
+		(data_1->independent_variables)&&data_2&&(data_2->variable)&&
+		(0<data_2->order)&&(data_2->independent_variables),return_code,0)
 	{
-		if (return_code=Computed_variable_same_variable(data_1->variable,
-			data_2->variable))
+		if (data_1->order==data_2->order)
 		{
-			return_code=Computed_variable_same_variable(data_1->independent_variable,
-				data_2->independent_variable);
+			if (return_code=Computed_variable_same_variable(data_1->variable,
+				data_2->variable))
+			{
+				i=0;
+				do
+				{
+					j=0;
+					do
+					{
+						return_code=Computed_variable_same_variable(
+							(data_1->independent_variables)[i],
+							(data_2->independent_variables)[j]);
+						j++;
+					} while (!return_code&&(j<data_2->order));
+					i++;
+				} while (return_code&&(i<data_1->order));
+			}
 		}
 	}
 }
@@ -1229,8 +1323,6 @@ DESCRIPTION :
 	Computed_variable_set_independent_variable_value_type_specific_function
 		computed_variable_set_independent_variable_value_type_specific_function;
 	/* source variables for independent variables */
-		/*???DB.  Have not done set up.  Starting with
-			Computed_variable_set_source_variable */
 	int number_of_source_variables;
 	struct Computed_variable **independent_variables;
 	struct Computed_variable **source_variables;
@@ -3210,51 +3302,70 @@ Evaluates the <derivative_matrix> for the <order> degree derivative of
 
 int Computed_variable_set_type_derivative(
 	struct Computed_variable *derivative,
-	struct Computed_variable *dependent_variable,
-	struct Computed_variable *independent_variable)
+	struct Computed_variable *dependent_variable,int order,
+	struct Computed_variable **independent_variables)
 /*******************************************************************************
-LAST MODIFIED : 7 March 2003
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Sets <derivative> to be the derivative of the <dependent_variable> with respect
-to the <independent_variable>.
-
-???DB.  Have an <order> and <independent_variables>?
+to the <independent_variables>.  This function ACCESSes the <dependent_variable>
+and <independent_variables>.  After success, the <derivative> is responsible for
+DEACCESS/DEALLOCATEing <dependent_variable> and <independent_variables>.
 ==============================================================================*/
 {
-	int return_code;
+	int i,return_code;
 	struct Computed_variable_derivative_type_specific_data *data;
 
 	ENTER(Computed_variable_set_type_derivative);
 	return_code=0;
 	/* check arguments */
-	if (derivative&&dependent_variable&&independent_variable)
+	if (derivative&&dependent_variable&&(0<order)&&independent_variables)
 	{
-		/* 1.  Make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(data,struct Computed_variable_derivative_type_specific_data,1))
+		i=0;
+		while ((i<order)&&independent_variables[i])
 		{
-			/* 2.  Clear current type-specific data */
-			Computed_variable_clear_type(derivative);
-			/* 3.  Establish the new type */
-			derivative->type_string=computed_variable_derivative_type_string;
-			derivative->type_specific_data=(void *)data;
-			data->variable=ACCESS(Computed_variable)(dependent_variable);
-			data->independent_variable=
-				ACCESS(Computed_variable)(independent_variable);
-			/* set all the methods */
-			return_code=COMPUTED_VARIABLE_ESTABLISH_METHODS(derivative,derivative);
+			i++;
+		}
+		if (i<=order)
+		{
+			/* 1.  Make dynamic allocations for any new type-specific data */
+			if (ALLOCATE(data,struct Computed_variable_derivative_type_specific_data,
+				1))
+			{
+				/* 2.  Clear current type-specific data */
+				Computed_variable_clear_type(derivative);
+				/* 3.  Establish the new type */
+				derivative->type_string=computed_variable_derivative_type_string;
+				derivative->type_specific_data=(void *)data;
+				data->order=order;
+				data->variable=ACCESS(Computed_variable)(dependent_variable);
+				data->independent_variables=independent_variables;
+				for (i=0;i<order;i++)
+				{
+					ACCESS(Computed_variable)(independent_variables[i]);
+				}
+				/* set all the methods */
+				return_code=COMPUTED_VARIABLE_ESTABLISH_METHODS(derivative,derivative);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Computed_variable_set_type_derivative.  "
+					"Could not ALLOCATE type specific data");
+			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Computed_variable_set_type_derivative.  "
-				"Could not ALLOCATE type specific data");
+			display_message(ERROR_MESSAGE,
+				"Computed_variable_set_type_derivative.  "
+				"Missing independent variable(s)");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"Computed_variable_set_type_derivative.  "
-			"Invalid argument(s).  %p %p %p\n",derivative,dependent_variable,
-			independent_variable);
+			"Invalid argument(s).  %p %p %d %p\n",derivative,dependent_variable,
+			order,independent_variables);
 	}
 	LEAVE;
 
