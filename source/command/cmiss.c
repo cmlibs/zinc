@@ -419,12 +419,12 @@ DESCRIPTION :
 							FE_node_change_identifier_sub,
 							(void *)&data, node_group);
 						MANAGER_END_CACHE(FE_node)(command_data->node_manager);
-						if (data.count != NUMBER_IN_MANAGER(FE_node)(command_data->node_manager))
+						if (data.count != NUMBER_IN_GROUP(FE_node)(node_group))
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_change_identifier."
 								"  Only able to update node numbers for %d nodes out of %d\n",
-								data.count, NUMBER_IN_MANAGER(FE_node)(command_data->node_manager));
+								data.count, NUMBER_IN_GROUP(FE_node)(node_group));
 						}
 					}
 					if (data_group)
@@ -436,12 +436,12 @@ DESCRIPTION :
 							FE_node_change_identifier_sub,
 							(void *)&data, data_group);
 						MANAGER_END_CACHE(FE_node)(command_data->data_manager);
-						if (data.count != NUMBER_IN_MANAGER(FE_node)(command_data->data_manager))
+						if (data.count != NUMBER_IN_GROUP(FE_node)(data_group))
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_change_identifier."
 								"  Only able to update node numbers for %d nodes out of %d\n",
-								data.count, NUMBER_IN_MANAGER(FE_node)(command_data->data_manager));
+								data.count, NUMBER_IN_GROUP(FE_node)(data_group));
 						}
 					}
 					if (element_group)
@@ -453,17 +453,17 @@ DESCRIPTION :
 							FE_element_change_identifier_sub,
 							(void *)&data, element_group);
 						MANAGER_END_CACHE(FE_element)(command_data->element_manager);
-						if (data.count != NUMBER_IN_MANAGER(FE_element)(command_data->element_manager))
+						if (data.count != NUMBER_IN_GROUP(FE_element)(element_group))
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_change_identifier."
 								"  Only able to update element numbers for %d elements out of %d\n",
-								data.count, NUMBER_IN_MANAGER(FE_element)(command_data->element_manager));
+								data.count, NUMBER_IN_GROUP(FE_element)(element_group));
 						}
 					}
 				}
 			}
-			/* must deaccess computed_field since accessed by set_Computed_field */
+			/* must deaccess computed_field since accessed by set_FE_node_group */
 			if (node_group)
 			{
 				DEACCESS(GROUP(FE_node))(&node_group);
@@ -471,6 +471,10 @@ DESCRIPTION :
 			if (data_group)
 			{
 				DEACCESS(GROUP(FE_node))(&data_group);
+			}				
+			if (element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&element_group);
 			}				
 		}
 		else
