@@ -650,10 +650,9 @@ Graphics font name now read in from Cmgui XDefaults file.
 				&text_defaults,resources,XtNumber(resources),NULL);
 			glXUseXFont(text_defaults.graphics_font->fid,0,256,fontOffset);
 #elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
-#if GTK_MAJOR_VERSION >= 2
-			/*
-			 * Generate font display lists.
-			 */
+#if GTK_MAJOR_VERSION >= 2 || defined (WIN32_SYSTEM)
+			/* SAB The WIN32 system currently uses GTK GL AREA for open GL. */
+			/* Generate font display lists. */
 
 			font_desc = pango_font_description_from_string (font_string);
 
