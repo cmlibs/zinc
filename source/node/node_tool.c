@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -118,7 +118,7 @@ Module functions
 ----------------
 */
 
-int Node_tool_create_template_node(struct Node_tool *node_tool)
+static int Node_tool_create_template_node(struct Node_tool *node_tool)
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
 
@@ -1480,10 +1480,10 @@ structure itself.
 
 struct FE_field *Node_tool_get_coordinate_field(struct Node_tool *node_tool)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
-Sets the coordinate field of nodes created by <node_tool>.
+Returns the coordinate field of nodes created by <node_tool>.
 ==============================================================================*/
 {
 	struct FE_field *coordinate_field;
@@ -1507,7 +1507,7 @@ Sets the coordinate field of nodes created by <node_tool>.
 int Node_tool_set_coordinate_field(struct Node_tool *node_tool,
 	struct FE_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 Sets the coordinate field of nodes created by <node_tool>.
@@ -1527,7 +1527,8 @@ Sets the coordinate field of nodes created by <node_tool>.
 					(FE_VALUE_VALUE != get_FE_field_value_type(coordinate_field)))
 				{
 					display_message(ERROR_MESSAGE,
-						"Node_tool_set_coordinate_field.  Invalid argument(s)");
+						"Node_tool_set_coordinate_field.  "
+						"Invalid number of components or value type");
 					return_code=0;
 				}
 			}
