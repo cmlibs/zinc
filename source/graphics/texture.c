@@ -421,20 +421,13 @@ GL_EXT_texture_object extension.
 		{
 			case TEXTURE_BLEND:
 			{
-				if (number_of_components<3)
-				{
-					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_BLEND);
-				}
-				else
-				{
-					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
-				}
+				glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_BLEND);
 			} break;
 			case TEXTURE_DECAL:
 			{
 				if (number_of_components<3)
 				{
-					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
 				}
 				else
 				{
