@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -578,6 +578,7 @@ continuation.  Display the map.
 				while ((number_of_devices>0)&&(no_undecided||no_accepted))
 				{
 					if ((ELECTRODE==(description=(*device)->description)->type)&&
+						((*device)->signal)&&
 						(!current_region||(description->region==current_region)))
 					{
 						event=(*device)->signal->first_event;
@@ -610,6 +611,7 @@ continuation.  Display the map.
 				while ((number_of_devices>0)&&(no_undecided||no_accepted))
 				{
 					if ((ELECTRODE==(description=(*device)->description)->type)&&
+						((*device)->signal)&&
 						(!current_region||(description->region==current_region)))
 					{
 						event=(*device)->signal->first_event;
@@ -3110,7 +3112,10 @@ signals.
 						number_of_devices=rig->number_of_devices;
 						for (i=number_of_devices;i>0;i--)
 						{
-							(*device)->signal->status=REJECTED;
+							if ((*device)->signal)
+							{
+								(*device)->signal->status=REJECTED;
+							}
 							device++;
 						}
 						/* read the table format */
@@ -3460,7 +3465,8 @@ signals.
 										device++;
 										i--;
 									}
-									if ((i>0)&&!((*device)->signal->first_event))
+									if ((i>0)&&
+										!(((*device)->signal)&&((*device)->signal->first_event)))
 									{
 										(*device)->signal->status=ACCEPTED;
 										/* read the events */
@@ -3596,7 +3602,7 @@ signals.
 										i--;
 									}
 									if ((device_name_length>0)&&(i>0)&&
-										!((*device)->signal->first_event))
+										!(((*device)->signal)&&((*device)->signal->first_event)))
 									{
 										(*device)->signal->status=ACCEPTED;
 										/* read the events */
@@ -5053,7 +5059,7 @@ DESCRIPTION :
 	{
 		if ((rig=analysis->rig)&&(highlight=analysis->highlight))
 		{
-			if (event=(*highlight)->signal->first_event)
+			if (((*highlight)->signal)&&(event=(*highlight)->signal->first_event))
 			{
 				event_number=analysis->event_number;
 				while (event&&(event->number<event_number))
@@ -5090,7 +5096,8 @@ DESCRIPTION :
 							highlight--;
 							i--;
 						}
-						if (event=(*highlight)->signal->first_event)
+						if (((*highlight)->signal)&&
+							(event=(*highlight)->signal->first_event))
 						{
 							while ((event->next)&&
 								(event->next->number<=analysis->event_number))
@@ -5134,7 +5141,8 @@ DESCRIPTION :
 							highlight--;
 							i--;
 						}
-						if (event=(*highlight)->signal->first_event)
+						if (((*highlight)->signal)&&
+							(event=(*highlight)->signal->first_event))
 						{
 							while (event->next)
 							{
@@ -5182,7 +5190,7 @@ DESCRIPTION :
 	{
 		if ((rig=analysis->rig)&&(highlight=analysis->highlight))
 		{
-			if (event=(*highlight)->signal->first_event)
+			if (((*highlight)->signal)&&(event=(*highlight)->signal->first_event))
 			{
 				event_number=analysis->event_number;
 				while (event&&(event->number<event_number))
@@ -5220,7 +5228,8 @@ DESCRIPTION :
 							highlight++;
 							i--;
 						}
-						if (event=(*highlight)->signal->first_event)
+						if (((*highlight)->signal)&&
+							(event=(*highlight)->signal->first_event))
 						{
 							while ((event->next)&&
 								(event->number<=analysis->event_number))
@@ -5264,7 +5273,8 @@ DESCRIPTION :
 							highlight++;
 							i--;
 						}
-						if (event=(*highlight)->signal->first_event)
+						if (((*highlight)->signal)&&
+							(event=(*highlight)->signal->first_event))
 						{
 							analysis->event_number=event->number;
 							trace_update_edit_interval(analysis->trace);
@@ -6207,10 +6217,13 @@ drawing area.
 #if defined (UNEMAP_USE_NODES)
 						signal_drawing_package=analysis->signal_drawing_package;
 						display_start_time_field=
-							get_Signal_drawing_package_display_start_time_field(signal_drawing_package);
+							get_Signal_drawing_package_display_start_time_field(
+							signal_drawing_package);
 						display_end_time_field=
-							get_Signal_drawing_package_display_end_time_field(signal_drawing_package);
-						signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
+							get_Signal_drawing_package_display_end_time_field(
+							signal_drawing_package);
+						signal_field=get_Signal_drawing_package_signal_field(
+							signal_drawing_package);
 #endif /* defined (UNEMAP_USE_NODES)*/
 						/* grab the pointer */
 						owner_events=True;
@@ -9292,7 +9305,7 @@ should be done as a callback from the trace_window.
 																		new_max=initial_value+
 																			(float)(x_axis_y_marker-axes_top)*
 																			(float)(marker-x_axis_y_marker)/(y_scale*
-																				(float)(initial_marker-x_axis_y_marker));
+																			(float)(initial_marker-x_axis_y_marker));
 #if defined (UNEMAP_USE_NODES)
 																		signal_drawing_package=
 																			analysis->signal_drawing_package;
@@ -9302,7 +9315,8 @@ should be done as a callback from the trace_window.
 																		/* set the new signal_maximum*/
 																		component.number=0;
 																		component.field = signal_maximum_field;
-																		set_FE_nodal_FE_value_value(analysis->highlight_rig_node,
+																		set_FE_nodal_FE_value_value(
+																			analysis->highlight_rig_node,
 																			&component,0,FE_NODAL_VALUE,new_max);
 #endif /*	defined (UNEMAP_USE_NODES) */
 																		highlight_device->signal_maximum=new_max;
@@ -9327,8 +9341,9 @@ should be done as a callback from the trace_window.
 																		/* set the new signal_minimum*/
 																		component.number=0;
 																		component.field = signal_minimum_field;
-																		set_FE_nodal_FE_value_value(analysis->highlight_rig_node,
-																			&component,0,FE_NODAL_VALUE,new_min);
+																		set_FE_nodal_FE_value_value(
+																			analysis->highlight_rig_node,&component,0,
+																			FE_NODAL_VALUE,new_min);
 #endif /*	defined (UNEMAP_USE_NODES) */
 																		highlight_device->signal_minimum=new_min;
 																		if (highlight_device!=trace_area_3_device)
@@ -9741,7 +9756,8 @@ Duplicates the raw rig, except that
 		{
 #if defined (UNEMAP_USE_3D)
 			/* set the all_devices_rig_node_group pointer */
-			if (all_devices_rig_node_group=get_Rig_all_devices_rig_node_group(raw_rig))
+			if (all_devices_rig_node_group=
+				get_Rig_all_devices_rig_node_group(raw_rig))
 			{
 				set_Rig_all_devices_rig_node_group(rig,all_devices_rig_node_group);
 			}
@@ -10485,8 +10501,10 @@ c.f. analysis_set_range.
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
 		signal_drawing_package=analysis->signal_drawing_package;
-		signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
-		display_start_time_field=get_Signal_drawing_package_display_start_time_field(
+		signal_field=get_Signal_drawing_package_signal_field(
+			signal_drawing_package);
+		display_start_time_field=
+			get_Signal_drawing_package_display_start_time_field(
 			signal_drawing_package);
 		display_end_time_field=get_Signal_drawing_package_display_end_time_field(
 			signal_drawing_package);
@@ -10554,12 +10572,16 @@ c.f. analysis_set_range.
 				(current_region==highlight->description->region)))
 			{
 				/* set the signal minimum and maximum */
-				if (0<(channel_gain=highlight->channel->gain))
+				if ((highlight->channel)&&(highlight->signal)&&
+					(0<(channel_gain=highlight->channel->gain)))
 				{
-					Signal_get_min_max(highlight->signal,&minimum,&maximum,1/*time_range*/);
+					Signal_get_min_max(highlight->signal,&minimum,&maximum,
+						1/*time_range*/);
 					channel_offset=highlight->channel->offset;
-					highlight->signal_minimum=channel_gain*((float)(minimum)-channel_offset);
-					highlight->signal_maximum=channel_gain*((float)(maximum)-channel_offset);
+					highlight->signal_minimum=
+						channel_gain*((float)(minimum)-channel_offset);
+					highlight->signal_maximum=
+						channel_gain*((float)(maximum)-channel_offset);
 				}
 			}
 
@@ -10623,10 +10645,13 @@ own min/max
 			if (min_max_iterator=CREATE(Min_max_iterator)())
 			{
 				signal_drawing_package=analysis->signal_drawing_package;
-				signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
-				display_start_time_field=get_Signal_drawing_package_display_start_time_field(
+				signal_field=get_Signal_drawing_package_signal_field(
 					signal_drawing_package);
-				display_end_time_field=get_Signal_drawing_package_display_end_time_field(
+				display_start_time_field=
+					get_Signal_drawing_package_display_start_time_field(
+					signal_drawing_package);
+				display_end_time_field=
+					get_Signal_drawing_package_display_end_time_field(
 					signal_drawing_package);
 				channel_gain_field=get_Signal_drawing_package_channel_gain_field(
 					signal_drawing_package);
@@ -10712,7 +10737,8 @@ own min/max
 				/* for the electrodes in the current region */
 				if (((ELECTRODE==(*device)->description->type)||
 					(AUXILIARY==(*device)->description->type))&&(!current_region||
-					(current_region==(*device)->description->region)))
+					(current_region==(*device)->description->region))&&
+					((*device)->channel)&&((*device)->signal))
 				{
 					/* set the signal minimum and maximum */
 					if (0<(channel_gain=(*device)->channel->gain))
@@ -10789,10 +10815,13 @@ then sets all signals to this range.
 			if (min_max_iterator=CREATE(Min_max_iterator)())
 			{
 				signal_drawing_package=analysis->signal_drawing_package;
-				signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
-				display_start_time_field=get_Signal_drawing_package_display_start_time_field(
+				signal_field=get_Signal_drawing_package_signal_field(
 					signal_drawing_package);
-				display_end_time_field=get_Signal_drawing_package_display_end_time_field(
+				display_start_time_field=
+					get_Signal_drawing_package_display_start_time_field(
+					signal_drawing_package);
+				display_end_time_field=
+					get_Signal_drawing_package_display_end_time_field(
 					signal_drawing_package);
 				channel_gain_field=get_Signal_drawing_package_channel_gain_field(
 					signal_drawing_package);
@@ -10896,7 +10925,8 @@ then sets all signals to this range.
 				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
 					(current_region==(*device)->description->region))&&
 					(((*device)->signal->status==ACCEPTED)||
-						((*device)->signal->status==UNDECIDED)))
+					((*device)->signal->status==UNDECIDED))&&((*device)->channel)&&
+					((*device)->signal))
 				{
 					/* get the minimum,maximum */
 					Signal_get_min_max((*device)->signal,&minimum,&maximum,
@@ -11023,8 +11053,10 @@ same as the range for the current signal.
 					&maximum);
 				set_Min_max_iterator_max(min_max_iterator,maximum);
 				set_Min_max_iterator_min(min_max_iterator,minimum);
-				set_Min_max_iterator_signal_minimum_field(min_max_iterator,signal_minimum_field);
-				set_Min_max_iterator_signal_maximum_field(min_max_iterator,signal_maximum_field);
+				set_Min_max_iterator_signal_minimum_field(min_max_iterator,
+					signal_minimum_field);
+				set_Min_max_iterator_signal_maximum_field(min_max_iterator,
+					signal_maximum_field);
 				/* run through all the nodes setting signals min, max */
 				FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_set_rig_node_signal_min_max,
 					(void *)min_max_iterator,rig_node_group);
@@ -11853,11 +11885,13 @@ DESCRIPTION :
 		rig_node_order_info=(struct FE_node_order_info *)NULL;
 		highlight_rig_node=(struct FE_node *)NULL;
 		if ((analysis->rig)&&(highlight_rig_node=analysis->highlight_rig_node)&&
-			(signal_drawing_package=analysis->signal_drawing_package)&&(device_type_field=
-			get_Signal_drawing_package_device_type_field(signal_drawing_package))
-			&&(signal_status_field=
-			get_Signal_drawing_package_signal_status_field(signal_drawing_package))
-			&&(rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window)))
+			(signal_drawing_package=analysis->signal_drawing_package)&&
+			(device_type_field=
+			get_Signal_drawing_package_device_type_field(signal_drawing_package))&&
+			(signal_status_field=
+			get_Signal_drawing_package_signal_status_field(signal_drawing_package))&&
+			(rig_node_order_info=get_Analysis_window_rig_node_order_info(
+			analysis->window)))
 		{
 			get_FE_nodal_string_value(highlight_rig_node,device_type_field,0,0,
 						FE_NODAL_VALUE,&device_type_string);
@@ -11880,8 +11914,8 @@ DESCRIPTION :
 			highlight_rig_node=get_FE_node_order_info_prev_node(rig_node_order_info);
 			if (highlight_rig_node)
 			{
-				highlight_analysis_device_node(0,highlight_rig_node,(int *)NULL,(int *)NULL,
-					(int *)NULL,analysis);
+				highlight_analysis_device_node(0,highlight_rig_node,(int *)NULL,
+					(int *)NULL,(int *)NULL,analysis);
 			}
 		}
 #else
@@ -11890,7 +11924,7 @@ DESCRIPTION :
 			if (ELECTRODE==(*highlight)->description->type)
 			{
 				/* accept the current signal if undecided */
-				if (UNDECIDED==(*highlight)->signal->status)
+				if (((*highlight)->signal)&&(UNDECIDED==(*highlight)->signal->status))
 				{
 					analysis_accept_signal(widget,analysis_work_area,call_data);
 				}
@@ -11943,11 +11977,13 @@ DESCRIPTION :
 		rig_node_order_info=(struct FE_node_order_info *)NULL;
 		highlight_rig_node=(struct FE_node *)NULL;
 		if ((analysis->rig)&&(highlight_rig_node=analysis->highlight_rig_node)&&
-			(signal_drawing_package=analysis->signal_drawing_package)&&(device_type_field=
-			get_Signal_drawing_package_device_type_field(signal_drawing_package))
-			&&(signal_status_field=
-			get_Signal_drawing_package_signal_status_field(signal_drawing_package))
-			&&(rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window)))
+			(signal_drawing_package=analysis->signal_drawing_package)&&
+			(device_type_field=
+			get_Signal_drawing_package_device_type_field(signal_drawing_package))&&
+			(signal_status_field=
+			get_Signal_drawing_package_signal_status_field(signal_drawing_package))&&
+			(rig_node_order_info=get_Analysis_window_rig_node_order_info(
+			analysis->window)))
 		{
 			get_FE_nodal_string_value(highlight_rig_node,device_type_field,0,0,
 						FE_NODAL_VALUE,&device_type_string);
@@ -11970,8 +12006,8 @@ DESCRIPTION :
 			highlight_rig_node=get_FE_node_order_info_next_node(rig_node_order_info);
 			if (highlight_rig_node)
 			{
-				highlight_analysis_device_node(0,highlight_rig_node,(int *)NULL,(int *)NULL,
-					(int *)NULL,analysis);
+				highlight_analysis_device_node(0,highlight_rig_node,(int *)NULL,
+					(int *)NULL,(int *)NULL,analysis);
 			}
 		}
 #else
@@ -11980,7 +12016,7 @@ DESCRIPTION :
 			if (ELECTRODE==(*highlight)->description->type)
 			{
 				/* accept the current signal if undecided */
-				if (UNDECIDED==(*highlight)->signal->status)
+				if (((*highlight)->signal)&&(UNDECIDED==(*highlight)->signal->status))
 				{
 					analysis_accept_signal(widget,analysis_work_area,call_data);
 				}
@@ -13810,8 +13846,9 @@ remain unchanged.
 	current_region=(struct Region *)NULL;
 	signals=(struct Signals_area *)NULL;
 	description=(struct Device_description *)NULL;
-	if ((analysis)&&(analysis->rig)&&(analysis->rig->devices)&&(*(analysis->rig->devices))
-		&&the_new_device&&(device_number||electrode_number||auxiliary_number))
+	if ((analysis)&&(analysis->rig)&&(analysis->rig->devices)&&
+		(*(analysis->rig->devices))&&the_new_device&&
+		(device_number||electrode_number||auxiliary_number))
 	{
 		current_region=get_Rig_current_region(analysis->rig);
 		if (analysis->window)
@@ -14219,8 +14256,9 @@ else
 #if defined (UNEMAP_USE_NODES)
 									(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 #endif /* defined (UNEMAP_USE_NODES)*/
-									old_device_number,start_analysis_interval,end_analysis_interval,
-									analysis->datum,analysis->potential_time,signals,
+									old_device_number,start_analysis_interval,
+									end_analysis_interval,analysis->datum,
+									analysis->potential_time,signals,
 									analysis->signal_drawing_information,analysis->user_interface,
 									&(analysis->window->interval));
 								highlight_electrode_or_auxiliar(*old_highlight,
@@ -14437,11 +14475,12 @@ cf highlight_analysis_device
 	signal_drawing_package=(struct Signal_drawing_package *)NULL;
 	if (analysis&&(analysis->rig)&&(signal_drawing_package=
 		analysis->signal_drawing_package)&&(device_type_field=
-			get_Signal_drawing_package_device_type_field(signal_drawing_package))&&
+		get_Signal_drawing_package_device_type_field(signal_drawing_package))&&
 		(device_node||device_number||electrode_number||auxiliary_number))
 	{
 		current_region=get_Rig_current_region(analysis->rig);
-		rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window);
+		rig_node_order_info=get_Analysis_window_rig_node_order_info(
+			analysis->window);
 		if (rig_node_order_info)
 		{
 			if (analysis->window)
@@ -14725,8 +14764,8 @@ cf highlight_analysis_device
 				if (multiple_selection)
 				{
 					/* if the device is highlighted */
-					get_FE_nodal_int_value(new_highlight_rig_node,&component,0,FE_NODAL_VALUE,
-						&highlighted);
+					get_FE_nodal_int_value(new_highlight_rig_node,&component,0,
+						FE_NODAL_VALUE,&highlighted);
 					if (highlighted)
 					{
 						/* determine whether or not the device is the only highlighted
@@ -14747,8 +14786,8 @@ cf highlight_analysis_device
 							get_FE_nodal_int_value(temp_device_rig_node,&component,
 								0,FE_NODAL_VALUE,&highlighted);
 							count++;
-							while ((count<number_of_devices)&&
-								(!(highlighted)||(temp_device_rig_node==new_highlight_rig_node)))
+							while ((count<number_of_devices)&&(!(highlighted)||
+								(temp_device_rig_node==new_highlight_rig_node)))
 							{
 								temp_device_rig_node=get_FE_node_order_info_node(
 									all_devices_rig_node_order_info,count);
@@ -14773,8 +14812,8 @@ cf highlight_analysis_device
 						if (new_highlight_rig_node!=analysis->highlight_rig_node)
 						{
 							/* dehighlight the selected device */
-							set_FE_nodal_int_value(new_highlight_rig_node,&component,/*version*/0,
-								FE_NODAL_VALUE,0/*highlight*/);
+							set_FE_nodal_int_value(new_highlight_rig_node,&component,
+								/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
 							highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 								analysis->signal_drawing_package,new_device_number,0,0,
 								analysis->datum,analysis->potential_time,signals,
@@ -14790,8 +14829,8 @@ cf highlight_analysis_device
 						/* highlight it and make it THE highlighted device for the analysis
 							 work area */
 						analysis->highlight_rig_node=new_highlight_rig_node;
-						set_FE_nodal_int_value(new_highlight_rig_node,&component,/*version*/0,
-								FE_NODAL_VALUE,1/*highlight*/);
+						set_FE_nodal_int_value(new_highlight_rig_node,&component,
+							/*version*/0,FE_NODAL_VALUE,1/*highlight*/);
 						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 							analysis->signal_drawing_package,new_device_number,
 							0,0,analysis->datum,analysis->potential_time,signals,
@@ -14818,9 +14857,10 @@ cf highlight_analysis_device
 						(rig_node_order_info);
 					for (i=0;i<number_of_devices;i++)
 					{
-						old_highlight_rig_node=get_FE_node_order_info_node(rig_node_order_info,i);
-						get_FE_nodal_string_value(old_highlight_rig_node,device_type_field,0,0,
-							FE_NODAL_VALUE,&device_type_string);
+						old_highlight_rig_node=get_FE_node_order_info_node(
+							rig_node_order_info,i);
+						get_FE_nodal_string_value(old_highlight_rig_node,device_type_field,
+							0,0,FE_NODAL_VALUE,&device_type_string);
 						get_FE_nodal_int_value(old_highlight_rig_node,&component,0,
 							FE_NODAL_VALUE,&highlighted);
 						if (!strcmp(device_type_string,"ELECTRODE"))
@@ -14882,7 +14922,8 @@ cf highlight_analysis_device
 									highlight_iterator.count=0;
 									highlight_iterator.highlight_field=
 										signal_drawing_package->highlight_field;
-									FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_set_highlight_field,
+									FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+										iterative_set_highlight_field,
 										(void *)(&highlight_iterator),rig_node_group);
 								}
 							}
@@ -16129,9 +16170,10 @@ Creates the windows associated with the analysis work area.
 #endif /* defined (UNEMAP_USE_NODES) */
 #if defined (UNEMAP_USE_3D)
 		/* set up callback for selecting nodes/devices */
-		node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
-		FE_node_selection_add_callback(node_selection,rig_node_group_node_selection_change,
-			(void *)analysis);
+		node_selection=get_unemap_package_FE_node_selection(
+			analysis->unemap_package);
+		FE_node_selection_add_callback(node_selection,
+			rig_node_group_node_selection_change,(void *)analysis);
 #endif /* defined (UNEMAP_USE_3D) */
 		analysis->activation=activation;
 		analysis->map_type=NO_MAP_FIELD;
@@ -16264,7 +16306,8 @@ Creates the windows associated with the analysis work area.
 							&(analysis->search_interval_divisions),
 							&(analysis->end_search_interval),user_interface->screen_height,
 							postscript_file_extension,analysis->events_file_extension,
-							analysis->signal_drawing_information,user_interface,&(analysis->signal_order)))
+							analysis->signal_drawing_information,user_interface,
+							&(analysis->signal_order)))
 						{
 							XtAddCallback(analysis->window->region_pull_down_menu,
 								XmNentryCallback,(XtCallbackProc)set_analysis_analysis_region,

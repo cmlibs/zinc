@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 1 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6270,8 +6270,8 @@ Calculates the processed device.
 				if ((trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(device->signal)&&
 					(device->signal->buffer)&&extract_signal_information(
-					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,1,0,
-					(device->signal->buffer->number_of_samples)-1,
+					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,
+					1,0,(device->signal->buffer->number_of_samples)-1,
 					(int *)NULL,&number_of_samples,&times,&values,&signals_status,&name,
 					&highlight,&minimum,&maximum)&&(0<number_of_samples)&&
 					(processed_device=trace->processed_device)&&
@@ -6386,8 +6386,8 @@ Calculates the processed device.
 				if ((trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(device->signal)&&
 					(event=device->signal->first_event)&&extract_signal_information(
-					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,1,1,0,
-					(int *)NULL,&number_of_samples,&times,&values,
+					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,1,
+					1,0,(int *)NULL,&number_of_samples,&times,&values,
 					(enum Event_signal_status **)NULL,&name,(int *)NULL,
 					(float *)NULL,(float *)NULL)&&(0<number_of_samples)&&
 					(processed_device=trace->processed_device)&&
@@ -7441,33 +7441,31 @@ The callback for redrawing part of the drawing area in trace area 1.
 #if defined (UNEMAP_USE_NODES)
 									(*(trace->highlight_rig_node))&&
 									(*(trace->signal_drawing_package))&&
-#endif
+#endif /* defined (UNEMAP_USE_NODES) */
 									(device= **(trace->highlight))&&
 									(buffer=get_Device_signal_buffer(device)))
 								{
 									start_analysis_interval=buffer->start;
 									end_analysis_interval=buffer->end;
 #if defined (UNEMAP_USE_NODES)									
-									draw_signal(
-										*(trace->highlight_rig_node),*(trace->signal_drawing_package),
-										(struct Device *)NULL,
+									draw_signal(*(trace->highlight_rig_node),
+										*(trace->signal_drawing_package),(struct Device *)NULL,
 										ENLARGE_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
 										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
 										&axes_width,&axes_height,signal_drawing_information,
 										user_interface);									
-#else
-									draw_signal(
-										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-										device,
+#else /* defined (UNEMAP_USE_NODES) */
+									draw_signal((struct FE_node *)NULL,
+										(struct Signal_drawing_package *)NULL,device,
 										ENLARGE_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
 										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
 										&axes_width,&axes_height,signal_drawing_information,
 										user_interface);
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_NODES) */
 									trace_area_1->axes_left=axes_left;
 									trace_area_1->axes_top=axes_top;
 									trace_area_1->axes_width=axes_width;
@@ -7602,26 +7600,24 @@ The callback for redrawing part of the drawing area in trace area 1.
 #if defined (UNEMAP_USE_NODES)
 									(*(trace->highlight_rig_node))&&
 									(*(trace->signal_drawing_package))&&
-#endif
+#endif /* defined (UNEMAP_USE_NODES) */
 									(buffer=get_Device_signal_buffer(device)))
 								{
 									start_analysis_interval=buffer->start;
 									end_analysis_interval=buffer->end;
 									/* draw the active signal */
 #if defined (UNEMAP_USE_NODES)									
-									draw_signal(
-										*(trace->highlight_rig_node),*(trace->signal_drawing_package),
-										(struct Device *)NULL,EDIT_AREA_DETAIL,1,0,
-										&start_analysis_interval,
+									draw_signal(*(trace->highlight_rig_node),
+										*(trace->signal_drawing_package),(struct Device *)NULL,
+										EDIT_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
 										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
 										&axes_width,&axes_height,signal_drawing_information,
 										user_interface);									
-#else
-									draw_signal(
-										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-										device,
+#else /* defined (UNEMAP_USE_NODES) */
+									draw_signal((struct FE_node *)NULL,
+										(struct Signal_drawing_package *)NULL,device,
 										EDIT_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
@@ -7841,7 +7837,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 #if defined (UNEMAP_USE_NODES)
 									&&(*(trace->highlight_rig_node))&&
 									(*(trace->signal_drawing_package))
-#endif
+#endif /* defined (UNEMAP_USE_NODES) */
 										)
 								{
 									/* draw the active signal */
@@ -7856,9 +7852,9 @@ The callback for redrawing part of the drawing area in trace area 3.
 										trace->processed_device->signal_maximum=
 											device->signal_maximum;
 										draw_signal((struct FE_node *)NULL,
-											(struct Signal_drawing_package *)NULL,trace->processed_device,
-											EDIT_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
-											trace_area_3->drawing->width,
+											(struct Signal_drawing_package *)NULL,
+											trace->processed_device,EDIT_AREA_DETAIL,1,0,&first_data,
+											&last_data,0,0,trace_area_3->drawing->width,
 											trace_area_3->drawing->height,
 											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
 											&axes_width,&axes_height,signal_drawing_information,
@@ -7875,15 +7871,16 @@ The callback for redrawing part of the drawing area in trace area 3.
 											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
 											&axes_width,&axes_height,signal_drawing_information,
 											user_interface);
-#else
+#else /* defined (UNEMAP_USE_NODES) */
 										draw_signal((struct FE_node *)NULL,
-											(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
-											&first_data,&last_data,0,0,trace_area_3->drawing->width,
+											(struct Signal_drawing_package *)NULL,device,
+											EDIT_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
+											trace_area_3->drawing->width,
 											trace_area_3->drawing->height,
 											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
 											&axes_width,&axes_height,signal_drawing_information,
 											user_interface);
-#endif /*defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_NODES) */
 									}
 									trace_area_3->axes_left=axes_left;
 									trace_area_3->axes_top=axes_top;
@@ -8525,7 +8522,7 @@ Updates the selectability of the signal controls.
 	if (trace)
 	{	
 		if ((trace->rig)&&(rig= *(trace->rig))&&(trace->highlight)&&
-			(highlight= *(trace->highlight)))
+			(highlight= *(trace->highlight))&&(*highlight))
 		{
 			switch (trace->analysis_mode)
 			{
@@ -8533,7 +8530,7 @@ Updates the selectability of the signal controls.
 				{
 					/* ghost/unghost the calculate button */
 					if (!(trace->area_1.enlarge.calculate_all_events)&&
-						(REJECTED==(*highlight)->signal->status))
+						((*highlight)->signal)&&(REJECTED==(*highlight)->signal->status))
 					{
 						XtSetSensitive(trace->area_1.enlarge.calculate_button,False);
 					}
@@ -8929,8 +8926,8 @@ Updates the potential time marker in the <trace> window.
 	return (return_code);
 } /* trace_update_potential_time */
 
-int trace_update_datum(struct Trace_window *trace, int datum,
-	int previous_datum, int event_number, int potential_time,
+int trace_update_datum(struct Trace_window *trace,int datum,int previous_datum,
+	int event_number,int potential_time,
 	enum Trace_window_update_flags *update_flags)
 /*******************************************************************************
 LAST MODIFIED : 4 August 1999
@@ -9005,10 +9002,17 @@ Updates the datum marker in the <trace> window.
 						signal_drawing_information,
 						trace->user_interface);
 
-					event=highlight_device->signal->first_event;
-					while (event&&(event->number<event_number))
+					if (highlight_device->signal)
 					{
-						event=event->next;
+						event=highlight_device->signal->first_event;
+						while (event&&(event->number<event_number))
+						{
+							event=event->next;
+						}
+					}
+					else
+					{
+						event=(struct Event *)NULL;
 					}
 					if (event&&(event_number==event->number))
 					{
@@ -9371,7 +9375,8 @@ has been moved.
 					(*(trace->highlight))&&(**(trace->highlight))&&
 					(buffer=get_Device_signal_buffer(**(trace->highlight))))
 				{
-					if (event=(**(trace->highlight))->signal->first_event)
+					if (((**(trace->highlight))->signal)&&
+						(event=(**(trace->highlight))->signal->first_event))
 					{
 						event_number= *(trace->event_detection.event_number);
 						while (event&&(event->number<event_number))
