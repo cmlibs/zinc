@@ -20,7 +20,6 @@ Functions for calculating streamlines in finite elements.
 #include "general/random.h"
 #include "graphics/graphics_object.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the stream point stuff currently messes around in the guts
@@ -164,10 +163,11 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 
 static int update_adaptive_imp_euler(struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	struct FE_element **element,FE_value *xi,FE_value time,FE_value *point,
-	FE_value *step_size,FE_value *total_stepped, int *keep_tracking)
+	struct FE_region *fe_region,struct FE_element **element,FE_value *xi,
+	FE_value time,FE_value *point,FE_value *step_size,
+	FE_value *total_stepped, int *keep_tracking)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2004
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Update the xi coordinates using the <stream_vector_field> with adaptive step
@@ -413,7 +413,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			/* The last increment should have been the most accurate, if
 				it wants to change then change element if we can */
 			return_code = FE_element_change_to_adjacent_element(element,
-				xiF, (FE_value *)NULL, &face_number, xi_face);
+				xiF, (FE_value *)NULL, &face_number, xi_face, fe_region);
 			if (face_number == -1)
 			{
 				/* There is no adjacent element */
@@ -525,9 +525,9 @@ static int track_streamline_from_FE_element(struct FE_element **element,
 	float length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field,int *number_of_points,
 	Triple **stream_points,Triple **stream_vectors,Triple **stream_normals,
-	GTDATA **stream_data, FE_value time)
+	GTDATA **stream_data, FE_value time, struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Tracks the stream following <stream_vector_field> starting in the <*element> at
@@ -555,6 +555,9 @@ following way:
     from cross product);
 9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
     normal).
+
+If <fe_region> is not NULL then the function will restrict itself to elements
+in that region.
 ==============================================================================*/
 {
 	FE_value angle,coordinates[3],cos_angle,curl[3],curl_component,data_value,
@@ -998,8 +1001,8 @@ following way:
 							previous_element_B = previous_element_A;
 							previous_element_A = *element;
 							return_code=update_adaptive_imp_euler(coordinate_field,
-								stream_vector_field,reverse_track,element,xi,time,coordinates,
-								&step_size,&total_stepped,&keep_tracking);
+								stream_vector_field,reverse_track,fe_region,element,xi,
+								time,coordinates,&step_size,&total_stepped,&keep_tracking);
 							/* If we haven't gone anywhere and are changing back to the previous
 								element then we are stuck */
 							if ((total_stepped == previous_total_stepped_B) && 
@@ -1136,15 +1139,18 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,enum Streamline_data_type data_type,
-	struct Computed_field *data_field, FE_value time)
+	struct Computed_field *data_field, FE_value time,
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Creates a <GT_polyline> streamline from the <coordinate_field> following
 <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
 the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
+If <fe_region> is not NULL then the function will restrict itself to elements
+in that region.
 ==============================================================================*/
 {
 	gtDataType gt_data_type;
@@ -1174,7 +1180,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 		if (track_streamline_from_FE_element(&element,start_xi,
 			coordinate_field,stream_vector_field,reverse_track,length,
 			data_type,data_field,&number_of_stream_points,&stream_points,
-			&stream_vectors,&stream_normals,&stream_data,time))
+				&stream_vectors,&stream_normals,&stream_data,time,fe_region))
 		{
 			if (0<number_of_stream_points)
 			{
@@ -1231,15 +1237,17 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,float width,enum Streamline_type type,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	FE_value time)
+	FE_value time, struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Creates a <GT_surface> streamline from the <coordinate_field> following
 <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
 the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
+If <fe_region> is not NULL then the function will restrict itself to elements
+in that region.
 ==============================================================================*/
 {
 	float cosw,magnitude,sinw,thickness;
@@ -1280,7 +1288,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 		if (track_streamline_from_FE_element(&element,start_xi,
 			coordinate_field,stream_vector_field,reverse_track,length,
 			data_type,data_field,&number_of_stream_points,&stream_points,
-			&stream_vectors,&stream_normals,&stream_data,time))
+				&stream_vectors,&stream_normals,&stream_data,time,fe_region))
 		{
 			if (0<number_of_stream_points)
 			{
@@ -1820,8 +1828,9 @@ created with the given timestamp.
 				step_size=step-total_stepped;
 			}
 			return_code=update_adaptive_imp_euler(coordinate_field,
-				stream_vector_field,/*reverse_track*/0,&(point->element),point->xi,
-				time,coordinates,&step_size,&total_stepped,&keep_tracking);
+				stream_vector_field,/*reverse_track*/0,(struct FE_region *)NULL,
+				&(point->element),point->xi,time,coordinates,&step_size,
+				&total_stepped,&keep_tracking);
 			(*((point->pointlist)[point->index]))[0]=coordinates[0];
 			(*((point->pointlist)[point->index]))[1]=coordinates[1];
 			(*((point->pointlist)[point->index]))[2]=coordinates[2];
@@ -1875,7 +1884,8 @@ Converts a 3-D element into an array of streamlines.
 					element_to_streamline_data->length,
 					element_to_streamline_data->data_type,
 					element_to_streamline_data->data_field,
-					element_to_streamline_data->time))
+					element_to_streamline_data->time,
+					(struct FE_region *)NULL))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 						element_to_streamline_data->graphics_object,
@@ -1902,7 +1912,8 @@ Converts a 3-D element into an array of streamlines.
 					element_to_streamline_data->type,
 					element_to_streamline_data->data_type,
 					element_to_streamline_data->data_field,
-					element_to_streamline_data->time))
+					element_to_streamline_data->time,
+					(struct FE_region *)NULL))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 						element_to_streamline_data->graphics_object,
@@ -1987,7 +1998,8 @@ Converts a 3-D element into an array of streamlines.
 					node_to_streamline_data->length,
 					node_to_streamline_data->data_type,
 					node_to_streamline_data->data_field,
-					node_to_streamline_data->time))
+					node_to_streamline_data->time,
+					(struct FE_region *)NULL))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 						node_to_streamline_data->graphics_object,
@@ -2014,7 +2026,8 @@ Converts a 3-D element into an array of streamlines.
 					node_to_streamline_data->type,
 					node_to_streamline_data->data_type,
 					node_to_streamline_data->data_field,
-					node_to_streamline_data->time))
+					node_to_streamline_data->time,
+					(struct FE_region *)NULL))
 				{
 					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 						node_to_streamline_data->graphics_object,

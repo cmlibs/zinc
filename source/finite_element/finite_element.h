@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 30 July 2003
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -4766,9 +4766,10 @@ on the boundary of the element.
 ==============================================================================*/
 
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
-	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face);
+	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 20 January 2004
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Steps into the adjacent element through face <face_number>, updating the 
@@ -4777,6 +4778,8 @@ If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
 location in the new element.
 If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
+If <fe_region> is not NULL then the function will restrict itself to elements
+in that region.
 ==============================================================================*/
 
 int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
@@ -4785,7 +4788,11 @@ int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
 LAST MODIFIED : 21 January 2004
 
 DESCRIPTION :
-Adds the <increment> to <xi> changing to another element if necessary.
+Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
+if an adjacent element is found then the element and xi location are changed 
+to this element and the stepping continues using the remaining increment.  If
+no adjacent element is found then the <xi> will be on the element boundary and
+the <increment> will contain the fraction of the increment not used.
 ==============================================================================*/
 
 int make_square_FE_element(struct FE_element **element_ptr,

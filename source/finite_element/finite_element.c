@@ -29667,6 +29667,7 @@ sets <*element_shape_address> to NULL.
 		{
 			DEALLOCATE(shape->type);
 			DEALLOCATE(shape->faces);
+			DEALLOCATE(shape->face_normals);
 			DEALLOCATE(shape->face_to_element);
 			DEALLOCATE(*element_shape_address);
 			return_code=1;
@@ -45288,8 +45289,20 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 	return (return_code);
 } /* FE_element_set_scale_factor_for_nodal_value */
 
+struct FE_element_parent_not_equal_data
+/*******************************************************************************
+LAST MODIFIED : 19 March 2003
+
+DESCRIPTION :
+Data structure for the FE_element_parent_not_equal_to_element routine
+==============================================================================*/
+{
+	struct FE_element *not_element;
+	struct FE_region *fe_region;
+}; /* struct FE_element_parent_not_equal_data */
+
 static int FE_element_parent_not_equal_to_element(struct FE_element_parent *object,
-	void *element_void)
+	void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 
@@ -45299,13 +45312,22 @@ An iterator function that returns true if the element referred to in the parent
 ==============================================================================*/
 {
 	int return_code;
+	struct FE_element_parent_not_equal_data *data;
 
 	ENTER(parent_not_equal_to_element);
-	if (object && element_void)
+	if (object && (data = (struct FE_element_parent_not_equal_data *)data_void))
 	{
-		if (object->parent != (struct FE_element *)element_void)
+		if (object->parent != data->not_element)
 		{
-			return_code=1;
+			if (data->fe_region)
+			{
+				return_code = FE_region_contains_FE_element(data->fe_region,
+					object->parent);
+			}
+			else
+			{
+				return_code=1;
+			}
 		}
 		else
 		{
@@ -45359,9 +45381,10 @@ on the boundary of the element.
 } /* FE_element_xi_increment_within_element */
 
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
-	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face)
+	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2004
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Steps into the adjacent element through face <face_number>, updating the 
@@ -45370,6 +45393,8 @@ If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
 location in the new element.
 If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
+If <fe_region> is not NULL then the function will restrict itself to elements
+in that region.
 ==============================================================================*/
 {
 	double dot_product;
@@ -45377,6 +45402,7 @@ in the new element.
 	int dimension,i,j,new_face_number,return_code;
 	struct FE_element *element,*face,*new_element;
 	struct FE_element_parent *face_parent;
+	struct FE_element_parent_not_equal_data data;
 	FE_value *face_normal;
 
 	ENTER(FE_element_change_to_adjacent_element);
@@ -45395,8 +45421,10 @@ in the new element.
 			if (face)
 			{
 				/* find the other parent */
+				data.not_element = element;
+				data.fe_region = fe_region;
 				face_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_not_equal_to_element,(void *)element,
+					FE_element_parent_not_equal_to_element, (void *)&data,
 					face->parent_list);
 				if (face_parent)
 				{
@@ -45539,7 +45567,7 @@ in the new element.
 int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
 	FE_value *increment)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2004
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
@@ -45578,7 +45606,8 @@ the <increment> will contain the fraction of the increment not used.
 				if (return_code && (fraction < 1.0))
 				{
 					return_code = FE_element_change_to_adjacent_element(&element,
-						local_xi, local_increment, &face_number, xi_face);
+						local_xi, local_increment, &face_number, xi_face,
+						(struct FE_region *)NULL);
 					if (face_number == -1)
 					{
 						/* No adjacent face could be found, so stop */

@@ -184,15 +184,18 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,enum Streamline_data_type data_type,
-	struct Computed_field *data_field, FE_value time);
+	struct Computed_field *data_field, FE_value time,
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Creates a <GT_polyline> streamline from the <coordinate_field> following
 <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
 the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
+If <fe_region> is not NULL then the function will restrict itself to elements
+in that region.
 ==============================================================================*/
 
 struct GT_surface *create_GT_surface_streamribbon_FE_element(
@@ -201,15 +204,17 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct Computed_field *stream_vector_field,int reverse_track,
 	float length,float width,enum Streamline_type type,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	FE_value time);
+	FE_value time, struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
 Creates a <GT_surface> streamline from the <coordinate_field> following
 <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
 the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
+If <fe_region> is not NULL then the function will restrict itself to elements
+in that region.
 ==============================================================================*/
 
 struct GT_pointset *create_interactive_streampoint(struct FE_element *element,
