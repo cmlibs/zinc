@@ -275,6 +275,9 @@ DESCRIPTION :
 	struct Select_tool *select_tool;
 #endif /* defined (MOTIF) */
 	struct Interactive_tool *transform_tool;
+#if defined (PERL_INTERPRETER)
+	struct Interpreter *interpreter;
+#endif /* defined (PERL_INTERPRETER) */
 #if defined (SELECT_DESCRIPTORS)
 	struct LIST(Io_device) *device_list;
 #endif /* defined (SELECT_DESCRIPTORS) */
@@ -22642,8 +22645,8 @@ Executes a SET DIR command.
 								}
 #if defined (PERL_INTERPRETER)
 								/* Set the interpreter variable */
-								interpreter_set_string("example", example_directory, 
-									&return_code);
+								interpreter_set_string(command_data->interpreter, "example",
+									example_directory, &return_code);
 #endif /* defined (PERL_INTERPRETER) */
 								
 #if defined (LINK_CMISS)
@@ -23024,7 +23027,7 @@ and then executes the returned strings
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 		quit = 0;
 
-		interpret_command(command_string, (void *)command_data, 
+		interpret_command(command_data->interpreter, command_string, (void *)command_data, 
 		  &quit, &execute_command, &return_code);
 
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
@@ -23860,6 +23863,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (MOTIF) */
 		command_data->help_directory=(char *)NULL;
 		command_data->help_url=(char *)NULL;
+#if defined (PERL_INTERPRETER)
+		command_data->interpreter = (struct Interpreter *)NULL;
+#endif /* defined (PERL_INTERPRETER) */
 
 		/* set default values for command-line modifiable options */
 		/* Note User_interface will not be created if command_list selected */
@@ -23972,26 +23978,26 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			as X modifies the argc, argv removing the options it understands
 			however I want a full copy for the interpreter so that we can use
 			-display for example for both */
-		create_interpreter(argc, argv, comfile_name, &status);
+		create_interpreter(argc, argv, comfile_name, &command_data->interpreter, &status);
 
 		if (!status)
 		{
 			return_code=0;			
 		}
 
-		interpreter_set_display_message_function(display_message, &status);
+		interpreter_set_display_message_function(command_data->interpreter, display_message, &status);
 
 		/* SAB Set a useful default for the interpreter variable, need to 
 			specify full name as this function does not run embedded by
 			a package directive */
-		interpreter_set_string("cmiss::example", ".", &status);
+		interpreter_set_string(command_data->interpreter, "cmiss::example", ".", &status);
 
 		/* SAB Set the cmgui command data into the interpreter.  The Cmiss package
 			is then able to export this when it is called from inside cmgui or
 			when called directly from perl to load the appropriate libraries to
 			create a cmgui externally. */
-	 	interpreter_set_pointer("Cmiss::Cmgui_command_data", "Cmiss::Cmgui_command_data",
-			command_data, &status);
+	 	interpreter_set_pointer(command_data->interpreter, "Cmiss::Cmgui_command_data",
+			"Cmiss::Cmgui_command_data", command_data, &status);
 
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
@@ -24804,7 +24810,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 								set_display_message_function(WARNING_MESSAGE,
 									display_warning_message,command_window);
 #if defined (PERL_INTERPRETER)
-								redirect_interpreter_output(&return_code);
+								redirect_interpreter_output(command_data->interpreter, &return_code);
 #endif /* defined (PERL_INTERPRETER) */
 							}
 #if defined (MOTIF)
@@ -25166,7 +25172,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(Execute_command)(&command_data->set_command);
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-		destroy_interpreter(&status);
+		destroy_interpreter(command_data->interpreter, &status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 		if (command_data->command_console)
