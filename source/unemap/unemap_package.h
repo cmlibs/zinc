@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 19 June 2000
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -63,7 +63,7 @@ element,nodes, fields when they are no longer required.
 	/* map_fit_field also in map_3d_package. Need to store here between creation*/
 	/* of map_fit_field and creation of map_3d_package. ??JW Remove from map_3d_package? */
 	struct FE_field *map_fit_field; 
-	struct FE_field *delauney_signal_field;  
+	struct FE_field *delaunay_signal_field;  
 	struct FE_field *read_order_field;
 	struct FE_field *signal_field;
 	struct FE_field *signal_minimum_field;
@@ -251,7 +251,7 @@ Sets the field of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct FE_field *get_unemap_package_delauney_signal_field(
+struct FE_field *get_unemap_package_delaunay_signal_field(
 	struct Unemap_package *package);
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
@@ -260,7 +260,7 @@ DESCRIPTION :
 gets the field of the unemap package.
 ==============================================================================*/
 
-int set_unemap_package_delauney_signal_field(struct Unemap_package *package,
+int set_unemap_package_delaunay_signal_field(struct Unemap_package *package,
 	struct FE_field *read_order_field);
 /*******************************************************************************
 LAST MODIFIED :  8 December 2000

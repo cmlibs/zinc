@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -176,11 +176,11 @@ map_drawing_information.
 	struct FE_node_order_info *node_order_info;
 	/*element_group,node_group on the cylinder (or prolate spheroid or patch) surface*/
 	/* mapped_torso_element_group,mapped_torso_node_group on the loaded default torso mesh*/
-	/* delauney_torso_element_group,delauney_torso_node_group on delauney surface*/
+	/* delaunay_torso_element_group,delaunay_torso_node_group on delaunay surface*/
 	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
-		*delauney_torso_element_group;
+		*delaunay_torso_element_group;
 	struct GROUP(FE_node) *node_group,*mapped_torso_node_group,
-		*delauney_torso_node_group;		
+		*delaunay_torso_node_group;		
 	struct GT_object *electrode_glyph;	
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
@@ -846,22 +846,22 @@ DESCRIPTION :
 Sets the mapped_torso_node_group for map_3d_package
 ==============================================================================*/
 
-struct GROUP(FE_node) *get_map_3d_package_delauney_torso_node_group(
+struct GROUP(FE_node) *get_map_3d_package_delaunay_torso_node_group(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
 LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
-gets the delauney_torso_node_group for map_3d_package 
+gets the delaunay_torso_node_group for map_3d_package 
 ==============================================================================*/
 
-int set_map_3d_package_delauney_torso_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *delauney_torso_node_group);
+int set_map_3d_package_delaunay_torso_node_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_node) *delaunay_torso_node_group);
 /*******************************************************************************
 LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
-Sets the delauney_torso_node_group for map_3d_package
+Sets the delaunay_torso_node_group for map_3d_package
 ==============================================================================*/
 
 struct GROUP(FE_element) *get_map_3d_package_element_group(
@@ -900,22 +900,22 @@ DESCRIPTION :
 Sets the mapped_torso_element_group for map_3d_package
 ==============================================================================*/
 
-struct GROUP(FE_element) *get_map_3d_package_delauney_torso_element_group(
+struct GROUP(FE_element) *get_map_3d_package_delaunay_torso_element_group(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
 LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
-gets the delauney_torso_element_group for map_3d_package
+gets the delaunay_torso_element_group for map_3d_package
 ==============================================================================*/
 
-int set_map_3d_package_delauney_torso_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *delauney_torso_element_group);
+int set_map_3d_package_delaunay_torso_element_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_element) *delaunay_torso_element_group);
 /*******************************************************************************
 LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
-Sets the delauney_torso_element_group for map_3d_package
+Sets the delaunay_torso_element_group for map_3d_package
 ==============================================================================*/
 
 int get_map_drawing_information_viewed_scene(
