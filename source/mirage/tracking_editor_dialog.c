@@ -467,6 +467,7 @@ It is up to the calling routine to DEALLOCATE the returned args!
 ???RC Yet to be converted to cmgui format!
 ==============================================================================*/
 {
+	char arg_lengthc[4];
 	int arg_length,return_code;
 
 	ENTER(tracking_editor_get_message);
@@ -482,24 +483,34 @@ It is up to the calling routine to DEALLOCATE the returned args!
 		InCom[XVG_SOCKET_COMMAND_LEN] = '\0';
 
 		/* read in the length of the arguments to follow */
-		if (read(remoteClient,&arg_length,sizeof(int)) == -1)
+		if (read(remoteClient,arg_lengthc,4) == -1)
 		{
 			perror("read(ArgsLen) ");
 			return(0);
 		}
+		arg_length = (arg_lengthc[3] << 24) + (arg_lengthc[2] << 16) +
+			(arg_lengthc[1] << 8) + arg_lengthc[0];
+		printf(" Arg %s arg_length %d\n", InCom, arg_length);
 
 		/* if the ArgsLen count is non-zero, read in the arguments */
 		if (0<arg_length)
 		{
-			if (ALLOCATE(*args,char,arg_length+1))
-			{
-				/* read in the data */
-				if (read(remoteClient,*args,arg_length) == -1)
-				{
-					DEALLOCATE(*args);
-					perror("read(args) ");
-					return(0);
-				}
+		  if (arg_length > 100000)
+		  {
+			  display_message(ERROR_MESSAGE,
+				  "tracking_editor_get_message.  Very large argument space %d requested by xvg with message %s",
+				  arg_length, InCom);
+			  arg_length = 100000;
+		  }
+		  if (ALLOCATE(*args,char,arg_length+1))
+		  {
+			  /* read in the data */
+			  if (read(remoteClient,*args,arg_length) == -1)
+			  {
+				  DEALLOCATE(*args);
+				  perror("read(args) ");
+				  return(0);
+			  }
 			}
 			else
 			{
