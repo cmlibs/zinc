@@ -2138,9 +2138,9 @@ view angle, interest point etc.
 {
 	char allow_skew_flag,absolute_viewport_flag,relative_viewport_flag,
 		custom_projection_flag,parallel_projection_flag,perspective_projection_flag;
-	double bottom,eye[3],clip_plane_add[4],clip_plane_remove[4],far,left,lookat[3],
+	double bottom,eye[3],clip_plane_add[4],clip_plane_remove[4],far_plane,left,lookat[3],
 		modelview_matrix[16],
-		ndc_placement[4],near,photogrammetry_matrix[12],projection_matrix[16],right,
+		ndc_placement[4],near_plane,photogrammetry_matrix[12],projection_matrix[16],right,
 		top,up[3],view_angle,viewport_coordinates[4];
 	enum Scene_viewer_projection_mode projection_mode;
 	int number_of_components,return_code;
@@ -2177,7 +2177,7 @@ view angle, interest point etc.
 					&(eye[0]),&(eye[1]),&(eye[2]),
 					&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-					&bottom,&top,&near,&far)&&
+					&bottom,&top,&near_plane,&far_plane)&&
 				Scene_viewer_get_view_angle(scene_viewer,&view_angle))
 			{
 				view_angle *= (180.0/PI);
@@ -2188,7 +2188,7 @@ view angle, interest point etc.
 				lookat[0]=lookat[1]=lookat[2]=0.0;
 				up[0]=up[1]=up[2]=0.0;
 				left=right=bottom=top=0.0;
-				near=far=0.0;
+				near_plane=far_plane=0.0;
 				view_angle=0.0;
 				scene_viewer=(struct Scene_viewer *)NULL;
 			}
@@ -2217,7 +2217,7 @@ view angle, interest point etc.
 			Option_table_add_double_vector_entry(option_table, "eye_point", eye,
 				&number_of_components);
 			/* far_clipping_plane */
-			Option_table_add_double_entry(option_table, "far_clipping_plane", &far);
+			Option_table_add_double_entry(option_table, "far_clipping_plane", &far_plane);
 			/* interest_point */
 			Option_table_add_double_vector_entry(option_table, "interest_point", lookat,
 				&number_of_components);
@@ -2228,7 +2228,7 @@ view angle, interest point etc.
 			Option_table_add_double_vector_with_help_entry(option_table, "ndc_placement",
 				ndc_placement, &ndc_placement_data);
 			/* near_clipping_plane */
-			Option_table_add_double_entry(option_table, "near_clipping_plane", &near);
+			Option_table_add_double_entry(option_table, "near_clipping_plane", &near_plane);
 			/* photogrammetry_matrix */
 			Option_table_add_double_vector_with_help_entry(option_table, "photogrammetry_matrix",
 				photogrammetry_matrix, &photogrammetry_matrix_data);
@@ -2310,7 +2310,7 @@ view angle, interest point etc.
 						/* must set viewing volume before view_angle otherwise view_angle
 							is overwritten */
 						Scene_viewer_set_viewing_volume(scene_viewer,left,right,bottom,top,
-							near,far);
+							near_plane,far_plane);
 						if (allow_skew_flag)
 						{
 							Scene_viewer_set_lookat_parameters(scene_viewer,
@@ -2388,12 +2388,12 @@ view angle, interest point etc.
 							/* photogrammetry_matrix must be after ndc_placement viewing
 								 volume since it uses the latest NDC, near and far values */
 							if (Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-								&bottom,&top,&near,&far)&&Scene_viewer_get_NDC_info(
+								&bottom,&top,&near_plane,&far_plane)&&Scene_viewer_get_NDC_info(
 									scene_viewer,&NDC_left,&NDC_top,&NDC_width,&NDC_height))
 							{
 								NDC_bottom=NDC_top-NDC_height;
 								photogrammetry_to_graphics_projection(photogrammetry_matrix,
-									near,far,NDC_left,NDC_bottom,NDC_width,NDC_height,
+									near_plane,far_plane,NDC_left,NDC_bottom,NDC_width,NDC_height,
 									modelview_matrix,projection_matrix,eye,lookat,up);
 								Scene_viewer_set_modelview_matrix(scene_viewer,
 									modelview_matrix);
@@ -4836,7 +4836,7 @@ with commands for setting these.
 	double centre_x,centre_y,centre_z,clip_factor,radius,
 		size_x,size_y,size_z,width_factor;
 	int pane_no,return_code;
-	double left, right, bottom, top, near, far;
+	double left, right, bottom, top, near_plane, far_plane;
 
 	ENTER(Graphics_window_view_all);
 	if (window)
@@ -4850,7 +4850,7 @@ with commands for setting these.
 		{
 			/* get current "radius" from first scene viewer */
 			Scene_viewer_get_viewing_volume(window->scene_viewer_array[0],
-				&left, &right, &bottom, &top, &near, &far);
+				&left, &right, &bottom, &top, &near_plane, &far_plane);
 			radius = 0.5*(right - left);
 		}
 		else
@@ -4897,8 +4897,8 @@ current layout_mode, the function adjusts the view in all the panes tied to
 		number_of_scene_viewers stored in the graphics window */
 #define GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES (4)
 	double angle,bottom,eye[3],eye_distance,extra_axis[3],
-		far[GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES],left,lookat[3],
-		near[GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES],right,top,up[3],view[3],
+		far_plane[GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES],left,lookat[3],
+		near_plane[GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES],right,top,up[3],view[3],
 		view_left[3];
 	enum Scene_viewer_projection_mode projection_mode;
 	int pane_no,return_code;
@@ -4916,13 +4916,13 @@ current layout_mode, the function adjusts the view in all the panes tied to
 				Scene_viewer_stop_animations(window->scene_viewer_array[pane_no]);
 			}
 			Scene_viewer_get_viewing_volume(window->scene_viewer_array[pane_no],
-				&left,&right,&bottom,&top,&(near[pane_no]),&(far[pane_no]));
+				&left,&right,&bottom,&top,&(near_plane[pane_no]),&(far_plane[pane_no]));
 		}
 		if (return_code=(Scene_viewer_get_lookat_parameters(
 			window->scene_viewer_array[changed_pane],&(eye[0]),&(eye[1]),&(eye[2]),
 			&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
 			Scene_viewer_get_viewing_volume(window->scene_viewer_array[changed_pane],
-				&left,&right,&bottom,&top,&(near[changed_pane]),&(far[changed_pane]))))
+				&left,&right,&bottom,&top,&(near_plane[changed_pane]),&(far_plane[changed_pane]))))
 		{
 			projection_mode=Graphics_window_get_projection_mode(window,changed_pane);
 			/* get orthogonal view, up and left directions in changed_pane */
@@ -4954,7 +4954,7 @@ current layout_mode, the function adjusts the view in all the panes tied to
 								eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
 								up[0],up[1],up[2]);
 							Scene_viewer_set_viewing_volume(window->scene_viewer_array[pane_no],
-								left,right,bottom,top,near[pane_no],far[pane_no]);
+								left,right,bottom,top,near_plane[pane_no],far_plane[pane_no]);
 						}
 						/* now rotate all tied panes but the changed_pane to get the proper
 							relationship between them */
@@ -5058,7 +5058,7 @@ current layout_mode, the function adjusts the view in all the panes tied to
 									eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
 									up[0],up[1],up[2]);
 								Scene_viewer_set_viewing_volume(window->scene_viewer_array[pane_no],
-									left,right,bottom,top,near[pane_no],far[pane_no]);
+									left,right,bottom,top,near_plane[pane_no],far_plane[pane_no]);
 							}
 							/* now rotate all tied panes but the changed_pane to get the proper
 								relationship between them */
@@ -5123,7 +5123,7 @@ current layout_mode, the function adjusts the view in all the panes tied to
 								eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
 								up[0],up[1],up[2]);
 							Scene_viewer_set_viewing_volume(window->scene_viewer_array[pane_no],
-								left,right,bottom,top,near[pane_no],far[pane_no]);
+								left,right,bottom,top,near_plane[pane_no],far_plane[pane_no]);
 						}
 						/* now rotate all tied panes but the changed_pane to get the proper
 							relationship between them */
@@ -5161,7 +5161,7 @@ current layout_mode, the function adjusts the view in all the panes tied to
 									eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
 									up[0],up[1],up[2]);
 								Scene_viewer_set_viewing_volume(window->scene_viewer_array[pane_no],
-									left,right,bottom,top,near[pane_no],far[pane_no]);
+									left,right,bottom,top,near_plane[pane_no],far_plane[pane_no]);
 							}
 							/* now rotate all tied panes but the changed_pane to get the proper
 								relationship between them */
@@ -5301,10 +5301,10 @@ Writes the properties of the <window> to the command window.
 ==============================================================================*/
 {
 	char line[80],*name, *opengl_version, *opengl_vendor, *opengl_extensions;
-	double bottom, eye[3], far, horizontal_view_angle, left, lookat[3],
+	double bottom, eye[3], far_plane, horizontal_view_angle, left, lookat[3],
 		max_pixels_per_polygon, modelview_matrix[16],
 		NDC_height, NDC_left, NDC_top, NDC_width,
-		near, projection_matrix[16], right, rotations[3],
+		near_plane, projection_matrix[16], right, rotations[3],
 		texture_height, texture_width, top,
 		up[3], view[3], view_angle, viewport_left, viewport_top,
 		viewport_pixels_per_unit_x, viewport_pixels_per_unit_y;
@@ -5442,7 +5442,7 @@ Writes the properties of the <window> to the command window.
 				view[1] = lookat[1] - eye[1];
 				view[2] = lookat[2] - eye[2];
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-					&bottom,&top,&near,&far);
+					&bottom,&top,&near_plane,&far_plane);
 				Scene_viewer_get_view_angle(scene_viewer,&view_angle);
 				Scene_viewer_get_horizontal_view_angle(scene_viewer,
 					&horizontal_view_angle);
@@ -5457,7 +5457,7 @@ Writes the properties of the <window> to the command window.
 					view_angle*(180/PI), horizontal_view_angle*(180/PI));
 
 				display_message(INFORMATION_MESSAGE,
-					"    near and far clipping planes: %g %g\n",near,far);
+					"    near and far clipping planes: %g %g\n",near_plane,far_plane);
 				/* work out if view is skew = up not orthogonal to view direction */
 				eye[0] -= lookat[0];
 				eye[1] -= lookat[1];
@@ -5592,8 +5592,8 @@ to the command window.
 {
 	char *name,*prefix;
 	double bottom,
-		eye[3],far,left,lookat[3],max_pixels_per_polygon,modelview_matrix[16],
-		NDC_height,NDC_left,NDC_top,NDC_width,near,projection_matrix[16],right,
+		eye[3],far_plane,left,lookat[3],max_pixels_per_polygon,modelview_matrix[16],
+		NDC_height,NDC_left,NDC_top,NDC_width,near_plane,projection_matrix[16],right,
 		texture_height,texture_width,top,up[3],view_angle,viewport_left,
 		viewport_top,viewport_pixels_per_unit_x,viewport_pixels_per_unit_y;
 	enum Scene_viewer_blending_mode blending_mode;
@@ -5724,7 +5724,7 @@ to the command window.
 					&(eye[0]),&(eye[1]),&(eye[2]),&(lookat[0]),&(lookat[1]),&(lookat[2]),
 					&(up[0]),&(up[1]),&(up[2]));
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-					&bottom,&top,&near,&far);
+					&bottom,&top,&near_plane,&far_plane);
 				Scene_viewer_get_view_angle(scene_viewer,&view_angle);
 				display_message(INFORMATION_MESSAGE,
 					" eye_point %g %g %g",eye[0],eye[1],eye[2]);
@@ -5735,7 +5735,7 @@ to the command window.
 				display_message(INFORMATION_MESSAGE,
 					" view_angle %g",view_angle*180/PI);
 				display_message(INFORMATION_MESSAGE,
-					" near_clipping_plane %g far_clipping_plane %g",near,far);
+					" near_clipping_plane %g far_clipping_plane %g",near_plane,far_plane);
 				/* work out if view is skew = up not orthogonal to view direction */
 				eye[0] -= lookat[0];
 				eye[1] -= lookat[1];
