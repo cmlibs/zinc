@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_value_scalar.cpp
 //
-// LAST MODIFIED : 20 February 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -14,7 +14,7 @@ Function_variable_value_scalar::Function_variable_value_scalar(
 	Function_variable_value_scalar_set_function set_function):
 	set_function(set_function){}
 
-Function_variable_value_scalar::~Function_variable_value_scalar(){};
+Function_variable_value_scalar::~Function_variable_value_scalar(){}
 
 const std::string Function_variable_value_scalar::type()
 {

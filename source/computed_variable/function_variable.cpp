@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -355,7 +355,7 @@ bool Function_variable_iterator::operator==(
 	}
 
 	return (result);
-};
+}
 
 bool Function_variable_iterator::operator!=(
 	const Function_variable_iterator& iterator)
@@ -392,7 +392,7 @@ Function_variable_handle Function_variable_iterator::operator*() const
 		result=(representation->dereference)();
 	}
 	return (result);
-};
+}
 
 
 // class Function_variable
