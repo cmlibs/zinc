@@ -1551,7 +1551,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_integration_type_string;
 			field->number_of_components = seed_element->shape->dimension;
 			/* source_fields: 0=integrand, 1=coordinate_field */
@@ -1595,8 +1594,7 @@ the seed element used for the mapping is returned - otherwise an error is report
 	struct Computed_field_integration_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_integration);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_integration_type_string)
+	if (field&&(field->type_string==computed_field_integration_type_string)
 		&&(data = 
 		(struct Computed_field_integration_type_specific_data *)
 		field->type_specific_data))

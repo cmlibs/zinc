@@ -574,7 +574,6 @@ The <coordinate_field>s must have no more than 3 components.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_2d_strain_type_string;
 			field->number_of_components=4;
 			/* source_fields:
@@ -624,8 +623,7 @@ Use function Computed_field_get_type to determine the field type.
 	int return_code;
 
 	ENTER(Computed_field_get_type_2d_strain);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_2d_strain_type_string) &&
+	if (field && (field->type_string == computed_field_2d_strain_type_string) &&
 		undeformed_coordinate_field && deformed_coordinate_field &&
 		fibre_angle_field)
 	{

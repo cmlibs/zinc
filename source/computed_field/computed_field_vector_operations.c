@@ -444,7 +444,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_normalise_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -485,8 +484,7 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_normalise);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_normalise_type_string) &&
+	if (field && (field->type_string == computed_field_normalise_type_string) &&
 		source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -1178,7 +1176,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_cross_product_type_string;
 			field->number_of_components = dimension;
 			for (i = 0 ; i < number_of_source_fields ; i++)
@@ -1224,8 +1221,7 @@ If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the
 	int i, return_code;
 
 	ENTER(Computed_field_get_type_cross_product);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_cross_product_type_string)
+	if (field&&(field->type_string==computed_field_cross_product_type_string)
 		&&source_fields)
 	{
 		*dimension = field->number_of_components;
@@ -1886,7 +1882,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_dot_product_type_string;
 			field->number_of_components = 1;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -1929,8 +1924,7 @@ If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_dot_product);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_dot_product_type_string) &&
+	if (field && (field->type_string == computed_field_dot_product_type_string) &&
 		source_field_one && source_field_two)
 	{
 		*source_field_one = field->source_fields[0];
@@ -2623,7 +2617,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_magnitude_type_string;
 			field->number_of_components = 1;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -2664,8 +2657,7 @@ If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_magnitude);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_magnitude_type_string) &&
+	if (field && (field->type_string == computed_field_magnitude_type_string) &&
 		source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -3199,7 +3191,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_cubic_texture_coordinates_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -3240,8 +3231,7 @@ by it is returned - otherwise an error is reported.
 	int return_code;
 
 	ENTER(Computed_field_get_type_cubic_texture_coordinates);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_cubic_texture_coordinates_type_string) &&
+	if (field && (field->type_string == computed_field_cubic_texture_coordinates_type_string) &&
 		source_field)
 	{
 		*source_field = field->source_fields[0];

@@ -443,7 +443,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_multiply_components_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -486,8 +485,7 @@ If the field is of type COMPUTED_FIELD_MULTIPLY_COMPONENTS, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_multiply_components);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_multiply_components_type_string))
+	if (field&&(field->type_string==computed_field_multiply_components_type_string))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -1037,7 +1035,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_divide_components_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -1080,8 +1077,7 @@ If the field is of type COMPUTED_FIELD_DIVIDE_COMPONENTS, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_divide_components);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_divide_components_type_string))
+	if (field&&(field->type_string==computed_field_divide_components_type_string))
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -1638,7 +1634,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_add_type_string;
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -1685,8 +1680,7 @@ If the field is of type COMPUTED_FIELD_ADD, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_add);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_add_type_string))
+	if (field&&(field->type_string==computed_field_add_type_string))
 	{
 		*source_field_one = field->source_fields[0];
 		*scale_factor1 = field->source_values[0];
@@ -2366,7 +2360,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_scale_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -2413,8 +2406,7 @@ If the field is of type COMPUTED_FIELD_SCALE, the
 	int i,return_code;
 
 	ENTER(Computed_field_get_type_scale);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_scale_type_string))
+	if (field&&(field->type_string==computed_field_scale_type_string))
 	{
 		if (ALLOCATE(*scale_factors,FE_value,
 			field->source_fields[0]->number_of_components))
@@ -3143,7 +3135,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_clamp_maximum_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -3190,8 +3181,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the
 	int i,return_code;
 
 	ENTER(Computed_field_get_type_clamp_maximum);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_clamp_maximum_type_string)
+	if (field&&(field->type_string==computed_field_clamp_maximum_type_string)
 		&&source_field&&maximums)
 	{
 		if (ALLOCATE(*maximums,FE_value,field->number_of_components))
@@ -3919,7 +3909,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_clamp_minimum_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -3966,8 +3955,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the
 	int i,return_code;
 
 	ENTER(Computed_field_get_type_clamp_minimum);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_clamp_minimum_type_string)
+	if (field&&(field->type_string==computed_field_clamp_minimum_type_string)
 		&&source_field&&minimums)
 	{
 		if (ALLOCATE(*minimums,FE_value,field->number_of_components))
@@ -4660,7 +4648,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_offset_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -4711,8 +4698,7 @@ It is up to the calling function to DEALLOCATE the returned <*offsets>.
 	int i,return_code;
 
 	ENTER(Computed_field_get_type_offset);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_offset_type_string)
+	if (field&&(field->type_string==computed_field_offset_type_string)
 		&&source_field&&offsets)
 	{
 		if (ALLOCATE(*offsets,FE_value,field->number_of_components))
@@ -5330,7 +5316,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type = COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_sum_components_type_string;
 			field->number_of_components = 1;
 			source_fields[0] = ACCESS(Computed_field)(source_field);
@@ -5377,8 +5362,7 @@ If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the
 	int i, return_code;
 
 	ENTER(Computed_field_get_type_sum_components);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_sum_components_type_string))
+	if (field && (field->type_string == computed_field_sum_components_type_string))
 	{
 		if (ALLOCATE(*weights, FE_value,
 			field->source_fields[0]->number_of_components))
@@ -6092,7 +6076,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type = COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_edit_mask_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0] = ACCESS(Computed_field)(source_field);
@@ -6142,8 +6125,7 @@ allocated array containing the FE_values.
 	int i, return_code;
 
 	ENTER(Computed_field_get_type_edit_mask);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_edit_mask_type_string))
+	if (field && (field->type_string == computed_field_edit_mask_type_string))
 	{
 		if (ALLOCATE(*edit_mask, FE_value,
 			field->source_fields[0]->number_of_components))

@@ -470,7 +470,7 @@ is already set up in the correct way, does nothing.
 	struct Computed_field_finite_element_type_specific_data *data;
 
 	ENTER(Computed_field_calculate_FE_element_field_values_for_element);
-	if (field&&element&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+	if (field&&element&&
 		(field->type_string==computed_field_finite_element_type_string)&&
 		(data = (struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
@@ -1061,7 +1061,7 @@ Sets the <values> of the computed <field> over the <element>.
 			display_message(ERROR_MESSAGE,
 				"Computed_field_finite_element_set_values_in_element.  "
 				"Failed for field %s.",field->name,
-				Computed_field_type_to_string(field));
+				Computed_field_get_type_string(field));
 		}
 	}
 	else
@@ -3573,7 +3573,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_node_value_type_string;
 			field->number_of_components = number_of_components;
 			field->component_names = component_names;
@@ -3624,8 +3623,7 @@ If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
 	struct Computed_field_node_value_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_node_value);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_node_value_type_string) 
+	if (field&&(field->type_string==computed_field_node_value_type_string) 
 		&& (data = (struct Computed_field_node_value_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -4402,8 +4400,7 @@ If the field is of type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, the FE_field be
 	struct Computed_field_node_array_value_at_time_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_node_array_value_at_time);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_node_array_value_at_time_type_string) 
+	if (field&&(field->type_string==computed_field_node_array_value_at_time_type_string) 
 		&& (data = (struct Computed_field_node_array_value_at_time_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -5216,7 +5213,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_embedded_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -5260,8 +5256,7 @@ If the field is of type COMPUTED_FIELD_EMBEDDED, the FE_field being
 	struct Computed_field_embedded_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_embedded);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_embedded_type_string) 
+	if (field&&(field->type_string==computed_field_embedded_type_string) 
 		&& (data = (struct Computed_field_embedded_type_specific_data *)
 		field->type_specific_data) && element_xi_fe_field &&source_field)
 	{
@@ -5850,7 +5845,6 @@ Computed_field_finite_element_not_in_use.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_finite_element_type_string;
 			field->number_of_components = number_of_components;
 			field->component_names = component_names;
@@ -5900,8 +5894,7 @@ If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 	struct Computed_field_finite_element_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_finite_element);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_finite_element_type_string) 
+	if (field&&(field->type_string==computed_field_finite_element_type_string) 
 		&& (data = (struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -6071,7 +6064,6 @@ although its cache may be lost.
 		/* 2. free current type-specific data */
 		Computed_field_clear_type(field);
 		/* 3. establish the new type */
-		field->type=COMPUTED_FIELD_NEW_TYPES;
 		field->type_string = computed_field_cmiss_number_type_string;
 		field->number_of_components = 1;
 		field->type_specific_data = (void *)1;
@@ -6185,7 +6177,6 @@ Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper.
 	if (field)
 	{
 		if((1==field->number_of_components)&&
-			(COMPUTED_FIELD_NEW_TYPES==field->type)&&
 			(field->type_string==computed_field_finite_element_type_string) 
 			&& (data = (struct Computed_field_finite_element_type_specific_data *)
 			field->type_specific_data))
@@ -6227,7 +6218,6 @@ Used for choosing field suitable for identifying grid points.
 	if (field&&(element=(struct FE_element *)element_void))
 	{
 		if ((1==field->number_of_components)&&
-			(COMPUTED_FIELD_NEW_TYPES==field->type)&&
 			(field->type_string==computed_field_finite_element_type_string) 
 			&& (data = (struct Computed_field_finite_element_type_specific_data *)
 			field->type_specific_data))
@@ -6454,7 +6444,6 @@ may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_node_array_value_at_time_type_string;
 			field->number_of_components = number_of_components;
 			field->component_names = component_names;
@@ -6526,7 +6515,6 @@ although its cache may be lost.
 		/* 2. free current type-specific data */
 		Computed_field_clear_type(field);
 		/* 3. establish the new type */
-		field->type=COMPUTED_FIELD_NEW_TYPES;
 		field->type_string = computed_field_xi_coordinates_type_string;
 		field->number_of_components = 3;
 		field->type_specific_data = (void *)1;

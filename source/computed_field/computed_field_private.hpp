@@ -80,7 +80,6 @@ DESCRIPTION :
 		 by the user. See Computed_field_set_read_only function */
 	int read_only;
 	struct Coordinate_system coordinate_system;
-	enum Computed_field_type type;
 
 	/* Value cache: */
 	/* For all Computed_field_types: computed values/derivatives.
@@ -111,8 +110,6 @@ DESCRIPTION :
 	 contains all sorts of things we don't want to include in computed_field */
 	struct Computed_field_find_element_xi_special_cache *find_element_xi_cache;
 
-	/* for COMPUTED_FIELD_NEW_TYPES */
-	/* Soon this will be the only way it is done. */
 	Computed_field_clear_type_specific_function
 	   computed_field_clear_type_specific_function;
 	Computed_field_copy_type_specific_function 

@@ -742,7 +742,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_coordinate_transformation_type_string;
 			field->number_of_components = 3;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -783,9 +782,8 @@ If the field is of type COMPUTED_FIELD_COORDINATE_TRANSFORMATION, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_coordinate_transformation);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_coordinate_transformation_type_string) &&
-		source_field)
+	if (field && (field->type_string == 
+		computed_field_coordinate_transformation_type_string) && source_field)
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -1526,7 +1524,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_vector_coordinate_transformation_type_string;
 			if (3 >= vector_field->number_of_components)
 			{
@@ -1580,8 +1577,7 @@ If the field is of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_vector_coordinate_transformation);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == 
+	if (field && (field->type_string == 
 		computed_field_vector_coordinate_transformation_type_string) &&
 		vector_field && coordinate_field)
 	{

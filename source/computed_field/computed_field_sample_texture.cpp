@@ -549,7 +549,6 @@ although its cache may be lost.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_sample_texture_type_string;
 				field->number_of_components = number_of_components;
 				source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
@@ -604,8 +603,7 @@ returned.
 	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_sample_texture);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_sample_texture_type_string)
+	if (field&&(field->type_string==computed_field_sample_texture_type_string)
 		&&(data = 
 		(struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data)&&texture_coordinate_field&&texture)

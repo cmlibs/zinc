@@ -728,8 +728,7 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 	struct Computed_field_window_projection_type_specific_data *data;
 	
 	ENTER(Computed_field_evaluate_projection_matrix);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(computed_field_window_projection_type_string==field->type_string)&&
+	if (field&&(computed_field_window_projection_type_string==field->type_string)&&
 		(data = (struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -939,7 +938,7 @@ Sets the <values> of the computed <field> at <node>.
 	struct Computed_field_window_projection_type_specific_data *data;
 	
 	ENTER(Computed_field_window_projection_set_values_at_node);
-	if (field && node && values && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
+	if (field && node && values && 
 		(computed_field_window_projection_type_string == field->type_string) &&
 		(data = (struct Computed_field_window_projection_type_specific_data *)
 			field->type_specific_data))
@@ -1213,7 +1212,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_window_projection_type_string;
 			field->number_of_components = 3;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -1264,8 +1262,7 @@ Use function Computed_field_get_type to determine the field type.
 	struct Computed_field_window_projection_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_window_projection);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_window_projection_type_string)
+	if (field&&(field->type_string==computed_field_window_projection_type_string)
 		&&(data = 
 		(struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data)&&source_field&&graphics_window&&

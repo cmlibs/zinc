@@ -416,7 +416,7 @@ value for it in <values> will be used.
 	struct Computed_field_composite_type_specific_data *data;
 	
 	ENTER(Computed_field_composite_set_values_at_node);
-	if (field && node && values && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
+	if (field && node && values && 
 		(computed_field_composite_type_string == field->type_string) &&
 		(data = (struct Computed_field_composite_type_specific_data *)
 			field->type_specific_data))
@@ -918,7 +918,6 @@ although its cache may be lost.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_composite_type_string;
 				field->number_of_components = number_of_components;
 				for (i=0;i<number_of_source_fields;i++)
@@ -989,10 +988,9 @@ Note returned fields are not allocated in arrays.
 	struct Computed_field_composite_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_composite);
-	if (field && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
-		(field->type_string == computed_field_composite_type_string) && (data = 
-			(struct Computed_field_composite_type_specific_data *)
-			field->type_specific_data) && number_of_components &&
+	if (field && (field->type_string == computed_field_composite_type_string) 
+		&& (data = (struct Computed_field_composite_type_specific_data *)
+		field->type_specific_data) && number_of_components &&
 		number_of_source_fields && source_fields &&
 		number_of_source_values && source_values &&
 		source_field_numbers && source_value_numbers)

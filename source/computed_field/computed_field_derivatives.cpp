@@ -494,7 +494,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_derivative_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -537,8 +536,7 @@ If the field is of type COMPUTED_FIELD_DERIVATIVE, the
 	struct Computed_field_derivatives_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_derivative);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_derivative_type_string)
+	if (field&&(field->type_string==computed_field_derivative_type_string)
 		&&(data = 
 		(struct Computed_field_derivatives_type_specific_data *)
 		field->type_specific_data)&&source_field)
@@ -838,8 +836,7 @@ Note currently requires vector_field to be RC.
 	int coordinate_components,i,return_code;
 	
 	ENTER(Computed_field_evaluate_curl);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_curl_type_string))
+	if (field&&(field->type_string==computed_field_curl_type_string))
 	{
 		coordinate_components=field->source_fields[1]->number_of_components;
 		/* curl is only valid in 3 dimensions */
@@ -1144,7 +1141,6 @@ element and the number of components in coordinate_field & vector_field differ.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_curl_type_string;
 				field->number_of_components=3;
 				source_fields[0]=ACCESS(Computed_field)(vector_field);
@@ -1193,8 +1189,7 @@ If the field is of type COMPUTED_FIELD_CURL, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_curl);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_curl_type_string)
+	if (field&&(field->type_string==computed_field_curl_type_string)
 		&&vector_field&&coordinate_field)
 	{
 		/* source_fields: 0=vector, 1=coordinate */
@@ -1507,8 +1502,7 @@ Note currently requires vector_field to be RC.
 	int coordinate_components,i,j,return_code;
 	
 	ENTER(Computed_field_evaluate_divergence);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_divergence_type_string))
+	if (field&&(field->type_string==computed_field_divergence_type_string))
 	{
 		coordinate_components=field->source_fields[1]->number_of_components;
 		/* Following asks: can dx_dxi be inverted? */
@@ -1817,7 +1811,6 @@ element and the number of components in coordinate_field & vector_field differ.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_divergence_type_string;
 				field->number_of_components=1;
 				source_fields[0]=ACCESS(Computed_field)(vector_field);
@@ -1866,8 +1859,7 @@ If the field is of type COMPUTED_FIELD_DIVERGENCE, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_divergence);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_divergence_type_string)
+	if (field&&(field->type_string==computed_field_divergence_type_string)
 		&&vector_field&&coordinate_field)
 	{
 		/* source_fields: 0=vector, 1=coordinate */
@@ -2465,7 +2457,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_gradient_type_string;
 			field->number_of_components = source_field->number_of_components *
 				coordinate_field->number_of_components;
@@ -2507,8 +2498,7 @@ used by it are returned.
 	int return_code;
 
 	ENTER(Computed_field_get_type_gradient);
-	if (field && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
-		(field->type_string == computed_field_gradient_type_string) &&
+	if (field && (field->type_string == computed_field_gradient_type_string) &&
 		source_field && coordinate_field)
 	{
 		/* source_fields: 0=source, 1=coordinate */

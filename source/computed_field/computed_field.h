@@ -44,18 +44,6 @@ Global types
 ------------
 */
 
-enum Computed_field_type
-/******************************************************************************
-LAST MODIFIED : 18 December 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	COMPUTED_FIELD_INVALID,
-	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
-	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
-};
-
 struct Computed_field;
 /*******************************************************************************
 LAST MODIFIED : 24 December 1998
@@ -488,28 +476,12 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 <focus> must be given with prolate and oblate spheroidal coordinate systems.
 ==============================================================================*/
 
-enum Computed_field_type Computed_field_get_type(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 24 December 1998
-
-DESCRIPTION :
-Returns the type of the computed <field> eg. COMPUTED_FIELD_FINITE_ELEMENT etc.
-==============================================================================*/
-
 char *Computed_field_get_type_string(struct Computed_field *field);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 24 January 2002
 
 DESCRIPTION :
 Returns the string which identifies the type.
-==============================================================================*/
-
-char *Computed_field_type_to_string(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-Returns a pointer to a static string token for the given <field_type>.
 The calling function must not deallocate the returned string.
 ==============================================================================*/
 

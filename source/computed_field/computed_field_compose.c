@@ -581,7 +581,6 @@ from which any returned element_xi will belong.
 					/* 2. free current type-specific data */
 					Computed_field_clear_type(field);
 					/* 3. establish the new type */
-					field->type = COMPUTED_FIELD_NEW_TYPES;
 					field->type_string = computed_field_compose_type_string;
 					field->number_of_components=
 						calculate_values_field->number_of_components;
@@ -649,8 +648,7 @@ Note that the fields are not ACCESSed.
 	struct Computed_field_compose_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_compose);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_compose_type_string) &&
+	if (field && (field->type_string == computed_field_compose_type_string) &&
 		(data = (struct Computed_field_compose_type_specific_data *)
 		field->type_specific_data) && texture_coordinate_field &&
 		find_element_xi_field && calculate_values_field && search_element_group)

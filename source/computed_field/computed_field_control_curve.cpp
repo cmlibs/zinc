@@ -48,7 +48,6 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 
 	ENTER(Computed_field_curve_lookup_Control_curve_change);
 	if (message && (field = (struct Computed_field *)field_void) &&
-		(COMPUTED_FIELD_NEW_TYPES == field->type) &&
 		(field->type_string == computed_field_curve_lookup_type_string) &&
 		(data = (struct Computed_field_curve_lookup_type_specific_data *)
 			field->type_specific_data))
@@ -569,7 +568,6 @@ in response to changes in the curve from the control curve manager.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type = COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_curve_lookup_type_string;
 			field->number_of_components =
 				Control_curve_get_number_of_components(curve);
@@ -618,8 +616,7 @@ used by it are returned - otherwise an error is reported.
 	struct Computed_field_curve_lookup_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_curve_lookup);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_curve_lookup_type_string) &&
+	if (field && (field->type_string == computed_field_curve_lookup_type_string) &&
 		(data = (struct Computed_field_curve_lookup_type_specific_data *)
 			field->type_specific_data) && source_field && curve)
 	{

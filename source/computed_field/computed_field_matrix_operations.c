@@ -351,8 +351,7 @@ field->values.
 	struct Computed_field_eigenvalues_type_specific_data *data;
 	
 	ENTER(Computed_field_evaluate_eigenvalues);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_eigenvalues_type_string) &&
+	if (field && (field->type_string == computed_field_eigenvalues_type_string) &&
 		(data = (struct Computed_field_eigenvalues_type_specific_data *)
 			field->type_specific_data))
 	{
@@ -639,7 +638,6 @@ although its cache may be lost.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type = COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_eigenvalues_type_string;
 				field->number_of_components =
 					Computed_field_get_square_matrix_size(source_field);
@@ -694,8 +692,7 @@ eigenvalues of is returned.
 	int return_code;
 
 	ENTER(Computed_field_get_type_eigenvalues);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_eigenvalues_type_string) &&
+	if (field && (field->type_string == computed_field_eigenvalues_type_string) &&
 		source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -945,8 +942,7 @@ Note the source field should already have been evaluated.
 	struct Computed_field_eigenvalues_type_specific_data *data;
 	
 	ENTER(Computed_field_evaluate_eigenvectors);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_eigenvectors_type_string))
+	if (field && (field->type_string == computed_field_eigenvectors_type_string))
 	{
 		source_field = field->source_fields[0];
 		if (Computed_field_is_type_eigenvalues(source_field) &&
@@ -1221,7 +1217,6 @@ although its cache may be lost.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type = COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_eigenvectors_type_string;
 				n = eigenvalues_field->number_of_components;
 				field->number_of_components = n * n;
@@ -1272,8 +1267,7 @@ returned.
 	int return_code;
 
 	ENTER(Computed_field_get_type_eigenvectors);
-	if (field && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
-		(field->type_string == computed_field_eigenvectors_type_string) &&
+	if (field && (field->type_string == computed_field_eigenvectors_type_string) &&
 		eigenvalues_field)
 	{
 		*eigenvalues_field = field->source_fields[0];
@@ -1603,8 +1597,7 @@ been pre-calculated before calling this.
 	struct Computed_field_matrix_invert_type_specific_data *data;
 	
 	ENTER(Computed_field_evaluate_matrix_invert);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_matrix_invert_type_string) &&
+	if (field && (field->type_string == computed_field_matrix_invert_type_string) &&
 		(data = (struct Computed_field_matrix_invert_type_specific_data *)
 			field->type_specific_data))
 	{
@@ -1903,7 +1896,6 @@ although its cache may be lost.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type = COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_matrix_invert_type_string;
 				field->number_of_components =
 					Computed_field_get_number_of_components(source_field);
@@ -1959,8 +1951,7 @@ matrix_invert of is returned.
 	int return_code;
 
 	ENTER(Computed_field_get_type_matrix_invert);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_matrix_invert_type_string) &&
+	if (field && (field->type_string == computed_field_matrix_invert_type_string) &&
 		source_field)
 	{
 		*source_field = field->source_fields[0];
@@ -2555,7 +2546,6 @@ although its cache may be lost.
 					/* 2. free current type-specific data */
 					Computed_field_clear_type(field);
 					/* 3. establish the new type */
-					field->type=COMPUTED_FIELD_NEW_TYPES;
 					field->type_string = computed_field_matrix_multiply_type_string;
 					field->number_of_components = number_of_rows*n;
 					temp_source_fields[0]=ACCESS(Computed_field)(source_field1);
@@ -2620,8 +2610,7 @@ If the field is of type COMPUTED_FIELD_MATRIX_MULTIPLY, the
 	struct Computed_field_matrix_multiply_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_matrix_multiply);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_matrix_multiply_type_string) &&
+	if (field && (field->type_string == computed_field_matrix_multiply_type_string) &&
 		source_field1 && source_field2 && (data = 
 			(struct Computed_field_matrix_multiply_type_specific_data *)
 			field->type_specific_data))
@@ -3373,7 +3362,6 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_projection_type_string;
 			field->number_of_components=number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -3427,8 +3415,7 @@ Use function Computed_field_get_type to determine the field type.
 	struct Computed_field_projection_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_projection);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_projection_type_string) &&
+	if (field && (field->type_string == computed_field_projection_type_string) &&
 		source_field && number_of_components && projection_matrix && (data =
 			(struct Computed_field_projection_type_specific_data *)
 			field->type_specific_data))
@@ -4133,7 +4120,6 @@ although its cache may be lost.
 				/* 2. free current type-specific data */
 				Computed_field_clear_type(field);
 				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_transpose_type_string;
 				field->number_of_components = source_field->number_of_components;
 				temp_source_fields[0] = ACCESS(Computed_field)(source_field);
@@ -4188,8 +4174,7 @@ If the field is of type COMPUTED_FIELD_TRANSPOSE, the
 	struct Computed_field_transpose_type_specific_data *data;
 
 	ENTER(Computed_field_get_type_transpose);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_transpose_type_string) &&
+	if (field && (field->type_string == computed_field_transpose_type_string) &&
 		source_field && (data = 
 			(struct Computed_field_transpose_type_specific_data *)
 			field->type_specific_data))

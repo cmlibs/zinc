@@ -600,7 +600,6 @@ while the field is in use. Not sure if we want that restriction.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
 			field->type_string = computed_field_fibre_axes_type_string;
 			field->number_of_components=9;
 			/* source_fields: 0=fibre, 1=coordinate */
@@ -644,8 +643,7 @@ fields used by it are returned - otherwise an error is reported.
 	int return_code;
 
 	ENTER(Computed_field_get_type_fibre_axes);
-	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
-		(field->type_string == computed_field_fibre_axes_type_string) &&
+	if (field && (field->type_string == computed_field_fibre_axes_type_string) &&
 		fibre_field && coordinate_field)
 	{
 		/* source_fields: 0=fibre, 1=coordinate */

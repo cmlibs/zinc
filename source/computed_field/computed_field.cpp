@@ -65,10 +65,6 @@ values at certain positions that may have changed. Alternative of getting
 messages from element/node managers seems a little expensive. Forgetting to
 clear the cache could cause some unexpected behaviour.
 
-- COMPUTED_FIELD_XI is a simple field that simply returns the xi position that
-the user requested, enabling such functionality as iso-surfaces of xi to be
-performed with the same intercace.
-
 - Computed fields that are not created by the user (eg. default coordinate, xi
 and those automatically created to wrap FE_fields) have a read_only flag set,
 so that the user can not modify them be text commands.
@@ -122,20 +118,6 @@ may be the same as that of the element, but the position is quite different.
 Ideally, they should have distinct coordinate fields, but 3-component coordinate
 fields with the name 'coordinates' are quite pervasive.
 
-- Running into problems with clutter in the Computed_field structure. Should
-re-write in C++. The best model for the object in C++ is to have a simple main
-object CONTAINING a replacable function object that is pure C++. The contents
-of the function objects could vary greatly depending on the source information
-and cache required by that type of field. Advantage could be made out of
-inheritance for similar function objects, while the interface to the rest of
-the computed field object will be identical.
-
-- Ability to evaluate a field as a string. For fields returning floats, this
-would be a comma delimited list of values. Perhaps the number format could be
-supplied as well. For FE_fields that do not evaluate to FE_value types (eg.
-char strings, integers) they will have zero components, but could return a
-valid name. This is the case for unemap electrodes.
-
 - Should handle coordinate system differently. For the majority of field types
 it can simply be assumed, eg. from source fields, or RC/irrelevant if scalar.
 For those that do allow it to be specified, should make it a leaf option with
@@ -143,28 +125,6 @@ the gfx define field commands. Also should not allow coordinate system to be
 changed if field is in use, since field may be chosen on the basis of this,
 like the number of components.
 
-- Allowing computed field values to be set as well as evaluated. Certain fields
-may have easily invertible values that in many cases will allow us to, say,
-tell a node its new RC position/derivatives, which causes the source fields to
-be set leading back to the original calculation of the FE_field at a node. The
-coordinates at the node may be in a prolate coordinate system, but one of the
-fields between the node and its representation that is being changed will be
-able to undo the coordinate transformation. We intend to use this idea to
-support derivative editing for all coordinate systems using new type
-COMPUTED_FIELD_NODE_VALUE.
-
-
-HOW TO ADD NEW COMPUTED FIELDS:
--------------------------------
-
-- add new type name enum Computed_field_type in computed_field.h;
-- add any new source data storage to struct Computed_field, and make sure it
-is initialised in CREATE(Computed_field) and cleaned up by function
-Computed_field_clear_type;
-- add functions Computed_field_get/set_type_NEW_TYPE_NAME;
-- add function define_Computed_field_NEW_TYPE_NAME;
-- add code to some or all functions containing the following text:
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -360,7 +320,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEALLOCATE(field->component_names);
 		}
 
-		/* for COMPUTED_FIELD_NEW_TYPES */
 		if (field->type_specific_data)
 		{
 			if(field->computed_field_clear_type_specific_function)
@@ -379,7 +338,6 @@ Calls Computed_field_clear_cache before clearing the type.
 		}
 		field->type_string = (char *)NULL;
 
-		/* for all Computed_field_types calculated from others */
 		if (field->source_fields)
 		{
 			for (i=0;i< field->number_of_source_fields;i++)
@@ -432,8 +390,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			(List_Computed_field_function)NULL;
 		field->computed_field_get_command_string_function =
 			(Computed_field_get_command_string_function)NULL;
-
-		field->type=COMPUTED_FIELD_INVALID;
 	}
 	else
 	{
@@ -519,7 +475,8 @@ COMPUTED_FIELD_INVALID with no components.
 			(field->name = duplicate_string(name)))
 		{
 			/* initialise all members of computed_field */	
-			field->type = COMPUTED_FIELD_INVALID;
+			field->type_specific_data = NULL;
+			field->type_string = (char *)NULL;
 			field->number_of_components = 0;
 			/* allowed to modify/remove from manager until disabled with
 				 Computed_field_set_read_only */
@@ -536,8 +493,6 @@ COMPUTED_FIELD_INVALID with no components.
 
 			field->find_element_xi_cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
 
-			/* for COMPUTED_FIELD_NEW_TYPES */
-			/* Soon this will be the only way it is done. */
 			field->computed_field_clear_type_specific_function = 
 				(Computed_field_clear_type_specific_function)NULL;
 			field->computed_field_copy_type_specific_function =
@@ -576,9 +531,6 @@ COMPUTED_FIELD_INVALID with no components.
 				(Computed_field_get_command_string_function)NULL;
 			field->computed_field_has_multiple_times_function =
 				(Computed_field_has_multiple_times_function)NULL;
-			
-			field->type_specific_data = NULL;
-			field->type_string = (char *)NULL;
 
 			/* for all types of Computed_field calculated from others */
 			field->source_fields = (struct Computed_field **)NULL;
@@ -727,7 +679,6 @@ Do not allow copy if:
 field. However, this makes it impossible to modify computed fields that wrap
 fe_fields when the latter changes. Hence, now leave it up to define/destroy
 functions to check if read_only flag is set.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
 	char **component_names;
@@ -792,11 +743,9 @@ functions to check if read_only flag is set.
 					destination->read_only=source->read_only;
 					COPY(Coordinate_system)(&destination->coordinate_system,
 						&source->coordinate_system);
-					destination->type=source->type;
 
 					destination->component_names = component_names;
 
-					/* for COMPUTED_FIELD_NEW_TYPES */
 					destination->computed_field_clear_type_specific_function = 
 						source->computed_field_clear_type_specific_function;
 					destination->computed_field_copy_type_specific_function =
@@ -834,7 +783,6 @@ functions to check if read_only flag is set.
 						destination->type_specific_data = type_specific_data;
 					}
 					destination->type_string = source->type_string;
-						
 
 					/* for all Computed_field_types calculated from others */
 					destination->number_of_source_fields=
@@ -1004,8 +952,7 @@ function and bases its result on that.
 						IS_OBJECT_IN_LIST(Computed_field)(object,
 							manager->message->changed_object_list)))
 				{
-					if ((object->type == COMPUTED_FIELD_NEW_TYPES) &&
-						(object->computed_field_not_in_use_function))
+					if (object->computed_field_not_in_use_function)
 					{
 						return_code = object->computed_field_not_in_use_function(object);
 					}
@@ -1266,8 +1213,6 @@ Clears any caching of elements/values of <field> and any fields it refers to.
 Must call this function for each field after you have used functions
 Computed_field_evaluate_in_element or Computed_field_evaluate_at_node and they
 are possibly not going to be called again for some time.
-#### Must ensure implemented correctly for new Computed_field_type. ####
-Only certain field types require a special implementation of this function.
 ==============================================================================*/
 {
 	int i,return_code;
@@ -1320,50 +1265,34 @@ DESCRIPTION :
 Returns true if <field> can be calculated in <element>. If the field depends on
 any other fields, this function is recursively called for them.
 ???RC.  Should also ask if derivatives defined for it.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 
 	ENTER(Computed_field_is_defined_in_element);
 	return_code=0;
 	if (field&&element)
 	{
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_evaluate_cache_in_element_function)
 		{
-			if (field->computed_field_evaluate_cache_in_element_function)
+			if (field->computed_field_is_defined_in_element_function)
 			{
-				if (field->computed_field_is_defined_in_element_function)
-				{
-					return_code = 
-						field->computed_field_is_defined_in_element_function(
-							field, element);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_is_defined_in_element.  "
-						"Is_defined_in_element_function for field %s is not defined.",
-						field->name);
-					return_code=0;
-				}
+				return_code = 
+					field->computed_field_is_defined_in_element_function(
+						field, element);
 			}
 			else
 			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_is_defined_in_element.  "
+					"Is_defined_in_element_function for field %s is not defined.",
+					field->name);
 				return_code=0;
 			}
 		}
 		else
 		{
-			return_code=1;
-			for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-			{
-				if (!Computed_field_is_defined_in_element(field->source_fields[i],
-					element))
-				{
-					return_code=0;
-				}
-			}
+			return_code=0;
 		}
 	}
 	else
@@ -1440,7 +1369,6 @@ LAST MODIFIED : 29 October 1999
 DESCRIPTION :
 Returns true if <field> can be calculated at <node>. If the field depends on
 any other fields, this function is recursively called for them.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
 	int return_code;
@@ -1449,41 +1377,25 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&node)
 	{	
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_evaluate_cache_at_node_function)
 		{
-			if (field->computed_field_evaluate_cache_at_node_function)
+			if (field->computed_field_is_defined_at_node_function)
 			{
-				if (field->computed_field_is_defined_at_node_function)
-				{
-					return_code = field->computed_field_is_defined_at_node_function(
-						field, node);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_is_defined_at_node.  "
-						"Is_defined_in_node_function for field %s is not defined.",
-						field->name);
-					return_code=0;
-				}
+				return_code = field->computed_field_is_defined_at_node_function(
+					field, node);
 			}
 			else
 			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_is_defined_at_node.  "
+					"Is_defined_in_node_function for field %s is not defined.",
+					field->name);
 				return_code=0;
 			}
 		}
 		else
 		{
-			switch (field->type)
-			{
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_is_defined_at_node.  Unknown field type");
-					return_code=0;
-				} break;
-
-			} /* switch */
+			return_code=0;
 		}
 	}
 	else
@@ -1739,7 +1651,6 @@ when the coordinate field is calculated without derivatives, then straight away
 with derivatives for computing fibre axes/gradient etc. By first calling this
 function with <calculate_derivatives> set, a recalculation of the field values
 is avoided.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
 	int cache_is_valid,element_dimension,i,
@@ -1796,69 +1707,27 @@ is avoided.
 			}
 			if (return_code)
 			{
-				if (field->type == COMPUTED_FIELD_NEW_TYPES)
+				if (field->computed_field_evaluate_cache_in_element_function)
 				{
-					if (field->computed_field_evaluate_cache_in_element_function)
-					{
-						return_code = 
-							field->computed_field_evaluate_cache_in_element_function(
-								field, element, xi, time, top_level_element,
-								calculate_derivatives);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_in_element.  "
-							"Function for calculating field %s in element not defined.",
-							field->name);
-						return_code=0;
-					}
+					return_code = 
+						field->computed_field_evaluate_cache_in_element_function(
+							field, element, xi, time, top_level_element,
+							calculate_derivatives);
 				}
 				else
 				{
-					/* 2. Precalculate any source fields that this field depends on.  */
-					if (return_code)
-					{
-						switch (field->type)
-						{
-							default:
-							{
-								/* calculate values of source_fields, derivatives only if requested */
-								for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-								{
-									return_code=
-										Computed_field_evaluate_cache_in_element(
-											field->source_fields[i],element,xi,time,
-											top_level_element,calculate_derivatives);
-								}
-							} break;
-						}
-					}
-
-					/* 3. Calculate the field */
-					if (return_code)
-					{
-						/* set the flag indicating if derivatives are valid, assuming all values
-							will be successfully calculated. Note that some types always get
-							derivatives since they are so inexpensive to calculate. */
-						field->derivatives_valid=calculate_derivatives;
-						switch (field->type)
-						{
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_in_element.  Unknown field type");
-								return_code=0;
-							} break;
-						}
-					}
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_cache_in_element.  "
+						"Function for calculating field %s in element not defined.",
+						field->name);
+					return_code=0;
 				}
 				if (return_code&&calculate_derivatives&&!(field->derivatives_valid))
 				{
 					display_message(ERROR_MESSAGE,
 						"Computed_field_evaluate_cache_in_element.  "
 						"Derivatives unavailable for field %s of type %s",field->name,
-						Computed_field_type_to_string(field));
+						Computed_field_get_type_string(field));
 					return_code=0;
 				}
 				if (return_code)
@@ -2030,57 +1899,24 @@ It is up to the calling function to DEALLOCATE the returned string.
 ???RC.  Allow derivatives to be evaluated as string too?
 ==============================================================================*/
 {
-	char *return_string,tmp_string[50];
-	int error,i;
+	char *return_string;
 
 	ENTER(Computed_field_evaluate_as_string_in_element);
 	return_string=(char *)NULL;
 	if (field&&element&&xi&&(-1<=component_number)&&
 		(component_number < field->number_of_components))
 	{
-		if (COMPUTED_FIELD_NEW_TYPES==field->type)
+		if (field->computed_field_evaluate_as_string_in_element_function)
 		{
-			if (field->computed_field_evaluate_as_string_in_element_function)
-			{
-				return_string = 
-					field->computed_field_evaluate_as_string_in_element_function(
+			return_string = 
+				field->computed_field_evaluate_as_string_in_element_function(
 					field, component_number, element, xi, time, top_level_element);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_as_string_in_element.  "
-					"No function defined.");
-			}
 		}
 		else
 		{
-			/* write the component value in %g format */
-			if (Computed_field_evaluate_cache_in_element(field,element,xi,
-				time,top_level_element,/*calculate_derivatives*/0))
-			{
-				if (-1 == component_number)
-				{
-					error=0;
-					for (i=0;i<field->number_of_components;i++)
-					{
-						if (0<i)
-						{
-							sprintf(tmp_string,", %g",field->values[i]);
-						}
-						else
-						{
-							sprintf(tmp_string,"%g",field->values[i]);
-						}
-						append_string(&return_string,tmp_string,&error);
-					}
-				}
-				else
-				{
-					sprintf(tmp_string,"%g",field->values[component_number]);
-					return_string=duplicate_string(tmp_string);
-				}
-			}
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_as_string_in_element.  "
+				"No function defined.");
 		}
 		if (!return_string)
 		{
@@ -2268,10 +2104,9 @@ point during mesh fitting. At present the coordinate field of data pt. position
 may be the same as that of the element, but the position is quite different.
 Ideally, they should have distinct coordinate fields, but 3-component coordinate
 fields with the name 'coordinates' are quite pervasive.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 
 	ENTER(Computed_field_evaluate_cache_at_node);
 	if (field&&node)
@@ -2302,51 +2137,18 @@ fields with the name 'coordinates' are quite pervasive.
 			}
 			if (return_code)
 			{
-				if (COMPUTED_FIELD_NEW_TYPES == field->type)
+				if (field->computed_field_evaluate_cache_at_node_function)
 				{
-					if (field->computed_field_evaluate_cache_at_node_function)
-					{
-						return_code = 
-							field->computed_field_evaluate_cache_at_node_function(
-								field, node,time);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
-							"No function defined.");
-						return_code = 0;
-					}
+					return_code = 
+						field->computed_field_evaluate_cache_at_node_function(
+							field, node,time);
 				}
 				else
 				{
-					/* 1. Precalculate any source fields that this field depends on */
-					switch(field->type)
-					{
-						default:
-						{
-							/* calculate values of source_fields */
-							for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-							{
-								return_code=Computed_field_evaluate_cache_at_node(
-									field->source_fields[i],node,time);
-							}
-						} break;
-					}
-
-					/* 2. Calculate the field */
-					if (return_code)
-					{
-						switch (field->type)
-						{
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_at_node.  Unknown field type");
-								return_code=0;
-							} break;
-						}
-					}
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_cache_at_node.  "
+						"No function defined.");
+					return_code = 0;
 				}
 
 				/* Store information about what is cached, or clear it if error */
@@ -2435,65 +2237,24 @@ Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 {
-	char *return_string,tmp_string[50];
-	int error,i;
+	char *return_string;
 
 	ENTER(Computed_field_evaluate_as_string_at_node);
 	return_string=(char *)NULL;
 	if (field&&node&&(component_number >= -1)&&
 		(component_number<field->number_of_components))
 	{
-		if (COMPUTED_FIELD_NEW_TYPES==field->type)
+		if (field->computed_field_evaluate_as_string_at_node_function)
 		{
-			if (field->computed_field_evaluate_as_string_at_node_function)
-			{
-				return_string = 
-					field->computed_field_evaluate_as_string_at_node_function(
+			return_string = 
+				field->computed_field_evaluate_as_string_at_node_function(
 					field, component_number, node, time);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_as_string_at_node.  "
-					"No function defined.");
-			}
 		}
 		else
 		{
-			error=0;
-			/* write the component values in %g format, comma separated */
-			if (Computed_field_evaluate_cache_at_node(field,node,time))
-			{
-				if (-1 == component_number)
-				{
-					for (i=0;i<field->number_of_components;i++)
-					{
-						if (0<i)
-						{
-							sprintf(tmp_string,", %g",field->values[i]);
-						}
-						else
-						{
-							sprintf(tmp_string,"%g",field->values[i]);
-						}
-						append_string(&return_string,tmp_string,&error);
-					}
-				}
-				else
-				{
-					sprintf(tmp_string,"%g",field->values[component_number]);
-					append_string(&return_string,tmp_string,&error);
-				}
-			}
-			else
-			{
-				error=1;
-			}
-			if (!return_string)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_as_string_at_node.  Failed");
-			}
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_as_string_at_node.  "
+				"No function defined.");
 		}
 		if (!return_string)
 		{
@@ -2652,8 +2413,6 @@ will change values inside them. Also, this function does not clear the cache at
 any time, so up to the calling function to do so.
 Note that the values array will not be modified by this function. Also, <node>
 should not be managed at the time it is modified by this function.
-#### Must ensure implemented correctly for new Computed_field_type. ####
-???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
 {
 	int return_code;
@@ -2661,32 +2420,23 @@ should not be managed at the time it is modified by this function.
 	ENTER(Computed_field_set_values_at_node);
 	if (field && node && values)
 	{
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_set_values_at_node_function)
 		{
-			if (field->computed_field_set_values_at_node_function)
+			if (!(return_code = 
+					 field->computed_field_set_values_at_node_function(
+						 field, node, values)))
 			{
-				if (!(return_code = 
-					field->computed_field_set_values_at_node_function(
-					field, node, values)))
-				{
-					display_message(ERROR_MESSAGE, "Computed_field_set_values_at_node.  "
-						"Failed for field %s of type %s", field->name, field->type_string);
-				}
-				Computed_field_clear_cache(field);
+				display_message(ERROR_MESSAGE, "Computed_field_set_values_at_node.  "
+					"Failed for field %s of type %s", field->name, field->type_string);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_values_at_node.  No function defined");
-				return_code = 0;
-			}
+			Computed_field_clear_cache(field);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_set_values_at_node.  "
 				"Cannot set values for field %s of type %s", field->name,
-				Computed_field_type_to_string(field));
+				Computed_field_get_type_string(field));
 			return_code = 0;
 		}
 	}
@@ -2887,8 +2637,6 @@ xi1, number of grid points in xi2 etc. and lastly components.
 
 Note that the values array will not be modified by this function. Also,
 <element> should not be managed at the time it is modified by this function.
-#### Must ensure implemented correctly for new Computed_field_type. ####
-???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
 {
 	int return_code;
@@ -2896,33 +2644,24 @@ Note that the values array will not be modified by this function. Also,
 	ENTER(Computed_field_set_values_in_element);
 	if (field && element && element->shape && number_in_xi && values)
 	{
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_set_values_in_element_function)
 		{
-			if (field->computed_field_set_values_in_element_function)
-			{
-				if (!(return_code = 
-					field->computed_field_set_values_in_element_function(
-						field, element, number_in_xi, values)))
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_in_element.  "
-						"Failed for field %s of type %s", field->name, field->type_string);
-				}
-				Computed_field_clear_cache(field);
-			}
-			else
+			if (!(return_code = 
+					 field->computed_field_set_values_in_element_function(
+						 field, element, number_in_xi, values)))
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_values_in_element.  No function defined");
-				return_code = 0;
+					"Computed_field_set_values_in_element.  "
+					"Failed for field %s of type %s", field->name, field->type_string);
 			}
+			Computed_field_clear_cache(field);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_set_values_in_element.  "
 				"Cannot set values for field %s of type %s", field->name,
-				Computed_field_type_to_string(field));
+				Computed_field_get_type_string(field));
 			return_code = 0;
 		}
 	}
@@ -3029,7 +2768,6 @@ as the number of dimensions in <element>, but is assumed to have no more than
 MAXIMUM_ELEMENT_XI_DIMENSIONS so that
 int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this function.
 Returns 0 with no errors if the field is not grid-based.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 In particular, make sure all the same field types are supported here and in
 Computed_field_set_values_in_[managed_]element.
 ==============================================================================*/
@@ -3040,18 +2778,11 @@ Computed_field_set_values_in_[managed_]element.
 	if (field && element && number_in_xi && element->shape &&
 		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= get_FE_element_dimension(element)))
 	{
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_get_native_discretization_in_element_function)
 		{
-			if (field->computed_field_get_native_discretization_in_element_function)
-			{
-				return_code = 
-					field->computed_field_get_native_discretization_in_element_function(
+			return_code = 
+				field->computed_field_get_native_discretization_in_element_function(
 					field, element, number_in_xi);
-			}
-			else
-			{
-				return_code = 0;
-			}
 		}
 		else
 		{
@@ -3136,7 +2867,6 @@ If the <field> has special component names then these are returned,
 otherwise default names are made out of the character form of the
 component_no+1, eg, 1 -> "2".
 It is up to the calling function to deallocate the returned string.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ??? Get names from coordinate system?
 ==============================================================================*/
 {
@@ -3238,10 +2968,11 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 
 char *Computed_field_get_type_string(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 24 January 2002
 
 DESCRIPTION :
 Returns the string which identifies the type.
+The calling function must not deallocate the returned string.
 ==============================================================================*/
 {
 	char *return_string;
@@ -3261,62 +2992,6 @@ Returns the string which identifies the type.
 	return (return_string);
 } /* Computed_field_get_type_string */
 
-enum Computed_field_type Computed_field_get_type(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 24 December 1998
-
-DESCRIPTION :
-Returns the type of the computed <field> eg. COMPUTED_FIELD_FINITE_ELEMENT etc.
-==============================================================================*/
-{
-	enum Computed_field_type type;
-
-	ENTER(Computed_field_get_type);
-	if (field)
-	{
-		type=field->type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Computed_field_get_type.  Missing field");
-		type=COMPUTED_FIELD_INVALID;
-	}
-	LEAVE;
-
-	return (type);
-} /* Computed_field_get_type */
-
-char *Computed_field_type_to_string(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 23 March 2000
-
-DESCRIPTION :
-Returns a pointer to a static string token for the given <field_type>.
-The calling function must not deallocate the returned string.
-#### Must ensure implemented correctly for new Computed_field_type. ####
-==============================================================================*/
-{
-	char *field_type_string;
-
-	ENTER(Computed_field_type_to_string);
-	switch (field->type)
-	{
-		case COMPUTED_FIELD_NEW_TYPES:
-		{
-			field_type_string=field->type_string;
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_type_to_string.  Invalid field type");
-			field_type_string=(char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (field_type_string);
-} /* Computed_field_type_to_string */
-
 int Computed_field_has_numerical_components(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
@@ -3326,7 +3001,6 @@ DESCRIPTION :
 Conditional function returning true if <field> returns numerical components.
 Note that whether the numbers were integer, FE_value or double, they may be
 returned as FE_value when evaluated.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
 	int return_code;
@@ -3335,24 +3009,17 @@ returned as FE_value when evaluated.
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_has_numerical_components_function)
 		{
-			if (field->computed_field_has_numerical_components_function)
-			{
-				return_code = field->computed_field_has_numerical_components_function(
-					field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_has_numerical_components.  "
-					"No function defined.");
-				return_code = 0;
-			}
+			return_code = field->computed_field_has_numerical_components_function(
+				field);
 		}
 		else
 		{
-			return_code=1;
+			display_message(ERROR_MESSAGE,
+				"Computed_field_has_numerical_components.  "
+				"No function defined.");
+			return_code = 0;
 		}
 	}
 	else
@@ -3599,35 +3266,18 @@ Conditional function returning true if <field> depends on time.
 	return_code=0;
 	if (field)
 	{	
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_has_multiple_times_function)
 		{
-			if (field->computed_field_has_multiple_times_function)
-			{
-				return_code = field->computed_field_has_multiple_times_function(
-					field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_has_multiple_times.  "
-					"Computed_field_has_multiple_times_function for field %s is not defined.",
-					field->name);
-				return_code=0;
-			}
+			return_code = field->computed_field_has_multiple_times_function(
+				field);
 		}
 		else
 		{
-			switch (field->type)
-			{
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_has_multiple_times.  Unknown field type for %s",
-						field->name);
-					return_code=0;
-				} break;
-
-			} /* switch */
+			display_message(ERROR_MESSAGE,
+				"Computed_field_has_multiple_times.  "
+				"Computed_field_has_multiple_times_function for field %s is not defined.",
+				field->name);
+			return_code=0;
 		}
 	}
 	else
@@ -3826,27 +3476,18 @@ will belong.
 	if (field&&values&&(number_of_values==field->number_of_components)
 		&&element&&xi&&search_element_group)
 	{
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_find_element_xi_function)
 		{
-			if (field->computed_field_find_element_xi_function)
-			{
-				return_code = 
-					field->computed_field_find_element_xi_function(
+			return_code = 
+				field->computed_field_find_element_xi_function(
 					field, values, number_of_values, element, xi,
 					search_element_group);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_find_element_xi.  No function defined.");
-				return_code = 0;
-			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_find_element_xi.  Field type not implemented");
-			return_code=0;
+				"Computed_field_find_element_xi.  No function defined.");
+			return_code = 0;
 		}
 	}
 	else
@@ -3876,23 +3517,13 @@ a set of values.
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		switch (field->type)
+		if (field->computed_field_find_element_xi_function)
 		{
-			case COMPUTED_FIELD_NEW_TYPES:
-			{
-				if (field->computed_field_find_element_xi_function)
-				{
-					return_code=1;
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			default:
-			{
-				return_code=0;
-			} break;
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
 		}
 	}
 	else
@@ -3955,7 +3586,6 @@ Part of the group of define_Computed_field functions. Here, we already have the
 <field> to be modified and have determined the number of components and
 coordinate system, and must now determine the type of computed field function
 and its parameter fields and values.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
 	int return_code;
@@ -4012,24 +3642,13 @@ level, defining the type of computed field function.  Then, if the
 coordinate_system was not explictly stated, it is set in accordance with the type.
 Function assumes that <field> is not currently managed, as it would be illegal
 to modify it if it was.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	auto struct Modifier_entry
-		option_table[]=
-		{
-			{"coordinate_system",NULL,NULL,set_Coordinate_system},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"[coordinate_system NAME]",NULL,NULL,define_Computed_field_type},
-			{NULL,NULL,NULL,NULL}
-		};
 	char *current_token;
 	struct Coordinate_system coordinate_system;
 	int return_code;
 	struct Computed_field *field;
+	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_coordinate_system);
 	if (state&&(field=(struct Computed_field *)field_void))
@@ -4044,9 +3663,12 @@ to modify it if it was.
 			{
 				if (fuzzy_string_compare(current_token,"coordinate_system"))
 				{
-					/* parse coordinate_system */
-					(option_table[0]).to_be_modified= &coordinate_system;
-					if(return_code=process_option(state,option_table))
+					option_table = CREATE(Option_table)();
+					Option_table_add_entry(option_table,"coordinate_system",
+						&coordinate_system, NULL, set_Coordinate_system);
+					return_code=Option_table_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+					if(return_code)
 					{
 						if(return_code=define_Computed_field_type(state,field_void,
 							computed_field_package_void))
@@ -4066,10 +3688,13 @@ to modify it if it was.
 			}
 			else
 			{
-				/* write help */
-				(help_option_table[0]).to_be_modified=field_void;
-				(help_option_table[0]).user_data=computed_field_package_void;
-				return_code=process_option(state,help_option_table);
+				/* Write out the help */
+				option_table = CREATE(Option_table)();
+				Option_table_add_entry(option_table,"[coordinate_system NAME]",
+					&field_void, computed_field_package_void, 
+					define_Computed_field_type);
+				return_code=Option_table_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
 				return_code=1;
 			}
 		}
@@ -4126,16 +3751,11 @@ The <field_copy_void> parameter, if set, points to the field we are to modify
 and should not itself be managed.
 ==============================================================================*/
 {
-	auto struct Modifier_entry
-		help_option_table[]=
-		{
-			{"FIELD_NAME",NULL,NULL,define_Computed_field_coordinate_system},
-			{NULL,NULL,NULL,NULL}
-		};
 	char *current_token;
 	int return_code;
 	struct Computed_field *existing_field,*temp_field;
 	struct Computed_field_package *computed_field_package;
+	struct Option_table *help_option_table;
 
 	ENTER(define_Computed_field);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -4200,7 +3820,7 @@ and should not itself be managed.
 						}
 						else
 						{
-							if (COMPUTED_FIELD_INVALID != temp_field->type)
+							if (temp_field->type_string)
 							{
 								/* add the new field to the manager */
 								if (!ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
@@ -4227,12 +3847,18 @@ and should not itself be managed.
 				}
 				else
 				{
+					/* Write out the help */
 					if (temp_field=CREATE(Computed_field)("dummy"))
 					{
-						(help_option_table[0]).to_be_modified=(void *)temp_field;
-						(help_option_table[0]).user_data=computed_field_package_void;
-						return_code=process_option(state,help_option_table);
+						help_option_table = CREATE(Option_table)();
+						/* FIELD_NAME */
+						Option_table_add_entry(help_option_table,"FIELD_NAME",
+							(void *)temp_field, &computed_field_package_void,
+							define_Computed_field_coordinate_system);
+						return_code=Option_table_parse(help_option_table,state);
+						DESTROY(Option_table)(&help_option_table);
 						DESTROY(Computed_field)(&temp_field);
+						return_code=1;
 					}
 					else
 					{
@@ -4325,7 +3951,6 @@ LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Writes the properties of the <field> to the command window.
-#### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
 	char *component_name,*temp_string;
@@ -4346,31 +3971,16 @@ Writes the properties of the <field> to the command window.
 			DEALLOCATE(temp_string);
 		}
 		display_message(INFORMATION_MESSAGE,"  field type = %s\n",
-			Computed_field_type_to_string(field));
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+			Computed_field_get_type_string(field));
+		if (field->list_Computed_field_function)
 		{
-			if (field->list_Computed_field_function)
-			{
-				field->list_Computed_field_function(field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"list_Computed_field.  "
-					"Function not defined.");
-				return_code=0;
-			}
+			field->list_Computed_field_function(field);
 		}
 		else
 		{
-			switch (field->type)
-			{
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"list_Computed_field.  Unknown field type");
-					return_code=0;
-				}
-			}
+			display_message(ERROR_MESSAGE,"list_Computed_field.  "
+				"Function not defined.");
+			return_code=0;
 		}
 		/* write the names of the components */
 		if (1<field->number_of_components)
@@ -4438,35 +4048,19 @@ Writes the commands needed to reproduce <field> to the command window.
 				temp_string);
 			DEALLOCATE(temp_string);
 		}
-		if (COMPUTED_FIELD_NEW_TYPES == field->type)
+		if (field->computed_field_get_command_string_function)
 		{
-			if (field->computed_field_get_command_string_function)
+			if (command_string =
+				field->computed_field_get_command_string_function(field))
 			{
-				if (command_string =
-					field->computed_field_get_command_string_function(field))
-				{
-					display_message(INFORMATION_MESSAGE, " %s", command_string);
-					DEALLOCATE(command_string);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "list_Computed_field_commands.  "
-					"Command string function not defined");
+				display_message(INFORMATION_MESSAGE, " %s", command_string);
+				DEALLOCATE(command_string);
 			}
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE, " %s",
-				Computed_field_type_to_string(field));
-			switch (field->type)
-			{
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"list_Computed_field.  Unknown field type");
-				}
-			}
+			display_message(ERROR_MESSAGE, "list_Computed_field_commands.  "
+				"Command string function not defined");
 		}
 		display_message(INFORMATION_MESSAGE, ";\n");
 		return_code = 1;
@@ -4562,7 +4156,7 @@ components and coordinate system.
 	{
 		display_message(INFORMATION_MESSAGE,"%s",field->name);
 		display_message(INFORMATION_MESSAGE," : %s",
-			Computed_field_type_to_string(field));
+			Computed_field_get_type_string(field));
 		display_message(INFORMATION_MESSAGE,", %d component(s)",
 			field->number_of_components);
 		if (temp_string=Coordinate_system_string(&field->coordinate_system))
@@ -4604,7 +4198,7 @@ its name matches the contents of the <other_computed_field_void>.
 			&&(field->read_only==other_computed_field->read_only)
 			&&(field->coordinate_system.type==other_computed_field->coordinate_system.type)
 			/* Ignoring other coordinate_system parameters */
-			&&(field->type==other_computed_field->type)
+			&&(field->type_string==other_computed_field->type_string)
 			&&(field->number_of_source_fields==
 				other_computed_field->number_of_source_fields)
 			&&(field->number_of_source_values==
@@ -4624,26 +4218,19 @@ its name matches the contents of the <other_computed_field_void>.
 						other_computed_field->source_values[i]);				
 				}
 			}
-			if (return_code && (field->type == COMPUTED_FIELD_NEW_TYPES))
+			if (return_code)
 			{
-				if (field->type_string == other_computed_field->type_string)
+				if (field->computed_field_type_specific_contents_match_function)
 				{
-					if (field->computed_field_type_specific_contents_match_function)
-					{
-						return_code = 
-							field->computed_field_type_specific_contents_match_function(
+					return_code = 
+						field->computed_field_type_specific_contents_match_function(
 							field, other_computed_field);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_contents_match.  "
-							"Type specific contents match function undefined.");
-						return_code = 0;					
-					}
 				}
 				else
 				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_contents_match.  "
+						"Type specific contents match function undefined.");
 					return_code = 0;					
 				}
 			}
