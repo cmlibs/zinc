@@ -373,10 +373,12 @@ bool Function_matrix<Value_type>::evaluate_derivative(Scalar&,
 	return (false);
 }
 
+#if !defined (AIX)
 template<>
 bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables);
+#endif // !defined (AIX)
 
 EXPORT template<typename Value_type>
 bool Function_matrix<Value_type>::set_value(
