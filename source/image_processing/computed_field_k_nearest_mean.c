@@ -1,9 +1,9 @@
 /******************************************************************
-  FILE: computed_field_local_std.c
+  FILE: computed_field_k_nearest_mean.c
 
-  LAST MODIFIED: 5 May 2004
+  LAST MODIFIED: 17 June 2004
 
-  DESCRIPTION:Implement image neigborhood averaging operation
+  DESCRIPTION:Implement image K_Nearest Neighborhood averaging
 ==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -15,14 +15,14 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "image_processing/computed_field_local_std.h"
+#include "image_processing/computed_field_k_nearest_mean.h"
 
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
 
-struct Computed_field_local_std_package
+struct Computed_field_k_nearest_mean_package
 /*******************************************************************************
-LAST MODIFIED : 17 March 2004
+LAST MODIFIED : 17 June 2004
 
 DESCRIPTION :
 A container for objects required to define fields in this module.
@@ -35,10 +35,11 @@ A container for objects required to define fields in this module.
 
 
 
-struct Computed_field_local_std_type_specific_data
+struct Computed_field_k_nearest_mean_type_specific_data
 {
-	/* The size of the median filter window */
+	/* The size of filter window */
 	int radius;
+	int k_number; /* k_number must be less than 2*(radius + 1) */
 
 	float cached_time;
 	int element_dimension;
@@ -49,11 +50,11 @@ struct Computed_field_local_std_type_specific_data
 	void *computed_field_manager_callback_id;
 };
 
-static char computed_field_local_std_type_string[] = "local_std";
+static char computed_field_k_nearest_mean_type_string[] = "k_nearest_mean";
 
-int Computed_field_is_type_local_std(struct Computed_field *field)
+int Computed_field_is_type_k_nearest_mean(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -61,23 +62,23 @@ DESCRIPTION :
 	int return_code;
 
 
-	ENTER(Computed_field_is_type_local_std);
+	ENTER(Computed_field_is_type_k_nearest_mean);
 	if (field)
 	{
 		return_code =
-		  (field->type_string == computed_field_local_std_type_string);
+		  (field->type_string == computed_field_k_nearest_mean_type_string);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_local_std.  Missing field");
+			"Computed_field_is_type_k_nearest_mean.  Missing field");
 		return_code = 0;
 	}
 
 	return (return_code);
-} /* Computed_field_is_type_local_std */
+} /* Computed_field_is_type_k_nearest_mean */
 
-static void Computed_field_local_std_field_change(
+static void Computed_field_k_nearest_mean_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message, void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2003
@@ -88,11 +89,11 @@ we know to invalidate the image cache.
 ==============================================================================*/
 {
 	struct Computed_field *field;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_local_std_source_field_change);
+	ENTER(Computed_field_k_nearest_mean_source_field_change);
 	if (message && (field = (struct Computed_field *)field_void) && (data =
-		(struct Computed_field_local_std_type_specific_data *)
+		(struct Computed_field_k_nearest_mean_type_specific_data *)
 		field->type_specific_data))
 	{
 		switch (message->change)
@@ -122,27 +123,27 @@ we know to invalidate the image cache.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_local_std_source_field_change.  "
+			"Computed_field_k_nearest_mean_source_field_change.  "
 			"Invalid arguments.");
 	}
 	LEAVE;
-} /* Computed_field_local_std_source_field_change */
+} /* Computed_field_k_nearest_mean_source_field_change */
 
-static int Computed_field_local_std_clear_type_specific(
+static int Computed_field_k_nearest_mean_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Clear the type specific data used by this type.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_local_std_clear_type_specific);
+	ENTER(Computed_field_k_nearest_mean_clear_type_specific);
 	if (field && (data =
-		(struct Computed_field_local_std_type_specific_data *)
+		(struct Computed_field_k_nearest_mean_type_specific_data *)
 		field->type_specific_data))
 	{
 		if (data->region)
@@ -165,36 +166,37 @@ Clear the type specific data used by this type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_local_std_clear_type_specific.  "
+			"Computed_field_k_nearest_mean_clear_type_specific.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_local_std_clear_type_specific */
+} /* Computed_field_k_nearest_mean_clear_type_specific */
 
-static void *Computed_field_local_std_copy_type_specific(
+static void *Computed_field_k_nearest_mean_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_local_std_type_specific_data *destination,
+	struct Computed_field_k_nearest_mean_type_specific_data *destination,
 		*source;
 
-	ENTER(Computed_field_local_std_copy_type_specific);
+	ENTER(Computed_field_k_nearest_mean_copy_type_specific);
 	if (source_field && destination_field && (source =
-		(struct Computed_field_local_std_type_specific_data *)
+		(struct Computed_field_k_nearest_mean_type_specific_data *)
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_local_std_type_specific_data, 1))
+			struct Computed_field_k_nearest_mean_type_specific_data, 1))
 		{
 			destination->radius = source->radius;
+			destination->k_number = source->k_number;
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->element_dimension = source->element_dimension;
@@ -202,7 +204,7 @@ Copy the type specific data used by this type.
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
-				Computed_field_local_std_field_change, (void *)destination_field,
+				Computed_field_k_nearest_mean_field_change, (void *)destination_field,
 				destination->computed_field_manager);
 			if (source->image)
 			{
@@ -220,7 +222,7 @@ Copy the type specific data used by this type.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_local_std_copy_type_specific.  "
+				"Computed_field_k_nearest_mean_copy_type_specific.  "
 				"Unable to allocate memory.");
 			destination = NULL;
 		}
@@ -228,29 +230,29 @@ Copy the type specific data used by this type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_local_std_copy_type_specific.  "
+			"Computed_field_k_nearest_mean_copy_type_specific.  "
 			"Invalid arguments.");
 		destination = NULL;
 	}
 	LEAVE;
 
 	return (destination);
-} /* Computed_field_local_std_copy_type_specific */
+} /* Computed_field_k_nearest_mean_copy_type_specific */
 
-int Computed_field_local_std_clear_cache_type_specific
+int Computed_field_k_nearest_mean_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_local_std_clear_type_specific);
+	ENTER(Computed_field_k_nearest_mean_clear_type_specific);
 	if (field && (data =
-		(struct Computed_field_local_std_type_specific_data *)
+		(struct Computed_field_k_nearest_mean_type_specific_data *)
 		field->type_specific_data))
 	{
 		if (data->image)
@@ -262,36 +264,37 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_local_std_clear_type_specific.  "
+			"Computed_field_k_nearest_mean_clear_type_specific.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_local_std_clear_type_specific */
+} /* Computed_field_k_nearest_mean_clear_type_specific */
 
-static int Computed_field_local_std_type_specific_contents_match(
+static int Computed_field_k_nearest_mean_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Compare the type specific data
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_local_std_type_specific_data *data,
+	struct Computed_field_k_nearest_mean_type_specific_data *data,
 		*other_data;
 
-	ENTER(Computed_field_local_std_type_specific_contents_match);
+	ENTER(Computed_field_k_nearest_mean_type_specific_contents_match);
 	if (field && other_computed_field && (data =
-		(struct Computed_field_local_std_type_specific_data *)
+		(struct Computed_field_k_nearest_mean_type_specific_data *)
 		field->type_specific_data) && (other_data =
-		(struct Computed_field_local_std_type_specific_data *)
+		(struct Computed_field_k_nearest_mean_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
 		if ((data->radius == other_data->radius) &&
+		        (data->k_number == other_data->k_number) &&
 			data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
@@ -311,64 +314,65 @@ Compare the type specific data
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_local_std_type_specific_contents_match */
+} /* Computed_field_k_nearest_mean_type_specific_contents_match */
 
-#define Computed_field_local_std_is_defined_in_element \
+#define Computed_field_k_nearest_mean_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-#define Computed_field_local_std_is_defined_at_node \
+#define Computed_field_k_nearest_mean_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-#define Computed_field_local_std_has_numerical_components \
+#define Computed_field_k_nearest_mean_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_local_std_not_in_use \
+#define Computed_field_k_nearest_mean_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
-static int Image_cache_local_std(struct Image_cache *image, int radius)
+static int Image_cache_k_nearest_mean(struct Image_cache *image, int radius, int k_number)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2004
+LAST MODIFIED : 17 June 2004
 
 DESCRIPTION :
-Perform a neigborhood averaging operation on the image cache.
+Perform K_Nearest Neighborhood averaging on the image cache.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *kernel, local_mean, local_diff, *max_diff;
+	FE_value *data_index, *result_index, *kernel, local_mean;
 	int filter_size, i, j, k, m, *offsets, return_code, kernel_size, storage_size;
-	int image_step, kernel_step;
+	int kernel_step, image_step;
+	int sign;
+	FE_value swap;
 
-	ENTER(Image_cache_local_std);
-	if (image && (image->dimension > 0) && (image->depth > 0))
+	ENTER(Image_cache_k_nearest_mean);
+	if (image && (image->dimension > 0) && (image->depth > 0) &&
+	         (k_number <= (2 * radius + 1) * (2 * radius + 1)))
 	{
 		return_code = 1;
 		filter_size = 2 * radius + 1;
-
-		/* We only need the one kernel as it is just a reordering for the other dimensions */
 		kernel_size = 1;
 		for (i = 0 ; i < image->dimension ; i++)
 		{
@@ -382,8 +386,7 @@ Perform a neigborhood averaging operation on the image cache.
 		}
 		if (ALLOCATE(kernel, FE_value, kernel_size) &&
 			ALLOCATE(offsets, int, kernel_size) &&
-			ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
-			ALLOCATE(max_diff, FE_value, image->depth))
+			ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
 		{
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
@@ -394,10 +397,6 @@ Perform a neigborhood averaging operation on the image cache.
 			for (j = 0 ; j < kernel_size ; j++)
 			{
 				offsets[j] = 0;
-			}
-			for (k = 0; k <image->depth; k++)
-			{
-			        max_diff[k] = 0.0;
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
@@ -432,40 +431,32 @@ Perform a neigborhood averaging operation on the image cache.
 						{
 						        kernel[j] = *(data_index + offsets[j] + k);
 						}
-						local_mean += kernel[j];
 					}
-					local_mean /= (FE_value)kernel_size;
-					local_diff = 0.0;
-                                        for(j = 0 ; j < kernel_size ; j++)
+					sign = kernel_size;
+					while (sign > 1) /* Bubble sort to determine the order */
 					{
-						local_diff += (kernel[j] - local_mean) * (kernel[j] - local_mean);
+					        sign--;
+					        for (j = 0; j <= sign - 1; j++)
+						{
+						        if (fabs(kernel[j] - *(data_index + k)) > fabs(kernel[j+1] - *(data_index + k)))
+							{
+							        swap = kernel[j];
+								kernel[j] = kernel[j+1];
+								kernel[j+1] = swap;
+							}
+						}
 					}
-					local_diff = sqrt(local_diff);
-					local_diff /= (FE_value)kernel_size;
-				        result_index[k] = local_diff;
-					/* result_index[k] = local_mean * (1.0 - local_diff); */
-					/* max_diff[k] = my_Max(max_diff[k], local_diff); */
-					max_diff[k] = my_Max(max_diff[k], result_index[k]);
+					for (j = 0; j < k_number; j++)
+					{
+					        local_mean += kernel[j];
+					}
+					local_mean /= (FE_value)k_number;
+					result_index[k] = local_mean;
 				}
 				data_index += image->depth;
 				result_index += image->depth;
 			}
 
-			for (i = (storage_size / image->depth) - 1; i >= 0; i--)
-			{
-			        result_index -= image->depth;
-				for (k = 0; k < image->depth; k++)
-				{
-				        if (max_diff[k] == 0.0)
-					{
-					        result_index[k] = 0.0;
-					}
-					else
-					{
-				                result_index[k] /= max_diff[k];
-					}
-				}
-			}
 			if (return_code)
 			{
 				DEALLOCATE(image->data);
@@ -479,42 +470,41 @@ Perform a neigborhood averaging operation on the image cache.
 
 			DEALLOCATE(kernel);
 			DEALLOCATE(offsets);
-			DEALLOCATE(max_diff);
 
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Image_cache_local_std.  Not enough memory");
+				"Image_cache_k_nearest_mean.  Not enough memory");
 			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Image_cache_local_std.  "
+		display_message(ERROR_MESSAGE, "Image_cache_k_nearest_mean.  "
 			"Invalid arguments.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Image_cache_local_std */
+} /* Image_cache_k_nearest_mean */
 
-static int Computed_field_local_std_evaluate_cache_at_node(
+static int Computed_field_k_nearest_mean_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_local_std_evaluate_cache_at_node);
+	ENTER(Computed_field_k_nearest_mean_evaluate_cache_at_node);
 	if (field && node &&
-		(data = (struct Computed_field_local_std_type_specific_data *)field->type_specific_data))
+		(data = (struct Computed_field_k_nearest_mean_type_specific_data *)field->type_specific_data))
 	{
 		return_code = 1;
 		/* 1. Precalculate the Image_cache */
@@ -524,7 +514,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_local_std(data->image, data->radius);
+			return_code = Image_cache_k_nearest_mean(data->image, data->radius, data->k_number);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -535,33 +525,33 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_local_std_evaluate_cache_at_node.  "
+			"Computed_field_k_nearest_mean_evaluate_cache_at_node.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_local_std_evaluate_cache_at_node */
+} /* Computed_field_k_nearest_mean_evaluate_cache_at_node */
 
-static int Computed_field_local_std_evaluate_cache_in_element(
+static int Computed_field_k_nearest_mean_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_local_std_evaluate_cache_in_element);
+	ENTER(Computed_field_k_nearest_mean_evaluate_cache_in_element);
 	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi && (field->number_of_source_fields > 0) &&
 		(field->number_of_components == field->source_fields[0]->number_of_components) &&
-		(data = (struct Computed_field_local_std_type_specific_data *) field->type_specific_data) &&
+		(data = (struct Computed_field_k_nearest_mean_type_specific_data *) field->type_specific_data) &&
 		data->image && (field->number_of_components == data->image->depth))
 	{
 		return_code = 1;
@@ -572,7 +562,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_local_std(data->image, data->radius);
+			return_code = Image_cache_k_nearest_mean(data->image, data->radius, data->k_number);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
@@ -583,70 +573,70 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_local_std_evaluate_cache_in_element.  "
+			"Computed_field_k_nearest_mean_evaluate_cache_in_element.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_local_std_evaluate_cache_in_element */
+} /* Computed_field_k_nearest_mean_evaluate_cache_in_element */
 
-#define Computed_field_local_std_evaluate_as_string_at_node \
+#define Computed_field_k_nearest_mean_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-#define Computed_field_local_std_evaluate_as_string_in_element \
+#define Computed_field_k_nearest_mean_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-#define Computed_field_local_std_set_values_at_node \
+#define Computed_field_k_nearest_mean_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-#define Computed_field_local_std_set_values_in_element \
+#define Computed_field_k_nearest_mean_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-#define Computed_field_local_std_get_native_discretization_in_element \
+#define Computed_field_k_nearest_mean_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_local_std_find_element_xi \
+#define Computed_field_k_nearest_mean_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 June 2004
 
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-static int list_Computed_field_local_std(
+static int list_Computed_field_k_nearest_mean(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -655,11 +645,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(List_Computed_field_local_std);
-	if (field && (field->type_string==computed_field_local_std_type_string)
-		&& (data = (struct Computed_field_local_std_type_specific_data *)
+	ENTER(List_Computed_field_k_nearest_mean);
+	if (field && (field->type_string==computed_field_k_nearest_mean_type_string)
+		&& (data = (struct Computed_field_k_nearest_mean_type_specific_data *)
 		field->type_specific_data))
 	{
 		display_message(INFORMATION_MESSAGE,
@@ -668,20 +658,22 @@ DESCRIPTION :
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    filter radius : %d\n", data->radius);
+		display_message(INFORMATION_MESSAGE,
+			"    filter k_number : %d\n", data->k_number);
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_local_std.  Invalid field");
+			"list_Computed_field_k_nearest_mean.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Computed_field_local_std */
+} /* list_Computed_field_k_nearest_mean */
 
-static char *Computed_field_local_std_get_command_string(
+static char *Computed_field_k_nearest_mean_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -692,17 +684,17 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name, temp_string[40];
 	int error;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_local_std_get_command_string);
+	ENTER(Computed_field_k_nearest_mean_get_command_string);
 	command_string = (char *)NULL;
-	if (field&& (field->type_string==computed_field_local_std_type_string)
-		&& (data = (struct Computed_field_local_std_type_specific_data *)
+	if (field&& (field->type_string==computed_field_k_nearest_mean_type_string)
+		&& (data = (struct Computed_field_k_nearest_mean_type_specific_data *)
 		field->type_specific_data) )
 	{
 		error = 0;
 		append_string(&command_string,
-			computed_field_local_std_type_string, &error);
+			computed_field_k_nearest_mean_type_string, &error);
 		append_string(&command_string, " field ", &error);
 		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
@@ -718,6 +710,8 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		sprintf(temp_string, " dimension %d", data->image->dimension);
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " k_number %d", data->k_number);
 		append_string(&command_string, temp_string, &error);
 
 		sprintf(temp_string, " radius %d", data->radius);
@@ -738,14 +732,14 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_local_std_get_command_string.  Invalid field");
+			"Computed_field_k_nearest_mean_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_local_std_get_command_string */
+} /* Computed_field_k_nearest_mean_get_command_string */
 
-#define Computed_field_local_std_has_multiple_times \
+#define Computed_field_k_nearest_mean_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -754,10 +748,10 @@ DESCRIPTION :
 Works out whether time influences the field.
 ==============================================================================*/
 
-int Computed_field_set_type_local_std(struct Computed_field *field,
+int Computed_field_set_type_k_nearest_mean(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	int radius,
+	int radius, int k_number,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -765,7 +759,7 @@ int Computed_field_set_type_local_std(struct Computed_field *field,
 LAST MODIFIED : 17 December 2003
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_local_std with the supplied
+Converts <field> to type COMPUTED_FIELD_k_nearest_mean with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <radius> specifies
 half the width and height of the filter window.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
@@ -776,20 +770,20 @@ although its cache may be lost.
 {
 	int depth, number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_set_type_local_std);
+	ENTER(Computed_field_set_type_k_nearest_mean);
 	if (field && source_field && texture_coordinate_field &&
-		(radius > 0) && (depth = source_field->number_of_components) &&
+		(radius > 0) && (k_number > 0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
-		data = (struct Computed_field_local_std_type_specific_data *)NULL;
+		data = (struct Computed_field_k_nearest_mean_type_specific_data *)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields) &&
-			ALLOCATE(data, struct Computed_field_local_std_type_specific_data, 1) &&
+			ALLOCATE(data, struct Computed_field_k_nearest_mean_type_specific_data, 1) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
 			data->image, dimension, depth, sizes, minimums, maximums) &&
@@ -798,26 +792,27 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_local_std_type_string;
+			field->type_string = computed_field_k_nearest_mean_type_string;
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			source_fields[1]=ACCESS(Computed_field)(texture_coordinate_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
 			data->radius = radius;
+			data->k_number = k_number;
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
 			data->computed_field_manager = computed_field_manager;
 			data->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
-				Computed_field_local_std_field_change, (void *)field,
+				Computed_field_k_nearest_mean_field_change, (void *)field,
 				computed_field_manager);
 
 			field->type_specific_data = data;
 
 			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(local_std);
+			COMPUTED_FIELD_ESTABLISH_METHODS(k_nearest_mean);
 		}
 		else
 		{
@@ -836,33 +831,33 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_local_std.  Invalid argument(s)");
+			"Computed_field_set_type_k_nearest_mean.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_type_local_std */
+} /* Computed_field_set_type_k_nearest_mean */
 
-int Computed_field_get_type_local_std(struct Computed_field *field,
+int Computed_field_get_type_k_nearest_mean(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	int *radius, int *dimension, int **sizes, FE_value **minimums,
+	int *radius, int *k_number, int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
 LAST MODIFIED : 17 December 2003
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_local_std, the
+If the field is of type COMPUTED_FIELD_k_nearest_mean, the
 parameters defining it are returned.
 ==============================================================================*/
 {
 	int i, return_code;
-	struct Computed_field_local_std_type_specific_data *data;
+	struct Computed_field_k_nearest_mean_type_specific_data *data;
 
-	ENTER(Computed_field_get_type_local_std);
-	if (field && (field->type_string==computed_field_local_std_type_string)
-		&& (data = (struct Computed_field_local_std_type_specific_data *)
+	ENTER(Computed_field_get_type_k_nearest_mean);
+	if (field && (field->type_string==computed_field_k_nearest_mean_type_string)
+		&& (data = (struct Computed_field_k_nearest_mean_type_specific_data *)
 		field->type_specific_data) && data->image)
 	{
 		*dimension = data->image->dimension;
@@ -873,6 +868,7 @@ parameters defining it are returned.
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
 			*radius = data->radius;
+			*k_number = data->k_number;
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
@@ -885,46 +881,46 @@ parameters defining it are returned.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_local_std.  Unable to allocate vectors.");
+				"Computed_field_get_type_k_nearest_mean.  Unable to allocate vectors.");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_local_std.  Invalid argument(s)");
+			"Computed_field_get_type_k_nearest_mean.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_local_std */
+} /* Computed_field_get_type_k_nearest_mean */
 
-static int define_Computed_field_type_local_std(struct Parse_state *state,
-	void *field_void, void *computed_field_local_std_package_void)
+static int define_Computed_field_type_k_nearest_mean(struct Parse_state *state,
+	void *field_void, void *computed_field_k_nearest_mean_package_void)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_local_std (if it is not
+Converts <field> into type COMPUTED_FIELD_k_nearest_mean (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	char *current_token;
 	FE_value *minimums, *maximums;
-	int dimension, element_dimension, radius, return_code, *sizes;
+	int dimension, element_dimension, radius, k_number, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
-	struct Computed_field_local_std_package
-		*computed_field_local_std_package;
+	struct Computed_field_k_nearest_mean_package
+		*computed_field_k_nearest_mean_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data,
 		set_texture_coordinate_field_data;
 
-	ENTER(define_Computed_field_type_local_std);
+	ENTER(define_Computed_field_type_k_nearest_mean);
 	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_local_std_package=
-		(struct Computed_field_local_std_package *)
-		computed_field_local_std_package_void))
+		(computed_field_k_nearest_mean_package=
+		(struct Computed_field_k_nearest_mean_package *)
+		computed_field_k_nearest_mean_package_void))
 	{
 		return_code=1;
 		source_field = (struct Computed_field *)NULL;
@@ -935,24 +931,25 @@ already) and allows its contents to be modified.
 		maximums = (FE_value *)NULL;
 		element_dimension = 0;
 		radius = 1;
+		k_number = 1;
 		/* field */
 		set_source_field_data.computed_field_manager =
-			computed_field_local_std_package->computed_field_manager;
+			computed_field_k_nearest_mean_package->computed_field_manager;
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		/* texture_coordinate_field */
 		set_texture_coordinate_field_data.computed_field_manager =
-			computed_field_local_std_package->computed_field_manager;
+			computed_field_k_nearest_mean_package->computed_field_manager;
 		set_texture_coordinate_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
 
-		if (computed_field_local_std_type_string ==
+		if (computed_field_k_nearest_mean_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code = Computed_field_get_type_local_std(field,
-				&source_field, &texture_coordinate_field, &radius,
+			return_code = Computed_field_get_type_k_nearest_mean(field,
+				&source_field, &texture_coordinate_field, &radius, &k_number,
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -981,6 +978,9 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
+				/* k_number */
+				Option_table_add_int_positive_entry(option_table,
+					"k_number", &k_number);
 				/* maximums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"maximums", maximums, &dimension);
@@ -1038,6 +1038,9 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
+				/* k_number */
+				Option_table_add_int_positive_entry(option_table,
+					"k_number", &k_number);
 				/* maximums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"maximums", maximums, &dimension);
@@ -1060,12 +1063,12 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_local_std(field,
-					source_field, texture_coordinate_field, radius, dimension,
+				return_code = Computed_field_set_type_k_nearest_mean(field,
+					source_field, texture_coordinate_field, radius, k_number, dimension,
 					sizes, minimums, maximums, element_dimension,
-					computed_field_local_std_package->computed_field_manager,
-					computed_field_local_std_package->root_region,
-					computed_field_local_std_package->graphics_buffer_package);
+					computed_field_k_nearest_mean_package->computed_field_manager,
+					computed_field_k_nearest_mean_package->root_region,
+					computed_field_k_nearest_mean_package->graphics_buffer_package);
 			}
 			if (!return_code)
 			{
@@ -1075,7 +1078,7 @@ already) and allows its contents to be modified.
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_local_std.  Failed");
+						"define_Computed_field_type_k_nearest_mean.  Failed");
 				}
 			}
 			if (source_field)
@@ -1103,15 +1106,15 @@ already) and allows its contents to be modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_local_std.  Invalid argument(s)");
+			"define_Computed_field_type_k_nearest_mean.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_local_std */
+} /* define_Computed_field_type_k_nearest_mean */
 
-int Computed_field_register_types_local_std(
+int Computed_field_register_types_k_nearest_mean(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
@@ -1121,30 +1124,30 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_local_std_package
-		computed_field_local_std_package;
+	static struct Computed_field_k_nearest_mean_package
+		computed_field_k_nearest_mean_package;
 
-	ENTER(Computed_field_register_types_local_std);
+	ENTER(Computed_field_register_types_k_nearest_mean);
 	if (computed_field_package)
 	{
-		computed_field_local_std_package.computed_field_manager =
+		computed_field_k_nearest_mean_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_local_std_package.root_region = root_region;
-		computed_field_local_std_package.graphics_buffer_package = graphics_buffer_package;
+		computed_field_k_nearest_mean_package.root_region = root_region;
+		computed_field_k_nearest_mean_package.graphics_buffer_package = graphics_buffer_package;
 		return_code = Computed_field_package_add_type(computed_field_package,
-			            computed_field_local_std_type_string,
-			            define_Computed_field_type_local_std,
-			            &computed_field_local_std_package);
+			            computed_field_k_nearest_mean_type_string,
+			            define_Computed_field_type_k_nearest_mean,
+			            &computed_field_k_nearest_mean_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_local_std.  Invalid argument(s)");
+			"Computed_field_register_types_k_nearest_mean.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_local_std */
+} /* Computed_field_register_types_k_nearest_mean */
 
