@@ -251,6 +251,7 @@ UNEMAP_SRCS = \
 	unemap/mapping.c \
 	unemap/mapping_window.c \
 	unemap/neurosoft.c \
+	unemap/pacing_window.c \
 	unemap/page_window.c \
 	unemap/rig.c \
 	unemap/rig_node.c \
