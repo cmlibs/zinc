@@ -572,6 +572,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
 	finite_element/finite_element.c \
+	finite_element/finite_element_adjacent_elements.c \
 	finite_element/import_finite_element.c
 GENERAL_SRCS = \
 	general/any_object.c \
