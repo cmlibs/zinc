@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 23 November 2001
+XCOMM LAST MODIFIED : 27 November 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -735,8 +735,6 @@ ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB) \
 		$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	  $(MOVIE_FILE_LIB) $(XML_LIB) $(LIB)
 
-APPLICATION_SRCS = \
-	application/application.c 
 CHOOSE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_control_curve.c \
@@ -838,14 +836,12 @@ GENERAL_SRCS = \
 	general/statistics.c \
 	general/value.c 
 GRAPHICS_SRCS = \
-	graphics/animation_window.c \
 	graphics/auxiliary_graphics_types.c \
 	graphics/colour.c \
 	graphics/complex.c \
 	graphics/element_group_settings.c \
 	graphics/element_point_ranges.c \
 	graphics/environment_map.c \
-	graphics/face_window.c \
 	graphics/glyph.c \
 	graphics/graphical_element.c \
 	graphics/graphical_element_editor.c \
@@ -861,7 +857,6 @@ GRAPHICS_SRCS = \
 	graphics/makegtobj.c \
 	graphics/mcubes.c \
 	graphics/movie_graphics.c \
-	graphics/nrutil.c \
 	graphics/renderbinarywavefront.c \
 	graphics/rendergl.c \
 	graphics/rendervrml.c \
@@ -876,7 +871,6 @@ GRAPHICS_SRCS = \
 	graphics/spectrum_editor_dialog.c \
 	graphics/spectrum_editor_settings.c \
 	graphics/spectrum_settings.c \
-	graphics/splines.c \
 	graphics/texture.c \
 	graphics/texture_graphics.c \
 	graphics/texture_line.c \
@@ -885,8 +879,7 @@ GRAPHICS_SRCS = \
 	graphics/userdef_objects.c \
 	graphics/volume_texture.c \
 	graphics/volume_texture_editor.c \
-	graphics/volume_texture_editor_dialog.c \
-	graphics/write_to_video.c 
+	graphics/volume_texture_editor_dialog.c
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
@@ -965,7 +958,6 @@ VIEW_SRCS = \
 
 XCOMM DB.  makedepend has problems if too many files
 SRCS_1 = \
-	$(APPLICATION_SRCS) \
 	$(CELL_SRCS) \
 	$(CHOOSE_SRCS) \
 	$(COLOUR_SRCS) \
