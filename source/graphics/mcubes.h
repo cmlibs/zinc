@@ -53,29 +53,6 @@ struct Cell_fn
 Global functions
 ----------------
 */
-double vector_modulus(double a[3]);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Returns the modulus of vector a.
-==============================================================================*/
-
-double dot_product(double a[3],double b[3]);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Returns the dot product ( a.b ) of vectors a,b.
-==============================================================================*/
-
-double scalar_triple_product(double a[3],double b[3],double c[3]);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Returns the scalar triple product ( [abc] = a.(bxc) ) of vectors a,b and c.
-==============================================================================*/
 
 int normalized_cross_product(float vector_1[3],float vector_2[3],
 	float result[3]);
@@ -95,24 +72,6 @@ LAST MODIFIED : 18 February 1998
 DESCRIPTION :
 Calculates the cross product of <vector_1> and <vector_2> and puts
 it in <result>.
-==============================================================================*/
-
-int vectors_equal(double v1[3],double v2[3],double tolerance);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-compares difference of vectors to a tolerance. returns 1 if less than tolerance,
-0 if greater.
-==============================================================================*/
-
-int scalars_equal(double s1,double s2,double tolerance);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-compares difference of scalars to a tolerance. returns 1 if less than tolerance,
-0 if greater.
 ==============================================================================*/
 
 #if defined (OLD_CODE)

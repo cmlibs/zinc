@@ -36,6 +36,7 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #endif
 
 #include "general/debug.h"
+#include "general/matrix_vector.h"
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
 #include "graphics/texture_line.h"
@@ -633,6 +634,33 @@ int debug_i=0,debug_j=0,debug_k=0;
 Module functions
 ----------------
 */
+
+static int vectors_equal(double v1[3],double v2[3],double tolerance)
+/*******************************************************************************
+LAST MODIFIED : 18 February 1998
+
+DESCRIPTION :
+Compares difference of vectors to a tolerance. returns 1 if less than tolerance,
+0 if greater.
+==============================================================================*/
+{
+	double v[3];
+	int i;
+
+	for (i=0;i<3;i++)
+	{
+		v[i]=v1[i]-v2[i];
+	}
+	if (sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]) < tolerance)
+	{
+		return(1);
+	}
+	else
+	{
+		return(0);
+	}
+} /* vectors_equal */
+
 static int shared_edge(double v1[3],double v2[3],double t2[3][3])
 /*******************************************************************************
 LAST MODIFIED : 17 July 1997
@@ -1823,54 +1851,57 @@ else
 static struct Triangle *make_triangle(double vertices[3][3],int clip_history,
 	int clip_history2)
 /*******************************************************************************
-LAST MODIFIED : 21 December 1995
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
 Creates and sets up triangle data structure, including plane eqn parameters.
 ==============================================================================*/
 {
-int i,j;
-double v1[3],v2[3];
-struct Triangle *triangle;
+	int i,j;
+	double v1[3],v2[3];
+	struct Triangle *triangle;
 
-if (ALLOCATE(triangle,struct Triangle,1))
+	ENTER(make_triangle);
+	if (ALLOCATE(triangle,struct Triangle,1))
 	{
-	for (i=0;i<3;i++)
+		for (i=0;i<3;i++)
 		{
-		for (j=0;j<3;j++)
+			for (j=0;j<3;j++)
 			{
-			triangle->v[i][j]=vertices[i][j];
+				triangle->v[i][j]=vertices[i][j];
 			}
-		/* material at vertex */
+			/* material at vertex */
 		}
-	for (i=0;i<3;i++)
+		for (i=0;i<3;i++)
 		{
-		v1[i]=triangle->v[1][i]-triangle->v[0][i];
-		v2[i]=triangle->v[2][i]-triangle->v[0][i];
+			v1[i]=triangle->v[1][i]-triangle->v[0][i];
+			v2[i]=triangle->v[2][i]-triangle->v[0][i];
 		}
-	/* calculate normal */
-	if (cross_product(v1,v2,triangle->n))
+		/* calculate normal */
+		if (vectors_equal(v1, v2, AREA_ACC))
 		{
-		/* ax+by+cz+d=0 */
-		triangle->d=-(triangle->n[0]*triangle->v[0][0]
-			+triangle->n[1]*triangle->v[0][1]
-			+triangle->n[2]*triangle->v[0][2]);
+			if (debug_flag)
+				printf("** ERROR ** make_triangle : equal vectors, no cross product\n");
+			return(NULL);
 		}
+		else
+		{
+			cross_product3(v1, v2, triangle->n);
+			/* ax + by + cz + d = 0 */
+			triangle->d=-(triangle->n[0]*triangle->v[0][0]
+				+triangle->n[1]*triangle->v[0][1]
+				+triangle->n[2]*triangle->v[0][2]);
+		}
+		triangle->clip_history=clip_history;
+		triangle->clip_history2=clip_history2;
+		return(triangle);
+	}
 	else
-		{
-		if (debug_flag)
-			printf("** ERROR ** make_triangle : bad cross product\n");
-		return(NULL);
-		}
-	triangle->clip_history=clip_history;
-	triangle->clip_history2=clip_history2;
-	return(triangle);
-	}
-else
 	{
-	printf("*** ERROR *** make_triangle: - memory allocate failed\n");
-	return(NULL);
+		printf("*** ERROR *** make_triangle: - memory allocate failed\n");
+		return(NULL);
 	}
+	LEAVE;
 }  /* make_triangle */
 
 static void recurse_clip(struct Triangle *triangle,int n_clipping_triangles,
@@ -2086,18 +2117,18 @@ else
 				/* store as intermediate vertices 3,4,5 (between 0,1,2) */
 				temp_v[i+3][j]=q[j];
 				}
-			if (scalar_triple_product(v1,v2,clip_triangle->n) >=cutoff /* intersection is inside triangle */
-					&&  scalar_triple_product(v2,v3,clip_triangle->n) >=cutoff
-					&&  scalar_triple_product(v3,v1,clip_triangle->n) >=cutoff)
+			if (scalar_triple_product3(v1,v2,clip_triangle->n) >=cutoff /* intersection is inside triangle */
+					&&  scalar_triple_product3(v2,v3,clip_triangle->n) >=cutoff
+					&&  scalar_triple_product3(v3,v1,clip_triangle->n) >=cutoff)
 				{
 				if (debug_flag)
 					printf("stp:  %f,%f,%f\n",
-						scalar_triple_product(v1,v2,clip_triangle->n),
-								scalar_triple_product(v2,v3,clip_triangle->n),
-								scalar_triple_product(v3,v1,clip_triangle->n));
-						if (scalar_triple_product(v1,v2,clip_triangle->n)==0
-							||  scalar_triple_product(v2,v3,clip_triangle->n)==0
-							||  scalar_triple_product(v3,v1,clip_triangle->n)==0)
+						scalar_triple_product3(v1,v2,clip_triangle->n),
+								scalar_triple_product3(v2,v3,clip_triangle->n),
+								scalar_triple_product3(v3,v1,clip_triangle->n));
+						if (scalar_triple_product3(v1,v2,clip_triangle->n)==0
+							||  scalar_triple_product3(v2,v3,clip_triangle->n)==0
+							||  scalar_triple_product3(v3,v1,clip_triangle->n)==0)
 							{
 							if (debug_flag)
 								printf("one of stp=0\n");
@@ -2162,12 +2193,12 @@ else
 						}
 					if (debug_flag)
 						printf("stp: clip : %f,%f,%f\n",
-							scalar_triple_product(v1,v2,triangle->n),
-									scalar_triple_product(v2,v3,triangle->n),
-									scalar_triple_product(v3,v1,triangle->n));
-					if (scalar_triple_product(v1,v2,triangle->n) >=cutoff  /* intersection is inside triangle */
-								&& scalar_triple_product(v2,v3,triangle->n) >=cutoff
-								&& scalar_triple_product(v3,v1,triangle->n) >=cutoff
+							scalar_triple_product3(v1,v2,triangle->n),
+									scalar_triple_product3(v2,v3,triangle->n),
+									scalar_triple_product3(v3,v1,triangle->n));
+					if (scalar_triple_product3(v1,v2,triangle->n) >=cutoff  /* intersection is inside triangle */
+								&& scalar_triple_product3(v2,v3,triangle->n) >=cutoff
+								&& scalar_triple_product3(v3,v1,triangle->n) >=cutoff
 								)
 						{
 						if (debug_flag)
@@ -2175,9 +2206,9 @@ else
 						/* the point of intersection has position vector q */
 						/* this is the case were the clip is on an edge of triangle,
 						so this will become a new vertex */
-						if (scalar_triple_product(v1,v2,triangle->n)==0
-									||  scalar_triple_product(v2,v3,triangle->n)==0
-									||  scalar_triple_product(v3,v1,triangle->n)==0)
+						if (scalar_triple_product3(v1,v2,triangle->n)==0
+									||  scalar_triple_product3(v2,v3,triangle->n)==0
+									||  scalar_triple_product3(v3,v1,triangle->n)==0)
 									{
 									if (debug_flag)
 										printf("clip: one of stp=0\n");
@@ -2543,13 +2574,13 @@ Retriangulates hole, removing vertex.
 			tempv2[k] = i_vertex->coord[k] - vertex2->coord[k];
 			tempv3[k] = vertex2->coord[k] - vertex1->coord[k];
 		}
-		a = dot_product(tempv1,tempv2) / (vector_modulus(tempv3) * vector_modulus(tempv3));
+		a = dot_product3(tempv1,tempv2) / (norm3(tempv3) * norm3(tempv3));
 
 		for (k=0;k<3;k++)
 		{
 			tempv4[k] = tempv1[k] + a*(tempv2[k] - tempv1[k]) - i_vertex->coord[k];
 		}
-		temp_aspect=vector_modulus(tempv4) / vector_modulus(tempv3);
+		temp_aspect=norm3(tempv4) / norm3(tempv3);
 			/* printf("aspect[%d]=%lf\n",j,temp_aspect); */
 		if (temp_aspect > max_aspect)
 		{
@@ -2731,13 +2762,13 @@ for (j=0;j<n_triangles;j++)
 			tempv2[k]=iso_surface->vertex_list[i].coord[k] - iso_surface->vertex_list[vertex2].coord[k];
 			tempv3[k]=iso_surface->vertex_list[vertex2].coord[k] - iso_surface->vertex_list[vertex1].coord[k];
 		}
-		a=dot_product(tempv1,tempv2) / (vector_modulus(tempv3) * vector_modulus(tempv3));
+		a=dot_product3(tempv1,tempv2) / (norm3(tempv3) * norm3(tempv3));
 
 		for (k=0;k<3;k++)
 		{
 			tempv4[k]=tempv1[k] + a*(tempv2[k] - tempv1[k]) - iso_surface->vertex_list[i].coord[k];
 		}
-		temp_aspect=vector_modulus(tempv4) / vector_modulus(tempv3);
+		temp_aspect=norm3(tempv4) / norm3(tempv3);
 /*    printf("aspect[%d]=%lf\n",j,temp_aspect); */
 		if (temp_aspect > max_aspect)
 		{
@@ -2997,8 +3028,8 @@ Decimates triangle mesh
 						x1[k] = triangles[j]->vertices[1]->coord[k];
 						x2[k] = triangles[j]->vertices[2]->coord[k];
 					}
-					cross_product(v1,v2,cross);
-					magnitude=vector_modulus(cross);
+					cross_product3(v1,v2,cross);
+					magnitude=norm3(cross);
 
 					for (k=0;k<3;k++)
 					{
@@ -3013,12 +3044,12 @@ Decimates triangle mesh
 					xc[k] /= total_area;
 					vx[k] = i_vertex->coord[k] - xc[k];
 				}
-				magnitude = vector_modulus(na);
+				magnitude = norm3(na);
 				for ( k=0 ; k<3 ; k++ )
 				{
 					na[k] /= magnitude;
 				}
-				vertex_distance = fabs( dot_product(na,vx) );
+				vertex_distance = fabs( dot_product3(na,vx) );
 
 				/* debug */
 				/*  printf("vertex_distance[%d]=%lf\n",i,vertex_distance); */
@@ -3303,8 +3334,8 @@ for (i=0;i< iso_surface->n_vertices ;i++)
 				x1[k]=iso_surface->vertex_list[triangles[j][1]].coord[k];
 				x2[k]=iso_surface->vertex_list[triangles[j][2]].coord[k];
 			}
-			cross_product(v1,v2,cross);
-			magnitude=vector_modulus(cross);
+			cross_product3(v1,v2,cross);
+			magnitude=norm3(cross);
 
 			for (k=0;k<3;k++)
 			{
@@ -3319,12 +3350,12 @@ for (i=0;i< iso_surface->n_vertices ;i++)
 			xc[k] /=total_area;
 			vx[k]=iso_surface->vertex_list[i].coord[k] - xc[k];
 		}
-		magnitude=vector_modulus(na);
+		magnitude=norm3(na);
 		for (k=0;k<3;k++)
 		{
 			na[k] /=magnitude;
 		}
-		vertex_distance=fabs(dot_product(na,vx));
+		vertex_distance=fabs(dot_product3(na,vx));
 	/*  printf("vertex_distance[%d]=%lf\n",i,vertex_distance); */
 
 		new_triangle_count=0;
@@ -3508,183 +3539,6 @@ iso_surface->n_iso_polys=new_triangle_index;
 Global functions
 ----------------
 */
-double vector_modulus(double a[3])
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Returns the modulus of vector a.
-==============================================================================*/
-{
-	if (a)
-		{
-		return( sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]));
-		}
-	else
-		{
-		printf(" modulus : invalid vector \n");
-		return(1);
-		}
-} /* vector_modulus */
-
-double dot_product(double a[3],double b[3])
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Returns the dot product ( a.b ) of vectors a,b.
-==============================================================================*/
-{
-	if (a&&b)
-		{
-		return( a[0]*b[0] + a[1]*b[1] + a[2]*b[2] );
-		}
-	else
-		{
-		printf(" dot product : invalid vectors \n");
-		return(0);
-		}
-} /* dot_product */
-
-double scalar_triple_product(double a[3],double b[3],double c[3])
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Returns the scalar triple product ( [abc]=a.(bxc) ) of vectors a,b and c.
-==============================================================================*/
-{
-	if (a&&b&&c)
-		{
-		return(  a[0] * (b[1]*c[2] - c[1]*b[2])
-			+a[1] * (b[2]*c[0] - c[2]*b[0])
-			+a[2] * (b[0]*c[1] - b[1]*c[0]) );
-
-		}
-	else
-		{
-		printf(" scalar triple product : invalid vectors \n");
-		return(0);
-		}
-} /* scalar_triple_product */
-
-int normalized_cross_product(float vector_1[3],float vector_2[3],
-	float result[3])
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Calculates the normalized cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-==============================================================================*/
-{
-	int return_code;
-	float norm;
-
-	if (vector_1&&vector_2&&result)
-	{
-		result[0]=vector_1[1]*vector_2[2] - vector_2[1]*vector_1[2];
-		result[1]=vector_1[2]*vector_2[0] - vector_2[2]*vector_1[0];
-		result[2]=vector_1[0]*vector_2[1] - vector_1[1]*vector_2[0];
-		if ((norm=result[0]*result[0]+result[1]*result[1]+result[2]*result[2])>0)
-		{
-			norm=(float) sqrt((double)norm);
-			result[0] /=norm;
-			result[1] /=norm;
-			result[2] /=norm;
-		}
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-} /* normalized_cross_product */
-
-int cross_product(double vector_1[3],double vector_2[3],double result[3])
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Calculates the cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-==============================================================================*/
-{
-	int return_code;
-
-	if (vector_1&&vector_2&&result)
-		{
-		if (vectors_equal(vector_1,vector_2,AREA_ACC))
-			{
-			if (debug_flag)
-				printf("/////////////////// ERROR - cross product not good\n");
-			return_code=0;
-			}
-		else
-			{
-			result[0]=vector_1[1]*vector_2[2] - vector_2[1]*vector_1[2];
-			result[1]=vector_1[2]*vector_2[0] - vector_2[2]*vector_1[0];
-			result[2]=vector_1[0]*vector_2[1] - vector_1[1]*vector_2[0];
-
-			return_code=1;
-			}
-		}
-	else
-	{
-	printf("{{{{{{{{{{{{{{{{ ERROR - ! v1&v2&result\n");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* cross_product */
-
-int vectors_equal(double v1[3],double v2[3],double tolerance)
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Compares difference of vectors to a tolerance. returns 1 if less than tolerance,
-0 if greater.
-==============================================================================*/
-{
-double v[3];
-int i;
-
-for (i=0;i<3;i++)
-	{
-	v[i]=v1[i]-v2[i];
-	}
-if (sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]) < tolerance)
-	{
-	return(1);
-	}
-else
-	{
-	return(0);
-	}
-} /* vectors_equal */
-
-int scalars_equal(double s1,double s2,double tolerance)
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Compares difference of scalars to a tolerance. returns 1 if less than tolerance,
-0 if greater.
-==============================================================================*/
-{
-
-if (fabs(s1-s2) < tolerance)
-	{
-	return(1);
-	}
-else
-	{
-	return(0);
-	}
-} /* scalars_equal */
 
 #if defined (OLD_CODE)
 int load_mc_tables(void)
@@ -4955,7 +4809,8 @@ if (a < 6)
 					vector1[k]=vertex1[k]-vertex0[k];
 					vector2[k]=vertex2[k]-vertex0[k];
 				}
-				normalized_cross_product(vector1,vector2,result);
+				cross_product_float3(vector1, vector2, result);
+				normalize_float3(result);
 				for (k=0;k<3;k++)
 				{
 					vectorsum[k] +=result[k];
