@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6366,8 +6366,8 @@ NULL if not successful.
 #define XmCMapRangeMinimum "MapRangeMinimum"
 #define XmNmapRangeMaximum "mapRangeMaximum"
 #define XmCMapRangeMaximum "MapRangeMaximum"
-#define XmNreDrawMapOnMaunalTimeUpdate "reDrawMapOnMaunalTimeUpdate"
-#define XmCReDrawMapOnMaunalTimeUpdate "ReDrawMapOnMaunalTimeUpdate"
+#define XmNreDrawMapOnManualTimeUpdate "reDrawMapOnManualTimeUpdate"
+#define XmCReDrawMapOnManualTimeUpdate "ReDrawMapOnManualTimeUpdate"
 	static XtResource
 		resources_1[]=
 		{
@@ -6489,8 +6489,8 @@ NULL if not successful.
 		resources_10[]=
 		{
 			{
-				XmNreDrawMapOnMaunalTimeUpdate,
-				XmCReDrawMapOnMaunalTimeUpdate,
+				XmNreDrawMapOnManualTimeUpdate,
+				XmCReDrawMapOnManualTimeUpdate,
 				XmRString,
 				sizeof(char *),
 				0,
