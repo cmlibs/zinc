@@ -23718,6 +23718,12 @@ Executes a SET DIR command.
 									DEALLOCATE(command_data->example_directory);
 								}
 								command_data->example_directory=example_directory;
+#if defined (PERL_INTERPRETER)
+								/* Set the interpreter variable */
+								interpreter_set_string("example", example_directory, 
+									&return_code);
+#endif /* defined (PERL_INTERPRETER) */
+								
 #if defined (LINK_CMISS)
 								if (CMISS)
 								{
