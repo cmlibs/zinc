@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1884,38 +1884,39 @@ the the start and end times, the number of events and the search algorithm.
 
 int draw_signal(struct FE_node *device_node,
 	struct Draw_package *draw_package,struct Device *device,
-	enum Signal_detail detail,int first_data,int last_data,int x_pos,int y_pos,
+	enum Signal_detail detail,int number_of_data_intervals,
+	int current_data_interval,int *first_data,int *last_data,int x_pos,int y_pos,
 	int width,int height,Pixmap pixel_map,int *axes_left,int *axes_top,
 	int *axes_width,int *axes_height,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
 (<x_pos>, <y_pos>), size (<width>, <height>) and <detail>.
+NB.  0<=current_data_interval<number_of_data_intervals
 ???missing data ? times ?
 ???DB.  Needs more checking and more on return_code
 ???DB.  Change first_data and last_data to times
 ==============================================================================*/
 {
-	char *name,number_string[20],ticks_above;
+	char **name,number_string[20],ticks_above;
 	Display *display;
-	enum Event_signal_status *signals_status;
+	enum Event_signal_status **signals_status;
 	float postscript_page_bottom,postscript_page_left,postscript_page_height,
 		postscript_page_width,signal_maximum,signal_minimum,signal_ref,
-		*signals_values,*signal_value,*time,time_max,time_min,time_ref,*times,
-		time_scale,time_tick,time_tick_max,time_tick_min,time_tick_width,
-		value_float,value_scale,value_tick,value_tick_max,value_tick_min,
-		value_tick_width,world_height,world_left,world_top,world_width,x_scale,
-		y_scale;
+		*signals_maximum,*signals_minimum,**signals_values,*signal_value,*time,
+		time_max,time_min,time_ref,**times,time_scale,time_tick,time_tick_max,
+		time_tick_min,time_tick_width,value_float,value_scale,value_tick,
+		value_tick_max,value_tick_min,value_tick_width,world_height,world_left,
+		world_top,world_width,x_scale,y_scale;
 	GC graphics_context;
-	int ascent,descent,highlight,direction,i,j,length,
-		number_of_points,number_of_segments,
-		number_of_signals,number_of_ticks,return_code,x_marker,x_max,x_min,
-		x_ref,x_string,x_tick,x_tick_length=3,y_marker,y_max,y_min,y_ref,y_string,
-		y_tick,y_tick_length=3;
+	int ascent,descent,*highlight,direction,i,j,k,length,*number_of_points,
+		number_of_segments,*number_of_signals,number_of_ticks,return_code,x_marker,
+		x_max,x_min,x_ref,x_string,x_tick,x_tick_length=3,y_marker,y_max,y_min,
+		y_ref,y_string,y_tick,y_tick_length=3;
 	short int value_short_int,x;
 	XCharStruct bounds;
 	XFontStruct *font;
@@ -1930,223 +1931,230 @@ Draws the <device> signal in the <pixel_map> at the specified position
 		width,height);
 #endif /* defined (DEBUG) */
 	return_code=0; 
-	if (user_interface&&signal_drawing_information)
+	if (user_interface&&signal_drawing_information&&(0<=current_data_interval)&&
+		(current_data_interval<number_of_data_intervals)&&first_data&&last_data)
 	{
-		signals_status=(enum Event_signal_status *)NULL;
-		signals_values=(float *)NULL;
-		times=(float *)NULL;
-		name=(char *)NULL;
-		if (extract_signal_information(device_node,draw_package,device,0,first_data,
-			last_data,&number_of_signals,&number_of_points,&times,&signals_values,
-			&signals_status,&name,&highlight,&signal_minimum,&signal_maximum))
+		ALLOCATE(signals_status,enum Event_signal_status *,
+			number_of_data_intervals);
+		ALLOCATE(signals_values,float *,number_of_data_intervals);
+		ALLOCATE(times,float *,number_of_data_intervals);
+		ALLOCATE(name,char *,number_of_data_intervals);
+		ALLOCATE(number_of_signals,int,number_of_data_intervals);
+		ALLOCATE(number_of_points,int,number_of_data_intervals);
+		ALLOCATE(highlight,int,number_of_data_intervals);
+		ALLOCATE(signals_minimum,float,number_of_data_intervals);
+		ALLOCATE(signals_maximum,float,number_of_data_intervals);
+		if (signals_status&&signals_values&&times&&name&&number_of_signals&&
+			number_of_points&&highlight&&signals_minimum&&signals_maximum)
 		{
-			/* local variables initialised OK.  Use them only from now on */
-			font=signal_drawing_information->font;
-			display=user_interface->display;
-			graphics_context=
-				(signal_drawing_information->graphics_context).axis_colour;
-			/* calculate the data time range from the first signal */
-			time_min=times[0];
-			time_max=times[number_of_points-1];
-			/* determine the time tick marks */
-			calculate_divisions(time_min,time_max,5,&time_tick_width,&time_tick_min,
-				&time_tick_max);
-			/* scale the time range to fit in the specified width on the screen */
-			switch (detail)
+			for (i=0;i<number_of_data_intervals;i++)
 			{
-				case SIGNAL_AREA_DETAIL:
-				{
-					/* leave enough room on the left for displaying a 3 character name */
-						/*???DB.  Can I do better than this ?  The axes only need to be
-							calculated once when drawing all the signals */
-					XTextExtents(font,"BBB",3,&direction,&ascent,&descent,&bounds);
-					x_min=x_pos+bounds.lbearing+bounds.rbearing+3;
-					x_max=x_pos+width-1;
-				} break;
-				case INTERVAL_AREA_DETAIL: case ENLARGE_AREA_DETAIL:
-				{
-					/* leave enough room on the left for displaying a 3 character name */
-						/*???DB.  Can I do better than this ?  The axes only need to be
-							calculated once when drawing all the signals */
-					XTextExtents(font,"BBB",3,&direction,&ascent,&descent,&bounds);
-					x_min=x_pos+bounds.lbearing+bounds.rbearing+3;
-					x_max=x_pos+width-3;
-				} break;
-				case EDIT_AREA_DETAIL: case PRINTER_DETAIL:
-				{
-					/* leave enough room on the left for displaying a 3 character name,
-						a 3 digit voltage and a tick mark */
-					XTextExtents(font,"BBB -888",8,&direction,&ascent,&descent,&bounds);
-					x_min=x_pos+bounds.lbearing+bounds.rbearing+6;
-					x_max=x_pos+width-3;
-				} break;
+				signals_status[i]=(enum Event_signal_status *)NULL;
+				signals_values[i]=(float *)NULL;
+				times[i]=(float *)NULL;
+				name[i]=(char *)NULL;
 			}
-			if (x_min>=x_max)
+			i=0;
+			while ((i<number_of_data_intervals)&&extract_signal_information(
+				device_node,draw_package,device,0,first_data[i],last_data[i],
+				number_of_signals+i,number_of_points+i,times+i,signals_values+i,
+				signals_status+i,name+i,highlight+i,signals_minimum+i,
+				signals_maximum+i))
 			{
-				x_min=x_max-1;
+				i++;
 			}
-			time_scale=SCALE_FACTOR(time_max-time_min,x_max-x_min);
-			/* determine the unscaled points/lines to be drawn */			
-			if (signal_maximum<signal_minimum)
+			if (i>=number_of_data_intervals)
 			{
-				/* calculate the maximum and minimum signal values */
-				signal_value=signals_values;
-				signal_minimum= *signal_value;
-				signal_maximum=signal_minimum;
-				for (i=number_of_signals*number_of_points-1;i>0;i--)
+				/* local variables initialised OK.  Use them only from now on */
+				font=signal_drawing_information->font;
+				display=user_interface->display;
+				graphics_context=
+					(signal_drawing_information->graphics_context).axis_colour;
+				/* calculate the data time range from the current interval of the first
+					signal.  Offset other intervals to start at the same time as the
+					current interval */
+				time_min=(times[current_data_interval])[0];
+				time_max=(times[current_data_interval])[number_of_points[
+					current_data_interval]-1];
+				for (i=0;i<number_of_data_intervals;i++)
 				{
-					signal_value++;
-					value_float= *signal_value;
-					if (value_float<signal_minimum)
+					if (i!=current_data_interval)
 					{
-						signal_minimum=value_float;
-					}
-					else
-					{
-						if (value_float>signal_maximum)
+						time=times[i];
+						for (j=number_of_points[i]-1;j>=0;j--)
 						{
-							signal_maximum=value_float;
+							time[j] += time_min-time[0];
 						}
-					} 
+						if (time[number_of_points[i]-1]>time_max)
+						{
+							time_max=time[number_of_points[i]-1];
+						}
+					}
 				}
-			}
-			/* allow for constant signals */
-			if (signal_minimum==signal_maximum)
-			{
-				signal_maximum += 1;
-				signal_minimum -= 1;
-			}
-			if (device)
-			{
-				device->signal_maximum=signal_maximum;
-				device->signal_minimum=signal_minimum;
-			}
+				/* determine the time tick marks */
+				calculate_divisions(time_min,time_max,5,&time_tick_width,&time_tick_min,
+					&time_tick_max);
+				/* scale the time range to fit in the specified width on the screen */
+				switch (detail)
+				{
+					case SIGNAL_AREA_DETAIL:
+					{
+						/* leave enough room on the left for displaying a 3 character
+							name */
+							/*???DB.  Can I do better than this ?  The axes only need to be
+								calculated once when drawing all the signals */
+						XTextExtents(font,"BBB",3,&direction,&ascent,&descent,&bounds);
+						x_min=x_pos+bounds.lbearing+bounds.rbearing+3;
+						x_max=x_pos+width-1;
+					} break;
+					case INTERVAL_AREA_DETAIL: case ENLARGE_AREA_DETAIL:
+					{
+						/* leave enough room on the left for displaying a 3 character
+							name */
+							/*???DB.  Can I do better than this ?  The axes only need to be
+								calculated once when drawing all the signals */
+						XTextExtents(font,"BBB",3,&direction,&ascent,&descent,&bounds);
+						x_min=x_pos+bounds.lbearing+bounds.rbearing+3;
+						x_max=x_pos+width-3;
+					} break;
+					case EDIT_AREA_DETAIL: case PRINTER_DETAIL:
+					{
+						/* leave enough room on the left for displaying a 3 character name,
+							a 3 digit voltage and a tick mark */
+						XTextExtents(font,"BBB -888",8,&direction,&ascent,&descent,&bounds);
+						x_min=x_pos+bounds.lbearing+bounds.rbearing+6;
+						x_max=x_pos+width-3;
+					} break;
+				}
+				if (x_min>=x_max)
+				{
+					x_min=x_max-1;
+				}
+				time_scale=SCALE_FACTOR(time_max-time_min,x_max-x_min);
+				/* determine the unscaled points/lines to be drawn */
+				signal_minimum=signals_minimum[current_data_interval];
+				signal_maximum=signals_maximum[current_data_interval];
+				if (signal_maximum<signal_minimum)
+				{
+					/* calculate the maximum and minimum signal values */
+					signal_minimum=(signals_values[0])[0];
+					signal_maximum=signal_minimum;
+					for (j=number_of_data_intervals-1;j>=0;j--)
+					{
+						signal_value=signals_values[j];
+						for (i=number_of_signals[j]*number_of_points[j];i>0;i--)
+						{
+							value_float= *signal_value;
+							if (value_float<signal_minimum)
+							{
+								signal_minimum=value_float;
+							}
+							else
+							{
+								if (value_float>signal_maximum)
+								{
+									signal_maximum=value_float;
+								}
+							} 
+							signal_value++;
+						}
+					}
+				}
+				/* allow for constant signals */
+				if (signal_minimum==signal_maximum)
+				{
+					signal_maximum += 1;
+					signal_minimum -= 1;
+				}
+				if (device)
+				{
+					device->signal_maximum=signal_maximum;
+					device->signal_minimum=signal_minimum;
+				}
 #if defined (UNEMAP_USE_NODES)
-			else
-			{
-				struct FE_field_component component;
-				component.number=0;
-				component.field=get_Draw_package_signal_minimum_field(draw_package); 
-				set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-					signal_minimum);
-				component.number=0;
-				component.field=get_Draw_package_signal_maximum_field(draw_package); 
-				set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-					signal_maximum);
-			}
+				else
+				{
+					struct FE_field_component component;
+					component.number=0;
+					component.field=get_Draw_package_signal_minimum_field(draw_package); 
+					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+						signal_minimum);
+					component.number=0;
+					component.field=get_Draw_package_signal_maximum_field(draw_package); 
+					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
+						signal_maximum);
+				}
 #endif /* defined (UNEMAP_USE_NODES) */
-			/* determine the value tick marks */
-			calculate_divisions(signal_minimum,signal_maximum,5,&value_tick_width,
-				&value_tick_min,&value_tick_max);
-			/* scale the value range to fit in the specified height on the screen */
-			switch (detail)
-			{
-				case SIGNAL_AREA_DETAIL:
+				/* determine the value tick marks */
+				calculate_divisions(signal_minimum,signal_maximum,5,&value_tick_width,
+					&value_tick_min,&value_tick_max);
+				/* scale the value range to fit in the specified height on the screen */
+				switch (detail)
 				{
-					/* leave no space above or below */
-					y_min=y_pos;
-					y_max=y_pos+height-1;
-				} break;
-				case EDIT_AREA_DETAIL: case INTERVAL_AREA_DETAIL:
-				case ENLARGE_AREA_DETAIL: case PRINTER_DETAIL:
+					case SIGNAL_AREA_DETAIL:
+					{
+						/* leave no space above or below */
+						y_min=y_pos;
+						y_max=y_pos+height-1;
+					} break;
+					case EDIT_AREA_DETAIL: case INTERVAL_AREA_DETAIL:
+					case ENLARGE_AREA_DETAIL: case PRINTER_DETAIL:
+					{
+						/* leave space for putting marker values above */
+						sprintf(number_string,"%.3g",time_tick_min);
+						length=strlen(number_string);
+						XTextExtents(font,number_string,length,&direction,&ascent,&descent,
+							&bounds);
+						y_min=y_pos+ascent+descent;
+						y_max=y_pos+height-3;
+					} break;
+				}
+				value_scale=SCALE_FACTOR(signal_maximum-signal_minimum,y_max-y_min);
+				/* draw axes */
+				/* draw the x axis */
+				if ((signal_maximum<=0)||(signal_minimum>=0))
 				{
-					/* leave space for putting marker values above */
-					sprintf(number_string,"%.3g",time_tick_min);
-					length=strlen(number_string);
-					XTextExtents(font,number_string,length,&direction,&ascent,&descent,
-						&bounds);
-					y_min=y_pos+ascent+descent;
-					y_max=y_pos+height-3;
-				} break;
-			}
-			value_scale=SCALE_FACTOR(signal_maximum-signal_minimum,y_max-y_min);
-			/* draw axes */
-			/* draw the x axis */
-			if ((signal_maximum<=0)||(signal_minimum>=0))
-			{
-				y_marker=y_max;
-			}
-			else
-			{
-				y_marker=SCALE_Y(0,signal_maximum,y_min,value_scale);
-			}
-			XPSDrawLine(display,pixel_map,graphics_context,x_min,y_marker,x_max,
-				y_marker);
-			/* draw the x axis markings - not for low detail */
-			switch (detail)
-			{
-				case INTERVAL_AREA_DETAIL: case EDIT_AREA_DETAIL:
-				case ENLARGE_AREA_DETAIL: case PRINTER_DETAIL:
+					y_marker=y_max;
+				}
+				else
 				{
-					/* determine if the ticks are above or below the axis */
-					if (y_marker>(y_min+y_max)/2)
+					y_marker=SCALE_Y(0,signal_maximum,y_min,value_scale);
+				}
+				XPSDrawLine(display,pixel_map,graphics_context,x_min,y_marker,x_max,
+					y_marker);
+				/* draw the x axis markings - not for low detail */
+				switch (detail)
+				{
+					case INTERVAL_AREA_DETAIL: case EDIT_AREA_DETAIL:
+					case ENLARGE_AREA_DETAIL: case PRINTER_DETAIL:
 					{
-						/* ticks above */
-						ticks_above=1;
-						y_tick=y_marker-y_tick_length;
+						/* determine if the ticks are above or below the axis */
+						if (y_marker>(y_min+y_max)/2)
+						{
+							/* ticks above */
+							ticks_above=1;
+							y_tick=y_marker-y_tick_length;
 #if !defined (NO_ALIGNMENT)
-						SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
-#endif
-					}
-					else
-					{
-						/* ticks below */
-						ticks_above=0;
-						y_tick=y_marker+y_tick_length;
+							SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
+#endif /* !defined (NO_ALIGNMENT) */
+						}
+						else
+						{
+							/* ticks below */
+							ticks_above=0;
+							y_tick=y_marker+y_tick_length;
 #if !defined (NO_ALIGNMENT)
-						SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif
-					}
+							SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* !defined (NO_ALIGNMENT) */
+						}
 #if !defined (NO_ALIGNMENT)
-					SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif
-					number_of_ticks=
-						(int)((time_tick_max-time_tick_min)/time_tick_width+0.5);
-					time_tick=time_tick_min;
-					/* draw the left tick mark */
-					x_marker=SCALE_X(time_tick,time_min,x_min,time_scale);
-					if (ticks_above)
-					{
-						XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_tick,
-							x_marker,y_marker);
-					}
-					else
-					{
-						XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_marker,
-							x_marker,y_tick);
-					}
-					/* write the left tick value */
-					sprintf(number_string,"%.3g",time_tick);
-					length=strlen(number_string);
-#if defined (NO_ALIGNMENT)
-					XTextExtents(font,number_string,length,&direction,&ascent,&descent,
-						&bounds);
-					x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
-					if (x_string-bounds.lbearing<x_min)
-					{
-						x_string=x_min+bounds.lbearing;
-					}
-					if (ticks_above)
-					{
-						y_string=y_tick-bounds.descent;
-					}
-					else
-					{
-						y_string=y_tick+bounds.ascent;
-					}
-					/* write the tick value */
-					XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
-						number_string,length);
-#else
-					XPSDrawString(display,pixel_map,graphics_context,x_marker,y_tick,
-						number_string,length);
-#endif
-					/* move to the next tick */
-					time_tick += time_tick_width;
-					for (i=number_of_ticks-1;i>0;i--)
-					{
+						SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif /* !defined (NO_ALIGNMENT) */
+						number_of_ticks=
+							(int)((time_tick_max-time_tick_min)/time_tick_width+0.5);
+						time_tick=time_tick_min;
+						/* draw the left tick mark */
 						x_marker=SCALE_X(time_tick,time_min,x_min,time_scale);
-						/* draw the tick mark */
 						if (ticks_above)
 						{
 							XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_tick,
@@ -2157,511 +2165,528 @@ Draws the <device> signal in the <pixel_map> at the specified position
 							XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_marker,
 								x_marker,y_tick);
 						}
-						if (PRINTER_DETAIL!=detail)
-						{
-							/* write the tick value */
-							sprintf(number_string,"%.3g",time_tick);
-							length=strlen(number_string);
+						/* write the left tick value */
+						sprintf(number_string,"%.3g",time_tick);
+						length=strlen(number_string);
 #if defined (NO_ALIGNMENT)
-							XTextExtents(font,number_string,length,&direction,&ascent,
-								&descent,&bounds);
-							x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
-							if (x_string-bounds.lbearing<x_min)
-							{
-								x_string=x_min+bounds.lbearing;
-							}
-							if (ticks_above)
-							{
-								y_string=y_tick-bounds.descent;
-							}
-							else
-							{
-								y_string=y_tick+bounds.ascent;
-							}
-							/* write the tick value */
-							XPSDrawString(display,pixel_map,graphics_context,x_string,
-								y_string,number_string,length);
-#else
-							XPSDrawString(display,pixel_map,graphics_context,x_marker,y_tick,
-								number_string,length);
-#endif
+						XTextExtents(font,number_string,length,&direction,&ascent,&descent,
+							&bounds);
+						x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
+						if (x_string-bounds.lbearing<x_min)
+						{
+							x_string=x_min+bounds.lbearing;
 						}
+						if (ticks_above)
+						{
+							y_string=y_tick-bounds.descent;
+						}
+						else
+						{
+							y_string=y_tick+bounds.ascent;
+						}
+						/* write the tick value */
+						XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
+							number_string,length);
+#else /* !defined (NO_ALIGNMENT) */
+						XPSDrawString(display,pixel_map,graphics_context,x_marker,y_tick,
+							number_string,length);
+#endif /* !defined (NO_ALIGNMENT) */
 						/* move to the next tick */
 						time_tick += time_tick_width;
-					}
-					/* draw the right tick mark */
-					x_marker=SCALE_X(time_tick,time_min,x_min,time_scale);
-					if (ticks_above)
-					{
-						XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_tick,
-							x_marker,y_marker);
-					}
-					else
-					{
-						XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_marker,
-							x_marker,y_tick);
-					}
-					/* write the right tick value */
-					sprintf(number_string,"%.3g",time_tick);
-					length=strlen(number_string);
-#if defined (NO_ALIGNMENT)
-					XTextExtents(font,number_string,length,&direction,&ascent,&descent,
-						&bounds);
-					x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
-					if (x_string-bounds.lbearing<x_min)
-					{
-						x_string=x_min+bounds.lbearing;
-					}
-					if (ticks_above)
-					{
-						y_string=y_tick-bounds.descent;
-					}
-					else
-					{
-						y_string=y_tick+bounds.ascent;
-					}
-					XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
-						number_string,length);
-#else
-					XPSDrawString(display,pixel_map,graphics_context,x_marker,y_tick,
-						number_string,length);
-#endif
-				} break;
-			}
-			/* draw the y axis */
-			XPSDrawLine(display,pixel_map,graphics_context,x_min,y_min,x_min,y_max);
-			/* draw the y axis markings - not for low detail */
-			switch (detail)
-			{
-				case EDIT_AREA_DETAIL:
-				/*???DB.  Temp ?*/case PRINTER_DETAIL:
-				{
-#if !defined (NO_ALIGNMENT)
-					SET_HORIZONTAL_ALIGNMENT(RIGHT_ALIGNMENT);
-					SET_VERTICAL_ALIGNMENT(CENTRE_VERTICAL_ALIGNMENT);
-#endif
-					x_tick=x_min-x_tick_length;
-					number_of_ticks=
-						(int)((value_tick_max-value_tick_min)/value_tick_width+0.5);
-					value_tick=value_tick_min;
-					y_marker=SCALE_Y(value_tick,signal_maximum,y_min,value_scale);
-					/* draw the minimum tick mark */
-					XPSDrawLine(display,pixel_map,graphics_context,x_tick,y_marker,x_min,
-						y_marker);
-					/* write the minimum tick value */
-					sprintf(number_string,"%.3g",value_tick);
-					length=strlen(number_string);
-#if defined (NO_ALIGNMENT)
-					XTextExtents(font,number_string,length,&direction,&ascent,&descent,
-						&bounds);
-					x_string=x_tick-bounds.rbearing;
-					if (x_string-bounds.lbearing<x_pos)
-					{
-						x_string=x_pos+bounds.lbearing;
-					}
-					y_string=y_marker+(bounds.ascent-bounds.descent)/2;
-					if (y_string-bounds.ascent<y_min)
-					{
-						y_string=y_min+bounds.ascent;
-					}
-					if (y_string+bounds.descent>y_max)
-					{
-						y_string=y_max-bounds.descent;
-					}
-					XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
-						number_string,length);
-#else
-					XPSDrawString(display,pixel_map,graphics_context,x_tick,y_marker,
-						number_string,length);
-#endif
-					/* move to the next tick */
-					value_tick += value_tick_width;
-					for (i=number_of_ticks-1;i>0;i--)
-					{
-						y_marker=SCALE_Y(value_tick,signal_maximum,y_min,value_scale);
-						/* draw the tick mark */
-						XPSDrawLine(display,pixel_map,graphics_context,x_tick,y_marker,
-							x_min,y_marker);
-						if (PRINTER_DETAIL!=detail)
+						for (i=number_of_ticks-1;i>0;i--)
 						{
-							/* write the tick value */
-							sprintf(number_string,"%.3g",value_tick);
-							length=strlen(number_string);
-#if defined (NO_ALIGNMENT)
-							XTextExtents(font,number_string,length,&direction,&ascent,
-								&descent,&bounds);
-							x_string=x_tick-bounds.rbearing;
-							if (x_string-bounds.lbearing<x_pos)
+							x_marker=SCALE_X(time_tick,time_min,x_min,time_scale);
+							/* draw the tick mark */
+							if (ticks_above)
 							{
-								x_string=x_pos+bounds.lbearing;
-							}
-							y_string=y_marker+(bounds.ascent-bounds.descent)/2;
-							if (y_string-bounds.ascent<y_min)
-							{
-								y_string=y_min+bounds.ascent;
-							}
-							if (y_string+bounds.descent>y_max)
-							{
-								y_string=y_max-bounds.descent;
-							}
-							XPSDrawString(display,pixel_map,graphics_context,x_string,
-								y_string,number_string,length);
-#else
-							XPSDrawString(display,pixel_map,graphics_context,x_tick,y_marker,
-								number_string,length);
-#endif
-						}
-						/* move to the next tick */
-						value_tick += value_tick_width;
-					}
-					/* draw the maximum tick mark */
-					y_marker=SCALE_Y(value_tick,signal_maximum,y_min,value_scale);
-					XPSDrawLine(display,pixel_map,graphics_context,x_tick,y_marker,x_min,
-						y_marker);
-					/* write the maximum tick value */
-					sprintf(number_string,"%.3g",value_tick);
-					length=strlen(number_string);
-#if defined (NO_ALIGNMENT)
-					XTextExtents(font,number_string,length,&direction,&ascent,&descent,
-						&bounds);
-					x_string=x_tick-bounds.rbearing;
-					if (x_string-bounds.lbearing<x_pos)
-					{
-						x_string=x_pos+bounds.lbearing;
-					}
-					y_string=y_marker+(bounds.ascent-bounds.descent)/2;
-					if (y_string-bounds.ascent<y_min)
-					{
-						y_string=y_min+bounds.ascent;
-					}
-					if (y_string+bounds.descent>y_max)
-					{
-						y_string=y_max-bounds.descent;
-					}
-					XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
-						number_string,length);
-#else
-					XPSDrawString(display,pixel_map,graphics_context,x_tick,y_marker,
-						number_string,length);
-#endif
-				} break;
-			}
-			if (name)
-			{
-				/* draw the signal name */
-				length=strlen(name);
-#if defined (NO_ALIGNMENT)
-				XTextExtents(font,name,length,&direction,&ascent,&descent,&bounds);
-#endif
-				switch (detail)
-				{
-					case SIGNAL_AREA_DETAIL:
-					{
-						/* right justified */
-#if defined (NO_ALIGNMENT)
-						x_string=x_min-(bounds.rbearing+2);
-#else
-						SET_HORIZONTAL_ALIGNMENT(RIGHT_ALIGNMENT);
-						x_string=x_min;
-#endif
-					} break;
-					case EDIT_AREA_DETAIL: case INTERVAL_AREA_DETAIL:
-					case ENLARGE_AREA_DETAIL: case PRINTER_DETAIL:
-					{
-						/* left justified */
-#if defined (NO_ALIGNMENT)
-						x_string=x_pos+(bounds.lbearing+2);
-#else
-						SET_HORIZONTAL_ALIGNMENT(LEFT_ALIGNMENT);
-						x_string=x_pos;
-#endif
-					} break;
-				}
-#if defined (NO_ALIGNMENT)
-				y_string=(y_min+y_max+ascent-descent)/2;
-#else
-				SET_VERTICAL_ALIGNMENT(CENTRE_VERTICAL_ALIGNMENT);
-				y_string=(y_min+y_max)/2;
-#endif
-				/* only highlight signal name in the signals window */
-				if (highlight&&(SIGNAL_AREA_DETAIL==detail))
-				{
-					XPSDrawString(display,pixel_map,
-						(signal_drawing_information->graphics_context).highlighted_colour,
-						x_string,y_string,name,length);
-				}
-				else
-				{
-					XPSDrawString(display,pixel_map,
-						(signal_drawing_information->graphics_context).device_name_colour,
-						x_string,y_string,name,length);
-				}
-			}
-			/* use full resolution for printer */
-			if (PRINTER_DETAIL==detail)
-			{
-				x_scale=SCALE_FACTOR(x_max-x_min,time_max-time_min);
-				time_scale=1;
-				y_scale=SCALE_FACTOR(y_max-y_min,signal_maximum-signal_minimum);
-				value_scale=1;
-				/* set the printer transformation */
-				if (get_postscript_display_transfor(&postscript_page_left,
-					&postscript_page_bottom,&postscript_page_width,
-					&postscript_page_height,&world_left,&world_top,&world_width,
-					&world_height))
-				{
-					set_postscript_display_transfor(postscript_page_left,
-						postscript_page_bottom,postscript_page_width,postscript_page_height,
-						(float)time_min+(float)(x_pos-x_min)*x_scale,
-						(float)(y_pos-y_min)*y_scale-signal_maximum,x_scale*(float)width,
-						y_scale*(float)height);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"draw_signal.  Could not get_postscript_page_size");
-				}
-				x_min=time_min;
-				x_max=time_max;
-				y_min= -signal_maximum;
-				y_max= -signal_minimum;
-				time_ref=0;
-				x_ref=0;
-				signal_ref=0;
-				y_ref=0;
-			}
-			else
-			{
-				time_ref=time_min;
-				x_ref=x_min;
-				signal_ref=signal_maximum;
-				y_ref=y_min;
-			}
-			*axes_left=x_min;
-			*axes_width=x_max-x_min+1;
-			*axes_top=y_min;
-			*axes_height=y_max-y_min+1;
-#if defined (DEBUG)
-			/*???debug */
-			if ((x_max<=x_min)||(y_max<=y_min))
-			{
-				printf("draw_signal.  %d %d %d %d\n",x_min,x_max,y_min,y_max);
-			}
-#endif /* defined (DEBUG) */
-			/* set the clipping rectangle */
-			clip_rectangle.x= *axes_left;
-			clip_rectangle.y= *axes_top;
-			clip_rectangle.width= *axes_width;
-			clip_rectangle.height= *axes_height;
-			/* draw the signals */
-			for (j=0;j<number_of_signals;j++)
-			{
-				/* determine the signal colour */
-				if ((highlight)&&(detail==SIGNAL_AREA_DETAIL))
-				{
-					graphics_context=
-						(signal_drawing_information->graphics_context).highlighted_colour;
-				}
-				else
-				{
-					switch (signals_status[j])
-					{
-						case ACCEPTED:
-						{
-							graphics_context=(signal_drawing_information->graphics_context).
-								signal_accepted_colour;
-						} break;
-						case REJECTED:
-						{
-							if ((j>0)&&(signal_drawing_information->
-								number_of_signal_overlay_colours>0))
-							{
-								graphics_context=(signal_drawing_information->graphics_context).
-									signal_overlay_colour;
-								XSetForeground(display,graphics_context,
-									(signal_drawing_information->signal_overlay_colours)[(j-1)%
-									(signal_drawing_information->
-									number_of_signal_overlay_colours)]);
+								XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_tick,
+									x_marker,y_marker);
 							}
 							else
 							{
-								graphics_context=(signal_drawing_information->graphics_context).
-									signal_rejected_colour;
+								XPSDrawLine(display,pixel_map,graphics_context,x_marker,
+									y_marker,x_marker,y_tick);
 							}
-#if defined (OLD_CODE)
-							/*???DB.  For dfn.  Needs generalizing */
-							/*???DB.  Stops drawing if I use different contexts.  Why ? */
-							graphics_context=
-								(signal_drawing_information->graphics_context).spectrum;
-							switch (j%6)
+							if (PRINTER_DETAIL!=detail)
 							{
-								case 0:
+								/* write the tick value */
+								sprintf(number_string,"%.3g",time_tick);
+								length=strlen(number_string);
+#if defined (NO_ALIGNMENT)
+								XTextExtents(font,number_string,length,&direction,&ascent,
+									&descent,&bounds);
+								x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
+								if (x_string-bounds.lbearing<x_min)
 								{
-									XSetForeground(display,graphics_context,
-										signal_drawing_information->signal_rejected_colour);
-/*									graphics_context=(signal_drawing_information->
-										graphics_context).signal_rejected_colour;*/
-								} break;
-								case 1:
+									x_string=x_min+bounds.lbearing;
+								}
+								if (ticks_above)
 								{
-									XSetForeground(display,graphics_context,
-										signal_drawing_information->signal_undecided_colour);
-/*									graphics_context=(signal_drawing_information->
-										graphics_context).signal_undecided_colour;*/
-								} break;
-								case 2:
-								{
-									XSetForeground(display,graphics_context,
-										signal_drawing_information->signal_accepted_colour);
-/*									graphics_context=(signal_drawing_information->
-										graphics_context).signal_accepted_colour;*/
-								} break;
-								case 3:
-								{
-									XSetForeground(display,graphics_context,
-										signal_drawing_information->rejected_colour);
-/*									graphics_context=(signal_drawing_information->
-										graphics_context).rejected_colour;*/
-								} break;
-								case 4:
-								{
-									XSetForeground(display,graphics_context,
-										signal_drawing_information->undecided_colour);
-/*									graphics_context=(signal_drawing_information->
-										graphics_context).undecided_colour;*/
-								} break;
-								case 5:
-								{
-									XSetForeground(display,graphics_context,
-										signal_drawing_information->accepted_colour);
-/*									graphics_context=(signal_drawing_information->
-										graphics_context).accepted_colour;*/
-								} break;
-							}
-#endif /* defined (OLD_CODE) */
-						} break;
-						case UNDECIDED:
-						{
-							graphics_context=(signal_drawing_information->graphics_context).
-								signal_undecided_colour;
-						} break;
-					}
-				}
-				XPSSetClipRectangles(display,graphics_context,0,0,&clip_rectangle,1,
-					Unsorted);
-				if ((PRINTER_DETAIL==detail)||(number_of_points<=4*(*axes_width)))
-				{
-					/* draw all the data points with line segments joining them */
-					if (ALLOCATE(points,XPoint,number_of_points))
-					{
-						/* calculate the points */
-						point=points;
-						time=times;
-						signal_value=signals_values+(j*number_of_points);
-						for (i=number_of_points;i>0;i--)
-						{
-							point->x=SCALE_X(*time,time_ref,x_ref,time_scale);
-							point->y=SCALE_Y(*signal_value,signal_ref,y_ref,value_scale);
-							point++;
-							signal_value++;
-							time++;
-						}	
-						/* draw */
-						XPSDrawLines(display,pixel_map,graphics_context,points,
-							number_of_points,CoordModeOrigin);
-						DEALLOCATE(points);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"draw_signal.  Insufficient memory for signal");
-					}
-				}
-				else
-				{
-					/* represent the signal by a number of line segments */
-					if (ALLOCATE(segments,XSegment,2*(*axes_width)-1))
-					{
-						segment=segments;
-						time=times;
-						signal_value=signals_values+(j*number_of_points);
-						value_short_int=SCALE_Y(*signal_value,signal_ref,y_ref,value_scale);
-						segment->x1=x_min;
-						segment->y1=value_short_int;
-						segment->x2=x_min;
-						segment->y2=value_short_int;
-						number_of_segments=1;
-						i=number_of_points-1;
-						while (i>0)
-						{
-							time++;
-							signal_value++;
-							while ((i>0)&&(segment->x2==
-								(x=SCALE_X(*time,time_ref,x_ref,time_scale))))
-							{
-								value_short_int=SCALE_Y(*signal_value,signal_ref,y_ref,
-									value_scale);
-								if (value_short_int<segment->y1)
-								{
-									segment->y1=value_short_int;
+									y_string=y_tick-bounds.descent;
 								}
 								else
 								{
-									if (value_short_int>segment->y2)
-									{
-										segment->y2=value_short_int;
-									}
+									y_string=y_tick+bounds.ascent;
 								}
-								signal_value++;
-								time++;
-								i--;
+								/* write the tick value */
+								XPSDrawString(display,pixel_map,graphics_context,x_string,
+									y_string,number_string,length);
+#else /* !defined (NO_ALIGNMENT) */
+								XPSDrawString(display,pixel_map,graphics_context,x_marker,
+									y_tick,number_string,length);
+#endif /* !defined (NO_ALIGNMENT) */
 							}
-							if (i>0)
-							{
-								segment[1].x1=segment->x2;
-								segment++;
-								number_of_segments++;
-								segment->y1=value_short_int;
-								segment->x2=x;
-								value_short_int=SCALE_Y(*signal_value,signal_ref,y_ref,
-									value_scale);
-								segment->y2=value_short_int;
-								segment++;
-								number_of_segments++;
-								segment->x1=x;
-								segment->y1=value_short_int;
-								segment->x2=x;
-								segment->y2=value_short_int;
-								i--;
-							}
+							/* move to the next tick */
+							time_tick += time_tick_width;
 						}
-						/* draw */			
-						XDrawSegments(display,pixel_map,graphics_context,segments,
-							number_of_segments);			
-						DEALLOCATE(segments);
+						/* draw the right tick mark */
+						x_marker=SCALE_X(time_tick,time_min,x_min,time_scale);
+						if (ticks_above)
+						{
+							XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_tick,
+								x_marker,y_marker);
+						}
+						else
+						{
+							XPSDrawLine(display,pixel_map,graphics_context,x_marker,y_marker,
+								x_marker,y_tick);
+						}
+						/* write the right tick value */
+						sprintf(number_string,"%.3g",time_tick);
+						length=strlen(number_string);
+#if defined (NO_ALIGNMENT)
+						XTextExtents(font,number_string,length,&direction,&ascent,&descent,
+							&bounds);
+						x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
+						if (x_string-bounds.lbearing<x_min)
+						{
+							x_string=x_min+bounds.lbearing;
+						}
+						if (ticks_above)
+						{
+							y_string=y_tick-bounds.descent;
+						}
+						else
+						{
+							y_string=y_tick+bounds.ascent;
+						}
+						XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
+							number_string,length);
+#else /* !defined (NO_ALIGNMENT) */
+						XPSDrawString(display,pixel_map,graphics_context,x_marker,y_tick,
+							number_string,length);
+#endif /* !defined (NO_ALIGNMENT) */
+					} break;
+				}
+				/* draw the y axis */
+				XPSDrawLine(display,pixel_map,graphics_context,x_min,y_min,x_min,y_max);
+				/* draw the y axis markings - not for low detail */
+				switch (detail)
+				{
+					case EDIT_AREA_DETAIL:
+					/*???DB.  Temp ?*/case PRINTER_DETAIL:
+					{
+#if !defined (NO_ALIGNMENT)
+						SET_HORIZONTAL_ALIGNMENT(RIGHT_ALIGNMENT);
+						SET_VERTICAL_ALIGNMENT(CENTRE_VERTICAL_ALIGNMENT);
+#endif /* !defined (NO_ALIGNMENT) */
+						x_tick=x_min-x_tick_length;
+						number_of_ticks=
+							(int)((value_tick_max-value_tick_min)/value_tick_width+0.5);
+						value_tick=value_tick_min;
+						y_marker=SCALE_Y(value_tick,signal_maximum,y_min,value_scale);
+						/* draw the minimum tick mark */
+						XPSDrawLine(display,pixel_map,graphics_context,x_tick,y_marker,
+							x_min,y_marker);
+						/* write the minimum tick value */
+						sprintf(number_string,"%.3g",value_tick);
+						length=strlen(number_string);
+#if defined (NO_ALIGNMENT)
+						XTextExtents(font,number_string,length,&direction,&ascent,&descent,
+							&bounds);
+						x_string=x_tick-bounds.rbearing;
+						if (x_string-bounds.lbearing<x_pos)
+						{
+							x_string=x_pos+bounds.lbearing;
+						}
+						y_string=y_marker+(bounds.ascent-bounds.descent)/2;
+						if (y_string-bounds.ascent<y_min)
+						{
+							y_string=y_min+bounds.ascent;
+						}
+						if (y_string+bounds.descent>y_max)
+						{
+							y_string=y_max-bounds.descent;
+						}
+						XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
+							number_string,length);
+#else /* !defined (NO_ALIGNMENT) */
+						XPSDrawString(display,pixel_map,graphics_context,x_tick,y_marker,
+							number_string,length);
+#endif /* !defined (NO_ALIGNMENT) */
+						/* move to the next tick */
+						value_tick += value_tick_width;
+						for (i=number_of_ticks-1;i>0;i--)
+						{
+							y_marker=SCALE_Y(value_tick,signal_maximum,y_min,value_scale);
+							/* draw the tick mark */
+							XPSDrawLine(display,pixel_map,graphics_context,x_tick,y_marker,
+								x_min,y_marker);
+							if (PRINTER_DETAIL!=detail)
+							{
+								/* write the tick value */
+								sprintf(number_string,"%.3g",value_tick);
+								length=strlen(number_string);
+#if defined (NO_ALIGNMENT)
+								XTextExtents(font,number_string,length,&direction,&ascent,
+									&descent,&bounds);
+								x_string=x_tick-bounds.rbearing;
+								if (x_string-bounds.lbearing<x_pos)
+								{
+									x_string=x_pos+bounds.lbearing;
+								}
+								y_string=y_marker+(bounds.ascent-bounds.descent)/2;
+								if (y_string-bounds.ascent<y_min)
+								{
+									y_string=y_min+bounds.ascent;
+								}
+								if (y_string+bounds.descent>y_max)
+								{
+									y_string=y_max-bounds.descent;
+								}
+								XPSDrawString(display,pixel_map,graphics_context,x_string,
+									y_string,number_string,length);
+#else /* !defined (NO_ALIGNMENT) */
+								XPSDrawString(display,pixel_map,graphics_context,x_tick,
+									y_marker,number_string,length);
+#endif /* !defined (NO_ALIGNMENT) */
+							}
+							/* move to the next tick */
+							value_tick += value_tick_width;
+						}
+						/* draw the maximum tick mark */
+						y_marker=SCALE_Y(value_tick,signal_maximum,y_min,value_scale);
+						XPSDrawLine(display,pixel_map,graphics_context,x_tick,y_marker,
+							x_min,y_marker);
+						/* write the maximum tick value */
+						sprintf(number_string,"%.3g",value_tick);
+						length=strlen(number_string);
+#if defined (NO_ALIGNMENT)
+						XTextExtents(font,number_string,length,&direction,&ascent,&descent,
+							&bounds);
+						x_string=x_tick-bounds.rbearing;
+						if (x_string-bounds.lbearing<x_pos)
+						{
+							x_string=x_pos+bounds.lbearing;
+						}
+						y_string=y_marker+(bounds.ascent-bounds.descent)/2;
+						if (y_string-bounds.ascent<y_min)
+						{
+							y_string=y_min+bounds.ascent;
+						}
+						if (y_string+bounds.descent>y_max)
+						{
+							y_string=y_max-bounds.descent;
+						}
+						XPSDrawString(display,pixel_map,graphics_context,x_string,y_string,
+							number_string,length);
+#else /* !defined (NO_ALIGNMENT) */
+						XPSDrawString(display,pixel_map,graphics_context,x_tick,y_marker,
+							number_string,length);
+#endif /* !defined (NO_ALIGNMENT) */
+					} break;
+				}
+				if (name[current_data_interval])
+				{
+					/* draw the signal name */
+					length=strlen(name[current_data_interval]);
+#if defined (NO_ALIGNMENT)
+					XTextExtents(font,name[current_data_interval],length,&direction,
+						&ascent,&descent,&bounds);
+#endif /* !defined (NO_ALIGNMENT) */
+					switch (detail)
+					{
+						case SIGNAL_AREA_DETAIL:
+						{
+							/* right justified */
+#if defined (NO_ALIGNMENT)
+							x_string=x_min-(bounds.rbearing+2);
+#else /* !defined (NO_ALIGNMENT) */
+							SET_HORIZONTAL_ALIGNMENT(RIGHT_ALIGNMENT);
+							x_string=x_min;
+#endif /* !defined (NO_ALIGNMENT) */
+						} break;
+						case EDIT_AREA_DETAIL: case INTERVAL_AREA_DETAIL:
+						case ENLARGE_AREA_DETAIL: case PRINTER_DETAIL:
+						{
+							/* left justified */
+#if defined (NO_ALIGNMENT)
+							x_string=x_pos+(bounds.lbearing+2);
+#else /* !defined (NO_ALIGNMENT) */
+							SET_HORIZONTAL_ALIGNMENT(LEFT_ALIGNMENT);
+							x_string=x_pos;
+#endif /* !defined (NO_ALIGNMENT) */
+						} break;
+					}
+#if defined (NO_ALIGNMENT)
+					y_string=(y_min+y_max+ascent-descent)/2;
+#else /* !defined (NO_ALIGNMENT) */
+					SET_VERTICAL_ALIGNMENT(CENTRE_VERTICAL_ALIGNMENT);
+					y_string=(y_min+y_max)/2;
+#endif /* !defined (NO_ALIGNMENT) */
+					/* only highlight signal name in the signals window */
+					if (highlight&&(SIGNAL_AREA_DETAIL==detail))
+					{
+						XPSDrawString(display,pixel_map,
+							(signal_drawing_information->graphics_context).highlighted_colour,
+							x_string,y_string,name[current_data_interval],length);
+					}
+					else
+					{
+						XPSDrawString(display,pixel_map,
+							(signal_drawing_information->graphics_context).device_name_colour,
+							x_string,y_string,name[current_data_interval],length);
+					}
+				}
+				/* use full resolution for printer */
+				if (PRINTER_DETAIL==detail)
+				{
+					x_scale=SCALE_FACTOR(x_max-x_min,time_max-time_min);
+					time_scale=1;
+					y_scale=SCALE_FACTOR(y_max-y_min,signal_maximum-signal_minimum);
+					value_scale=1;
+					/* set the printer transformation */
+					if (get_postscript_display_transfor(&postscript_page_left,
+						&postscript_page_bottom,&postscript_page_width,
+						&postscript_page_height,&world_left,&world_top,&world_width,
+						&world_height))
+					{
+						set_postscript_display_transfor(postscript_page_left,
+							postscript_page_bottom,postscript_page_width,
+							postscript_page_height,
+							(float)time_min+(float)(x_pos-x_min)*x_scale,
+							(float)(y_pos-y_min)*y_scale-signal_maximum,x_scale*(float)width,
+							y_scale*(float)height);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"draw_signal.  Insufficient memory for signal");
+							"draw_signal.  Could not get_postscript_page_size");
+					}
+					x_min=time_min;
+					x_max=time_max;
+					y_min= -signal_maximum;
+					y_max= -signal_minimum;
+					time_ref=0;
+					x_ref=0;
+					signal_ref=0;
+					y_ref=0;
+				}
+				else
+				{
+					time_ref=time_min;
+					x_ref=x_min;
+					signal_ref=signal_maximum;
+					y_ref=y_min;
+				}
+				*axes_left=x_min;
+				*axes_width=x_max-x_min+1;
+				*axes_top=y_min;
+				*axes_height=y_max-y_min+1;
+#if defined (DEBUG)
+				/*???debug */
+				if ((x_max<=x_min)||(y_max<=y_min))
+				{
+					printf("draw_signal.  %d %d %d %d\n",x_min,x_max,y_min,y_max);
+				}
+#endif /* defined (DEBUG) */
+				/* set the clipping rectangle */
+				clip_rectangle.x= *axes_left;
+				clip_rectangle.y= *axes_top;
+				clip_rectangle.width= *axes_width;
+				clip_rectangle.height= *axes_height;
+				/* draw the signals */
+				for (k=0;k<number_of_data_intervals;k++)
+				{
+					for (j=0;j<number_of_signals[k];j++)
+					{
+						/* determine the signal colour */
+						if ((highlight[k])&&(detail==SIGNAL_AREA_DETAIL))
+						{
+							graphics_context=(signal_drawing_information->graphics_context).
+								highlighted_colour;
+						}
+						else
+						{
+							switch ((signals_status[k])[j])
+							{
+								case ACCEPTED:
+								{
+									graphics_context=(signal_drawing_information->
+										graphics_context).signal_accepted_colour;
+								} break;
+								case REJECTED:
+								{
+									if ((j>0)&&(signal_drawing_information->
+										number_of_signal_overlay_colours>0))
+									{
+										graphics_context=(signal_drawing_information->
+											graphics_context).signal_overlay_colour;
+										XSetForeground(display,graphics_context,
+											(signal_drawing_information->signal_overlay_colours)[
+											(j-1)%(signal_drawing_information->
+											number_of_signal_overlay_colours)]);
+									}
+									else
+									{
+										graphics_context=(signal_drawing_information->
+											graphics_context). signal_rejected_colour;
+									}
+								} break;
+								case UNDECIDED:
+								{
+									graphics_context=(signal_drawing_information->
+										graphics_context). signal_undecided_colour;
+								} break;
+							}
+						}
+						XPSSetClipRectangles(display,graphics_context,0,0,&clip_rectangle,1,
+							Unsorted);
+						if ((PRINTER_DETAIL==detail)||
+							(number_of_points[k]<=4*(*axes_width)))
+						{
+							/* draw all the data points with line segments joining them */
+							if (ALLOCATE(points,XPoint,number_of_points[k]))
+							{
+								/* calculate the points */
+								point=points;
+								time=times[k];
+								signal_value=signals_values[k]+(j*number_of_points[k]);
+								for (i=number_of_points[k];i>0;i--)
+								{
+									point->x=SCALE_X(*time,time_ref,x_ref,time_scale);
+									point->y=SCALE_Y(*signal_value,signal_ref,y_ref,value_scale);
+									point++;
+									signal_value++;
+									time++;
+								}	
+								/* draw */
+								XPSDrawLines(display,pixel_map,graphics_context,points,
+									number_of_points[k],CoordModeOrigin);
+								DEALLOCATE(points);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"draw_signal.  Insufficient memory for signal");
+							}
+						}
+						else
+						{
+							/* represent the signal by a number of line segments */
+							if (ALLOCATE(segments,XSegment,2*(*axes_width)-1))
+							{
+								segment=segments;
+								time=times[k];
+								signal_value=signals_values[k]+(j*number_of_points[k]);
+								value_short_int=SCALE_Y(*signal_value,signal_ref,y_ref,
+									value_scale);
+								segment->x1=x_min;
+								segment->y1=value_short_int;
+								segment->x2=x_min;
+								segment->y2=value_short_int;
+								number_of_segments=1;
+								i=number_of_points[k]-1;
+								while (i>0)
+								{
+									time++;
+									signal_value++;
+									while ((i>0)&&(segment->x2==
+										(x=SCALE_X(*time,time_ref,x_ref,time_scale))))
+									{
+										value_short_int=SCALE_Y(*signal_value,signal_ref,y_ref,
+											value_scale);
+										if (value_short_int<segment->y1)
+										{
+											segment->y1=value_short_int;
+										}
+										else
+										{
+											if (value_short_int>segment->y2)
+											{
+												segment->y2=value_short_int;
+											}
+										}
+										signal_value++;
+										time++;
+										i--;
+									}
+									if (i>0)
+									{
+										segment[1].x1=segment->x2;
+										segment++;
+										number_of_segments++;
+										segment->y1=value_short_int;
+										segment->x2=x;
+										value_short_int=SCALE_Y(*signal_value,signal_ref,y_ref,
+											value_scale);
+										segment->y2=value_short_int;
+										segment++;
+										number_of_segments++;
+										segment->x1=x;
+										segment->y1=value_short_int;
+										segment->x2=x;
+										segment->y2=value_short_int;
+										i--;
+									}
+								}
+								/* draw */			
+								XDrawSegments(display,pixel_map,graphics_context,segments,
+									number_of_segments);			
+								DEALLOCATE(segments);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"draw_signal.  Insufficient memory for signal");
+							}
+						}
+						XPSSetClipMask(display,graphics_context,None);
 					}
 				}
-				XPSSetClipMask(display,graphics_context,None);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"draw_signal.  Could not extract signal information");
+				return_code=0;
+			}	
+			for (i=0;i<number_of_data_intervals;i++)
+			{
+				DEALLOCATE(name[i]);	
+				DEALLOCATE(signals_status[i]);
+				DEALLOCATE(signals_values[i]);
+				DEALLOCATE(times[i]);
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"draw_signal.  Could not extract signal");
+			display_message(ERROR_MESSAGE,"draw_signal.  Could not allocate storage");
 			return_code=0;
 		}	
-		DEALLOCATE(name);	
 		DEALLOCATE(signals_status);
 		DEALLOCATE(signals_values);
 		DEALLOCATE(times);
+		DEALLOCATE(name);
+		DEALLOCATE(number_of_signals);
+		DEALLOCATE(number_of_points);
+		DEALLOCATE(highlight);
+		DEALLOCATE(signals_minimum);
+		DEALLOCATE(signals_maximum);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"draw_signal.  Invalid arguments");
+		display_message(ERROR_MESSAGE,"draw_signal.  Invalid argument(s)");
 		return_code=0;
 	}	
 	LEAVE;

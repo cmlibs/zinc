@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 4 January 2000
+LAST MODIFIED : 14 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -459,6 +459,14 @@ enum Trace_window_update_flags
 Global functions
 ----------------
 */
+int trace_process_device(struct Trace_window *trace);
+/*******************************************************************************
+LAST MODIFIED : 14 January 2000
+
+DESCRIPTION :
+Calculates the processed device.
+==============================================================================*/
+
 int draw_highlight_event_box(int left,int top,int width,int height,
 	enum Event_detection_algorithm detection,Widget drawing_area,
 	struct Drawing_2d *drawing,

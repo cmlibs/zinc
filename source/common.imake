@@ -63,7 +63,7 @@ OPTIMISATION_FLAGS = -g -mips3
 COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521,1048
 COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
 STRICT_FLAGS = -diag_error 1196
-STRICT_FLAGS_PATTERN = choose\/*.c | command/WildC | curve/WildC | data/WildC | finite_element/WildC | general/WildC | graphics/WildC | material/WildC | mirage/WildC | select/WildC | three_d_drawing/WildC | time/WildC | user_interface/WildC | view/WildC
+STRICT_FLAGS_PATTERN = choose/WildC | command/WildC | curve/WildC | data/WildC | finite_element/WildC | general/WildC | graphics/WildC | material/WildC | mirage/WildC | select/WildC | three_d_drawing/WildC | time/WildC | view/WildC
 #endif /* defined (OPTIMISED) */
 
 #if defined (O64)
@@ -256,7 +256,7 @@ Target: $(OBJS)                                                                 
 	rm -f product_object ; \                                                          @@\
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \                                   @@\
 	(ls $(OBJS) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%" > object.list) ; \  @@\
-	$(LINK) -o UTILITIES_PATH/Target `cat object.list` LIBS
+	$(LINK) -o UTILITIES_PATH/Target $(ALL_FLAGS) `cat object.list` LIBS
 #elif defined(LINUX) /* switch OperatingSystem */
 #define BuildNormalTarget(Target, UTILITIES_PATH, SRCS, OBJSA, OBJSB, OBJS, LIBS)    @@\
 OBJSA = $(SRCS:.c=.ObjSuffix)                                                        @@\
@@ -274,7 +274,7 @@ Target: $(OBJS)                                                                 
 	rm -f product_object ; \                                                          @@\
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \                                   @@\
 	(ls $(OBJS) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \ @@\
-	$(LINK) -o UTILITIES_PATH/Target `cat object.list` LIBS
+	$(LINK) -o UTILITIES_PATH/Target $(ALL_FLAGS) `cat object.list` LIBS
 #endif /* switch OperatingSystem */
 
 UID2UIDH_SRCS = \

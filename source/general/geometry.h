@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : geometry.h
 
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 17 January 2000
 
 DESCRIPTION :
 The types and global variables for describing geometry.  Prototypes of functions
@@ -123,6 +123,18 @@ y = r*sin(theta)
 z = z_in
 ==============================================================================*/
 
+int cartesian_to_spherical_polar(float x,float y,float z,float *r,float *theta,
+	float *phi,float *jacobian);
+/*******************************************************************************
+LAST MODIFIED : 17 January 2000
+
+DESCRIPTION :
+For transforming from spherical polar to cartesian coordinates.
+x = r*cos(phi)*cos(theta)
+y = r*cos(phi)*sin(theta)
+z = r*sin(phi)
+==============================================================================*/
+
 int spherical_polar_to_cartesian(float r,float theta,float phi,float *x,
 	float *y,float *z,float *jacobian);
 /*******************************************************************************
@@ -195,8 +207,8 @@ LAST MODIFIED : 25 January 1999
 DESCRIPTION :
 Returns the type of the coordinate system passed to it.
 ==============================================================================*/
-PROTOTYPE_COPY_OBJECT_FUNCTION(Coordinate_system);
 
+PROTOTYPE_COPY_OBJECT_FUNCTION(Coordinate_system);
 
 int set_Coordinate_system(struct Parse_state *state,
 	void *coordinate_system_void,void *dummy_void);
@@ -249,12 +261,10 @@ int convert_Coordinate_system(
 /*******************************************************************************
 LAST MODIFIED : 29 January 1999
 
-
 DESCRIPTION :
 Convert the <source_coordinates> into the <destination_coordinates> assuming
 that they are both 3-D.  Calculate the <jacobian> if not NULL.
 ???DB.  Should the dimension be part of struct Coordinate_system ?
 ???DB.  Can we get rid of most of io_devices/conversion ?
 ==============================================================================*/
-
-#endif
+#endif /* !defined (GEOMETRY_H) */

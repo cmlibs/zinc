@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 8 December 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -155,18 +155,22 @@ the the start and end times, the number of events and the search algorithm.
 
 int draw_signal(struct FE_node *device_node,
 	struct Draw_package *draw_package,struct Device *device,
-	enum Signal_detail detail,int first_data,
-	int last_data,int x_pos,int y_pos,int width,int height,Pixmap pixel_map,
-	int *axes_left,int *axes_top,int *axes_width,int *axes_height,
+	enum Signal_detail detail,int number_of_data_intervals,
+	int current_data_interval,int *first_data,int *last_data,int x_pos,int y_pos,
+	int width,int height,Pixmap pixel_map,int *axes_left,int *axes_top,
+	int *axes_width,int *axes_height,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 18 June 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
 (<x_pos>, <y_pos>), size (<width>, <height>) and <detail>.
+NB.  0<=current_data_interval<number_of_data_intervals
 ???missing data ? times ?
+???DB.  Needs more checking and more on return_code
+???DB.  Change first_data and last_data to times
 ==============================================================================*/
 
 #if defined (OLD_CODE)

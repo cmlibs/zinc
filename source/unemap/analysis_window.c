@@ -1612,7 +1612,7 @@ Finds the id of the analysis print all button.
 
 static int print_signals(char all,char *file_name,void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 Writes the PostScript for drawing either <all> the signals from the
@@ -1745,16 +1745,10 @@ Writes the PostScript for drawing either <all> the signals from the
 							/* print the signal */
 							draw_signal(
 								(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
-								PRINTER_DETAIL,first_data,last_data,0,signal_height_pixel,
+								PRINTER_DETAIL,1,0,&first_data,&last_data,0,signal_height_pixel,
 								signal_width_pixel,signal_height_pixel,(Pixmap)NULL,&axes_left,
 								&axes_top,&axes_width,&axes_height,
 								analysis->signal_drawing_information,analysis->user_interface);
-#if defined (OLD_CODE)
-							draw_signal(*device,PRINTER_DETAIL,first_data,last_data,0,
-								signal_height_pixel,signal_width_pixel,signal_height_pixel,
-								(Pixmap)NULL,&axes_left,&axes_top,&axes_width,&axes_height,
-								analysis->signal_drawing_information,analysis->user_interface);
-#endif /* defined (OLD_CODE) */
 							/* print the markers */
 							draw_device_markers(*device,first_data,last_data,0,0,0,0,
 								PRINTER_DETAIL,0,axes_left,axes_top,axes_width,axes_height,
@@ -2502,7 +2496,7 @@ Finds the id of the interval drawing area.
 static void expose_interval_drawing_area(Widget widget,
 	XtPointer analysis_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 July 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 The callback for redrawing part of an analysis interval drawing area.
@@ -2510,6 +2504,7 @@ The callback for redrawing part of an analysis interval drawing area.
 {
 	Display *display;
 	float x_scale;
+	int first_data,last_data;
 	struct Analysis_window *analysis;
 	struct Device *highlight_device;
 	struct Interval_area *interval;
@@ -2555,31 +2550,23 @@ The callback for redrawing part of an analysis interval drawing area.
 										(highlight_device= **(analysis->highlight))&&
 										(buffer=get_Device_signal_buffer(highlight_device)))
 									{
+										first_data=0;
+										last_data=buffer->number_of_samples-1;
 										draw_signal(
 											(struct FE_node *)NULL,(struct Draw_package *)NULL,
 											highlight_device,
-											INTERVAL_AREA_DETAIL,0,buffer->number_of_samples-1,0,0,
+											INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
 											attributes.width,attributes.height,
 											interval->drawing->pixel_map,&(interval->axes_left),
 											&(interval->axes_top),&(interval->axes_width),
 											&(interval->axes_height),
 											analysis->signal_drawing_information,
 											analysis->user_interface);
-#if defined (OLD_CODE)
-										draw_signal(highlight_device,INTERVAL_AREA_DETAIL,0,
-											buffer->number_of_samples-1,0,0,attributes.width,
-											attributes.height,interval->drawing->pixel_map,
-											&(interval->axes_left),&(interval->axes_top),
-											&(interval->axes_width),&(interval->axes_height),
-											analysis->signal_drawing_information,
-											analysis->user_interface);
-#endif /* defined (OLD_CODE) */
-										draw_device_markers(highlight_device,0,
-											buffer->number_of_samples-1,*(analysis->datum),1,
-											*(analysis->potential_time),1,INTERVAL_AREA_DETAIL,
-											*(analysis->event_number),interval->axes_left,
-											interval->axes_top,interval->axes_width,
-											interval->axes_height,(Window)NULL,
+										draw_device_markers(highlight_device,first_data,last_data,
+											*(analysis->datum),1,*(analysis->potential_time),1,
+											INTERVAL_AREA_DETAIL,*(analysis->event_number),
+											interval->axes_left,interval->axes_top,
+											interval->axes_width,interval->axes_height,(Window)NULL,
 											interval->drawing->pixel_map,
 											analysis->signal_drawing_information,
 											analysis->user_interface);
@@ -2662,7 +2649,7 @@ The callback for redrawing part of an analysis interval drawing area.
 static void resize_interval_drawing_area(Widget widget,
 	XtPointer analysis_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 The callback for resizing an analysis interval drawing area.
@@ -2670,7 +2657,7 @@ The callback for resizing an analysis interval drawing area.
 {
 	Display *display;
 	float x_scale;
-	int width,height;
+	int first_data,height,last_data,width;
 	struct Analysis_window *analysis;
 	struct Device *highlight_device;
 	struct Interval_area *interval;
@@ -2723,30 +2710,21 @@ The callback for resizing an analysis interval drawing area.
 								(highlight_device= **(analysis->highlight))&&
 								(buffer=get_Device_signal_buffer(highlight_device)))
 							{
-								draw_signal(
-									(struct FE_node *)NULL,(struct Draw_package *)NULL,
-									highlight_device,
-									INTERVAL_AREA_DETAIL,0,buffer->number_of_samples-1,0,0,
-									attributes.width,attributes.height,
+								first_data=0;
+								last_data=buffer->number_of_samples-1;
+								draw_signal((struct FE_node *)NULL,(struct Draw_package *)NULL,
+									highlight_device,INTERVAL_AREA_DETAIL,1,0,&first_data,
+									&last_data,0,0,attributes.width,attributes.height,
 									interval->drawing->pixel_map,&(interval->axes_left),
 									&(interval->axes_top),&(interval->axes_width),
 									&(interval->axes_height),analysis->signal_drawing_information,
 									analysis->user_interface);
-#if defined (OLD_CODE)
-								draw_signal(highlight_device,INTERVAL_AREA_DETAIL,0,
-									buffer->number_of_samples-1,0,0,attributes.width,
-									attributes.height,interval->drawing->pixel_map,
-									&(interval->axes_left),&(interval->axes_top),
-									&(interval->axes_width),&(interval->axes_height),
-									analysis->signal_drawing_information,
-									analysis->user_interface);
-#endif /* defined (OLD_CODE) */
-								draw_device_markers(highlight_device,0,
-									buffer->number_of_samples-1,*(analysis->datum),1,
-									*(analysis->potential_time),1,INTERVAL_AREA_DETAIL,
-									*(analysis->event_number),interval->axes_left,
-									interval->axes_top,interval->axes_width,interval->axes_height,
-									(Window)NULL,interval->drawing->pixel_map,
+								draw_device_markers(highlight_device,first_data,last_data,
+									*(analysis->datum),1,*(analysis->potential_time),1,
+									INTERVAL_AREA_DETAIL,*(analysis->event_number),
+									interval->axes_left,interval->axes_top,interval->axes_width,
+									interval->axes_height,(Window)NULL,
+									interval->drawing->pixel_map,
 									analysis->signal_drawing_information,
 									analysis->user_interface);
 								x_scale=SCALE_FACTOR(buffer->number_of_samples-1,
@@ -3933,7 +3911,7 @@ The callback for redrawing the analysis drawing area.
 
 int update_interval_drawing_area(struct Analysis_window *analysis)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 11 January 2000
 
 DESCRIPTION :
 The function for redrawing the analysis interval drawing area.
@@ -3941,7 +3919,7 @@ The function for redrawing the analysis interval drawing area.
 {
 	Display *display;
 	float x_scale;
-	int device_number,i,return_code;
+	int device_number,first_data,i,last_data,return_code;
 	struct Device **device,**highlight_device;
 	struct Interval_area *interval;
 	struct Region *current_region;
@@ -3963,28 +3941,21 @@ The function for redrawing the analysis interval drawing area.
 			(*highlight_device)&&(buffer=get_Device_signal_buffer(*highlight_device)))
 		{
 			/* draw all of the active signal */
-			draw_signal(
-				(struct FE_node *)NULL,(struct Draw_package *)NULL,*highlight_device,
-				INTERVAL_AREA_DETAIL,0,buffer->number_of_samples-1,0,0,
+			first_data=0;
+			last_data=buffer->number_of_samples-1;
+			draw_signal((struct FE_node *)NULL,(struct Draw_package *)NULL,
+				*highlight_device,INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
 				interval->drawing->width,interval->drawing->height,
 				interval->drawing->pixel_map,&(interval->axes_left),
 				&(interval->axes_top),&(interval->axes_width),
 				&(interval->axes_height),analysis->signal_drawing_information,
 				analysis->user_interface);
-#if defined (OLD_CODE)
-			draw_signal(*highlight_device,INTERVAL_AREA_DETAIL,0,
-				buffer->number_of_samples-1,0,0,interval->drawing->width,
-				interval->drawing->height,interval->drawing->pixel_map,
-				&(interval->axes_left),&(interval->axes_top),
-				&(interval->axes_width),&(interval->axes_height),
-				analysis->signal_drawing_information,analysis->user_interface);
-#endif /* defined (OLD_CODE) */
-			draw_device_markers(*highlight_device,0,buffer->number_of_samples-1,
-				*(analysis->datum),1,*(analysis->potential_time),1,
-				INTERVAL_AREA_DETAIL,*(analysis->event_number),interval->axes_left,
-				interval->axes_top,interval->axes_width,interval->axes_height,
-				(Window)NULL,interval->drawing->pixel_map,
-				analysis->signal_drawing_information,analysis->user_interface);
+			draw_device_markers(*highlight_device,first_data,last_data,
+				*(analysis->datum),1,*(analysis->potential_time),1,INTERVAL_AREA_DETAIL,
+				*(analysis->event_number),interval->axes_left,interval->axes_top,
+				interval->axes_width,interval->axes_height,(Window)NULL,
+				interval->drawing->pixel_map,analysis->signal_drawing_information,
+				analysis->user_interface);
 			x_scale=SCALE_FACTOR(buffer->number_of_samples-1,
 				interval->axes_width-1);
 			interval->left_box=SCALE_X(buffer->start,0,interval->axes_left,x_scale);
@@ -4246,15 +4217,10 @@ Should use GROUP NEXT operator (when it's ready!)
 #else /* defined (UNEMAP_USE_NODES) */
 							(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
-							SIGNAL_AREA_DETAIL,first_data,last_data,xpos,ypos,signal_width,
-							signal_height,pixel_map,&axes_left,&axes_top,&axes_width,
-							&axes_height,signal_drawing_information,user_interface);
-#if defined (OLD_CODE)
-						draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
-							xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
-							&axes_top,&axes_width,&axes_height,signal_drawing_information,
+							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+							&axes_width,&axes_height,signal_drawing_information,
 							user_interface);
-#endif /* defined (OLD_CODE) */
 						signals->axes_left=axes_left;
 						signals->axes_top=axes_top;
 						signals->axes_width=axes_width;
@@ -4307,15 +4273,10 @@ Should use GROUP NEXT operator (when it's ready!)
 #else /* defined (UNEMAP_USE_NODES) */
 								(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
-								SIGNAL_AREA_DETAIL,first_data,last_data,xpos,ypos,signal_width,
-								signal_height,pixel_map,&axes_left,&axes_top,&axes_width,
-								&axes_height,signal_drawing_information,user_interface);
-#if defined (OLD_CODE)
-							draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
-								xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
-								&axes_top,&axes_width,&axes_height,signal_drawing_information,
+								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+								&axes_width,&axes_height,signal_drawing_information,
 								user_interface);
-#endif /* defined (OLD_CODE) */
 							/*if using rig, draw_device_markers, and inc device pointer */
 							/* write code rig_node based draw_device_markers later */
 							if (rig)
@@ -4372,15 +4333,10 @@ Should use GROUP NEXT operator (when it's ready!)
 #else /* defined (UNEMAP_USE_NODES) */
 							(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
-							SIGNAL_AREA_DETAIL,first_data,last_data,xpos,ypos,signal_width,
-							signal_height,pixel_map,&axes_left,&axes_top,&axes_width,
-							&axes_height,signal_drawing_information,user_interface);
-#if defined (OLD_CODE)
-						draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
-							xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
-							&axes_top,&axes_width,&axes_height,signal_drawing_information,
+							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+							&axes_width,&axes_height,signal_drawing_information,
 							user_interface);
-#endif /* defined (OLD_CODE) */
 						signals->axes_left=axes_left;
 						signals->axes_top=axes_top;
 						signals->axes_width=axes_width;
@@ -4419,15 +4375,10 @@ Should use GROUP NEXT operator (when it's ready!)
 #else /* defined (UNEMAP_USE_NODES) */
 								(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
-								SIGNAL_AREA_DETAIL,first_data,last_data,xpos,ypos,signal_width,
-								signal_height,pixel_map,&axes_left,&axes_top,&axes_width,
-								&axes_height,signal_drawing_information,user_interface);
-#if defined (OLD_CODE)
-							draw_signal(*device,SIGNAL_AREA_DETAIL,first_data,last_data,
-								xpos,ypos,signal_width,signal_height,pixel_map,&axes_left,
-								&axes_top,&axes_width,&axes_height,signal_drawing_information,
+								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
+								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
+								&axes_width,&axes_height,signal_drawing_information,
 								user_interface);
-#endif /* defined (OLD_CODE) */
 							if (rig)
 							{
 								/* for rig based, get next device */
@@ -4722,17 +4673,11 @@ Highlights/dehighlights the <device> in the <signals> area.
 			ypos+signals->axes_top,signals->axes_width,signals->axes_height,
 			(Window)NULL,signals->drawing->pixel_map,signal_drawing_information,
 			user_interface);
-		draw_signal(
-			(struct FE_node *)NULL,(struct Draw_package *)NULL,device,
-			SIGNAL_AREA_DETAIL,start_data,end_data,xpos,ypos,signals->signal_width,
-			signals->signal_height,signals->drawing->pixel_map,&axes_left,&axes_top,
-			&axes_width,&axes_height,signal_drawing_information,user_interface);
-#if defined (OLD_CODE)
-		draw_signal(device,SIGNAL_AREA_DETAIL,start_data,end_data,xpos,ypos,
+		draw_signal((struct FE_node *)NULL,(struct Draw_package *)NULL,device,
+			SIGNAL_AREA_DETAIL,1,0,&start_data,&end_data,xpos,ypos,
 			signals->signal_width,signals->signal_height,signals->drawing->pixel_map,
 			&axes_left,&axes_top,&axes_width,&axes_height,signal_drawing_information,
 			user_interface);
-#endif /* defined (OLD_CODE) */
 		draw_device_markers(device,start_data,end_data,datum,1,potential_time,1,
 			SIGNAL_AREA_DETAIL,0,xpos+signals->axes_left,
 			ypos+signals->axes_top,signals->axes_width,signals->axes_height,

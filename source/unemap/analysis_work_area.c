@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 7 January 2000
+LAST MODIFIED : 14 January 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -6376,7 +6376,7 @@ drawing area.
 static void decrement_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2000
+LAST MODIFIED : 14 January 2000
 
 DESCRIPTION :
 Decrement the number of events.
@@ -6432,6 +6432,10 @@ trace window.
 			/* go back to constant width divisions */
 			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
 			DEALLOCATE(trace->area_1.enlarge.divisions);
+			if (BEAT_AVERAGING==trace->analysis_mode)
+			{
+				trace_process_device(trace);
+			}
 			trace_update_edit_interval(trace);
 			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);
@@ -6476,7 +6480,7 @@ trace window.
 static void increment_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2000
+LAST MODIFIED : 14 January 2000
 
 DESCRIPTION :
 Increment the number of events.
@@ -6525,6 +6529,10 @@ trace window.
 			/* go back to constant width divisions */
 			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
 			DEALLOCATE(trace->area_1.enlarge.divisions);
+			if (BEAT_AVERAGING==trace->analysis_mode)
+			{
+				trace_process_device(trace);
+			}
 			trace_update_edit_interval(trace);
 			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);
@@ -7737,7 +7745,7 @@ should be done as a callback from the trace_window.
 static void select_trace_3_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 14 January 2000
 
 DESCRIPTION :
 ???DB.  Change comment ?
@@ -7767,7 +7775,7 @@ should be done as a callback from the trace_window.
 	Pixmap pixel_map,signals_pixel_map;
 	struct Analysis_work_area *analysis;
 	struct Channel *channel;
-	struct Device **device,*highlight_device;
+	struct Device **device,*highlight_device,*trace_area_3_device;
 	struct Event *current_event,*event,*event_temp;
 	struct Region *current_region;
 	struct Signal *signal;
@@ -7802,27 +7810,28 @@ should be done as a callback from the trace_window.
 				{
 					case EVENT_DETECTION: case BEAT_AVERAGING:
 					{
-						if ((BEAT_AVERAGING==analysis->trace->analysis_mode)&&
-							(analysis->trace->valid_processing))
+						if (analysis->highlight)
 						{
-							highlight_device=analysis->trace->processed_device;
+							highlight_device= *(analysis->highlight);
 						}
 						else
 						{
-							if (analysis->highlight)
-							{
-								highlight_device= *(analysis->highlight);
-							}
-							else
-							{
-								highlight_device=(struct Device *)NULL;
-							}
+							highlight_device=(struct Device *)NULL;
 						}
-						if (highlight_device&&
+						if ((BEAT_AVERAGING==analysis->trace->analysis_mode)&&
+							(analysis->trace->valid_processing))
+						{
+							trace_area_3_device=analysis->trace->processed_device;
+						}
+						else
+						{
+							trace_area_3_device=highlight_device;
+						}
+						if (highlight_device&&trace_area_3_device&&
 							(buffer=get_Device_signal_buffer(highlight_device))&&
 							(times=buffer->times))
 						{
-							signal=highlight_device->signal;
+							signal=trace_area_3_device->signal;
 							if ((callback->event)&&(ButtonPress==callback->event->type))
 							{
 								display=user_interface->display;
@@ -7889,8 +7898,8 @@ should be done as a callback from the trace_window.
 											/* clear the marker */
 											draw_event_marker(event,event_number,datum,times,
 												frequency,EDIT_AREA_DETAIL,first_data,last_data,
-												highlight_device->signal_minimum,
-												highlight_device->signal_maximum,axes_left,axes_top,
+												trace_area_3_device->signal_minimum,
+												trace_area_3_device->signal_maximum,axes_left,axes_top,
 												axes_width,trace_area_3->axes_height,
 												XtWindow(trace_area_3->drawing_area),
 												trace_area_3->drawing->pixel_map,
@@ -7979,8 +7988,8 @@ should be done as a callback from the trace_window.
 													{
 														draw_event_marker(event_temp,event_number,datum,
 															times,frequency,EDIT_AREA_DETAIL,first_data,
-															last_data,highlight_device->signal_minimum,
-															highlight_device->signal_maximum,axes_left,
+															last_data,trace_area_3_device->signal_minimum,
+															trace_area_3_device->signal_maximum,axes_left,
 															axes_top,axes_width,trace_area_3->axes_height,
 															XtWindow(trace_area_3->drawing_area),
 															trace_area_3->drawing->pixel_map,
@@ -7988,8 +7997,8 @@ should be done as a callback from the trace_window.
 														(event_temp->number)--;
 														draw_event_marker(event_temp,event_number,datum,
 															times,frequency,EDIT_AREA_DETAIL,first_data,
-															last_data,highlight_device->signal_minimum,
-															highlight_device->signal_maximum,axes_left,
+															last_data,trace_area_3_device->signal_minimum,
+															trace_area_3_device->signal_maximum,axes_left,
 															axes_top,axes_width,trace_area_3->axes_height,
 															XtWindow(trace_area_3->drawing_area),
 															trace_area_3->drawing->pixel_map,
@@ -8015,8 +8024,8 @@ should be done as a callback from the trace_window.
 												{
 													draw_event_marker(current_event,event_number,datum,
 														times,frequency,EDIT_AREA_DETAIL,first_data,
-														last_data,highlight_device->signal_minimum,
-														highlight_device->signal_maximum,axes_left,
+														last_data,trace_area_3_device->signal_minimum,
+														trace_area_3_device->signal_maximum,axes_left,
 														axes_top,axes_width,trace_area_3->axes_height,
 														XtWindow(trace_area_3->drawing_area),
 														trace_area_3->drawing->pixel_map,
@@ -8028,9 +8037,9 @@ should be done as a callback from the trace_window.
 												{
 													draw_event_marker(current_event,event_number,datum,
 														times,frequency,EDIT_AREA_DETAIL,first_data,
-														last_data,highlight_device->signal_minimum,
-														highlight_device->signal_maximum,axes_left,axes_top,
-														axes_width,trace_area_3->axes_height,
+														last_data,trace_area_3_device->signal_minimum,
+														trace_area_3_device->signal_maximum,axes_left,
+														axes_top,axes_width,trace_area_3->axes_height,
 														XtWindow(trace_area_3->drawing_area),
 														trace_area_3->drawing->pixel_map,
 														signal_drawing_information,user_interface);
@@ -8130,9 +8139,9 @@ should be done as a callback from the trace_window.
 											{
 												draw_event_marker(current_event,event_number,datum,
 													times,frequency,EDIT_AREA_DETAIL,first_data,last_data,
-													highlight_device->signal_minimum,
-													highlight_device->signal_maximum,axes_left,axes_top,
-													axes_width,trace_area_3->axes_height,
+													trace_area_3_device->signal_minimum,
+													trace_area_3_device->signal_maximum,axes_left,
+													axes_top,axes_width,trace_area_3->axes_height,
 													XtWindow(trace_area_3->drawing_area),
 													trace_area_3->drawing->pixel_map,
 													signal_drawing_information,user_interface);
@@ -8149,9 +8158,9 @@ should be done as a callback from the trace_window.
 											{
 												draw_event_marker(current_event,event_number,datum,
 													times,frequency,EDIT_AREA_DETAIL,first_data,last_data,
-													highlight_device->signal_minimum,
-													highlight_device->signal_maximum,axes_left,axes_top,
-													axes_width,trace_area_3->axes_height,
+													trace_area_3_device->signal_minimum,
+													trace_area_3_device->signal_maximum,axes_left,
+													axes_top,axes_width,trace_area_3->axes_height,
 													XtWindow(trace_area_3->drawing_area),
 													trace_area_3->drawing->pixel_map,
 													signal_drawing_information,user_interface);
@@ -8159,8 +8168,8 @@ should be done as a callback from the trace_window.
 											/* draw the marker */
 											draw_event_marker(event,event_number,datum,times,
 												frequency,EDIT_AREA_DETAIL,first_data,last_data,
-												highlight_device->signal_minimum,
-												highlight_device->signal_maximum,axes_left,axes_top,
+												trace_area_3_device->signal_minimum,
+												trace_area_3_device->signal_maximum,axes_left,axes_top,
 												axes_width,trace_area_3->axes_height,
 												XtWindow(trace_area_3->drawing_area),
 												trace_area_3->drawing->pixel_map,
@@ -8312,8 +8321,8 @@ should be done as a callback from the trace_window.
 													{
 														/* determine if the positive or the negative y axis
 															has been selected */
-														signal_min=highlight_device->signal_minimum;
-														signal_max=highlight_device->signal_maximum;
+														signal_min=trace_area_3_device->signal_minimum;
+														signal_max=trace_area_3_device->signal_maximum;
 														if (signal_max==signal_min)
 														{
 															signal_max += 1;
@@ -8464,7 +8473,7 @@ should be done as a callback from the trace_window.
 													marker_graphics_context,x_string,y_string,
 													number_string,length);
 												/* clear the potential */
-												if (signal&&(channel=highlight_device->channel))
+												if (signal&&(channel=trace_area_3_device->channel))
 												{
 													switch (buffer->value_type)
 													{
@@ -8703,8 +8712,8 @@ should be done as a callback from the trace_window.
 																				event_graphics_context_text,x_string,
 																				y_string,number_string,length);
 																			XDrawString(display,working_window,
-																				event_graphics_context,x_string,y_string,
-																				number_string,length);
+																				event_graphics_context,x_string,
+																				y_string,number_string,length);
 																		}
 																	} break;
 																	case MOVING_POTENTIAL_TIME_MARKER:
@@ -8913,6 +8922,11 @@ should be done as a callback from the trace_window.
 																			(float)(x_axis_y_marker-axes_top)*
 																			(float)(marker-x_axis_y_marker)/(y_scale*
 																			(float)(initial_marker-x_axis_y_marker));
+																		if (highlight_device!=trace_area_3_device)
+																		{
+																			trace_area_3_device->signal_maximum=
+																				highlight_device->signal_maximum;
+																		}
 																	} break;
 																	case SCALING_Y_AXIS_NEGATIVE:
 																	{
@@ -8929,6 +8943,11 @@ should be done as a callback from the trace_window.
 																			(float)(x_axis_y_marker-axes_bottom)*
 																			(float)(marker-x_axis_y_marker)/(y_scale*
 																			(float)(initial_marker-x_axis_y_marker));
+																		if (highlight_device!=trace_area_3_device)
+																		{
+																			trace_area_3_device->signal_minimum=
+																				highlight_device->signal_minimum;
+																		}
 																	} break;
 																}
 																/* draw the new markers */
@@ -8978,19 +8997,23 @@ should be done as a callback from the trace_window.
 																	{
 																		analysis->trace_update_flags |=
 																			TRACE_3_NO_POTENTIAL_ERASE;
-																		/* This conversion to time_keeper time should
-																			be much more robust.  The frequency is not
-																			guaranteed to divide the potential time and
-																			this takes no account of time transformations */
+																		/* this conversion to time_keeper time
+																			should be much more robust.  The frequency
+																			is not guaranteed to divide the potential
+																			time and this takes no account of time
+																			transformations */
 																		Time_keeper_request_new_time(
-																			Time_object_get_time_keeper(analysis->potential_time_object),
-																			((double)times[potential_time] * 1000.0 / frequency));
+																			Time_object_get_time_keeper(
+																			analysis->potential_time_object),
+																			((double)times[potential_time]*1000.0/
+																			frequency));
 																	} break;
 																	case MOVING_DATUM_MARKER:
 																	{
 																		analysis->trace_update_flags |=
 																			TRACE_3_NO_DATUM_ERASE;
-																		Time_object_set_current_time_privileged(analysis->datum_time_object,
+																		Time_object_set_current_time_privileged(
+																			analysis->datum_time_object,
 																			(double)datum);
 																	} break;
 
@@ -9056,9 +9079,9 @@ should be done as a callback from the trace_window.
 																				(struct FE_node *)NULL,
 																				(struct Draw_package *)NULL,
 																				highlight_device,
-																				SIGNAL_AREA_DETAIL,
-																				start_analysis_interval,
-																				end_analysis_interval,xpos,ypos,
+																				SIGNAL_AREA_DETAIL,1,0,
+																				&start_analysis_interval,
+																				&end_analysis_interval,xpos,ypos,
 																				signals->signal_width,
 																				signals->signal_height,
 																				signals_pixel_map,&signals_axes_left,
@@ -9066,19 +9089,6 @@ should be done as a callback from the trace_window.
 																				&signals_axes_height,
 																				signal_drawing_information,
 																				user_interface);
-#if defined (OLD_CODE)
-																			draw_signal(highlight_device,
-																				SIGNAL_AREA_DETAIL,
-																				start_analysis_interval,
-																				end_analysis_interval,xpos,ypos,
-																				signals->signal_width,
-																				signals->signal_height,
-																				signals_pixel_map,&signals_axes_left,
-																				&signals_axes_top,&signals_axes_width,
-																				&signals_axes_height,
-																				signal_drawing_information,
-																				user_interface);
-#endif /* defined (OLD_CODE) */
 																			draw_device_markers(highlight_device,
 																				start_analysis_interval,
 																				end_analysis_interval,datum,1,
