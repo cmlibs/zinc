@@ -187,6 +187,7 @@ endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 
 GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
 GRAPHICS_LIB =
+GRAPHICS_INC =
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME:IRIX%=),)
       GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
@@ -209,8 +210,21 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
 #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
    ifeq ($(SYSNAME),Linux)
-      GRAPHICS_LIB += -L$(firstword $(wildcard /usr/local/Mesa/lib /usr/X11R6/lib))
-   endif # $(SYSNAME) == Linux
+      ifneq ($(wildcard /usr/local/Mesa/include),)
+         GRAPHICS_INC += -I/usr/local/Mesa/include
+      endif
+      GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard /usr/local/Mesa/lib /usr/X11R6/lib)))
+   endif
+   ifeq ($(SYSNAME:IRIX%=),)
+      ifneq ($(wildcard /usr/local/Mesa/include),)
+         GRAPHICS_INC += -I/usr/local/Mesa/include
+      endif
+      ifeq ($(ABI),64)
+         GRAPHICS_LIB += $(patsubst %,-L%,$(wildcard /usr/local/Mesa/lib64))
+      else # ABI == 64
+         GRAPHICS_LIB += $(patsubst %,-L%,$(wildcard /usr/local/Mesa/lib32))
+      endif # ABI == 64
+   endif # SYSNAME == IRIX%=
    ifeq ($(SYSNAME),win32)
       GRAPHICS_LIB += -L/usr/X11R6/lib
    endif # $(SYSNAME) == win32
@@ -576,8 +590,8 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES)
 
 ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
-	$(XML_INC) $(UIDH_INC) $(USER_INTERFACE_INC) $(INTERPRETER_INC) \
-	$(IMAGEMAGICK_INC) $(XML2_INC) $(BOOST_INC)
+	$(XML_INC) $(UIDH_INC) $(GRAPHICS_INC) $(USER_INTERFACE_INC) \
+	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(XML2_INC) $(BOOST_INC)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
