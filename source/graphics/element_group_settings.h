@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -120,7 +120,7 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 6 June 2000
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
@@ -138,6 +138,10 @@ object.
 	/* objects changed which require editing of existing graphics_objects */
 	struct FE_element *changed_element;
 	struct FE_node *changed_node;
+	/* remember list of named primitives removed when editing graphics_object
+		 because of changed_element or changed_node - to prevent removing the
+		 ones they are replaced by if calculated on top_level_element */
+	struct LIST(Selected_graphic) *removed_primitives;
 	/* for highlighting of selected objects */
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	struct LIST(FE_element) *selected_element_list;
@@ -592,19 +596,21 @@ For settings starting in a particular element.
 int GT_element_settings_get_seed_xi(struct GT_element_settings *settings,
 	Triple seed_xi);
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
-For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
+For settings_types GT_ELEMENT_SETTINGS_ELEMENT_POINTS or
+GT_ELEMENT_SETTINGS_STREAMLINES only.
 ==============================================================================*/
 
 int GT_element_settings_set_seed_xi(struct GT_element_settings *settings,
 	Triple seed_xi);
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
-For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
+For settings_types GT_ELEMENT_SETTINGS_ELEMENT_POINTS or
+GT_ELEMENT_SETTINGS_STREAMLINES only.
 ==============================================================================*/
 
 int GT_element_settings_get_streamline_parameters(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 2 June 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -39,7 +39,7 @@ Module types
 
 struct GT_element_settings
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Stores one group of settings for a single line/surface/etc. part of the
@@ -80,9 +80,9 @@ finite element group rendition.
 	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
 	/* for element_points only */
+	enum Xi_discretization_mode xi_discretization_mode;
 	struct FE_field *native_discretization_field;
 	struct Element_discretization discretization;
-	enum Xi_discretization_mode xi_discretization_mode;
 	/* for volumes only */
 	struct VT_volume_texture *volume_texture;
 	/* SAB Added for text access only */
@@ -91,7 +91,7 @@ finite element group rendition.
 	struct Computed_field *blur_field;
 	/* for settings starting in a particular element */
 	struct FE_element *seed_element;
-	/* for streamlines only */
+	/* for settings requiring an exact xi location */
 	Triple seed_xi;
 	enum Streamline_type streamline_type;
 	struct Computed_field *stream_vector_field;
@@ -180,7 +180,7 @@ struct Element_point_ranges_select_in_graphics_object_data
 static int Element_point_ranges_select_in_graphics_object(
 	struct Element_point_ranges *element_point_ranges,void *select_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 If <settings> is of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and has a graphics
@@ -189,11 +189,9 @@ applies to the settings, and if so selects any ranges in it in the
 graphics_object.
 ==============================================================================*/
 {
-	FE_value element_to_top_level[9];
-	int dimension,i,matching_identifier,
-		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],return_code,
-		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct Element_point_ranges_identifier element_point_ranges_identifier;
+	int i,return_code,top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Element_point_ranges_identifier element_point_ranges_identifier,
+		temp_element_point_ranges_identifier;
 	struct Element_point_ranges_select_in_graphics_object_data *select_data;
 	struct FE_element *element,*top_level_element;
 	struct GROUP(FE_element) *element_group;
@@ -215,81 +213,58 @@ graphics_object.
 			element=element_point_ranges_identifier.element;
 			if (GT_element_settings_uses_FE_element(settings,element,element_group))
 			{
-				if (top_level_element=FE_element_get_top_level_element_conversion(
-					element,/*check_top_level_element*/(struct FE_element *)NULL,
-					element_group,settings->face,element_to_top_level))
+				top_level_element=(struct FE_element *)NULL;
+				top_level_number_in_xi[0]=settings->discretization.number_in_xi1;
+				top_level_number_in_xi[1]=settings->discretization.number_in_xi2;
+				top_level_number_in_xi[2]=settings->discretization.number_in_xi3;
+				if (get_FE_element_discretization(element,
+					element_group,settings->face,settings->native_discretization_field,
+					top_level_number_in_xi,&top_level_element,
+					temp_element_point_ranges_identifier.number_in_xi))
 				{
-					/* get the discretization requested for top-level element, from native
-						 discretization field if not NULL and is element based in element */
-					if (!(settings->native_discretization_field&&
-						FE_element_field_is_grid_based(top_level_element,
-							settings->native_discretization_field)&&
-						get_FE_element_field_grid_map_number_in_xi(top_level_element,
-							settings->native_discretization_field,top_level_number_in_xi)))
+					temp_element_point_ranges_identifier.element=element;
+					temp_element_point_ranges_identifier.top_level_element=
+						top_level_element;
+					temp_element_point_ranges_identifier.xi_discretization_mode=
+						settings->xi_discretization_mode;
+					/*???RC temporary, hopefully */
+					for (i=0;i<3;i++)
 					{
-						top_level_number_in_xi[0]=settings->discretization.number_in_xi1;
-						top_level_number_in_xi[1]=settings->discretization.number_in_xi2;
-						top_level_number_in_xi[2]=settings->discretization.number_in_xi3;
+						temp_element_point_ranges_identifier.exact_xi[i]=
+							settings->seed_xi[i];
 					}
-					if (get_FE_element_discretization_from_top_level(element,number_in_xi,
-						top_level_element,top_level_number_in_xi,element_to_top_level))
+					if (0==compare_Element_point_ranges_identifier(
+						&element_point_ranges_identifier,
+						&temp_element_point_ranges_identifier))
 					{
-						if (element_point_ranges_identifier.xi_discretization_mode ==
-							settings->xi_discretization_mode)
+						if (ranges=CREATE(Multi_range)())
 						{
-							dimension=get_FE_element_dimension(element);
-							matching_identifier=1;
-							for (i=0;(i<dimension)&&matching_identifier;i++)
+							if (Multi_range_copy(ranges,Element_point_ranges_get_ranges(
+								element_point_ranges))&&GT_object_select_graphic(
+									settings->graphics_object,element->cm.number,ranges))
 							{
-								if (element_point_ranges_identifier.number_in_xi[i] !=
-									number_in_xi[i])
-								{
-									matching_identifier=0;
-								}
+								return_code=1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Element_point_ranges_select_in_graphics_object.  "
+									"Could not select ranges");
+								DESTROY(Multi_range)(&ranges);
+								return_code=0;
 							}
 						}
-						else
-						{
-							matching_identifier=0;
-						}
-						if (matching_identifier)
-						{
-							if (ranges=CREATE(Multi_range)())
-							{
-								if (Multi_range_copy(ranges,Element_point_ranges_get_ranges(
-									element_point_ranges))&&GT_object_select_graphic(
-										settings->graphics_object,element->cm.number,ranges))
-								{
-									return_code=1;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Element_point_ranges_select_in_graphics_object.  "
-										"Could not select ranges");
-									DESTROY(Multi_range)(&ranges);
-									return_code=0;
-								}
-							}
-							return_code=1;
-
-						}
-						else
-						{
-							return_code=1;
-						}
+						return_code=1;
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
-							"Error getting discretization");
-						return_code=0;
+						return_code=1;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
-						"Error getting top_level_element");
+						"Error getting discretization");
 					return_code=0;
 				}
 			}
@@ -459,13 +434,13 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			/* for element_points and iso_surfaces */
 			settings->use_element_type=USE_ELEMENTS;
 			/* for element_points only */
+			settings->xi_discretization_mode=XI_DISCRETIZATION_CELL_CENTRES;
 			settings->native_discretization_field=(struct FE_field *)NULL;
 			/* default to 1*1*1 discretization for fastest possible display.
 				 Important since model may have a *lot* of elements */
 			settings->discretization.number_in_xi1=1;
 			settings->discretization.number_in_xi2=1;
 			settings->discretization.number_in_xi3=1;
-			settings->xi_discretization_mode=XI_DISCRETIZATION_CELL_CENTRES;
 			/* for volumes only */
 			settings->volume_texture=(struct VT_volume_texture *)NULL;
 			settings->displacement_map_field=(struct Computed_field *)NULL;
@@ -473,10 +448,11 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->blur_field=(struct Computed_field *)NULL;
 			/* for settings starting in a particular element */
 			settings->seed_element=(struct FE_element *)NULL;
-			/* for streamlines only */
+			/* for settings requiring an exact xi location */
 			settings->seed_xi[0]=0.5;
 			settings->seed_xi[1]=0.5;
 			settings->seed_xi[2]=0.5;
+			/* for streamlines only */
 			settings->streamline_type=STREAM_LINE;
 			settings->stream_vector_field=(struct Computed_field *)NULL;
 			settings->reverse_track=0;
@@ -722,15 +698,15 @@ Note: destination->access_count is not changed by COPY.
 		/* for element_points and iso_surfaces */
 		destination->use_element_type=source->use_element_type;
 		/* for element_points only */
-		REACCESS(FE_field)(&(destination->native_discretization_field),
-			source->native_discretization_field);
+		destination->xi_discretization_mode=source->xi_discretization_mode;
 		destination->discretization.number_in_xi1=
 			source->discretization.number_in_xi1;
 		destination->discretization.number_in_xi2=
 			source->discretization.number_in_xi2;
 		destination->discretization.number_in_xi3=
 			source->discretization.number_in_xi3;
-		destination->xi_discretization_mode=source->xi_discretization_mode;
+		REACCESS(FE_field)(&(destination->native_discretization_field),
+			source->native_discretization_field);
 		/* for volumes only */
 		REACCESS(VT_volume_texture)(&(destination->volume_texture),
 			source->volume_texture);
@@ -741,10 +717,11 @@ Note: destination->access_count is not changed by COPY.
 		/* for settings starting in a particular element */
 		REACCESS(FE_element)(&(destination->seed_element),
 			source->seed_element);
-		/* for streamlines only */
+		/* for settings requiring an exact xi location */
 		destination->seed_xi[0]=source->seed_xi[0];
 		destination->seed_xi[1]=source->seed_xi[1];
 		destination->seed_xi[2]=source->seed_xi[2];
+		/* for streamlines only */
 		destination->streamline_type=source->streamline_type;
 		REACCESS(Computed_field)(&(destination->stream_vector_field),
 			source->stream_vector_field);
@@ -2065,17 +2042,19 @@ For settings starting in a particular element.
 int GT_element_settings_get_seed_xi(struct GT_element_settings *settings,
 	Triple seed_xi)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
-For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
+For settings_types GT_ELEMENT_SETTINGS_ELEMENT_POINTS or
+GT_ELEMENT_SETTINGS_STREAMLINES only.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(GT_element_settings_get_seed_xi);
-	if (settings&&seed_xi&&
-		(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type))
+	if (settings&&seed_xi&&(
+		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+		(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type)))
 	{
 		seed_xi[0]=settings->seed_xi[0];
 		seed_xi[1]=settings->seed_xi[1];
@@ -2096,17 +2075,19 @@ For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
 int GT_element_settings_set_seed_xi(struct GT_element_settings *settings,
 	Triple seed_xi)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
-For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
+For settings_types GT_ELEMENT_SETTINGS_ELEMENT_POINTS or
+GT_ELEMENT_SETTINGS_STREAMLINES only.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(GT_element_settings_set_seed_xi);
-	if (settings&&seed_xi&&
-		(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type))
+	if (settings&&seed_xi&&(
+		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+		(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type)))
 	{
 		settings->seed_xi[0]=seed_xi[0];
 		settings->seed_xi[1]=seed_xi[1];
@@ -3222,6 +3203,8 @@ settings describe EXACTLY the same geometry.
 			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
 		{
 			return_code=
+				(settings->xi_discretization_mode==
+					second_settings->xi_discretization_mode)&&
 				(settings->native_discretization_field==
 					second_settings->native_discretization_field)&&
 				(settings->discretization.number_in_xi1==
@@ -3229,9 +3212,7 @@ settings describe EXACTLY the same geometry.
 				(settings->discretization.number_in_xi2==
 					second_settings->discretization.number_in_xi2)&&
 				(settings->discretization.number_in_xi3==
-					second_settings->discretization.number_in_xi3)&&
-				(settings->xi_discretization_mode==
-					second_settings->xi_discretization_mode);
+					second_settings->discretization.number_in_xi3);
 		}
 		/* for volumes only */
 		if (return_code&&(GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type))
@@ -3251,13 +3232,20 @@ settings describe EXACTLY the same geometry.
 			return_code=
 				(settings->seed_element==second_settings->seed_element);
 		}
-		/* for streamlines only */
-		if (return_code&&(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type))
+		/* for settings requiring an exact xi location */
+		if (return_code&&(
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type)))
 		{
 			return_code=
 				(settings->seed_xi[0]==second_settings->seed_xi[0])&&
 				(settings->seed_xi[1]==second_settings->seed_xi[1])&&
-				(settings->seed_xi[2]==second_settings->seed_xi[2])&&
+				(settings->seed_xi[2]==second_settings->seed_xi[2]);
+		}
+		/* for streamlines only */
+		if (return_code&&(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type))
+		{
+			return_code=
 				(settings->streamline_type==second_settings->streamline_type)&&
 				(settings->stream_vector_field==second_settings->stream_vector_field)&&
 				(settings->reverse_track==second_settings->reverse_track)&&
@@ -3642,7 +3630,7 @@ Returns the <GT_element_settings_type> described by
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -3705,7 +3693,7 @@ if no coordinate field. Currently only write if we have a field.
 			}
 			else
 			{
-				append_string(&settings_string,"unknown",&error);
+				append_string(&settings_string,"NONE",&error);
 			}
 		}
 		/* for 1-D and 2-D elements only */
@@ -3872,30 +3860,36 @@ if no coordinate field. Currently only write if we have a field.
 		/* for element_points only */
 		if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
 		{
-			sprintf(temp_string," discretization %d*%d*%d",
-				settings->discretization.number_in_xi1,
-				settings->discretization.number_in_xi2,
-				settings->discretization.number_in_xi3);
-			append_string(&settings_string,temp_string,&error);
-			if (settings->native_discretization_field)
-			{
-				if (GET_NAME(FE_field)(settings->native_discretization_field,&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					append_string(&settings_string," native_discretization ",&error);
-					append_string(&settings_string,name,&error);
-					DEALLOCATE(name);
-				}
-				else
-				{
-					DEALLOCATE(settings_string);
-					error=1;
-				}
-			}
 			append_string(&settings_string," ",&error);
 			append_string(&settings_string,
 				Xi_discretization_mode_string(settings->xi_discretization_mode),&error);
+			if (XI_DISCRETIZATION_EXACT_XI != settings->xi_discretization_mode)
+			{
+				sprintf(temp_string," discretization %d*%d*%d native_discretization ",
+					settings->discretization.number_in_xi1,
+					settings->discretization.number_in_xi2,
+					settings->discretization.number_in_xi3);
+				append_string(&settings_string,temp_string,&error);
+				if (settings->native_discretization_field)
+				{
+					if (GET_NAME(FE_field)(settings->native_discretization_field,&name))
+					{
+						/* put quotes around name if it contains special characters */
+						make_valid_token(&name);
+						append_string(&settings_string,name,&error);
+						DEALLOCATE(name);
+					}
+					else
+					{
+						DEALLOCATE(settings_string);
+						error=1;
+					}
+				}
+				else
+				{
+					append_string(&settings_string,"NONE",&error);
+				}
+			}
 		}
 		/* for volumes only */
 		if (GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type)
@@ -3954,12 +3948,20 @@ if no coordinate field. Currently only write if we have a field.
 				DEALLOCATE(name);
 			}
 		}
+
+		/* for settings requiring an exact xi location */
+		if (((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)&&
+			(XI_DISCRETIZATION_EXACT_XI == settings->xi_discretization_mode))||
+			(GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type))
+		{
+			sprintf(temp_string," xi %g,%g,%g",
+				settings->seed_xi[0],settings->seed_xi[1],settings->seed_xi[2]);
+		}
+
 		/* for streamlines only */
 		if (GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type)
 		{
-			sprintf(temp_string," xi %g %g %g ",
-				settings->seed_xi[0],settings->seed_xi[1],settings->seed_xi[2]);
-			append_string(&settings_string,temp_string,&error);
+			append_string(&settings_string," ",&error);
 			append_string(&settings_string,
 				Streamline_type_string(settings->streamline_type),&error);
 			if (GET_NAME(Computed_field)(settings->stream_vector_field,&name))
@@ -4191,10 +4193,10 @@ Makes a copy of the settings and puts it in the list_of_settings.
 	return (return_code);
 } /* GT_element_settings_copy_and_put_in_list */
 
-static int element_to_graphics_object(struct FE_element *element,
+static int FE_element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2000
+LAST MODIFIED : 6 June 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4219,7 +4221,7 @@ Converts a finite element into a graphics object with the supplied settings.
 	struct Multi_range *ranges;
 	Triple *xi_points;
 
-	ENTER(element_to_graphics_object);
+	ENTER(FE_element_to_graphics_object);
 	if (element&&(settings_to_object_data=
 		(struct GT_element_settings_to_graphics_object_data *)
 		settings_to_object_data_void)
@@ -4434,7 +4436,7 @@ Converts a finite element into a graphics object with the supplied settings.
 							} break;
 							default:
 							{
-								display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
+								display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
 									"Invalid graphic type for iso_scalar");
 								return_code=0;
 							} break;
@@ -4442,17 +4444,38 @@ Converts a finite element into a graphics object with the supplied settings.
 					} break;
 					case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 					{
+						/*???RC temporary, hopefully */
+						for (i=0;i<3;i++)
+						{
+							element_point_ranges_identifier.exact_xi[i]=settings->seed_xi[i];
+						}
 						if (xi_points=Xi_discretization_mode_get_xi_points(
 							settings->xi_discretization_mode,dimension,number_in_xi,
-							&number_of_xi_points))
+							element_point_ranges_identifier.exact_xi,&number_of_xi_points))
 						{
 							if (edit_mode)
 							{
-								GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_glyph_set)(
-									settings->graphics_object,time,element->cm.number);
+								if (!FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
+									element->cm.number,
+									settings_to_object_data->removed_primitives))
+								{
+									struct Selected_graphic *removed_primitive;
+
+									GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_glyph_set)(
+										settings->graphics_object,time,element->cm.number);
+									removed_primitive=
+										CREATE(Selected_graphic)(element->cm.number);
+									if (!ADD_OBJECT_TO_LIST(Selected_graphic)(removed_primitive,
+										settings_to_object_data->removed_primitives))
+									{
+										DESTROY(Selected_graphic)(&removed_primitive);
+									}
+								}
 							}
 							ranges=(struct Multi_range *)NULL;
 							element_point_ranges_identifier.element=element;
+							element_point_ranges_identifier.top_level_element=
+								top_level_element;
 							element_point_ranges_identifier.xi_discretization_mode=
 								settings->xi_discretization_mode;
 							for (i=0;i<dimension;i++)
@@ -4571,13 +4594,13 @@ Converts a finite element into a graphics object with the supplied settings.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"element_to_graphics_object.  Unknown streamline type");
+								"FE_element_to_graphics_object.  Unknown streamline type");
 							return_code=0;
 						}
 					} break;
 					default:
 					{
-						display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
+						display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
 							"Unknown element settings type");
 						return_code=0;
 					} break;
@@ -4586,26 +4609,26 @@ Converts a finite element into a graphics object with the supplied settings.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"element_to_graphics_object.  Could not get discretization");
+					"FE_element_to_graphics_object.  Could not get discretization");
 				return_code=0;
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
+		display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* element_to_graphics_object */
+} /* FE_element_to_graphics_object */
 
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 6 June 2000
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
@@ -4648,7 +4671,7 @@ The graphics object is stored with with the settings it was created from.
 				{
 					coordinate_field=settings->coordinate_field;
 				}
-				/* want RC coordinate_field passed to element_to_graphics_object */
+				/* RC coordinate_field to pass to FE_element_to_graphics_object */
 				if ((settings_to_object_data->rc_coordinate_field=
 					Computed_field_begin_wrap_coordinate_field(coordinate_field))&&
 					((!settings->orientation_scale_field) ||
@@ -4798,8 +4821,10 @@ The graphics object is stored with with the settings it was created from.
 						settings->selected_graphics_changed=1;
 						/* all primitives added at time 0.0 */
 						time=0.0;
-						/* need settings for element_to_graphics_object routine */
+						/* need settings for FE_element_to_graphics_object routine */
 						settings_to_object_data->settings=settings;
+						REMOVE_ALL_OBJECTS_FROM_LIST(Selected_graphic)(
+							settings_to_object_data->removed_primitives);
 						switch (settings->settings_type)
 						{
 							case GT_ELEMENT_SETTINGS_NODE_POINTS:
@@ -4853,8 +4878,8 @@ The graphics object is stored with with the settings it was created from.
 							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 							{
 								return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-									element_to_graphics_object,settings_to_object_data_void,
-									element_group);
+									FE_element_to_graphics_object,
+									settings_to_object_data_void,element_group);
 							} break;
 							case GT_ELEMENT_SETTINGS_VOLUMES:
 							{
@@ -4880,14 +4905,14 @@ The graphics object is stored with with the settings it was created from.
 								}
 								if (settings->seed_element)
 								{
-									return_code=element_to_graphics_object(settings->seed_element,
-										settings_to_object_data_void);
+									return_code=FE_element_to_graphics_object(
+										settings->seed_element,settings_to_object_data_void);
 								}
 								else
 								{
 									return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-										element_to_graphics_object,settings_to_object_data_void,
-										element_group);
+										FE_element_to_graphics_object,
+										settings_to_object_data_void,element_group);
 								}
 								if (multi_element_voltex)
 								{
@@ -4911,14 +4936,14 @@ The graphics object is stored with with the settings it was created from.
 								settings_to_object_data->changed_node=(struct FE_node *)NULL;
 								if (settings->seed_element)
 								{
-									return_code=element_to_graphics_object(settings->seed_element,
-										settings_to_object_data_void);
+									return_code=FE_element_to_graphics_object(
+										settings->seed_element,settings_to_object_data_void);
 								}
 								else
 								{
 									return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-										element_to_graphics_object,settings_to_object_data_void,
-										element_group);
+										FE_element_to_graphics_object,
+										settings_to_object_data_void,element_group);
 								}
 								/* restore changed node/element for other settings */
 								settings_to_object_data->changed_element=changed_element;
@@ -5762,7 +5787,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* centre */
 					number_of_components=3;
 					Option_table_add_entry(option_table,"centre",
-						&(settings->glyph_centre),&(number_of_components),set_float_vector);
+						settings->glyph_centre,&(number_of_components),set_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
@@ -5817,7 +5842,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
 					Option_table_add_entry(option_table,"scale_factors",
-						&(settings->glyph_scale_factors),"*",set_special_float3);
+						settings->glyph_scale_factors,"*",set_special_float3);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -5837,7 +5862,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
-						&(settings->glyph_size),"*",set_special_float3);
+						settings->glyph_size,"*",set_special_float3);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -5904,7 +5929,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_data_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT DATA_POINTS command.
@@ -5957,7 +5982,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* centre */
 					number_of_components=3;
 					Option_table_add_entry(option_table,"centre",
-						&(settings->glyph_centre),&(number_of_components),set_float_vector);
+						settings->glyph_centre,&(number_of_components),set_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
@@ -6012,7 +6037,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
 					Option_table_add_entry(option_table,"scale_factors",
-						&(settings->glyph_scale_factors),"*",set_special_float3);
+						settings->glyph_scale_factors,"*",set_special_float3);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -6031,7 +6056,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
-						&(settings->glyph_size),"*",set_special_float3);
+						settings->glyph_size,"*",set_special_float3);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -6843,7 +6868,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -6905,7 +6930,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* centre */
 					number_of_components=3;
 					Option_table_add_entry(option_table,"centre",
-						&(settings->glyph_centre),&(number_of_components),set_float_vector);
+						settings->glyph_centre,&number_of_components,set_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
@@ -6974,7 +6999,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
 					Option_table_add_entry(option_table,"scale_factors",
-						&(settings->glyph_scale_factors),"*",set_special_float3);
+						settings->glyph_scale_factors,"*",set_special_float3);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -6994,7 +7019,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
-						&(settings->glyph_size),"*",set_special_float3);
+						settings->glyph_size,"*",set_special_float3);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -7007,6 +7032,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&use_element_type_string);
 					DEALLOCATE(valid_strings);
+					/* xi */
+					Option_table_add_entry(option_table,"xi",
+						settings->seed_xi,&number_of_components,set_float_vector);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
