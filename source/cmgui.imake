@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 24 May 2002
+XCOMM LAST MODIFIED : 18 July 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -573,7 +573,7 @@ UNEMAP_SRCS =
 #if defined (OLD_CODE)
 XCOMM for all nodal stuff UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
 #endif
-UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D 
+UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
 UNEMAP_SRCS = \
 	unemap/acquisition.c \
 	unemap/acquisition_window.c \
@@ -603,6 +603,7 @@ UNEMAP_SRCS = \
 	unemap/spectral_methods.c \
 	unemap/system_window.c \
 	unemap/trace_window.c \
+	unemap/unemap_command.c \
 	unemap/unemap_hardware_client.c \
 	unemap/unemap_package.c 
 #endif /* !defined (UNEMAP) */
@@ -931,7 +932,7 @@ COMMAND_SRCS = \
 	command/command.c \
 	command/console.c \
 	command/example_path.c \
-	command/parser.c 
+	command/parser.c
 COMMAND_INTERFACE_SRCS = \
 	command/command_window.c
 COMPUTED_FIELD_SRCS = \
