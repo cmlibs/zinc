@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor_dialog.c
 
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Routines for creating an element group editor dialog shell and standard buttons.
@@ -36,7 +36,7 @@ static MrmHierarchy graphical_element_editor_dialog_hierarchy;
 
 struct Graphical_element_editor_dialog
 /*******************************************************************************
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor dialog
@@ -45,7 +45,7 @@ widget.
 {
 	/* if autoapply flag is set, any changes to the currently edited graphical
 		 element will automatically be applied globally */
-	int autoapply;
+	int autoapply,graphical_element_changed;
 	struct Callback_data update_callback;
 	struct Computed_field_package *computed_field_package;
 	struct GROUP(FE_element) *element_group;
@@ -110,6 +110,48 @@ ie. the graphical region is a class derived from a scene.
 	return (return_code);
 } /* graphical_element_editor_dialog_update */
 #endif /* defined (OLD_CODE) */
+
+static int graphical_element_editor_dialog_apply_settings(
+	struct Graphical_element_editor_dialog *gelem_editor_dialog)
+/*******************************************************************************
+LAST MODIFIED : 19 October 1998
+
+DESCRIPTION :
+Copies the settings back to the original GT_element_group, rebuilds the
+graphics and envokes a scene update.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_group *gt_element_group,*edited_gt_element_group;
+
+	ENTER(graphical_element_editor_dialog_apply_settings);
+	if (gelem_editor_dialog)
+	{
+		if ((gt_element_group=Scene_get_graphical_element_group(
+			gelem_editor_dialog->scene,gelem_editor_dialog->element_group)))
+		{
+			if (edited_gt_element_group=graphical_element_editor_get_gt_element_group(
+				gelem_editor_dialog->editor_widget))
+			{
+				busy_cursor_on((Widget)NULL,gelem_editor_dialog->user_interface);
+				GT_element_group_modify(gt_element_group,edited_gt_element_group);
+				gelem_editor_dialog->graphical_element_changed=0;
+				busy_cursor_off((Widget)NULL,gelem_editor_dialog->user_interface);
+			}
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_dialog_apply_settings.  "
+			"Missing graphical_element_editor_dialog");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* graphical_element_editor_dialog_apply_settings */
 
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
 	Graphical_element_editor_dialog,egroup_form)
@@ -213,7 +255,7 @@ Visibility toggle for entire graphical element group.
 static void graphical_element_editor_dialog_autoapply_button_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Autoapply toggle for entire graphical element group.
@@ -230,6 +272,10 @@ Autoapply toggle for entire graphical element group.
 		if (XmToggleButtonGetState(widget))
 		{
 			gelem_editor_dialog->autoapply = 1;
+			if (gelem_editor_dialog->graphical_element_changed)
+			{
+				graphical_element_editor_dialog_apply_settings(gelem_editor_dialog);
+			}
 		}
 		else
 		{
@@ -245,71 +291,11 @@ Autoapply toggle for entire graphical element group.
 	LEAVE;
 } /* graphical_element_editor_dialog_autoapply_button_CB */
 
-static int graphical_element_editor_dialog_apply_settings(
-	struct Graphical_element_editor_dialog *gelem_editor_dialog)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Copies the settings back to the original GT_element_group, rebuilds the
-graphics and envokes a scene update.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_element_group *gt_element_group,*edited_gt_element_group;
-
-	ENTER(graphical_element_editor_dialog_apply_settings);
-	if (gelem_editor_dialog)
-	{
-		if ((gt_element_group=Scene_get_graphical_element_group(
-			gelem_editor_dialog->scene,gelem_editor_dialog->element_group)))
-		{
-			if (edited_gt_element_group=graphical_element_editor_get_gt_element_group(
-				gelem_editor_dialog->editor_widget))
-			{
-				busy_cursor_on((Widget)NULL,gelem_editor_dialog->user_interface);
-				GT_element_group_modify(gt_element_group,edited_gt_element_group);
-				busy_cursor_off((Widget)NULL,gelem_editor_dialog->user_interface);
-#if defined (OLD_CODE)
-				/* refresh the gelem editor to clear settings_changed flags */
-				graphical_element_editor_refresh(gelem_editor_dialog->editor_widget);
-#endif /* defined (OLD_CODE) */
-			}
-#if defined (OLD_CODE)
-			else
-			{
-				display_message(WARNING_MESSAGE,"No element group settings to apply");
-			}
-#endif /* defined (OLD_CODE) */
-			return_code=1;
-		}
-#if defined (OLD_CODE)
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"graphical_element_editor_dialog_apply_settings.  "
-				"Missing graphical element group");
-			return_code=0;
-		}
-#endif /* defined (OLD_CODE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphical_element_editor_dialog_apply_settings.  "
-			"Missing graphical_element_editor_dialog");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* graphical_element_editor_dialog_apply_settings */
-
 static void graphical_element_editor_dialog_update_egroup(
 	Widget surface_settings_editor_widget,
 	void *gelem_editor_dialog_void,void *element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 16 October 1998
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Called when element group is changed.
@@ -322,8 +308,7 @@ Called when element group is changed.
 	if (gelem_editor_dialog=
 		(struct Graphical_element_editor_dialog *)gelem_editor_dialog_void)
 	{
-		/*???RC New: always apply the settings here: */
-		if (gelem_editor_dialog->element_group&&gelem_editor_dialog->scene)
+		if (gelem_editor_dialog->graphical_element_changed)
 		{
 			graphical_element_editor_dialog_apply_settings(gelem_editor_dialog);
 		}
@@ -344,7 +329,7 @@ static void graphical_element_editor_dialog_update_scene(
 	Widget surface_settings_editor_widget,
 	void *gelem_editor_dialog_void,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Called when scene is changed.
@@ -357,8 +342,7 @@ Called when scene is changed.
 	if (gelem_editor_dialog=
 		(struct Graphical_element_editor_dialog *)gelem_editor_dialog_void)
 	{
-		/*???RC New: always apply the settings here: */
-		if (gelem_editor_dialog->element_group&&gelem_editor_dialog->scene)
+		if (gelem_editor_dialog->graphical_element_changed)
 		{
 			graphical_element_editor_dialog_apply_settings(gelem_editor_dialog);
 		}
@@ -543,7 +527,7 @@ DESCRIPTION :
 static void graphical_element_editor_dialog_update_graphical_element(
 	Widget widget,void *gelem_editor_dialog_void,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Callback for when changes are made in the graphical element editor. If autoapply
@@ -558,6 +542,7 @@ is on, changes are applied globally, otherwise nothing happens.
 	if (gelem_editor_dialog=
 		(struct Graphical_element_editor_dialog *)gelem_editor_dialog_void)
 	{
+		gelem_editor_dialog->graphical_element_changed=1;
 		if (gelem_editor_dialog->autoapply)
 		{
 			graphical_element_editor_dialog_apply_settings(gelem_editor_dialog);
@@ -589,7 +574,7 @@ static Widget create_graphical_element_editor_dialog(
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -655,6 +640,7 @@ DESCRIPTION :
 			{
 				/* initialise the structure */
 				gelem_editor_dialog->autoapply=0;
+				gelem_editor_dialog->graphical_element_changed=0;
 				gelem_editor_dialog->dialog_parent=parent;
 				gelem_editor_dialog->dialog_address=
 					graphical_element_editor_dialog_address;
