@@ -3496,16 +3496,38 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_node_value_get_command_string */
 
-#define Computed_field_node_value_has_multiple_times \
-	Computed_field_default_has_multiple_times
+static int Computed_field_node_value_has_multiple_times(
+	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 16 January 2001
 
 DESCRIPTION :
-Works out whether time influences the field.
+Check the fe_field
 ==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data;
 
-static int Computed_field_set_type_node_value(struct Computed_field *field,
+	ENTER(Computed_field_node_value_has_multiple_times);
+	if (field && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code=FE_field_has_multiple_times(data->fe_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_has_multiple_times.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_value_has_multiple_times */
+
+int Computed_field_set_type_node_value(struct Computed_field *field,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
 	int version_number)
 /*******************************************************************************

@@ -111,20 +111,6 @@ DESCRIPTION :
 	 contains all sorts of things we don't want to include in computed_field */
 	struct Computed_field_find_element_xi_special_cache *find_element_xi_cache;
 
-	/* for COMPUTED_FIELD_COMPONENT only */
-	int component_no;
-
-	/* for COMPUTED_FIELD_COMPOSE only */
-	struct GROUP(FE_element) *compose_element_group;
-
-	/* for COMPUTED_FIELD_EXTERNAL only */
-	char *child_filename;
-	int timeout;
-	struct Child_process *child_process;
-
-	/* for COMPUTED_FIELD_CURVE_LOOKUP only */
-	struct Control_curve *curve;
-
 	/* for COMPUTED_FIELD_NEW_TYPES */
 	/* Soon this will be the only way it is done. */
 	Computed_field_clear_type_specific_function

@@ -173,6 +173,22 @@ DESCRIPTION :
 Frees the computed fields from the computed field manager, given the FE_field
 ==============================================================================*/
 
+int Computed_field_set_type_node_value(struct Computed_field *field,
+	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
+	int version_number);
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_NODE_VALUE, returning the values for the
+given <nodal_value_type> and <version_number> of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+Field automatically takes the coordinate system of the source fe_field. See note
+at start of this file about changing use of coordinate systems.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
 int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 10 January 2002
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -172,7 +172,6 @@ Computed_field_clear_type;
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
-#include "general/child_process.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -361,24 +360,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEALLOCATE(field->component_names);
 		}
 
-		/* for COMPUTED_FIELD_COMPOSE only */
-		if (field->compose_element_group)
-		{
-			DEACCESS(GROUP(FE_element))(&field->compose_element_group);
-		}
-	
-		/* for COMPUTED_FIELD_EXTERNAL only */
-		if (field->child_filename)
-		{
-			DEALLOCATE(field->child_filename);
-		}
-		if (field->child_process)
-		{
-			DEACCESS(Child_process)(&(field->child_process));
-			field->child_process = (struct Child_process *)NULL;
-		}
-		field->timeout = 0;
-
 		/* for COMPUTED_FIELD_NEW_TYPES */
 		if (field->type_specific_data)
 		{
@@ -554,14 +535,6 @@ COMPUTED_FIELD_INVALID with no components.
 			field->node = (struct FE_node *)NULL;
 
 			field->find_element_xi_cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
-
-			/* for COMPUTED_FIELD_COMPOSE only */
-			field->compose_element_group = (struct GROUP(FE_element) *)NULL;
-
-			/* for COMPUTED_FIELD_EXTERNAL only */
-			field->child_filename = (char *)NULL;
-			field->child_process = (struct Child_process *)NULL;
-			field->timeout = 0;
 
 			/* for COMPUTED_FIELD_NEW_TYPES */
 			/* Soon this will be the only way it is done. */
@@ -822,24 +795,6 @@ functions to check if read_only flag is set.
 					destination->type=source->type;
 
 					destination->component_names = component_names;
-
-					/* for COMPUTED_FIELD_COMPOSE only */
-					REACCESS(GROUP(FE_element))(&destination->compose_element_group,
-						source->compose_element_group);
-
-					/* for COMPUTED_FIELD_EXTERNAL only */
-					if (source->child_filename)
-					{
-						ALLOCATE(destination->child_filename, char,
-							strlen(source->child_filename) + 1);
-						strcpy(destination->child_filename, source->child_filename);
-					}
-					destination->timeout = source->timeout;
-					if (source->child_process)
-					{
-						destination->child_process = 
-							ACCESS(Child_process)(source->child_process);
-					}
 
 					/* for COMPUTED_FIELD_NEW_TYPES */
 					destination->computed_field_clear_type_specific_function = 
@@ -1488,7 +1443,7 @@ any other fields, this function is recursively called for them.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 
 	ENTER(Computed_field_is_defined_at_node);
 	return_code=0;
@@ -1521,18 +1476,6 @@ any other fields, this function is recursively called for them.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-				case COMPUTED_FIELD_EXTERNAL:
-				{
-					return_code=1;
-					for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-					{
-						if (!Computed_field_is_defined_at_node(field->source_fields[i],node))
-						{
-							return_code=0;
-						}
-					}
-				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
@@ -1799,11 +1742,8 @@ is avoided.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char buffer[100], *temp_string;
-	FE_value *temp, *temp2, compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int cache_is_valid,element_dimension,i,index,j,k,number_of_components,
-		return_code,total_values;
-	struct FE_element *compose_element;
+	int cache_is_valid,element_dimension,i,
+		return_code;
 
 	ENTER(Computed_field_evaluate_cache_in_element);
 	if (field&&element)
@@ -1881,14 +1821,6 @@ is avoided.
 					{
 						switch (field->type)
 						{
-							case COMPUTED_FIELD_COMPOSE:
-							{
-								/* only calculate the first source_field at this location */
-								return_code=
-									Computed_field_evaluate_cache_in_element(
-										field->source_fields[0],element,xi,time,
-										top_level_element,0);
-							} break;
 							default:
 							{
 								/* calculate values of source_fields, derivatives only if requested */
@@ -1912,158 +1844,6 @@ is avoided.
 						field->derivatives_valid=calculate_derivatives;
 						switch (field->type)
 						{
-							case COMPUTED_FIELD_COMPOSE:
-							{
-								/* The values from the first source field are inverted in the
-									second source field to get element_xi which is evaluated with
-									the third source field */
-								if (return_code = Computed_field_find_element_xi(field->source_fields[1],
-									field->source_fields[0]->values,
-									field->source_fields[0]->number_of_components,
-									&compose_element, compose_xi, field->compose_element_group))
-								{
-									/* calculate the third source_field at this new location */
-									return_code=
-										Computed_field_evaluate_cache_in_element(
-											field->source_fields[2],compose_element,compose_xi,
-											time,/*top_level*/(struct FE_element *)NULL,
-											calculate_derivatives);
-									for (i=0;i<field->number_of_components;i++)
-									{
-										field->values[i]=field->source_fields[2]->values[i];
-									}
-									if (calculate_derivatives)
-									{
-										temp=field->derivatives;
-										temp2=field->source_fields[2]->derivatives;
-										for (i=0;i<field->number_of_components;i++)
-										{
-											for (j=0;j<element_dimension;j++)
-											{
-												(*temp)=(*temp2);
-												temp++;
-												temp2++;
-											}
-										}
-									}
-								}
-							} break;
-							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-							{
-								number_of_components = field->number_of_components;
-								temp=field->source_fields[0]->values;
-								field->values[number_of_components - 1] = fabs(*temp);
-								temp++;
-								j = 0;
-								for (i=1;i<number_of_components;i++)
-								{
-									if (fabs(*temp) > field->values[number_of_components - 1])
-									{
-										field->values[number_of_components - 1] = fabs(*temp);
-										j = i;
-									}
-									temp++;
-								}
-								temp=field->source_fields[0]->values;
-								for (i=0;i < number_of_components - 1;i++)
-								{
-									if ( i == j )
-									{
-										/* Skip over the maximum coordinate */
-										temp++;
-									}
-									field->values[i] = *temp / field->values[number_of_components - 1];
-									temp++;
-								}
-								field->derivatives_valid = 0;
-							} break;
-							case COMPUTED_FIELD_EXTERNAL:
-							{
-								total_values = field->number_of_source_values * 12 + 2;
-								for (i = 0 ; i < field->number_of_source_fields ; i++)
-								{
-									total_values+=field->source_fields[i]->number_of_components * 12;
-									if (calculate_derivatives /* and not never || always give derivatives */)
-									{
-										total_values+=field->source_fields[i]->number_of_components *
-											(element_dimension * 12 + 20);
-									}
-								}
-								if (ALLOCATE(temp_string, char, total_values))
-								{
-									index = 0;
-									for (i = 0 ; i < field->number_of_source_values ; i++)
-									{
-										sprintf(temp_string + index, "%10.5e ", field->source_values[i]);
-										index += 12;
-									}
-									for (i = 0 ; i < field->number_of_source_fields ; i++)
-									{
-										for (j = 0 ; j < field->source_fields[i]->number_of_components ; j++)
-										{
-											sprintf(temp_string + index, "%10.5e ", field->source_fields[i]->values[j]);
-											index += 12;
-											if (calculate_derivatives /* and not never || always give derivatives */)
-											{
-												sprintf(temp_string + index, "#deriv=%d %n", element_dimension,
-													&k);
-												index += k;
-												for (k = 0 ; k < element_dimension ; k++)
-												{
-													sprintf(temp_string + index, "%10.5e ",
-														field->source_fields[i]->derivatives[j * element_dimension + k]);
-													index += 12;
-												}
-											}
-										}
-									}
-									sprintf(temp_string + index, "\n");
-									Child_process_send_string_to_stdin(field->child_process,temp_string);
-									DEALLOCATE(temp_string);
-									if (temp_string = Child_process_get_line_from_stdout(field->child_process,
-										field->timeout))
-									{
-										index = 0;
-										for (i = 0 ; i < field->number_of_components ; i++)
-										{
-											sscanf(temp_string + index, "%f%n", &(field->values[i]), &j);
-											index += j;
-											sscanf(temp_string + index, "%s%n", buffer, &j);
-											if (!strncmp(buffer, "#deriv=", 7))
-											{
-												index += j;
-												/* Should check to see derivatives are supplied for
-													all or none of the components and set the derivatives
-													valid flag appropriately */
-												if (sscanf(buffer + 7, "%d", &k) && k == element_dimension)
-												{											
-													for (k = 0 ; k < element_dimension ; k++)
-													{
-														sscanf(temp_string + index, "%f%n",
-															&(field->derivatives[i * element_dimension + k]), &j);
-														index += j;
-													}
-												}
-											}
-										}
-										DEALLOCATE(temp_string);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_evaluate_cache_in_element."
-											"  Invalid response from child process");
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_evaluate_cache_in_element."
-										"  Unable to allocate temporary string");
-									return_code = 0;
-								}
-							} break;
 							default:
 							{
 								display_message(ERROR_MESSAGE,
@@ -2491,12 +2271,7 @@ fields with the name 'coordinates' are quite pervasive.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *temp_string;
-	FE_value *temp;
-	int i,j,k,number_of_components,return_code,total_values;
-	/* For COMPUTED_FIELD_EMBEDDED and COMPUTED_FIELD_COMPOSE only */
-	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct FE_element *element;	
+	int i,return_code;
 
 	ENTER(Computed_field_evaluate_cache_at_node);
 	if (field&&node)
@@ -2548,13 +2323,6 @@ fields with the name 'coordinates' are quite pervasive.
 					/* 1. Precalculate any source fields that this field depends on */
 					switch(field->type)
 					{
-						case COMPUTED_FIELD_COMPOSE:
-						{
-							/* only calculate the first source_field at this location */
-							return_code=
-								Computed_field_evaluate_cache_at_node(
-									field->source_fields[0],node,time);
-						} break;
 						default:
 						{
 							/* calculate values of source_fields */
@@ -2571,108 +2339,6 @@ fields with the name 'coordinates' are quite pervasive.
 					{
 						switch (field->type)
 						{
-							case COMPUTED_FIELD_COMPOSE:
-							{
-								/* The values from the first source field are inverted in the
-									second source field to get element_xi which is evaluated with
-									the third source field */
-								if (return_code = Computed_field_find_element_xi(field->source_fields[1],
-									field->source_fields[0]->values,
-									field->source_fields[0]->number_of_components, &element, xi,
-									field->compose_element_group))
-								{
-									/* calculate the third source_field at this new location */
-									return_code=
-										Computed_field_evaluate_cache_in_element(
-											field->source_fields[2],element,xi,time,
-											/*top_level*/(struct FE_element *)NULL,0);
-									for (i=0;i<field->number_of_components;i++)
-									{
-										field->values[i]=field->source_fields[2]->values[i];
-									}
-								}
-							} break;
-							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-							{
-								number_of_components = field->number_of_components;
-								temp=field->source_fields[0]->values;
-								field->values[number_of_components - 1] = fabs(*temp);
-								temp++;
-								j = 0;
-								for (i=1;i <number_of_components;i++)
-								{
-									if (fabs(*temp) > field->values[number_of_components - 1])
-									{
-										field->values[number_of_components - 1] = fabs(*temp);
-										j = i;
-									}
-									temp++;
-								}
-								temp=field->source_fields[0]->values;
-								for (i=0;i < number_of_components - 1;i++)
-								{
-									if ( i == j )
-									{
-										/* Skip over the maximum coordinate */
-										temp++;
-									}
-									field->values[i] = *temp / field->values[number_of_components - 1];
-									temp++;
-								}
-							} break;
-							case COMPUTED_FIELD_EXTERNAL:
-							{
-								total_values = field->number_of_source_values;
-								for (i = 0 ; i < field->number_of_source_fields ; i++)
-								{
-									total_values+=field->source_fields[i]->number_of_components;
-								}
-								if (ALLOCATE(temp_string, char, total_values * 12 + 2))
-								{
-									k = 0;
-									for (i = 0 ; i < field->number_of_source_values ; i++)
-									{
-										sprintf(temp_string + k, "%10.5e ", field->source_values[i]);
-										k += 12;
-									}
-									for (i = 0 ; i < field->number_of_source_fields ; i++)
-									{
-										for (j = 0 ; j < field->source_fields[i]->number_of_components ; j++)
-										{
-											sprintf(temp_string + k, "%10.5e ", field->source_fields[i]->values[j]);
-											k += 12;
-										}
-									}
-									sprintf(temp_string + k, "\n");
-									Child_process_send_string_to_stdin(field->child_process,temp_string);
-									DEALLOCATE(temp_string);
-									if (temp_string = Child_process_get_line_from_stdout(field->child_process,
-										field->timeout))
-									{
-										k = 0;
-										for (i = 0 ; i < field->number_of_components ; i++)
-										{
-											sscanf(temp_string + k, "%f%n", &(field->values[i]), &j);
-											k += j;
-										}
-										DEALLOCATE(temp_string);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_evaluate_cache_at_node."
-											"  Invalid response from child process");
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_evaluate_cache_at_node."
-										"  Unable to allocate temporary string");
-									return_code = 0;
-								}
-							} break;
 							default:
 							{
 								display_message(ERROR_MESSAGE,
@@ -3635,18 +3301,6 @@ The calling function must not deallocate the returned string.
 	ENTER(Computed_field_type_to_string);
 	switch (field->type)
 	{
-		case COMPUTED_FIELD_COMPOSE:
-		{
-			field_type_string="compose";
-		} break;
-		case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-		{
-			field_type_string="cubic_texture_coordinates";
-		} break;
-		case COMPUTED_FIELD_EXTERNAL:
-		{
-			field_type_string="external";
-		} break;
 		case COMPUTED_FIELD_NEW_TYPES:
 		{
 			field_type_string=field->type_string;
@@ -3939,7 +3593,7 @@ DESCRIPTION :
 Conditional function returning true if <field> depends on time.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 
 	ENTER(Computed_field_has_multiple_times);
 	return_code=0;
@@ -3965,22 +3619,11 @@ Conditional function returning true if <field> depends on time.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-				case COMPUTED_FIELD_EXTERNAL:
-				{
-					return_code=0;
-					for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
-					{
-						if (Computed_field_has_multiple_times(field->source_fields[i]))
-						{
-							return_code=1;
-						}
-					}
-				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_has_multiple_times.  Unknown field type");
+						"Computed_field_has_multiple_times.  Unknown field type for %s",
+						field->name);
 					return_code=0;
 				} break;
 
@@ -3990,7 +3633,7 @@ Conditional function returning true if <field> depends on time.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_has_multiple_times.  Invalid argument(s)");
+			"Computed_field_has_multipletimes.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -4076,539 +3719,6 @@ The number of components controls how the field is interpreted:
 
 	return (return_code);
 } /* Computed_field_is_stream_vector_capable */
-
-int Computed_field_get_type_compose(struct Computed_field *field,
-	struct Computed_field **texture_coordinate_field,
-	struct Computed_field **find_element_xi_field,
-	struct Computed_field **calculate_values_field,
-	struct GROUP(FE_element) **search_element_group)
-/*******************************************************************************
-LAST MODIFIED : 16 June 2000
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
-fields which define the field.
-Note that the fields are not ACCESSed.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_compose);
-	if (field&&(COMPUTED_FIELD_COMPOSE==field->type)&&texture_coordinate_field&&
-		find_element_xi_field&&calculate_values_field&&search_element_group)
-	{
-		*texture_coordinate_field = field->source_fields[0];
-		*find_element_xi_field = field->source_fields[1];
-		*calculate_values_field = field->source_fields[2];
-		*search_element_group = field->compose_element_group;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_compose.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_compose */
-
-int Computed_field_set_type_compose(struct Computed_field *field,
-	struct Computed_field *texture_coordinate_field,
-	struct Computed_field *find_element_xi_field,
-	struct Computed_field *calculate_values_field,
-	struct GROUP(FE_element) *search_element_group)
-/*******************************************************************************
-LAST MODIFIED : 16 June 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
-evaluate one field to find "texture coordinates", use a find_element_xi field
-to then calculate a corresponding element/xi and finally calculate values using
-this element/xi and a third field.  You can then evaluate values on a "host"
-mesh for any points "contained" inside.  The <search_element_group> is the group
-from which any returned element_xi will belong.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_compose);
-	if (field&&texture_coordinate_field&&find_element_xi_field&&
-		calculate_values_field&&search_element_group)
-	{
-		return_code=1;
-		if (return_code)
-		{
-			/* 1. make dynamic allocations for any new type-specific data and
-			 check fields are valid */
-			number_of_source_fields=3;
-			if (ALLOCATE(source_fields,struct Computed_field *,
-				number_of_source_fields))
-			{
-				if (texture_coordinate_field->number_of_components ==
-					find_element_xi_field->number_of_components)
-				{
-					if (texture_coordinate_field->number_of_components ==
-						find_element_xi_field->number_of_components)
-					{
-						/* 2. free current type-specific data */
-						Computed_field_clear_type(field);
-						/* 3. establish the new type */
-						field->type=COMPUTED_FIELD_COMPOSE;
-						field->number_of_components=
-							calculate_values_field->number_of_components;
-						source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
-						source_fields[1]=ACCESS(Computed_field)(find_element_xi_field);
-						source_fields[2]=ACCESS(Computed_field)(calculate_values_field);
-						field->source_fields=source_fields;
-						field->number_of_source_fields=number_of_source_fields;
-						field->compose_element_group=search_element_group;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_compose."
-							"  The find_element_xi_field must be find_element_xi capable");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_type_compose."
-						"  The texuture_coordinate_field and find_element_xi_field"
-						" must have the same number of components");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_compose.  Not enough memory");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_compose.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_compose */
-
-int Computed_field_get_type_cubic_texture_coordinates(struct Computed_field *field,
-	struct Computed_field **source_field)
-/*******************************************************************************
-LAST MODIFIED : 17 June 1999
-
-DESCRIPTION :
-If the field is of type CUBIC_TEXTURE_COORDINATES, the source field used
-by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_cubic_texture_coordinates);
-	if (field&&(COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES==field->type)
-		&&source_field)
-	{
-		*source_field=field->source_fields[0];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_cubic_texture_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_cubic_texture_coordinates */
-
-int Computed_field_set_type_cubic_texture_coordinates(struct Computed_field *field,
-	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, 
-which returns texture coordinates based on a cubic projection from the origin.
-Sets the number of components to the same as the source field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_cubic_texture_coordinates);
-	if (field&&source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES;
-			field->number_of_components=source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_cubic_texture_coordinates.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_cubic_texture_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_cubic_texture_coordinates */
-
-static int Computed_field_get_type_external(struct Computed_field *field,
-	char **filename, int *timeout,
-	int *number_of_source_values, FE_value **source_values,
-	int *number_of_source_fields,struct Computed_field ***source_fields)
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_EXTERNAL, the function allocates and
-returns in <**source_fields> an array containing the <number_of_sources> source
-fields making up the composite field - otherwise an error is reported.
-It is up to the calling function to DEALLOCATE the returned array. Note that the
-fields in the returned array are not ACCESSed.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_get_type_external);
-	if (field&&(COMPUTED_FIELD_EXTERNAL==field->type)&&number_of_source_fields&&
-		source_fields)
-	{
-		return_code = 1;
-		*number_of_source_fields=field->number_of_source_fields;
-		*number_of_source_values=field->number_of_source_values;
-		*timeout = field->timeout;
-		if (*number_of_source_fields)
-		{
-			if (ALLOCATE(*source_fields,struct Computed_field *,*number_of_source_fields))
-			{
-				for (i=0;i<(*number_of_source_fields);i++)
-				{
-					(*source_fields)[i]=field->source_fields[i];
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_get_type_external.  Could not allocate source_field array");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			*source_fields = (struct Computed_field **)NULL;
-		}
-		if (return_code && *number_of_source_values)
-		{
-			if (ALLOCATE(*source_values, FE_value, *number_of_source_values))
-			{
-				for (i=0;i<(*number_of_source_values);i++)
-				{
-					(*source_values)[i]=field->source_values[i];
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_get_type_external.  Could not allocate source_values array");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			*source_values = (FE_value *)NULL;
-		}
-		if (return_code &&
-			ALLOCATE(*filename, char, strlen(field->child_filename)+1))
-		{
-			strcpy(*filename, field->child_filename);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_external.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_external */
-
-static int Computed_field_set_type_external(struct Computed_field *field,
-	char *filename, int timeout,
-	int number_of_source_values, FE_value *source_values,
-	int number_of_source_fields, struct Computed_field **source_fields)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EXTERNAL.
-<source_fields> must point to an array of <number_of_sources> pointers to
-Computed_fields. The resulting field will have as many
-components as <number_of_sources> * components + number_of_source_values.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	char *filename_space, outstring[500], *result_string;
-	FE_value *source_values_copy;
-	int components, i, index, j, number_of_fields, number_of_values,
-		return_code, total_values;
-	struct Child_process *child_process;
-	struct Computed_field **source_fields_copy;
-
-	ENTER(Computed_field_set_type_external);
-	if (field&&filename&&source_fields)
-	{
-		return_code = 1;
-		total_values = number_of_source_values;
-		/* make sure source_fields are all non-NULL */
-		for (i=0;return_code&&(i<number_of_source_fields);i++)
-		{
-			if (source_fields[i])
-			{
-				total_values += source_fields[i]->number_of_components;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_external.  Invalid source_fields");
-				return_code=0;
-			}
-		}
-		/* Try executable and see how many components it will return */
-		if (return_code && (child_process = CREATE(Child_process)(filename)))
-		{
-			sprintf(outstring, "%d #values %d #fields %d%n", total_values, number_of_source_values, 
-				number_of_source_fields, &index);
-			for (i = 0 ; i < number_of_source_fields ; i++)
-			{
-				sprintf(outstring + index, " %s %d AS_FOR_FIELD%n", source_fields[i]->name,
-					source_fields[i]->number_of_components, &j);
-				index += j;
-			}
-			sprintf(outstring + index, "\n");
-			Child_process_send_string_to_stdin(child_process, outstring);
-			if (result_string = Child_process_get_line_from_stdout(
-				child_process, timeout))
-			{
-				sscanf(result_string, "%d%n", &components, &index);
-				if (components < 1)
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_type_external.  "
-						"External field incompatible with source fields");
-					display_message(ERROR_MESSAGE,
-						"%s", result_string);
-					DESTROY(Child_process)(&child_process);
-					return_code=0;
-				}
-				else
-				{
-					/* Check all the fields of the return string and give
-					 sensible errors if they don't match */
-					sscanf(result_string + index, "%s%d%n", outstring, &number_of_values,
-						&j);
-					index += j;
-					if (fuzzy_string_compare(outstring, "#values"))
-					{
-						if (number_of_values == number_of_source_values)
-						{
-							sscanf(result_string + index, "%s%d%n", outstring, &number_of_fields,
-								&j);
-							index += j;
-							if (fuzzy_string_compare(outstring, "#fields"))
-							{
-								if (number_of_fields == number_of_source_fields)
-								{
-									for (i = 0 ; (i < number_of_fields) ; i++)
-									{
-										sscanf(result_string + index, "%*s%d%s%n", 
-											&number_of_values, outstring, &j);
-										index += j;
-										if (number_of_values != source_fields[i]->number_of_components)
-										{
-											display_message(ERROR_MESSAGE,
-												"Computed_field_set_type_external."
-												"  Number of components in field (%s %d) does not match the requirements of the external program (%d)",
-												source_fields[i]->name, source_fields[i]->number_of_components,
-												number_of_values);
-											DESTROY(Child_process)(&child_process);
-											return_code = 0;
-										}
-										if (fuzzy_string_compare(outstring, "AS_FOR_FIELD"))
-										{
-											/* Set a flag saying this and also check for
-												other flags (i.e. NEVER and ALWAYS) */
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"Computed_field_set_type_external."
-												"  Unknown derivative specifier (%s)",
-												outstring);
-											DESTROY(Child_process)(&child_process);
-											return_code = 0;
-										}
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_set_type_external."
-										"  Number of source fields given (%d) does not match the requirements of the external program (%d)",
-										number_of_source_fields, number_of_fields);
-									DESTROY(Child_process)(&child_process);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_set_type_external.  #values keyword not found");
-								DESTROY(Child_process)(&child_process);
-								return_code = 0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_set_type_external."
-								"  Number of source values given (%d) does not match the requirements of the external program (%d)",
-								number_of_source_values, number_of_values);
-							DESTROY(Child_process)(&child_process);
-							return_code = 0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_external.  #values keyword not found");
-						DESTROY(Child_process)(&child_process);
-						return_code = 0;
-					}
-				}
-				DEALLOCATE(result_string);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_external.  Invalid response from child process");
-				DESTROY(Child_process)(&child_process);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_external.  Could not create child process");
-			return_code=0;
-		}
-		if (return_code)
-		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			if (number_of_source_fields)
-			{
-				if (!ALLOCATE(source_fields_copy, struct Computed_field *,
-					number_of_source_fields))
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				source_fields_copy = (struct Computed_field **)NULL;
-			}
-			if (number_of_source_values)
-			{
-				if (!ALLOCATE(source_values_copy, FE_value, number_of_source_values))
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				source_values_copy = (FE_value *)NULL;
-			}
-			if (return_code &&
-				ALLOCATE(filename_space,char,strlen(filename) + 1))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_EXTERNAL;
-				for (i=0;i<number_of_source_fields;i++)
-				{
-					source_fields_copy[i]=ACCESS(Computed_field)(source_fields[i]);
-				}
-				field->source_fields=source_fields_copy;
-				field->number_of_source_fields=number_of_source_fields;
-				field->number_of_source_values = number_of_source_values;
-				for (i=0;i<number_of_source_values;i++)
-				{
-					source_values_copy[i]=source_values[i];
-				}
-				field->source_values = source_values_copy;
-				field->number_of_components=components;
-				field->child_filename = filename_space;
-				strcpy(filename_space, filename);
-				field->timeout = timeout;
-				field->child_process = ACCESS(Child_process)(child_process);
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_external.  Unable to establish external field");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_external.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_external */
 
 int Computed_field_is_read_only(struct Computed_field *field)
 /*******************************************************************************
@@ -4796,453 +3906,6 @@ a set of values.
 	return (return_code);
 } /* Computed_field_is_find_element_xi_capable */
 
-static int define_Computed_field_type_compose(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_COMPOSE (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry 
-		option_table[]=
-		{
-			{"calculate_values_field",NULL,NULL,set_Computed_field_conditional},
-			{"find_element_xi_field",NULL,NULL,set_Computed_field_conditional},
-			{"group",NULL,NULL,set_FE_element_group},
-			{"texture_coordinates_field",NULL,NULL,set_Computed_field_conditional},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field,*calculate_values_field,*find_element_xi_field,
-		*texture_coordinates_field;
-	struct Computed_field_package *computed_field_package;
-	struct Coordinate_system *coordinate_system_ptr;
-	struct GROUP(FE_element) *search_element_group;
-	struct Set_Computed_field_conditional_data set_calculate_values_field_data,
-		set_find_element_xi_field_data, set_texture_coordinates_field_data;
-
-	ENTER(define_Computed_field_type_compose);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code = 1;
-		set_calculate_values_field_data.computed_field_manager=
-			computed_field_package->computed_field_manager;
-		set_calculate_values_field_data.conditional_function=
-			Computed_field_has_numerical_components;
-		set_calculate_values_field_data.conditional_function_user_data=(void *)NULL;
-		set_find_element_xi_field_data.computed_field_manager=
-			computed_field_package->computed_field_manager;
-		set_find_element_xi_field_data.conditional_function=
-			Computed_field_is_find_element_xi_capable;
-		set_find_element_xi_field_data.conditional_function_user_data=(void *)NULL;
-		set_texture_coordinates_field_data.computed_field_manager=
-			computed_field_package->computed_field_manager;
-		set_texture_coordinates_field_data.conditional_function=
-			Computed_field_has_numerical_components;
-		set_texture_coordinates_field_data.conditional_function_user_data=(void *)NULL;
-		search_element_group = (struct GROUP(FE_element) *)NULL;
-		calculate_values_field = (struct Computed_field *)NULL;
-		find_element_xi_field = (struct Computed_field *)NULL;
-		texture_coordinates_field = (struct Computed_field *)NULL;
-		/* get valid parameters for composite field */
-		if (COMPUTED_FIELD_COMPOSE==Computed_field_get_type(field))
-		{
-			return_code = Computed_field_get_type_compose(field,
-				&calculate_values_field, &find_element_xi_field,
-				&texture_coordinates_field, &search_element_group);
-		}
-		if (return_code)
-		{
-			/* ACCESS the fields for set_Computed_field */
-			if (calculate_values_field)
-			{
-				ACCESS(Computed_field)(calculate_values_field);
-			}
-			if (find_element_xi_field)
-			{
-				ACCESS(Computed_field)(find_element_xi_field);
-			}
-			if (search_element_group)
-			{
-				ACCESS(GROUP(FE_element))(search_element_group);
-			}
-			if (texture_coordinates_field)
-			{
-				ACCESS(Computed_field)(texture_coordinates_field);
-			}
-			/* parse the scalars */
-			if (return_code&&state->current_token)
-			{
-				(option_table[0]).to_be_modified= &calculate_values_field;
-				(option_table[0]).user_data= &set_calculate_values_field_data;
-				(option_table[1]).to_be_modified= &find_element_xi_field;
-				(option_table[1]).user_data= &set_find_element_xi_field_data;
-				(option_table[2]).to_be_modified= &search_element_group;
-				(option_table[2]).user_data= computed_field_package->fe_element_manager;
-				(option_table[3]).to_be_modified= &texture_coordinates_field;
-				(option_table[3]).user_data= &set_texture_coordinates_field_data;
-				return_code=process_multiple_options(state,option_table);
-			}
-			if (return_code)
-			{
-				if (return_code=Computed_field_set_type_compose(field,
-					texture_coordinates_field, find_element_xi_field,
-					calculate_values_field, search_element_group))
-				{
-					/* Set default coordinate system */
-					/* Inherit from third source field */
-					coordinate_system_ptr = 
-						Computed_field_get_coordinate_system(calculate_values_field);
-					Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-				}
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_compose.  Failed");
-				}
-			}
-			if (calculate_values_field)
-			{
-				DEACCESS(Computed_field)(&calculate_values_field);
-			}
-			if (find_element_xi_field)
-			{
-				DEACCESS(Computed_field)(&find_element_xi_field);
-			}
-			if (search_element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&search_element_group);
-			}
-			if (texture_coordinates_field)
-			{
-				DEACCESS(Computed_field)(&texture_coordinates_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_compose.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_compose */
-
-static int define_Computed_field_type_cubic_texture_coordinates(
-	struct Parse_state *state,void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 10 February 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES
-(if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"field",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *source_field,*field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_field_data;
-
-	ENTER(define_Computed_field_type_cubic_texture_coordinates);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code = 1;
-		source_field = (struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES ==
-			Computed_field_get_type(field))
-		{
-			return_code = Computed_field_get_type_cubic_texture_coordinates(field,
-				&source_field);
-		}
-		if (return_code)
-		{
-			if (source_field)
-			{
-				ACCESS(Computed_field)(source_field);
-			}
-			set_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_manager=
-            computed_field_package->computed_field_manager;
-			(option_table[0]).to_be_modified= &source_field;
-			(option_table[0]).user_data= &set_field_data;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_cubic_texture_coordinates(field,source_field);
-			if (source_field)
-			{
-				DEACCESS(Computed_field)(&source_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_cubic_texture_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_cubic_texture_coordinates */
-
-static int define_Computed_field_type_external(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_EXTERNAL (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	char *current_token, *filename;
-	int i,number_of_fields,number_of_source_values,return_code,
-		temp_number_of_fields, temp_number_of_source_values,
-		timeout;
-	FE_value *source_values, *temp_source_values;
-	static struct Modifier_entry 
-		number_of_fields_option_table[]=
-		{
-			{"number_of_fields",NULL,NULL,set_int_non_negative},
-			{"number_of_values",NULL,NULL,set_int_non_negative},
-			{NULL,NULL,NULL,NULL}
-		},
-		fields_option_table[]=
-		{
-			{"fields",NULL,NULL,set_Computed_field_array},
-			{"filename",NULL,(void *)1,set_name},
-			{"timeout",NULL,NULL,set_int_positive},
-			{"values",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"number_of_fields",NULL,NULL,set_int_non_negative},
-			{"number_of_values",NULL,NULL,set_int_non_negative},
-			{"fields",NULL,NULL,set_Computed_field_array},
-			{"filename",NULL,(void *)1,set_name},
-			{"timeout",NULL,NULL,set_int_positive},
-			{"values",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field,**source_fields,**temp_source_fields;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_array_data set_source_field_array_data;
-	struct Set_Computed_field_conditional_data set_source_field_data;
-
-	ENTER(define_Computed_field_type_external);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		filename = (char *)NULL;
-		return_code=1;
-		set_source_field_data.computed_field_manager=
-			computed_field_package->computed_field_manager;
-		set_source_field_data.conditional_function =
-			Computed_field_has_numerical_components;
-		set_source_field_data.conditional_function_user_data=(void *)NULL;
-		/* get valid parameters for external field */
-		source_fields=(struct Computed_field **)NULL;
-		number_of_source_values = 0;
-		source_values = (FE_value *)NULL;
-		timeout = 5;
-		if (COMPUTED_FIELD_EXTERNAL==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_external(field,
-				&filename, &timeout,
-				&number_of_source_values,&source_values,
-				&number_of_fields,&source_fields);
-		}
-		else
-		{
-			/* ALLOCATE and clear array of source fields */
-			number_of_fields=1;
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_fields))
-			{
-				for (i = 0; i < number_of_fields; i++)
-				{
-					source_fields[i] = (struct Computed_field *)NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_external.  Not enough memory");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* ACCESS the source fields for set_Computed_field_array */
-			for (i = 0; i < number_of_fields; i++)
-			{
-				if (source_fields[i])
-				{
-					ACCESS(Computed_field)(source_fields[i]);
-				}
-			}
-			/* try to handle help first */
-			if (current_token=state->current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					(help_option_table[0]).to_be_modified= &number_of_fields;
-					(help_option_table[1]).to_be_modified= &number_of_source_values;
-					set_source_field_array_data.number_of_fields=number_of_fields;
-					set_source_field_array_data.conditional_data= &set_source_field_data;
-					(help_option_table[2]).to_be_modified= source_fields;
-					(help_option_table[2]).user_data= &set_source_field_array_data;
-					(help_option_table[3]).to_be_modified= &filename;
-					(help_option_table[4]).to_be_modified= &timeout;
-					(help_option_table[5]).to_be_modified= source_values;
-					(help_option_table[5]).user_data= &number_of_source_values;
-					return_code=process_multiple_options(state,help_option_table);
-				}
-			}
-			/* parse the number_of_fields... */
-			if (return_code&&(current_token=state->current_token))
-			{
-				/* ... only if the "number_of_fields" token or 
-					"number_of_values" is next */
-				while (fuzzy_string_compare("number_of_",state->current_token))
-				{
-					/* keep the number_of_fields to maintain any current ones */
-					temp_number_of_fields=number_of_fields;
-					temp_number_of_source_values=number_of_source_values;
-					(number_of_fields_option_table[0]).to_be_modified=
-						&temp_number_of_fields;
-					(number_of_fields_option_table[1]).to_be_modified=
-						&temp_number_of_source_values;
-					if (return_code=process_option(state,number_of_fields_option_table))
-					{
-						if (temp_number_of_fields != number_of_fields)
-						{
-							if (ALLOCATE(temp_source_fields,struct Computed_field *,
-								temp_number_of_fields))
-							{
-								for (i=0;i<temp_number_of_fields;i++)
-								{
-									temp_source_fields[i] = (struct Computed_field *)NULL;
-									if ((i < number_of_fields) && source_fields[i])
-									{
-										temp_source_fields[i] =
-											ACCESS(Computed_field)(source_fields[i]);
-									}
-								}
-								/* clean up the previous source_fields array */
-								for (i=0;i<number_of_fields;i++)
-								{
-									DEACCESS(Computed_field)(&(source_fields[i]));
-								}
-								DEALLOCATE(source_fields);
-								source_fields=temp_source_fields;
-								number_of_fields=temp_number_of_fields;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"define_Computed_field_type_external.  Not enough memory");
-								return_code=0;
-							}
-						}
-						if (number_of_source_values != temp_number_of_source_values)
-						{
-							if (REALLOCATE(temp_source_values,source_values,FE_value,
-								temp_number_of_source_values))
-							{
-								source_values=temp_source_values;
-								/* make any new source values 0.0 */
-								for (i=temp_number_of_source_values;
-									i<number_of_source_values;i++)
-								{
-									source_values[i]=0.0;
-								}
-								number_of_source_values = temp_number_of_source_values;
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-					}
-				}
-			}
-			/* parse the fields */
-			if (return_code&&state->current_token)
-			{
-				set_source_field_array_data.number_of_fields=number_of_fields;
-				set_source_field_array_data.conditional_data= &set_source_field_data;
-				(fields_option_table[0]).to_be_modified= source_fields;
-				(fields_option_table[0]).user_data= &set_source_field_array_data;
-				(fields_option_table[1]).to_be_modified= &filename;
-				(fields_option_table[2]).to_be_modified= &timeout;
-				(fields_option_table[3]).to_be_modified= source_values;
-				(fields_option_table[3]).user_data= &number_of_source_values;
-				return_code=process_multiple_options(state,fields_option_table);
-			}
-			if (return_code)
-			{
-				return_code=Computed_field_set_type_external(field,
-					filename, timeout, number_of_source_values, source_values,
-					number_of_fields,source_fields);
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_external.  Failed");
-				}
-			}
-			/* clean up the source fields array */
-			for (i=0;i<number_of_fields;i++)
-			{
-				if (source_fields[i])
-				{
-					DEACCESS(Computed_field)(&(source_fields[i]));
-				}
-			}
-			DEALLOCATE(source_fields);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_external.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_external */
-
 struct Add_type_to_option_table_data
 {
 	struct Option_table *option_table;
@@ -5307,16 +3970,6 @@ and its parameter fields and values.
 		if (state->current_token)
 		{
 			option_table=CREATE(Option_table)();
-			/* compose */
-			Option_table_add_entry(option_table,"compose",field_void,
-				computed_field_package_void,define_Computed_field_type_compose);
-			/* cubic_texture_coordinates */
-			Option_table_add_entry(option_table,"cubic_texture_coordinates",
-				field_void,computed_field_package_void,
-				define_Computed_field_type_cubic_texture_coordinates);
-			/* external */
-			Option_table_add_entry(option_table,"external",field_void,
-				computed_field_package_void,define_Computed_field_type_external);
 			/* new_types */
 			data.option_table = option_table;
 			data.field_void = field_void;
@@ -5711,54 +4364,6 @@ Writes the properties of the <field> to the command window.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_COMPOSE:
-				{
-					display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
-					display_message(INFORMATION_MESSAGE," %s\n",
-						field->source_fields[0]->name);
-					display_message(INFORMATION_MESSAGE,"    find element xi field :");
-					display_message(INFORMATION_MESSAGE," %s\n",
-						field->source_fields[1]->name);
-					display_message(INFORMATION_MESSAGE,"    calculate values field :");
-					display_message(INFORMATION_MESSAGE," %s\n",
-						field->source_fields[2]->name);
-				} break;
-				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-				{
-					display_message(INFORMATION_MESSAGE,
-						"    field : %s\n",field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_EXTERNAL:
-				{
-					display_message(INFORMATION_MESSAGE,"    external_filename : %s\n",
-						field->child_filename);
-					display_message(INFORMATION_MESSAGE,"    number_of_source_values : %d\n",
-						field->number_of_source_values);
-					if (field->number_of_source_values)
-					{
-						display_message(INFORMATION_MESSAGE,"    source_values :");
-						for (i=0;i<field->number_of_source_values;i++)
-						{
-							display_message(INFORMATION_MESSAGE," %f",
-								field->source_values[i]);
-						}
-						display_message(INFORMATION_MESSAGE,"\n");
-					}
-					display_message(INFORMATION_MESSAGE,"    number_of_source_fields : %d\n",
-						field->number_of_source_fields);
-					if (field->number_of_source_fields)
-					{				
-						display_message(INFORMATION_MESSAGE,"    source_fields :");
-						for (i=0;i<field->number_of_source_fields;i++)
-						{
-							display_message(INFORMATION_MESSAGE," %s",
-								field->source_fields[i]->name);
-						}
-						display_message(INFORMATION_MESSAGE,"\n");
-					}
-					display_message(INFORMATION_MESSAGE,"    timeout %d\n",
-						field->timeout);
-				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
@@ -5816,7 +4421,7 @@ Writes the commands needed to reproduce <field> to the command window.
 ==============================================================================*/
 {
 	char *command_prefix, *command_string, *field_name, *temp_string;
-	int i, return_code;
+	int return_code;
 
 	ENTER(list_Computed_field_commands);
 	if (field && (command_prefix = (char *)command_prefix_void))
@@ -5856,47 +4461,6 @@ Writes the commands needed to reproduce <field> to the command window.
 				Computed_field_type_to_string(field));
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_COMPOSE:
-				{
-					display_message(INFORMATION_MESSAGE," texture_coordinates_field %s"
-						" find_element_xi_field %s calculate_values_field %s",
-						field->source_fields[0]->name, field->source_fields[1]->name,
-						field->source_fields[2]->name);
-				} break;
-				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" field %s",field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_EXTERNAL:
-				{
-					display_message(INFORMATION_MESSAGE," number_of_values %d",
-						field->number_of_source_values);
-					display_message(INFORMATION_MESSAGE," number_of_fields %d",
-						field->number_of_source_fields);
-					display_message(INFORMATION_MESSAGE," filename %s",
-						field->child_filename);
-					if (field->number_of_source_values)
-					{
-						display_message(INFORMATION_MESSAGE," values");
-						for (i=0;i<field->number_of_source_values;i++)
-						{
-							display_message(INFORMATION_MESSAGE," %f",
-								field->source_values[i]);
-						}
-					}
-					if (field->number_of_source_fields)
-					{				
-						display_message(INFORMATION_MESSAGE," fields");
-						for (i=0;i<field->number_of_source_fields;i++)
-						{
-							display_message(INFORMATION_MESSAGE," %s",
-								field->source_fields[i]->name);
-						}
-					}
-					display_message(INFORMATION_MESSAGE," timeout %d",
-						field->timeout);
-				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
@@ -6041,7 +4605,6 @@ its name matches the contents of the <other_computed_field_void>.
 			&&(field->coordinate_system.type==other_computed_field->coordinate_system.type)
 			/* Ignoring other coordinate_system parameters */
 			&&(field->type==other_computed_field->type)
-			&&(field->component_no==other_computed_field->component_no)
 			&&(field->number_of_source_fields==
 				other_computed_field->number_of_source_fields)
 			&&(field->number_of_source_values==

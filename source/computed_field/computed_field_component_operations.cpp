@@ -6320,15 +6320,6 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_edit_mask */
 
-
-
-
-
-
-
-
-
-
 int Computed_field_register_types_component_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************

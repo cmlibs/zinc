@@ -2764,6 +2764,582 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_magnitude */
 
+static char computed_field_cubic_texture_coordinates_type_string[]
+   = "cubic_texture_coordinates";
+
+int Computed_field_is_type_cubic_texture_coordinates(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_cubic_texture_coordinates);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_cubic_texture_coordinates_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_cubic_texture_coordinates.  Missing field.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_cubic_texture_coordinates */
+
+static int Computed_field_cubic_texture_coordinates_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_cubic_texture_coordinates_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cubic_texture_coordinates_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cubic_texture_coordinates_clear_type_specific */
+
+static void *Computed_field_cubic_texture_coordinates_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination;
+
+	ENTER(Computed_field_cubic_texture_coordinates_copy_type_specific);
+	if (field)
+	{
+		/* Return a TRUE value */
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cubic_texture_coordinates_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_cubic_texture_coordinates_copy_type_specific */
+
+#define Computed_field_cubic_texture_coordinates_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_cubic_texture_coordinates_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_vector_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_vector_operations_type_specific_contents_match */
+
+#define Computed_field_cubic_texture_coordinates_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_not_in_use \
+	(Computed_field_not_in_use_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+No special criteria.
+==============================================================================*/
+
+static int Computed_field_cubic_texture_coordinates_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *temp;
+	int i, j, number_of_components, return_code;
+
+	ENTER(Computed_field_cubic_texture_coordinates_evaluate_cache_at_node);
+	if (field && node && (field->number_of_source_fields > 0) && 
+		(field->number_of_components == field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+		{
+			/* 2. Calculate the field */
+			number_of_components = field->number_of_components;
+			temp=field->source_fields[0]->values;
+			field->values[number_of_components - 1] = fabs(*temp);
+			temp++;
+			j = 0;
+			for (i=1;i <number_of_components;i++)
+			{
+				if (fabs(*temp) > field->values[number_of_components - 1])
+				{
+					field->values[number_of_components - 1] = fabs(*temp);
+					j = i;
+				}
+				temp++;
+			}
+			temp=field->source_fields[0]->values;
+			for (i=0;i < number_of_components - 1;i++)
+			{
+				if ( i == j )
+				{
+					/* Skip over the maximum coordinate */
+					temp++;
+				}
+				field->values[i] = *temp / field->values[number_of_components - 1];
+				temp++;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cubic_texture_coordinates_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cubic_texture_coordinates_evaluate_cache_at_node */
+
+static int Computed_field_cubic_texture_coordinates_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *temp;
+	int i, j, number_of_components, return_code;
+
+	ENTER(Computed_field_cubic_texture_coordinates_evaluate_cache_in_element);
+	if (field && element && xi && (field->number_of_source_fields > 0) && 
+		(field->number_of_components == field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, time, top_level_element, calculate_derivatives))
+		{
+			/* 2. Calculate the field */
+			number_of_components = field->number_of_components;
+			temp=field->source_fields[0]->values;
+			field->values[number_of_components - 1] = fabs(*temp);
+			temp++;
+			j = 0;
+			for (i=1;i<number_of_components;i++)
+			{
+				if (fabs(*temp) > field->values[number_of_components - 1])
+				{
+					field->values[number_of_components - 1] = fabs(*temp);
+					j = i;
+				}
+				temp++;
+			}
+			temp=field->source_fields[0]->values;
+			for (i=0;i < number_of_components - 1;i++)
+			{
+				if ( i == j )
+				{
+					/* Skip over the maximum coordinate */
+					temp++;
+				}
+				field->values[i] = *temp / field->values[number_of_components - 1];
+				temp++;
+			}
+			field->derivatives_valid = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cubic_texture_coordinates_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cubic_texture_coordinates_evaluate_cache_in_element */
+
+#define Computed_field_cubic_texture_coordinates_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_cubic_texture_coordinates(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_cubic_texture_coordinates);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    source field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_cubic_texture_coordinates.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_cubic_texture_coordinates */
+
+static char *Computed_field_cubic_texture_coordinates_get_command_string(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 15 January 2002
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name;
+	int error;
+
+	ENTER(Computed_field_cubic_texture_coordinates_get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_cubic_texture_coordinates_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cubic_texture_coordinates_get_command_string.  "
+			"Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_cubic_texture_coordinates_get_command_string */
+
+#define Computed_field_cubic_texture_coordinates_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
+int Computed_field_set_type_cubic_texture_coordinates(struct Computed_field *field,
+	struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES with the supplied
+<source_field>.  Sets the number of components equal to the <source_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_cubic_texture_coordinates);
+	if (field&&source_field)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=1;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_cubic_texture_coordinates_type_string;
+			field->number_of_components = source_field->number_of_components;
+			source_fields[0]=ACCESS(Computed_field)(source_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)1;
+
+			/* Set all the methods */
+			COMPUTED_FIELD_ESTABLISH_METHODS(cubic_texture_coordinates);
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_cubic_texture_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_cubic_texture_coordinates */
+
+int Computed_field_get_type_cubic_texture_coordinates(struct Computed_field *field,
+	struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+If the field is of type CUBIC_TEXTURE_COORDINATES, the source field used
+by it is returned - otherwise an error is reported.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_cubic_texture_coordinates);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_cubic_texture_coordinates_type_string) &&
+		source_field)
+	{
+		*source_field = field->source_fields[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_cubic_texture_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_cubic_texture_coordinates */
+
+static int define_Computed_field_type_cubic_texture_coordinates(struct Parse_state *state,
+	void *field_void,void *computed_field_vector_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 18 December 2001
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field,*source_field;
+	struct Computed_field_vector_operations_package 
+		*computed_field_vector_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_cubic_texture_coordinates);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_vector_operations_package=
+		(struct Computed_field_vector_operations_package *)
+		computed_field_vector_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_cubic_texture_coordinates_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code = Computed_field_get_type_cubic_texture_coordinates(field, &source_field);
+		}
+		if (return_code)
+		{
+			/* must access objects for set functions */
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+			option_table = CREATE(Option_table)();
+			/* field */
+			set_source_field_data.computed_field_manager=
+				computed_field_vector_operations_package->computed_field_manager;
+			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"field",&source_field,
+				&set_source_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state);
+			/* no errors,not asking for help */
+			if (return_code)
+			{
+				return_code = Computed_field_set_type_cubic_texture_coordinates(field,
+					source_field);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token)||
+					(strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_cubic_texture_coordinates.  Failed");
+				}
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_cubic_texture_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_cubic_texture_coordinates */
+
 int Computed_field_register_types_vector_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
@@ -2797,6 +3373,10 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_dot_product_type_string,
 			define_Computed_field_type_dot_product,
+			&computed_field_vector_operations_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_cubic_texture_coordinates_type_string,
+			define_Computed_field_type_cubic_texture_coordinates,
 			&computed_field_vector_operations_package);
 	}
 	else

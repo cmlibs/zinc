@@ -52,9 +52,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	COMPUTED_FIELD_INVALID,
-	COMPUTED_FIELD_COMPOSE,            /* compose three Computed_fields in sequence */
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
-	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
 	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
 };
 

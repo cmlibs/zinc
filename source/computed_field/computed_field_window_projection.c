@@ -1007,14 +1007,69 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_window_projection_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
+static int Computed_field_window_projection_find_element_xi(struct Computed_field *field, 
+	FE_value *values, int number_of_values, struct FE_element **element,
+	FE_value *xi, struct GROUP(FE_element) *search_element_group)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
-Not implemented yet.
 ==============================================================================*/
+{
+	double d,lu_matrix[16],result[4];
+	int indx[4],return_code;
+	FE_value source_values[3];
+	struct Computed_field_window_projection_type_specific_data *data;
+
+	ENTER(Computed_field_window_projection_find_element_xi);
+	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
+		search_element_group)
+	{
+		if (data->projection_matrix ||
+			Computed_field_window_projection_calculate_matrix(field))
+		{
+			copy_matrix(4,4,data->projection_matrix,lu_matrix);
+			result[0] = (double)values[0];
+			result[1] = (double)values[1];
+			result[2] = (double)values[2];
+			result[3] = 1.0;
+			if (LU_decompose(4,lu_matrix,indx,&d) &&
+				LU_backsubstitute(4,lu_matrix,indx,result) &&
+				(0.0 != result[3]))
+			{
+				source_values[0] = (result[0] / result[3]);
+				source_values[1] = (result[1] / result[3]);
+				source_values[2] = (result[2] / result[3]);
+				return_code=Computed_field_find_element_xi(
+					field->source_fields[0], source_values, 3, element,
+					xi, search_element_group);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_window_projection_find_element_xi.  "
+					"Could not invert field %s",field->name);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_window_projection_find_element_xi.  "
+				"Missing projection matrix for field %s",field->name);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection_find_element_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_window_projection_find_element_xi */
 
 static int list_Computed_field_window_projection(
 	struct Computed_field *field)

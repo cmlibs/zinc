@@ -32,11 +32,13 @@ DESCRIPTION :
 #include "element/element_tool.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
+#include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_control_curve.h"
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
+#include "computed_field/computed_field_external.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_integration.h"
@@ -1095,6 +1097,12 @@ Main program for the CMISS Graphical User Interface
 			command_data.computed_field_package);
 		Computed_field_register_types_component_operations(
 			command_data.computed_field_package);
+		if (command_data.element_group_manager)
+		{
+			Computed_field_register_types_compose(
+				command_data.computed_field_package, 
+				command_data.element_group_manager);
+		}
 		Computed_field_register_types_composite(
 			command_data.computed_field_package);		
 		if (command_data.control_curve_manager)
@@ -1104,6 +1112,8 @@ Main program for the CMISS Graphical User Interface
 				command_data.control_curve_manager);
 		}
 		Computed_field_register_types_derivatives(
+			command_data.computed_field_package);
+		Computed_field_register_types_external(
 			command_data.computed_field_package);
 		Computed_field_register_types_fibres(
 			command_data.computed_field_package);

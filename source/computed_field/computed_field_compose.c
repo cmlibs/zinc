@@ -1,0 +1,861 @@
+/*******************************************************************************
+FILE : computed_field_compose.c
+
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Implements a computed_field that uses evaluates one field, does a
+"find element_xi" look up on a field in a host element group to find the same 
+values and then evaluates a third field at that location.
+Essentially it is used to embed one mesh in the elements of another.
+==============================================================================*/
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
+#include "general/debug.h"
+#include "general/mystring.h"
+#include "user_interface/message.h"
+#include "computed_field/computed_field_compose.h"
+
+struct Computed_field_compose_package 
+{
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(GROUP(FE_element)) *fe_element_group_manager;
+};
+
+struct Computed_field_compose_type_specific_data
+{
+	struct GROUP(FE_element) *element_group;
+};
+
+static char computed_field_compose_type_string[] = "compose";
+
+int Computed_field_is_type_compose(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_compose);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_compose_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_compose.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_compose */
+
+static int Computed_field_compose_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_compose_type_specific_data *data;
+
+	ENTER(Computed_field_compose_clear_type_specific);
+	if (field && (data = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&(data->element_group));
+		}
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_compose_clear_type_specific.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_compose_clear_type_specific */
+
+static void *Computed_field_compose_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_compose_type_specific_data *destination, *source;
+
+	ENTER(Computed_field_compose_copy_type_specific);
+	if (field && (source = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_compose_type_specific_data, 1))
+		{
+			destination->element_group = ACCESS(GROUP(FE_element))(source->element_group);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_compose_copy_type_specific.  "
+				"Unable to allocate memory");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_compose_copy_type_specific.  Invalid argument(s)");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_compose_copy_type_specific */
+
+#define Computed_field_compose_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_compose_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Compare the type specific data.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_compose_type_specific_data *data, *other_data;
+
+	ENTER(Computed_field_compose_type_specific_contents_match);
+	if (field && other_computed_field && (data = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data) && (other_data =
+		(struct Computed_field_compose_type_specific_data *)
+		other_computed_field->type_specific_data))
+	{
+		if (data->element_group == other_data->element_group)
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_compose_type_specific_contents_match */
+
+#define Computed_field_compose_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+int Computed_field_compose_is_defined_at_node(struct Computed_field *field,
+	struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value xi[3];
+	int return_code;
+	struct Computed_field_compose_type_specific_data *data;
+	struct FE_element *element;
+
+	ENTER(Computed_field_compose_is_defined_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code=1;
+		if (return_code = Computed_field_is_defined_at_node(
+			field->source_fields[0],node))
+		{
+			if (return_code=
+				Computed_field_evaluate_cache_at_node(
+				field->source_fields[0],node,/*time*/0.0))
+			{
+				if (Computed_field_find_element_xi(
+					field->source_fields[1], field->source_fields[0]->values,
+					field->source_fields[0]->number_of_components, &element, xi,
+					data->element_group) && element)
+				{
+					/* calculate the third source_field at this new location */
+					return_code = Computed_field_is_defined_in_element(
+						field->source_fields[2],element);
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_compose_is_defined_at_node */
+
+#define Computed_field_compose_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_compose_not_in_use \
+	(Computed_field_not_in_use_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+No special criteria.
+==============================================================================*/
+
+static int Computed_field_compose_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2003
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int i, return_code;
+	struct Computed_field_compose_type_specific_data *data;
+	struct FE_element *compose_element;
+
+	ENTER(Computed_field_compose_evaluate_cache_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		/* only calculate the first source_field at this location */
+		if (return_code=Computed_field_evaluate_cache_at_node(
+			field->source_fields[0],node,time))
+		{
+			/* 2. Calculate the field */
+			/* The values from the first source field are inverted in the
+				second source field to get element_xi which is evaluated with
+				the third source field */
+			if (return_code = Computed_field_find_element_xi(field->source_fields[1],
+				field->source_fields[0]->values,
+				field->source_fields[0]->number_of_components,
+				&compose_element, compose_xi, data->element_group))
+			{
+				/* calculate the third source_field at this new location */
+				return_code=Computed_field_evaluate_cache_in_element(
+					field->source_fields[2],compose_element,compose_xi,
+					time,/*top_level*/(struct FE_element *)NULL,
+					/*calculate_derivatives*/0);
+				for (i=0;i<field->number_of_components;i++)
+				{
+					field->values[i]=field->source_fields[2]->values[i];
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_compose_evaluate_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_compose_evaluate_cache_at_node */
+
+static int Computed_field_compose_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int i, return_code;
+	struct Computed_field_compose_type_specific_data *data;
+	struct FE_element *compose_element;
+
+	ENTER(Computed_field_compose_evaluate_cache_in_element);
+	USE_PARAMETER(calculate_derivatives);
+	if (field && element && xi && (data = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		/* only calculate the first source_field at this location */
+		if (return_code=Computed_field_evaluate_cache_in_element(
+			field->source_fields[0],element,xi,time,top_level_element,0))
+		{
+			/* 2. Calculate the field */
+			/* The values from the first source field are inverted in the
+				second source field to get element_xi which is evaluated with
+				the third source field */
+			if (return_code = Computed_field_find_element_xi(field->source_fields[1],
+				field->source_fields[0]->values,
+				field->source_fields[0]->number_of_components,
+				&compose_element, compose_xi, data->element_group))
+			{
+				/* calculate the third source_field at this new location */
+				return_code=Computed_field_evaluate_cache_in_element(
+					field->source_fields[2],compose_element,compose_xi,
+					time,/*top_level*/(struct FE_element *)NULL,
+					/*calculate_derivatives*/0);
+				for (i=0;i<field->number_of_components;i++)
+				{
+					field->values[i]=field->source_fields[2]->values[i];
+				}
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_compose_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_compose_evaluate_cache_in_element */
+
+#define Computed_field_compose_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_compose_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_compose_set_values_at_node \
+	(Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Unavailable for this field type.
+==============================================================================*/
+
+#define Computed_field_compose_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Unavailable for this field type.
+==============================================================================*/
+
+#define Computed_field_compose_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_compose_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_compose(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *group_name;
+	int return_code;
+	struct Computed_field_compose_type_specific_data *data;
+
+	ENTER(List_Computed_field_compose);
+	if (field && (data = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code = GET_NAME(GROUP(FE_element))(data->element_group,
+			&group_name))
+		{
+			display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
+			display_message(INFORMATION_MESSAGE," %s\n",
+				field->source_fields[0]->name);
+			display_message(INFORMATION_MESSAGE,"    find element xi field :");
+			display_message(INFORMATION_MESSAGE," %s\n",
+				field->source_fields[1]->name);
+			display_message(INFORMATION_MESSAGE,"    search element group :");
+			display_message(INFORMATION_MESSAGE," %s\n", group_name);
+			display_message(INFORMATION_MESSAGE,"    calculate values field :");
+			display_message(INFORMATION_MESSAGE," %s\n",
+				field->source_fields[2]->name);
+			DEALLOCATE(group_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_compose.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_compose */
+
+static char *Computed_field_compose_get_command_string(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 15 January 2002
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *group_name, *field_name;
+	int error;
+	struct Computed_field_compose_type_specific_data *data;
+
+	ENTER(Computed_field_compose_get_command_string);
+	command_string = (char *)NULL;
+	if (field && (data = 
+		(struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data))
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_compose_type_string, &error);
+		append_string(&command_string, " texture_coordinates_field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " find_element_xi_field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " group ", &error);
+		if (GET_NAME(GROUP(FE_element))(data->element_group, &group_name))
+		{
+			make_valid_token(&group_name);
+			append_string(&command_string, group_name, &error);
+			DEALLOCATE(group_name);
+		}
+		append_string(&command_string, " calculate_values_field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[2], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_compose_get_command_string.  Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_compose_get_command_string */
+
+#define Computed_field_compose_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
+int Computed_field_set_type_compose(struct Computed_field *field,
+	struct Computed_field *texture_coordinate_field,
+	struct Computed_field *find_element_xi_field,
+	struct Computed_field *calculate_values_field,
+	struct GROUP(FE_element) *search_element_group)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
+evaluate one field to find "texture coordinates", use a find_element_xi field
+to then calculate a corresponding element/xi and finally calculate values using
+this element/xi and a third field.  You can then evaluate values on a "host"
+mesh for any points "contained" inside.  The <search_element_group> is the group
+from which any returned element_xi will belong.
+==============================================================================*/
+{
+	int number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+	struct Computed_field_compose_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_compose);
+	if (field&&texture_coordinate_field&&find_element_xi_field&&
+		calculate_values_field&&search_element_group)
+	{
+		return_code = 1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields = 3;
+		if (texture_coordinate_field->number_of_components ==
+			find_element_xi_field->number_of_components)
+		{
+			if (Computed_field_is_find_element_xi_capable(
+				find_element_xi_field, /*dummy*/NULL))
+			{
+				if (ALLOCATE(source_fields, struct Computed_field *,
+					number_of_source_fields) &&
+					ALLOCATE(data, struct Computed_field_compose_type_specific_data, 1))
+				{
+					/* 2. free current type-specific data */
+					Computed_field_clear_type(field);
+					/* 3. establish the new type */
+					field->type = COMPUTED_FIELD_NEW_TYPES;
+					field->type_string = computed_field_compose_type_string;
+					field->number_of_components=
+						calculate_values_field->number_of_components;
+					source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
+					source_fields[1]=ACCESS(Computed_field)(find_element_xi_field);
+					source_fields[2]=ACCESS(Computed_field)(calculate_values_field);
+					field->source_fields=source_fields;
+					field->number_of_source_fields=number_of_source_fields;
+					field->type_specific_data = (void *)data;
+					data->element_group = ACCESS(GROUP(FE_element))(search_element_group);
+
+					/* Set all the methods */
+					COMPUTED_FIELD_ESTABLISH_METHODS(compose);
+				}
+				else
+				{
+					DEALLOCATE(source_fields);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_compose.  "
+					"The type of find_element_xi_field supplied has not "
+					"been implemented for find_element_xi calculations.");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_compose.  "
+				"The texuture_coordinate_field and find_element_xi_field "
+				"must have the same number of components");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_compose.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_compose */
+
+int Computed_field_get_type_compose(struct Computed_field *field,
+	struct Computed_field **texture_coordinate_field,
+	struct Computed_field **find_element_xi_field,
+	struct Computed_field **calculate_values_field,
+	struct GROUP(FE_element) **search_element_group)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
+fields which define the field.
+Note that the fields are not ACCESSed.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_compose_type_specific_data *data;
+
+	ENTER(Computed_field_get_type_compose);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_compose_type_string) &&
+		(data = (struct Computed_field_compose_type_specific_data *)
+		field->type_specific_data) && texture_coordinate_field &&
+		find_element_xi_field && calculate_values_field && search_element_group)
+	{
+		*texture_coordinate_field = field->source_fields[0];
+		*find_element_xi_field = field->source_fields[1];
+		*calculate_values_field = field->source_fields[2];
+		*search_element_group = data->element_group;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_compose.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_compose */
+
+static int define_Computed_field_type_compose(struct Parse_state *state,
+	void *field_void, void *computed_field_compose_package_void)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_COMPOSE (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field, *calculate_values_field,*find_element_xi_field,
+		*texture_coordinates_field;
+	struct Computed_field_compose_package *computed_field_compose_package;
+	struct Coordinate_system *coordinate_system_ptr;
+	struct GROUP(FE_element) *search_element_group;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_calculate_values_field_data,
+		set_find_element_xi_field_data, set_texture_coordinates_field_data;
+
+	ENTER(define_Computed_field_type_compose);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_compose_package =
+			(struct Computed_field_compose_package *)
+			computed_field_compose_package_void))
+	{
+		return_code = 1;
+		search_element_group = (struct GROUP(FE_element) *)NULL;
+		calculate_values_field = (struct Computed_field *)NULL;
+		find_element_xi_field = (struct Computed_field *)NULL;
+		texture_coordinates_field = (struct Computed_field *)NULL;
+		/* get valid parameters for composite field */
+		if (computed_field_compose_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code = Computed_field_get_type_compose(field, 
+				&calculate_values_field, &find_element_xi_field,
+				&texture_coordinates_field, &search_element_group);
+		}
+		if (return_code)
+		{
+			/* must access objects for set functions */
+			if (calculate_values_field)
+			{
+				ACCESS(Computed_field)(calculate_values_field);
+			}
+			if (find_element_xi_field)
+			{
+				ACCESS(Computed_field)(find_element_xi_field);
+			}
+			if (search_element_group)
+			{
+				ACCESS(GROUP(FE_element))(search_element_group);
+			}
+			if (texture_coordinates_field)
+			{
+				ACCESS(Computed_field)(texture_coordinates_field);
+			}
+
+			option_table = CREATE(Option_table)();
+			/* calculate_values_field */
+			set_calculate_values_field_data.computed_field_manager =
+				computed_field_compose_package->computed_field_manager;
+			set_calculate_values_field_data.conditional_function = 
+				Computed_field_has_numerical_components;
+			set_calculate_values_field_data.conditional_function_user_data = 
+				(void *)NULL;
+			Option_table_add_entry(option_table, "calculate_values_field", 
+				&calculate_values_field, &set_calculate_values_field_data, 
+				set_Computed_field_conditional);
+			/* find_element_xi_field */
+			set_find_element_xi_field_data.computed_field_manager =
+				computed_field_compose_package->computed_field_manager;
+			set_find_element_xi_field_data.conditional_function = 
+				Computed_field_has_numerical_components;
+			set_find_element_xi_field_data.conditional_function_user_data = 
+				(void *)NULL;
+			Option_table_add_entry(option_table, "find_element_xi_field", 
+				&find_element_xi_field, &set_find_element_xi_field_data, 
+				set_Computed_field_conditional);
+			/* group */
+			Option_table_add_entry(option_table, "group", 
+				&search_element_group, 
+				computed_field_compose_package->fe_element_group_manager, 
+				set_FE_element_group);
+			/* texture_coordinates_field */
+			set_texture_coordinates_field_data.computed_field_manager =
+				computed_field_compose_package->computed_field_manager;
+			set_texture_coordinates_field_data.conditional_function = 
+				Computed_field_has_numerical_components;
+			set_texture_coordinates_field_data.conditional_function_user_data = 
+				(void *)NULL;
+			Option_table_add_entry(option_table, "texture_coordinates_field", 
+				&texture_coordinates_field, &set_texture_coordinates_field_data, 
+				set_Computed_field_conditional);
+			return_code = Option_table_multi_parse(option_table, state);
+			/* no errors,not asking for help */
+			if (return_code)
+			{
+				if (return_code=Computed_field_set_type_compose(field,
+					texture_coordinates_field, find_element_xi_field,
+					calculate_values_field, search_element_group))
+				{
+					/* Set default coordinate system */
+					/* Inherit from third source field */
+					coordinate_system_ptr = 
+						Computed_field_get_coordinate_system(calculate_values_field);
+					Computed_field_set_coordinate_system(field, coordinate_system_ptr);
+				}
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING, state->current_token)&&
+						strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_compose.  Failed");
+				}
+			}
+			if (calculate_values_field)
+			{
+				DEACCESS(Computed_field)(&calculate_values_field);
+			}
+			if (find_element_xi_field)
+			{
+				DEACCESS(Computed_field)(&find_element_xi_field);
+			}
+			if (search_element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&search_element_group);
+			}
+			if (texture_coordinates_field)
+			{
+				DEACCESS(Computed_field)(&texture_coordinates_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_compose.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_compose */
+
+int Computed_field_register_types_compose(
+	struct Computed_field_package *computed_field_package, 
+	struct MANAGER(GROUP(FE_element)) *fe_element_group_manager)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	static struct Computed_field_compose_package 
+		computed_field_compose_package;
+
+	ENTER(Computed_field_register_types_compose);
+	if (computed_field_package && fe_element_group_manager)
+	{
+		computed_field_compose_package.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+			computed_field_package);
+		computed_field_compose_package.fe_element_group_manager =
+			fe_element_group_manager;
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_compose_type_string, 
+			define_Computed_field_type_compose,
+			&computed_field_compose_package);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_register_types_compose.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_register_types_compose */
