@@ -485,19 +485,9 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifeq ($(SYSNAME:IRIX%=),)
    BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > $(1).list) ;
-endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list) ;
-endif # SYSNAME == Linux
-ifeq ($(SYSNAME:CYGWIN%=),)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list)
-endif # SYSNAME == CYGWIN%=
-ifeq ($(SYSNAME),AIX)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list)
-endif # SYSNAME == AIX
-ifeq ($(SYSNAME),win32)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list)
-endif # SYSNAME == win32
+else # SYSNAME != IRIX%
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (LC_ALL=C ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list) ;
+endif # SYSNAME ==/!= IRIX%
 
 define BuildNormalTarget
 	echo 'Building $(2)/$(1)'
