@@ -496,6 +496,7 @@ GRAPHICS_SRCS = \
 	graphics/colour.c \
 	graphics/scene_viewer.c \
 	graphics/scene.c \
+	graphics/order_independent_transparency.c \
 	graphics/selected_graphic.c \
 	graphics/spectrum_settings.c \
 	graphics/texture.c \
