@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 7 March 2002
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1108,7 +1108,7 @@ Callback for change of default coordinate field.
 static void graphical_element_editor_element_disc_text_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 7 March 2002
 
 DESCRIPTION :
 Called when entry is made into the element discretization text field.
@@ -1117,7 +1117,8 @@ Called when entry is made into the element discretization text field.
 	char *disc_text;
 	struct Graphical_element_editor *gelem_editor;
 	struct Parse_state *temp_state;
-	struct Element_discretization element_discretization;
+	struct Element_discretization element_discretization,
+		old_element_discretization;
 
 	ENTER(graphical_element_editor_element_disc_text_CB);
 	USE_PARAMETER(call_data);
@@ -1131,12 +1132,19 @@ Called when entry is made into the element discretization text field.
 			if (temp_state=create_Parse_state(disc_text))
 			{
 				if (GT_element_group_get_element_discretization(
-					gelem_editor->edit_gt_element_group,&element_discretization)&&
-					set_Element_discretization(temp_state,(void *)&element_discretization,
-						(void *)gelem_editor->user_interface)&&
+					gelem_editor->edit_gt_element_group, &old_element_discretization) &&
+					set_Element_discretization(temp_state,
+						(void *)&element_discretization,
+						(void *)gelem_editor->user_interface) &&
+					((element_discretization.number_in_xi1 !=
+						old_element_discretization.number_in_xi1) ||
+						(element_discretization.number_in_xi2 !=
+							old_element_discretization.number_in_xi2) ||
+						(element_discretization.number_in_xi3 !=
+							old_element_discretization.number_in_xi3)) &&
 					GT_element_group_set_element_discretization(
 						gelem_editor->edit_gt_element_group,
-						&element_discretization,gelem_editor->user_interface))
+						&element_discretization, gelem_editor->user_interface))
 				{
 					/* inform the client of the changes */
 					graphical_element_editor_update(gelem_editor);
@@ -1170,13 +1178,14 @@ Called when entry is made into the element discretization text field.
 static void graphical_element_editor_circle_disc_text_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 7 March 2002
 
 DESCRIPTION :
 Called when entry is made into the circle discretization text field.
 ==============================================================================*/
 {
 	char *disc_text;
+	int circle_discretization;
 	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_circle_disc_text_CB);
@@ -1189,9 +1198,12 @@ Called when entry is made into the circle discretization text field.
 		XtVaGetValues(widget,XmNvalue,&disc_text,NULL);
 		if (disc_text)
 		{
-			if (GT_element_group_set_circle_discretization(
-				gelem_editor->edit_gt_element_group,atoi(disc_text),
-				gelem_editor->user_interface))
+			circle_discretization = atoi(disc_text);
+			if ((circle_discretization != GT_element_group_get_circle_discretization(
+				gelem_editor->edit_gt_element_group)) &&
+				GT_element_group_set_circle_discretization(
+					gelem_editor->edit_gt_element_group, circle_discretization,
+					gelem_editor->user_interface))
 			{
 				/* inform the client of the changes */
 				graphical_element_editor_update(gelem_editor);
