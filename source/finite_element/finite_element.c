@@ -7167,7 +7167,7 @@ DESCRIPTION :
 								/* first dimension */
 								k=0;
 								j=0;
-								while (standard_basis_argument[j]<0)
+								do
 								{
 									inherited_standard_basis_argument=
 										inherited_standard_basis_arguments;
@@ -7194,6 +7194,8 @@ DESCRIPTION :
 									k -= standard_basis_argument[j];
 									j++;
 								}
+								while ((standard_basis_argument[j]<0)
+								  && (-basis_dimension<standard_basis_argument[j - 1]));
 							}
 							else
 							{
