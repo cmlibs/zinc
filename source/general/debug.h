@@ -82,9 +82,10 @@ DESCRIPTION :
 Wrapper for realloc.
 ==============================================================================*/
 
-int list_memory(int count, int show_pointers, int increment_counter);
+int list_memory(int count, int show_pointers, int increment_counter, 
+	int show_structures);
 /*******************************************************************************
-LAST MODIFIED : 20 October 1999
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Writes out memory blocks currently allocated.  Each time this is called an internal
@@ -101,6 +102,8 @@ If <count_number> is positive only the memory with that count is written out.
 	while printing.
 <show_pointers> toggles the output format to include the actual memory addresses
 or not.  (It isn't useful for testing and output to record the changing addresses).
+If <show_structures> is set then for known types the objects are cast to the
+actual object type and then the appropriate list function is called.
 ==============================================================================*/
 
 #endif /* !defined (DEBUG_H) */

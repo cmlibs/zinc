@@ -10,11 +10,28 @@ Function definitions for debugging.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "general/debug.h"
 #include "user_interface/message.h"
+#include "general/debug.h"
 
-/* controls whether or not memory checking is included */
-/* #define MEMORY_CHECKING */
+#if defined (MEMORY_CHECKING)
+/* Must override all these Macros before we use them to ensure we don't get
+	stuck in an infinite loop of allocating */
+#define ALLOCATE( result , type , number ) \
+( result = ( type *) malloc( ( number ) * sizeof( type ) ))
+
+#define DEALLOCATE( ptr ) \
+{ free((char *) ptr ); ( ptr )=NULL;}
+
+#define ENTER( function_name )
+
+#define LEAVE
+
+#define REALLOCATE( final , initial , type , number ) \
+( final = ( type *) realloc( (char *)( initial ) , \
+	( number ) * sizeof( type )))
+#include "general/compare.h"
+#include "general/indexed_list_private.h"
+#endif
 
 /*
 Module types
@@ -31,19 +48,132 @@ Keeps a record of where a block of memory was allocated
 {
 	char *filename_line, *type;
 	int count,size;
-	struct Memory_block *next;
 	void *ptr;
+	int access_count;
 }; /* struct Memory_block */
 #endif /* defined (MEMORY_CHECKING) */
 
 /*
-Module variables
+Module functions
 ----------------
 */
 #if defined (MEMORY_CHECKING)
+static struct Memory_block *CREATE(Memory_block)(void *pointer,
+	char *filename, int line, char *type_string, int size,
+	int count)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Memory_block *block;
+	
+	if (ALLOCATE(block, struct Memory_block, 1))
+	{
+		block->ptr = pointer;
+		block->size = size;
+		block->count = count;
+		block->access_count = 0;
+
+		if (ALLOCATE(block->filename_line, char, strlen(filename)+20))
+		{
+			sprintf(block->filename_line,"%s : %10d",filename,line);
+			if (ALLOCATE(block->type,char,strlen(type_string)+1))
+			{
+				strcpy(block->type, type_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Memory_block).  Unable to allocate memory for memory_block type string identifier");
+				DEALLOCATE(block);
+				DEALLOCATE(block->filename_line);
+				block = (struct Memory_block *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Memory_block).  Unable to allocate memory for memory_block string identifier");
+			DEALLOCATE(block);
+			block = (struct Memory_block *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Memory_block).  Unable to allocate memory for memory_block list structure");
+		block = (struct Memory_block *)NULL;
+	}
+	
+	return(block);
+}
+
+int DESTROY(Memory_block)(struct Memory_block **block_address)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Memory_block *block;
+
+	if (block_address && (block = *block_address))
+	{
+		if (block->access_count <= 0)
+		{
+			if (block->filename_line)
+			{
+				DEALLOCATE(block->filename_line);
+			}
+			if (block->type)
+			{
+				DEALLOCATE(block->type);
+			}
+			DEALLOCATE(*block_address);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Memory_block).  Destroy called when access count > 0.");
+			*block_address = (struct Memory_block *)NULL;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Memory_block).  Invalid arguments.");
+		return_code = 0;
+	}
+
+	return (return_code);
+}
+
+DECLARE_LIST_TYPES(Memory_block);
+
+PROTOTYPE_OBJECT_FUNCTIONS(Memory_block);
+PROTOTYPE_LIST_FUNCTIONS(Memory_block);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Memory_block,ptr,void *);
+
+DECLARE_OBJECT_FUNCTIONS(Memory_block)
+FULL_DECLARE_INDEXED_LIST_TYPE(Memory_block);
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Memory_block,ptr,void *,compare_pointer)
+DECLARE_INDEXED_LIST_FUNCTIONS(Memory_block)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Memory_block,ptr,void *,
+	compare_pointer)
+
+#if defined (MEMORY_CHECKING)
 static int maximum_count = 1;
-static struct Memory_block *memory_list=NULL;
+static struct LIST(Memory_block) *memory_block_list =
+   (struct LIST(Memory_block) *)NULL;
 #endif /* defined (MEMORY_CHECKING) */
+
+#endif /* defined (MEMORY_CHECKING) */
+
 
 /*
 Global variables
@@ -81,7 +211,6 @@ Wrapper for allocate which keeps track of allocated memory.
 {
 	char *result;
 #if defined (MEMORY_CHECKING)
-	char *filename_line, *type_string;
 	struct Memory_block *new_block;
 #endif /* defined (MEMORY_CHECKING) */
 
@@ -97,39 +226,24 @@ Wrapper for allocate which keeps track of allocated memory.
 #if defined (MEMORY_CHECKING)
 		else
 		{
-			if (filename_line=(char *)malloc(sizeof(char)*(strlen(filename)+20)))
+			if (!memory_block_list)
 			{
-				sprintf(filename_line,"%s : %10d",filename,line);
-				if (type_string=(char *)malloc(sizeof(char)*(strlen(type)+1)))
-				{
-					strcpy(type_string, type);
-					if (new_block=
-						(struct Memory_block *)malloc(sizeof(struct Memory_block)))
-					{
-						new_block->ptr=(void *)result;
-						new_block->filename_line=filename_line;
-						new_block->type=type_string;
-						new_block->size=size;
-						new_block->count=maximum_count;
-						new_block->next=memory_list;
-						memory_list=new_block;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"allocate.  Unable to allocate memory for memory_block list structure");
-					}
-				}
-				else
+				memory_block_list = CREATE(LIST(Memory_block))();
+			}
+			if (new_block=CREATE(Memory_block)((void *)result,
+				filename, line, type, size, maximum_count))
+			{
+				if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
 				{
 					display_message(ERROR_MESSAGE,
-						"allocate.  Unable to allocate memory for memory_block type string identifier");
+						"allocate.  Unable to add Memory_block to list");
+					DESTROY(Memory_block)(&new_block);
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-		"allocate.  Unable to allocate memory for memory_block string identifier");
+					"allocate.  Unable to create Memory_block");
 			}
 		}
 #endif /* defined (MEMORY_CHECKING) */
@@ -137,6 +251,9 @@ Wrapper for allocate which keeps track of allocated memory.
 	else
 	{
 		display_message(WARNING_MESSAGE,"allocate.  Zero size");
+#if defined (MEMORY_CHECKING)
+		display_message(WARNING_MESSAGE,"%s : %10d",filename,line);
+#endif
 		result=(char *)NULL;
 	}
 	LEAVE;
@@ -153,33 +270,17 @@ Wrapper for deallocate which keeps track of allocated memory.
 ==============================================================================*/
 {
 #if defined (MEMORY_CHECKING)
-	struct Memory_block *list,*previous;
+	struct Memory_block *block;
 #endif /* defined (MEMORY_CHECKING) */
 
 	ENTER(deallocate);
 	if (ptr)
 	{
 #if defined (MEMORY_CHECKING)
-		list=memory_list;
-		previous=(struct Memory_block *)NULL;
-		while (list&&(list->ptr!=(void *)ptr))
+		if (memory_block_list && (block = 
+			FIND_BY_IDENTIFIER_IN_LIST(Memory_block,ptr)(ptr, memory_block_list)))
 		{
-			previous=list;
-			list=list->next;
-		}
-		if (list)
-		{
-			if (previous)
-			{
-				previous->next=list->next;
-			}
-			else
-			{
-				memory_list=list->next;
-			}
-			free(list->type);
-			free(list->filename_line);
-			free((char *)list);
+			REMOVE_OBJECT_FROM_LIST(Memory_block)(block, memory_block_list);
 		}
 		else
 		{
@@ -206,22 +307,20 @@ Wrapper for reallocate which keeps track of allocated memory.
 {
 	char *result;
 #if defined (MEMORY_CHECKING)
-	char *filename_line, *type_string;
-	struct Memory_block *list,*new_block;
+	struct Memory_block *block,*new_block;
 #endif /* defined (MEMORY_CHECKING) */
 
 	ENTER(reallocate);
 	if (0<size)
 	{
 #if defined (MEMORY_CHECKING)
+		if (!memory_block_list)
+		{
+			memory_block_list = CREATE(LIST(Memory_block))();
+		}
 		if (ptr)
 		{
-			list=memory_list;
-			while (list&&(list->ptr!=(void *)ptr))
-			{
-				list=list->next;
-			}
-			if (!list)
+			if (!(block = FIND_BY_IDENTIFIER_IN_LIST(Memory_block,ptr)(ptr, memory_block_list)))
 			{
 				display_message(ERROR_MESSAGE,
 					"reallocate.  Could not find ptr %x in memory block list", ptr);
@@ -233,7 +332,7 @@ Wrapper for reallocate which keeps track of allocated memory.
 		}
 		else
 		{
-			list=(struct Memory_block *)NULL;
+			block=(struct Memory_block *)NULL;
 		}
 #endif /* defined (MEMORY_CHECKING) */
 		result=realloc(ptr,size);
@@ -245,64 +344,30 @@ Wrapper for reallocate which keeps track of allocated memory.
 #if defined (MEMORY_CHECKING)
 		else
 		{
-			if (list)
+			if (block)
 			{
-				if (strcmp(type, list->type))
+				if (strcmp(type, block->type))
 				{
 					display_message(ERROR_MESSAGE,
 						"reallocate.  Allocation types don't match %s realloced at %s : %10d",
-						list->filename_line, filename, line);
+						block->filename_line, filename, line);
 				}
-				if (filename_line=(char *)realloc(list->filename_line,
-					sizeof(char)*(strlen(filename)+20)))
-				{
-					sprintf(filename_line,"%s : %10d",filename,line);
-					list->ptr=(void *)result;
-					list->filename_line=filename_line;
-					list->size=size;
-				}
-				else
+				REMOVE_OBJECT_FROM_LIST(Memory_block)(block, memory_block_list);
+			}
+			if (new_block=CREATE(Memory_block)((void *)result,
+				filename, line, type, size, maximum_count))
+			{
+				if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
 				{
 					display_message(ERROR_MESSAGE,
-"reallocate.  Unable to reallocate memory for memory_block string identifier");
+						"reallocate.  Unable to add Memory_block to list");
+					DESTROY(Memory_block)(&new_block);
 				}
 			}
 			else
 			{
-				if (filename_line=(char *)malloc(sizeof(char)*(strlen(filename)+20)))
-				{
-					sprintf(filename_line,"%s : %10d",filename,line);
-					if (type_string=(char *)malloc(sizeof(char)*(strlen(type)+1)))
-					{
-						strcpy(type_string, type);
-						if (new_block=
-							(struct Memory_block *)malloc(sizeof(struct Memory_block)))
-						{
-							new_block->ptr=(void *)result;
-							new_block->filename_line=filename_line;
-							new_block->type=type_string;
-							new_block->size=size;
-							new_block->count=1;
-							new_block->next=memory_list;
-							memory_list=new_block;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"reallocate.  Unable to allocate memory for memory_block list structure");
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"reallocate.  Unable to allocate memory for memory_block type string identifier");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"reallocate.  Unable to allocate memory for memory_block string identifier");
-				}
+				display_message(ERROR_MESSAGE,
+					"reallocate.  Unable to create Memory_block");
 			}
 		}
 #endif /* defined (MEMORY_CHECKING) */
@@ -320,9 +385,72 @@ Wrapper for reallocate which keeps track of allocated memory.
 	return (result);
 } /* reallocate */
 
-int list_memory(int count,int show_pointers,int increment_counter)
+#if defined (MEMORY_CHECKING)
+struct List_memory_data
+{
+	int count;
+	int show_pointers;
+	int show_structures;
+	int total;
+	int *count_total;
+};
+
+static int list_memory_block(struct Memory_block *block, void *list_memory_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2000
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct List_memory_data *list_memory_data;
+
+	ENTER(list_memory_block);
+	if (block && (list_memory_data = (struct List_memory_data *)list_memory_data_void))
+	{
+		if (list_memory_data->show_pointers)
+		{
+			if (!list_memory_data->count||(block->count==list_memory_data->count))
+			{
+				printf("%s @ %x size %d type %s\n",block->filename_line,block->ptr,
+					block->size, block->type);
+			}
+			list_memory_data->count_total[block->count] += block->size;
+			list_memory_data->total += block->size;
+		}
+		else
+		{
+			if (!list_memory_data->count||(block->count==list_memory_data->count))
+			{
+				printf("%s size %d type %s\n",block->filename_line,block->size,block->type);
+			}
+			list_memory_data->count_total[block->count] += block->size;
+			list_memory_data->total += block->size;
+		}
+		if (list_memory_data->show_structures)
+		{
+			if (!strcmp(block->type, "struct FE_field"))
+			{
+				list_FE_field(block->ptr, NULL);
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		printf("Unable to allocate memory total array\n");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_memory_block */
+#endif /* defined (MEMORY_CHECKING) */
+
+int list_memory(int count,int show_pointers,int increment_counter,
+	int show_structures)
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Writes out memory blocks currently allocated.  Each time this is called an
@@ -339,61 +467,46 @@ If <count> is positive only the memory with that count is written out.
 <show_pointers> toggles the output format to include the actual memory addresses
 or not.  (It isn't useful for testing and output to record the changing
 addresses).
+If <show_structures> is set then for known types the objects are cast to the
+actual object type and then the appropriate list function is called.
 ???DB.  printf used because want to make sure that no allocation is going on
 	while printing.
 ==============================================================================*/
 {
 	int return_code;
 #if defined (MEMORY_CHECKING)
-	int *count_total, i, total;
-	struct Memory_block *list;
+	int i;
+	struct List_memory_data list_memory_data;
 #endif /* defined (MEMORY_CHECKING) */
 
 	ENTER(list_memory);
 	return_code=0;
 #if defined (MEMORY_CHECKING)
-	total=0;
-	list=memory_list;
-	if (count_total = (int *)malloc((maximum_count + 1) * sizeof(int)))
+	if (ALLOCATE(list_memory_data.count_total, int, maximum_count + 1))
 	{
 		for (i = 0 ; i < (maximum_count + 1) ; i++)
 		{
-			count_total[i] = 0;
+			list_memory_data.count_total[i] = 0;
 		}
-		if (show_pointers)
+		list_memory_data.count = count;
+		list_memory_data.show_pointers = show_pointers;
+		list_memory_data.show_structures = show_structures;
+		list_memory_data.total = 0;
+
+		if (memory_block_list)
 		{
-			while (list)
-			{
-				if (!count||(list->count==count))
-				{
-					printf("%s @ %x size %d type %s\n",list->filename_line,list->ptr,list->size,
-						list->type);
-				}
-				count_total[list->count] += list->size;
-				total += list->size;
-				list=list->next;
-			}
+			FOR_EACH_OBJECT_IN_LIST(Memory_block)(list_memory_block, 
+				(void *)&list_memory_data, memory_block_list);
 		}
-		else
-		{
-			while (list)
-			{
-				if (!count||(list->count==count))
-				{
-					printf("%s size %d type %s\n",list->filename_line,list->size,list->type);
-				}
-				count_total[list->count] += list->size;
-				total += list->size;
-				list=list->next;
-			}
-		}
+
 		printf("\n\n\n\n\n");
 		for (i = 1 ; i < maximum_count + 1 ; i++)
 		{
-			printf("Allocated memory with count %3d: %12d\n", i, count_total[i]);
+			printf("Allocated memory with count %3d: %12d\n", i, 
+				list_memory_data.count_total[i]);
 		}
-		free(count_total);
-		printf("Total allocated memory:          %12d\n", total);
+		DEALLOCATE(list_memory_data.count_total);
+		printf("Total allocated memory:          %12d\n", list_memory_data.total);
 		if (increment_counter)
 		{
 			maximum_count++;
