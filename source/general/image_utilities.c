@@ -5123,8 +5123,9 @@ be specified in the <width> and <height> arguments.
 					pixel_storage = RGB;
 				}
 				*number_of_bytes_per_component = 1;
-				*width = magick_image->columns;
-				*height = magick_image->rows;
+				/* Casting to suppress the warnings about loss of precision */
+				*width = (long int)magick_image->columns;
+				*height = (long int)magick_image->rows;
 				if (ALLOCATE(image_data, unsigned char,
 					*width * *height * *number_of_components *
 					*number_of_bytes_per_component))
