@@ -4679,7 +4679,8 @@ returned.
 				analysis->write_times_file_open_data=create_File_open_data(
 					events_file_extension,REGULAR,write_times_undecided_accepted,analysis,
 					0,user_interface);
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
 					&signal_aspect_ratio_percent,resources_1,XtNumber(resources_1),NULL);
 				analysis->signal_aspect_ratio=(float)(signal_aspect_ratio_percent)/100;
 				XtVaGetApplicationResources(
