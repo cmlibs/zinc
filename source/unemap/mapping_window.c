@@ -5919,13 +5919,17 @@ Note: 3D maps always fully recalculate on manual time updates.
 {
 #if defined (OLD_CODE)
 	enum Interpolation_type interpolation;
+	struct Map *map;
 #endif /* defined (OLD_CODE) */
 	int recalculate,return_code;
-	struct Map *map;
 
 	ENTER(update_map_from_manual_time_update);
-	map=(struct Map *)NULL;
-	if (mapping&&(map=mapping->map))
+	return_code=0;
+	if (mapping
+#if defined (OLD_CODE)
+		&&(map=mapping->map)
+#endif /* defined (OLD_CODE) */
+		)
 	{
 		return_code=1;
 #if defined (OLD_CODE)
