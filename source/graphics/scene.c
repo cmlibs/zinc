@@ -6444,8 +6444,11 @@ understood for the type of <interaction_volume> passed.
 						glMatrixMode(GL_MODELVIEW);
 						glLoadIdentity();
 						glMultMatrixd(opengl_modelview_matrix);
-						/* set an arbitrary viewport - not really needed */
-						glViewport(0,0,1024,1024);
+						/* set an arbitrary viewport - not really needed
+						   SAB 22 July 2004 This is causing the view frustrums
+						   to not match when picking, so instead I am not changing the
+						   viewport, so presumably the last rendered viewport is OK. */
+						/* glViewport(0,0,1024,1024); */
 						glDepthRange((GLclampd)0,(GLclampd)1);
 						execute_Scene(scene);
 						glFlush();
@@ -7412,7 +7415,7 @@ GT_element_group and therefore have the same rendition.
 	Triple glyph_centre, glyph_size, glyph_scale_factors;
 
 	ENTER(Scene_add_graphical_element_group);
-	if (scene && cmiss_region && data_cmiss_region && scene_object_name)
+	if (scene && cmiss_region && scene_object_name)
 	{
 		if (!FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_name,
 			(void *)scene_object_name, scene->scene_object_list))
@@ -7527,7 +7530,8 @@ GT_element_group and therefore have the same rendition.
 								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 									Computed_field_is_type_embedded, NULL,
 									scene->computed_field_manager);
-							if ((fe_region = Cmiss_region_get_FE_region(data_cmiss_region)) &&
+							if (data_cmiss_region && 
+								(fe_region = Cmiss_region_get_FE_region(data_cmiss_region)) &&
 								FE_region_get_first_FE_node_that(fe_region,
 									(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL))
 							{
