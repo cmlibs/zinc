@@ -4960,7 +4960,7 @@ Enlarges the minimum and maximum time range by that of the graphics_object.
 	gt_object_type,primitive_var) \
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(primitive_type) \
 /***************************************************************************** \
-LAST MODIFIED : 30 April 2003 \
+LAST MODIFIED : 20 May 2003 \
 \
 DESCRIPTION : \
 Adds <primitive> to <graphics_object> at <time>, creating the new time if it \
@@ -5020,8 +5020,7 @@ there is not already one. <primitive> is a NULL-terminated linked-list. \
 		} \
 		if (return_code) \
 		{ \
-			/*???RC FORWARD PRIMITIVE_ORDER -- Can handle linked primitives */ \
-			/* \
+			/* note this adds primitives to the end of the list; used to be start */ \
 			if (primitive_list->primitive_var.last) \
 			{ \
 				primitive_list->primitive_var.last->ptrnext = primitive; \
@@ -5031,9 +5030,7 @@ there is not already one. <primitive> is a NULL-terminated linked-list. \
 				primitive_list->primitive_var.first = primitive; \
 				primitive_list->primitive_var.last = primitive; \
 			} \
-			*/ \
 			/* advance last pointer to last primitive in linked-list */ \
-			/* \
 			if (primitive_list->primitive_var.last) \
 			{ \
 				while (primitive_list->primitive_var.last->ptrnext) \
@@ -5042,21 +5039,6 @@ there is not already one. <primitive> is a NULL-terminated linked-list. \
 						primitive_list->primitive_var.last->ptrnext; \
 				} \
 			} \
-			*/ \
-\
-			/*???RC REVERSE PRIMITIVE_ORDER -- Assumes only one primitive */ \
-			/*???RC remove as soon as possible for graphics object editing */ \
-			if (primitive_list->primitive_var.last) \
-			{ \
-				primitive->ptrnext = primitive_list->primitive_var.first; \
-				primitive_list->primitive_var.first = primitive; \
-			} \
-			else \
-			{ \
-				primitive_list->primitive_var.first = primitive; \
-				primitive_list->primitive_var.last = primitive; \
-			} \
-\
 			GT_object_changed(graphics_object); \
 		} \
 		else \
