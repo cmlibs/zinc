@@ -5620,7 +5620,7 @@ However, if none of the scene objects have transformations, the flag
 be set to the identity.
 ==============================================================================*/
 {
-	double mat1[6],mat2[16];
+	double mat1[16],mat2[16];
 	int i,j,k,number_of_transformations,return_code;
 	gtMatrix gt_transformation;
 
