@@ -662,12 +662,15 @@ DESCRIPTION :
 static int Scene_viewer_calculate_transformation(
 	struct Scene_viewer *scene_viewer, int viewport_width, int viewport_height)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 11 November 2003
 
 DESCRIPTION :
 Calculates the projection_matrix, window_projection_matrix and modelview_materix
 for the <scene_viewer> onto a given <viewport_width>.<viewport_height> in
 pixels, both of which must be positive.
+The <left>, <right>, <top> and <bottom> are used to specify the viewing frustrum,
+by default these are stored in the scene_viewer but are supplied as parameters
+to this function so that they can be overridden.
 In CUSTOM projections, the projection_matrix and modelview_matrix are supplied
 and hence these are only calculated for other projection modes. In all cases
 the projection_matrix is understood to project space onto the NDC_info; In
@@ -2202,10 +2205,17 @@ access this function.
 		return_code=1;
 		if ((!left) && (!bottom) && (!right) && (!top))
 		{
-			left = 0;
-			bottom = 0;
-			right = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-			top = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+			rendering_data.viewport_left = 0;
+			rendering_data.viewport_bottom = 0;
+			rendering_data.viewport_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+			rendering_data.viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		}
+		else
+		{
+			rendering_data.viewport_left = left;
+			rendering_data.viewport_bottom = bottom;
+			rendering_data.viewport_width = right - left;
+			rendering_data.viewport_height = top - bottom;
 		}
 
 		rendering_data.scene_viewer = scene_viewer;
@@ -2227,10 +2237,6 @@ access this function.
 		{
 			rendering_data.override_transparency_layers = scene_viewer->transparency_layers;
 		}		
-		rendering_data.viewport_left = left;
-		rendering_data.viewport_bottom = bottom;
-		rendering_data.viewport_width = right - left;
-		rendering_data.viewport_height = top - bottom;
 		/* Set further down */
 		rendering_data.rendering_double_buffered = 0;
 		rendering_data.stencil_depth = 0;
