@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 7 July 2004
+# LAST MODIFIED : 23 July 2004
 #
 # DESCRIPTION :
 #
@@ -598,6 +598,7 @@ API_SRCS = \
 	api/cmiss_function_coordinates.cpp \
 	api/cmiss_function_derivative.cpp \
 	api/cmiss_function_finite_element.cpp \
+	api/cmiss_function_inverse.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_variable.cpp \
 	api/cmiss_function_variable_composite.cpp \
@@ -724,6 +725,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/function_variable_value_element.cpp \
 	computed_variable/function_variable_value_function_size_type.cpp \
 	computed_variable/function_variable_value_scalar.cpp \
+	computed_variable/function_variable_value_specific.cpp \
 	computed_variable/function_variable_wrapper.cpp \
 	computed_variable/variable.cpp \
 	computed_variable/variable_composite.cpp \
@@ -1371,6 +1373,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_function_composition.cpp \
 	api/cmiss_function_coordinates.cpp \
 	api/cmiss_function_derivative.cpp \
+	api/cmiss_function_inverse.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_variable.cpp \
 	api/cmiss_function_variable_composite.cpp \
@@ -1389,7 +1392,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_variable_new_matrix.cpp \
 	api/cmiss_variable_new_scalar.cpp \
 	api/cmiss_variable_new_vector.cpp \
-	$(filter-out %finite_element.cpp,$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS))) \
+	$(filter-out %element_xi.cpp,$(filter-out %finite_element.cpp,$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS)))) \
 	$(MATRIX_SRCS) \
 	api/cmiss_value_derivative_matrix.c \
 	api/cmiss_value_fe_value.c \
@@ -1410,6 +1413,7 @@ SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE_F
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS = \
 	$(filter %finite_element.c,$(COMPUTED_VARIABLE_SRCS)) \
 	$(filter %finite_element.cpp,$(COMPUTED_VARIABLE_SRCS)) \
+	$(filter %element_xi.cpp,$(COMPUTED_VARIABLE_SRCS)) \
 	api/cmiss_function_finite_element.cpp \
 	api/cmiss_value_element_xi.c \
 	api/cmiss_variable_finite_element.c \
