@@ -843,6 +843,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_adjust_contrast.c \
 	image_processing/computed_field_canny_filter.c \
 	image_processing/computed_field_color_based_segment.c \
+	image_processing/computed_field_cube_plugin_all.c \
 	image_processing/computed_field_sterology_measures.c \
 	image_processing/computed_field_dilate_filter.c \
 	image_processing/computed_field_erode_filter.c \
