@@ -22427,7 +22427,8 @@ Executes a UNEMAP OPEN command.
 					command_data->computed_field_package);
 				command_data->unemap_package = CREATE(Unemap_package)(
 					command_data->fe_field_manager,command_data->element_group_manager,
-					command_data->node_manager,command_data->data_group_manager,
+					command_data->node_manager,command_data->data_manager,
+					command_data->data_group_manager,
 					command_data->node_group_manager,command_data->basis_manager,
 					command_data->element_manager,computed_field_manager,
 					command_data->interactive_tool_manager, 

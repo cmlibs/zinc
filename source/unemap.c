@@ -625,6 +625,7 @@ Main program for unemap
 		texture_manager=CREATE_MANAGER(Texture)();	
 		fe_field_manager=CREATE_MANAGER(FE_field)();
 		element_group_manager=CREATE_MANAGER(GROUP(FE_element))();
+		data_manager=CREATE_MANAGER(FE_node)();
 		node_manager=CREATE_MANAGER(FE_node)();
 		element_manager=CREATE_MANAGER(FE_element)();
 		node_group_manager=CREATE_MANAGER(GROUP(FE_node))();
@@ -850,9 +851,9 @@ Main program for unemap
 			&user_interface);		
 		transform_tool=CREATE(Transform_tool)(interactive_tool_manager);
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
-			element_group_manager,node_manager,data_group_manager,node_group_manager,
-			fe_basis_manager,element_manager,computed_field_manager,interactive_tool_manager,
-			node_selection);	
+			element_group_manager,node_manager,data_manager,data_group_manager,
+			node_group_manager,fe_basis_manager,element_manager,computed_field_manager,
+			interactive_tool_manager,node_selection);	
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
@@ -998,6 +999,7 @@ Main program for unemap
 			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
 			DESTROY(MANAGER(FE_node))(&node_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
+			DESTROY(MANAGER(FE_node))(&data_manager);
 			DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
 #endif /* defined (UNEMAP_USE_3D) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */

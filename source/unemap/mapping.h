@@ -197,7 +197,8 @@ map_drawing_information.
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
+	struct MANAGER(FE_node) *data_manager;
+	struct MANAGER(GROUP(FE_element))	*element_group_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;  
 };
 #endif /* defined (UNEMAP_USE_3D) */
@@ -496,8 +497,9 @@ struct Map_3d_package *CREATE(Map_3d_package)(	int number_of_map_rows,
 	struct FE_field *map_position_field,struct FE_field *map_fit_field,
 	struct GROUP(FE_node) *node_group,struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager, 
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(Computed_field) *computed_field_manager);

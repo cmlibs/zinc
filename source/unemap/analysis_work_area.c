@@ -9706,8 +9706,16 @@ Duplicates the raw rig, except that
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *raw_signal_buffer,*signal_buffer;
-
+#if defined (UNEMAP_USE_3D)
+	struct GROUP(FE_node) *all_devices_rig_node_group;
+	struct GROUP(FE_node) *rig_node_group;							
+#endif /* defined (UNEMAP_USE_3D) */
+				
 	ENTER(create_processed_rig);
+#if defined (UNEMAP_USE_3D)
+	all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined (UNEMAP_USE_3D) */
 	if (raw_rig&&(0<raw_rig->number_of_devices)&&(raw_rig->devices)&&
 		(*(raw_rig->devices))&&
 		(raw_signal_buffer=get_Device_signal_buffer(*(raw_rig->devices))))
@@ -9720,6 +9728,13 @@ Duplicates the raw rig, except that
 #endif /* defined (UNEMAP_USE_3D) */
 				))
 		{
+#if defined (UNEMAP_USE_3D)
+			/* set the all_devices_rig_node_group pointer */				
+			if(all_devices_rig_node_group=get_Rig_all_devices_rig_node_group(raw_rig))
+			{
+				set_Rig_all_devices_rig_node_group(rig,all_devices_rig_node_group);
+			}			
+#endif /* defined (UNEMAP_USE_3D) */
 			if (raw_rig->signal_file_name)
 			{
 				/* assign the signal file name */
@@ -9794,6 +9809,13 @@ Duplicates the raw rig, except that
 							),(struct Region_list_item *)NULL))&&
 							((*region_item_address)->region))
 						{
+#if defined (UNEMAP_USE_3D)					
+							if(rig_node_group=get_Region_rig_node_group(raw_region))
+							{									
+								set_Region_rig_node_group((*region_item_address)->region,
+									rig_node_group);
+							}						
+#endif /* defined (UNEMAP_USE_3D) */
 							switch (raw_region->type)
 							{
 								case SOCK:

@@ -884,9 +884,8 @@ the devices in the device list.
 					the_region->map_electrode_position_field);
 				the_region->map_electrode_position_field=(struct FE_field *)NULL;
 			}			
-		}	
-		DEACCESS(GROUP(FE_node))(&((*region)->rig_node_group));
-		DEACCESS(Map_3d_package)(&((*region)->map_3d_package));
+		}		
+		DEACCESS(Map_3d_package)(&((*region)->map_3d_package));		
 		DEACCESS(FE_field)(&((*region)->electrode_position_field));
 		DEACCESS(FE_field)(&((*region)->map_electrode_position_field));
 		DEACCESS(Unemap_package)(&((*region)->unemap_package));	
@@ -1012,7 +1011,7 @@ int set_Region_map_3d_package(struct Region *region,struct Map_3d_package *map_3
 LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
-Sets (and accesses) map_info_3 of <region> to <map_3d_package>
+Sets (and accesses) set_Region_map_3d_package of <region> to <map_3d_package>
 ==============================================================================*/
 {
 	int return_code;

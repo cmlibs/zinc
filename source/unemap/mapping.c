@@ -2702,8 +2702,9 @@ i.e sock is a hemisphere, torso is a cylinder.
 				interpolation_node_group,
 				get_unemap_package_FE_field_manager(package),
 				get_unemap_package_element_group_manager(package),
-				get_unemap_package_node_manager(package),
+				get_unemap_package_data_manager(package),
 				get_unemap_package_data_group_manager(package),
+				get_unemap_package_node_manager(package),
 				get_unemap_package_node_group_manager(package),
 				get_unemap_package_element_manager(package),
 				get_unemap_package_Computed_field_manager(package));	
@@ -9814,8 +9815,9 @@ struct Map_3d_package *CREATE(Map_3d_package)(int number_of_map_rows,
 	struct FE_field *map_position_field,struct FE_field *map_fit_field,
 	struct GROUP(FE_node) *node_group,struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager, 
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(Computed_field) *computed_field_manager)
@@ -9846,11 +9848,12 @@ Create and  and set it's components
 				map_3d_package->node_order_info=ACCESS(FE_node_order_info)
 					(node_order_info);
 				map_3d_package->map_position_field=ACCESS(FE_field)(map_position_field);			
-				map_3d_package->map_fit_field=ACCESS(FE_field)(map_fit_field);
+				map_3d_package->map_fit_field=ACCESS(FE_field)(map_fit_field);				
 				map_3d_package->node_group=ACCESS(GROUP(FE_node))(node_group);
 				map_3d_package->fe_field_manager=fe_field_manager;
 				map_3d_package->element_group=(struct GROUP(FE_element) *)NULL;
 				map_3d_package->element_group_manager=element_group_manager;
+				map_3d_package->data_manager=data_manager;
 				map_3d_package->node_manager=node_manager;
 				map_3d_package->data_group_manager=data_group_manager;
 				map_3d_package->node_group_manager=node_group_manager; 
@@ -9937,7 +9940,7 @@ to NULL.
 	struct GROUP(FE_element) *map_element_group,*temp_map_element_group;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(FE_node) *node_manager,*data_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager; 
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -9948,6 +9951,7 @@ to NULL.
 		element_manager=map_3d_package->element_manager;
 		element_group_manager=map_3d_package->element_group_manager;
 		node_manager=map_3d_package->node_manager;
+		data_manager=map_3d_package->data_manager;
 		data_group_manager=map_3d_package->data_group_manager;
 		node_group_manager=map_3d_package->node_group_manager;
 		fe_field_manager=map_3d_package->fe_field_manager;
@@ -9984,8 +9988,8 @@ to NULL.
 		}
 		/* map_group */
 		free_node_and_element_and_data_groups(&(map_3d_package->node_group),
-			element_manager,element_group_manager,node_manager,
-			data_group_manager,node_group_manager);
+			element_manager,element_group_manager,data_manager,
+			data_group_manager,node_manager,node_group_manager);
 		/* computed_fields */
 		remove_computed_field_from_manager_given_FE_field(
 			computed_field_manager,map_3d_package->map_fit_field);		

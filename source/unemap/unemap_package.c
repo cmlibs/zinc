@@ -29,6 +29,7 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_basis) *fe_basis_manager,
@@ -56,6 +57,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->fe_field_manager=fe_field_manager;
 			package->element_group_manager=element_group_manager;
 			package->node_manager=node_manager;
+			package->data_manager=data_manager;
 			package->data_group_manager=data_group_manager;
 			package->node_group_manager=node_group_manager;
 			package->fe_basis_manager=fe_basis_manager;	
@@ -1225,6 +1227,34 @@ gets a manager of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
+struct MANAGER(FE_node) *get_unemap_package_data_manager(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+gets a manager of the unemap package.
+==============================================================================*/
+{
+	struct MANAGER(FE_node) *data_manager;
+
+	ENTER(get_unemap_package_data_manager);
+	if(package)
+	{
+		data_manager=package->data_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_data_manager."
+			" invalid arguments");
+		data_manager = (struct MANAGER(FE_node) *)NULL;
+	}
+	LEAVE;
+	return(data_manager);
+}/* get_unemap_package_data_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_element) *get_unemap_package_element_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1892,8 +1922,9 @@ free_unemap_package_rig_node_group_glyphs for this
 	{			
 		return_code=free_node_and_element_and_data_groups(
 			rig_node_group,package->element_manager,
-			package->element_group_manager,package->node_manager,
-			package->data_group_manager,package->node_group_manager);	
+			package->element_group_manager,package->data_manager,
+			package->data_group_manager,package->node_manager,
+			package->node_group_manager);	
 	}
 	else
 	{

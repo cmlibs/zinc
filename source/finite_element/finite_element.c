@@ -37024,11 +37024,12 @@ DESCRIPTION :Debug function. May be naughty.
 int free_node_and_element_and_data_groups(struct GROUP(FE_node) **a_node_group,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager )
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 2 October 2000
 
 DESCRIPTION :
 Given a <node_group>, frees it's asscoiated element and data groups
@@ -37082,7 +37083,7 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 				if (FE_node_can_be_destroyed(node_to_destroy))
 				{				
 					return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
-						node_manager);					
+						data_manager);					
 				}					
 			}		
 			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
