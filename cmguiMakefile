@@ -88,8 +88,8 @@ depend: update_sources
 run_tests:
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(TEST_PATH); \
-		$(MAKE) -u; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(TEST_PATH) ; make -W cmgui_linux.exe cmgui_linux_test' ; \
+		$(MAKE) \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(TEST_PATH) ; make cmgui-linux-test' ; \
 		cat all.mail ; \
 	else \
 		echo "Must be cmiss"; \
