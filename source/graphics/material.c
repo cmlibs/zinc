@@ -84,9 +84,6 @@ but shared between different materials with the same state.
 	GLuint vertex_program;
 	GLuint fragment_program;
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-#if defined GL_NV_vertex_program && defined GL_NV_register_combiners2
-	GLuint nv_vertex_program;
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 
 	/* Display list which enables the correct state for this program */
 	GLuint display_list;
@@ -193,9 +190,6 @@ DESCRIPTION :
 		material_program->vertex_program = 0;
 		material_program->fragment_program = 0;
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-#if defined GL_NV_vertex_program && defined GL_NV_register_combiners2
-		material_program->nv_vertex_program = 0;
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		material_program->display_list = 0;
 #endif /* defined (OPENGL_API) */
 		material_program->compiled = 0;
@@ -237,12 +231,6 @@ Frees the memory for the material_program.
 			if (material_program->fragment_program)
 			{
 				glDeleteProgramsARB(1, &material_program->fragment_program);
-			}
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-#if defined GL_NV_vertex_program && defined GL_NV_register_combiners2
-			if (material_program->nv_vertex_program)
-			{
-				glDeleteProgramsNV(1, &material_program->nv_vertex_program);
 			}
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 			if (material_program->display_list)

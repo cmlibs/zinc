@@ -1304,6 +1304,35 @@ the extensions succeed, false if not.
 			}
 		}
 #endif /* GL_VERSION_1_3 */
+#if defined GL_VERSION_1_4
+		else if (!strcmp(extension_name, "GL_VERSION_1_4"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_VERSION_1_4))
+			{
+				return_code = GLEXTENSIONFLAG(GL_VERSION_1_4);
+			}
+			else
+			{
+				if (query_gl_version(1, 4))
+				{
+					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBlendFuncSeparate, PFNGLBLENDFUNCSEPARATEPROC)
+						Graphics_library_get_function_ptr("glBlendFuncSeparate"))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_VERSION_1_4) = return_code;
+			}
+		}
+#endif /* GL_VERSION_1_4 */
 #if defined GL_EXT_texture3D
 		else if (!strcmp(extension_name, "GL_EXT_texture3D"))
 		{

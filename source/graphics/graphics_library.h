@@ -403,6 +403,9 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_2);
 #if defined (GL_VERSION_1_3)
 GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_3);
 #endif /* defined (GL_VERSION_1_3) */
+#if defined (GL_VERSION_1_4)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_4);
+#endif /* defined (GL_VERSION_1_4) */
 #if defined (GL_EXT_texture3D)
 GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_texture3D);
 #endif /* defined (GL_EXT_texture3D) */
@@ -415,9 +418,8 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program);
 
 /* Extension function handles */
 #if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
-#if defined (PFNGLTEXIMAGE3DPROC)
-/* Just using this one function pointer type to check that we have
-	these definitions, could check for more of them */
+#if defined (APIENTRY)
+/* Testing to see if we are using Mesa like headers (NVIDIA defined APIENTRY and not APIENTRYP) */
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 /* Note that while to strictly satisfy the GL_EXT_texture3D 
 	this function would have the EXT delimiter the SGI
@@ -433,6 +435,12 @@ GRAPHICS_LIBRARY_EXTERN PFNGLACTIVETEXTUREPROC GLHANDLE(glActiveTexture);
 GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
 #define glMultiTexCoord3fv (GLHANDLE(glMultiTexCoord3fv))
 #endif /* defined (GL_VERSION_1_3) */
+#if defined (GL_VERSION_1_4)
+GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
+#define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
+GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
+#define glMultiTexCoord3fv (GLHANDLE(glMultiTexCoord3fv))
+#endif /* defined (GL_VERSION_1_4) */
 #if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)
 GRAPHICS_LIBRARY_EXTERN PFNGLGENPROGRAMSARBPROC GLHANDLE(glGenProgramsARB);
 #define glGenProgramsARB (GLHANDLE(glGenProgramsARB))
