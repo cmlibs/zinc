@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -27,6 +27,7 @@ December 1997. Created MANAGER(Scene).
 #include "graphics/light.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
+#include "interaction/interaction_volume.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -118,7 +119,7 @@ DECLARE_MANAGER_TYPES(Scene);
 
 struct Modify_scene_data
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Structure to pass to modify_Scene.
@@ -138,7 +139,7 @@ Structure to pass to modify_Scene.
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *node_selection;
+	struct FE_node_selection *data_selection,*node_selection;
 	struct User_interface *user_interface;
 }; /* struct Modify_scene_data */
 
@@ -365,6 +366,16 @@ DESCRIPTION :
 Changes the Time_object object referenced by <scene_object>.
 ==============================================================================*/
 
+int Scene_object_has_data_group(struct Scene_object *scene_object,
+	void *data_group_void);
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+Scene_object iterator function returning true if <scene_object> contains a
+g_ELEMENT_GROUP gt_object referencing the given data_group.
+==============================================================================*/
+
 int Scene_object_has_element_group(struct Scene_object *scene_object,
 	void *element_group_void);
 /*******************************************************************************
@@ -373,6 +384,16 @@ LAST MODIFIED : 19 September 1997
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> contains a
 g_ELEMENT_GROUP gt_object referencing the given element_group.
+==============================================================================*/
+
+int Scene_object_has_node_group(struct Scene_object *scene_object,
+	void *node_group_void);
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+Scene_object iterator function returning true if <scene_object> contains a
+g_ELEMENT_GROUP gt_object referencing the given node_group.
 ==============================================================================*/
 
 int Scene_object_has_graphical_element_group(struct Scene_object *scene_object,
@@ -589,9 +610,10 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -645,12 +667,14 @@ Allows clients of the <scene> to perform functions with the scene_objects in
 it. For example, rendervrml.c needs to output all the scene objects in a scene.
 ==============================================================================*/
 
-struct Scene_object *Scene_get_first_scene_object_that(struct Scene *scene,
-	LIST_CONDITIONAL_FUNCTION(Scene_object) *conditional_function,void *user_data);
+struct Scene_object *first_Scene_object_in_Scene_that(struct Scene *scene,
+	LIST_CONDITIONAL_FUNCTION(Scene_object) *conditional_function,
+	void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
+Wrapper for FIRST_OBJECT_IN_LIST_THAT function for Scene_object.
 ==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(Scene_picked_object);
@@ -833,18 +857,34 @@ calling function.
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct MANAGER(FE_node) *node_manager,struct GROUP(FE_node) *node_group,
+	struct MANAGER(FE_node) *node_manager,int data_manager,
+	struct GROUP(FE_node) *node_group,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address);
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Returns the nearest picked node in <scene_picked_object_list> that is in
 <node_group> (or any group if NULL). If any of the remaining address arguments
 are not NULL, they are filled with the appropriate information pertaining to
 the nearest node.
+The <data_manager> flag indicates that the node_manager is in fact the
+data_manager - needed since different settings type used for each.
+==============================================================================*/
+
+struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct MANAGER(FE_node) *node_manager,int data_manager);
+/*******************************************************************************
+LAST MODIFIED : 28 April 2000
+
+DESCRIPTION :
+Returns the list of all nodes in the <scene_picked_object_list> in the
+<node_manager>. 
+The <data_manager> flag indicates that the node_manager is in fact the
+data_manager - needed since different settings type used for each.
 ==============================================================================*/
 
 int Scene_get_input_callback(struct Scene *scene,
@@ -866,6 +906,7 @@ Sets the function that will be called to pass on input information, and the data
 that that function wants to receive.
 ==============================================================================*/
 
+#if defined (OLD_CODE)
 int Scene_input(struct Scene *scene,enum Scene_input_type input_type,
 	int button_number,int input_modifier,double viewx,double viewy,double viewz,
 	double nearx,double neary,double nearz,double farx,double fary,double farz,
@@ -889,6 +930,18 @@ drag information. Finally, if the event involved selection/picking, the number
 of hits and the select buffer will be set accordingly. The main function of
 this routine is to convert picking information into a list of easy-to-interpret
 Scene_picked_objects to pass to clients of the scene, eg. node editor.
+==============================================================================*/
+#endif /* defined (OLD_CODE) */
+
+struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
+	struct Interaction_volume *interaction_volume);
+/*******************************************************************************
+LAST MODIFIED : 26 April 2000
+
+DESCRIPTION :
+Returns a list of all the graphical entities in the <interaction_volume> of
+<scene>. The nearest member of each scene_picked_object will be adjusted as
+understood for the type of <interaction_volume> passed.
 ==============================================================================*/
 
 int Scene_add_light(struct Scene *scene,struct Light *light);

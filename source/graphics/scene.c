@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -49,6 +49,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "graphics/makegtobj.h"
 #include "graphics/scene.h"
 #include "graphics/texture.h"
+#include "three_d_drawing/ThreeDDraw.h"
 #include "time/time.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -57,6 +58,17 @@ November 1997. Created from Scene description part of Drawing.
 Module constants
 ----------------
 */
+
+/*
+Module variables
+----------------
+*/
+
+/* select buffer size grows in increments of SELECT_BUFFER_SIZE_INCREMENT when
+	 select buffer overflows. Hence, always large enough to fit all picked objects
+	 in the scene */
+#define SELECT_BUFFER_SIZE_INCREMENT 10000
+static int select_buffer_size=10000;
 
 /*
 Module types
@@ -96,7 +108,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
 
 struct Scene
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Stores the collections of objects that make up a 3-D graphical model.
@@ -132,7 +144,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* global stores of selected objects */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *node_selection;
+	struct FE_node_selection *data_selection,*node_selection;
 
 	/* graphics object representing axes */
 	struct GT_object *axis_object;
@@ -1975,6 +1987,8 @@ struct Scene_picked_object_get_nearest_node_data
 	unsigned int nearest;
 	struct FE_node *nearest_node;
 	struct MANAGER(FE_node) *node_manager;
+	/* flag indicating that the above manager is actually the data manager */
+	int data_manager;
 	/* group that the node must be in, or any group if NULL */
 	struct GROUP(FE_node) *node_group;
 	/* information about the nearest node */
@@ -1986,7 +2000,7 @@ struct Scene_picked_object_get_nearest_node_data
 static int Scene_picked_object_get_nearest_node(
 	struct Scene_picked_object *scene_picked_object,void *nearest_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to a node, the "nearest" value is compared
@@ -1995,6 +2009,7 @@ no current nearest node or the new node is nearer, it becomes the picked node
 and its "nearest" value is stored in the nearest_node_data.
 ==============================================================================*/
 {
+	enum GT_element_settings_type settings_type;
 	int node_number,return_code;
 	struct FE_node *nearest_node;
 	struct Scene_object *scene_object;
@@ -2013,7 +2028,7 @@ and its "nearest" value is stored in the nearest_node_data.
 				nearest_node_data->nearest))
 		{
 			/* is the last scene_object a Graphical_element wrapper, and does the
-				 settings for the graphic refer to node_points? */
+				 settings for the graphic refer to node_points or data_points? */
 			if ((scene_object=Scene_picked_object_get_Scene_object(
 				scene_picked_object,
 				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
@@ -2024,8 +2039,12 @@ and its "nearest" value is stored in the nearest_node_data.
 				(gt_element_settings=get_settings_at_position_in_GT_element_group(
 					gt_element_group,
 					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-				(GT_ELEMENT_SETTINGS_NODE_POINTS==
-					GT_element_settings_get_settings_type(gt_element_settings)))
+				(((GT_ELEMENT_SETTINGS_NODE_POINTS==
+					(settings_type=
+						GT_element_settings_get_settings_type(gt_element_settings)))&&
+					(!(nearest_node_data->data_manager)))||
+					((GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)&&
+						nearest_node_data->data_manager)))
 			{
 				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
 				if (nearest_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
@@ -2064,6 +2083,84 @@ and its "nearest" value is stored in the nearest_node_data.
 
 	return (return_code);
 } /* Scene_picked_object_get_nearest_node */
+
+struct Scene_picked_object_get_picked_nodes_data
+{
+	struct LIST(FE_node) *node_list;
+	/* manager that nodes must be in to add to list */
+	struct MANAGER(FE_node) *node_manager;
+	/* flag indicating that the above manager is actually the data manager */
+	int data_manager;
+};
+
+static int Scene_picked_object_get_picked_nodes(
+	struct Scene_picked_object *scene_picked_object,void *picked_nodes_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 April 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to a node and the node is in the given
+manager, ensures it is in the list.
+==============================================================================*/
+{
+	enum GT_element_settings_type settings_type;
+	int node_number,return_code;
+	struct FE_node *node;
+	struct Scene_object *scene_object;
+	struct Scene_picked_object_get_picked_nodes_data *picked_nodes_data;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *gt_element_settings;
+
+	ENTER(Scene_picked_object_get_picked_nodes);
+	if (scene_picked_object&&(picked_nodes_data=
+		(struct Scene_picked_object_get_picked_nodes_data	*)picked_nodes_data_void))
+	{
+		return_code=1;
+		/* is the last scene_object a Graphical_element wrapper, and does the
+			 settings for the graphic refer to node_points? */
+		if ((scene_object=Scene_picked_object_get_Scene_object(
+			scene_picked_object,
+			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
+			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
+				Scene_object_get_type(scene_object))&&(gt_element_group=
+					Scene_object_get_graphical_element_group(scene_object))&&
+			(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+			(gt_element_settings=get_settings_at_position_in_GT_element_group(
+				gt_element_group,
+				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
+			(((GT_ELEMENT_SETTINGS_NODE_POINTS==
+				(settings_type=
+					GT_element_settings_get_settings_type(gt_element_settings)))&&
+				(!(picked_nodes_data->data_manager)))||
+				((GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)&&
+					picked_nodes_data->data_manager)))
+		{
+			node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
+			if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
+				node_number,picked_nodes_data->node_manager))
+			{
+				return_code=ensure_FE_node_is_in_list(node,
+					(void *)(picked_nodes_data->node_list));
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"Scene_picked_object_get_picked_nodes.  "
+					"Node number %d not in manager",node_number);
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_picked_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_picked_nodes */
 
 /*
 Global functions
@@ -2790,6 +2887,43 @@ Returns the Scene_object_type of <scene_object>.
 	return (scene_object_type);
 } /* Scene_object_get_type */
 
+int Scene_object_has_data_group(struct Scene_object *scene_object,
+	void *data_group_void)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+Scene_object iterator function returning true if <scene_object> contains a
+g_ELEMENT_GROUP gt_object referencing the given data_group.
+==============================================================================*/
+{
+	int return_code;
+	struct GROUP(FE_node) *data_group;
+
+	ENTER(Scene_object_has_data_group);
+	if (scene_object&&(data_group=(struct GROUP(FE_node) *)data_group_void))
+	{
+		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==scene_object->type)
+		{
+			return_code=(data_group==
+				GT_element_group_get_data_group(scene_object->gt_element_group));
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_has_data_group.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_has_data_group */
+
 int Scene_object_has_element_group(struct Scene_object *scene_object,
 	void *element_group_void)
 /*******************************************************************************
@@ -2827,6 +2961,43 @@ g_ELEMENT_GROUP gt_object referencing the given element_group.
 
 	return (return_code);
 } /* Scene_object_has_element_group */
+
+int Scene_object_has_node_group(struct Scene_object *scene_object,
+	void *node_group_void)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+Scene_object iterator function returning true if <scene_object> contains a
+g_ELEMENT_GROUP gt_object referencing the given node_group.
+==============================================================================*/
+{
+	int return_code;
+	struct GROUP(FE_node) *node_group;
+
+	ENTER(Scene_object_has_node_group);
+	if (scene_object&&(node_group=(struct GROUP(FE_node) *)node_group_void))
+	{
+		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==scene_object->type)
+		{
+			return_code=(node_group==
+				GT_element_group_get_node_group(scene_object->gt_element_group));
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_has_node_group.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_has_node_group */
 
 int Scene_object_has_graphical_element_group(struct Scene_object *scene_object,
 	void *gt_element_group_void)
@@ -3369,7 +3540,7 @@ as a command, using the given <command_prefix>.
 
 struct Scene *CREATE(Scene)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Scene now has pointer to its scene_manager, and it uses manager modify
@@ -3406,8 +3577,11 @@ from the default versions of these functions.
 			/* defaults to not adding GFEs - besides, need managers anyway */
 			scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
 			/* global stores of selected objects */
+			scene->element_point_ranges_selection=
+				(struct Element_point_ranges_selection *)NULL;
 			scene->element_selection=(struct FE_element_selection *)NULL;
 			scene->node_selection=(struct FE_node_selection *)NULL;
+			scene->data_selection=(struct FE_node_selection *)NULL;
 			/* axes created once graphics enabled */
 			scene->axis_object=(struct GT_object *)NULL;
 			/* attributes: */
@@ -3463,7 +3637,7 @@ from the default versions of these functions.
 
 int DESTROY(Scene)(struct Scene **scene_address)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Closes the scene and disposes of the scene data structure.
@@ -3491,6 +3665,7 @@ Closes the scene and disposes of the scene data structure.
 				(struct MANAGER(GROUP(FE_node)) *)NULL,
 				(struct Element_point_ranges_selection *)NULL,
 				(struct FE_element_selection *)NULL,
+				(struct FE_node_selection *)NULL,
 				(struct FE_node_selection *)NULL,
 				(struct User_interface *)NULL);
 			Scene_disable_graphics(scene);
@@ -3867,9 +4042,10 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -3887,7 +4063,7 @@ material and spectrum.
 		computed_field_package&&element_manager&&element_group_manager&&
 		fe_field_manager&&node_manager&&node_group_manager&&data_manager&&
 		data_group_manager&&element_point_ranges_selection&&element_selection&&
-		node_selection)))
+		node_selection&&data_selection)))
 	{
 		return_code=1;
 		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
@@ -3919,6 +4095,7 @@ material and spectrum.
 				(struct Element_point_ranges_selection *)NULL;
 			scene->element_selection=(struct FE_element_selection *)NULL;
 			scene->node_selection=(struct FE_node_selection *)NULL;
+			scene->data_selection=(struct FE_node_selection *)NULL;
 			scene->user_interface=(struct User_interface *)NULL;
 		}
 		else
@@ -3952,6 +4129,7 @@ material and spectrum.
 							element_point_ranges_selection;
 						scene->element_selection=element_selection;
 						scene->node_selection=node_selection;
+						scene->data_selection=data_selection;
 						scene->user_interface=user_interface;
 						if (GRAPHICAL_ELEMENT_MANUAL != graphical_element_mode)
 						{
@@ -4101,7 +4279,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			source->node_manager,source->node_group_manager,
 			source->data_manager,source->data_group_manager,
 			source->element_point_ranges_selection,
-			source->element_selection,source->node_selection,
+			source->element_selection,source->node_selection,source->data_selection,
 			source->user_interface);
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
@@ -4269,17 +4447,19 @@ it. For example, rendervrml.c needs to output all the window objects in a scene.
 	return (return_code);
 } /* for_each_Scene_object_in_Scene */
 
-struct Scene_object *Scene_get_first_scene_object_that(struct Scene *scene,
-	LIST_CONDITIONAL_FUNCTION(Scene_object) *conditional_function,void *user_data)
+struct Scene_object *first_Scene_object_in_Scene_that(struct Scene *scene,
+	LIST_CONDITIONAL_FUNCTION(Scene_object) *conditional_function,
+	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
+Wrapper for FIRST_OBJECT_IN_LIST_THAT function for Scene_object.
 ==============================================================================*/
 {
 	struct Scene_object *return_object;
 
-	ENTER(Scene_get_first_scene_object_that);
+	ENTER(first_Scene_object_in_Scene_that);
 	if (scene)
 	{
 		return_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(conditional_function,
@@ -4288,13 +4468,13 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_get_first_scene_object_that.  Missing scene");
+			"first_Scene_object_in_Scene_that.  Missing scene");
 		return_object=(struct Scene_object *)NULL;
 	}
 	LEAVE;
 
 	return (return_object);
-} /* Scene_get_first_scene_object_that */
+} /* first_Scene_object_in_Scene_that */
 
 struct Scene_picked_object *CREATE(Scene_picked_object)(int hit_no)
 /*******************************************************************************
@@ -4932,18 +5112,21 @@ calling function.
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct MANAGER(FE_node) *node_manager,struct GROUP(FE_node) *node_group,
+	struct MANAGER(FE_node) *node_manager,int data_manager,
+	struct GROUP(FE_node) *node_group,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Returns the nearest picked node in <scene_picked_object_list> that is in
 <node_group> (or any group if NULL). If any of the remaining address arguments
 are not NULL, they are filled with the appropriate information pertaining to
 the nearest node.
+The <data_manager> flag indicates that the node_manager is in fact the
+data_manager - needed since different settings type used for each.
 ==============================================================================*/
 {
 	struct Scene_picked_object_get_nearest_node_data nearest_node_data;
@@ -4952,6 +5135,7 @@ the nearest node.
 	nearest_node_data.nearest=0;
 	nearest_node_data.nearest_node=(struct FE_node *)NULL;
 	nearest_node_data.node_manager=node_manager;
+	nearest_node_data.data_manager=data_manager;
 	nearest_node_data.node_group=node_group;
 	nearest_node_data.scene_picked_object=(struct Scene_picked_object *)NULL;
 	nearest_node_data.gt_element_group=(struct GT_element_group *)NULL;
@@ -4983,6 +5167,49 @@ the nearest node.
 
 	return (nearest_node_data.nearest_node);
 } /* Scene_picked_object_list_get_nearest_node */
+
+struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct MANAGER(FE_node) *node_manager,int data_manager)
+/*******************************************************************************
+LAST MODIFIED : 28 April 2000
+
+DESCRIPTION :
+Returns the list of all nodes in the <scene_picked_object_list> in the
+<node_manager>. 
+The <data_manager> flag indicates that the node_manager is in fact the
+data_manager - needed since different settings type used for each.
+==============================================================================*/
+{
+	struct Scene_picked_object_get_picked_nodes_data picked_nodes_data;
+
+	ENTER(Scene_picked_object_list_get_picked_nodes);
+	if (scene_picked_object_list&&node_manager)
+	{	
+		picked_nodes_data.node_manager=node_manager;
+		picked_nodes_data.data_manager=data_manager;
+		if (picked_nodes_data.node_list=CREATE(LIST(FE_node))())
+		{
+			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+				Scene_picked_object_get_picked_nodes,(void *)&picked_nodes_data,
+				scene_picked_object_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_picked_object_list_get_picked_nodes.  Invalid argument(s)");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_picked_nodes.  Invalid argument(s)");
+		picked_nodes_data.node_list=(struct LIST(FE_node) *)NULL;
+	}
+	LEAVE;
+
+	return (picked_nodes_data.node_list);
+} /* Scene_picked_object_list_get_picked_nodes */
 
 int Scene_get_input_callback(struct Scene *scene,
 	struct Scene_input_callback *scene_input_callback)
@@ -5043,6 +5270,7 @@ that that function wants to receive.
 	return (return_code);
 } /* Scene_set_input_callback */
 
+#if defined (OLD_CODE)
 int Scene_input(struct Scene *scene,enum Scene_input_type input_type,
 	int button_number,int input_modifier,double viewx,double viewy,double viewz,
 	double nearx,double neary,double nearz,double farx,double fary,double farz,
@@ -5199,6 +5427,175 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 
 	return (return_code);
 } /* Scene_input */
+#endif /* defined (OLD_CODE) */
+
+struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
+	struct Interaction_volume *interaction_volume)
+/*******************************************************************************
+LAST MODIFIED : 1 May 2000
+
+DESCRIPTION :
+Returns a list of all the graphical entities in the <interaction_volume> of
+<scene>. The nearest member of each scene_picked_object will be adjusted as
+understood for the type of <interaction_volume> passed.
+==============================================================================*/
+{
+	double depth,modelview_matrix[16],normalised_z,projection_matrix[16];
+	GLdouble opengl_modelview_matrix[16],opengl_projection_matrix[16];
+	GLuint *select_buffer,*select_buffer_ptr;
+	int hit_no,i,j,num_hits,number_of_names,return_code,scene_object_no;
+	struct LIST(Scene_picked_object) *scene_picked_object_list;
+	struct Scene_picked_object *scene_picked_object;
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_pick_objects);
+	scene_picked_object_list=(struct LIST(Scene_picked_object) *)NULL;
+	if (scene&&interaction_volume)
+	{
+		if (scene_picked_object_list=CREATE(LIST(Scene_picked_object))())
+		{
+			if (X3dThreeDDrawingGetCurrent()&&compile_Scene(scene))
+			{
+				select_buffer=(GLuint *)NULL;
+				num_hits=-1;
+				while (0>num_hits)
+				{
+					if (ALLOCATE(select_buffer,GLuint,select_buffer_size))
+					{
+						select_buffer_ptr=select_buffer;
+						Interaction_volume_get_modelview_matrix(interaction_volume,
+							modelview_matrix);
+						Interaction_volume_get_projection_matrix(interaction_volume,
+							projection_matrix);
+						/* transpose projection matrix for OpenGL */
+						for (i=0;i<4;i++)
+						{
+							for (j=0;j<4;j++)
+							{
+								opengl_modelview_matrix[j*4+i] = modelview_matrix[i*4+j];
+								opengl_projection_matrix[j*4+i] = projection_matrix[i*4+j];
+							}
+						}
+						glSelectBuffer(select_buffer_size,select_buffer);
+						glRenderMode(GL_SELECT);
+						glMatrixMode(GL_PROJECTION);
+						glLoadIdentity();
+						glMultMatrixd(opengl_projection_matrix);
+						glMatrixMode(GL_MODELVIEW);
+						glLoadIdentity();
+						glMultMatrixd(opengl_modelview_matrix);
+						/* set an arbitrary viewport - not really needed */
+						glViewport(0,0,1024,1024);
+						glDepthRange((GLclampd)0,(GLclampd)1);
+						execute_Scene(scene);
+						glFlush();
+						num_hits=glRenderMode(GL_RENDER);
+						if (0<=num_hits)
+						{
+							return_code=1;
+							for (hit_no=0;(hit_no<num_hits)&&return_code;hit_no++)
+							{
+								if (scene_picked_object=CREATE(Scene_picked_object)(hit_no))
+								{
+									number_of_names=(int)(*select_buffer_ptr);
+									select_buffer_ptr++;
+									/* get range of depth of picked object */
+									depth=(double)(*select_buffer_ptr);
+									normalised_z=2.0*depth - 1.0;
+									Scene_picked_object_set_nearest(scene_picked_object,
+										Interaction_volume_get_closeness_from_normalised_z(
+											interaction_volume,normalised_z));
+									select_buffer_ptr++;
+									depth=(double)(*select_buffer_ptr);
+									normalised_z=2.0*depth - 1.0;
+									Scene_picked_object_set_farthest(scene_picked_object,
+										Interaction_volume_get_closeness_from_normalised_z(
+											interaction_volume,normalised_z));
+									select_buffer_ptr++;
+									/* first part of names identifies list of scene_objects in
+										 path to picked graphic. Must be at least one; only more
+										 that one if contains child_scene */
+									do
+									{
+										scene_object_no=(int)(*select_buffer_ptr);
+										select_buffer_ptr++;
+										number_of_names--;
+										if (scene_object=FIND_BY_IDENTIFIER_IN_LIST(Scene_object,
+											position)(scene_object_no,scene->scene_object_list))
+										{
+											return_code=Scene_picked_object_add_Scene_object(
+												scene_picked_object,scene_object);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"Scene_pick_objects.  No scene object at position %d",
+												scene_object_no);
+											return_code=0;
+										}
+									}
+									while (return_code&&(SCENE_OBJECT_SCENE==scene_object->type));
+									if (return_code)
+									{
+										for (;0<number_of_names&&return_code;number_of_names--)
+										{
+											return_code=Scene_picked_object_add_subobject(
+												scene_picked_object,(int)(*select_buffer_ptr));
+											select_buffer_ptr++;
+										}
+									}
+									if (return_code)
+									{
+										if (!ADD_OBJECT_TO_LIST(Scene_picked_object)(
+											scene_picked_object,scene_picked_object_list))
+										{
+											return_code=0;
+										}
+									}
+									if (!return_code)
+									{
+										display_message(ERROR_MESSAGE,"Scene_pick_objects.  "
+											"Failed to build Scene_picked_object");
+										DESTROY(Scene_picked_object)(&scene_picked_object);
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,"Scene_pick_objects.  "
+										"Could not create Scene_picked_object");
+									return_code=0;
+								}
+							}
+						}
+						else
+						{
+							/* select buffer overflow; enlarge and repeat */
+							select_buffer_size += SELECT_BUFFER_SIZE_INCREMENT;
+						}
+						DEALLOCATE(select_buffer);
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_pick_objects.  No current X3d drawing widget");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_pick_objects.  Could not create picked object list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_pick_objects.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (scene_picked_object_list);
+} /* Scene_pick_objects */
 
 int Scene_add_light(struct Scene *scene,struct Light *light)
 /*******************************************************************************
@@ -5647,7 +6044,7 @@ Removes <child_scene> from the list of scenes in <scene>.
 int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,char *scene_object_name)
 /*******************************************************************************
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings
@@ -5713,7 +6110,8 @@ the same element group to be added twice.
 							scene->computed_field_package,
 							scene->element_point_ranges_selection,
 							scene->element_selection,
-							scene->node_selection))
+							scene->node_selection,
+							scene->data_selection))
 						{
 							if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 								Scene_object_has_name, (void *)scene_object_name,
@@ -7396,6 +7794,7 @@ Parser commands for modifying scenes - lighting, etc.
 								modify_scene_data->element_point_ranges_selection,
 								modify_scene_data->element_selection,
 								modify_scene_data->node_selection,
+								modify_scene_data->data_selection,
 								modify_scene_data->user_interface);
 							scene_changed=1;
 						}
