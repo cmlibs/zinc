@@ -39,6 +39,7 @@ cmgui-console : USER_INTERFACE=USER_INTERFACE=CONSOLE_USER_INTERFACE
 cmgui-gtk : USER_INTERFACE=USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities: TARGET=utilities
+utilities: force
 
 cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
 	cd source ; \
@@ -118,3 +119,5 @@ cronjob:
 	fi
 #This mail is added into the example mail.
 
+force :
+	@echo "\n" > /dev/null

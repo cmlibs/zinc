@@ -31,13 +31,14 @@ unemap-debug :
 
 unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug : USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
 unemap unemap-nodes unemap-3d unemap64 : DEBUG=DEBUG=false
-unemap-debug unemap-3d-debug unemap64-debug : DEBUG=DEBUG=true
+unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG=DEBUG=true
 unemap64 unemap64-debug : ABI=ABI=64
 unemap-debug-memorycheck : MEMORYCHECK=MEMORYCHECK=true
 unemap-nodes : USE_UNEMAP_NODES=USE_UNEMAP_NODES=true
 unemap-nodes unemap-3d : USE_UNEMAP_3D=USE_UNEMAP_3D=true
 
 utilities: TARGET=utilities
+utilities: force
 
 unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug utilities :
 	cd source ; \
@@ -86,19 +87,17 @@ depend: update_sources
 cronjob:
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
-		cvs update ; \
-		echo -n > $(MAILFILE_PATH)/programmer.mail ; \
+		echo -n > $(MAILFILE_PATH)/unemap_programmer.mail ; \
 		if ! $(MAKE) -f $(MAKEFILE) depend; then \
-			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
+			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/unemap_programmer.mail ; \
 		fi ; \
 		if ! $(MAKE) -f $(MAKEFILE) update; then \
-			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
-		fi ; \
-		if [ -s $(TEST_PATH)/all.mail ]; then \
-			cat $(TEST_PATH)/all.mail >> $(MAILFILE_PATH)/programmer.mail ; \
+			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/unemap_programmer.mail ; \
 		fi ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
 #This mail is added into the example mail.
 
+force :
+	@echo "\n" > /dev/null
