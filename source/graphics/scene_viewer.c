@@ -5686,7 +5686,9 @@ so should not be modified or deallocated.
 		*opengl_vendor=(char *)glGetString(GL_VENDOR);
 		*opengl_extensions=(char *)glGetString(GL_EXTENSIONS);
 
+#if defined (DEBUG)
 		printf("%s\n", *opengl_extensions);
+#endif /* defined (DEBUG) */
 
 		Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer, visual_id);
 		Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
