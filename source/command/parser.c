@@ -1323,7 +1323,7 @@ If fails, marks the option_table as invalid.
 int Option_table_add_suboption_table(struct Option_table *option_table,
 	struct Option_table *suboption_table)
 /*******************************************************************************
-LAST MODIFIED : 23 December 1999
+LAST MODIFIED : 8 November 2000
 
 DESCRIPTION :
 Checks that <suboption_table> is valid, and if so, adds it to <option_table>.
@@ -1377,6 +1377,7 @@ of option_table!
 			display_message(ERROR_MESSAGE,
 				"Option_table_parse.  Invalid suboption_table");
 			option_table->valid=0;
+			DESTROY(Option_table)(&suboption_table);
 			return_code=0;
 		}
 	}
