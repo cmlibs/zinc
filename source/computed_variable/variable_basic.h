@@ -27,7 +27,7 @@ class Variable_scalar : public Variable
 		Variable_scalar(const string& name,const Scalar value);
 		Variable_scalar(const char *name,const Scalar value);
 		// destructor
-		Variable_scalar::~Variable_scalar();
+		~Variable_scalar();
 	private:
 		Variable *evaluate_local();
 		int get_set_input_value_local(Variable_input_value & input_value);
