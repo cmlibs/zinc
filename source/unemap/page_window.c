@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 23 September 2000
 
 DESCRIPTION :
 
@@ -2232,7 +2232,7 @@ DESCRIPTION :
 
 static int show_display_gain(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 2 August 1999
+LAST MODIFIED : 23 September 2000
 
 DESCRIPTION :
 Writes the gain for the current channel into the gain field.
@@ -2246,27 +2246,30 @@ Writes the gain for the current channel into the gain field.
 	return_code=0;
 	if (page_window)
 	{
+		return_code=1;
 		if ((page_window->display_device)&&(page_window->display_device->channel))
 		{
-			return_code=0;
 			unemap_get_gain(page_window->display_device->channel->number,
 				&pre_filter_gain,&post_filter_gain);
 			sprintf(number_string,"%g",pre_filter_gain*post_filter_gain);
 #if defined (MOTIF)
 			XtVaSetValues((page_window->gain).value,XmNvalue,number_string,NULL);
+			XtSetSensitive((page_window->gain).value,True);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 			Edit_SetText((page_window->gain).edit,number_string);
+			EnableWindow((page_window->gain).edit,TRUE);
 #endif /* defined (WINDOWS) */
 		}
 		else
 		{
-			/*???DB.  Change sensitivity ? */
 #if defined (MOTIF)
 			XtVaSetValues((page_window->gain).value,XmNvalue," ",NULL);
+			XtSetSensitive((page_window->gain).value,False);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 			Edit_SetText((page_window->gain).edit," ");
+			EnableWindow((page_window->gain).edit,FALSE);
 #endif /* defined (WINDOWS) */
 		}
 	}
@@ -2770,7 +2773,7 @@ Motif wrapper for update_display_minimum.
 
 static int update_display_device(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 10 April 2000
+LAST MODIFIED : 23 September 2000
 
 DESCRIPTION :
 Reads the string in the channel field of the <page_window> and updates the
@@ -2809,8 +2812,9 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 				number_of_devices=(*(page_window->rig_address))->number_of_devices;
 				for (i=0;i<number_of_devices;i++)
 				{
-					if ((*device_address)&&((*device_address)->signal)&&
+					if ((*device_address)&&
 #if defined (OLD_CODE)
+						((*device_address)->signal)&&
 						((*device_address)->channel)&&
 						(0<(*device_address)->channel->number)&&
 #if defined (WINDOWS)
