@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 11 April 2002
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Utilities for handling images.
@@ -6286,7 +6286,7 @@ struct Cmgui_image *Cmgui_image_constitute(int width, int height,
 	int number_of_components, int number_of_bytes_per_component,
 	int source_width_bytes, unsigned char *source_pixels)
 /*******************************************************************************
-LAST MODIFIED : 11 April 2002
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Creates a single Cmgui_image of the specified <width>, <height> with
@@ -6308,6 +6308,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 	unsigned short short_value[4];
 #else /* defined (IMAGEMAGICK) */
 	unsigned char *destination, *image, *source;
+	int width_bytes;
 #endif /* defined (IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_constitute);
