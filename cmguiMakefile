@@ -7,9 +7,10 @@ MAILFILE_PATH=mailfiles
 #Build defaults
 USER_INTERFACE=MOTIF_USER_INTERFACE
 DYNAMIC_GL_LINUX=false
-OPT=false
+DEBUG=true
+ABI=32
 
-PROPOGATE_VARIABLES = USER_INTERFACE=$(USER_INTERFACE) OPT=$(OPT) DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX)
+PROPOGATE_VARIABLES = USER_INTERFACE=$(USER_INTERFACE) OPT=$(OPT) DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX) ABI=$(ABI)
 
 ifdef CMISS_ROOT
    CMISS_ROOT_DEFINED = true
@@ -29,14 +30,15 @@ endif # CMISS_ROOT_DEFINED
 #Developers default
 cmgui-debug :
 
-cmgui cmgui-debug cmgui-dynamic cmgui-debug-dynamic: USER_INTERFACE=MOTIF_USER_INTERFACE
-cmgui-dynamic cmgui-debug-dynamic: DYNAMIC_GL_LINUX=true
-cmgui cmgui-dynamic : OPT=true
-cmgui-debug cmgui-debug-dynamic: OPT=false
+cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
+cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=true
+cmgui cmgui-dynamicgl cmgui64 : DEBUG=false
+cmgui-debug cmgui-dynamicgl-debug : DEBUG=true
+cmgui64 cmgui64-debug : ABI=64
 
 utilities: TARGET=utilities
 
-cmgui cmgui-debug cmgui-dynamic cmgui-debug-dynamic utilities :
+cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug utilities :
 	cd source ; \
 	$(MAKE) -f $(MAKEFILE) $(TARGET) $(PROPOGATE_VARIABLES) ;
 
