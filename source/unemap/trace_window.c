@@ -321,13 +321,53 @@ Saves the id of the trace event detection button in the analysis mode menu.
 	LEAVE;
 } /* identify_event_detection_button */
 
+static void reset_trace_window_after_cross_correlation(struct Trace_window *trace)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2001
+
+DESCRIPTION :  Reset dimensions of things in the trace window after it has been 
+set to cross correlation. This is necessary as  CROSS_CORRELATION 
+(and ELECTRICAL_IMAGING)  displays trace->area_2.pane, but other 
+trace->analysis_mode types don't.
+==============================================================================*/
+{
+	Dimension paned_window_height;
+
+	ENTER(reset_trace_window_after_cross_correlation);
+	if(trace)
+	{	
+		/* unmanage pane2 as it's not used */
+		XtUnmanageChild(trace->area_2.pane);
+		/* unmanage pane3 so it'll be resized when it's remanaged*/
+		XtUnmanageChild(trace->area_3.pane);	
+		/*get height of whole paned window*/
+		XtVaGetValues(trace->paned_window,XmNheight,&paned_window_height,NULL);
+		/* manage and unmanage things that are/aren't used*/	
+		/* unmanage pane1 so can adjust it's height*/	
+		XtUnmanageChild(trace->area_1.pane);
+		/* adust height to 36% of paned_window, as when created in create_Trace_window*/
+		XtVaSetValues(trace->area_1.pane,
+			XmNheight,paned_window_height*9/25,NULL);										
+		/* remanage panes*/
+		XtManageChild(trace->area_3.pane);
+		XtManageChild(trace->area_1.pane);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"reset_trace_window_after_cross_correlation.  Missing trace_window");
+	}
+	LEAVE;
+}/*reset_trace_window_after_cross_correlation */
+
 static void reset_trace_window_after_eimaging(struct Trace_window *trace)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2001
 
 DESCRIPTION : Reset dimensions of things in the trace window after it has been 
-set to electrical imaging. This is necessary as eimaging displays
-trace->area_2.pane, but other trace->analysis_mode types don't.
+set to electrical imaging. This is necessary as ELECTRICAL_IMAGING 
+(and CROSS_CORRELATION) displays trace->area_2.pane, but other 
+trace->analysis_mode types don't.
 ==============================================================================*/
 {
 	Dimension paned_window_height;
@@ -412,12 +452,15 @@ Sets the analysis mode to event detection.
 				case POWER_SPECTRA:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_3.power_spectra.menu);
 				} break;
 				case CROSS_CORRELATION:
 				{
-					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
-					XtUnmanageChild(trace->area_2.pane);
+					reset_trace_window_after_cross_correlation(trace);
+					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);				
 					XtUnmanageChild(trace->area_3.correlation.menu);
 				} break;
 				case AUTO_CORRELATION:
@@ -427,11 +470,17 @@ Sets the analysis mode to event detection.
 				case FILTERING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_3.filtering.menu);
 				} break;
 				case BEAT_AVERAGING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_1.beat_averaging.menu);
 					XtUnmanageChild(trace->area_3.beat_averaging.menu);
 				} break;
@@ -524,15 +573,18 @@ Sets the analysis mode to frequency domain.
 				case POWER_SPECTRA:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_3.power_spectra.menu);
 				} break;
 				case CROSS_CORRELATION:
 				{
+					reset_trace_window_after_cross_correlation(trace);
 					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_FORM,
-						NULL);
-					XtUnmanageChild(trace->area_2.pane);
+						NULL);					
 					XtUnmanageChild(trace->area_3.correlation.menu);
 				} break;
 				case AUTO_CORRELATION:
@@ -542,11 +594,17 @@ Sets the analysis mode to frequency domain.
 				case FILTERING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_3.filtering.menu);
 				} break;
 				case BEAT_AVERAGING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_FORM,
 						NULL);
@@ -624,6 +682,9 @@ Sets the analysis mode to power spectra.
 					reset_trace_window_after_eimaging(trace);					
 					XtUnmanageChild(trace->area_3.edit.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case EVENT_DETECTION:
 				{
@@ -633,26 +694,38 @@ Sets the analysis mode to power spectra.
 						NULL);
 					XtUnmanageChild(trace->area_3.edit.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case FREQUENCY_DOMAIN:
 				{
 					XtUnmanageChild(trace->area_3.frequency_domain.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case CROSS_CORRELATION:
 				{
+					reset_trace_window_after_cross_correlation(trace);
 					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_FORM,
-						NULL);
-					XtUnmanageChild(trace->area_2.pane);
+						NULL);				
 					XtUnmanageChild(trace->area_3.correlation.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case AUTO_CORRELATION:
 				{
 					XtUnmanageChild(trace->area_3.correlation.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case FILTERING:
 				{
@@ -723,7 +796,8 @@ LAST MODIFIED : 16 April 2000
 DESCRIPTION :
 Sets the analysis mode to cross correlation.
 ==============================================================================*/
-{
+{	
+	Dimension paned_window_height;
 	struct Trace_window *trace;
 
 	ENTER(set_analysis_cross_correlation);
@@ -780,6 +854,9 @@ Sets the analysis mode to cross correlation.
 				case POWER_SPECTRA:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_WIDGET,
 						XmNtopWidget,trace->area_1.correlation_time_domain.menu,
@@ -802,6 +879,9 @@ Sets the analysis mode to cross correlation.
 				case FILTERING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_WIDGET,
 						XmNtopWidget,trace->area_1.correlation_time_domain.menu,
@@ -816,6 +896,9 @@ Sets the analysis mode to cross correlation.
 				case BEAT_AVERAGING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_1.beat_averaging.menu);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopWidget,trace->area_1.correlation_time_domain.menu,
@@ -830,11 +913,26 @@ Sets the analysis mode to cross correlation.
 			}
 			/* set cross correlation mode */
 			trace->analysis_mode=CROSS_CORRELATION;
-			trace->valid_processing=0;
-			XtManageChild(trace->area_2.pane);
+			trace->valid_processing=0;	
 			XtVaSetValues(trace->area_3.correlation.label,
 				XmNlabelString,cross_correlation_string,
 				NULL);
+			/*get value to resize things from*/		
+			XtVaGetValues(trace->paned_window,XmNheight,&paned_window_height,NULL);	
+			/* unmanage areas 1 and 3 for resizing (2 already unmanaged)*/
+			XtUnmanageChild(trace->area_3.pane);
+			XtUnmanageChild(trace->area_1.pane);			
+			/*set the height of  panes */			
+			XtVaSetValues(trace->area_1.pane,
+							XmNheight,paned_window_height*1/3,NULL);	
+			XtVaSetValues(trace->area_2.pane,
+					XmNheight,paned_window_height*1/3,NULL);
+			XtVaSetValues(trace->area_3.pane,
+					XmNheight,paned_window_height*1/3,NULL);
+			/* order of re managing is important!*/				
+			XtManageChild(trace->area_2.pane);
+			XtManageChild(trace->area_1.pane);	
+			XtManageChild(trace->area_3.pane);
 			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);
 			redraw_trace_2_drawing_area((Widget)NULL,(XtPointer)trace,
@@ -912,12 +1010,15 @@ Sets the analysis mode to electrical imaging.
 				case POWER_SPECTRA:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_3.power_spectra.menu);
 				} break;
 				case CROSS_CORRELATION:
 				{
-					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
-					XtUnmanageChild(trace->area_2.pane);
+					reset_trace_window_after_cross_correlation(trace);
+					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);				
 					XtUnmanageChild(trace->area_3.correlation.menu);
 				} break;
 				case AUTO_CORRELATION:
@@ -927,11 +1028,17 @@ Sets the analysis mode to electrical imaging.
 				case FILTERING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);	
 					XtUnmanageChild(trace->area_3.filtering.menu);
 				} break;
 				case BEAT_AVERAGING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_1.beat_averaging.menu);
 					XtUnmanageChild(trace->area_3.beat_averaging.menu);
 				} break;
@@ -1079,15 +1186,18 @@ Sets the analysis mode to auto correlation.
 				} break;
 				case CROSS_CORRELATION:
 				{
+					reset_trace_window_after_cross_correlation(trace);
 					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_FORM,
-						NULL);
-					XtUnmanageChild(trace->area_2.pane);
+						NULL);				
 				} break;
 				case FILTERING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_3.filtering.menu);
 					XtVaSetValues(trace->area_3.drawing_area,
 						XmNtopWidget,trace->area_3.correlation.menu,
@@ -1097,6 +1207,9 @@ Sets the analysis mode to auto correlation.
 				case BEAT_AVERAGING:
 				{
 					XtUnmanageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.analysis_mode_choice,
+						NULL);
 					XtUnmanageChild(trace->area_1.beat_averaging.menu);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_FORM,
@@ -1186,6 +1299,9 @@ Sets the analysis mode to filtering.
 						NULL);
 					XtManageChild(trace->area_3.filtering.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case EVENT_DETECTION:
 				{
@@ -1199,6 +1315,9 @@ Sets the analysis mode to filtering.
 						NULL);
 					XtManageChild(trace->area_3.filtering.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case FREQUENCY_DOMAIN:
 				{
@@ -1208,6 +1327,9 @@ Sets the analysis mode to filtering.
 						NULL);
 					XtManageChild(trace->area_3.filtering.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case POWER_SPECTRA:
 				{
@@ -1219,17 +1341,20 @@ Sets the analysis mode to filtering.
 				} break;
 				case CROSS_CORRELATION:
 				{
+					reset_trace_window_after_cross_correlation(trace);
 					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopAttachment,XmATTACH_FORM,
-						NULL);
-					XtUnmanageChild(trace->area_2.pane);
+						NULL);				
 					XtUnmanageChild(trace->area_3.correlation.menu);
 					XtVaSetValues(trace->area_3.drawing_area,
 						XmNtopWidget,trace->area_3.filtering.menu,
 						NULL);
 					XtManageChild(trace->area_3.filtering.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case AUTO_CORRELATION:
 				{
@@ -1239,6 +1364,9 @@ Sets the analysis mode to filtering.
 						NULL);
 					XtManageChild(trace->area_3.filtering.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case BEAT_AVERAGING:
 				{
@@ -1333,6 +1461,9 @@ Sets the analysis mode to beat averaging.
 						NULL);
 					XtManageChild(trace->area_3.beat_averaging.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case EVENT_DETECTION:
 				{
@@ -1347,6 +1478,9 @@ Sets the analysis mode to beat averaging.
 						NULL);
 					XtManageChild(trace->area_3.beat_averaging.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case FREQUENCY_DOMAIN:
 				{
@@ -1361,6 +1495,9 @@ Sets the analysis mode to beat averaging.
 						NULL);
 					XtManageChild(trace->area_3.beat_averaging.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case POWER_SPECTRA:
 				{
@@ -1377,18 +1514,21 @@ Sets the analysis mode to beat averaging.
 				} break;
 				case CROSS_CORRELATION:
 				{
+					reset_trace_window_after_cross_correlation(trace);
 					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 					XtVaSetValues(trace->area_1.drawing_area,
 						XmNtopWidget,trace->area_1.beat_averaging.menu,
 						NULL);
-					XtManageChild(trace->area_1.beat_averaging.menu);
-					XtUnmanageChild(trace->area_2.pane);
+					XtManageChild(trace->area_1.beat_averaging.menu);				
 					XtUnmanageChild(trace->area_3.correlation.menu);
 					XtVaSetValues(trace->area_3.drawing_area,
 						XmNtopWidget,trace->area_3.beat_averaging.menu,
 						NULL);
 					XtManageChild(trace->area_3.beat_averaging.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case AUTO_CORRELATION:
 				{
@@ -1403,6 +1543,9 @@ Sets the analysis mode to beat averaging.
 						NULL);
 					XtManageChild(trace->area_3.beat_averaging.menu);
 					XtManageChild(trace->menu.apply_button);
+					XtVaSetValues(trace->menu.average_width,
+						XmNleftWidget,trace->menu.apply_button,
+						NULL);
 				} break;
 				case FILTERING:
 				{
@@ -3087,7 +3230,7 @@ Saves the id of the trace enlarge level value.
 	LEAVE;
 } /* identify_trace_enlarge_level_va */
 
-static void identify_trace_enlarge_averagew(Widget *widget_id,
+static void id_trace_average_width_txt(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 22 February 2000
@@ -3098,19 +3241,44 @@ Saves the id of the trace enlarge level width.
 {
 	struct Trace_window *trace;
 
-	ENTER(identify_trace_enlarge_averagew);
+	ENTER(id_trace_average_width_txt);
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_1.enlarge.average_width= *widget_id;
+		trace->menu.average_width_txt= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_trace_enlarge_averagew.  Missing trace_window");
+			"id_trace_average_width_txt.  Missing trace_window");
 	}
 	LEAVE;
-} /* identify_trace_enlarge_averagew */
+} /* id_trace_average_width_txt */
+
+static void id_trace_average_width(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 22 February 2000
+
+DESCRIPTION :
+Saves the id of the trace enlarge level width.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_average_width);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->menu.average_width= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_average_width.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_average_width */
 
 static void change_average_width(Widget *widget_id,XtPointer trace_window,
 	XtPointer call_data)
@@ -3137,7 +3305,7 @@ Called when the average width is changed by the level width text field.
 			((trace->event_detection).average_width))
 		{
 			value_string=(char *)NULL;
-			XtVaGetValues(trace->area_1.enlarge.average_width,
+			XtVaGetValues(trace->menu.average_width_txt,
 				XmNvalue,&value_string,
 				NULL);
 			if (1==sscanf(value_string,"%d",&average_width))
@@ -3153,6 +3321,8 @@ Called when the average width is changed by the level width text field.
 						(processed_buffer=processed_device->signal->buffer)&&
 						(processed_device->channel))
 					{
+						if(processed_device->signal->next)
+						{
 						/* calculate objective function */
 						calculate_device_objective(processed_device,
 							*((trace->event_detection).detection),
@@ -3161,6 +3331,7 @@ Called when the average width is changed by the level width text field.
 							(processed_device->signal->next->index),
 							processed_buffer->number_of_samples,
 							processed_buffer->number_of_signals,average_width);
+						}
 						if (True==XmToggleButtonGadgetGetState((trace->area_3).edit.
 							objective_toggle))
 						{
@@ -3182,7 +3353,7 @@ Called when the average width is changed by the level width text field.
 			*((trace->event_detection).average_width)=average_width;
 			XtFree(value_string);
 			sprintf(global_temp_string,"%d",average_width);
-			XtVaSetValues(trace->area_1.enlarge.average_width,
+			XtVaSetValues(trace->menu.average_width_txt,
 				XmNvalue,global_temp_string,
 				NULL);
 		}
@@ -6596,8 +6767,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_enlarge_events_u},
 		{"identify_trace_enlarge_level_va",
 			(XtPointer)identify_trace_enlarge_level_va},
-		{"identify_trace_enlarge_averagew",
-			(XtPointer)identify_trace_enlarge_averagew},
+		{"id_trace_average_width",
+			(XtPointer)id_trace_average_width},
+		{"id_trace_average_width_txt",
+			(XtPointer)id_trace_average_width_txt},
 		{"change_average_width",(XtPointer)change_average_width},
 		{"identify_trace_enlarge_thresh_s",
 			(XtPointer)identify_trace_enlarge_thresh_s},
@@ -6828,6 +7001,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 #else /* defined (SPECTRAL_TOOLS) */
 				trace->analysis_mode=EVENT_DETECTION;
 #endif /* defined (SPECTRAL_TOOLS) */
+				trace->menu.average_width=(Widget)NULL;
+				trace->menu.average_width_txt=(Widget)NULL;
 				trace->menu.analysis_mode_choice=(Widget)NULL;
 				trace->menu.analysis_mode.event_detection_button=(Widget)NULL;
 				trace->menu.analysis_mode.frequency_domain_button=(Widget)NULL;
@@ -6879,8 +7054,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.enlarge.threshold_label=(Widget)NULL;
 				trace->area_1.enlarge.minimum_separation_scroll=(Widget)NULL;
 				trace->area_1.enlarge.minimum_separation_label=(Widget)NULL;
-				trace->area_1.enlarge.level_value=(Widget)NULL;
-				trace->area_1.enlarge.average_width=(Widget)NULL;
+				trace->area_1.enlarge.level_value=(Widget)NULL;							
 				trace->area_1.enlarge.all_current_choice=(Widget)NULL;
 				trace->area_1.enlarge.calculate_all_events=1;
 				trace->area_1.enlarge.all_current.all_button=(Widget)NULL;
@@ -7277,7 +7451,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 #else /* defined (SPECTRAL_TOOLS) */
 									XtUnmanageChild(trace->menu.analysis_mode_choice);
 #endif /* defined (SPECTRAL_TOOLS) */
-									XtUnmanageChild(trace->menu.apply_button);	
+									XtUnmanageChild(trace->menu.apply_button);
+									XtVaSetValues(trace->menu.average_width,
+										XmNleftWidget,trace->menu.analysis_mode_choice,
+										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -7302,6 +7479,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case FREQUENCY_DOMAIN:
 								{
 									XtUnmanageChild(trace->menu.apply_button);
+									XtVaSetValues(trace->menu.average_width,
+										XmNleftWidget,trace->menu.analysis_mode_choice,
+										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
@@ -7345,6 +7525,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case CROSS_CORRELATION:
 								{
 									XtUnmanageChild(trace->menu.apply_button);
+									XtVaSetValues(trace->menu.average_width,
+										XmNleftWidget,trace->menu.analysis_mode_choice,
+										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -7368,6 +7551,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case AUTO_CORRELATION:
 								{
 									XtUnmanageChild(trace->menu.apply_button);
+									XtVaSetValues(trace->menu.average_width,
+										XmNleftWidget,trace->menu.analysis_mode_choice,
+										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
@@ -7760,7 +7946,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								NULL);
 							/* set the level width */
 							sprintf(value_string,"%d",*average_width);
-							XtVaSetValues(trace->area_1.enlarge.average_width,
+							XtVaSetValues(trace->menu.average_width_txt,
 								XmNvalue,value_string,
 								NULL);
 							/* adjust the enlarge datum choice */

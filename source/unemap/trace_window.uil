@@ -103,7 +103,8 @@ procedure
 	identify_trace_enlarge_events_u;
 	increment_number_of_events;
 	identify_trace_enlarge_level_va;
-	identify_trace_enlarge_averagew;
+	id_trace_average_width_txt;
+	id_trace_average_width;
 	change_average_width;
 	identify_trace_enlarge_thresh_s;
 	change_threshold;
@@ -285,6 +286,7 @@ object
 			{
 			XmOptionMenu trace_analysis_mode_choice;
 			XmPushButtonGadget trace_analysis_mode_apply_butto;
+			XmForm trace_average_width;
 			XmPushButtonGadget trace_close_button;
 			};
 		};
@@ -520,6 +522,98 @@ object
 			XmNactivateCallback = procedures
 				{
 				trace_analysis_mode_apply(analysis_work_area_structure);
+				};
+			};
+		};	
+	trace_average_width: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;		
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButtonGadget trace_analysis_mode_apply_butto;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmSeparator trace_average_width_sep;
+			XmLabel trace_average_width_label;
+			XmTextField trace_average_width_txt;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_trace_average_width(trace_window_structure);
+				};
+			};
+		};
+	trace_average_width_sep : XmSeparator
+		{
+		arguments
+			{
+			XmNorientation = XmVERTICAL;
+			XmNleftAttachment = XmATTACH_FORM;		
+			XmNleftOffset = 5;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		};
+	trace_average_width_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+				compound_string("Average width");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmSeparator trace_average_width_sep;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};		
+		};
+	trace_average_width_txt: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel trace_average_width_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_trace_average_width_txt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				change_average_width(trace_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				change_average_width(trace_window_structure);
 				};
 			};
 		};
@@ -1139,7 +1233,6 @@ object
 			XmOptionMenu trace_enlarge_datum_choice;
 			XmForm trace_enlarge_events_number;
 			XmTextField trace_enlarge_level_value;
-			XmTextField trace_enlarge_average_width;
 			XmScrollBar trace_enlarge_threshold_scroll;
 			XmLabel trace_enlarge_threshold_label;
 			XmScrollBar trace_enlarge_separation_scroll;
@@ -1167,7 +1260,6 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-!			XmNmappedWhenManaged = false;
 			};
 		controls
 			{
@@ -1250,40 +1342,6 @@ object
 				};
 			};
 		};
-	trace_enlarge_average_width: XmTextField
-		{
-		arguments
-			{
-			XmNcolumns = 8;
-			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmOptionMenu trace_enlarge_detection_choice;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			XmNmarginHeight = 5;
-			XmNhighlightThickness = 0;
-!			XmNmappedWhenManaged = false;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_trace_enlarge_averagew(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				change_average_width(trace_window_structure);
-				};
-			XmNlosingFocusCallback = procedures
-				{
-				change_average_width(trace_window_structure);
-				};
-			};
-		};
 	trace_enlarge_objective_choice: XmOptionMenu
 		{
 		arguments
@@ -1292,13 +1350,12 @@ object
 			XmNmarginWidth = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmTextField trace_enlarge_average_width;
+			XmNleftWidget = XmOptionMenu trace_enlarge_detection_choice;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
-!			XmNmappedWhenManaged = false;
 			};
 		controls
 			{
@@ -1624,7 +1681,7 @@ object
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmTextField trace_enlarge_average_width;
+			XmNleftWidget = XmOptionMenu trace_enlarge_detection_choice;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;

@@ -175,6 +175,7 @@ The analysis window object.
 	WidgetList regions;
 	Widget current_region;
 	Widget close_button;
+	Widget average_width_text;
 	struct Interval_area interval;
 	struct Signals_area signals;
 	struct Rig **rig;

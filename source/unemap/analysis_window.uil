@@ -14,7 +14,7 @@ procedure
 	identify_analysis_reset_button;
 	analysis_reset_to_raw_signals;
 	identify_analysis_baseline_butt;
-	analysis_set_baseline;
+	analysis_set_baseline;	
 	identify_analysis_range_button;
 	id_anal_range_auto_all_butt;
 	id_anal_rng_frm_cur_win_butt;
@@ -203,7 +203,7 @@ object
 		controls
 			{
 			XmPushButton analysis_reset_button;
-			XmPushButton analysis_baseline_button;
+			XmPushButton analysis_baseline_button;		
 			XmSeparator
 				{
 				arguments
@@ -211,7 +211,7 @@ object
 					XmNorientation = XmVERTICAL;
 					XmNleftAttachment = XmATTACH_WIDGET;
 					XmNleftWidget = XmPushButton analysis_baseline_button;
-					XmNleftOffset = 0;
+					XmNleftOffset = 5;
 					XmNrightAttachment = XmATTACH_NONE;
 					XmNrightOffset = 0;
 					XmNtopAttachment = XmATTACH_FORM;
@@ -331,6 +331,7 @@ object
 				};
 			};
 		};
+	
 	analysis_range_button: XmCascadeButtonGadget
 		{
 		arguments

@@ -2330,7 +2330,7 @@ Sets up the analysis work area for analysing a set of signals.
 						if (average_width!=analysis->average_width)
 						{
 							sprintf(value_string,"%d",average_width);
-							XtVaSetValues(trace->area_1.enlarge.average_width,
+							XtVaSetValues(trace->menu.average_width,
 								XmNvalue,value_string,
 								NULL);
 						}
@@ -3062,7 +3062,7 @@ signals.
 														{
 															sprintf(value_string,"%d",average_width);
 															XtVaSetValues(
-																analysis->trace->area_1.enlarge.average_width,
+																analysis->trace->menu.average_width,
 																XmNvalue,value_string,
 																NULL);
 														}
@@ -5616,7 +5616,7 @@ set to automatic and reorder the devices if this is required.
 						XmNvalue,global_temp_string,
 						NULL);
 					value_string=(char *)NULL;
-					XtVaGetValues(analysis->trace->area_1.enlarge.average_width,
+					XtVaGetValues(analysis->trace->menu.average_width,
 						XmNvalue,&value_string,
 						NULL);
 					if (1==sscanf(value_string,"%d",&average_width))
@@ -5633,7 +5633,7 @@ set to automatic and reorder the devices if this is required.
 					analysis->average_width=average_width;
 					XtFree(value_string);
 					sprintf(global_temp_string,"%d",average_width);
-					XtVaSetValues(analysis->trace->area_1.enlarge.average_width,
+					XtVaSetValues(analysis->trace->menu.average_width,
 						XmNvalue,global_temp_string,
 						NULL);
 				} break;
@@ -10274,7 +10274,8 @@ value at the potential time.
 ==============================================================================*/
 {
 	float channel_offset,*value;
-	int buffer_offset,i,j,potential_time;
+	int buffer_offset,count,i,j,potential_time,sample_shift,
+		samples_to_average_across,the_time;
 	struct Analysis_work_area *analysis;
 	struct Device **device,*highlight;
 	struct Map *map;
@@ -10347,25 +10348,36 @@ value at the potential time.
 				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
 					(current_region==(*device)->description->region)))
 				{
-
 					channel_offset=(buffer->signals.float_values)[potential_time*
 						buffer_offset+(*device)->signal->index];
-#if defined (NEW_CODE) /* jw need a way to decide how many samples to average across */
-					{
-						/* offset by an average of num_to_average_across signals values around the potential_time*/
-						int count,num_to_average_across;
-
-						num_to_average_across=10;channel_offset=0;
-						potential_time-=num_to_average_across/2;
-						for(count=0;count<num_to_average_across;count++)
+					/* calculate offset,an average of samples_to_average_across signals values */
+					/*around the potential_time*/		
+					samples_to_average_across=analysis->average_width;					
+					channel_offset=0;
+					sample_shift=(samples_to_average_across/2);
+					/*ensure not averaging off the start/end of the samples*/
+					if(potential_time>sample_shift)
+					{							
+						if((buffer->number_of_samples-potential_time)<sample_shift)
 						{
-							channel_offset+=(buffer->signals.float_values)[potential_time*
-								buffer_offset+(*device)->signal->index];
-							potential_time++;	
-						}
-						channel_offset/=num_to_average_across;
+							sample_shift=buffer->number_of_samples-potential_time;
+							samples_to_average_across=2*sample_shift;	
+						}						
 					}
-#endif
+					else
+					{
+						sample_shift=potential_time;
+						samples_to_average_across=2*sample_shift;
+					}
+					the_time=potential_time-sample_shift;
+					for(count=0;count<samples_to_average_across;count++)
+					{
+						channel_offset+=(buffer->signals.float_values)[the_time*
+							buffer_offset+(*device)->signal->index];
+						the_time++;	
+					}
+					channel_offset/=samples_to_average_across;				
+					/* offset signals */
 					value=(buffer->signals.float_values)+(*device)->signal->index;
 					for (j=buffer->number_of_samples;j>0;j--)
 					{
@@ -11642,7 +11654,7 @@ DESCRIPTION :
 								XmNvalue,global_temp_string,
 								NULL);
 							value_string=(char *)NULL;
-							XtVaGetValues(analysis->trace->area_1.enlarge.average_width,
+							XtVaGetValues(analysis->trace->menu.average_width,
 								XmNvalue,&value_string,
 								NULL);
 							if (1==sscanf(value_string,"%d",&average_width))
@@ -11659,7 +11671,7 @@ DESCRIPTION :
 							analysis->average_width=average_width;
 							XtFree(value_string);
 							sprintf(global_temp_string,"%d",average_width);
-							XtVaSetValues(analysis->trace->area_1.enlarge.average_width,
+							XtVaSetValues(analysis->trace->menu.average_width,
 								XmNvalue,global_temp_string,
 								NULL);
 						} break;

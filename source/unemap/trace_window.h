@@ -126,7 +126,6 @@ The area of the trace window where the enlarged signal is drawn.
 	Widget minimum_separation_scroll;
 	Widget minimum_separation_label;
 	Widget level_value;
-	Widget average_width;
 	Widget all_current_choice;
 	struct
 	{
@@ -461,6 +460,8 @@ The menu in the trace window.
 	} analysis_mode;
 	Widget apply_button;
 	Widget close_button;
+	Widget average_width;
+	Widget average_width_txt;
 }; /* struct Trace_window_menu */
 
 struct Trace_window_area_1

@@ -57,6 +57,7 @@ MrmHierarchy analysis_window_hierarchy;
 Module functions
 ----------------
 */
+
 static void identify_analysis_reset_button(Widget *widget_id,
 	XtPointer analysis_window,XtPointer call_data)
 /*******************************************************************************
@@ -4076,7 +4077,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface,enum Signal_order *signal_order)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -4092,7 +4093,7 @@ returned.
 	int signal_aspect_ratio_percent,widget_spacing;
 	MrmType analysis_window_class;
 	Pixmap no_cascade_pixmap;
-	static MrmRegisterArg callback_list[]={
+	static MrmRegisterArg callback_list[]={	
 		{"identify_analysis_reset_button",
 			(XtPointer)identify_analysis_reset_button},
 		{"identify_analysis_baseline_butt",
@@ -4346,6 +4347,7 @@ returned.
 				analysis->number_of_regions=0;
 				analysis->regions=(Widget *)NULL;
 				analysis->close_button=(Widget)NULL;
+				analysis->average_width_text=(Widget)NULL;
 				analysis->interval.reset_button=(Widget)NULL;
 				analysis->interval.baseline_button=(Widget)NULL;
 				analysis->interval.range_button=(Widget)NULL;
