@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1111,7 +1111,7 @@ Called when a settings select toggle button is selected.
 static void graphical_element_editor_modify_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 Called when a modify button - add, delete, up, down - is activated.
@@ -1120,11 +1120,13 @@ Called when a modify button - add, delete, up, down - is activated.
 	enum Streamline_type streamline_type;
 	float streamline_length,streamline_width;
 	int list_changed,position,return_code,reverse_track;
-	struct Computed_field *iso_scalar_field,*orientation_scale_field,
-		*stream_vector_field;
+	struct Computed_field *default_coordinate_field,*element_xi_coordinate_field,
+		*iso_scalar_field,*orientation_scale_field,*stream_vector_field;
 	struct Graphical_element_editor_struct *gelem_editor;
+	struct GROUP(FE_node) *data_group;
 	struct GT_object *glyph,*old_glyph;
 	struct GT_element_settings *settings;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct VT_volume_texture *volume_texture;
 	Widget modify_button;
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
@@ -1132,7 +1134,9 @@ Called when a modify button - add, delete, up, down - is activated.
 	ENTER(graphical_element_editor_modify_CB);
 	if (widget&&(modify_button=((XmRowColumnCallbackStruct *)call_data)->widget)&&
 		(gelem_editor=(struct Graphical_element_editor_struct *)client_data)&&
-		gelem_editor->edit_gt_element_group)
+		gelem_editor->edit_gt_element_group&&
+		(computed_field_manager=Computed_field_package_get_computed_field_manager(
+			gelem_editor->computed_field_package)))
 	{
 		list_changed=0;
 		if (modify_button==gelem_editor->add_button)
@@ -1157,14 +1161,39 @@ Called when a modify button - add, delete, up, down - is activated.
 					GT_element_settings_set_selected_material(settings,
 						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 							"default_selected",gelem_editor->graphical_material_manager));
+					/* for data_points, ensure either there are points with
+						 default_coordinate defined at them. If not, and any have
+						 the element_xi_coordinate field defined over them, use that */
+					if (GT_ELEMENT_SETTINGS_DATA_POINTS==
+						gelem_editor->current_settings_type)
+					{
+						data_group=GT_element_group_get_data_group(
+							gelem_editor->edit_gt_element_group);
+						default_coordinate_field=
+							GT_element_group_get_default_coordinate_field(
+								gelem_editor->edit_gt_element_group);
+						if (!FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+							FE_node_has_Computed_field_defined,
+							(void *)default_coordinate_field,data_group))
+						{
+							if ((element_xi_coordinate_field=
+								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+									"element_xi_coordinate",computed_field_manager))&&
+								FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+									FE_node_has_Computed_field_defined,
+									(void *)element_xi_coordinate_field,data_group))
+							{
+								GT_element_settings_set_coordinate_field(settings,
+									element_xi_coordinate_field);
+							}
+						}
+					}
 					/* set iso_scalar_field for iso_surfaces */
 					if (GT_ELEMENT_SETTINGS_ISO_SURFACES==
 						gelem_editor->current_settings_type)
 					{
 						if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-							Computed_field_is_scalar,(void *)NULL,
-							Computed_field_package_get_computed_field_manager(
-								gelem_editor->computed_field_package)))
+							Computed_field_is_scalar,(void *)NULL,computed_field_manager))
 						{
 							if (!GT_element_settings_set_iso_surface_parameters(
 								settings,iso_scalar_field,0.0))
@@ -1229,8 +1258,7 @@ Called when a modify button - add, delete, up, down - is activated.
 						if (stream_vector_field=
 							FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 							Computed_field_is_stream_vector_capable,(void *)NULL,
-							Computed_field_package_get_computed_field_manager(
-								gelem_editor->computed_field_package)))
+							computed_field_manager))
 						{
 							if (!GT_element_settings_set_streamline_parameters(
 								settings,streamline_type,stream_vector_field,reverse_track,
