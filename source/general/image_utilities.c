@@ -1625,6 +1625,10 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					{
 						DEALLOCATE(palette_image);
 					}
+					if (colour_map_entry)
+					{
+						DEALLOCATE(colour_map_entry);
+					}
 					DESTROY(LIST(Colour_map_entry))(&colour_map_list);
 				}
 				else
@@ -4016,6 +4020,14 @@ present in some files */
 
 									} /* else */
 #endif /* defined (OLD_CODE) */
+								}
+								if (strip_byte_counts)
+								{
+									DEALLOCATE(strip_byte_counts);
+								}
+								if (strip_offsets)
+								{
+									DEALLOCATE(strip_offsets);
 								}
 							} /* number of fields */
 						} /* image file directory */
