@@ -420,31 +420,41 @@ WORMHOLE_INC = -I/usr/people/bullivan/wormhole/source
 WORMHOLE_LIB = -L/usr/people/bullivan/wormhole/lib -lwormhole
 WORMHOLE_INC = -I/usr/people/bullivan/wormhole/source
 #endif /* defined (OLD_CODE) */
+#if defined (CMISS_ROOT_DEFINED)
+WORMHOLE_PATH=$(CMISS_ROOT)/wormhole
+#else /* defined (CMISS_ROOT_DEFINED) */
+WORMHOLE_PATH=$(CMGUI_DEV_ROOT)/wormhole
+#endif /* defined (CMISS_ROOT_DEFINED) */
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
-WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_64
-WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
+WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_64
+WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 #else /* defined (O64) */
-WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_n32
-WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
+WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_n32
+WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
-WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_linux
-WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
+WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_linux
+WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 #endif /* switch OperatingSystem */
 
+#if defined (CMISS_ROOT_DEFINED)
+XML_PATH=$(CMISS_ROOT)/xml
+#else /* defined (CMISS_ROOT_DEFINED) */
+XML_PATH=$(CMGUI_DEV_ROOT)/xml
+#endif /* defined (CMISS_ROOT_DEFINED) */
 #if defined (CELL)
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
-XML_LIB = -L${CMISS_ROOT}/xml/expat_lib/lib -lExpat_64
-XML_INC = -I${CMISS_ROOT}/xml/expat_lib/include
+XML_LIB = -L$(XML_PATH)/expat_lib/lib -lExpat_64
+XML_INC = -I$(XML_PATH)/expat_lib/include
 #else /* defined (O64) */
-XML_LIB = -B static -L${CMISS_ROOT}/xml/expat_lib/lib -lExpat_n32 -B dynamic
-XML_INC = -I${CMISS_ROOT}/xml/expat_lib/include
+XML_LIB = -B static -L$(XML_PATH)/expat_lib/lib -lExpat_n32 -B dynamic
+XML_INC = -I$(XML_PATH)//expat_lib/include
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
-XML_LIB = -static -L${CMISS_ROOT}/xml/expat_lib/lib -lExpat_linux -shared
-XML_INC = -I${CMISS_ROOT}/xml/expat_lib/include
+XML_LIB = -static -L$(XML_PATH)/expat_lib/lib -lExpat_linux -shared
+XML_INC = -I(XML_PATH)/expat_lib/include
 #endif /* switch OperatingSystem */
 #endif /* defined (CELL) */
 
