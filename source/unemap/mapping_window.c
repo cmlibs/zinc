@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 4 October 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -2347,7 +2347,7 @@ Finds the id of the mapping file save electrode values button.
 
 static int write_electrode_values_file(char *file_name,void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 28 July 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Write the electrode values for the current map to a file.
@@ -2393,6 +2393,10 @@ Write the electrode values for the current map to a file.
 					{
 						fprintf(output_file,",(Potential Time,)*number of maps\n");
 					} break;
+					case ACTIVATION_POTENTIAL:
+					{
+						fprintf(output_file,",Activation_potential\n");
+					} break;
 					default:
 					{
 						fprintf(output_file,",Unknown\n");
@@ -2426,7 +2430,8 @@ Write the electrode values for the current map to a file.
 					/* write the electrode names and values */
 					for (i=number_of_electrodes;i>0;i--)
 					{
-						fprintf(output_file,"%s,%g\n",(*electrode)->description->name,*value);
+						fprintf(output_file,"%s,%g\n",
+							(*electrode)->description->name,*value);
 						electrode++;
 						value++;
 					}

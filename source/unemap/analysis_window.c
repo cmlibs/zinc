@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -719,7 +719,7 @@ static void id_analysis_map_multiple_activa(Widget *widget_id,
 LAST MODIFIED : 19 June 1998
 
 DESCRIPTION :
-Finds the id of the analysis single activation button.
+Finds the id of the analysis multiple activation button.
 ==============================================================================*/
 {
 	struct Analysis_window *analysis;
@@ -737,6 +737,31 @@ Finds the id of the analysis single activation button.
 	}
 	LEAVE;
 } /* id_analysis_map_multiple_activa */
+
+static void id_analysis_map_activation_pote(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 8 June 2003
+
+DESCRIPTION :
+Finds the id of the analysis activation potential button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_analysis_map_activation_pote);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		analysis->map_menu.activation_potential_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_analysis_map_activation_pote.  Missing analysis_window");
+	}
+	LEAVE;
+} /* id_analysis_map_activation_pote */
 
 static void identify_analysis_file_button(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
@@ -4363,6 +4388,8 @@ returned.
 			(XtPointer)id_analysis_map_single_activati},
 		{"id_analysis_map_multiple_activa",
 			(XtPointer)id_analysis_map_multiple_activa},
+		{"id_analysis_map_activation_pote",
+			(XtPointer)id_analysis_map_activation_pote},
 		{"identify_analysis_file_button",(XtPointer)identify_analysis_file_button},
 		{"identify_analysis_file_read_sig",
 			(XtPointer)identify_analysis_file_read_sig},
@@ -4523,7 +4550,8 @@ returned.
 				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&signal_aspect_ratio_percent,resources_1,XtNumber(resources_1),NULL);
 				analysis->signal_aspect_ratio=(float)(signal_aspect_ratio_percent)/100;
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),analysis,
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),analysis,
 					resources_2,XtNumber(resources_2),NULL);
 				analysis->window=(Widget)NULL;
 				analysis->menu=(Widget)NULL;
@@ -4533,6 +4561,7 @@ returned.
 				analysis->map_menu.gradient_button=(Widget)NULL;
 				analysis->map_menu.single_activation_button=(Widget)NULL;
 				analysis->map_menu.multiple_activation_button=(Widget)NULL;
+				analysis->map_menu.activation_potential_button=(Widget)NULL;
 				analysis->display_map_warning_accept_butt=(Widget)NULL;
 				analysis->display_map_warning_reject_butt=(Widget)NULL;
 				analysis->display_map_warning_box=(Widget)NULL;

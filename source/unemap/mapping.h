@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -36,7 +36,7 @@ Global types
 */
 enum Map_type
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -45,7 +45,8 @@ DESCRIPTION :
 	SINGLE_ACTIVATION,
 	MULTIPLE_ACTIVATION,
 	INTEGRAL,
-	POTENTIAL
+	POTENTIAL,
+	ACTIVATION_POTENTIAL
 }; /* enum Map_type */
 
 enum Interpolation_type

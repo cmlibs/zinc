@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -240,7 +240,7 @@ rig->current_region->type are compatible.
 static void display_map(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 October 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ??? colour bar ?
@@ -320,15 +320,17 @@ DESCRIPTION :
 			&(analysis->mapping_work_area->current_mapping_window),
 			&(analysis->mapping_work_area->open),
 			&(analysis->mapping_work_area->associate),&(analysis->map_type),
-			SHOW_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_VALUES,HIDE_FIBRES,HIDE_LANDMARKS,
-			HIDE_EXTREMA,maintain_aspect_ratio,1,projection_type,VARIABLE_THICKNESS,
-			&(analysis->rig),&(analysis->event_number),&(analysis->potential_time),
-			&(analysis->datum),&(analysis->start_search_interval),
-			&(analysis->end_search_interval),analysis->identifying_colour,
-			ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
+			SHOW_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_VALUES,HIDE_FIBRES,
+			HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,1,projection_type,
+			VARIABLE_THICKNESS,&(analysis->rig),&(analysis->event_number),
+			&(analysis->potential_time),&(analysis->datum),
+			&(analysis->start_search_interval),&(analysis->end_search_interval),
+			analysis->identifying_colour,ANALYSIS_ASSOCIATE,
+			(XtPointer)set_mapping_analysis_region,
 			(XtPointer)analysis_select_map_drawing_are,
 			(XtPointer)analysis_select_auxiliary_drawi,analysis_work_area,
-			User_interface_get_screen_width(user_interface),User_interface_get_screen_height(user_interface),
+			User_interface_get_screen_width(user_interface),
+			User_interface_get_screen_height(user_interface),
 			analysis->configuration_file_extension,
 			analysis->postscript_file_extension,analysis->map_drawing_information,
 			analysis->user_interface,analysis->unemap_package,
@@ -341,6 +343,7 @@ DESCRIPTION :
 			/* determine if undecided events are accepted or rejected */
 			if ((widget==analysis_window->map_menu.single_activation_button)||
 				(widget==analysis_window->map_menu.multiple_activation_button)||
+				(widget==analysis_window->map_menu.activation_potential_button)||
 				(widget==analysis_window->map_menu.integral_button)||
 				(widget==analysis_window->map_menu.potential_button))
 			{
@@ -475,7 +478,7 @@ except the warning box shell.
 static void display_map_with_check(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Check the analysis rig for events and for undecided events.  Prompt user for
@@ -527,9 +530,17 @@ continuation.  Display the map.
 				}
 				else
 				{
-					map_type=INTEGRAL;
-					start_search_interval=analysis->start_search_interval;
-					end_search_interval=analysis->end_search_interval;
+					if (widget==analysis_window->map_menu.integral_button)
+					{
+						map_type=INTEGRAL;
+						start_search_interval=analysis->start_search_interval;
+						end_search_interval=analysis->end_search_interval;
+					}
+					else
+					{
+						map_type=ACTIVATION_POTENTIAL;
+						event_number=analysis->event_number;
+					}
 				}
 			}
 		}
@@ -549,6 +560,7 @@ continuation.  Display the map.
 		switch (map_type)
 		{
 			case SINGLE_ACTIVATION:
+			case ACTIVATION_POTENTIAL:
 			{
 				while ((number_of_devices>0)&&(no_undecided||no_accepted))
 				{
@@ -1089,7 +1101,7 @@ DESCRIPTION : draws all_markers
 static void set_detection_interval(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the detection algorithm to interval.
@@ -1181,6 +1193,8 @@ Sets the detection algorithm to interval.
 			}
 			XtSetSensitive(analysis->window->file_menu.save_times_button,False);
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				False);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				False);
 			analysis->calculate_events=0;
@@ -1229,7 +1243,7 @@ Sets the detection algorithm to interval.
 static void set_detection_level(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the detection algorithm to level.
@@ -1335,6 +1349,8 @@ Sets the detection algorithm to level.
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 			analysis->detection=EDA_LEVEL;
@@ -1391,7 +1407,7 @@ Sets the detection algorithm to level.
 static void set_detection_threshold(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the detection algorithm to threshold.
@@ -1499,6 +1515,8 @@ Sets the detection algorithm to threshold.
 			}
 			XtSetSensitive(analysis->window->file_menu.save_times_button,True);
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
 			analysis->calculate_events=0;
@@ -1561,7 +1579,7 @@ Sets the detection algorithm to threshold.
 static void set_objective_absolute_slope(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to absolute slope.
@@ -1631,6 +1649,8 @@ Sets the objective for the detection algorithm to absolute slope.
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 		}
@@ -1646,7 +1666,7 @@ Sets the objective for the detection algorithm to absolute slope.
 static void set_objective_positive_slope(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to positive slope.
@@ -1716,6 +1736,8 @@ Sets the objective for the detection algorithm to positive slope.
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 		}
@@ -1731,7 +1753,7 @@ Sets the objective for the detection algorithm to positive slope.
 static void set_objective_negative_slope(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to negative slope.
@@ -1801,6 +1823,8 @@ Sets the objective for the detection algorithm to negative slope.
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 		}
@@ -1816,7 +1840,7 @@ Sets the objective for the detection algorithm to negative slope.
 static void set_objective_absolute_value(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to absolute value.
@@ -1886,6 +1910,8 @@ Sets the objective for the detection algorithm to absolute value.
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 		}
@@ -1901,7 +1927,7 @@ Sets the objective for the detection algorithm to absolute value.
 static void set_objective_positive_value(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to positive value.
@@ -1971,6 +1997,8 @@ Sets the objective for the detection algorithm to positive value.
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 		}
@@ -1986,7 +2014,7 @@ Sets the objective for the detection algorithm to positive value.
 static void set_objective_negative_value(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to negative value.
@@ -2055,6 +2083,8 @@ Sets the objective for the detection algorithm to negative value.
 			XtSetSensitive(analysis->window->file_menu.save_times_button,True);
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+				True);
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
 				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
@@ -2375,7 +2405,7 @@ signal type file
 #if defined (OLD_CODE)
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2708,6 +2738,8 @@ Sets up the analysis work area for analysing a set of signals.
 								analysis->window->map_menu.single_activation_button,True);
 							XtSetSensitive(
 								analysis->window->map_menu.multiple_activation_button,True);
+							XtSetSensitive(
+								analysis->window->map_menu.activation_potential_button,True);
 							XtSetSensitive(analysis->window->file_menu.save_times_button,
 								True);
 						}
@@ -2717,6 +2749,8 @@ Sets up the analysis work area for analysing a set of signals.
 								analysis->window->map_menu.single_activation_button,False);
 							XtSetSensitive(
 								analysis->window->map_menu.multiple_activation_button,False);
+							XtSetSensitive(
+								analysis->window->map_menu.activation_potential_button,False);
 							XtSetSensitive(analysis->window->file_menu.save_times_button,
 								False);
 						}
@@ -2871,6 +2905,8 @@ Sets up the analysis work area for analysing a set of signals.
 						False);
 					XtSetSensitive(
 						analysis->window->map_menu.multiple_activation_button,False);
+					XtSetSensitive(
+						analysis->window->map_menu.activation_potential_button,False);
 					XtSetSensitive(analysis->window->file_menu.save_times_button,False);
 				}
 				/* initialize the search interval */
@@ -3113,6 +3149,9 @@ Sets up the analysis work area for analysing a set of signals.
 			XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
 			/* ghost the display multiple activation map button */
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+				False);
+			/* ghost the display activation potential map button */
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
 				False);
 			/* ghost the print selected signals button */
 			XtSetSensitive(analysis->window->print_menu.selected_button,False);
@@ -3469,7 +3508,7 @@ set.
 static int analysis_work_area_read_signal_file(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -3717,6 +3756,8 @@ Sets up the analysis work area for analysing a set of signals.
 							analysis->window->map_menu.single_activation_button,True);
 						XtSetSensitive(
 							analysis->window->map_menu.multiple_activation_button,True);
+						XtSetSensitive(
+							analysis->window->map_menu.activation_potential_button,True);
 						XtSetSensitive(analysis->window->file_menu.save_times_button,
 							True);
 					}
@@ -3726,6 +3767,8 @@ Sets up the analysis work area for analysing a set of signals.
 							analysis->window->map_menu.single_activation_button,False);
 						XtSetSensitive(
 							analysis->window->map_menu.multiple_activation_button,False);
+						XtSetSensitive(
+							analysis->window->map_menu.activation_potential_button,False);
 						XtSetSensitive(analysis->window->file_menu.save_times_button,
 							False);
 					}
@@ -3784,6 +3827,8 @@ Sets up the analysis work area for analysing a set of signals.
 						False);
 					XtSetSensitive(
 						analysis->window->map_menu.multiple_activation_button,False);
+					XtSetSensitive(
+						analysis->window->map_menu.activation_potential_button,False);
 					XtSetSensitive(analysis->window->file_menu.save_times_button,False);
 				}
 				/* initialize the search interval */
@@ -4022,6 +4067,9 @@ Sets up the analysis work area for analysing a set of signals.
 			/* ghost the display multiple activation map button */
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				False);
+			/* ghost the display activation potential map button */
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				False);
 			/* ghost the print selected signals button */
 			XtSetSensitive(analysis->window->print_menu.selected_button,False);
 			/* ghost the print all signals button */
@@ -4078,7 +4126,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -4891,6 +4939,9 @@ signals.
 							/* unghost the multiple activation map button */
 							XtSetSensitive(
 								analysis->window->map_menu.multiple_activation_button,True);
+							/* unghost the activation potential map button */
+							XtSetSensitive(
+								analysis->window->map_menu.activation_potential_button,True);
 							/* allow event times to be saved */
 							XtSetSensitive(analysis->window->file_menu.save_times_button,
 								True);
@@ -4904,6 +4955,9 @@ signals.
 							/* ghost the multiple activation map button */
 							XtSetSensitive(
 								analysis->window->map_menu.multiple_activation_button,False);
+							/* ghost the activation potential map button */
+							XtSetSensitive(
+								analysis->window->map_menu.activation_potential_button,False);
 							/* no event times to be saved */
 							XtSetSensitive(analysis->window->file_menu.save_times_button,
 								False);
@@ -5033,6 +5087,9 @@ signals.
 						False);
 					/* ghost the display multiple activation map button */
 					XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+						False);
+					/* ghost the display activation potential map button */
+					XtSetSensitive(analysis->window->map_menu.activation_potential_button,
 						False);
 					/* ghost the print selected signals button */
 					XtSetSensitive(analysis->window->print_menu.selected_button,False);
@@ -5501,7 +5558,7 @@ for analysing the signals.
 static int analysis_read_bdf_or_edf_file(struct Analysis_work_area *analysis,
 	int bdf)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Reads in the signals from the bdf or edf file and sets up the analysis work area
@@ -5578,6 +5635,8 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 						False);
 					XtSetSensitive(
 						analysis->window->map_menu.multiple_activation_button,False);
+					XtSetSensitive(
+						analysis->window->map_menu.activation_potential_button,False);
 					XtSetSensitive(analysis->window->file_menu.save_times_button,False);
 				}
 				/* initialize the search interval */
@@ -5749,6 +5808,9 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 					False);
 				/* ghost the display multiple activation map button */
 				XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+					False);
+				/* ghost the display activation potential map button */
+				XtSetSensitive(analysis->window->map_menu.activation_potential_button,
 					False);
 				/* ghost the print selected signals button */
 				XtSetSensitive(analysis->window->print_menu.selected_button,False);
@@ -7084,7 +7146,7 @@ Adds the hot key handler to the widget.
 static void calculate_all_event_markers(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Calculate the positions of all event markers, recalculate the datum if this is
@@ -7421,6 +7483,9 @@ set to automatic and reorder the devices if this is required.
 			/* unghost the display multiple activation map button */
 			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
 				True);
+			/* unghost the display activation potential map button */
+			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+				True);
 			analysis->calculate_events=1;
 			trace_update_signal_controls(analysis->trace);
 		}
@@ -7594,7 +7659,7 @@ enum Moving_status
 static void select_analysis_interval(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2003
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 The callback for modifying the analysis interval in the analysis interval
@@ -8084,6 +8149,10 @@ drawing area.
 																	analysis->window->map_menu.
 																	multiple_activation_button,
 																	False);
+																XtSetSensitive(
+																	analysis->window->map_menu.
+																	activation_potential_button,
+																	False);
 																analysis->calculate_events=0;
 															}
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
@@ -8091,8 +8160,9 @@ drawing area.
 															if ((
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 																((EDA_INTERVAL==analysis->detection)&&
-																	((SINGLE_ACTIVATION==analysis->map_type)||
-																		(MULTIPLE_ACTIVATION==analysis->map_type)))||
+																((SINGLE_ACTIVATION==analysis->map_type)||
+																(ACTIVATION_POTENTIAL==analysis->map_type)||
+																(MULTIPLE_ACTIVATION==analysis->map_type)))||
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 																(INTEGRAL==analysis->map_type))&&
 																(analysis->mapping_window)&&
@@ -8234,7 +8304,7 @@ drawing area.
 static void decrement_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Decrement the number of events.
@@ -8324,6 +8394,8 @@ trace window.
 		XtSetSensitive(analysis->window->file_menu.save_times_button,False);
 		XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
 		XtSetSensitive(analysis->window->map_menu.multiple_activation_button,False);
+		XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+			False);
 		analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 	}
@@ -8338,7 +8410,7 @@ trace window.
 static void increment_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Increment the number of events.
@@ -8420,6 +8492,8 @@ trace window.
 		XtSetSensitive(analysis->window->file_menu.save_times_button,False);
 		XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
 		XtSetSensitive(analysis->window->map_menu.multiple_activation_button,False);
+		XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+			False);
 		analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 	}
@@ -8992,7 +9066,7 @@ update_map_from_manual_time_update
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2003
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ???DB.  Update comment ?
@@ -9848,9 +9922,10 @@ should be done as a callback from the trace_window.
 																	if ((
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 																		((EDA_INTERVAL==analysis->detection)&&
-																			((SINGLE_ACTIVATION==analysis->map_type)||
-																				(MULTIPLE_ACTIVATION==
-																					analysis->map_type)))||
+																		((SINGLE_ACTIVATION==analysis->map_type)||
+																		(MULTIPLE_ACTIVATION==analysis->map_type)||
+																		(ACTIVATION_POTENTIAL==
+																		analysis->map_type)))||
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 																		(INTEGRAL==analysis->map_type))&&
 																		(analysis->mapping_window)&&
@@ -9881,6 +9956,8 @@ should be done as a callback from the trace_window.
 																			single_activation_button,False);
 																		XtSetSensitive(analysis->window->map_menu.
 																			multiple_activation_button,False);
+																		XtSetSensitive(analysis->window->map_menu.
+																			activation_potential_button,False);
 																		analysis->calculate_events=0;
 																	}
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.h
 
-LAST MODIFIED : 11 December 2001
+LAST MODIFIED : 8 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -31,7 +31,7 @@ Global Types
 */
 struct Analysis_map_menu
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 The menu associated with the map button.
@@ -42,6 +42,7 @@ The menu associated with the map button.
 	Widget gradient_button;
 	Widget single_activation_button;
 	Widget multiple_activation_button;
+	Widget activation_potential_button;
 }; /* struct Analysis_map_menu */
 
 struct Analysis_file_menu

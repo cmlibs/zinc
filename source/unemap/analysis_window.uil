@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : analysis_window.uil
 !
-! LAST MODIFIED : 11 December 2001
+! LAST MODIFIED : 8 June 2003
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the analysis window in the analysis work area.
@@ -62,6 +62,7 @@ procedure
 	identify_analysis_map_gradient;
 	id_analysis_map_single_activati;
 	id_analysis_map_multiple_activa;
+	id_analysis_map_activation_pote;
 	identify_analysis_file_button;
 	identify_analysis_file_read_sig;
 	identify_analysis_file_read_edf;
@@ -1100,6 +1101,7 @@ object
 			XmPushButton analysis_map_gradient_button;
 			XmPushButton analysis_map_single_acti_button;
 			XmPushButton analysis_map_multiple_acti_butt;
+			XmPushButton analysis_map_act_pot_button;
 			};
 		};
 	analysis_map_potential_button: XmPushButton
@@ -1200,6 +1202,27 @@ object
 			MrmNcreateCallback = procedures
 				{
 				id_analysis_map_multiple_activa(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				display_map_with_check(analysis_work_area_structure);
+				};
+			};
+		};
+	analysis_map_act_pot_button: XmPushButton
+		{
+		arguments
+			{
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Activation potential");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_analysis_map_activation_pote(analysis_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interpolate.c
 
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Functions for calculating a finite element interpolation to data for a special
@@ -6002,7 +6002,7 @@ struct Interpolation_function *calculate_interpolation_functio(
 	int finite_element_mesh_columns,float membrane_smoothing,
 	float plate_bending_smoothing)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 There are three groups of arguments for this function
@@ -6061,7 +6061,8 @@ if they should be 1-D or 2-D arrays ?
 		float *y_mesh=(float *)NULL;
 		Linear_transformation *linear_trans=(Linear_transformation *)NULL;
 		short int *short_int_value=(short int *)NULL;
-		struct Interpolation_function *function=(struct Interpolation_function *)NULL;
+		struct Interpolation_function
+			*function=(struct Interpolation_function *)NULL;
 		struct Device **device=(struct Device **)NULL;
 		struct Position *position=(struct Position *)NULL;
 		struct Device_description *description=(struct Device_description *)NULL;
@@ -6070,14 +6071,17 @@ if they should be 1-D or 2-D arrays ?
 		struct Signal_buffer *buffer=(struct Signal_buffer *)NULL;
 
 		ENTER(calculate_interpolation_functio);
-		if (rig&&region&&((((map_type==SINGLE_ACTIVATION)&&
-			((event_number= *event_number_address)>=1)&&((datum= *datum_address)>=0)))||
+		if (rig&&region&&(
+			((((map_type==SINGLE_ACTIVATION)||(map_type==ACTIVATION_POTENTIAL))&&
+			((event_number= *event_number_address)>=1)&&
+			((datum= *datum_address)>=0)))||
 			((map_type==MULTIPLE_ACTIVATION)&&((datum= *datum_address)>=0))||
 			(map_type==POTENTIAL)||
 			(((map_type==INTEGRAL)&&
-				((start_search_interval= *start_search_interval_address)>=0)&&
-				((end_search_interval= *end_search_interval_address)>=
-					start_search_interval)))))
+			((start_search_interval= *start_search_interval_address)>=0)&&
+			((end_search_interval= *end_search_interval_address)>=
+			start_search_interval)))
+			))
 		{	
 	
 			/* count the number of data points */
@@ -6087,12 +6091,14 @@ if they should be 1-D or 2-D arrays ?
 			switch (map_type)
 			{
 				case SINGLE_ACTIVATION:
+				case ACTIVATION_POTENTIAL:
 				{
 					for (i=number_of_devices;i>0;i--)
 					{
 						if (((description=(*device)->description)->type==ELECTRODE)&&
-							(description->region==region)&&
-							(event=(*device)->signal->first_event))
+							(description->region==region)&&(signal=(*device)->signal)&&
+							(buffer=signal->buffer)&&(times=buffer->times)&&
+							(event=signal->first_event))
 						{
 							while (event&&(event->number<event_number))
 							{
@@ -6100,7 +6106,8 @@ if they should be 1-D or 2-D arrays ?
 							}
 							if (event&&(event->number==event_number)&&
 								((event->status==ACCEPTED)||(undecided_accepted&&
-									(event->status==UNDECIDED))))
+								(event->status==UNDECIDED)))&&(0<=event->time)&&
+								(event->time<buffer->number_of_samples))
 							{
 								number_of_data++;
 							}
@@ -6137,11 +6144,11 @@ if they should be 1-D or 2-D arrays ?
 						if (((description=(*device)->description)->type==ELECTRODE)&&
 							(description->region==region)&&(signal=(*device)->signal)&&
 							((signal->status==ACCEPTED)||
-								(undecided_accepted&&(signal->status==UNDECIDED)))&&
+							(undecided_accepted&&(signal->status==UNDECIDED)))&&
 							(buffer=signal->buffer)&&(times=buffer->times)&&
 							((float)(times[0])*1000/(buffer->frequency)<=potential_time)&&
-							(potential_time<=(float)(times[(buffer->number_of_samples)-1])*1000/
-								(buffer->frequency)))
+							(potential_time<=(float)(times[(buffer->number_of_samples)-1])*
+							1000/(buffer->frequency)))
 						{
 							number_of_data++;
 						}
@@ -6157,7 +6164,7 @@ if they should be 1-D or 2-D arrays ?
 							(0<=start_search_interval)&&
 							(start_search_interval<signal->buffer->number_of_samples)&&
 							((signal->status==ACCEPTED)||
-								(undecided_accepted&&(signal->status==UNDECIDED))))
+							(undecided_accepted&&(signal->status==UNDECIDED))))
 						{
 							number_of_data++;
 						}
@@ -6190,12 +6197,14 @@ if they should be 1-D or 2-D arrays ?
 					switch (map_type)
 					{
 						case SINGLE_ACTIVATION:
+						case ACTIVATION_POTENTIAL:
 						{
 							while (i>0)
 							{
 								if (((description=(*device)->description)->type==ELECTRODE)&&
-									(description->region==region)&&
-									(event=(*device)->signal->first_event))
+									(description->region==region)&&(signal=(*device)->signal)&&
+									(buffer=signal->buffer)&&(times=buffer->times)&&
+									(event=signal->first_event))
 								{
 									while (event&&(event->number<event_number))
 									{
@@ -6203,7 +6212,8 @@ if they should be 1-D or 2-D arrays ?
 									}
 									if (event&&(event->number==event_number)&&
 										((event->status==ACCEPTED)||(undecided_accepted&&
-											(event->status==UNDECIDED))))
+										(event->status==UNDECIDED)))&&(0<=event->time)&&
+										(event->time<buffer->number_of_samples))
 									{
 										/* perform projection */
 										position= &(description->properties.electrode.position);
@@ -6227,9 +6237,37 @@ if they should be 1-D or 2-D arrays ?
 													position->z,&r,x_data,y_data,(float *)NULL);
 											} break;
 										}
-										/* calculate activation time */
-										*value=(float)(times[event->time]-times[datum])*(float)1000./
-											frequency;
+										switch (map_type)
+										{
+											case SINGLE_ACTIVATION:
+											{
+												/* calculate activation time */
+												*value=(float)(times[event->time]-times[datum])*
+													(float)1000./frequency;
+											} break;
+											case ACTIVATION_POTENTIAL:
+											{
+												/* calculate potential at activation time */
+												switch (signal->buffer->value_type)
+												{
+													case SHORT_INT_VALUE:
+													{
+														*value=(float)(signal->buffer->signals.
+															short_int_values)[(event->time)*
+															(signal->buffer->number_of_signals)+
+															(signal->index)];
+													} break;
+													case FLOAT_VALUE:
+													{
+														*value=(signal->buffer->signals.float_values)[
+															(event->time)*(signal->buffer->number_of_signals)+
+															(signal->index)];
+													} break;
+													*value=((*value)-((*device)->channel->offset))*
+														((*device)->channel->gain);
+												}
+											} break;
+										}
 										x_data++;
 										y_data++;
 										value++;
@@ -6318,11 +6356,12 @@ if they should be 1-D or 2-D arrays ?
 								if (((description=(*device)->description)->type==ELECTRODE)&&
 									(description->region==region)&&(signal=(*device)->signal)&&
 									((signal->status==ACCEPTED)||
-										(undecided_accepted&&(signal->status==UNDECIDED)))&&
+									(undecided_accepted&&(signal->status==UNDECIDED)))&&
 									(buffer=signal->buffer)&&(times=buffer->times)&&
 									((float)(times[0])*1000/(buffer->frequency)<=potential_time)&&
-									(potential_time<=(float)(times[(buffer->number_of_samples)-1])*
-										1000/(buffer->frequency)))
+									(potential_time<=
+									(float)(times[(buffer->number_of_samples)-1])*1000/
+									(buffer->frequency)))
 								{
 									/* perform projection */
 									position= &(description->properties.electrode.position);
@@ -6330,10 +6369,10 @@ if they should be 1-D or 2-D arrays ?
 									{
 										case SOCK:
 										{
-											linear_transformation(linear_trans,position->x,position->y,
-												position->z,&x,&y,&z);
-											cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,y_data,
-												x_data,(float *)NULL);
+											linear_transformation(linear_trans,position->x,
+												position->y,position->z,&x,&y,&z);
+											cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,
+												y_data,x_data,(float *)NULL);
 										} break;
 										case PATCH:
 										{
@@ -6376,22 +6415,26 @@ if they should be 1-D or 2-D arrays ?
 										case SHORT_INT_VALUE:
 										{
 											*value=(proportion*
-												(float)((signal->buffer->signals.short_int_values)[before*
-													(signal->buffer->number_of_signals)+(signal->index)])+
+												(float)((signal->buffer->signals.short_int_values)[
+												before*
+												(signal->buffer->number_of_signals)+(signal->index)])+
 												(1-proportion)*
-												(float)((signal->buffer->signals.short_int_values)[after*
-													(signal->buffer->number_of_signals)+(signal->index)])-
-												((*device)->channel->offset))*((*device)->channel->gain);
+												(float)((signal->buffer->signals.short_int_values)[
+												after*
+												(signal->buffer->number_of_signals)+(signal->index)])-
+												((*device)->channel->offset))*
+												((*device)->channel->gain);
 										} break;
 										case FLOAT_VALUE:
 										{
 											*value=(proportion*
 												(signal->buffer->signals.float_values)[before*
-													(signal->buffer->number_of_signals)+(signal->index)]+
+												(signal->buffer->number_of_signals)+(signal->index)]+
 												(1-proportion)*
 												(signal->buffer->signals.float_values)[after*
-													(signal->buffer->number_of_signals)+(signal->index)]-
-												((*device)->channel->offset))*((*device)->channel->gain);
+												(signal->buffer->number_of_signals)+(signal->index)]-
+												((*device)->channel->offset))*
+												((*device)->channel->gain);
 										} break;
 									}
 									x_data++;
@@ -6414,7 +6457,7 @@ if they should be 1-D or 2-D arrays ?
 									(0<=start_search_interval)&&
 									(end_search_interval<signal->buffer->number_of_samples)&&
 									((signal->status==ACCEPTED)||
-										(undecided_accepted&&(signal->status==UNDECIDED))))
+									(undecided_accepted&&(signal->status==UNDECIDED))))
 								{
 									/* perform projection */
 									position= &(description->properties.electrode.position);
@@ -6422,10 +6465,10 @@ if they should be 1-D or 2-D arrays ?
 									{
 										case SOCK:
 										{
-											linear_transformation(linear_trans,position->x,position->y,
-												position->z,&x,&y,&z);
-											cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,y_data,
-												x_data,(float *)NULL);
+											linear_transformation(linear_trans,position->x,
+												position->y,position->z,&x,&y,&z);
+											cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,
+												y_data,x_data,(float *)NULL);
 										} break;
 										case PATCH:
 										{
@@ -6446,8 +6489,10 @@ if they should be 1-D or 2-D arrays ?
 									{
 										case SHORT_INT_VALUE:
 										{
-											short_int_value=(signal->buffer->signals.short_int_values)+
-												(start_search_interval*number_of_signals+(signal->index));
+											short_int_value=
+												(signal->buffer->signals.short_int_values)+
+												(start_search_interval*number_of_signals+
+												(signal->index));
 											for (j=end_search_interval-start_search_interval;j>=0;j--)
 											{
 												integral += (double)(*short_int_value);
@@ -6457,7 +6502,8 @@ if they should be 1-D or 2-D arrays ?
 										case FLOAT_VALUE:
 										{
 											float_value=(signal->buffer->signals.float_values)+
-												(start_search_interval*number_of_signals+(signal->index));
+												(start_search_interval*number_of_signals+
+												(signal->index));
 											for (j=end_search_interval-start_search_interval;j>=0;j--)
 											{
 												integral += (double)(*float_value);

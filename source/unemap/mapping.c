@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2393,7 +2393,7 @@ DESCRIPTION :
 Given the <function> and <package>, <node_order_info> and <name>, searches
 <fe_region> for the nodes in <node_order_info>, and fills them in with values
 from <function>.
-*******************************************************************************/
+==============================================================================*/
 {
 	enum Region_type region_type;
 	int count,f_index,i,j,node_number, number_of_columns,number_of_nodes,
@@ -3210,7 +3210,7 @@ LAST MODIFIED :1 March 2001
 
 DESCRIPTION :
 Constructs the fit name from the region.
-*******************************************************************************/
+==============================================================================*/
 {
 	char *fit_name,*fit_str = "_fit",*patch_str="_patch",region_num_string[10],
 		*sock_str="_sock",
@@ -3288,7 +3288,7 @@ If the identical groups don't exist, create the groups and fill them in, with
 interpolation_function_to_node_group and make_fit_elements
 If <region>->type is TORSO, and we have a default torso loaded,
 do similar with the mapped torso node group.
-*******************************************************************************/
+==============================================================================*/
 {
 	char *fit_name;
 	int return_code;
@@ -6646,7 +6646,7 @@ and array of length 3*number_of_gouraud_triangles containing indices into
 map->electrodes of pointing to the triangle's electrodes.
 No cutting of the cylinder for 2d projection is done. This happens after 2d
 projection is performed, in  draw_2d_construct_2d_gouraud_image_map
-*******************************************************************************/
+==============================================================================*/
 {
 	char undecided_accepted;
 	float *vertex,*vertices;
@@ -7325,7 +7325,7 @@ Returns -1 on error.
 A helper function for get_triangle_scan_line_intersection,
 draw_2d_construct_2d_gouraud_image_map,
 get_tri_scan_line_intersection_rgb_triple
-*******************************************************************************/
+==============================================================================*/
 {
 	int end_vertex_num;
 
@@ -7376,7 +7376,7 @@ check for these conditions before calling this function.
 This function is a quite specific (i.e. non-generic) helper function, called by
 construct_rgb_triple_gouraud_map
 cf get_triangle_scan_line_intersection
-*******************************************************************************/
+==============================================================================*/
 {
 	float grad,inverse_y_length,value_0r,value_0g,value_0b,value_1r,value_1g,
 		value_1b;
@@ -7472,7 +7472,7 @@ specified by <electrode_x> <electrode_y>, <electrode_rgbs>, connected by
 <electrode_x> <electrode_y>, <electrode_rgbs>.
 cf draw_2d_construct_2d_gouraud_image_map, which works with floats not
 rgb triples.
-*******************************************************************************/
+==============================================================================*/
 {
 	unsigned char vertex_rgb_value[9]/*rgb for 3 vertices*/,start_rgb_value[3],
 		end_rgb_value[3];
@@ -8937,7 +8937,7 @@ LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 Fill in the 2D map pixel image.
-*******************************************************************************/
+==============================================================================*/
 {
 	float background_pixel_value,boundary_pixel_value,f_approx,max_f,min_f,
 		*pixel_value,range_f;
@@ -9055,7 +9055,7 @@ LAST MODIFIED : 19 September 2001
 
 DESCRIPTION :
 draw the constant thickness contours
-*******************************************************************************/
+==============================================================================*/
 {
 	Display *display;
 	GC graphics_context;
@@ -9418,7 +9418,7 @@ LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
 <frame>'s minimum and maximum.
-*******************************************************************************/
+==============================================================================*/
 {
 	int return_code;
 	struct Map_frame *frame;
@@ -9465,7 +9465,7 @@ LAST MODIFIED : 18 September 2001
 DESCRIPTION :
 Sets the  <map>'s minimum and maximum,
 based upon its  sub_map(s)'  min and max.
-*******************************************************************************/
+==============================================================================*/
 {
 	float min_f,max_f;
 	int i;
@@ -9517,7 +9517,7 @@ LAST MODIFIED : 18 September 2001
 DESCRIPTION :
 Sets the  <map>'s minimum and maximum,
 for the case map->interpolation_type==NO_INTERPOLATION.
-*******************************************************************************/
+==============================================================================*/
 {
 	char undecided_accepted;
 	float *electrode_value,f_approx,max_f,min_f;
@@ -9643,7 +9643,7 @@ LAST MODIFIED : 17 September 2001
 DESCRIPTION :
 Write the values of the contours.
 Works off map min and max values, not sub_map.
-*******************************************************************************/
+==============================================================================*/
 {
 	char draw_contour_value,value_string[11];
 	Display *display;
@@ -9814,7 +9814,7 @@ LAST MODIFIED :10 September 2001
 
 DESCRIPTION :
 Draw the fibres
-*******************************************************************************/
+==============================================================================*/
 {
 	char valid_mu_and_theta;
 	Display *display;
@@ -10270,7 +10270,7 @@ DESCRIPTION :
 Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
 <descent> to the map given by <map_x_offset> <map_y_offset> <map_width>
 < map_height>
-*******************************************************************************/
+==============================================================================*/
 {
 	int return_code;
 
@@ -10319,7 +10319,7 @@ LAST MODIFIED : 17 September 2001
 
 DESCRIPTION :
 draw the extrema
-*******************************************************************************/
+==============================================================================*/
 {
 	Display *display;
 	char *name,value_string[11];
@@ -10491,7 +10491,7 @@ LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 draw the landmarks
-*******************************************************************************/
+==============================================================================*/
 {
 	Display *display;
 	GC graphics_context;
@@ -10643,7 +10643,7 @@ LAST MODIFIED : 17 October 2001
 
 DESCRIPTION :
 Write the title,using the sub_map->potential_time
-*******************************************************************************/
+==============================================================================*/
 {
 	char title[12];
 	float title_x,title_y,title_value;
@@ -10710,7 +10710,7 @@ DESCRIPTION :
 Set the colour (in <graphics_context>) and <name> of the electrode.  Name must
 already have been allocated. It's only a short string, so pass it a static
 string of length 11.
-*******************************************************************************/
+==============================================================================*/
 {
 	enum Map_type map_type;
 	float f_value,max_f,min_f;
@@ -10914,7 +10914,7 @@ static int draw_2d_electrode(struct Map *map,struct Sub_map *sub_map,
 LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :  Draw the electrode in 2D, and write it's name.
-*******************************************************************************/
+==============================================================================*/
 {
 	Display *display;
 	enum Electrodes_marker_type electrodes_marker_type;
@@ -11034,7 +11034,7 @@ Draws lines of delaunay triangles.
 Really a debugging function.
 Could be more efficient, as most lines are shared and will be drawn twice.
 Must call map_2d_delaunay first.
-*******************************************************************************/
+==============================================================================*/
 {
 	Display *display;
 	GC graphics_context;
@@ -11096,7 +11096,7 @@ LAST MODIFIED : 3 May 2002
 
 DESCRIPTION :
 Actually draw the map from the calculated data.
-*******************************************************************************/
+==============================================================================*/
 {
 	char draw_boundary,draw_contours,*electrode_drawn,name[11];
 	Display *display;
@@ -11284,7 +11284,7 @@ LAST MODIFIED : 17 July 2001
 
 DESCRIPTION :
 Perform projection and update ranges for 2d map
-*******************************************************************************/
+==============================================================================*/
 {
 	float a,b,c,lambda,*max_x,*max_y,*min_x,*min_y,mu,r,theta;
 	int *draw_region_number,region_number,return_code;
@@ -11442,11 +11442,11 @@ static int draw_2d_calculate_electrode_value(struct Map *map,
 	struct Sub_map *sub_map,char *electrode_drawn,struct Device	**electrode,
 	float *f_value)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
-*******************************************************************************/
+==============================================================================*/
 {
 	char undecided_accepted;
 	double integral;
@@ -11482,10 +11482,11 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 			switch (map_type)
 			{
 				case SINGLE_ACTIVATION:
+				case ACTIVATION_POTENTIAL:
 				{
 					if ((signal=(*electrode)->signal)&&
 						((ACCEPTED==signal->status)||(undecided_accepted&&
-							(UNDECIDED==signal->status)))&&
+						(UNDECIDED==signal->status)))&&
 						(buffer=signal->buffer)&&(times=buffer->times))
 					{
 						event=signal->first_event;
@@ -11495,10 +11496,39 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 						}
 						if (event&&(event->number==event_number)&&
 							((ACCEPTED==event->status)||
-								(undecided_accepted&&(UNDECIDED==event->status))))
+							(undecided_accepted&&(UNDECIDED==event->status)))&&
+							(0<=event->time)&&(event->time<buffer->number_of_samples))
 						{
-							*f_value=(float)(times[event->time]-times[datum])*1000/
-								(signal->buffer->frequency);
+							switch (map_type)
+							{
+								case SINGLE_ACTIVATION:
+								{
+									*f_value=(float)(times[event->time]-times[datum])*1000/
+										(signal->buffer->frequency);
+								} break;
+								case ACTIVATION_POTENTIAL:
+								{
+									switch (signal->buffer->value_type)
+									{
+										case SHORT_INT_VALUE:
+										{
+											*f_value=(float)(signal->buffer->signals.
+												short_int_values)[(event->time)*
+												(signal->buffer->number_of_signals)+
+												(signal->index)];
+										} break;
+										case FLOAT_VALUE:
+										{
+											*f_value=(signal->buffer->signals.
+												float_values)[(event->time)*
+												(signal->buffer->number_of_signals)+
+												(signal->index)];
+										} break;
+									}
+									*f_value=((*f_value)-((*electrode)->channel->offset))*
+										((*electrode)->channel->gain);
+								} break;
+							}
 							*electrode_drawn=1;
 						}
 					}
@@ -11716,7 +11746,7 @@ LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 calculate the element coordinates for the 2d map.
-*******************************************************************************/
+==============================================================================*/
 {
 	float a,b,c,d,mu,pi_over_2,two_pi,theta;
 	int return_code;
@@ -11864,7 +11894,7 @@ LAST MODIFIED : 17 July 2001
 
 DESCRIPTION :
 Set <f_approx> from <function>
-*******************************************************************************/
+==============================================================================*/
 {
 	float *d2fdxdy,*dfdy,*f,*dfdx,dfdx_i_j,dfdx_i_jm1,dfdx_im1_j,
 		dfdx_im1_jm1,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,dfdy_im1_jm1,d2fdxdy_i_j,
@@ -11971,7 +12001,7 @@ static int draw_2d_map_boundary(char *background_map_boundary_base,
 LAST MODIFIED : 20 July 2001
 
 DESCRIPTION : (possibly) draw map boundary
-*******************************************************************************/
+==============================================================================*/
 {
 	char *background_map_boundary;
 	int i,j,return_code;
@@ -12027,7 +12057,7 @@ LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 sets <sub_map>'s min_x, max_x min_y max_y
-*******************************************************************************/
+==============================================================================*/
 {
 	float *min_x,*max_x,*min_y,*max_y,pi;
 	int *draw_region_number,region_number,return_code,temp_region_number,
@@ -12109,7 +12139,7 @@ LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Calculate the screen to map transform for the 2d Map.
-*******************************************************************************/
+==============================================================================*/
 {
 	float *min_x,*max_x,*min_y,*max_y,*stretch_x,*stretch_y,
 		pixel_aspect_ratio;
@@ -12215,7 +12245,7 @@ Given a triangle's vertex given by the offset <triangle_vertex_index> into the
 array of rectangular cartesian vertices <vertices>, converts this x,y,z into
 <r> <theta> <z_cp> and returns it.
 See cylinder_delaunay for definition of <triangle_vertex_index>, <vertices>
-*******************************************************************************/
+==============================================================================*/
 {
 	float x,y,z_rc;
 	int return_code,index;
@@ -12257,7 +12287,7 @@ See cylinder_delaunay for definition of <vertex0_index> <vertex1_index>
 <vertex2_index>,<*vertices>.
 Would be possible to generalise for any polygon, but this would be slower,
 and I don't see a need.
-*******************************************************************************/
+==============================================================================*/
 {
 	float r[3],theta[3],z_cp[3],min_theta,max_theta;
 	int i,return_code;
@@ -12328,7 +12358,7 @@ DESCRIPTION :
 Sets <min_value> <max_value> based on <value>,
 	<maximum_region> <minimum_region> based on <region>
 	<minimum_x> <minimum_y> <maximum_x> <maximum_y> based on <x> ,<y>.
-*******************************************************************************/
+==============================================================================*/
 {
 	int return_code;
 
@@ -12391,7 +12421,7 @@ LAST MODIFIED 9 November 2001
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
 <sub_map> frame, using interpolation.
-*******************************************************************************/
+==============================================================================*/
 {
 	enum Map_type map_type;
 	char valid_u_and_v;
@@ -12557,7 +12587,7 @@ check for these conditions before calling this function.
 This function is a quite specific (i.e. non-generic) helper function, called by
 draw_2d_construct_2d_gouraud_image_map.
 cf get_tri_scan_line_intersection_rgb_triple
-*******************************************************************************/
+==============================================================================*/
 {
 	float grad,inverse_y_length,value_0,value_1;
 	int a_x,b_x,a_y,b_y,end_vertex_num,return_code,start_vertex_num;
@@ -12643,7 +12673,7 @@ Construct a colour map image for colour map or contours or  values  in the
 Only works for TORSOs, requires that the  electrodes are approximately a
 cylinder with z axis  up centre.
 cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
-*******************************************************************************/
+==============================================================================*/
 {
 	enum Map_type map_type;
 	float delta_value,delta_y,end_value,*electrode_value,gradient[3],
@@ -12978,7 +13008,7 @@ LAST MODIFIED : 19 November 2001
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
 <sub_map> frame.
-*******************************************************************************/
+==============================================================================*/
 {
 	char *background_map_boundary,*background_map_boundary_base,*temp_char;
 	Display *display;
@@ -13309,7 +13339,7 @@ static int draw_2d_make_map(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing,int map_width,int map_height,int map_x_offset,
 	int map_y_offset,float frame_time,int use_potential_time)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 8 June 2003
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height>
@@ -13388,10 +13418,12 @@ to the drawing or writes to a postscript file.
 		switch (map_type)
 		{
 			case SINGLE_ACTIVATION:
+			case ACTIVATION_POTENTIAL:
 			{
 				if (!map->event_number)
 				{
-					display_message(ERROR_MESSAGE,"draw_2d_make_map.  Missing event_number");
+					display_message(ERROR_MESSAGE,
+						"draw_2d_make_map.  Missing event_number");
 				}
 				if (!map->datum)
 				{
