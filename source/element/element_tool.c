@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 18 September 2000
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -960,7 +960,7 @@ int destroy_listed_elements(struct LIST(FE_element) *element_list,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 Destroys all the elements in <element_list> that are not accessed outside
@@ -1044,6 +1044,7 @@ Note that <element_list> should only contain top-level-elements, at present.
 			Element_point_ranges_selection_end_cache(element_point_ranges_selection);
 		}
 		/* now remove the elements from the manager */
+		MANAGER_BEGIN_CACHE(FE_element)(element_manager);
 		number_of_elements_destroyed=0;
 		while (return_code&&(element=FIRST_OBJECT_IN_LIST_THAT(FE_element)(
 			(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL,element_list)))
@@ -1071,6 +1072,7 @@ Note that <element_list> should only contain top-level-elements, at present.
 				return_code=0;
 			}
 		}
+		MANAGER_END_CACHE(FE_element)(element_manager);
 		if (0<(number_of_elements_not_destroyed=
 			NUMBER_IN_LIST(FE_element)(not_destroyed_element_list)))
 		{
