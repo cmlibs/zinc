@@ -70,12 +70,14 @@ sub new
 		}
 		else
 		{
-			croak "Could not create $class";
+			print "Could not create $class\n";
+			$objref;
 		}
 	}
 	else
 	{
-		croak "Missing summands";
+		print "Missing summands\n";
+		$objref;
 	}
 }
 
