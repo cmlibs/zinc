@@ -16419,7 +16419,7 @@ Executes a GFX READ command.
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Executes a GFX SELECT command.
@@ -16432,10 +16432,13 @@ Executes a GFX SELECT command.
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
+	struct FE_element_select_grid_field_ranges_data select_grid_points_data;
+	struct FE_field *grid_field;
 	struct FE_node *node;
-	struct Multi_range *data_ranges,*element_ranges,*face_ranges,*line_ranges,
-		*multi_range,*node_ranges;
+	struct Multi_range *data_ranges,*element_ranges,*face_ranges,
+		*grid_point_ranges,*line_ranges,*multi_range,*node_ranges;
 	struct Option_table *option_table;
+	struct Set_FE_field_conditional_data set_grid_field_data;
 
 	ENTER(execute_command_gfx_select);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -16443,18 +16446,36 @@ Executes a GFX SELECT command.
 	{
 		if (state->current_token)
 		{
+			element_point_ranges=(struct Element_point_ranges *)NULL;
 			data_ranges=CREATE(Multi_range)();
 			element_ranges=CREATE(Multi_range)();
 			face_ranges=CREATE(Multi_range)();
+			grid_point_ranges=CREATE(Multi_range)();
 			line_ranges=CREATE(Multi_range)();
 			node_ranges=CREATE(Multi_range)();
-			element_point_ranges=(struct Element_point_ranges *)NULL;
+			if ((grid_field=FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
+				"grid_point_number",command_data->fe_field_manager))&&
+				FE_field_is_1_component_integer(grid_field,(void *)NULL))
+			{
+				ACCESS(FE_field)(grid_field);
+			}
+			else
+			{
+				grid_field=(struct FE_field *)NULL;
+			}
 			option_table=CREATE(Option_table)();
 			Option_table_add_entry(option_table,"data",data_ranges,
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"elements",element_ranges,
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"faces",face_ranges,
+				(void *)NULL,set_Multi_range);
+			set_grid_field_data.fe_field_manager=command_data->fe_field_manager;
+			set_grid_field_data.conditional_function=FE_field_is_1_component_integer;
+			set_grid_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"grid_field",
+				&grid_field,&set_grid_field_data,set_FE_field_conditional);
+			Option_table_add_entry(option_table,"grid_points",grid_point_ranges,
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"lines",line_ranges,
 				(void *)NULL,set_Multi_range);
@@ -16630,6 +16651,32 @@ Executes a GFX SELECT command.
 					}
 					FE_element_selection_end_cache(command_data->element_selection);
 				}
+				/* grid_points */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(grid_point_ranges)))
+				{
+					if (grid_field)
+					{
+						Element_point_ranges_selection_begin_cache(
+							command_data->element_point_ranges_selection);
+						/* inefficient: go through every element in manager */
+						select_grid_points_data.element_point_ranges_selection=
+							command_data->element_point_ranges_selection;
+						select_grid_points_data.grid_field=grid_field;
+						select_grid_points_data.ranges=grid_point_ranges;
+						FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							FE_element_select_grid_field_ranges,
+							(void *)&select_grid_points_data,
+							command_data->element_manager);
+						Element_point_ranges_selection_end_cache(
+							command_data->element_point_ranges_selection);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"To select grid_points, "
+							"need integer grid_field (eg. grid_point_number)");
+					}
+				}
 				/* lines */
 				if (0<(total_number_in_ranges=
 					Multi_range_get_total_number_in_ranges(line_ranges)))
@@ -16738,8 +16785,13 @@ Executes a GFX SELECT command.
 				}
 			}
 			DESTROY(Option_table)(&option_table);
+			if (grid_field)
+			{
+				DEACCESS(FE_field)(&grid_field);
+			}
 			DESTROY(Multi_range)(&node_ranges);
 			DESTROY(Multi_range)(&line_ranges);
+			DESTROY(Multi_range)(&grid_point_ranges);
 			DESTROY(Multi_range)(&face_ranges);
 			DESTROY(Multi_range)(&element_ranges);
 			DESTROY(Multi_range)(&data_ranges);
@@ -16768,7 +16820,7 @@ Executes a GFX SELECT command.
 static int execute_command_gfx_unselect(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Executes a GFX UNSELECT command.
@@ -16781,10 +16833,13 @@ Executes a GFX UNSELECT command.
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
+	struct FE_element_select_grid_field_ranges_data unselect_grid_points_data;
+	struct FE_field *grid_field;
 	struct FE_node *node;
-	struct Multi_range *data_ranges,*element_ranges,*face_ranges,*line_ranges,
-		*multi_range,*node_ranges;
+	struct Multi_range *data_ranges,*element_ranges,*face_ranges,
+		*grid_point_ranges,*line_ranges,*multi_range,*node_ranges;
 	struct Option_table *option_table;
+	struct Set_FE_field_conditional_data set_grid_field_data;
 
 	ENTER(execute_command_gfx_unselect);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -16792,18 +16847,36 @@ Executes a GFX UNSELECT command.
 	{
 		if (state->current_token)
 		{
+			element_point_ranges=(struct Element_point_ranges *)NULL;
 			data_ranges=CREATE(Multi_range)();
 			element_ranges=CREATE(Multi_range)();
 			face_ranges=CREATE(Multi_range)();
+			grid_point_ranges=CREATE(Multi_range)();
 			line_ranges=CREATE(Multi_range)();
 			node_ranges=CREATE(Multi_range)();
-			element_point_ranges=(struct Element_point_ranges *)NULL;
+			if ((grid_field=FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
+				"grid_point_number",command_data->fe_field_manager))&&
+				FE_field_is_1_component_integer(grid_field,(void *)NULL))
+			{
+				ACCESS(FE_field)(grid_field);
+			}
+			else
+			{
+				grid_field=(struct FE_field *)NULL;
+			}
 			option_table=CREATE(Option_table)();
 			Option_table_add_entry(option_table,"data",data_ranges,
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"elements",element_ranges,
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"faces",face_ranges,
+				(void *)NULL,set_Multi_range);
+			set_grid_field_data.fe_field_manager=command_data->fe_field_manager;
+			set_grid_field_data.conditional_function=FE_field_is_1_component_integer;
+			set_grid_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"grid_field",
+				&grid_field,&set_grid_field_data,set_FE_field_conditional);
+			Option_table_add_entry(option_table,"grid_points",grid_point_ranges,
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"lines",line_ranges,
 				(void *)NULL,set_Multi_range);
@@ -16992,6 +17065,32 @@ Executes a GFX UNSELECT command.
 					}
 					FE_element_selection_end_cache(command_data->element_selection);
 				}
+				/* grid_points */
+				if (0<(total_number_in_ranges=
+					Multi_range_get_total_number_in_ranges(grid_point_ranges)))
+				{
+					if (grid_field)
+					{
+						Element_point_ranges_selection_begin_cache(
+							command_data->element_point_ranges_selection);
+						/* inefficient: go through every element in manager */
+						unselect_grid_points_data.element_point_ranges_selection=
+							command_data->element_point_ranges_selection;
+						unselect_grid_points_data.grid_field=grid_field;
+						unselect_grid_points_data.ranges=grid_point_ranges;
+						FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							FE_element_unselect_grid_field_ranges,
+							(void *)&unselect_grid_points_data,
+							command_data->element_manager);
+						Element_point_ranges_selection_end_cache(
+							command_data->element_point_ranges_selection);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"To unselect grid_points, "
+							"need integer grid_field (eg. grid_point_number)");
+					}
+				}
 				/* lines */
 				if (0<(total_number_in_ranges=
 					Multi_range_get_total_number_in_ranges(line_ranges)))
@@ -17108,7 +17207,13 @@ Executes a GFX UNSELECT command.
 				}
 			}
 			DESTROY(Option_table)(&option_table);
+			if (grid_field)
+			{
+				DEACCESS(FE_field)(&grid_field);
+			}
+			DESTROY(Multi_range)(&node_ranges);
 			DESTROY(Multi_range)(&line_ranges);
+			DESTROY(Multi_range)(&grid_point_ranges);
 			DESTROY(Multi_range)(&face_ranges);
 			DESTROY(Multi_range)(&element_ranges);
 			DESTROY(Multi_range)(&data_ranges);
