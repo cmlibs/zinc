@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_field_viewer_widget.c
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 22 May 2000
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -309,7 +309,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 static void node_field_viewer_widget_value_destroy_CB(Widget widget,
 	void *user_data,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 22 May 2000
 
 DESCRIPTION :
 Cleans up the nodal_value_information user_data for the node value text field.
@@ -317,14 +317,14 @@ Cleans up the nodal_value_information user_data for the node value text field.
 {
 	struct Nodal_value_information *nodal_value_information;
 
-	ENTER(node_field_viewer_widget_value_CB);
+	ENTER(node_field_viewer_widget_value_destroy_CB);
 	USE_PARAMETER(user_data);
 	USE_PARAMETER(call_data);
 	nodal_value_information=(struct Nodal_value_information *)NULL;
 	XtVaGetValues(widget,XmNuserData,&nodal_value_information,NULL);
 	DEALLOCATE(nodal_value_information);
 	LEAVE;
-} /* node_field_viewer_widget_value_CB */
+} /* node_field_viewer_widget_value_destroy_CB */
 
 static void node_field_viewer_widget_value_CB(Widget widget,
 	void *node_field_viewer_void,void *call_data)
@@ -558,7 +558,7 @@ values whose value_type was not recognized.
 static int node_field_viewer_widget_setup_components(
 	struct Node_field_viewer_widget_struct *node_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 22 May 2000
 
 DESCRIPTION :
 Creates the array of cells containing field component values and derivatives
@@ -569,8 +569,8 @@ and their labels.
 	char *component_name;
 	enum FE_nodal_value_type *component_nodal_value_types,nodal_value_type;
 	enum Computed_field_type field_type;
-	int col,k,num_args,number_of_components,number_of_derivatives,
-		number_of_rows,number_of_unknown_nodal_value_types,return_code,row;
+	int col,comp_no,k,num_args,number_of_components,number_of_derivatives,
+		number_of_unknown_nodal_value_types,return_code;
 	struct Computed_field *field;
 	struct FE_field *fe_field;
 	struct FE_node *node;
@@ -595,14 +595,6 @@ and their labels.
 		{
 			number_of_components=Computed_field_get_number_of_components(field);
 			node_field_viewer->number_of_components=number_of_components;
-			if (0<number_of_components)
-			{
-				number_of_rows=number_of_components;
-			}
-			else
-			{
-				number_of_rows=1;
-			}
 			if (node_field_viewer->nodal_value_types)
 			{
 				DEALLOCATE(node_field_viewer->nodal_value_types);
@@ -613,7 +605,7 @@ and their labels.
 			XtSetArg(args[0],XmNpacking,XmPACK_COLUMN);
 			XtSetArg(args[1],XmNorientation,XmHORIZONTAL);
 			XtSetArg(args[2],XmNentryAlignment,XmALIGNMENT_CENTER);
-			XtSetArg(args[3],XmNnumColumns,number_of_rows+1);
+			XtSetArg(args[3],XmNnumColumns,number_of_components+1);
 			if (node_field_viewer->component_rowcol=XmCreateRowColumn(
 				node_field_viewer->widget,"node_field_viewer_rowcol",args,4))
 			{
@@ -631,18 +623,18 @@ and their labels.
 						display_message(WARNING_MESSAGE,"Unknown nodal derivative types");
 					}
 					component_nodal_value_types=(enum FE_nodal_value_type *)NULL;
-					for (row=0;(row<=number_of_rows)&&return_code;row++)
+					for (comp_no=0;(comp_no<=number_of_components)&&return_code;comp_no++)
 					{
-						if (0 < row)
+						if (0 < comp_no)
 						{
 							if (COMPUTED_FIELD_FINITE_ELEMENT == field_type)
 							{
 								number_of_derivatives=
 									get_FE_node_field_component_number_of_derivatives(
-										node,fe_field,row-1);
+										node,fe_field,comp_no-1);
 								if (!(component_nodal_value_types=
 									get_FE_node_field_component_nodal_value_types(
-										node,fe_field,row-1)))
+										node,fe_field,comp_no-1)))
 								{
 									return_code=0;
 								}
@@ -672,7 +664,7 @@ and their labels.
 									nodal_value_type=FE_NODAL_VALUE;
 								}
 							}
-							if (0 == row)
+							if (0 == comp_no)
 							{
 								/* nodal value type labels; note blank cell in the corner */
 								if (0 < col)
@@ -688,9 +680,9 @@ and their labels.
 									/* component label */
 									if (((COMPUTED_FIELD_FINITE_ELEMENT == field_type)&&
 										(component_name=get_FE_field_component_name(fe_field,
-											row-1)))||
+											comp_no-1)))||
 										(component_name=
-											Computed_field_get_component_name(field,row-1)))
+											Computed_field_get_component_name(field,comp_no-1)))
 									{
 										new_string=XmStringCreateSimple(component_name);
 										DEALLOCATE(component_name);
@@ -721,7 +713,7 @@ and their labels.
 											struct Nodal_value_information,1))
 										{
 											nodal_value_information->field=field;
-											nodal_value_information->component_number=row-1;
+											nodal_value_information->component_number=comp_no-1;
 											nodal_value_information->type=nodal_value_type;
 											nodal_value_information->version=0;
 										}

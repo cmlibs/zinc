@@ -1,15 +1,15 @@
 /*******************************************************************************
 FILE : node_field_viewer_widget.h
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 22 May 2000
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
 over a node. One field at a time can be viewed/edited.
 Note the node passed to this widget should be a non-managed local copy.
 ==============================================================================*/
-#if !defined (NODE_FIELD_VIEWER_H)
-#define NODE_FIELD_VIEWER_H
+#if !defined (NODE_FIELD_VIEWER_WIDGET_H)
+#define NODE_FIELD_VIEWER_WIDGET_H
 
 #include "general/callback.h"
 #include "finite_element/finite_element.h"
@@ -59,4 +59,4 @@ the editor works on the node itself, not a local copy. Hence, only pass
 unmanaged nodes to this widget.
 ==============================================================================*/
 
-#endif /* !defined (NODE_FIELD_VIEWER_H) */
+#endif /* !defined (NODE_FIELD_VIEWER_WIDGET_H) */
