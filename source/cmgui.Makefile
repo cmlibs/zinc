@@ -845,17 +845,22 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_color_based_segment.c \
 	image_processing/computed_field_dilate_filter.c \
 	image_processing/computed_field_erode_filter.c \
+	image_processing/computed_field_first_order_statistics.c \
 	image_processing/computed_field_gaussian_filter.c \
 	image_processing/computed_field_haar_wavelet_decomp.c \
 	image_processing/computed_field_haar_wavelet_reconstruct.c \
 	image_processing/computed_field_histogram_based_threshold.c \
 	image_processing/computed_field_histogram_equalize.c \
+	image_processing/computed_field_histogram_normalize.c \
+	image_processing/computed_field_histogram_stretch.c \
 	image_processing/computed_field_image_contour.c \
 	image_processing/computed_field_image_enhancement.c \
 	image_processing/computed_field_image_mask.c \
 	image_processing/computed_field_image_mean_value.c \
 	image_processing/computed_field_image_threshold.c \
 	image_processing/computed_field_iteration_threshold.c \
+	image_processing/computed_field_k_nearest_mean.c \
+	image_processing/computed_field_local_mean_smooth.c \
 	image_processing/computed_field_local_std.c \
 	image_processing/computed_field_median_filter.c \
 	image_processing/computed_field_sobel_filter.c \
