@@ -447,7 +447,7 @@ be shared by multiple materials using the same program.
 							, &error);
 
 
-						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
+						if ((MATERIAL_PROGRAM_PER_PIXEL_TEXTURING == material_program->type)
 							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
 						{
 							append_string(&fragment_program_string, 
