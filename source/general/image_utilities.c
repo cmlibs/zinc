@@ -17,7 +17,7 @@ Utilities for handling images.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
-#define DEBUG 1
+/* #define DEBUG 1 */
 #if defined SGI
 #define __BYTE_ORDER 4321 
 #endif /* defined SGI */
