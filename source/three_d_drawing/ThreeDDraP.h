@@ -162,5 +162,14 @@ LAST MODIFIED : 15 July 1999
 DESCRIPTION :
 Exports the shareable context for the digital media extensions.
 ==============================================================================*/
+
+int ThreeDDrawing_get_glx_version(int *glx_major_version_number, 
+	int *glx_minor_version_number);
+/*******************************************************************************
+LAST MODIFIED : 12 December 2001
+
+DESCRIPTION :
+Exports the glx version numbers.
+==============================================================================*/
 #endif /* defined (OPENGL_API) */
 #endif

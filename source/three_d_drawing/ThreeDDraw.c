@@ -99,6 +99,8 @@ static Widget current_ThreeDDrawing=(Widget)NULL;
 /* each new one a context to share with. The shareable_context will be the */
 /* first context created, and is only destroyed in X3dThreeDDrawingCleanUp */
 static GLXContext shareable_context=(GLXContext)NULL;
+static int glx_major_version = 0;
+static int glx_minor_version = 0;
 #endif
 
 /*
@@ -776,9 +778,11 @@ because the initialize method is downward chained.
 			if (True==glXQueryVersion(display,&major_version_number,
 				&minor_version_number))
 			{
-				/* only want to print this once */
-				if (!shareable_context)
+				if (!glx_major_version)
 				{
+					glx_major_version = major_version_number;
+					glx_minor_version = minor_version_number;
+					/* only want to print this once */
 					printf("GLX\n");
 					printf("  major version = %d, minor version = %d\n",
 						major_version_number,minor_version_number);
@@ -1438,6 +1442,7 @@ present.
 	return (success);
 } /* ThreeDDrawingSetValues */
 
+#if defined (OPENGL_API)
 GLXContext ThreeDDrawing_get_shareable_context(void)
 /*******************************************************************************
 LAST MODIFIED : 15 July 1999
@@ -1448,7 +1453,33 @@ Exports the shareable context for the digital media extensions.
 {
 	return(shareable_context);
 } /* ThreeDDrawing_get_shareable_context */
+#endif /* defined (OPENGL_API) */
 
+#if defined (OPENGL_API)
+int ThreeDDrawing_get_glx_version(int *glx_major_version_number, 
+	int *glx_minor_version_number)
+/*******************************************************************************
+LAST MODIFIED : 12 December 2001
+
+DESCRIPTION :
+Exports the glx version numbers.
+==============================================================================*/
+{
+	int return_code;
+
+	if (glx_major_version)
+	{
+ 		*glx_major_version_number = glx_major_version;
+ 		*glx_minor_version_number = glx_minor_version;
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return(return_code);
+} /* ThreeDDrawing_get_glx_version */
+#endif /* defined (OPENGL_API) */
 
 static void ThreeDDrawingResize(Widget widget)
 /*******************************************************************************
