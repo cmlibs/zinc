@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 3 November 2004
+LAST MODIFIED : 4 March 2005
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -3014,19 +3014,19 @@ Assumes values_storage has already been allocated.
 } /* FE_node_field_initialise_value_storage */
 #endif /* defined (OLD_CODE) */
 
-struct FE_node_field_copy_values_storage_data
+struct FE_node_field_merge_values_storage_data
 {
 	Value_storage *new_values_storage;
 	struct LIST(FE_node_field) *old_node_field_list;
 	Value_storage *old_values_storage;
 	struct LIST(FE_node_field) *add_node_field_list;
 	Value_storage *add_values_storage;
-}; /* FE_node_field_copy_values_storage_data */
+}; /* FE_node_field_merge_values_storage_data */
 
-static int FE_node_field_copy_values_storage(
+static int FE_node_field_merge_values_storage(
 	struct FE_node_field *new_node_field,	void *copy_data_void)
 /*******************************************************************************
-LAST MODIFIED: 20 February 2003
+LAST MODIFIED: 4 March 2005
 
 DESCRIPTION:
 If <new_node_field> uses values storage then:
@@ -3041,24 +3041,28 @@ old values are copied followed by the add values to correctly merge the times.
 Copies the values for <new_node_field> into <new_values_storage> from the
 <old_values_storage> with the equivalent node field in <old_node_field_list>.
 
+... when <new_values_storage> is not provided then the values described by
+<add_node_field_list> are copied from the <add_values_storage> into the 
+corresponding places in the <old_values_storage>.
+
 Notes:
 Assumes <new_values_storage> is already allocated to the appropriate size.
 Assumes the only differences between equivalent node fields are in time version;
 no checks on this are made here.
 Assumes component nodal values are consecutive and start at first component.
-<copy_data_void> points at a struct FE_node_field_copy_values_storage_data.
+<copy_data_void> points at a struct FE_node_field_merge_values_storage_data.
 ==============================================================================*/
 {	
  	enum Value_type value_type;
 	int number_of_values, return_code;
 	struct FE_field *field;
 	struct FE_node_field *add_node_field, *old_node_field;
-	struct FE_node_field_copy_values_storage_data *copy_data;
+	struct FE_node_field_merge_values_storage_data *copy_data;
 	Value_storage *destination, *source;
 
-	ENTER(FE_node_field_copy_values_storage);
+	ENTER(FE_node_field_merge_values_storage);
 	if (new_node_field && (field = new_node_field->field) && (copy_data =
-		(struct FE_node_field_copy_values_storage_data *)copy_data_void))
+		(struct FE_node_field_merge_values_storage_data *)copy_data_void))
 	{
 		return_code = 1;
 		/* only GENERAL_FE_FIELD has values stored with node */
@@ -3075,9 +3079,10 @@ Assumes component nodal values are consecutive and start at first component.
 			{
 				add_node_field = (struct FE_node_field *)NULL;
 			}
-			if (old_node_field || add_node_field)
+			if (copy_data->new_values_storage)
 			{
-				if (copy_data->new_values_storage)
+				/* Merging into a new values storage */
+				if (old_node_field || add_node_field)
 				{
 					/* destination in new_values_storage according to new_node_field */
 					destination =
@@ -3129,40 +3134,83 @@ Assumes component nodal values are consecutive and start at first component.
 				}
 				else
 				{
+					display_message(ERROR_MESSAGE, "FE_node_field_merge_values_storage.  "
+						"Could not find equivalent existing node field");
 					return_code = 0;
 				}
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
-						"FE_node_field_copy_values_storage.  Unable to copy values");
+						"FE_node_field_merge_values_storage.  Unable to copy values");
 					return_code = 0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "FE_node_field_copy_values_storage.  "
-					"Could not find equivalent existing node field");
-				return_code = 0;
+				/* Replacing values in the existing values storage by copying
+					them from the add_node_storage to the old_node_storage.
+					(old_node_field and new_node_field should be the same) */
+				if (old_node_field && (old_node_field == new_node_field))
+				{
+					if (add_node_field)
+					{
+						destination =
+							copy_data->old_values_storage + old_node_field->components->value;
+						value_type = field->value_type;
+						number_of_values = FE_node_field_get_number_of_values(new_node_field);
+						if (copy_data->add_values_storage && add_node_field->components)
+						{
+							source = copy_data->add_values_storage +
+								add_node_field->components->value;
+							if (old_node_field->time_sequence)
+							{
+								return_code = copy_time_sequence_values_storage_arrays(
+									destination, value_type, old_node_field->time_sequence,
+									add_node_field->time_sequence, number_of_values, source);
+							}
+							else
+							{
+								return_code = copy_value_storage_array(destination, value_type,
+									old_node_field->time_sequence, add_node_field->time_sequence,
+									number_of_values, source);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_node_field_merge_values_storage.  Unable to merge values");
+							return_code = 0;
+						}
+					}
+					/* else do nothing as we are leaving this field alone */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_node_field_merge_values_storage.  "
+						"Unable to find corresponding node fields when updating values.");
+					return_code = 0;
+				}
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_field_copy_values_storage.  Invalid argument(s)");
+			"FE_node_field_merge_values_storage.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_node_field_copy_values_storage */
+} /* FE_node_field_merge_values_storage */
 
-static int copy_FE_node_values_storage(struct FE_node *node,
+static int merge_FE_node_values_storage(struct FE_node *node,
 	Value_storage *values_storage,
 	struct LIST(FE_node_field) *new_node_field_list,
 	struct FE_node *add_node)
 /*******************************************************************************
-LAST MODIFIED: 1 November 2002
+LAST MODIFIED: 4 March 2005
 
 DESCRIPTION:
 For each field in <new_node_field_list> requiring values storage, finds the
@@ -3174,12 +3222,15 @@ whether the node fields have times:
 * if the node fields have times, the times arrays are allocated, then the
 values at times in <node> are copied, followed by those in <add_node>.
 Hence, the values in <add_node> take preference over those in <node>.
+If <values_storage> is not provided then the fields described in the 
+<new_node_field_list> are looked for in the <add_node> and if found the
+values are copied into the existing values storage in <node>.
 Notes:
 * there must be an equivalent node field at either <node> or <add_node>;
 * <add_node> is optional and used only by merge_FE_node. If NULL then a node
 field must be found in <node>;
-* Values_storage must already be allocated to the appropriate size but is not
-assumed to contain any information prior to being filled here;
+* Values_storage, when provided, must already be allocated to the appropriate
+size but is not assumed to contain any information prior to being filled here;
 * Any objects or arrays referenced in the values_storage are accessed or
 allocated in the new <values_storage> so <node> and <add_node> are unchanged.
 * It is up to the calling function to have checked that the node fields in
@@ -3187,9 +3238,9 @@ allocated in the new <values_storage> so <node> and <add_node> are unchanged.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node_field_copy_values_storage_data copy_data;
+	struct FE_node_field_merge_values_storage_data copy_data;
 
-	ENTER(copy_FE_node_values_storage);
+	ENTER(merge_FE_node_values_storage);
 	if (node && node->fields && new_node_field_list &&
 		((!add_node) || add_node->fields))
 	{
@@ -3207,19 +3258,19 @@ allocated in the new <values_storage> so <node> and <add_node> are unchanged.
 			copy_data.add_values_storage = (Value_storage *)NULL;
 		}
 		return_code = FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-			FE_node_field_copy_values_storage, (void *)(&copy_data),
+			FE_node_field_merge_values_storage, (void *)(&copy_data),
 			new_node_field_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"copy_FE_node_values_storage.  Invalid argument(s)");
+			"merge_FE_node_values_storage.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 	
 	return (return_code);
-} /* copy_FE_node_values_storage */
+} /* merge_FE_node_values_storage */
 
 static int get_FE_node_field_list_values_storage_size(
 	struct LIST(FE_node_field) *node_field_list)
@@ -3285,7 +3336,7 @@ and any arrays in values_storage.
 			{
 				if (ALLOCATE(dest_values_storage,Value_storage,size))
 				{
-					return_code = copy_FE_node_values_storage(node, dest_values_storage,
+					return_code = merge_FE_node_values_storage(node, dest_values_storage,
 						node->fields->node_field_list, (struct FE_node *)NULL);
 				}
 				else
@@ -5490,6 +5541,7 @@ times the size of <node_field->field->value_type> .
 
 struct Merge_FE_node_field_into_list_data
 {
+	int requires_merged_storage;
 	int values_storage_size; 
 	int number_of_values;
 	struct LIST(FE_node_field) *list;
@@ -5570,23 +5622,33 @@ appropriately.
 								FE_field_get_FE_region(field), node_field->time_sequence,
 								existing_node_field->time_sequence))
 						{
-							new_node_field = copy_create_FE_node_field_with_offset(
-								existing_node_field, /*offset*/0);
-							REACCESS(FE_time_sequence)(&(new_node_field->time_sequence),
-								merged_time_sequence);
-							if (REMOVE_OBJECT_FROM_LIST(FE_node_field)(
-								existing_node_field, merge_data->list) &&
-							   ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field,
-								merge_data->list))
+							if (compare_FE_time_sequence(merged_time_sequence,
+									existing_node_field->time_sequence))
 							{
-								/* Finished */
+								/* Time sequences are different */
+								merge_data->requires_merged_storage = 1;
+								new_node_field = copy_create_FE_node_field_with_offset(
+									existing_node_field, /*offset*/0);
+								REACCESS(FE_time_sequence)(&(new_node_field->time_sequence),
+									merged_time_sequence);
+								if (REMOVE_OBJECT_FROM_LIST(FE_node_field)(
+									existing_node_field, merge_data->list) &&
+									ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field,
+									merge_data->list))
+								{
+									/* Finished */
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"merge_FE_node_field_into_list.  "
+										"Unable to replace node_field in merged list.");
+									return_code = 0;
+								}
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-									"merge_FE_node_field_into_list.  "
-									"Unable to replace node_field in merged list.");
-								return_code = 0;
+								/* Can continue with the existing time_sequence */
 							}
 						}
 						else
@@ -5628,6 +5690,7 @@ appropriately.
 		{
 			/* the node field is not already in the list */
 			/* create a new node field with modified offsets */
+			merge_data->requires_merged_storage = 1;
 			if ((component = node_field->components) &&
 				(new_node_field = CREATE(FE_node_field)(field)))
 			{
@@ -15776,7 +15839,7 @@ their FE_field listed in <fe_field_list>.
 			if ((0 == copy_data.values_storage_size) ||
 				(ALLOCATE(values_storage, Value_storage,
 					copy_data.values_storage_size) &&
-					copy_FE_node_values_storage(node, values_storage,
+					merge_FE_node_values_storage(node, values_storage,
 						copy_data.node_field_list, (struct FE_node *)NULL)))
 			{
 				/* create a node field info for the combined list */
@@ -20746,6 +20809,7 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 					(void *)(&number_of_values), node_field_list))
 			{
 				/* include the new information */
+				merge_data.requires_merged_storage = 0;
 				merge_data.values_storage_size = values_storage_size;
 				merge_data.number_of_values = number_of_values;
 				/* node field list */
@@ -20754,53 +20818,63 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 					merge_FE_node_field_into_list, (void *)(&merge_data),
 					source_fields->node_field_list))
 				{
-					number_of_values = merge_data.number_of_values;
-					values_storage_size = merge_data.values_storage_size;
-					values_storage = (Value_storage *)NULL;
-					/* allocate the new values storage and fill it with values from the
-						 destination and the source, favouring the latter but merging all
-						 time arrays */
-					if ((0 == values_storage_size) ||
-						(ALLOCATE(values_storage, Value_storage, values_storage_size) &&
-							copy_FE_node_values_storage(destination, values_storage,
-								node_field_list, source)))
+					if (!merge_data.requires_merged_storage)
 					{
-						/* create a node field info for the combined list */
-						if (fe_node_field_info = FE_region_get_FE_node_field_info(
-							fe_region, number_of_values, node_field_list))
+						/* Don't need to reallocate memory as we are only overwriting
+							existing values */
+						merge_FE_node_values_storage(destination, (Value_storage *)NULL,
+							node_field_list, source);
+					}
+					else
+					{
+						number_of_values = merge_data.number_of_values;
+						values_storage_size = merge_data.values_storage_size;
+						values_storage = (Value_storage *)NULL;
+						/* allocate the new values storage and fill it with values from the
+							destination and the source, favouring the latter but merging all
+							time arrays */
+						if ((0 == values_storage_size) ||
+							(ALLOCATE(values_storage, Value_storage, values_storage_size) &&
+								merge_FE_node_values_storage(destination, values_storage,
+									node_field_list, source)))
 						{
-							/* clean up old destination values_storage */
-							if (destination->values_storage)
+							/* create a node field info for the combined list */
+							if (fe_node_field_info = FE_region_get_FE_node_field_info(
+									 fe_region, number_of_values, node_field_list))
 							{
-								if (destination_fields)
-								{			
-									FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
-										FE_node_field_free_values_storage_arrays,
-										(void *)destination, destination_fields->node_field_list);
+								/* clean up old destination values_storage */
+								if (destination->values_storage)
+								{
+									if (destination_fields)
+									{			
+										FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+											FE_node_field_free_values_storage_arrays,
+											(void *)destination, destination_fields->node_field_list);
+									}
+									DEALLOCATE(destination->values_storage);
 								}
-								DEALLOCATE(destination->values_storage);
+								/* insert new fields and values_storage */
+								REACCESS(FE_node_field_info)(&(destination->fields),
+									fe_node_field_info);
+								destination->values_storage = values_storage;
 							}
-							/* insert new fields and values_storage */
-							REACCESS(FE_node_field_info)(&(destination->fields),
-								fe_node_field_info);
-							destination->values_storage = values_storage;
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"merge_FE_node.  Could not get node field info");
+								/* do not bother to clean up dynamic contents of values_storage */
+								DEALLOCATE(values_storage);
+								return_code = 0;
+							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"merge_FE_node.  Could not get node field info");
-							/* do not bother to clean up dynamic contents of values_storage */
+								"merge_FE_node.  Could copy values_storage");
+							/* cannot clean up dynamic contents of values_storage */
 							DEALLOCATE(values_storage);
 							return_code = 0;
 						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"merge_FE_node.  Could copy values_storage");
-						/* cannot clean up dynamic contents of values_storage */
-						DEALLOCATE(values_storage);
-						return_code = 0;
 					}
 				}
 				else
@@ -28037,7 +28111,7 @@ unchanged.
 * It is up to the calling function to have checked that the element fields in
 <element>, <add_element> and <new_element_field_list> are compatible.
 ???RC Ignore references to times in the above since not yet implemented; once
-they are, should follow pattern of copy_FE_node_values_storage.
+they are, should follow pattern of merge_FE_node_values_storage.
 ==============================================================================*/
 {
 	int dimension, return_code;
