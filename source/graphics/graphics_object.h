@@ -543,6 +543,15 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
+int GT_glyph_set_set_auxiliary_integer_identifier(struct GT_glyph_set *glyph_set,
+	int identifier);
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the extra integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+
 struct GT_nurbs *CREATE(GT_nurbs)(void);
 /*******************************************************************************
 LAST MODIFIED : 10 March 1999

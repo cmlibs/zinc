@@ -5559,7 +5559,8 @@ Converts a finite element into a graphics object with the supplied settings.
 								{
 									/* set auxiliary_object_name for glyph_set to
 										 element_graphics_name so we can edit */
-									glyph_set->auxiliary_object_name = element_graphics_name;
+									GT_glyph_set_set_auxiliary_integer_identifier(glyph_set,
+										element_graphics_name);
 								}
 								if (top_level_xi_point_numbers)
 								{

@@ -2345,6 +2345,33 @@ Sets the integer identifier used by the graphics to distinguish this object.
 	return (return_code);
 } /* GT_glyph_set_set_integer_identifier */
 
+int GT_glyph_set_set_auxiliary_integer_identifier(struct GT_glyph_set *glyph_set,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_glyph_set_set_auxiliary_integer_identifier);
+	if (glyph_set)
+	{
+		glyph_set->auxiliary_object_name = identifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_glyph_set_set_auxiliary_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_glyph_set_set_auxiliary_integer_identifier */
+
 struct GT_nurbs *CREATE(GT_nurbs)(void)
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998

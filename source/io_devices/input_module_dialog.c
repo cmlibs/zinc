@@ -31,6 +31,12 @@ data is accepted - pos,tangent,normal.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
+
+/* SAB Trying to hide the guts of GT_object and its primitives,
+	however the stream point stuff currently messes around in the guts
+	of a pointset. */
+#include "graphics/graphics_object_private.h"
+
 #if defined (EXT_INPUT)
 
 /*
