@@ -60,32 +60,43 @@ Cmiss::require_library('cmgui_computed_variable_finite_element');
 sub new
 {
 	my ($class, %arg) = @_;
-	my ($component_name,$fe_field,$objref);
+	my ($component_name,$name,$objref,$path,$region);
 
-	$fe_field=$arg{fe_field};
-	if ($fe_field)
+	$name=$arg{name};
+	if (defined($name)&&($name))
 	{
-		$component_name=$arg{component};
-		if ($component_name)
+		$name =~ s/^.*\///;
+		$path=$arg{name};
+		$path =~ s/[^\/]*$//;
+		$region=$arg{region};
+		if (defined($region)&&($region))
 		{
-			$objref=new_xs($fe_field, $component_name);
+			$component_name=$arg{component};
+			if ($component_name)
+			{
+				$objref=new_xs($region,$path,$name,$component_name);
+			}
+			else
+			{
+				$objref=new_xs($region,$path,$name);
+			}
+			if ($objref)
+			{
+				bless $objref,$class;
+			}
+			else
+			{
+				croak "Could not create $class";
+			}
 		}
 		else
 		{
-			$objref=new_xs($fe_field);
-		}
-		if ($objref)
-		{
-			bless $objref,$class;
-		}
-		else
-		{
-			croak "Could not create $class";
+			croak "Missing region";
 		}
 	}
 	else
 	{
-		croak "Missing fe_field";
+		croak "Missing name";
 	}
 }
 

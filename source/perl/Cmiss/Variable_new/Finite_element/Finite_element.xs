@@ -11,9 +11,22 @@ MODULE = Cmiss::Variable_new::Finite_element  PACKAGE = Cmiss::Variable_new::Fin
 PROTOTYPES: DISABLE
 
 Cmiss::Variable_new
-new_xs(Cmiss::FE_field fe_field,char *component_name=(char *)NULL)
+new_xs(Cmiss::Region region,char *path,char *name,char *component_name=(char *)NULL)
 	CODE:
-		RETVAL=Cmiss_variable_new_finite_element_create(fe_field,component_name);
+		{
+			struct Cmiss_region *sub_region;
+
+			if (path)
+			{
+				sub_region=Cmiss_region_get_sub_region(region,path);
+			}
+			else
+			{
+				sub_region=region;
+			}
+			RETVAL=Cmiss_variable_new_finite_element_create(sub_region,name,
+				component_name);
+		}
 		if (!RETVAL)
 		{
 			XSRETURN_UNDEF;
