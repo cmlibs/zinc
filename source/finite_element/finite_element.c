@@ -23494,6 +23494,29 @@ Frees the memory for the fields of the <element_field_values> structure.
 	return (return_code);
 } /* clear_FE_element_field_values */
 
+int standard_basis_function_is_bicubic(Standard_basis_function *function,
+	void *arguments_void)
+/*******************************************************************************
+LAST MODIFIED : 5 June 2002
+
+DESCRIPTION :
+Returns true if the standard basis function is a bicubic.
+==============================================================================*/
+{
+	int *arguments,return_code;
+
+	ENTER(standard_basis_function_is_bicubic);
+	return_code=0;
+	if ((monomial_basis_functions==function)&&(arguments=(int *)arguments_void)&&
+		(2==arguments[0])&&(3==arguments[1])&&(3==arguments[2]))
+	{
+		return_code=1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* standard_basis_function_is_bicubic */
+
 int calculate_FE_element_field_nodes(struct FE_element *element,
 	struct FE_field *field,int *number_of_element_field_nodes_address,
 	struct FE_node ***element_field_nodes_array_address)

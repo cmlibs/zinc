@@ -2363,6 +2363,15 @@ DESCRIPTION :
 Frees the memory for the fields of the <element_field_values> structure.
 ==============================================================================*/
 
+int standard_basis_function_is_bicubic(Standard_basis_function *function,
+	void *arguments_void);
+/*******************************************************************************
+LAST MODIFIED : 5 June 2002
+
+DESCRIPTION :
+Returns true if the standard basis function is a bicubic.
+==============================================================================*/
+
 int calculate_FE_element_field_nodes(struct FE_element *element,
 	struct FE_field *field,int *number_of_element_field_nodes_address,
 	struct FE_node ***element_field_nodes_array_address);
@@ -5015,7 +5024,7 @@ LAST MODIFIED : 26 October 2000
 DESCRIPTION :
 Given  <component_number>  and <nodal_value_type> of <field> at a 
 <node> in an <element>, find the  corresponding <scale_factor>.
-===============================================================================*/
+==============================================================================*/
 
 int FE_element_set_scale_factor_for_nodal_value(
 	struct FE_element *element, struct FE_node *node, struct FE_field *field,
@@ -5027,10 +5036,10 @@ LAST MODIFIED : 31 January 2001
 DESCRIPTION :
 Given  <component_number>  and <nodal_value_type> of <field> at a 
 <node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
-===============================================================================*/
+==============================================================================*/
 
-int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifier,
-	struct MANAGER(FE_node) *node_manager,
+int offset_FE_node_and_element_identifiers_in_group(char *name,
+	int last_identifier,struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager);
@@ -5038,10 +5047,10 @@ int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifi
 LAST MODIFIED :3 November 2000
 
 DESCRIPTION :
-Finds the node and element groups matching  <name>, and shifts the contained nodes 
-and elements  identifier numbers so that the groups identifiers end at 
-<last_identifier>. Eg if you wanted to shift the groups to the end of 
-the legal integer range, <last_identifier> would be INT_MAX.
+Finds the node and element groups matching  <name>, and shifts the contained
+nodes and elements  identifier numbers so that the groups identifiers end at 
+<last_identifier>. Eg if you wanted to shift the groups to the end of the legal
+integer range, <last_identifier> would be INT_MAX.
 NOTE: You can't iteratively call MANAGER_MODIFY_IDENTIFIER, hence the use of
 FE_node_order_info, FE_element_order_info
 ==============================================================================*/
