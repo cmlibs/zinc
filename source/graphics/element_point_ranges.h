@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -154,4 +154,20 @@ LAST MODIFIED : 28 March 2000
 DESCRIPTION :
 Returns true if the element for <element_point_ranges> is in <element_group>.
 ==============================================================================*/
+
+struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
+	struct FE_element *element,struct FE_field *grid_field,
+	struct Multi_range *ranges);
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+If <grid_field> is a single component grid-based field in <element>, creates and
+returns an Element_point_ranges containing all the grid points at which the
+value of <grid_field> is in the <ranges>.
+No Element_point_ranges object is returned without error if:
+- <grid_field> is not grid-based in <element>.
+- No grid points in <element> have <grid_field> value in the given <ranges>.
+==============================================================================*/
+
 #endif /* !defined (ELEMENT_POINT_RANGES_H) */

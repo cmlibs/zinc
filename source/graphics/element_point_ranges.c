@@ -122,7 +122,7 @@ Global functions
 struct Element_point_ranges *CREATE(Element_point_ranges)(
 	struct Element_point_ranges_identifier *identifier)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
@@ -133,6 +133,7 @@ element:Xi_discretization_mode of the <identifier>.
 	struct Element_point_ranges *element_point_ranges;
 
 	ENTER(CREATE(Element_point_ranges));
+	element_point_ranges=(struct Element_point_ranges *)NULL;
 	if (identifier&&identifier->element&&(
 		(XI_DISCRETIZATION_CELL_CENTRES==identifier->xi_discretization_mode)||
 		(XI_DISCRETIZATION_CELL_CORNERS==identifier->xi_discretization_mode)))
@@ -753,3 +754,83 @@ Returns true if the element for <element_point_ranges> is in <element_group>.
 
 	return (return_code);
 } /* Element_point_ranges_element_is_in_group */
+
+struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
+	struct FE_element *element,struct FE_field *grid_field,
+	struct Multi_range *ranges)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+If <grid_field> is a single component grid-based field in <element>, creates and
+returns an Element_point_ranges containing all the grid points at which the
+value of <grid_field> is in the <ranges>.
+No Element_point_ranges object is returned without error if:
+- <grid_field> is not grid-based in <element>.
+- No grid points in <element> have <grid_field> value in the given <ranges>.
+==============================================================================*/
+{
+	int grid_value_in_range,i,number_of_grid_values,*values;
+	struct Element_point_ranges *element_point_ranges;
+	struct Element_point_ranges_identifier identifier;
+
+	ENTER(Element_point_ranges_from_grid_field_ranges);
+	element_point_ranges=(struct Element_point_ranges *)NULL;
+	if (element&&grid_field&&ranges&&
+		(1==get_FE_field_number_of_components(grid_field)&&
+		(INT_VALUE==get_FE_field_value_type(grid_field))))
+	{
+		if (FE_element_field_is_grid_based(element,grid_field))
+		{
+			if (get_FE_element_field_component_grid_int_values(element,
+				grid_field,/*component_number*/0,&values))
+			{
+				number_of_grid_values=
+					get_FE_element_field_number_of_grid_values(element,grid_field);
+				/* work out if any values are in the given ranges */
+				grid_value_in_range=0;
+				for (i=0;(i<number_of_grid_values)&&(!grid_value_in_range);i++)
+				{
+					grid_value_in_range=Multi_range_is_value_in_range(ranges,values[i]);
+				}
+				if (grid_value_in_range)
+				{
+					identifier.element=element;
+					identifier.xi_discretization_mode=XI_DISCRETIZATION_CELL_CORNERS;
+					get_FE_element_field_grid_map_number_in_xi(element,grid_field,
+						identifier.number_in_xi);
+					if (element_point_ranges=CREATE(Element_point_ranges)(&identifier))
+					{
+						for (i=0;i<number_of_grid_values;i++)
+						{
+							if (Multi_range_is_value_in_range(ranges,values[i]))
+							{
+								Element_point_ranges_add_range(element_point_ranges,i,i);
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Element_point_ranges_from_grid_field_ranges.  "
+							"Could not create Element_point_ranges");
+					}
+				}
+				DEALLOCATE(values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Element_point_ranges_from_grid_field_ranges.  Invalid grid field");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_from_grid_field_ranges.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (element_point_ranges);
+} /* Element_point_ranges_from_grid_field_ranges */
