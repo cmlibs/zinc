@@ -2079,8 +2079,30 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(MANAGER(FE_node))(&command_data.data_manager);
 				DESTROY(MANAGER(FE_basis))(&command_data.basis_manager);
 
-				DESTROY_LIST(FE_element_field_info)(&all_FE_element_field_info);
-				DESTROY_LIST(FE_element_shape)(&all_FE_element_shape);
+				/* check if there are any objects in all lists; if so, do not destroy
+					 them since this will cause memory addresses to be deallocated twice
+					 as DEACCESS will also request the objects be removed from the list.
+					 Do, however, send out an error message */
+				if (0 == NUMBER_IN_LIST(FE_element_field_info)(
+					all_FE_element_field_info))
+				{
+					DESTROY(LIST(FE_element_field_info))(&all_FE_element_field_info);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"%d element field information object(s) still in use",
+						NUMBER_IN_LIST(FE_element_field_info)(all_FE_element_field_info));
+				}
+				if (0 == NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape))
+				{
+					DESTROY(LIST(FE_element_shape))(&all_FE_element_shape);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
+						NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape));
+				}
 
 				DEACCESS(Spectrum)(&(command_data.default_spectrum));
 				DESTROY(MANAGER(Spectrum))(&command_data.spectrum_manager);
