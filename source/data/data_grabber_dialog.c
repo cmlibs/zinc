@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_grabber_dialog.c
 
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -749,7 +749,7 @@ static Widget create_data_grabber_dialog(Widget *data_grabber_dialog_widget,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Brings up a data_grabber that allows the user to get three dimensional data
@@ -794,7 +794,8 @@ points.
 	ENTER(create_data_grabber_dialog);
 	return_widget=(Widget)NULL;
 	/* check arguments */
-	if (data_grabber_dialog_widget&&parent&&execute_command)
+	if (data_grabber_dialog_widget && parent && execute_command &&
+			user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(data_grabber_dialog_uidh,
 			&data_grabber_hierarchy,&data_grabber_hierarchy_open))
@@ -860,7 +861,7 @@ points.
 										data_grabber_dialog->node_group_form,
 										(struct GROUP(FE_node) *)NULL, node_group_manager,
 										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									data_grabber_dialog->node_group =
 										CHOOSE_OBJECT_GET_OBJECT(GROUP(FE_node))
@@ -876,7 +877,7 @@ points.
 										data_grabber_dialog->node_group_form,
 										(struct GROUP(FE_node) *)NULL, data_group_manager,
 										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets = 0;
 								}

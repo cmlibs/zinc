@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_enumerator.c
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widgets for editing a FE_field_scalar object = scalar function of a field.
@@ -125,9 +125,10 @@ Global functions
 ----------------
 */
 Widget create_choose_enumerator_widget(Widget parent,
-	int number_of_valid_strings,char **valid_strings,char *enumerator_string)
+	int number_of_valid_strings, char **valid_strings, char *enumerator_string,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates an editor for specifying a string out of the <valid_strings>, with the
@@ -135,6 +136,7 @@ Creates an editor for specifying a string out of the <valid_strings>, with the
 to its appropriate type by a function like:
 enum Enumerated_type Enumerated_type_from_string(char *string);
 Note: Choose_enumerator will be automatically DESTROYed with its widgets.
+<user_interface> supplies fonts.
 ==============================================================================*/
 {
 	struct Callback_data callback;
@@ -143,7 +145,8 @@ Note: Choose_enumerator will be automatically DESTROYed with its widgets.
 
 	ENTER(create_choose_enumerator_widget);
 	return_widget=(Widget)NULL;
-	if (parent&&valid_strings&&(0<number_of_valid_strings)&&enumerator_string)
+	if (parent && valid_strings && (0 < number_of_valid_strings) &&
+		enumerator_string && user_interface)
 	{
 		if (ALLOCATE(choose_enumerator,struct Choose_enumerator,1))
 		{
@@ -153,8 +156,9 @@ Note: Choose_enumerator will be automatically DESTROYed with its widgets.
 			choose_enumerator->update_callback.procedure=(Callback_procedure *)NULL;
 			choose_enumerator->update_callback.data=(void *)NULL;
 			if (choose_enumerator->chooser=
-				CREATE(Chooser)(parent,number_of_valid_strings,(void **)valid_strings,
-					valid_strings,(void *)enumerator_string,&(choose_enumerator->widget)))
+				CREATE(Chooser)(parent,number_of_valid_strings, (void **)valid_strings,
+					valid_strings, (void *)enumerator_string,
+					&(choose_enumerator->widget), user_interface))
 			{
 				/* add choose_enumerator as user data to chooser widget */
 				XtVaSetValues(choose_enumerator->widget,XmNuserData,choose_enumerator,

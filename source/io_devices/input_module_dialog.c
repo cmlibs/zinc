@@ -1847,9 +1847,9 @@ The mode has been changed etc.
 static Widget create_input_module_dialog(Widget *input_module_dialog_widget,
 	Widget parent,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *material_manager,struct Scene *scene,
-	struct MANAGER(Scene) *scene_manager)
+	struct MANAGER(Scene) *scene_manager, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Allows the user to control the input_module.
@@ -2006,7 +2006,8 @@ Allows the user to control the input_module.
 									CREATE_CHOOSE_OBJECT_WIDGET(Scene)(
 									input_module_dialog->scene_chooser_form,
 									input_module_dialog->scene,scene_manager,
-									(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL,(void *)NULL))
+									(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL,
+									user_interface))
 								{
 									callback.data = (void *)input_module_dialog;
 									callback.procedure=
@@ -2018,7 +2019,7 @@ Allows the user to control the input_module.
 										input_module_dialog->material_chooser_form,
 										input_module_dialog->material,material_manager,
 										(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
-										(void *)NULL))
+										(void *)NULL, user_interface))
 									{
 										callback.data = (void *)input_module_dialog;
 										callback.procedure=
@@ -2105,12 +2106,13 @@ Allows the user to control the input_module.
 Global functions
 ----------------
 */
+
 int bring_up_input_module_dialog(Widget *input_module_dialog_address,
 	Widget parent,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *material_manager,struct Scene *scene,
-	struct MANAGER(Scene) *scene_manager)
+	struct MANAGER(Scene) *scene_manager, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 If there is a input_module dialog in existence, then bring it to the front, else
@@ -2132,7 +2134,7 @@ a time.  This implementation may be changed later.
 		else
 		{
 			if (create_input_module_dialog(input_module_dialog_address,parent,
-				material,material_manager,scene,scene_manager))
+				material,material_manager,scene,scene_manager,user_interface))
 			{
 				return_code=1;
 			}

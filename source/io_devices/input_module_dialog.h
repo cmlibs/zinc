@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module_dialog.h
 
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 This is the control center for the input_module.  Things like setting
@@ -20,9 +20,9 @@ Global functions
 int bring_up_input_module_dialog(Widget *input_module_dialog_address,
 	Widget parent,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *material_manager,struct Scene *scene,
-	struct MANAGER(Scene) *scene_manager);
+	struct MANAGER(Scene) *scene_manager, struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 If there is a input_module dialog in existence, then bring it to the front, else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : distributed_editing_interface.c
 
-LAST MODIFIED : 11 June 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 The interface routines for editing distributed cellular parameters. Only used
@@ -1331,7 +1331,7 @@ int Distributed_editing_interface_create_choosers(
   struct Distributed_editing_interface *interface,
   void *dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 17 January 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates the chooser widgets for the distributed editing dialog.
@@ -1383,7 +1383,7 @@ Creates the chooser widgets for the distributed editing dialog.
       CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
         dialog->grid_field_form,grid_field,
         computed_field_manager,Computed_field_is_scalar_integer,
-        (void *)interface->element_copy)))
+        (void *)interface->element_copy, dialog->user_interface)))
     {
       return_code = 0;
     }

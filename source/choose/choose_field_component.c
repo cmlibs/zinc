@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_field_component.c
 
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Specialized chooser widget that allows a component of an FE_field to be
@@ -209,14 +209,16 @@ Global functions
 */
 
 Widget create_choose_field_component_widget(Widget parent,
-	struct FE_field *field,int component_no)
+	struct FE_field *field, int component_no,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates an option menu from which a component of the <field> may be chosen,
 initially with the given <component_no>.
 Note: Choose_field_component will be automatically DESTROYed with its widgets.
+<user_interface> supplies fonts.
 ==============================================================================*/
 {
 	char **item_names;
@@ -228,7 +230,7 @@ Note: Choose_field_component will be automatically DESTROYed with its widgets.
 
 	ENTER(create_choose_field_component_widget);
 	return_widget=(Widget)NULL;
-	if (parent)
+	if (parent && user_interface)
 	{
 		if (ALLOCATE(choose_field_component,struct Choose_field_component,1))
 		{
@@ -246,9 +248,9 @@ Note: Choose_field_component will be automatically DESTROYed with its widgets.
 				choose_field_component_get_items(field,&number_of_items,&items,
 					&item_names))
 			{
-				if (choose_field_component->chooser=
-					CREATE(Chooser)(parent,number_of_items,items,item_names,
-						(void *)component_no,&(choose_field_component->widget)))
+				if (choose_field_component->chooser = CREATE(Chooser)(parent,
+					number_of_items, items, item_names, (void *)component_no,
+					&(choose_field_component->widget), user_interface))
 				{
 					/* add choose_field_component as user data to chooser widget */
 					XtVaSetValues(choose_field_component->widget,

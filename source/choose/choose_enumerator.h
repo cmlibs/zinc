@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_enumerator.h
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widgets for editing an enumerated value. To overcome type differences, the
@@ -19,6 +19,7 @@ char **Enumerated_type_get_valid_strings(&number_of_valid_strings);
 
 #include <Xm/Xm.h>
 #include "general/callback.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global Types
@@ -29,10 +30,12 @@ Global Types
 Global Functions
 ---------------
 */
+
 Widget create_choose_enumerator_widget(Widget parent,
-	int number_of_valid_strings,char **valid_strings,char *enumerator_string);
+	int number_of_valid_strings, char **valid_strings, char *enumerator_string,
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates an editor for specifying a string out of the <valid_strings>, with the
@@ -40,6 +43,7 @@ Creates an editor for specifying a string out of the <valid_strings>, with the
 to its appropriate type by a function like:
 enum Enumerated_type Enumerated_type_from_string(char *string);
 Note: Choose_enumerator will be automatically DESTROYed with its widgets.
+<user_interface> supplies fonts.
 ==============================================================================*/
 
 struct Callback_data *choose_enumerator_get_callback(

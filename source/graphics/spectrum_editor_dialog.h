@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor_dialog.h
 
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Header description for spectrum_editor_dialog widget.
@@ -65,10 +65,11 @@ int bring_up_spectrum_editor_dialog(Widget *spectrum_editor_dialog_address,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager);
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
-If there is a spectrum_editor dialog in existence, then bring it to the front,
-else create a new one.
+If there is a spectrum_editor dialog in existence, then de-iconify it and
+bring it to the front, otherwise create a new one.
 ==============================================================================*/
+
 #endif

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : chooser.c
 
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widget for choosing a void pointer identified with a string out of a
@@ -19,7 +19,6 @@ hierarchical cascading menu system.
 #include "general/mystring.h"
 #include "choose/chooser.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 
 #define MAX_CHOOSER_ROWS 16
 
@@ -29,7 +28,7 @@ Module variables
 */
 struct Chooser
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Contains information required by the choose_object control dialog.
@@ -39,6 +38,7 @@ Contains information required by the choose_object control dialog.
 	struct Callback_data update_callback;
 	Widget main_cascade,main_menu,widget,widget_parent;
 	void *current_item,*last_updated_item;
+	struct User_interface *user_interface;
 }; /* struct Chooser */
 
 /*
@@ -187,7 +187,7 @@ Callback for the option menu - change of object.
 static Widget Chooser_build_menu(Widget parent,int number_of_items,
 	void **items,char **item_names,struct Chooser *chooser,Widget *item_widget)
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a PullDownMenu widget for choosing any of the <number_of_items>
@@ -244,10 +244,12 @@ current_item of the chooser.
 						item = (void *)NULL;
 						item_name = null_item_name;
 					}
-					XtSetArg(args[0],XmNuserData,(XtPointer)item);
-					new_string=XmStringCreateSimple(item_name);
-					XtSetArg(args[1],XmNlabelString,(XtPointer)new_string);
-					if (button=XmCreatePushButtonGadget(menu,item_name,args,2))
+					XtSetArg(args[0], XmNuserData, (XtPointer)item);
+					new_string = XmStringCreateSimple(item_name);
+					XtSetArg(args[1], XmNlabelString, (XtPointer)new_string);
+					XtSetArg(args[2], XmNfontList,
+						(XtPointer)(chooser->user_interface->normal_fontlist));
+					if (button=XmCreatePushButtonGadget(menu, item_name, args, 3))
 					{
 						if (item == chooser->current_item)
 						{
@@ -324,11 +326,13 @@ current_item of the chooser.
 							}
 						}
 					}
-					new_string=XmStringCreateSimple(item_name);
-					XtSetArg(args[0],XmNlabelString,(XtPointer)new_string);
+					new_string = XmStringCreateSimple(item_name);
+					XtSetArg(args[0], XmNlabelString, (XtPointer)new_string);
+					XtSetArg(args[1], XmNfontList,
+						(XtPointer)(chooser->user_interface->normal_fontlist));
 					if ((submenu=Chooser_build_menu(menu,
 						items_in_submenu,subitems,subitem_names,chooser,item_widget))&&
-						(button=XmCreateCascadeButtonGadget(menu,item_name,args,1)))
+						(button=XmCreateCascadeButtonGadget(menu,item_name,args,2)))
 					{
 						/* attach cascade button to new submenu */
 						XtVaSetValues(button,
@@ -370,27 +374,26 @@ Global functions
 ----------------
 */
 
-struct Chooser *CREATE(Chooser)(Widget parent,int number_of_items,void **items,
-	char **item_names,void *current_item,Widget *chooser_widget)
+struct Chooser *CREATE(Chooser)(Widget parent, int number_of_items,
+	void **items, char **item_names, void *current_item, Widget *chooser_widget,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a menu from which any of the given <items> with <item_names> may be
 chosen. Returns the <chooser_widget> which is then owned by the calling code.
 Note that it has no userdata and no destroy callbacks associated with it - but
 these may be added by the calling code.
+<user_interface> supplies fonts.
 ==============================================================================*/
 {
-	Arg args[7];
-	int num_children;
 	struct Chooser *chooser;
-	Widget *child_list;
-	XmFontList fontlist;
 
 	ENTER(CREATE(Chooser));
-	if (parent&&((0==number_of_items)||
-		((0<number_of_items)&&items&&item_names)))
+	if (parent && ((0 == number_of_items) ||
+		((0 < number_of_items) && items && item_names)) &&
+		user_interface && chooser_widget)
 	{
 		if (ALLOCATE(chooser,struct Chooser,1))
 		{
@@ -404,32 +407,30 @@ these may be added by the calling code.
 			chooser->current_item=current_item;
 			chooser->last_updated_item=current_item;
 			chooser->force_update=0;
-			XtSetArg(args[0],XmNleftAttachment,XmATTACH_FORM);
-			XtSetArg(args[1],XmNrightAttachment,XmATTACH_FORM);
-			XtSetArg(args[2],XmNtopAttachment,XmATTACH_FORM);
-			XtSetArg(args[3],XmNbottomAttachment,XmATTACH_FORM);
-			XtSetArg(args[4],XmNuserData,(XtPointer)chooser);
-			XtSetArg(args[5],XmNmarginHeight,0);
-			XtSetArg(args[6],XmNmarginWidth,0);
-			if (chooser->widget=XmCreateMenuBar(parent,"chooser",args,7))
+			chooser->user_interface = user_interface;
+			if (chooser->widget = XtVaCreateWidget("chooser",
+				xmRowColumnWidgetClass, parent,
+				XmNrowColumnType, XmMENU_BAR,
+				/*XmNisHomogenous, TRUE,*/
+				XmNentryClass, xmCascadeButtonGadgetClass,
+				XmNleftAttachment, XmATTACH_FORM,
+				XmNrightAttachment, XmATTACH_FORM,
+				XmNtopAttachment, XmATTACH_FORM,
+				XmNbottomAttachment, XmATTACH_FORM,
+				XmNuserData, (XtPointer)chooser,
+				XmNmarginHeight, 0,
+				XmNmarginWidth, 0,
+				NULL))
 			{
 				*chooser_widget = chooser->widget;
-				if (chooser->main_cascade=
-					XmCreateCascadeButtonGadget(chooser->widget,"cascade",NULL,0))
+				if (chooser->main_cascade = XtVaCreateWidget("cascade",
+					xmCascadeButtonGadgetClass, chooser->widget,
+					XmNfontList, (XtPointer)user_interface->normal_fontlist,
+					NULL))
 				{
-					if (Chooser_build_main_menu(chooser,number_of_items,
-						items,item_names,current_item))
+					if (Chooser_build_main_menu(chooser, number_of_items,
+						items, item_names, current_item))
 					{
-						/* tricky: steal font from child cascade buttons for main_cascade */
-						XtVaGetValues(chooser->main_menu,
-							XmNnumChildren,&num_children,XmNchildren,&child_list,NULL);
-						if ((0<num_children)&&child_list)
-						{
-							XtVaGetValues(child_list[0],
-								XmNfontList,(XtPointer)&fontlist,NULL);
-							XtVaSetValues(chooser->main_cascade,
-								XmNfontList,(XtPointer)fontlist,NULL);
-						}
 						XtManageChild(chooser->main_cascade);
 						XtManageChild(chooser->widget);
 					}

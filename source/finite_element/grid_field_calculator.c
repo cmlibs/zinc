@@ -953,7 +953,7 @@ control curve variation over coordinates - usually integration.
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										grid_calc->grid_field_form,(struct Computed_field *)NULL,
 										computed_field_manager,Computed_field_is_scalar,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}
@@ -962,7 +962,7 @@ control curve variation over coordinates - usually integration.
 										grid_calc->coord_field_form,(struct Computed_field *)NULL,
 										computed_field_manager,
 										Computed_field_has_up_to_3_numerical_components,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}
@@ -980,7 +980,7 @@ control curve variation over coordinates - usually integration.
 									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
 										grid_calc->axis1_curve_form,(struct Control_curve *)NULL,
 										control_curve_manager,Control_curve_has_1_component,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}
@@ -988,7 +988,7 @@ control curve variation over coordinates - usually integration.
 									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
 										grid_calc->axis2_curve_form,(struct Control_curve *)NULL,
 										control_curve_manager,Control_curve_has_1_component,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}
@@ -996,7 +996,7 @@ control curve variation over coordinates - usually integration.
 									CREATE_CHOOSE_OBJECT_WIDGET(Control_curve)(
 										grid_calc->axis3_curve_form,(struct Control_curve *)NULL,
 										control_curve_manager,Control_curve_has_1_component,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor_dialog.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 This module creates a spectrum_editor_dialog.
@@ -340,7 +340,7 @@ static Widget create_spectrum_editor_dialog(
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to edit the properties of any of
@@ -466,7 +466,8 @@ the spectrums contained in the global list.
 									CREATE_CHOOSE_OBJECT_WIDGET(Scene)(
 										spectrum_editor_dialog->autorange_scene_form,
 										(struct Scene *)NULL, scene_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL,(void *)NULL)))
+										(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL,
+										user_interface)))
 								{
 									spectrum_editor_dialog->autorange_scene =
 										CHOOSE_OBJECT_GET_OBJECT(Scene)
@@ -819,11 +820,11 @@ int bring_up_spectrum_editor_dialog(Widget *spectrum_editor_dialog_address,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
-If there is a spectrum_editor dialog in existence, then bring it to the front,
-else create a new one.
+If there is a spectrum_editor dialog in existence, then de-iconify it and
+bring it to the front, otherwise create a new one.
 ==============================================================================*/
 {
 	int return_code;
@@ -836,6 +837,7 @@ else create a new one.
 			spectrum_editor_dialog_set_spectrum(*spectrum_editor_dialog_address,
 				spectrum);
 			XtPopup(*spectrum_editor_dialog_address,XtGrabNone);
+			XtVaSetValues(*spectrum_editor_dialog_address, XmNiconic, False, NULL);
 			return_code=1;
 		}
 		else

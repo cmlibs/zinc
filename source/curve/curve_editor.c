@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve_editor.c
 
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Provides the widgets to modify Control_curve structures.
@@ -26,6 +26,7 @@ Provides the widgets to modify Control_curve structures.
 Module types
 ------------
 */
+
 typedef struct Control_curve_drawing_information
 	Control_curve_drawing_information_settings;
 
@@ -3769,17 +3770,18 @@ Creates a control_curve_editor widget.
 							}
 							valid_strings=Control_curve_FE_basis_type_get_valid_strings(
 								&number_of_valid_strings);
-							if (!(curve_editor->basis_type_widget=
+							if (!(curve_editor->basis_type_widget =
 								create_choose_enumerator_widget(curve_editor->basis_type_form,
 									number_of_valid_strings,valid_strings,
-									FE_basis_type_string(LINEAR_LAGRANGE))))
+									FE_basis_type_string(LINEAR_LAGRANGE), user_interface)))
 							{
 								init_widgets=0;
 							}
 							DEALLOCATE(valid_strings);
 							if (!(curve_editor->component_widget=
 								create_choose_field_component_widget(
-									curve_editor->component_form,(struct FE_field *)NULL,0)))
+									curve_editor->component_form, (struct FE_field *)NULL, 0,
+									user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3788,8 +3790,8 @@ Creates a control_curve_editor widget.
 							if (!(curve_editor->extend_mode_widget=
 								create_choose_enumerator_widget(curve_editor->extend_mode_form,
 									number_of_valid_strings,valid_strings,
-									Control_curve_extend_mode_string(
-										CONTROL_CURVE_EXTEND_CLAMP))))
+									Control_curve_extend_mode_string(CONTROL_CURVE_EXTEND_CLAMP),
+									user_interface)))
 							{
 								init_widgets=0;
 							}

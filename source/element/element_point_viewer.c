@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -1979,7 +1979,7 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -2272,7 +2272,8 @@ fields.
 										number_of_valid_strings,valid_strings,
 										ENUMERATOR_STRING(Xi_discretization_mode)(
 											element_point_viewer->
-											element_point_identifier.xi_discretization_mode))))
+											element_point_identifier.xi_discretization_mode),
+										user_interface)))
 								{
 									init_widgets=0;
 								}
@@ -2289,7 +2290,7 @@ fields.
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										element_point_viewer->grid_field_form,grid_field,
 										computed_field_manager,Computed_field_is_scalar_integer,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}
@@ -2315,7 +2316,7 @@ fields.
 									computed_field_package,
 									element_point_viewer->modified_field_components,
 									&temp_element_point_identifier,
-									temp_element_point_number))
+									temp_element_point_number, user_interface))
 								{
 									init_widgets=0;
 								}
@@ -2324,7 +2325,7 @@ fields.
 										element_point_viewer->match_grid_field_form,
 										element_point_viewer->match_grid_field,
 										computed_field_manager,Computed_field_is_scalar_integer,
-										(void *)NULL)))
+										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
 								}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_export_dialog.c
 
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 The export dialog used to export cell variables to ipcell and ipmatc files
@@ -377,7 +377,7 @@ struct Cell_export_dialog *CREATE(Cell_export_dialog)(
   struct Distributed_editing_interface *distributed_editing_interface,
   struct User_interface *user_interface,Widget parent)
 /*******************************************************************************
-LAST MODIFIED : 01 February 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Create a new export dialog.
@@ -483,7 +483,7 @@ Create a new export dialog.
                     Cell_cmgui_interface_get_element_group_manager(
                       cmgui_interface),
                     (MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
-                    (void *)NULL))
+                    (void *)NULL, user_interface))
                 {
                   /* create the grid field chooser - used to set the field
                    * which will be used as the grid point number field
@@ -515,7 +515,7 @@ Create a new export dialog.
                         computed_field_manager,
                         Computed_field_is_scalar_integer_grid_in_element,
                         (void *)Distributed_editing_interface_get_element_copy(
-                          distributed_editing_interface)))
+                          distributed_editing_interface), user_interface))
                     {
                       XtManageChild(dialog->window);
                       XtRealizeWidget(dialog->shell);

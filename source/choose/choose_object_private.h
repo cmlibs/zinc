@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object_private.h
 
-LAST MODIFIED : 18 May 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -532,12 +532,13 @@ Global functions
 #define DECLARE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 18 April 2000 \
+LAST MODIFIED : 21 November 2001 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
 The optional conditional function permits a subset of objects in the manager \
 to be selectable. \
+<user_interface> supplies fonts. \
 ============================================================================*/ \
 { \
 	struct Callback_data callback; \
@@ -546,7 +547,7 @@ to be selectable. \
 \
 	ENTER(CREATE_CHOOSE_OBJECT_WIDGET(object_type)); \
 	return_widget=(Widget)NULL; \
-	if (object_manager&&parent) \
+	if (object_manager && parent && user_interface) \
 	{ \
 		if (ALLOCATE(choose_object,struct CHOOSE_OBJECT(object_type),1)) \
 		{ \
@@ -567,10 +568,11 @@ to be selectable. \
          choose_object->item_names = (char **)NULL; \
 		  if (CHOOSE_OBJECT_BUILD_ITEMS(object_type)(choose_object)) \
 			{ \
-				if (choose_object->chooser= \
-					CREATE(Chooser)(parent,choose_object->number_of_items, \
-					choose_object->items,choose_object->item_names, \
-					(void *)current_object,&(choose_object->widget))) \
+				if (choose_object->chooser = \
+					CREATE(Chooser)(parent, choose_object->number_of_items, \
+					choose_object->items, choose_object->item_names, \
+					(void *)current_object, &(choose_object->widget), \
+					user_interface)) \
 				{ \
 					/* add choose_object as user data to chooser widget */ \
 					XtVaSetValues(choose_object->widget,XmNuserData,choose_object,NULL); \

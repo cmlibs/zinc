@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer_widget.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widget for editing the contents of a node with multiple text fields, visible
@@ -238,9 +238,9 @@ Global functions
 
 Widget create_node_viewer_widget(Widget *node_viewer_widget_address,
 	Widget parent,struct Computed_field_package *computed_field_package,
-	struct FE_node *initial_node)
+	struct FE_node *initial_node, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of <initial_node>. Can
@@ -272,7 +272,8 @@ parent dialog to make changes global.
 
 	ENTER(create_node_viewer_widget);
 	return_widget=(Widget)NULL;
-	if (node_viewer_widget_address&&parent&&computed_field_package)
+	if (node_viewer_widget_address && parent && computed_field_package &&
+		user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(node_viewer_widget_uidh,
 			&node_viewer_hierarchy,&node_viewer_hierarchy_open))
@@ -340,7 +341,8 @@ parent dialog to make changes global.
 								Computed_field_package_get_computed_field_manager(
 									computed_field_package),
 								choose_field_conditional_function,
-								(void *)(node_viewer->template_node))))
+								(void *)(node_viewer->template_node),
+								user_interface)))
 							{
 								init_widgets=0;
 							}

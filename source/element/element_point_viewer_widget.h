@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer_widget.h
 
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widget for editing field values stored at an element point with multiple text
@@ -28,9 +28,9 @@ Widget create_element_point_viewer_widget(
 	Widget parent,struct Computed_field_package *computed_field_package,
 	struct LIST(Field_value_index_ranges) *modified_field_components,
 	struct Element_point_ranges_identifier *initial_element_point_identifier,
-	int initial_element_point_number);
+	int initial_element_point_number, struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of the element point

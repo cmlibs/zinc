@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object.h
 
-LAST MODIFIED : 18 May 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -14,6 +14,7 @@ Calls the client-specified callback routine if a different object is chosen.
 
 #include <Xm/Xm.h>
 #include "general/callback.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global Types
@@ -24,6 +25,7 @@ Global Types
 Global Functions
 ---------------
 */
+
 #if defined (FULL_NAMES)
 #define CREATE_CHOOSE_OBJECT_WIDGET_( object_type ) \
 	create_choose_object_widget_ ## object_type
@@ -38,14 +40,16 @@ Widget CREATE_CHOOSE_OBJECT_WIDGET(object_type)(Widget parent, \
 	struct object_type *current_object, \
 	struct MANAGER(object_type) *object_manager, \
 	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
-	void *conditional_function_user_data) \
+	void *conditional_function_user_data, \
+	struct User_interface *user_interface) \
 /***************************************************************************** \
-LAST MODIFIED : 18 April 2000 \
+LAST MODIFIED : 21 November 2001 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
 The optional conditional function permits a subset of objects in the manager \
 to be selectable. \
+<user_interface> supplies fonts. \
 ============================================================================*/
 
 #if defined (FULL_NAMES)

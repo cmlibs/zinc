@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.c
 
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -901,7 +901,7 @@ struct Element_creator *CREATE(Element_creator)(
 	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a Element_creator, giving it the element_manager to put new
@@ -1044,7 +1044,7 @@ enable the creation of a coordinate field.
 										element_creator->element_group_form,
 										element_creator->element_group,element_group_manager,
 										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
-										(void *)NULL))
+										(void *)NULL, user_interface))
 								{
 									callback.data=(void *)element_creator;
 									callback.procedure=Element_creator_update_element_group;
@@ -1059,7 +1059,7 @@ enable the creation of a coordinate field.
 									CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
 										element_creator->coordinate_field_form,
 										element_creator->coordinate_field,fe_field_manager,
-										FE_field_is_coordinate_field,(void *)NULL))
+										FE_field_is_coordinate_field, (void *)NULL, user_interface))
 								{
 									callback.data=(void *)element_creator;
 									callback.procedure=Element_creator_update_coordinate_field;

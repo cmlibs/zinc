@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer_widget.c
 
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widget for editing field values stored at an element point with multiple text
@@ -262,9 +262,9 @@ Widget create_element_point_viewer_widget(
 	Widget parent,struct Computed_field_package *computed_field_package,
 	struct LIST(Field_value_index_ranges) *modified_field_components,
 	struct Element_point_ranges_identifier *initial_element_point_identifier,
-	int initial_element_point_number)
+	int initial_element_point_number, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of the element point
@@ -301,6 +301,7 @@ changes global.
 	return_widget=(Widget)NULL;
 	if (element_point_viewer_widget_address&&parent&&computed_field_package&&
 		modified_field_components&&initial_element_point_identifier&&
+		user_interface &&
 		(((struct FE_element *)NULL==initial_element_point_identifier->element)||
 			Element_point_ranges_identifier_element_point_number_is_valid(
 				initial_element_point_identifier,initial_element_point_number)))
@@ -381,7 +382,8 @@ changes global.
 								Computed_field_package_get_computed_field_manager(
 									computed_field_package),
 								choose_field_conditional_function,
-								(void *)(element_point_viewer->template_element))))
+								(void *)(element_point_viewer->template_element),
+								user_interface)))
 							{
 								init_widgets=0;
 							}

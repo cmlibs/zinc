@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object_list_private.h
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 ???RC Version of choose_object using lists instead of managers.
@@ -336,10 +336,13 @@ Global functions
 #define DECLARE_CREATE_CHOOSE_OBJECT_LIST_WIDGET_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_CHOOSE_OBJECT_LIST_WIDGET_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 21 November 2001 \
 \
 DESCRIPTION : \
-Creates an option menu from which an object from the list may be chosen. \
+Creates an option menu from which an object from the manager may be chosen. \
+The optional conditional function permits a subset of objects in the list \
+to be selectable. \
+<user_interface> supplies fonts. \
 ============================================================================*/ \
 { \
 	char **item_names; \
@@ -350,7 +353,7 @@ Creates an option menu from which an object from the list may be chosen. \
 	Widget return_widget; \
 \
 	ENTER(CREATE_CHOOSE_OBJECT_LIST_WIDGET(object_type)); \
-	if (object_list&&parent) \
+	if (object_list && parent && user_interface) \
 	{ \
 		if (ALLOCATE(choose_object_list,struct CHOOSE_OBJECT_LIST(object_type),1)) \
 		{ \
@@ -366,9 +369,10 @@ Creates an option menu from which an object from the list may be chosen. \
 		  if (CHOOSE_OBJECT_LIST_GET_ITEMS(object_type)(choose_object_list, \
 				&number_of_items,&items,&item_names)) \
 			{ \
-				if (choose_object_list->chooser= \
-					CREATE(Chooser)(parent,number_of_items,items,item_names, \
-					(void *)current_object,&(choose_object_list->widget))) \
+				if (choose_object_list->chooser = \
+					CREATE(Chooser)(parent, number_of_items, items, item_names, \
+					(void *)current_object, &(choose_object_list->widget), \
+					user_interface)) \
 				{ \
 					/* add choose_object_list as user data to chooser widget */ \
 					XtVaSetValues(choose_object_list->widget, \

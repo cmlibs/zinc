@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 16 October 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -165,8 +165,12 @@ Defines the appropriate FE_field upon which the <coordinate_field> depends in
 <node>. The field is defined with no versions or derivatives.
 ==============================================================================*/
 {
-	enum FE_nodal_value_type *(components_nodal_value_types[3]) =
-		{ FE_NODAL_VALUE, FE_NODAL_VALUE, FE_NODAL_VALUE };
+	enum FE_nodal_value_type *components_nodal_value_types[3] =
+	{
+		{ FE_NODAL_VALUE },
+		{ FE_NODAL_VALUE },
+		{ FE_NODAL_VALUE }
+	};
 	int components_number_of_derivatives[3]={0,0,0},
 		components_number_of_versions[3]={1,1,1},return_code;
 	struct FE_field *fe_field;
@@ -1903,7 +1907,7 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 15 September 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -2086,7 +2090,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 										node_tool->coordinate_field_form,
 										node_tool->coordinate_field,computed_field_manager,
 										Computed_field_has_up_to_3_numerical_components,
-										(void *)NULL))
+										(void *)NULL, user_interface))
 								{
 									callback.data=(void *)node_tool;
 									callback.procedure=Node_tool_update_coordinate_field;
@@ -2102,7 +2106,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 										node_tool->node_group_form,
 										node_tool->node_group,node_group_manager,
 										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
-										(void *)NULL))
+										(void *)NULL, user_interface))
 								{
 									callback.data=(void *)node_tool;
 									callback.procedure=Node_tool_update_node_group;

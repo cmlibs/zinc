@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : chooser.h
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widget allowing choice of a void *item from a named list using cascading menus.
@@ -18,6 +18,7 @@ Chooser.
 #include <Xm/Xm.h>
 #include "general/callback.h"
 #include "general/object.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global Types
@@ -29,16 +30,19 @@ struct Chooser;
 Global Functions
 ----------------
 */
-struct Chooser *CREATE(Chooser)(Widget parent,int number_of_items,void **items,
-	char **item_names,void *current_item,Widget *chooser_widget);
+
+struct Chooser *CREATE(Chooser)(Widget parent, int number_of_items,
+	void **items, char **item_names, void *current_item,
+	Widget *chooser_widget, struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a menu from which any of the given <items> with <item_names> may be
 chosen. Returns the <chooser_widget> which is then owned by the calling code.
 Note that it has no userdata and no destroy callbacks associated with it - but
 these may be added by the calling code.
+<user_interface> supplies fonts.
 ==============================================================================*/
 
 int DESTROY(Chooser)(struct Chooser **chooser_address);

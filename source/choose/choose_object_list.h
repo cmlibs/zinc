@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object_list.h
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 ???RC Version of choose_object using lists instead of managers.
@@ -14,6 +14,7 @@ Calls the client-specified callback routine if a different object is chosen.
 
 #include <Xm/Xm.h>
 #include "general/callback.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global Types
@@ -24,6 +25,7 @@ Global Types
 Global Functions
 ---------------
 */
+
 #if defined (FULL_NAMES)
 #define CREATE_CHOOSE_OBJECT_LIST_WIDGET_( object_type ) \
 	create_choose_object_list_widget_ ## object_type
@@ -37,14 +39,16 @@ Global Functions
 Widget CREATE_CHOOSE_OBJECT_LIST_WIDGET(object_type)(Widget parent, \
 	struct object_type *current_object, \
 	struct LIST(object_type) *object_list, \
-	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function) \
+	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
+	struct User_interface *user_interface) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 21 November 2001 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
 The optional conditional function permits a subset of objects in the list \
 to be selectable. \
+<user_interface> supplies fonts. \
 ============================================================================*/
 
 #if defined (FULL_NAMES)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material_editor.c
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -798,7 +798,7 @@ Widget create_material_editor_widget(Widget *material_editor_widget,
 	Widget parent,struct MANAGER(Texture) *texture_manager,
 	struct Graphical_material *material,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a material_editor widget.
@@ -955,7 +955,8 @@ Creates a material_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Texture)(
 								material_editor->texture_form,
 								(struct Texture *)NULL,texture_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(Texture) *)NULL,(void *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(Texture) *)NULL, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}

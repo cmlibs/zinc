@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer.c
 
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
@@ -496,7 +496,7 @@ struct Node_viewer *CREATE(Node_viewer)(
 	struct Computed_field_package *computed_field_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a dialog for choosing nodes and displaying and editing their fields.
@@ -636,7 +636,8 @@ Since both nodes and data can depend on embedded fields, the
 									&(node_viewer->viewer_widget),
 									node_viewer->viewer_form,
 									computed_field_package,
-									node_viewer->node_copy))
+									node_viewer->node_copy,
+									user_interface))
 								{
 									init_widgets=0;
 								}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer_widget.h
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Widget for editing the contents of a node with multiple text fields, visible
@@ -14,6 +14,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #include "general/callback.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global Functions
@@ -22,9 +23,9 @@ Global Functions
 
 Widget create_node_viewer_widget(Widget *node_viewer_widget_address,
 	Widget parent,struct Computed_field_package *computed_field_package,
-	struct FE_node *initial_node);
+	struct FE_node *initial_node, struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of <initial_node>. Can
