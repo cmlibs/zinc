@@ -333,7 +333,7 @@ Parses the <return_electrodes> string to get the return channels for the
 static int set_decrement_threshold_pairs_from_string(
 	struct Pacing_window *pacing_window,char *decrement_threshold_pairs_string)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Parses the <decrement_threshold_pairs_string> to get the steps to take for the
@@ -349,7 +349,7 @@ restitution curve protocol.
 	ENTER(set_decrement_threshold_pairs_from_string);
 	return_code=0;
 	/* check arguments */
-	if (pacing_window&&decrement_threshold_pairs)
+	if (pacing_window&&decrement_threshold_pairs_string)
 	{
 		return_code=1;
 		DEALLOCATE(pacing_window->decrement_threshold_pairs_string);
@@ -2374,7 +2374,7 @@ Finds the id of the restitution curve pace button in the pacing window.
 static void ch_pacing_restitution_curve_pac(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 Called when the restitution curve pace button is toggled.
@@ -2450,7 +2450,7 @@ Called when the restitution curve pace button is toggled.
 							number_of_pacing_voltages += number_of_s2_s1_pacing_voltages+
 								(pacing_window->number_of_s1-1)*number_of_s1_pacing_voltages+
 								number_of_s2_pacing_voltages;
-							for (j=pacing_window->number_of_s1-1;j--;j>0)
+							for (j=pacing_window->number_of_s1-1;j>0;j--)
 							{
 								*pacing_voltages=pacing_window->control_voltage;
 								pacing_voltages++;
@@ -3226,7 +3226,7 @@ opened.
 
 int destroy_Pacing_window(struct Pacing_window **pacing_window_address)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
 If the <address> field of the pacing window is not NULL, <*address> is set to
@@ -3275,4 +3275,6 @@ pacing window and frees the memory associated with the pacing window.
 			"destroy_Pacing_window.  Missing pacing_window_address");
 	}
 	LEAVE;
+
+	return (return_code);
 } /* destroy_Pacing_window */
