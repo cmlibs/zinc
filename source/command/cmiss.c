@@ -634,14 +634,14 @@ Implements GFX APPLY PROJECTION
 											else if((i == 0) && (k == 3))
 											{
 												texture_projection_matrix[i * 4 + j] += 
-													((1.0 - bk_texture_left) *
+													(-bk_texture_left *
 													(texture_width / bk_texture_width)) *
 													viewport_matrix[k * 4 + j];
 											}
 											else if((i == 1) && (k == 3))
 											{
 												texture_projection_matrix[i * 4 + j] += 
-													((1.0 - bk_texture_top) * 
+													(- bk_texture_top * 
 													(texture_height / bk_texture_height)
 													 + texture_height) *
 													viewport_matrix[k * 4 + j];
@@ -7324,6 +7324,147 @@ Executes a GFX CREATE SURFACES command.
 } /* gfx_create_surfaces */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+static int set_Texture_image_from_field(struct Texture *texture, struct Computed_field *field,
+	struct Computed_field *texture_coordinate_field, struct Spectrum *spectrum,
+	struct GROUP(FE_element) *element_group, enum Texture_storage_type storage,
+	int image_width,int image_height,
+	char *image_file_name,int crop_left_margin,int crop_bottom_margin,
+	int crop_width,int crop_height, struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Creates the image in the format given by sampling the <field> according to the
+reverse mapping of the <texture_coordinate_field>.  The values returned by
+field are converted to "colours" by applying the <spectrum>
+==============================================================================*/
+{
+	FE_value *data_values, values[3], xi[3];
+	float hint_minimums[3] = {0.0, 0.0, 0.0};
+	float hint_maximums[3] = {1.0, 1.0, 1.0};
+	float hint_resolution[3];
+	float	red, green, blue, texture_height, texture_width;
+	int j,k,number_of_components,number_of_data_components,return_code;
+	long unsigned *texture_image;
+	struct FE_element *element;
+	unsigned char *ptr;
+
+	ENTER(set_Texture_image_from_field);
+	if (texture&&field&&texture_coordinate_field&&spectrum&&
+		(3>=(number_of_components = Texture_get_number_of_components_from_storage_type(storage)))
+		&&(3>=Computed_field_get_number_of_components(texture_coordinate_field))
+		&&Computed_field_is_find_element_xi_capable(texture_coordinate_field, /*dummy*/NULL))
+	{
+		number_of_data_components = Computed_field_get_number_of_components(field);
+		Texture_get_physical_size(texture, &texture_width, &texture_height);
+		if (ALLOCATE(texture_image,unsigned long,
+			(image_width*image_height*number_of_components+3)/4) &&
+			 ALLOCATE(data_values, FE_value, Computed_field_get_number_of_components(field)))
+		{
+			hint_resolution[0] = image_width;
+			hint_resolution[1] = image_height;
+			hint_resolution[2] = 0;
+			ptr = (unsigned char *)texture_image;
+			values[2] = 0.0;
+			for (j=0;j<image_height;j++)
+			{
+				values[1] = texture_height * ((float)j + 0.5) / (float)image_height;
+				for (k = 0 ; k < image_width ; k++)
+				{
+					values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
+					if(Computed_field_find_element_xi(texture_coordinate_field,
+						values, 3, &element, xi, element_group, user_interface,
+						hint_minimums, hint_maximums, hint_resolution))
+					{
+						if(Computed_field_evaluate_in_element(field,
+							element, xi,(struct FE_element *)NULL, data_values, (FE_value *)NULL))
+						{
+							if (!spectrum_value_to_rgb(spectrum,number_of_data_components,
+								data_values, &red, &green, &blue))
+							{
+								red = 0.5;
+								green = 0.5;
+								blue = 0.5;
+								display_message(ERROR_MESSAGE,
+									"set_Texture_image_from_field.  Unable to evaluate spectrum");
+							}
+						}
+						else
+						{
+							red = 0.5;
+							green = 0.5;
+							blue = 0.5;
+							display_message(ERROR_MESSAGE,
+								"set_Texture_image_from_field.  Unable to evaluate field in element");
+						}
+					}
+					else
+					{
+						red = 0.5;
+						green = 0.5;
+						blue = 0.5;
+#if defined (OLD_CODE)
+						display_message(ERROR_MESSAGE,
+							"set_Texture_image_from_field.  Unable to find element_xi for values");
+#endif /* defined (OLD_CODE) */
+					}
+					switch(number_of_components)
+					{
+						case 1:
+						{
+							*ptr = (unsigned char)((red + green + blue) * 255.0 / 3.0);
+							ptr++;
+						} break;
+						case 3:
+						{
+							*ptr = (unsigned char)(red * 255.0);
+							ptr++;
+							*ptr = (unsigned char)(green * 255.0);
+							ptr++;
+							*ptr = (unsigned char)(blue * 255.0);
+							ptr++;
+						} break;
+						case 4:
+						{
+							*ptr = (unsigned char)(red * 255.0);
+							ptr++;
+							*ptr = (unsigned char)(green * 255.0);
+							ptr++;
+							*ptr = (unsigned char)(blue * 255.0);
+							ptr++;
+							*ptr = 1.0;
+							ptr++;
+						} break;
+					}
+				}
+			}
+			Texture_set_image(texture, texture_image,
+				storage, /* number_of_bytes_per_component */ 1,
+				image_width, image_height,
+				image_file_name, crop_left_margin, crop_bottom_margin,
+				crop_width, crop_height);
+			Computed_field_clear_cache(field);
+			Computed_field_clear_cache(texture_coordinate_field);
+			DEALLOCATE(data_values);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_Texture_image_from_field.  Could not allocate texture image");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Texture_image_from_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Texture_image_from_field */
+
 int gfx_modify_Texture(struct Parse_state *state,void *texture_void,
 	void *command_data_void)
 /*******************************************************************************
@@ -7365,6 +7506,7 @@ Modifies the properties of a texture.
 #if defined (SGI_MOVIE_FILE)
 			{"movie",NULL,NULL,set_Movie_graphics},
 #endif /* defined (SGI_MOVIE_FILE) */
+			{"source_element_group",NULL,NULL,set_FE_element_group},
 			{"source_field",NULL,NULL,set_Computed_field_conditional},
 			{"source_height_texels",NULL,NULL,set_int_positive},
 			{"source_spectrum",NULL,NULL,set_Spectrum},
@@ -7387,6 +7529,7 @@ Modifies the properties of a texture.
 	struct Cmiss_command_data *command_data;
 	struct Colour colour;
 	struct Computed_field *field, *texture_coordinates_field;
+	struct GROUP(FE_element) *source_element_group;
 #if defined (SGI_MOVIE_FILE)
 	struct Movie_graphics *movie,*old_movie;
 #endif /* defined (SGI_MOVIE_FILE) */
@@ -7522,6 +7665,7 @@ Modifies the properties of a texture.
 					Texture_get_physical_size(texture_to_be_modified_copy,&width,&height);
 					field = (struct Computed_field *)NULL;
 					spectrum = (struct Spectrum *)NULL;
+					source_element_group = (struct GROUP(FE_element) *)NULL;
 					source_height = 100;
 					source_width = 100;
 					texture_coordinates_field = (struct Computed_field *)NULL;
@@ -7571,6 +7715,10 @@ Modifies the properties of a texture.
 					(option_table[i]).user_data=command_data->movie_graphics_manager;
 					i++;
 #endif /* defined (SGI_MOVIE_FILE) */
+					/* source_element_group */
+					(option_table[i]).to_be_modified= &source_element_group;
+					(option_table[i]).user_data= command_data->element_group_manager;
+					i++;
 					/* source_field */
 					set_field_data.computed_field_package=
 						command_data->computed_field_package;
@@ -7604,13 +7752,13 @@ Modifies the properties of a texture.
 					(option_table[i]).to_be_modified=&width;
 					i++;
 					return_code=process_multiple_options(state,option_table);
-					if (field || spectrum || texture_coordinates_field)
+					if (field || source_element_group || spectrum || texture_coordinates_field)
 					{
-						if((!field) || (!spectrum) || (!texture_coordinates_field))
+						if((!field) || (!source_element_group) || (!spectrum) || (!texture_coordinates_field))
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_modify_Texture.  To source a texture from a field you must specify\n"
-								"a source_field, source_spectrum and source_texture_coordinates");
+								"a source_field, source_element_group, source_spectrum and source_texture_coordinates");
 							return_code = 0;
 						}
 					}
@@ -7630,9 +7778,9 @@ Modifies the properties of a texture.
 						if (field && spectrum && texture_coordinates_field)
 						{
 							set_Texture_image_from_field(texture_to_be_modified_copy, field,
-								texture_coordinates_field, spectrum, TEXTURE_RGB,
-								source_width, source_height, "computed_field",
-								0, 0, 0, 0);
+								texture_coordinates_field, spectrum, source_element_group,
+								TEXTURE_RGB, source_width, source_height, "computed_field",
+								0, 0, 0, 0, command_data->user_interface);
 						}
 						if (texture_to_be_modified)
 						{
@@ -7674,6 +7822,10 @@ Modifies the properties of a texture.
 						DEACCESS(Movie_graphics)(&movie);
 					}
 #endif /* defined (SGI_MOVIE_FILE) */
+					if (source_element_group)
+					{
+						DEACCESS(GROUP(FE_element))(&source_element_group);
+					}
 					if (spectrum)
 					{
 						DEACCESS(Spectrum)(&spectrum);
