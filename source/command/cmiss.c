@@ -24788,11 +24788,11 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(MANAGER(Graphics_window))(
 			&command_data->graphics_window_manager);
 		/* Must destroy the graphics_buffer_package after the windows which use it */
-#endif /* defined (MOTIF)|| defined (GTK_USER_INTERFACE) */
 		if (command_data->graphics_buffer_package)
 		{
 			DESTROY(Graphics_buffer_package)(&command_data->graphics_buffer_package);
 		}
+#endif /* defined (MOTIF)|| defined (GTK_USER_INTERFACE) */
 
 		if (command_data->computed_field_finite_element_package)
 		{
