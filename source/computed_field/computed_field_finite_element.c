@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 27 March 2001
+LAST MODIFIED : 22 May 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -6256,175 +6256,202 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_embedded */
 
-static int Computed_field_update_fe_field_in_manager(
-	struct Computed_field *computed_field, struct FE_field *fe_field,
-	struct MANAGER(Computed_field) *computed_field_manager)
+static int Computed_field_manager_update_wrapper(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct Computed_field *wrapper, int identifier_changed, int contents_changed)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
-Searches the Computed_field_manager for a Computed_field which has the exact
-same contents.  If there is then the object is "MODIFIED" so that the name is
-updated and MANAGER messages are passed to any clients. (i.e. the fe_field may
-have changed).  If there isn't a matching field then the new one is added to
-the manager.
+Searches the <computed_field_manager> for an existing field which matches
+<wrapper> in name, or if not, in content.
+If none found then <wrapper> is added to the manager.
+If an existing wrapper is found then depending on state of <identifier_changed>
+and <contents_changed>, it is modified appropriately to match the new <wrapper>.
+???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *matching_field,*same_name_field;
+	struct Computed_field *existing_wrapper;
 
-	ENTER(Computed_field_update_fe_field_in_manager);
-	if (computed_field&&fe_field&&computed_field_manager)
+	ENTER(Computed_field_manager_update_wrapper);
+	if (computed_field_manager && wrapper)
 	{
-		/* find any existing wrapper for fe_field */
-		same_name_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			computed_field->name,computed_field_manager);
-		if (((matching_field=same_name_field)&&
-			(!Computed_field_is_in_use(matching_field)))||
-			(matching_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_contents_match,(void *)computed_field,
-				computed_field_manager)))
+		return_code = 1;
+		/* find existing wrapper first of same name, then matching contents */
+		if (!(existing_wrapper = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			wrapper->name, computed_field_manager)))
 		{
-			/* has the field name changed? */
-			if (strcmp(matching_field->name,computed_field->name))
+			existing_wrapper = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_contents_match, (void *)wrapper, computed_field_manager);
+		}
+		if (existing_wrapper)
+		{
+			if (identifier_changed)
 			{
-				return_code=MANAGER_MODIFY(Computed_field)(
-					matching_field,computed_field,computed_field_manager);
+				if (contents_changed)
+				{
+					return_code = MANAGER_MODIFY(Computed_field,name)(
+						existing_wrapper, wrapper, computed_field_manager);
+				}
+				else
+				{
+					return_code = MANAGER_MODIFY_IDENTIFIER(Computed_field,name)(
+						existing_wrapper, wrapper->name, computed_field_manager);
+				}
 			}
-			else
+			else if (contents_changed)
 			{
-				return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-					matching_field,computed_field,computed_field_manager);
+				return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
+					existing_wrapper, wrapper, computed_field_manager);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_manager_update_wrapper.  Unable to modify wrapper");
 			}
 		}
 		else
 		{
-			if (same_name_field)
+			if (!ADD_OBJECT_TO_MANAGER(Computed_field)(wrapper,
+				computed_field_manager))
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_update_fe_field_in_manager.  "
-					"Cannot modify computed field wrapper %s",same_name_field->name);
-				return_code=0;
-			}
-			else
-			{
-				return_code=ADD_OBJECT_TO_MANAGER(Computed_field)(
-					computed_field,computed_field_manager);
+					"Computed_field_manager_update_wrapper.  Unable to add wrapper");
+				return_code = 0;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_update_fe_field_in_manager.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_manager_update_wrapper.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_update_fe_field_in_manager */
+} /* Computed_field_manager_update_wrapper */
 
-static int FE_field_update_wrapper_Computed_field(struct FE_field *fe_field,
-	void *computed_field_manager_void)
+struct FE_field_to_Computed_field_change_data
+{
+	struct MANAGER(Computed_field) *computed_field_manager;
+	int contents_changed, identifier_changed;
+};
+
+static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
+	void *field_change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 22 May 2001
 
 DESCRIPTION :
-FE_field iterator function that performs the following:
-1. Tries to find a wrapper Computed_field for <fe_field> in the
-<computed_field_manager>.
-2. If one is found, the contents are modified to match the changed values in
-the fe_field, and if the name of the fields are the same, only a
-MANAGER_MODIFY_NOT_IDENTIFIER is performed.
-3. If no wrapper is found, a new one is created and added to the manager.
+From <fe_field>, creates one, and for certain types of fields more than one
+Computed_field wrapper(s) for evaluating it in various ways, then calls
+Computed_field_manager_update_wrapper to ensure that the new wrappers are
+added to the manager, or the existing wrappers modified to match the new ones.
+The computed_field_manager should be cached around several calls to this
+function.
+???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	char *extra_field_name, *field_name;
 	enum Value_type value_type;
 	int return_code;
-	struct Computed_field *default_coordinate_field,*temp_field;
-	struct MANAGER(Computed_field) *computed_field_manager;
+	struct Computed_field *default_coordinate_field, *wrapper;
+	struct FE_field_to_Computed_field_change_data *field_change_data;
 
-	ENTER(FE_field_update_wrapper_Computed_field);
-	if (fe_field&&(computed_field_manager=
-		(struct MANAGER(Computed_field) *)computed_field_manager_void))
+	ENTER(FE_field_to_Computed_field_change);
+	if (fe_field && (field_change_data =
+		(struct FE_field_to_Computed_field_change_data *)field_change_data_void))
 	{
-		if (GET_NAME(FE_field)(fe_field,&field_name))
+		return_code = 1;
+		if (GET_NAME(FE_field)(fe_field, &field_name))
 		{
 			/* establish up-to-date wrapper for the fe_field */
-			if (temp_field=CREATE(Computed_field)(field_name))
+			if (wrapper = CREATE(Computed_field)(field_name))
 			{
-				ACCESS(Computed_field)(temp_field);
-				if (Computed_field_set_coordinate_system(temp_field,
-					get_FE_field_coordinate_system(fe_field))&&
-					Computed_field_set_type_finite_element(temp_field,fe_field)&&
-					Computed_field_set_read_only(temp_field))
+				ACCESS(Computed_field)(wrapper);
+				if (Computed_field_set_coordinate_system(wrapper,
+					get_FE_field_coordinate_system(fe_field)) &&
+					Computed_field_set_type_finite_element(wrapper, fe_field) &&
+					Computed_field_set_read_only(wrapper))
 				{
-					return_code = Computed_field_update_fe_field_in_manager(temp_field,
-						fe_field, computed_field_manager);
+					if (!Computed_field_manager_update_wrapper(
+						field_change_data->computed_field_manager, wrapper,
+						field_change_data->identifier_changed,
+						field_change_data->contents_changed))
+					{
+						return_code = 0;
+					}
 				}
 				else
 				{
-					return_code=0;
+					return_code = 0;
 				}
-				DEACCESS(Computed_field)(&temp_field);
+				DEACCESS(Computed_field)(&wrapper);
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 
-			/* For the ELEMENT_XI_VALUE also make a default embedded coordinate field */
+			/* For ELEMENT_XI_VALUE also make a default embedded coordinate field */
 			value_type = get_FE_field_value_type(fe_field);
 			switch(value_type)
 			{
 				case ELEMENT_XI_VALUE:
 				{
-					if(ALLOCATE(extra_field_name, char, strlen(field_name) + 20)&&
-						sprintf(extra_field_name, "%s_coordinate", field_name))
+					if (ALLOCATE(extra_field_name, char, strlen(field_name) + 15))
 					{
+						sprintf(extra_field_name, "%s_coordinate", field_name);
 						/* establish up-to-date wrapper for the fe_field */
-						if (temp_field=CREATE(Computed_field)(extra_field_name))
+						if (wrapper = CREATE(Computed_field)(extra_field_name))
 						{
-							ACCESS(Computed_field)(temp_field);
-							if ((default_coordinate_field=
+							ACCESS(Computed_field)(wrapper);
+							if ((default_coordinate_field =
 								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-									"default_coordinate",computed_field_manager))||
-								(default_coordinate_field=
+									"default_coordinate",
+									field_change_data->computed_field_manager)) ||
+								(default_coordinate_field =
 									FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 										Computed_field_has_up_to_3_numerical_components,
-										(void *)NULL,computed_field_manager)))
+										(void *)NULL, field_change_data->computed_field_manager)))
 							{
-								if (Computed_field_set_coordinate_system(temp_field,
+								if (Computed_field_set_coordinate_system(wrapper,
 									Computed_field_get_coordinate_system(
-										default_coordinate_field))&&
-									Computed_field_set_type_embedded(temp_field,fe_field,
-							  		default_coordinate_field)&&
-									Computed_field_set_read_only(temp_field))
+										default_coordinate_field)) &&
+									Computed_field_set_type_embedded(wrapper, fe_field,
+							  		default_coordinate_field) &&
+									Computed_field_set_read_only(wrapper))
 								{
-									return_code = Computed_field_update_fe_field_in_manager(
-										temp_field, fe_field, computed_field_manager);
+									if (!Computed_field_manager_update_wrapper(
+										field_change_data->computed_field_manager, wrapper,
+										field_change_data->identifier_changed,
+										field_change_data->contents_changed))
+									{
+										return_code = 0;
+									}
 								}
 								else
 								{
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
-							DEACCESS(Computed_field)(&temp_field);
+							DEACCESS(Computed_field)(&wrapper);
 						}
 						else
 						{
-							return_code=0;
+							return_code = 0;
 						}
 						DEALLOCATE(extra_field_name);
 					}
 					else
 					{
-						return_code=0;
+						return_code = 0;
 					}
 				} break;
 			}
@@ -6432,135 +6459,67 @@ MANAGER_MODIFY_NOT_IDENTIFIER is performed.
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_field_update_wrapper_Computed_field.  Unable to update wrapper");
+				"FE_field_to_Computed_field_change.  Could not propagate change(s)");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_update_wrapper_Computed_field.  Invalid argument(s)");
-		return_code=0;
+			"FE_field_to_Computed_field_change.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_field_update_wrapper_Computed_field */
+} /* FE_field_to_Computed_field_change */
 
 static void Computed_field_FE_field_change(
-	struct MANAGER_MESSAGE(FE_field) *message,void *computed_field_finite_element_package_void)
+	struct MANAGER_MESSAGE(FE_field) *message,
+	void *computed_field_finite_element_package_void)
 /*******************************************************************************
-LAST MODIFIED : 3 February 1999
+LAST MODIFIED : 22 May 2001
 
 DESCRIPTION :
-Something has changed globally in the FE_field manager. This function ensures
-that there is an appropriate (same name/#components/coordinate system)
-Computed_field wrapper for each FE_field in the manager.
+Updates definitions of Computed_field wrappers for changed FE_fields in the
+manager by calling FE_field_to_Computed_field_change for every FE_field in the
+changed_object_list. Caches computed_field_manager to consolidate messages
+that may result from this process.
+???RC Review Manager Messages Here
 ==============================================================================*/
 {
-	char *field_name;
-	int return_code;
-	struct Computed_field *field;
-	struct Computed_field_finite_element_package *computed_field_finite_element_package;
-	struct FE_field *fe_field;
+	struct Computed_field_finite_element_package
+		*computed_field_finite_element_package;
+	struct FE_field_to_Computed_field_change_data field_change_data;
 
 	ENTER(Computed_field_FE_field_change);
-	if (message&&(computed_field_finite_element_package=
-		(struct Computed_field_finite_element_package *)computed_field_finite_element_package_void))
+	if (message && (computed_field_finite_element_package=
+		(struct Computed_field_finite_element_package *)
+		computed_field_finite_element_package_void))
 	{
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_ALL(FE_field):
-			{
-				/* establish/update all FE_field wrappers */
-				/*???RC Note: does not handle deletion of fe_fields during manager
-					change all. Should not happen really */
-				MANAGER_BEGIN_CACHE(Computed_field)(
-					computed_field_finite_element_package->computed_field_manager);
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_field)(
-					FE_field_update_wrapper_Computed_field,
-					(void *)computed_field_finite_element_package->computed_field_manager,
-					computed_field_finite_element_package->fe_field_manager);
-				MANAGER_END_CACHE(Computed_field)(
-					computed_field_finite_element_package->computed_field_manager);
-			} break;
-			case MANAGER_CHANGE_ADD(FE_field):
-			case MANAGER_CHANGE_OBJECT(FE_field):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field):
-			{
-				return_code=
-					FE_field_update_wrapper_Computed_field(message->object_changed,
-						(void *)computed_field_finite_element_package->computed_field_manager);
-			} break;
-			case MANAGER_CHANGE_DELETE(FE_field):
-			{
-				/* do nothing; this can never happen as must destroy Computed field before FE_field */
-				return_code=1;
-#if defined (OLD_CODE)
-				fe_field=message->object_changed;
-				if ((field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_is_read_only_with_fe_field,(void *)fe_field,
-					computed_field_finite_element_package->computed_field_manager))&&
-					GET_NAME(FE_field)(fe_field,&field_name))
-				{
-					if (Computed_field_is_in_use(field))
-					{
-						display_message(ERROR_MESSAGE,"Computed_field_FE_field_change."
-							"  FE_field %s destroyed while Computed_field %s is in use",
-							field_name,field->name);
-						return_code=0;
-					}
-					else
-					{
-						return_code=REMOVE_OBJECT_FROM_MANAGER(Computed_field)(field,
-							computed_field_finite_element_package->computed_field_manager);
-					}
-					DEALLOCATE(field_name);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_FE_field_change.  DELETE: Invalid field(s)");
-					return_code=0;
-				}
-#endif /* defined (OLD_CODE) */
-			} break;
-			case MANAGER_CHANGE_IDENTIFIER(FE_field):
-			{
-				fe_field=message->object_changed;
-				if ((field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_is_read_only_with_fe_field,(void *)fe_field,
-					computed_field_finite_element_package->computed_field_manager))&&
-					GET_NAME(FE_field)(fe_field,&field_name))
-				{
-					return_code=MANAGER_MODIFY_IDENTIFIER(Computed_field,name)(
-						field,field_name,computed_field_finite_element_package->computed_field_manager);
-					DEALLOCATE(field_name);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_FE_field_change.  IDENTIFIER: Invalid field(s)");
-					return_code=0;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_FE_field_change.  Unknown manager message");
-				return_code=0;
-			} break;
-		}
-		if (!return_code)
+		field_change_data.computed_field_manager =
+			computed_field_finite_element_package->computed_field_manager;
+		field_change_data.identifier_changed = 
+			(MANAGER_CHANGE_IDENTIFIER(FE_field) == message->change) ||
+			(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
+		field_change_data.contents_changed = 
+			(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field) == message->change) ||
+			(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
+		MANAGER_BEGIN_CACHE(Computed_field)(
+			computed_field_finite_element_package->computed_field_manager);
+		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(
+			FE_field_to_Computed_field_change, (void *)&field_change_data,
+			message->changed_object_list))
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_FE_field_change.  Unable to process changes");
-			return_code=0;
+				"Computed_field_FE_field_change.  Unable to propagate change(s)");
 		}
+		MANAGER_END_CACHE(Computed_field)(
+			computed_field_finite_element_package->computed_field_manager);
 	}
 	else
 	{
@@ -6574,12 +6533,13 @@ Computed_field wrapper for each FE_field in the manager.
 Global functions
 ----------------
 */
+
 struct Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_field) *fe_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 This function registers the finite_element related types of Computed_fields and
