@@ -632,14 +632,48 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_coordinate_transformation_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
+static int Computed_field_coordinate_transformation_find_element_xi(
+	struct Computed_field *field,
+	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *xi, struct GROUP(FE_element) *search_element_group) 
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 18 February 2002
 
 DESCRIPTION :
-Not implemented yet.
 ==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_coordinate_transformation_find_element_xi);
+	if (field && element && xi && values && (field->number_of_components == number_of_values))
+	{
+		FE_value source_field_coordinates[3];
+		
+		/* convert this fields values back into source coordinate system */
+		return_code=convert_Coordinate_system(&(field->coordinate_system),
+			number_of_values,values, &(field->source_fields[0]->coordinate_system),
+			field->source_fields[0]->number_of_components, source_field_coordinates,
+			/*jacobian*/(float *)NULL) && Computed_field_find_element_xi(
+			field->source_fields[0],source_field_coordinates,
+			field->source_fields[0]->number_of_components,element,
+			xi,search_element_group);
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_coordinate_transformation_find_element_xi.  "
+				"Could not set coordinate_transformation field %s at node",field->name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_coordinate_transformation_find_element_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_coordinate_transformation_find_element_xi */
 
 static int list_Computed_field_coordinate_transformation(
 	struct Computed_field *field)
