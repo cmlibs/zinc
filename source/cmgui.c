@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -1168,20 +1168,24 @@ Main program for the CMISS Graphical User Interface
 		command_data.interactive_tool_manager);
 	command_data.node_tool=CREATE(Node_tool)(
 		command_data.interactive_tool_manager,
-		command_data.node_manager,/*data_manager*/0,
+		command_data.node_manager,/*use_data*/0,
 		command_data.node_selection,
-		command_data.computed_field_package);
+		command_data.computed_field_package,
+		command_data.default_graphical_material);
 	command_data.element_tool=CREATE(Element_tool)(
 		command_data.interactive_tool_manager,
-		command_data.element_selection);
+		command_data.element_selection,
+		command_data.default_graphical_material);
 	command_data.data_tool=CREATE(Node_tool)(
 		command_data.interactive_tool_manager,
-		command_data.data_manager,/*data_manager*/1,
+		command_data.data_manager,/*use_data*/1,
 		command_data.data_selection,
-		command_data.computed_field_package);
+		command_data.computed_field_package,
+		command_data.default_graphical_material);
 	command_data.element_point_tool=CREATE(Element_point_tool)(
 		command_data.interactive_tool_manager,
-		command_data.element_point_ranges_selection);
+		command_data.element_point_ranges_selection,
+		command_data.default_graphical_material);
 	command_data.element_creator=(struct Element_creator *)NULL;
 
 	if (return_code)
