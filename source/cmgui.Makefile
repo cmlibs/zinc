@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 5 November 2004
+# LAST MODIFIED : 10 November 2004
 #
 # DESCRIPTION :
 #
@@ -608,6 +608,7 @@ API_SRCS = \
 	api/cmiss_function_gradient.cpp \
 	api/cmiss_function_integral.cpp \
 	api/cmiss_function_inverse.cpp \
+	api/cmiss_function_linear_span.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_matrix_determinant.cpp \
 	api/cmiss_function_matrix_dot_product.cpp \
@@ -731,6 +732,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/function_identity.cpp \
 	computed_variable/function_integral.cpp \
 	computed_variable/function_inverse.cpp \
+	computed_variable/function_linear_span.cpp \
 	computed_variable/function_matrix.cpp \
 	computed_variable/function_matrix_determinant.cpp \
 	computed_variable/function_matrix_dot_product.cpp \
@@ -1414,6 +1416,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_function_derivative.cpp \
 	api/cmiss_function_gradient.cpp \
 	api/cmiss_function_inverse.cpp \
+	api/cmiss_function_linear_span.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_matrix_determinant.cpp \
 	api/cmiss_function_matrix_dot_product.cpp \
