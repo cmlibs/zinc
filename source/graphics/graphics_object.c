@@ -2787,7 +2787,7 @@ from <graphics_object> to the iso_poly_material array in the voltex. Of course,
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
 /*******************************************************************************
-LAST MODIFIED : 20 February 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics object.
@@ -2802,6 +2802,7 @@ Allocates memory and assigns fields for a graphics object.
 		if (ALLOCATE(object,gtObject,1)&&ALLOCATE(object->name,char,strlen(name)+1)
 			&&(object->selected_graphic_list=CREATE(LIST(Selected_graphic))()))
 		{
+			object->select_mode=GRAPHICS_NO_SELECT;
 			object->times=(float *)NULL;
 			object->access_count=0;
 			strcpy(object->name,name);
@@ -3006,29 +3007,34 @@ pointed to by <time_void>.
 					(graphics_object->display_list=glGenLists(1)))
 				{
 					glNewList(graphics_object->display_list,GL_COMPILE);
-					if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
-						(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,(void *)NULL,
-						graphics_object->selected_graphic_list))
+					if ((GRAPHICS_SELECT_ON == graphics_object->select_mode) ||
+						(GRAPHICS_DRAW_SELECTED == graphics_object->select_mode))
 					{
-						/* child objects have no material or transformation */
 						if (graphics_object->selected_material)
 						{
-							execute_Graphical_material(graphics_object->selected_material);
-							makegtobject(graphics_object,*time,/*draw_selected*/1);
+							if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
+								(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,
+								(void *)NULL,graphics_object->selected_graphic_list))
+							{
+								execute_Graphical_material(graphics_object->selected_material);
+								makegtobject(graphics_object,*time,/*draw_selected*/1);
+							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,"compile_GT_object.  "
-								"Graphics object %s has selected graphics but no selected "
-								"material",graphics_object->name);
+								"Graphics object %s has no selected material",
+								graphics_object->name);
 						}
 					}
-					/* child objects have no material or transformation */
-					if (graphics_object->default_material)
+					if (GRAPHICS_DRAW_SELECTED != graphics_object->select_mode)
 					{
-						execute_Graphical_material(graphics_object->default_material);
+						if (graphics_object->default_material)
+						{
+							execute_Graphical_material(graphics_object->default_material);
+						}
+						makegtobject(graphics_object,*time,/*draw_selected*/0);
 					}
-					makegtobject(graphics_object,*time,/*draw_selected*/0);
 					glEndList();
 					graphics_object->display_list_current = 1;
 				}
@@ -4596,6 +4602,65 @@ DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_nurbs, \
 DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex, \
 	g_VOLTEX,gt_voltex,DESTROY(GT_voltex))
 
+enum Graphics_select_mode GT_object_get_select_mode(
+	struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+Gets the default_select_mode of a GT_object.
+==============================================================================*/
+{
+	enum Graphics_select_mode select_mode;
+
+	ENTER(GT_object_get_select_mode);
+	if (graphics_object)
+	{
+		select_mode = graphics_object->select_mode;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_select_mode.  Invalid argument(s)");
+		select_mode = GRAPHICS_SELECT_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (select_mode);
+} /* GT_object_get_select_mode */
+
+int GT_object_set_select_mode(struct GT_object *graphics_object,
+	enum Graphics_select_mode select_mode)
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+Sets the select_mode of the <graphics_object>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_set_select_mode);
+	if (graphics_object && (
+		(GRAPHICS_SELECT_ON == select_mode) ||
+		(GRAPHICS_NO_SELECT == select_mode) ||
+		(GRAPHICS_DRAW_SELECTED == select_mode) ||
+		(GRAPHICS_DRAW_UNSELECTED == select_mode)))
+	{
+		graphics_object->select_mode=select_mode;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_select_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_set_select_mode */
+
 int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
@@ -4627,7 +4692,7 @@ Clears the list of selected primitives and subobjects in <graphics_object>.
 int GT_object_select_graphic(struct GT_object *graphics_object,int number,
 	struct Multi_range *subranges)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Selects graphics with the object_name <number> in <graphics_object>, with
@@ -4643,7 +4708,7 @@ graphics_object.
 
 	ENTER(GT_object_select_graphic);
 	return_code=0;
-	if (graphics_object)
+	if (graphics_object&&(GRAPHICS_NO_SELECT != graphics_object->select_mode))
 	{
 		/* clear current selected_graphic for number */
 		if (selected_graphic=FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
@@ -4677,7 +4742,7 @@ graphics_object.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_object_select_graphic.  Invalid graphics object");
+			"GT_object_select_graphic.  Invalid argument(s)");
 	}
 	LEAVE;
 

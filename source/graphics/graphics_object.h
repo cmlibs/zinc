@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Graphical object data structures.
@@ -470,7 +470,7 @@ struct Graphics_object_callback_data
 
 typedef struct GT_object
 /*******************************************************************************
-LAST MODIFIED : 18 February 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Graphical object data structure.
@@ -483,6 +483,7 @@ Graphical object data structure.
 	/* for inheritance */
 	struct GT_object *parentobject;
 	/* for selected primitives and subobjects */
+	enum Graphics_select_mode select_mode;
 	struct LIST(Selected_graphic) *selected_graphic_list;
 	/* default attributes */
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
@@ -1179,6 +1180,24 @@ PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_glyph_set);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_polyline);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_surface);
 PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex);
+
+enum Graphics_select_mode GT_object_get_select_mode(
+	struct GT_object *graphics_object);
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+Gets the default_select_mode of a GT_object.
+==============================================================================*/
+
+int GT_object_set_select_mode(struct GT_object *graphics_object,
+	enum Graphics_select_mode select_mode);
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+Sets the select_mode of the <graphics_object>.
+==============================================================================*/
 
 int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object);
 /*******************************************************************************
