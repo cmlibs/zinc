@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.hpp
 //
-// LAST MODIFIED : 7 February 2005
+// LAST MODIFIED : 21 February 2005
 //
 // DESCRIPTION :
 // A list of specifiers joined together end on end.  There can be repeats in the
@@ -14,9 +14,11 @@
 
 #include "computed_variable/function_variable.hpp"
 
+#define USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE
+
 class Function_variable_composite : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 7 February 2005
+// LAST MODIFIED : 21 February 2005
 //
 // DESCRIPTION :
 // A composite of other variable(s).
@@ -47,6 +49,29 @@ class Function_variable_composite : public Function_variable
 	// inherited
 	public:
 		Function_variable_handle clone() const;
+#if defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
+#if defined (EVALUATE_RETURNS_VALUE)
+		// evaluate creates a new Function which is the variable's value.  For a
+		//   dependent variable, this will involve evaluating the variable's
+		//   function
+		virtual Function_handle evaluate();
+#else // defined (EVALUATE_RETURNS_VALUE)
+		// for a dependent variable, the variable's function will be evaluated.  For
+		//   an independent variable, nothing will happen
+		virtual bool evaluate();
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// evaluate_derivative creates a new Function which is the value of the
+		//   variable differentiated with respect to the <independent_variables>
+		virtual Function_handle evaluate_derivative(
+			std::list<Function_variable_handle>& independent_variables);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// derivative creates a new Function which calculates the value of this
+		//   variable differentiated with respect to the <independent_variables>
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
 		string_handle get_string_representation();
 		Function_variable_iterator begin_atomic() const;
 		Function_variable_iterator end_atomic() const;
