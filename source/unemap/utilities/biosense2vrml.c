@@ -284,8 +284,6 @@ DESCRIPTION :
 								green=1;
 								blue=1;
 							}
-							/*???debug */
-							printf("%d.  %g %g %g\n",i+1,red,green,blue);
 							fprintf(vrml_file,"    Transform\n");
 							fprintf(vrml_file,"    {\n");
 							fprintf(vrml_file,"      translation %f %f %f\n",x_array[i],
@@ -355,11 +353,11 @@ DESCRIPTION :
 							fprintf(vrml_file,"                [\n");
 							fprintf(vrml_file,"                  \"%d\"\n",i+1);
 							fprintf(vrml_file,"                ]\n");
-							fprintf(vrml_file,"                fontstyle\n");
-							fprintf(vrml_file,"                Fontstyle\n");
+							fprintf(vrml_file,"                fontStyle\n");
+							fprintf(vrml_file,"                FontStyle\n");
 							fprintf(vrml_file,"                {\n");
 							fprintf(vrml_file,"                  size %f\n",2*sphere_radius);
-							fprintf(vrml_file,"                } #Fontstyle\n");
+							fprintf(vrml_file,"                } #FontStyle\n");
 							fprintf(vrml_file,"              } #Text\n");
 							fprintf(vrml_file,"            } #Shape\n");
 							fprintf(vrml_file,"          ]\n");
