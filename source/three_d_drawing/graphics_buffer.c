@@ -1030,6 +1030,7 @@ DESCRIPTION :
 } /* Graphics_buffer_create_from_visual_info */
 #endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 #if defined (OPENGL_API)
 static void Graphics_buffer_create_buffer_glx(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -1895,6 +1896,7 @@ that it is all in one place.
 	LEAVE;
 } /* Graphics_buffer_create_buffer_glx */
 #endif /* defined (OPENGL_API) */
+#endif /* defined (MOTIF) */
 
 #if defined (GTK_USER_INTERFACE)
 static void Graphics_buffer_gtkglarea_initialise_callback(GtkWidget *widget,
