@@ -106,7 +106,7 @@ Subset of command data passed to g_element modify routines.
 {
 	struct Graphical_material *default_material;
 	struct LIST(GT_object *) glyph_list;
-	struct Computed_field_package *computed_field_package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;

@@ -1,3 +1,12 @@
+/*******************************************************************************
+FILE : computed_field_find_xi.c
+
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Implements a special version of find_xi that uses OpenGL to accelerate the
+lookup of the element.
+==============================================================================*/
 #include <stdio.h>
 #include <math.h>
 

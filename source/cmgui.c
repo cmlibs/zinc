@@ -30,6 +30,8 @@ DESCRIPTION :
 #include "element/element_point_tool.h"
 #include "element/element_point_viewer.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_sample_texture.h"
+#include "computed_field/computed_field_window_projection.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "finite_element/grid_field_calculator.h"
@@ -884,7 +886,7 @@ Main program for the CMISS Graphical User Interface
 		CREATE(Computed_field_package)? */
 	if ((command_data.computed_field_package=CREATE(Computed_field_package)(
 		command_data.fe_field_manager,command_data.element_manager,
-		command_data.texture_manager,command_data.control_curve_manager))&&
+		command_data.control_curve_manager))&&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
 			command_data.computed_field_package)))
 	{
@@ -1026,7 +1028,8 @@ Main program for the CMISS Graphical User Interface
 				command_data.interactive_streamline_manager);
 			Scene_set_graphical_element_mode(command_data.default_scene,
 				GRAPHICAL_ELEMENT_LINES,
-				command_data.computed_field_package,command_data.element_manager,
+				Computed_field_package_get_computed_field_manager(
+				command_data.computed_field_package),command_data.element_manager,
 				command_data.element_group_manager,command_data.fe_field_manager,
 				command_data.node_manager,command_data.node_group_manager,
 				command_data.data_manager,command_data.data_group_manager,
@@ -1048,6 +1051,23 @@ Main program for the CMISS Graphical User Interface
 	}
 	/* graphics window manager.  Note there is no default window. */
 	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
+
+	/* Add Computed_fields to the Computed_field_package */
+	if (command_data.computed_field_package)
+	{
+		if (command_data.graphics_window_manager)
+		{
+			Computed_field_register_type_window_projection(
+				command_data.computed_field_package, 
+				command_data.graphics_window_manager);
+		}
+		if (command_data.texture_manager)
+		{
+			Computed_field_register_type_sample_texture(
+				command_data.computed_field_package, 
+				command_data.texture_manager);
+		}
+	}
 #if defined (UNEMAP)	
 	command_data.unemap_package = CREATE(Unemap_package)(
 		command_data.fe_field_manager,command_data.element_group_manager,

@@ -31,6 +31,7 @@ November 97 Created from rendering part of Drawing.
 #include "three_d_drawing/dm_interface.h"
 #include "three_d_drawing/ThreeDDraw.h"
 #include "three_d_drawing/movie_extensions.h"
+#include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/image_utilities.h"
@@ -57,6 +58,10 @@ Module constants
 Module types
 ------------
 */
+
+FULL_DECLARE_CALLBACK_TYPES(Scene_viewer_transform, \
+	struct Scene_viewer *, void *);
+
 struct Scene_viewer
 /*******************************************************************************
 LAST MODIFIED : 11 April 2000
@@ -134,7 +139,10 @@ DESCRIPTION :
 	double bk_texture_left,bk_texture_top,bk_texture_width,
 		bk_texture_height,bk_texture_max_pixels_per_polygon;
 	int bk_texture_undistort_on;
-	struct Callback_data input_callback,transform_callback;
+	struct Callback_data input_callback;
+	/* list of callbacks requested by other objects when view changes */
+	struct LIST(CALLBACK_ITEM(Scene_viewer_transform)) *sync_callback_list;
+	struct LIST(CALLBACK_ITEM(Scene_viewer_transform)) *transform_callback_list;
 	/* the scene_viewer must always have a light model */
 	struct Light_model *light_model;
 	/* lights in this list are oriented relative to the viewer */
@@ -174,6 +182,11 @@ Module variables
 Module functions
 ----------------
 */
+DEFINE_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_transform)
+
+DEFINE_CALLBACK_FUNCTIONS(Scene_viewer_transform, \
+	struct Scene_viewer *,void *)
+
 static int Scene_viewer_render_background_texture(
 	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height)
 /*******************************************************************************
@@ -1258,6 +1271,36 @@ Sets the initial viewing transform for the scene_viewer.
 	LEAVE;
 } /* Scene_viewer_initialize_callback */
 
+static void Scene_viewer_resize_callback(Widget scene_viewer_widget,
+	XtPointer scene_viewer_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 July 1998
+
+DESCRIPTION :
+Called when part of the Scene_viewer window is resized. All it does is notify
+callbacks interested in the scene_viewers transformations.
+==============================================================================*/
+{
+	struct Scene_viewer *scene_viewer;
+	X3dThreeDDrawCallbackStruct *resize_callback_data;
+
+	ENTER(Scene_viewer_resize_callback);
+	if (scene_viewer_widget&&
+		(scene_viewer=(struct Scene_viewer *)scene_viewer_structure)&&
+		(resize_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
+		(X3dCR_RESIZE==resize_callback_data->reason))
+	{
+		CALLBACK_LIST_CALL(Scene_viewer_transform)(
+			scene_viewer->transform_callback_list,scene_viewer,NULL);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_resize_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Scene_viewer_resize_callback */
+
 static void Scene_viewer_expose_callback(Widget scene_viewer_widget,
 	XtPointer scene_viewer_structure,XtPointer call_data)
 /*******************************************************************************
@@ -1952,14 +1995,11 @@ Converts mouse button-press and motion events into viewing transformations in
 					if (view_changed)
 					{
 						Scene_viewer_redraw_now(scene_viewer);
-						/* call transform_callback to allow clients to synchronize views
-							 in multiple scene_viewers. */
-						if (scene_viewer->transform_callback.procedure)
-						{
-							(scene_viewer->transform_callback.procedure)(
-								scene_viewer->drawing_widget,
-								scene_viewer->transform_callback.data,(void *)scene_viewer);
-						}
+						/* send the callbacks */
+						CALLBACK_LIST_CALL(Scene_viewer_transform)(
+							scene_viewer->transform_callback_list,scene_viewer,NULL);
+						CALLBACK_LIST_CALL(Scene_viewer_transform)(
+							scene_viewer->sync_callback_list,scene_viewer,NULL);
 					}
 					old_pointer_x=pointer_x;
 					old_pointer_y=pointer_y;
@@ -2725,8 +2765,10 @@ performed in idle time so that multiple redraws are avoided.
 					scene_viewer->transparency_mode=SCENE_VIEWER_FAST_TRANSPARENCY;
 					scene_viewer->input_callback.procedure=(Callback_procedure *)NULL;
 					scene_viewer->input_callback.data=NULL;
-					scene_viewer->transform_callback.procedure=(Callback_procedure *)NULL;
-					scene_viewer->transform_callback.data=NULL;
+					scene_viewer->sync_callback_list=
+					  CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
+					scene_viewer->transform_callback_list=
+					  CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
 					scene_viewer->pixel_width=0;
 					scene_viewer->pixel_height=0;
 					scene_viewer->update_pixel_image=0;
@@ -2737,8 +2779,8 @@ performed in idle time so that multiple redraws are avoided.
 					/* add callbacks to the drawing widget */
 					XtAddCallback(drawing_widget,X3dNinitializeCallback,
 						Scene_viewer_initialize_callback,scene_viewer);
-					/*XtAddCallback(drawing_widget,X3dNresizeCallback,
-						Scene_viewer_resize_callback,scene_viewer);*/
+					XtAddCallback(drawing_widget,X3dNresizeCallback,
+						Scene_viewer_resize_callback,scene_viewer);
 					XtAddCallback(drawing_widget,X3dNexposeCallback,
 						Scene_viewer_expose_callback,scene_viewer);
 					XtAddCallback(drawing_widget,X3dNinputCallback,
@@ -2868,6 +2910,16 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		}
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
 		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
+		if (scene_viewer->sync_callback_list)
+		{
+			DESTROY(LIST(CALLBACK_ITEM(Scene_viewer_transform)))(
+				&scene_viewer->sync_callback_list);
+		}
+		if (scene_viewer->transform_callback_list)
+		{
+			DESTROY(LIST(CALLBACK_ITEM(Scene_viewer_transform)))(
+				&scene_viewer->transform_callback_list);
+		}
 		/* must destroy the widget */
 		XtDestroyWidget(scene_viewer->drawing_widget);				
 		if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)
@@ -5335,37 +5387,159 @@ scene_viewer.
 	return (return_code);
 } /* Scene_viewer_set_input_callback */
 
-int Scene_viewer_set_transform_callback(struct Scene_viewer *scene_viewer,
-	struct Callback_data *callback)
+int Scene_viewer_sync_add_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 8 October 1998
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Sets a callback that will be activated each time the view is modified by mouse
-or other actions within this module. Chiefly used to synchronise views in
-separate scene viewer.
-Callback procedures should have no return value and have the 3 parameters:
-Widget widget,void *user_data_void,void *scene_viewer_void.
+Adds a callback to <element_selection> so that when it changes <function> is
+called with <user_data>. <function> has 3 arguments, a
+struct Scene_viewer *, a void* and the void *user_data.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Scene_viewer_set_transform_callback);
-	if (scene_viewer&&callback)
+	ENTER(Scene_viewer_sync_add_callback);
+	if (scene_viewer&&function)
 	{
-		scene_viewer->transform_callback.procedure=callback->procedure;
-		scene_viewer->transform_callback.data=callback->data;
+		if (CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_transform)(
+			scene_viewer->sync_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_sync_add_callback.  Could not add callback");
+			return_code=0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_tranform_callback.  Invalid argument(s)");
+			"Scene_viewer_sync_add_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_set_transform_callback */
+} /* Scene_viewer_sync_add_callback */
+
+int Scene_viewer_sync_remove_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_sync_remove_callback);
+	if (scene_viewer&&function)
+	{
+		if (CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_transform)(
+			scene_viewer->sync_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_sync_remove_callback.  Could not remove callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_sync_remove_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_sync_remove_callback */
+
+int Scene_viewer_transform_add_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Adds a callback to <element_selection> so that when it changes <function> is
+called with <user_data>. <function> has 3 arguments, a
+struct Scene_viewer *, a void* and the void *user_data.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_transform_add_callback);
+	if (scene_viewer&&function)
+	{
+		if (CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_transform)(
+			scene_viewer->transform_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_transform_add_callback.  Could not add callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_transform_add_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_transform_add_callback */
+
+int Scene_viewer_transform_remove_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_transform_remove_callback);
+	if (scene_viewer&&function)
+	{
+		if (CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_transform)(
+			scene_viewer->transform_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_transform_remove_callback.  Could not remove callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_transform_remove_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_transform_remove_callback */
 
 char *Scene_viewer_buffer_mode_string(
 	enum Scene_viewer_buffer_mode buffer_mode)

@@ -76,7 +76,7 @@ Structure for maintaining a graphical rendition of an element group.
 	void *data_manager_callback_id;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	void *data_group_manager_callback_id;
-	struct Computed_field_package *computed_field_package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	void *computed_field_manager_callback_id;
 
 	/* global stores of selected objects for automatic highlighting */
@@ -659,7 +659,7 @@ struct GT_element_group *CREATE(GT_element_group)(
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct Computed_field_package *computed_field_package,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -725,7 +725,7 @@ If supplied, callbacks are requested from the <element_selection> and
 				gt_element_group->data_manager_callback_id=(void *)NULL;
 				gt_element_group->data_group_manager=data_group_manager;
 				gt_element_group->data_group_manager_callback_id=(void *)NULL;
-				gt_element_group->computed_field_package=computed_field_package;
+				gt_element_group->computed_field_manager=computed_field_manager;
 				gt_element_group->computed_field_manager_callback_id=(void *)NULL;
 				/* request callbacks from any managers supplied */
 				if (element_manager)
@@ -765,13 +765,12 @@ If supplied, callbacks are requested from the <element_selection> and
 						MANAGER_REGISTER(GROUP(FE_node))(GT_element_group_data_group_change,
 							(void *)gt_element_group,gt_element_group->data_group_manager);
 				}
-				if (computed_field_package)
+				if (computed_field_manager)
 				{
 					gt_element_group->computed_field_manager_callback_id=
 						MANAGER_REGISTER(Computed_field)(
 							GT_element_group_computed_field_change,(void *)gt_element_group,
-							Computed_field_package_get_computed_field_manager(
-								gt_element_group->computed_field_package));
+							gt_element_group->computed_field_manager);
 				}
 				/* global selections */
 				gt_element_group->element_point_ranges_selection=
@@ -855,7 +854,7 @@ WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
 			(struct MANAGER(GROUP(FE_node)) *)NULL,
 			(struct MANAGER(FE_node) *)NULL,
 			(struct MANAGER(GROUP(FE_node)) *)NULL,
-			(struct Computed_field_package *)NULL,
+			(struct MANAGER(Computed_field) *)NULL,
 			(struct Element_point_ranges_selection *)NULL,
 			(struct FE_element_selection *)NULL,
 			(struct FE_node_selection *)NULL,
@@ -946,8 +945,7 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 				{
 					MANAGER_DEREGISTER(Computed_field)(
 						gt_element_group->computed_field_manager_callback_id,
-						Computed_field_package_get_computed_field_manager(
-							gt_element_group->computed_field_package));
+						gt_element_group->computed_field_manager);
 				}
 				/* remove callbacks from the global selections */
 				if (gt_element_group->element_point_ranges_selection)

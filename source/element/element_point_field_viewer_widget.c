@@ -162,7 +162,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 			for (comp_no=0;comp_no<number_of_components;comp_no++)
 			{
 				widget=child_list[comp_no*2+1];
-				if (value_string=Computed_field_evaluate_component_as_string_in_element(
+				if (value_string=Computed_field_evaluate_as_string_in_element(
 					field,comp_no,element,xi,top_level_element))
 				{
 					/* set background colour to modified or unmodified if editable */
@@ -342,7 +342,7 @@ data, and then changes the correct value in the array structure.
 			}
 			/* redisplay the actual value for the field component */
 			if (field_value_string=
-				Computed_field_evaluate_component_as_string_in_element(
+				Computed_field_evaluate_as_string_in_element(
 					field,component_number,element,xi,top_level_element))
 			{
 				/* only set string from field if different from that shown */

@@ -131,7 +131,7 @@ DESCRIPTION :
 
 	/* following needed for creating node groups/graphics */
 	struct Colour *background_colour;
-	struct Computed_field_package *computed_field_package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Digitiser_window) *digitiser_window_manager;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct MANAGER(FE_element) *element_manager;
@@ -2902,7 +2902,7 @@ Reads a movie file into the tracking editor.
 			}
 			track_ed->mirage_movie=tmp_movie;
 			if (return_code=(enable_Mirage_movie_graphics(tmp_movie,
-				track_ed->basis_manager,track_ed->computed_field_package,
+				track_ed->basis_manager,track_ed->computed_field_manager,
 				track_ed->element_manager,track_ed->element_group_manager,
 				track_ed->fe_field_manager,track_ed->glyph_list,
 				track_ed->graphical_material_manager,
@@ -5086,7 +5086,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	XtCallbackProc exit_button_callback,
 	struct Colour *background_colour,
 	struct MANAGER(FE_basis) *basis_manager,
-	struct Computed_field_package *computed_field_package,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
@@ -5192,7 +5192,7 @@ DESCRIPTION :
 
 	ENTER(open_tracking_editor_dialog);
 	USE_PARAMETER(exit_button_callback);
-	if (address&&background_colour&&basis_manager&&computed_field_package&&
+	if (address&&background_colour&&basis_manager&&computed_field_manager&&
 		element_manager&&element_group_manager&&fe_field_manager&&
 		glyph_list&&graphical_material_manager&&default_graphical_material&&
 		graphics_window_manager&&light_manager&&default_light&&
@@ -5224,7 +5224,7 @@ DESCRIPTION :
 					track_ed->digitiser_window_manager=
 						CREATE(MANAGER(Digitiser_window))();
 					track_ed->basis_manager=basis_manager;
-					track_ed->computed_field_package=computed_field_package;
+					track_ed->computed_field_manager=computed_field_manager;
 					track_ed->element_manager=element_manager;
 					track_ed->element_group_manager=element_group_manager;
 					track_ed->fe_field_manager=fe_field_manager;

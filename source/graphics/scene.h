@@ -129,7 +129,7 @@ Structure to pass to modify_Scene.
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	/* following used for enabling GFEs */
-	struct Computed_field_package *computed_field_package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -599,7 +599,7 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
-	struct Computed_field_package *computed_field_package,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,

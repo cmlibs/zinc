@@ -17,6 +17,7 @@ translating and zooming with mouse button press and motion events.
 #if !defined (SCENE_VIEWER_H)
 #define SCENE_VIEWER_H
 
+#include "general/callback.h"
 #include "general/image_utilities.h"
 #include "general/object.h"
 #include "graphics/colour.h"
@@ -112,6 +113,9 @@ LAST MODIFIED : 18 November 1997
 DESCRIPTION :
 Members of the Scene_viewer structure are private.
 ==============================================================================*/
+
+DECLARE_CALLBACK_TYPES(Scene_viewer_transform, \
+	struct Scene_viewer *, void *);
 
 /*
 Global functions
@@ -548,6 +552,48 @@ A value of zero turns off that transform capability.
 Negative values reverse the effects of mouse movement.
 ==============================================================================*/
 
+int Scene_viewer_sync_add_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Adds a callback to <element_selection> so that when it changes <function> is
+called with <user_data>. <function> has 3 arguments, a
+struct Scene_viewer *, a void* and the void *user_data.
+==============================================================================*/
+
+int Scene_viewer_sync_remove_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+
+int Scene_viewer_transform_add_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Adds a callback to <element_selection> so that when it changes <function> is
+called with <user_data>. <function> has 3 arguments, a
+struct Scene_viewer *, a void* and the void *user_data.
+==============================================================================*/
+
+int Scene_viewer_transform_remove_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+
 enum Scene_viewer_transparency_mode Scene_viewer_get_transparency_mode(
 	struct Scene_viewer *scene_viewer);
 /*******************************************************************************
@@ -879,19 +925,6 @@ LAST MODIFIED : 23 July 1998
 DESCRIPTION :
 Sets a callback that will be activated each time input is received by the 
 scene_viewer.
-==============================================================================*/
-
-int Scene_viewer_set_transform_callback(struct Scene_viewer *scene_viewer,
-	struct Callback_data *callback);
-/*******************************************************************************
-LAST MODIFIED : 8 October 1998
-
-DESCRIPTION :
-Sets a callback that will be activated each time the view is modified by mouse
-or other actions within this module. Chiefly used to synchronise views in
-separate scene viewer.
-Callback procedures should have no return value and have the 3 parameters:
-Widget widget,void *user_data_void,void *scene_viewer_void.
 ==============================================================================*/
 
 char *Scene_viewer_buffer_mode_string(

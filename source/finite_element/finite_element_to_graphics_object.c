@@ -305,7 +305,8 @@ fields used here.
 				((!data_field)||Computed_field_evaluate_at_node(data_field,node,
 					node_to_glyph_set_data->data))&&
 				((!label_field)||(*(node_to_glyph_set_data->label) =
-					Computed_field_evaluate_as_string_at_node(label_field,node)))&&
+					Computed_field_evaluate_as_string_at_node(label_field,
+					/*component_number*/-1,node)))&&
 				make_glyph_orientation_scale_axes(
 					number_of_orientation_scale_components,orientation_scale,a,b,c,size))
 			{
@@ -5961,7 +5962,8 @@ Note:
 								(FE_value *)NULL))&&
 							((!label_field)||
 								(labels[point_no]=Computed_field_evaluate_as_string_in_element(
-									label_field,element,xi,top_level_element)))&&
+									label_field,/*component_number*/-1,element,xi,
+									top_level_element)))&&
 							make_glyph_orientation_scale_axes(
 								number_of_orientation_scale_components,orientation_scale,
 								a,b,c,size))

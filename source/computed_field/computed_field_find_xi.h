@@ -1,4 +1,22 @@
+/*******************************************************************************
+FILE : computed_field_find_xi.h
+
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Implements a special version of find_xi that uses OpenGL to accelerate the
+lookup of the element.
+==============================================================================*/
+#if !defined (COMPUTED_FIELD_FIND_XI_H)
+#define COMPUTED_FIELD_FIND_XI_H
+
 struct Computed_field_find_element_xi_special_cache;
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+struct Computed_field_find_element_xi_special_cache is private.
+==============================================================================*/
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
 	struct Computed_field_find_element_xi_special_cache **cache_ptr, FE_value *values,
@@ -36,3 +54,4 @@ LAST MODIFIED : 20 June 2000
 DESCRIPTION :
 Frees memory/deaccess cache at <*cache_address>.
 ==============================================================================*/
+#endif /* !defined (COMPUTED_FIELD_FIND_XI_H) */

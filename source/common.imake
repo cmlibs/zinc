@@ -63,7 +63,7 @@ OPTIMISATION_FLAGS = -g -mips3
 COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521
 COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
 STRICT_FLAGS = -diag_error 1196,1409,1551
-STRICT_FLAGS_PATTERN = choose/WildC | curve/WildC | data/WildC | graphics/WildC | material/WildC | select/WildC | three_d_drawing/WildC | time/WildC | view/WildC
+STRICT_FLAGS_PATTERN = cell/WildC | choose/WildC | computed_field/WildC | curve/WildC | data/WildC | element/WildC | graphics/WildC | material/WildC | select/WildC | three_d_drawing/WildC | time/WildC | view/WildC
 #endif /* defined (OPTIMISED) */
 
 #if defined (O64)

@@ -231,7 +231,7 @@ Allocates space for and initializes the Mirage_movie structure.
 		mirage_movie->all_element_group=(struct GROUP(FE_element) *)NULL;
 		mirage_movie->all_node_group=(struct GROUP(FE_node) *)NULL;
 		mirage_movie->scene=(struct Scene *)NULL;
-		mirage_movie->computed_field_package=(struct Computed_field_package *)NULL;
+		mirage_movie->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 		mirage_movie->element_manager=(struct MANAGER(FE_element) *)NULL;
 		mirage_movie->element_group_manager=
 			(struct MANAGER(GROUP(FE_element)) *)NULL;
@@ -1673,7 +1673,7 @@ Removes all surface settings from the graphical finite element for
 
 int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(FE_basis) *basis_manager,
-	struct Computed_field_package *computed_field_package,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
@@ -1732,10 +1732,10 @@ resulting 3-D display.
 		data_group_manager&&element_point_ranges_selection&&
 		element_selection&&node_selection&&data_selection&&
 		scene_manager&&default_scene&&spectrum_manager&&
-		default_spectrum&&texture_manager&&user_interface&&computed_field_package)
+		default_spectrum&&texture_manager&&user_interface&&computed_field_manager)
 	{
 		return_code=1;
-		movie->computed_field_package=computed_field_package;
+		movie->computed_field_manager=computed_field_manager;
 		movie->element_manager=element_manager;
 		movie->element_group_manager=element_group_manager;
 		movie->fe_field_manager=fe_field_manager;
@@ -1897,7 +1897,7 @@ resulting 3-D display.
 
 		/* do not want all_element_group to be drawn in default scene */
 		Scene_set_graphical_element_mode(movie->scene,
-			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_package,element_manager,
+			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_manager,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
 			data_manager,data_group_manager,element_point_ranges_selection,
 			element_selection,node_selection,data_selection,user_interface);
@@ -1985,7 +1985,7 @@ resulting 3-D display.
 
 		/* do want 3-D node/element groups to be drawn in default scene */
 		Scene_set_graphical_element_mode(movie->scene,
-			GRAPHICAL_ELEMENT_LINES,computed_field_package,element_manager,
+			GRAPHICAL_ELEMENT_LINES,computed_field_manager,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
 			data_manager,data_group_manager,element_point_ranges_selection,
 			element_selection,node_selection,data_selection,user_interface);
@@ -2069,7 +2069,7 @@ resulting 3-D display.
 
 		/* don't want any of the following GFEs shown in default_scene */
 		Scene_set_graphical_element_mode(movie->scene,
-			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_package,element_manager,
+			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_manager,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
 			data_manager,data_group_manager,element_point_ranges_selection,
 			element_selection,node_selection,data_selection,user_interface);
@@ -2138,7 +2138,7 @@ resulting 3-D display.
 								texture_manager)&&
 							Scene_set_graphical_element_mode(view->scene,
 								GRAPHICAL_ELEMENT_INVISIBLE,
-								computed_field_package,element_manager,element_group_manager,
+								computed_field_manager,element_manager,element_group_manager,
 								fe_field_manager,node_manager,node_group_manager,
 								data_manager,data_group_manager,element_point_ranges_selection,
 								element_selection,node_selection,data_selection,
@@ -2186,7 +2186,7 @@ resulting 3-D display.
 
 		/* re-enable visibility and line renditions for new GFEs in default_scene */
 		Scene_set_graphical_element_mode(movie->scene,
-			GRAPHICAL_ELEMENT_LINES,computed_field_package,element_manager,
+			GRAPHICAL_ELEMENT_LINES,computed_field_manager,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
 			data_manager,data_group_manager,element_point_ranges_selection,
 			element_selection,node_selection,data_selection,user_interface);
@@ -2234,9 +2234,7 @@ pending points, but always with the problem points.
 	struct Mirage_view *view;
 
 	ENTER(Mirage_movie_graphics_show_2d_points);
-	if (movie&&(computed_field_manager=
-		Computed_field_package_get_computed_field_manager(
-			movie->computed_field_package)))
+	if (movie&&(computed_field_manager=movie->computed_field_manager))
 	{
 		return_code=1;
 		glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("cross",movie->glyph_list);
@@ -2475,9 +2473,7 @@ pending points, but always with the problem points.
 	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(Mirage_movie_graphics_show_3d_points);
-	if (movie&&(computed_field_manager=
-		Computed_field_package_get_computed_field_manager(
-			movie->computed_field_package)))
+	if (movie&&(computed_field_manager=movie->computed_field_manager))
 	{
 		return_code=1;
 		glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("cross",movie->glyph_list);

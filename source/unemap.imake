@@ -461,11 +461,12 @@ COMMAND_SRCS = \
 #if defined (USE_UNEMAP_NODES)
 COLOUR_SRCS = \
 	colour/edit_var.c
+COMPUTED_FIELD_SRCS = \
+	computed_field/computed_field.c \
+	computed_field/computed_field_find_xi.c
 CURVE_SRCS = \
 	curve/control_curve.c
 FINITE_ELEMENT_SRCS = \
-	computed_field/computed_field.c \
-	computed_field/computed_field_find_xi.c \
 	finite_element/export_finite_element.c \
 	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element_to_graphics_object.c \
@@ -565,6 +566,7 @@ UNEMAP_SRCS = \
 	unemap/unemap_hardware_client.c
 #else
 COLOUR_SRCS =
+COMPUTED_FIELD_SRCS =
 CURVE_SRCS =
 FINITE_ELEMENT_SRCS =
 GENERAL_SRCS = \
@@ -631,6 +633,7 @@ USER_INTERFACE_SRCS = \
 SRCS = \
 	$(COLOUR_SRCS) \
 	$(COMMAND_SRCS) \
+	$(COMPUTED_FIELD_SRCS) \
 	$(CURVE_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \

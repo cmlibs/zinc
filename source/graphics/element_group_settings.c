@@ -5867,8 +5867,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"centre",
 						settings->glyph_centre,&(number_of_components),set_float_vector);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -5876,8 +5876,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -5893,8 +5893,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
 						NULL,set_char_flag);
 					/* label */
-					set_label_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_label_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_label_field_data.conditional_function=
 						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 					set_label_field_data.conditional_function_user_data=(void *)NULL;
@@ -5905,8 +5905,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
 					/* orientation */
-					set_orientation_scale_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_orientation_scale_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_orientation_scale_field_data.conditional_function=
 						Computed_field_is_orientation_scale_capable;
 					set_orientation_scale_field_data.conditional_function_user_data=
@@ -6062,8 +6062,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"centre",
 						settings->glyph_centre,&(number_of_components),set_float_vector);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -6071,8 +6071,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -6088,8 +6088,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
 						NULL,set_char_flag);
 					/* label */
-					set_label_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_label_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_label_field_data.conditional_function=
 						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 					set_label_field_data.conditional_function_user_data=(void *)NULL;
@@ -6100,8 +6100,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
 					/* orientation */
-					set_orientation_scale_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_orientation_scale_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_orientation_scale_field_data.conditional_function=
 						Computed_field_is_orientation_scale_capable;
 					set_orientation_scale_field_data.conditional_function_user_data=
@@ -6246,8 +6246,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -6255,8 +6255,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -6413,8 +6413,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"constant_radius",
 						&(settings->constant_radius),NULL,set_float);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -6422,8 +6422,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -6449,8 +6449,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* radius_scalar */
-					set_radius_scalar_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_radius_scalar_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_radius_scalar_field_data.conditional_function=
 						Computed_field_is_scalar;
 					set_radius_scalar_field_data.conditional_function_user_data=
@@ -6591,8 +6591,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -6600,8 +6600,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -6656,8 +6656,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
 					/* texture_coordinates */
-					set_texture_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_texture_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_texture_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_texture_coordinate_field_data.conditional_function_user_data=
@@ -6756,8 +6756,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	{
 		if ((g_element_command_data=
 			(struct G_element_command_data *)g_element_command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				g_element_command_data->computed_field_package)))
+			(computed_field_manager=g_element_command_data->computed_field_manager))
 		{
 			if (modify_g_element_data=
 				(struct Modify_g_element_data *)modify_g_element_data_void)
@@ -6788,8 +6787,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -6797,8 +6796,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -6817,8 +6816,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
 						NULL,set_char_flag);
 					/* iso_scalar */
-					set_iso_scalar_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_iso_scalar_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_iso_scalar_field_data.conditional_function=
 						Computed_field_is_scalar;
 					set_iso_scalar_field_data.conditional_function_user_data=(void *)NULL;
@@ -7010,8 +7009,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"centre",
 						settings->glyph_centre,&number_of_components,set_float_vector);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -7019,8 +7018,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -7046,8 +7045,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
 						NULL,set_char_flag);
 					/* label */
-					set_label_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_label_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_label_field_data.conditional_function=
 						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 					set_label_field_data.conditional_function_user_data=(void *)NULL;
@@ -7062,8 +7061,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->native_discretization_field),
 						g_element_command_data->fe_field_manager,set_FE_field);
 					/* orientation */
-					set_orientation_scale_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_orientation_scale_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_orientation_scale_field_data.conditional_function=
 						Computed_field_is_orientation_scale_capable;
 					set_orientation_scale_field_data.conditional_function_user_data=
@@ -7242,8 +7241,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -7251,8 +7250,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -7262,8 +7261,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
 					/* displacement_map_field */
-					set_displacement_map_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_displacement_map_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_displacement_map_field_data.conditional_function=
 						Computed_field_has_up_to_4_numerical_components;
 					set_displacement_map_field_data.conditional_function_user_data=
@@ -7307,8 +7306,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
 					/* smooth_field */
-					set_blur_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_blur_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_blur_field_data.conditional_function=
 						Computed_field_has_up_to_4_numerical_components;
 					set_blur_field_data.conditional_function_user_data=(void *)NULL;
@@ -7414,8 +7413,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	{
 		if ((g_element_command_data=
 			(struct G_element_command_data *)g_element_command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				g_element_command_data->computed_field_package)))
+			(computed_field_manager=g_element_command_data->computed_field_manager))
 		{
 			if (modify_g_element_data=
 				(struct Modify_g_element_data *)modify_g_element_data_void)
@@ -7445,8 +7443,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* coordinate */
-					set_coordinate_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -7454,8 +7452,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->coordinate_field),&set_coordinate_field_data,
 						set_Computed_field_conditional);
 					/* data */
-					set_data_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_data_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_data_field_data.conditional_function=
 						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -7522,8 +7520,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
 					/* vector */
-					set_stream_vector_field_data.computed_field_package=
-						g_element_command_data->computed_field_package;
+					set_stream_vector_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
 					set_stream_vector_field_data.conditional_function=
 						Computed_field_is_stream_vector_capable;
 					set_stream_vector_field_data.conditional_function_user_data=

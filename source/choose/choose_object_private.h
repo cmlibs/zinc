@@ -46,12 +46,60 @@ Contains information required by the choose_object control dialog. \
 	struct Chooser *chooser; \
 	struct Callback_data update_callback; \
 	Widget widget,parent; \
+   int number_of_items; \
+   void **items; \
+   char **item_names; \
 } /* struct CHOOSE_OBJECT(object_type) */
 
 /*
 Module functions
 ----------------
 */
+
+#if defined (FULL_NAMES)
+#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_( object_type ) \
+	choose_object_is_in_chooser_ ## object_type
+#else
+#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_( object_type ) coisc ## object_type
+#endif
+#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER( object_type ) \
+	CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_(object_type)
+
+#define DECLARE_CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_FUNCTION( object_type ) \
+static int CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)( \
+	struct CHOOSE_OBJECT(object_type) *choose_object, \
+   struct object_type *object) \
+/***************************************************************************** \
+LAST MODIFIED : 6 July 2000 \
+\
+DESCRIPTION : \
+Tells CMGUI about the current values. Sends a pointer to the current object. \
+============================================================================*/ \
+{ \
+	int i, return_code; \
+\
+	ENTER(CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)); \
+	if (choose_object && object) \
+	{ \
+      return_code = 0; \
+		for (i = 0 ; !return_code && (i < choose_object->number_of_items) ; i++) \
+		{ \
+			if (object == choose_object->items[i]) \
+			{ \
+				return_code=1; \
+			} \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(" #object_type ").  Invalid argument(s)"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type) */
 
 #if defined (FULL_NAMES)
 #define CHOOSE_OBJECT_UPDATE_( object_type ) \
@@ -131,6 +179,14 @@ Callback for the choose_object dialog - tidies up all memory allocation. \
 				choose_object->manager_callback_id, \
 				choose_object->object_manager); \
 		} \
+      if (choose_object->items) \
+      { \
+			DEALLOCATE(choose_object->items); \
+      } \
+      if (choose_object->item_names) \
+      { \
+		   DEALLOCATE(choose_object->item_names); \
+      } \
 		DEALLOCATE(choose_object); \
 	} \
 	else \
@@ -259,31 +315,30 @@ Puts the <object> at the array position pointed to by <list_position>. \
 } /* CHOOSE_OBJECT_ADD_TO_LIST(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_GET_ITEMS_( object_type ) \
+#define CHOOSE_OBJECT_BUILD_ITEMS_( object_type ) \
 	choose_object_get_items_ ## object_type
 #else
-#define CHOOSE_OBJECT_GET_ITEMS_( object_type ) cogi ## object_type
+#define CHOOSE_OBJECT_BUILD_ITEMS_( object_type ) cogi ## object_type
 #endif
-#define CHOOSE_OBJECT_GET_ITEMS( object_type ) \
-	CHOOSE_OBJECT_GET_ITEMS_(object_type)
+#define CHOOSE_OBJECT_BUILD_ITEMS( object_type ) \
+	CHOOSE_OBJECT_BUILD_ITEMS_(object_type)
 
-#define DECLARE_CHOOSE_OBJECT_GET_ITEMS_FUNCTION( object_type ) \
-static int CHOOSE_OBJECT_GET_ITEMS(object_type)( \
-	struct CHOOSE_OBJECT(object_type) *choose_object, \
-	int *number_of_items,void ***items_address,char ***item_names_address) \
+#define DECLARE_CHOOSE_OBJECT_BUILD_ITEMS_FUNCTION( object_type ) \
+static int CHOOSE_OBJECT_BUILD_ITEMS(object_type)( \
+	struct CHOOSE_OBJECT(object_type) *choose_object) \
 /***************************************************************************** \
-LAST MODIFIED : 18 April 2000 \
+LAST MODIFIED : 6 July 2000 \
 \
 DESCRIPTION : \
-Allocates and fills an array of all the choosable objects and their names. \
+Updates the arrays of all the choosable objects and their names. \
 ============================================================================*/ \
 { \
 	int i,max_number_of_objects,return_code; \
 	struct CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type) add_to_list_data; \
 \
-	ENTER(CHOOSE_OBJECT_GET_ITEMS(object_type)); \
+	ENTER(CHOOSE_OBJECT_BUILD_ITEMS(object_type)); \
 	return_code=0; \
-	if (choose_object&&number_of_items&&items_address&&item_names_address) \
+	if (choose_object) \
 	{ \
 		max_number_of_objects= \
 			NUMBER_IN_MANAGER(object_type)(choose_object->object_manager); \
@@ -301,15 +356,23 @@ Allocates and fills an array of all the choosable objects and their names. \
 				CHOOSE_OBJECT_ADD_TO_LIST(object_type),(void *)&add_to_list_data, \
 				choose_object->object_manager)) \
 		{ \
-			*number_of_items = add_to_list_data.number_of_items; \
-			*items_address = add_to_list_data.items; \
-			*item_names_address = add_to_list_data.item_names; \
+         if (choose_object->items) \
+         { \
+				DEALLOCATE(choose_object->items); \
+         } \
+         if (choose_object->item_names) \
+         { \
+			   DEALLOCATE(choose_object->item_names); \
+         } \
+			choose_object->number_of_items = add_to_list_data.number_of_items; \
+			choose_object->items = add_to_list_data.items; \
+			choose_object->item_names = add_to_list_data.item_names; \
 			return_code=1; \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"CHOOSE_OBJECT_GET_ITEMS(" #object_type ").  Failed"); \
+				"CHOOSE_OBJECT_BUILD_ITEMS(" #object_type ").  Failed"); \
 			if (add_to_list_data.items) \
 			{ \
 				DEALLOCATE(add_to_list_data.items); \
@@ -327,12 +390,12 @@ Allocates and fills an array of all the choosable objects and their names. \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"CHOOSE_OBJECT_GET_ITEMS(" #object_type ").  Invalid argument(s)"); \
+			"CHOOSE_OBJECT_BUILD_ITEMS(" #object_type ").  Invalid argument(s)"); \
 	} \
 	LEAVE; \
  \
 	return (return_code); \
-} /* CHOOSE_OBJECT_GET_ITEMS(object_type) */
+} /* CHOOSE_OBJECT_BUILD_ITEMS(object_type) */
 
 #if defined (FULL_NAMES)
 #define CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_( object_type ) \
@@ -355,10 +418,8 @@ Tries to minimise menu rebuilds as much as possible, since these cause \
 annoying flickering on the screen. \
 ============================================================================*/ \
 { \
-	char **item_names; \
-	int i,number_of_items,update_menu; \
+	int update_menu; \
 	struct CHOOSE_OBJECT(object_type) *choose_object; \
-	void **items; \
 \
 	ENTER(CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type)); \
 	if (message&&(choose_object= \
@@ -387,34 +448,35 @@ annoying flickering on the screen. \
 			}; break; \
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type): \
 			{ \
-				/* update menu only if there is a conditional function since change \
-					 may have changed object's availability to chooser. Inefficient. */ \
 				if (choose_object->conditional_function) \
 				{ \
-					update_menu=1; \
+               if((choose_object->conditional_function)(message->object_changed, \
+						choose_object->conditional_function_user_data)) \
+               { \
+						if (!CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)( \
+							choose_object, message->object_changed)) \
+						{ \
+							update_menu=1; \
+						} \
+	            } \
+               else \
+					{ \
+						if (CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)( \
+							choose_object, message->object_changed)) \
+						{ \
+							update_menu=1; \
+						} \
+					} \
 				} \
 			} break; \
 		} \
 		if (update_menu) \
 		{ \
-		  if (CHOOSE_OBJECT_GET_ITEMS(object_type)(choose_object, \
-				&number_of_items,&items,&item_names)) \
+		  if (CHOOSE_OBJECT_BUILD_ITEMS(object_type)(choose_object)) \
 			{ \
 				update_menu=Chooser_build_main_menu(choose_object->chooser, \
-					number_of_items,items,item_names, \
-					Chooser_get_item(choose_object->chooser)); \
-				if (items) \
-				{ \
-					DEALLOCATE(items); \
-				} \
-				if (item_names) \
-				{  \
-					for (i=0;i<number_of_items;i++) \
-					{ \
-						DEALLOCATE(item_names[i]); \
-					} \
-					DEALLOCATE(item_names); \
-				} \
+					choose_object->number_of_items,choose_object->items, \
+				   choose_object->item_names,Chooser_get_item(choose_object->chooser)); \
 			} \
 			else \
 			{ \
@@ -453,11 +515,8 @@ The optional conditional function permits a subset of objects in the manager \
 to be selectable. \
 ============================================================================*/ \
 { \
-	char **item_names; \
-	int i,number_of_items; \
 	struct Callback_data callback; \
 	struct CHOOSE_OBJECT(object_type) *choose_object; \
-	void **items; \
 	Widget return_widget; \
 \
 	ENTER(CREATE_CHOOSE_OBJECT_WIDGET(object_type)); \
@@ -478,11 +537,14 @@ to be selectable. \
 			choose_object->conditional_function=conditional_function; \
 			choose_object->conditional_function_user_data= \
 				conditional_function_user_data; \
-		  if (CHOOSE_OBJECT_GET_ITEMS(object_type)(choose_object, \
-				&number_of_items,&items,&item_names)) \
+         choose_object->number_of_items = 0; \
+         choose_object->items = (void **)NULL; \
+         choose_object->item_names = (char **)NULL; \
+		  if (CHOOSE_OBJECT_BUILD_ITEMS(object_type)(choose_object)) \
 			{ \
 				if (choose_object->chooser= \
-					CREATE(Chooser)(parent,number_of_items,items,item_names, \
+					CREATE(Chooser)(parent,choose_object->number_of_items, \
+					choose_object->items,choose_object->item_names, \
 					(void *)current_object,&(choose_object->widget))) \
 				{ \
 					/* add choose_object as user data to chooser widget */ \
@@ -508,18 +570,6 @@ to be selectable. \
 						"CREATE_CHOOSE_OBJECT_WIDGET(" #object_type \
 						").  Could not create chooser"); \
 					DEALLOCATE(choose_object); \
-				} \
-				if (items) \
-				{ \
-					DEALLOCATE(items); \
-				} \
-				if (item_names) \
-				{  \
-					for (i=0;i<number_of_items;i++) \
-					{ \
-						DEALLOCATE(item_names[i]); \
-					} \
-					DEALLOCATE(item_names); \
 				} \
 			} \
 			else \
@@ -723,10 +773,8 @@ Changes the conditional_function and user_data limiting the available \
 selection of objects. Also allows new_object to be set simultaneously. \
 ============================================================================*/ \
 { \
-	char **item_names; \
-	int i,number_of_items,return_code; \
+	int return_code; \
 	struct CHOOSE_OBJECT(object_type) *choose_object; \
-	void **items; \
 \
 	ENTER(CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type)); \
 	if (choose_object_widget) \
@@ -739,23 +787,11 @@ selection of objects. Also allows new_object to be set simultaneously. \
 			choose_object->conditional_function=conditional_function; \
 			choose_object->conditional_function_user_data= \
 				conditional_function_user_data; \
-		  if (CHOOSE_OBJECT_GET_ITEMS(object_type)(choose_object, \
-				&number_of_items,&items,&item_names)) \
+		  if (CHOOSE_OBJECT_BUILD_ITEMS(object_type)(choose_object)) \
 			{ \
 				return_code=Chooser_build_main_menu(choose_object->chooser, \
-					number_of_items,items,item_names,(void *)new_object); \
-				if (items) \
-				{ \
-					DEALLOCATE(items); \
-				} \
-				if (item_names) \
-				{  \
-					for (i=0;i<number_of_items;i++) \
-					{ \
-						DEALLOCATE(item_names[i]); \
-					} \
-					DEALLOCATE(item_names); \
-				} \
+					choose_object->number_of_items,choose_object->items, \
+				   choose_object->item_names,(void *)new_object); \
 			} \
 			else \
 			{ \
@@ -789,12 +825,13 @@ selection of objects. Also allows new_object to be set simultaneously. \
 } /* CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type) */
 
 #define DECLARE_CHOOSE_OBJECT_MODULE_FUNCTIONS( object_type ) \
+DECLARE_CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_UPDATE_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_DESTROY_CB_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_UPDATE_CB_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type); \
 DECLARE_CHOOSE_OBJECT_ADD_TO_LIST_FUNCTION(object_type) \
-DECLARE_CHOOSE_OBJECT_GET_ITEMS_FUNCTION(object_type) \
+DECLARE_CHOOSE_OBJECT_BUILD_ITEMS_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_FUNCTION(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS( object_type ) \

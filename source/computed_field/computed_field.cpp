@@ -181,6 +181,7 @@ Computed_field_clear_type;
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "computed_field/computed_field_private.h"
 #include "finite_element/finite_element.h"
 #include "general/child_process.h"
 #include "general/compare.h"
@@ -194,113 +195,6 @@ Computed_field_clear_type;
 #include "general/value.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-
-/*
-Module types
-------------
-*/
-
-struct Computed_field
-/*******************************************************************************
-LAST MODIFIED : 17 June 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	/* the name/identifier of the Computed_field */
-	char *name;
-	int number_of_components;
-
-	/* if the following flag is set, the field may not be modified or destroyed
-		 by the user. See Computed_field_set_read_only function */
-	int read_only;
-	struct Coordinate_system coordinate_system;
-	enum Computed_field_type type;
-
-	/* Value cache: */
-	/* For all Computed_field_types: computed values/derivatives.
-		 When the field is computed its values and derivatives are first placed
-		 in these arrays. If the field is then recomputed at element:xi, the values
-		 are returned immediately. The <values> array is allocated when the field is
-		 evaluated and deallocated when the number_of_components is [re]established
-		 or the field is copied over. The values array is made large enough to store
-		 the values of the field while the derivatives fit those of the field in an
-		 element of dimension MAXIMUM_ELEMENT_XI_DIMENSIONS. */
-	/* ???RC note: separation of cache and field probably necessary if computed
-		 fields are to be efficient under multiprocessing */
-	FE_value *values,*derivatives,xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	/* flag saying whether derivatives were calculated */
-	int derivatives_valid;
-	/* Only one of element/node should be accessed at a time - if there is an
-		 element accessed, then values are guaranteed to be valid and derivatives
-		 are valid if the derivatives_valid flag is set - both at the above xi only.
-		 If node is accessed, then the values are valid at that node. Either modes
-		 of caching must be cleared by a call to Computed_field_clear_cache once
-		 the field is no longer of immediate use. */
-	/* last element in which values/derivatives calculated - ACCESSed by field */
-	struct FE_element *element;
-	/* last node at which values calculated - ACCESSed by field */
-	struct FE_node *node;
-
-	/* last mapping successfully used by Computed_field_find_element_xi so 
-		that it can first try this element again */
-	struct Computed_field_element_texture_mapping *find_element_xi_mapping;
-
-	/* cache used by external routine Computed_field_find_element_xi_special,
-	 contains all sorts of things we don't want to include in computed_field */
-	struct Computed_field_find_element_xi_special_cache *find_element_xi_cache;
-
-	/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
-		 COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-	/* the real FE_field being computed */
-	struct FE_field *fe_field;
-
-	/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED only */
-	/* element field values of fe_field in last_element */
-	struct FE_element_field_values *fe_element_field_values;
-
-	/* for COMPUTED_FIELD_COMPONENT only */
-	int component_no;
-
-	/* for COMPUTED_FIELD_COMPOSE only */
-	struct GROUP(FE_element) *compose_element_group;
-
-	/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-	enum FE_nodal_value_type nodal_value_type;
-	int version_number;
-
-	/* for COMPUTED_FIELD_DEFAULT_COORDINATE only */
-	struct MANAGER(Computed_field) *computed_field_manager;
-
-	/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
-	struct FE_element *seed_element;
-	struct LIST(Computed_field_element_texture_mapping) *texture_mapping;
-
-	/* for COMPUTED_FIELD_SAMPLE_TEXTURE only */
-	struct Texture *texture;
-
-	/* for COMPUTED_FIELD_EXTERNAL only */
-	char *child_filename;
-	int timeout;
-	struct Child_process *child_process;
-
-	/* for COMPUTED_FIELD_CURVE_LOOKUP only */
-	struct Control_curve *curve;
-
-	/* for COMPUTED_FIELD_PROJECTION only */
-	double *projection_matrix;
-
-	/* for all Computed_field_types calculated from others */
-
-	/* array of computed fields this field is calculated from */
-	int number_of_source_fields;
-	struct Computed_field **source_fields;
-	/* array of constant values this field is calculated from */
-	int number_of_source_values;
-	FE_value *source_values;
-
-	int access_count;
-}; /* struct Computed_field */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
 
@@ -321,6 +215,26 @@ this structure in set_Computed_field_component.
 	int component_no;
 }; /* struct Computed_field_component */
 
+struct Computed_field_type_data
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Stores information defining a type of computed field so that it can be 
+accessed by the rest of the program.
+==============================================================================*/
+{
+	char *name;
+	Define_Computed_field_type_function define_Computed_field_type_function;
+	void *define_type_user_data;
+	int access_count;
+};
+
+PROTOTYPE_OBJECT_FUNCTIONS(Computed_field_type_data);
+
+DECLARE_LIST_TYPES(Computed_field_type_data);
+PROTOTYPE_LIST_FUNCTIONS(Computed_field_type_data);
+
 struct Computed_field_package
 /*******************************************************************************
 LAST MODIFIED : 5 November 1999
@@ -336,10 +250,10 @@ wrappers need to be automatically created for each FE_field.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_element) *fe_element_manager;
-	struct MANAGER(Texture) *texture_manager;
 	struct MANAGER(Control_curve) *control_curve_manager;
 	void *fe_field_manager_callback_id;
 	void *control_curve_manager_callback_id;
+	struct LIST(Computed_field_type_data) *computed_field_type_list;
 }; /* struct Computed_field_package */
 
 struct Computed_field_element_texture_mapping
@@ -464,6 +378,92 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_element_texture_mapping)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(
 	Computed_field_element_texture_mapping,
 	element,struct FE_element *,compare_pointer)
+
+struct Computed_field_type_data *CREATE(Computed_field_type_data)
+   (char *name, Define_Computed_field_type_function 
+		define_Computed_field_type_function, void *define_type_user_data)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Creates a structure representing a type of computed field.  The <name> should
+point to a static string which is used as the identifier of that type
+throughout the program.  The <define_Computed_field_type_function> is added to
+the define_computed_field option table when needed.
+==============================================================================*/
+{
+	struct Computed_field_type_data *type_data;
+
+	ENTER(CREATE(Computed_field_type_data));
+	
+	if (name && define_Computed_field_type_function)
+	{
+		if (ALLOCATE(type_data,struct Computed_field_type_data,1))
+		{
+			type_data->name = name;
+			type_data->define_Computed_field_type_function = 
+				define_Computed_field_type_function;
+			type_data->define_type_user_data = define_type_user_data;
+			type_data->access_count = 0;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Computed_field_type_data).  Not enough memory");
+			type_data = (struct Computed_field_type_data *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Computed_field_type_data).  Invalid arguments");
+		type_data = (struct Computed_field_type_data *)NULL;
+	}
+	LEAVE;
+
+	return (type_data);
+} /* CREATE(Computed_field_type_data) */
+
+int DESTROY(Computed_field_type_data)
+	(struct Computed_field_type_data **data_address)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Frees memory/deaccess data at <*data_address>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(DESTROY(Computed_field_type_data));
+	if (data_address&&*data_address)
+	{
+		if (0 >= (*data_address)->access_count)
+		{
+			DEALLOCATE(*data_address);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Computed_field_type_data).  Positive access_count");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Computed_field_type_data).  Missing mapping");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Computed_field_type_data) */
+
+DECLARE_OBJECT_FUNCTIONS(Computed_field_type_data)
+FULL_DECLARE_LIST_TYPE(Computed_field_type_data);
+DECLARE_LIST_FUNCTIONS(Computed_field_type_data)
 
 static int Computed_field_extract_rc(struct Computed_field *field,
 	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives)
@@ -617,7 +617,7 @@ Note the order of derivatives:
 	return (return_code);
 } /* Computed_field_extract_rc */
 
-static int Computed_field_clear_type(struct Computed_field *field)
+int Computed_field_clear_type(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 18 June 1999
 
@@ -687,13 +687,6 @@ Calls Computed_field_clear_cache before clearing the type.
 				(struct LIST(Computed_field_element_texture_mapping) *)NULL;
 		}
 		
-		/* for COMPUTED_FIELD_SAMPLE_TEXTURE only */
-		if(field->texture)
-		{
-			DEACCESS(Texture)(&field->texture);
-			field->texture = (struct Texture *)NULL;
-		}
-
 		/* for COMPUTED_FIELD_EXTERNAL only */
 		if (field->child_filename)
 		{
@@ -717,6 +710,24 @@ Calls Computed_field_clear_cache before clearing the type.
 		{
 			DEALLOCATE(field->projection_matrix);
 		}
+
+		/* for COMPUTED_FIELD_NEW_TYPES */
+		if (field->type_specific_data)
+		{
+			if(field->computed_field_clear_type_specific_function)
+			{
+				field->computed_field_clear_type_specific_function(
+					field);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_clear_type.  "
+					"Type specific data but no function to clear it.");
+				return_code=0;
+			}
+		}
+		field->type_string = (char *)NULL;
 
 		/* for all Computed_field_types calculated from others */
 		if (field->source_fields)
@@ -808,6 +819,56 @@ field.component referred to by <field_component>.
 	return (return_code);
 } /* Computed_field_wraps_field_component */
 
+static int Computed_field_set_coordinate_system_from_sources(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 3 July 2000
+
+DESCRIPTION :
+Sets the coordinate system of the <field> to match that of it's sources.
+==============================================================================*/
+{
+	int i, return_code;
+	struct Coordinate_system *coordinate_system_ptr;
+
+	ENTER(Computed_field_set_coordinate_system_from_sources);
+	if (field)
+	{
+		return_code = 1;
+		if (field->number_of_source_fields > 0)
+		{
+			coordinate_system_ptr = 
+				Computed_field_get_coordinate_system(field->source_fields[0]);
+			Computed_field_set_coordinate_system(field, coordinate_system_ptr);
+			i = 1;
+			while (i < field->number_of_source_fields && 
+				Coordinate_systems_match(coordinate_system_ptr,
+					Computed_field_get_coordinate_system(field->source_fields[1])))
+			{
+				i++;
+			}
+			if (i < field->number_of_source_fields)
+			{
+				display_message(WARNING_MESSAGE,
+					"Computed_field_set_coordinate_system_from_sources."
+					"  Source fields differ in coordinate system\n"
+					"     Defaulting to coordinate system from first source field.");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_coordinate_system_from_sources.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_coordinate_system_from_sources */
+
 /*
 Global functions
 ----------------
@@ -876,9 +937,6 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 			field->texture_mapping =
 				(struct LIST(Computed_field_element_texture_mapping) *)NULL;
 			
-			/* for COMPUTED_FIELD_SAMPLE_TEXTURE only */
-			field->texture = (struct Texture *)NULL;
-
 			/* for COMPUTED_FIELD_EXTERNAL only */
 			field->child_filename = (char *)NULL;
 			field->child_process = (struct Child_process *)NULL;
@@ -889,6 +947,46 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 
 			/* for COMPUTED_FIELD_PROJECTION only */
 			field->projection_matrix= (double *)NULL;
+
+			/* for COMPUTED_FIELD_NEW_TYPES */
+			/* Soon this will be the only way it is done. */
+			field->computed_field_clear_type_specific_function = 
+				(Computed_field_clear_type_specific_function)NULL;
+			field->computed_field_copy_type_specific_function =
+				(Computed_field_copy_type_specific_function)NULL;
+	   	field->computed_field_clear_cache_type_specific_function =
+				(Computed_field_clear_cache_type_specific_function)NULL;
+			field->computed_field_type_specific_contents_match_function = 
+				(Computed_field_type_specific_contents_match_function)NULL;
+			field->computed_field_is_defined_in_element_function =
+				(Computed_field_is_defined_in_element_function)NULL;
+	   	field->computed_field_is_defined_at_node_function =
+				(Computed_field_is_defined_at_node_function)NULL;
+			field->computed_field_has_numerical_components_function =
+				(Computed_field_has_numerical_components_function)NULL;
+	   	field->computed_field_evaluate_cache_at_node_function =
+				(Computed_field_evaluate_cache_at_node_function)NULL; 
+	   	field->computed_field_evaluate_cache_in_element_function =
+				(Computed_field_evaluate_cache_in_element_function)NULL; 
+	   	field->computed_field_evaluate_as_string_in_element_function =
+				(Computed_field_evaluate_as_string_in_element_function)NULL; 
+	   	field->computed_field_evaluate_as_string_at_node_function =
+				(Computed_field_evaluate_as_string_at_node_function)NULL;
+	   	field->computed_field_set_values_at_node_function =
+				(Computed_field_set_values_at_node_function)NULL;
+	   	field->computed_field_set_values_in_element_function =
+				(Computed_field_set_values_in_element_function)NULL;
+	   	field->computed_field_get_native_discretization_in_element_function =	
+				(Computed_field_get_native_discretization_in_element_function)NULL;
+			field->computed_field_find_element_xi_function =	
+				(Computed_field_find_element_xi_function)NULL;
+			field->list_Computed_field_function =
+				(List_Computed_field_function)NULL;
+			field->list_Computed_field_commands_function =
+				(List_Computed_field_commands_function)NULL;
+			
+			field->type_specific_data = NULL;
+			field->type_string = (char *)NULL;
 
 			/* for all types of Computed_field calculated from others */
 			field->source_fields=(struct Computed_field **)NULL;
@@ -1042,6 +1140,7 @@ functions to check if read_only flag is set.
 	int i,number_of_projection_values,return_code;
 	struct Computed_field **source_fields;
 	struct LIST(Computed_field_element_texture_mapping) *texture_mapping;
+	void *type_specific_data;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name));
 	if (source&&destination)
@@ -1069,6 +1168,7 @@ functions to check if read_only flag is set.
 			{
 				source_fields=(struct Computed_field **)NULL;
 				source_values=(FE_value *)NULL;
+				type_specific_data = NULL;
 				/* 1. make dynamic allocations for any new type-specific data */
 				if (((0==source->number_of_source_fields)||ALLOCATE(source_fields,
 					struct Computed_field *,source->number_of_source_fields))&&
@@ -1079,99 +1179,164 @@ functions to check if read_only flag is set.
 						(COPY_LIST(Computed_field_element_texture_mapping)
 							(texture_mapping,source->texture_mapping))))
 				{
-					/* 2. free current type-specific data */
-					Computed_field_clear_type(destination);
-					/* 3. establish the new type */
-					destination->number_of_components=source->number_of_components;
-					destination->read_only=source->read_only;
-					COPY(Coordinate_system)(&destination->coordinate_system,
-						&source->coordinate_system);
-					destination->type=source->type;
-					/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
-						 COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-					if (source->fe_field)
+					if ((!source->type_specific_data)||
+						(!source->computed_field_copy_type_specific_function)||
+						(type_specific_data = 
+							source->computed_field_copy_type_specific_function(source)))
 					{
-						destination->fe_field=ACCESS(FE_field)(source->fe_field);
-					}
-				
-					/* for COMPUTED_FIELD_COMPONENT only */
-					destination->component_no=source->component_no;
-
-					/* for COMPUTED_FIELD_COMPOSE only */
-					REACCESS(GROUP(FE_element))(&destination->compose_element_group,
-						source->compose_element_group);
-
-					/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-					destination->nodal_value_type=source->nodal_value_type;
-					destination->version_number=source->version_number;
-
-					/* for COMPUTED_FIELD_DEFAULT_COORDINATE only */
-					destination->computed_field_manager=source->computed_field_manager;
-
-					/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
-					REACCESS(FE_element)(&destination->seed_element,source->seed_element);
-					if (source->texture_mapping)
-					{
-						destination->texture_mapping = texture_mapping;
-					}
-
-					/* for COMPUTED_FIELD_SAMPLE_TEXTURE only */
-					if (source->texture)
-					{
-						destination->texture = ACCESS(Texture)(source->texture);
-					}
-
-					/* for COMPUTED_FIELD_EXTERNAL only */
-					if (source->child_filename)
-					{
-						ALLOCATE(destination->child_filename, char,
-							strlen(source->child_filename) + 1);
-						strcpy(destination->child_filename, source->child_filename);
-					}
-					destination->timeout = source->timeout;
-					if (source->child_process)
-					{
-						destination->child_process = 
-							ACCESS(Child_process)(source->child_process);
-					}
-
-					/* for COMPUTED_FIELD_CURVE_LOOKUP only */
-					if (source->curve)
-					{
-						destination->curve=ACCESS(Control_curve)(source->curve);
-					}
-
-					/* for COMPUTED_FIELD_PROJECTION only */
-					if (source->projection_matrix)
-					{
-						number_of_projection_values = (source->source_fields[0]->number_of_components + 1)
-							* (source->number_of_components + 1);
-						if (ALLOCATE(destination->projection_matrix, double, number_of_projection_values))
+						/* 2. free current type-specific data */
+						Computed_field_clear_type(destination);
+						/* 3. establish the new type */
+						destination->number_of_components=source->number_of_components;
+						destination->read_only=source->read_only;
+						COPY(Coordinate_system)(&destination->coordinate_system,
+							&source->coordinate_system);
+						destination->type=source->type;
+						/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
+							COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
+						if (source->fe_field)
 						{
-							for (i=0;i<number_of_projection_values;i++)
+							destination->fe_field=ACCESS(FE_field)(source->fe_field);
+						}
+				
+						/* for COMPUTED_FIELD_COMPONENT only */
+						destination->component_no=source->component_no;
+
+						/* for COMPUTED_FIELD_COMPOSE only */
+						REACCESS(GROUP(FE_element))(&destination->compose_element_group,
+							source->compose_element_group);
+
+						/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
+						destination->nodal_value_type=source->nodal_value_type;
+						destination->version_number=source->version_number;
+
+						/* for COMPUTED_FIELD_DEFAULT_COORDINATE only */
+						destination->computed_field_manager=source->computed_field_manager;
+
+						/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
+						REACCESS(FE_element)(&destination->seed_element,source->seed_element);
+						if (source->texture_mapping)
+						{
+							destination->texture_mapping = texture_mapping;
+						}
+
+						/* for COMPUTED_FIELD_EXTERNAL only */
+						if (source->child_filename)
+						{
+							ALLOCATE(destination->child_filename, char,
+								strlen(source->child_filename) + 1);
+							strcpy(destination->child_filename, source->child_filename);
+						}
+						destination->timeout = source->timeout;
+						if (source->child_process)
+						{
+							destination->child_process = 
+								ACCESS(Child_process)(source->child_process);
+						}
+
+						/* for COMPUTED_FIELD_CURVE_LOOKUP only */
+						if (source->curve)
+						{
+							destination->curve=ACCESS(Control_curve)(source->curve);
+						}
+
+						/* for COMPUTED_FIELD_PROJECTION only */
+						if (source->projection_matrix)
+						{
+							number_of_projection_values = (source->source_fields[0]->number_of_components + 1)
+								* (source->number_of_components + 1);
+							if (ALLOCATE(destination->projection_matrix, double, number_of_projection_values))
 							{
-								destination->projection_matrix[i]=source->projection_matrix[i];
+								for (i=0;i<number_of_projection_values;i++)
+								{
+									destination->projection_matrix[i]=source->projection_matrix[i];
+								}
 							}
 						}
-					}
 
-					/* for all Computed_field_types calculated from others */
-					destination->number_of_source_fields=
-						source->number_of_source_fields;
-					for (i=0;i<source->number_of_source_fields;i++)
-					{
-						source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
-					}
-					destination->source_fields=source_fields;
+						/* for COMPUTED_FIELD_NEW_TYPES */
+						destination->computed_field_clear_type_specific_function = 
+							source->computed_field_clear_type_specific_function;
+						destination->computed_field_copy_type_specific_function =
+							source->computed_field_copy_type_specific_function;
+						destination->computed_field_type_specific_contents_match_function = 
+							source->computed_field_type_specific_contents_match_function;
+						destination->computed_field_is_defined_in_element_function =
+							source->computed_field_is_defined_in_element_function;
+						destination->computed_field_is_defined_at_node_function =
+							source->computed_field_is_defined_at_node_function;
+						destination->computed_field_has_numerical_components_function =
+							source->computed_field_has_numerical_components_function;
+						destination->computed_field_evaluate_cache_at_node_function =
+							source->computed_field_evaluate_cache_at_node_function;
+						destination->computed_field_evaluate_cache_in_element_function =
+							source->computed_field_evaluate_cache_in_element_function;
+						destination->computed_field_evaluate_as_string_in_element_function =
+							source->computed_field_evaluate_as_string_in_element_function;
+						destination->computed_field_evaluate_as_string_at_node_function =
+							source->computed_field_evaluate_as_string_at_node_function;
+						destination->computed_field_set_values_at_node_function =
+							source->computed_field_set_values_at_node_function;
+						destination->computed_field_set_values_in_element_function =
+							source->computed_field_set_values_in_element_function;
+						destination->computed_field_get_native_discretization_in_element_function =	
+							source->computed_field_get_native_discretization_in_element_function;
+						destination->computed_field_find_element_xi_function =	
+							source->computed_field_find_element_xi_function;
+						destination->list_Computed_field_function =
+							source->list_Computed_field_function;
+						destination->list_Computed_field_commands_function =
+							source->list_Computed_field_commands_function;
+						if (source->type_specific_data)
+						{
+							destination->type_specific_data = type_specific_data;
+						}
+						destination->type_string = source->type_string;
+						
 
-					destination->number_of_source_values=
-						source->number_of_source_values;
-					for (i=0;i<source->number_of_source_values;i++)
-					{
-						source_values[i]=source->source_values[i];
+						/* for all Computed_field_types calculated from others */
+						destination->number_of_source_fields=
+							source->number_of_source_fields;
+						for (i=0;i<source->number_of_source_fields;i++)
+						{
+							source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
+						}
+						destination->source_fields=source_fields;
+
+						destination->number_of_source_values=
+							source->number_of_source_values;
+						for (i=0;i<source->number_of_source_values;i++)
+						{
+							source_values[i]=source->source_values[i];
+						}
+						destination->source_values=source_values;
+						return_code=1;
 					}
-					destination->source_values=source_values;
-					return_code=1;
+					else
+					{
+						if (source->computed_field_copy_type_specific_function)
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+								"Type specific copy function failed.");
+							return_code=0;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
+								"Type specific data but no copy function.");
+							return_code=0;
+						}
+						if (source_fields)
+						{
+							DEALLOCATE(source_fields);
+						}
+						if (source_values)
+						{
+							DEALLOCATE(source_values);
+						}
+					}
 				}
 				else
 				{
@@ -1182,6 +1347,10 @@ functions to check if read_only flag is set.
 					if (source_fields)
 					{
 						DEALLOCATE(source_fields);
+					}
+					if (source_values)
+					{
+						DEALLOCATE(source_values);
 					}
 				}
 			}
@@ -1247,6 +1416,36 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,char *)
 DECLARE_MANAGER_FUNCTIONS(Computed_field)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,char *)
+
+int Computed_field_changed(struct Computed_field *field,
+	struct MANAGER(Computed_field) *computed_field_manager)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Notifies the <computed_field_manager> that the <field> has changed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_changed);
+	if (field && computed_field_manager)
+	{
+		MANAGER_NOTE_CHANGE(Computed_field)(
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field),
+			field, computed_field_manager);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_changed.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_changed */
 
 struct Computed_field *Computed_field_begin_wrap_coordinate_field(
 	struct Computed_field *coordinate_field)
@@ -1450,6 +1649,11 @@ Only certain field types require a special implementation of this function.
 		{
 			DEACCESS(FE_node)(&field->node);
 		}
+		if (field->computed_field_clear_cache_type_specific_function)
+		{
+			field->computed_field_clear_cache_type_specific_function(
+				field);
+		}
 		field->derivatives_valid=0;
 		for (i=0;i<field->number_of_source_fields;i++)
 		{
@@ -1497,11 +1701,24 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&element)
 	{
-		if (COMPUTED_FIELD_DEFAULT_COORDINATE==field->type)
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			if (get_FE_element_default_coordinate_field(element))
+			if (field->computed_field_evaluate_cache_in_element_function)
 			{
-				return_code=1;
+				if (field->computed_field_is_defined_in_element_function)
+				{
+					return_code = 
+						field->computed_field_is_defined_in_element_function(
+							field, element);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_is_defined_in_element.  "
+						"Is_defined_in_element_function for field %s is not defined.",
+						field->name);
+					return_code=0;
+				}
 			}
 			else
 			{
@@ -1510,20 +1727,34 @@ any other fields, this function is recursively called for them.
 		}
 		else
 		{
-			return_code=1;
-			if (field->fe_field)
+			if (COMPUTED_FIELD_DEFAULT_COORDINATE==field->type)
 			{
-				if (!FE_field_is_defined_in_element(field->fe_field,element))
+				if (get_FE_element_default_coordinate_field(element))
+				{
+					return_code=1;
+				}
+				else
 				{
 					return_code=0;
 				}
 			}
-			for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+			else
 			{
-				if (!Computed_field_is_defined_in_element(field->source_fields[i],
-					element))
+				return_code=1;
+				if (field->fe_field)
 				{
-					return_code=0;
+					if (!FE_field_is_defined_in_element(field->fe_field,element))
+					{
+						return_code=0;
+					}
+				}
+				for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+				{
+					if (!Computed_field_is_defined_in_element(field->source_fields[i],
+						element))
+					{
+						return_code=0;
+					}
 				}
 			}
 		}
@@ -1538,6 +1769,42 @@ any other fields, this function is recursively called for them.
 
 	return (return_code);
 } /* Computed_field_is_defined_in_element */
+
+int Computed_field_default_is_defined_in_element(struct Computed_field *field,
+	struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns 1 if the all the source fields are defined in the supplied <element>.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_default_is_defined_in_element);
+	if (field && element)
+	{
+		return_code=1;
+		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		{
+			if (!Computed_field_is_defined_in_element(field->source_fields[i],
+				element))
+			{
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_is_defined_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_is_defined_in_element */
 
 int Computed_field_is_defined_in_element_conditional(
 	struct Computed_field *field,void *element_void)
@@ -1642,129 +1909,154 @@ any other fields, this function is recursively called for them.
 	return_code=0;
 	if (field&&node)
 	{	
-		switch (field->type)
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			case COMPUTED_FIELD_DEFAULT_COORDINATE:
+			if (field->computed_field_evaluate_cache_at_node_function)
 			{
-				if (get_FE_node_default_coordinate_field(node))
+				if (field->computed_field_is_defined_at_node_function)
 				{
-					return_code=1;
+					return_code = field->computed_field_is_defined_at_node_function(
+						field, node);
 				}
 				else
 				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_is_defined_at_node.  "
+						"Is_defined_in_node_function for field %s is not defined.",
+						field->name);
 					return_code=0;
 				}
-			} break;
-			case COMPUTED_FIELD_FINITE_ELEMENT:
+			}
+			else
 			{
-				return_code=FE_field_is_defined_at_node(field->fe_field,node);
-			} break;
-			case COMPUTED_FIELD_NODE_VALUE:
-			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+				return_code=0;
+			}
+		}
+		else
+		{
+			switch (field->type)
 			{
-				if (FE_field_is_defined_at_node(field->fe_field,node))
+				case COMPUTED_FIELD_DEFAULT_COORDINATE:
 				{
-					/* must ensure at least one component of version_number,
-						 nodal_value_type defined at node */
-					return_code=0;
-					fe_field_component.field=field->fe_field;
-					for (comp_no=0;(comp_no<field->number_of_components)&&(!return_code);
-							 comp_no++)
+					if (get_FE_node_default_coordinate_field(node))
 					{
-						fe_field_component.number=comp_no;
-						if (FE_nodal_value_version_exists(node,&fe_field_component,
-							field->version_number,field->nodal_value_type))
-						{
-							return_code=1;
-						}
+						return_code=1;
 					}
-				}
-			} break;
-			case COMPUTED_FIELD_EMBEDDED:
-			{
-				FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-				int number_of_components;
-				struct FE_element *element;
-
-				if (FE_field_is_defined_at_node(field->fe_field,node))
-				{
-					return_code=1;
-					fe_field_component.field=field->fe_field;
-					number_of_components=
-						get_FE_field_number_of_components(field->fe_field);
-					for (comp_no=0;(comp_no<number_of_components)&&return_code;comp_no++)
+					else
 					{
-						fe_field_component.number=comp_no;
-						if (FE_nodal_value_version_exists(node,&fe_field_component,
-							field->version_number,field->nodal_value_type)&&
-							get_FE_nodal_element_xi_value(node,field->fe_field,comp_no,
-								field->version_number,field->nodal_value_type,&element,xi))
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_FINITE_ELEMENT:
+				{
+					return_code=FE_field_is_defined_at_node(field->fe_field,node);
+				} break;
+				case COMPUTED_FIELD_NODE_VALUE:
+				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+				{
+					if (FE_field_is_defined_at_node(field->fe_field,node))
+					{
+						/* must ensure at least one component of version_number,
+							nodal_value_type defined at node */
+						return_code=0;
+						fe_field_component.field=field->fe_field;
+						for (comp_no=0;(comp_no<field->number_of_components)&&(!return_code);
+							  comp_no++)
 						{
-							for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+							fe_field_component.number=comp_no;
+							if (FE_nodal_value_version_exists(node,&fe_field_component,
+								field->version_number,field->nodal_value_type))
 							{
-								if (!Computed_field_is_defined_in_element(
-									field->source_fields[i],element))
-								{
-									return_code=0;
-								}
+								return_code=1;
 							}
 						}
-						else
+					}
+				} break;
+				case COMPUTED_FIELD_EMBEDDED:
+				{
+					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+					int number_of_components;
+					struct FE_element *element;
+
+					if (FE_field_is_defined_at_node(field->fe_field,node))
+					{
+						return_code=1;
+						fe_field_component.field=field->fe_field;
+						number_of_components=
+							get_FE_field_number_of_components(field->fe_field);
+						for (comp_no=0;(comp_no<number_of_components)&&return_code;comp_no++)
+						{
+							fe_field_component.number=comp_no;
+							if (FE_nodal_value_version_exists(node,&fe_field_component,
+								field->version_number,field->nodal_value_type)&&
+								get_FE_nodal_element_xi_value(node,field->fe_field,comp_no,
+									field->version_number,field->nodal_value_type,&element,xi))
+							{
+								for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+								{
+									if (!Computed_field_is_defined_in_element(
+										field->source_fields[i],element))
+									{
+										return_code=0;
+									}
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+					}
+				} break;
+				case COMPUTED_FIELD_ADD:
+				case COMPUTED_FIELD_CLAMP_MAXIMUM:
+				case COMPUTED_FIELD_CLAMP_MINIMUM:
+				case COMPUTED_FIELD_CMISS_NUMBER:
+				case COMPUTED_FIELD_COMPONENT:
+				case COMPUTED_FIELD_COMPOSITE:
+				case COMPUTED_FIELD_CONSTANT:
+				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
+				case COMPUTED_FIELD_CURVE_LOOKUP:
+				case COMPUTED_FIELD_DOT_PRODUCT:
+				case COMPUTED_FIELD_EDIT_MASK:
+				case COMPUTED_FIELD_EXTERNAL:
+				case COMPUTED_FIELD_RC_COORDINATE:
+				case COMPUTED_FIELD_RC_VECTOR:
+				case COMPUTED_FIELD_MAGNITUDE:
+				case COMPUTED_FIELD_OFFSET:
+				case COMPUTED_FIELD_PROJECTION:
+				case COMPUTED_FIELD_SCALE:
+				case COMPUTED_FIELD_SUM_COMPONENTS:
+				{
+					return_code=1;
+					for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+					{
+						if (!Computed_field_is_defined_at_node(field->source_fields[i],node))
 						{
 							return_code=0;
 						}
 					}
-				}
-			} break;
-			case COMPUTED_FIELD_ADD:
-			case COMPUTED_FIELD_CLAMP_MAXIMUM:
-			case COMPUTED_FIELD_CLAMP_MINIMUM:
-			case COMPUTED_FIELD_CMISS_NUMBER:
-			case COMPUTED_FIELD_COMPONENT:
-			case COMPUTED_FIELD_COMPOSITE:
-			case COMPUTED_FIELD_CONSTANT:
-			case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-			case COMPUTED_FIELD_CURVE_LOOKUP:
-			case COMPUTED_FIELD_DOT_PRODUCT:
-			case COMPUTED_FIELD_EDIT_MASK:
-			case COMPUTED_FIELD_EXTERNAL:
-			case COMPUTED_FIELD_RC_COORDINATE:
-			case COMPUTED_FIELD_RC_VECTOR:
-			case COMPUTED_FIELD_MAGNITUDE:
-			case COMPUTED_FIELD_OFFSET:
-			case COMPUTED_FIELD_PROJECTION:
-			case COMPUTED_FIELD_SCALE:
-			case COMPUTED_FIELD_SUM_COMPONENTS:
-			{
-				return_code=1;
-				for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+				} break;
+				case COMPUTED_FIELD_2D_STRAIN:
+				case COMPUTED_FIELD_CURL:
+				case COMPUTED_FIELD_DIVERGENCE:
+				case COMPUTED_FIELD_FIBRE_AXES:
+				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
+				case COMPUTED_FIELD_GRADIENT:
+				case COMPUTED_FIELD_XI_COORDINATES:
+				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 				{
-					if (!Computed_field_is_defined_at_node(field->source_fields[i],node))
-					{
-						return_code=0;
-					}
-				}
-			} break;
-			case COMPUTED_FIELD_2D_STRAIN:
-			case COMPUTED_FIELD_CURL:
-			case COMPUTED_FIELD_DIVERGENCE:
-			case COMPUTED_FIELD_FIBRE_AXES:
-			case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-			case COMPUTED_FIELD_GRADIENT:
-			case COMPUTED_FIELD_SAMPLE_TEXTURE:
-			case COMPUTED_FIELD_XI_COORDINATES:
-			case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-			{
-				/* can not be evaluated at nodes */
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_is_defined_at_node.  Unknown field type");
-				return_code=0;
-			} break;
+					/* can not be evaluated at nodes */
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_is_defined_at_node.  Unknown field type");
+					return_code=0;
+				} break;
 
-		} /* switch */
+			} /* switch */
+		}
 	}
 	else
 	{
@@ -1796,6 +2088,42 @@ Computed_field_is_defined_at_node.
 
 	return (return_code);
 } /* Computed_field_is_defined_at_node_conditional */
+
+int Computed_field_default_is_defined_at_node(struct Computed_field *field,
+	struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns 1 if all the source fields are defined at the supplied <node>.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_default_is_defined_at_node);
+	if (field && node)
+	{
+		return_code=1;
+		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		{
+			if (!Computed_field_is_defined_at_node(field->source_fields[i],
+				node))
+			{
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_is_defined_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_is_defined_at_node */
 
 int FE_node_has_Computed_field_defined(struct FE_node *node,void *field_void)
 /*******************************************************************************
@@ -2992,7 +3320,6 @@ is avoided.
 ==============================================================================*/
 {
 	char buffer[100], *temp_string;
-	double texture_values[3];
 	FE_value element_to_top_level[9],sum,*temp,*temp1,*temp2,
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -3030,163 +3357,6 @@ is avoided.
 		}
 		if (!cache_is_valid)
 		{
-			/* 1. Get top_level_element for types that must be calculated on them */
-			switch (field->type)
-			{
-				case COMPUTED_FIELD_CURL:
-				case COMPUTED_FIELD_DIVERGENCE:
-				case COMPUTED_FIELD_FIBRE_AXES:
-				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-				case COMPUTED_FIELD_GRADIENT:
-				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-				{
-					if (CM_ELEMENT == element->cm.type)
-					{
-						top_level_element=element;
-						for (i=0;i<element_dimension;i++)
-						{
-							top_level_xi[i]=xi[i];
-						}
-						/* do not set element_to_top_level */
-						top_level_element_dimension=element_dimension;
-					}
-					else
-					{
-						/* check or get top_level element and xi coordinates for it */
-						if (top_level_element=FE_element_get_top_level_element_conversion(
-							element,top_level_element,(struct GROUP(FE_element) *)NULL,
-							-1,element_to_top_level))
-						{
-							/* convert xi to top_level_xi */
-							top_level_element_dimension=top_level_element->shape->dimension;
-							for (j=0;j<top_level_element_dimension;j++)
-							{
-								top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
-								for (k=0;k<element_dimension;k++)
-								{
-									top_level_xi[j] +=
-										element_to_top_level[j*(element_dimension+1)+k+1]*xi[k];
-								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_in_element.  "
-								"No top-level element found to evaluate field %s on",
-								field->name);
-							return_code=0;
-						}
-					}
-				} break;
-			}
-
-			/* 2. Precalculate any source fields that this field depends on. For type
-				 COMPUTED_FIELD_FINITE_ELEMENT, this means getting
-				 FE_element_field_values. */
-			if (return_code)
-			{
-				switch (field->type)
-				{
-					case COMPUTED_FIELD_2D_STRAIN:
-					{
-						/* always calculate derivatives of undeformed and deformed coordinate fields */
-						return_code=
-							Computed_field_evaluate_cache_in_element(field->source_fields[0],
-								element,xi,top_level_element,1)&&
-							Computed_field_evaluate_cache_in_element(field->source_fields[1],
-								element,xi,top_level_element,1)&&
-							Computed_field_evaluate_cache_in_element(field->source_fields[2],
-								element,xi,top_level_element,0);
-					} break;
-					case COMPUTED_FIELD_COMPOSE:
-					{
-						/* only calculate the first source_field at this location */
-						return_code=
-							Computed_field_evaluate_cache_in_element(
-							field->source_fields[0],element,xi,top_level_element,0);
-					} break;
-					case COMPUTED_FIELD_DEFAULT_COORDINATE:
-					{
-						if (Computed_field_get_default_coordinate_source_field_in_element(
-							field,element))
-						{
-							/* calculate values of source_field */
-							return_code=Computed_field_evaluate_cache_in_element(
-								field->source_fields[0],element,xi,top_level_element,
-								calculate_derivatives);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_in_element.  "
-								"Could not get default coordinate source_field");
-							return_code=0;
-						}
-					} break;
-					case COMPUTED_FIELD_EMBEDDED:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_element.  "
-							"Cannot evaluate an embedded field in elements");
-						return_code=0;
-					} break;
-					case COMPUTED_FIELD_FIBRE_AXES:
-					case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-					{
-						if (calculate_derivatives)
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_in_element.  "
-								"Derivatives not available for fibre_axes/fibre_sheet_axes");
-							return_code=0;
-						}
-						else
-						{
-							/* coordinate field must be evaluated on the top_level_element
-								 and derivatives are always required for it */
-							return_code=
-								Computed_field_evaluate_cache_in_element(
-									field->source_fields[0],element,xi,top_level_element,0)&&
-								Computed_field_evaluate_cache_in_element(
-									field->source_fields[1],top_level_element,top_level_xi,
-									top_level_element,1);
-						}
-					} break;
-					case COMPUTED_FIELD_FINITE_ELEMENT:
-					{
-						/* ensure we have FE_element_field_values for element, with
-							 derivatives_calculated if requested */
-						return_code=
-							Computed_field_calculate_FE_element_field_values_for_element(
-								field,calculate_derivatives,element,top_level_element);
-					} break;
-					case COMPUTED_FIELD_CURL:
-					case COMPUTED_FIELD_DIVERGENCE:
-					case COMPUTED_FIELD_GRADIENT:
-					{
-						/* always calculate derivatives of vector/scalar and coordinate
-							 fields and evaluate on the top_level_element */
-						return_code=
-							Computed_field_evaluate_cache_in_element(field->source_fields[0],
-								top_level_element,top_level_xi,top_level_element,1)&&
-							Computed_field_evaluate_cache_in_element(field->source_fields[1],
-								top_level_element,top_level_xi,top_level_element,1);
-					} break;
-					default:
-					{
-						/* calculate values of source_fields, derivatives only if requested */
-						for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-						{
-							return_code=
-								Computed_field_evaluate_cache_in_element(
-								field->source_fields[i],element,xi,top_level_element,
-								calculate_derivatives);
-						}
-					} break;
-				}
-			}
-
 			/* 3. Allocate values and derivative cache */
 			if (return_code)
 			{
@@ -3206,790 +3376,956 @@ is avoided.
 					}
 				}
 			}
-
-			/* 4. Calculate the field */
 			if (return_code)
 			{
-				/* set the flag indicating if derivatives are valid, assuming all values
-					 will be successfully calculated. Note that some types always get
-					 derivatives since they are so inexpensive to calculate. */
-				field->derivatives_valid=calculate_derivatives;
-				switch (field->type)
+				if (field->type == COMPUTED_FIELD_NEW_TYPES)
 				{
-					case COMPUTED_FIELD_2D_STRAIN:
+					if (field->computed_field_evaluate_cache_in_element_function)
 					{
-						return_code=
-							Computed_field_evaluate_2D_strain(field,element_dimension);
-					} break;
-					case COMPUTED_FIELD_ADD:
+						return_code = 
+							field->computed_field_evaluate_cache_in_element_function(
+								field, element, xi, top_level_element,calculate_derivatives);
+					}
+					else
 					{
-						for (i=0;i<field->number_of_components;i++)
+						display_message(ERROR_MESSAGE,
+							"Computed_field_evaluate_cache_in_element.  "
+							"Function for calculating field %s in element not defined.",
+							field->name);
+						return_code=0;
+					}
+				}
+				else
+				{
+					/* 1. Get top_level_element for types that must be calculated on them */
+					switch (field->type)
+					{
+						case COMPUTED_FIELD_CURL:
+						case COMPUTED_FIELD_DIVERGENCE:
+						case COMPUTED_FIELD_FIBRE_AXES:
+						case COMPUTED_FIELD_FIBRE_SHEET_AXES:
+						case COMPUTED_FIELD_GRADIENT:
+						case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 						{
-							field->values[i]=
-								field->source_values[0]*field->source_fields[0]->values[i]+
-								field->source_values[1]*field->source_fields[1]->values[i];
-						}
-						if (calculate_derivatives)
-						{
-							temp=field->derivatives;
-							temp1=field->source_fields[0]->derivatives;
-							temp2=field->source_fields[1]->derivatives;
-							for (i=(field->number_of_components*element_dimension);
-							  0<i;i--)
+							if (CM_ELEMENT == element->cm.type)
 							{
-								(*temp)=field->source_values[0]*(*temp1)+
-									field->source_values[1]*(*temp2);
-								temp++;
-								temp1++;
-								temp2++;
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_CLAMP_MAXIMUM:
-					{
-						if (calculate_derivatives)
-						{
-							temp=field->derivatives;
-							temp2=field->source_fields[0]->derivatives;
-						}
-						for (i=0;i<field->number_of_components;i++)
-						{
-							if (field->source_fields[0]->values[i] < field->source_values[i])
-							{
-								field->values[i]=field->source_fields[0]->values[i];
-								if (calculate_derivatives)
+								top_level_element=element;
+								for (i=0;i<element_dimension;i++)
 								{
-									for (j=0;j<element_dimension;j++)
-									{
-										(*temp)=(*temp2);
-										temp++;
-										temp2++;
-									}
+									top_level_xi[i]=xi[i];
 								}
+								/* do not set element_to_top_level */
+								top_level_element_dimension=element_dimension;
 							}
 							else
 							{
-								field->values[i]=field->source_values[i];
-								if (calculate_derivatives)
+								/* check or get top_level element and xi coordinates for it */
+								if (top_level_element=FE_element_get_top_level_element_conversion(
+									element,top_level_element,(struct GROUP(FE_element) *)NULL,
+									-1,element_to_top_level))
 								{
-									for (j=0;j<element_dimension;j++)
+									/* convert xi to top_level_xi */
+									top_level_element_dimension=top_level_element->shape->dimension;
+									for (j=0;j<top_level_element_dimension;j++)
 									{
-										(*temp)=0.0;
-										temp++;
-										temp2++; /* To ensure that the following components match */
-									}
-								}
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_CLAMP_MINIMUM:
-					{
-						if (calculate_derivatives)
-						{
-							temp=field->derivatives;
-							temp2=field->source_fields[0]->derivatives;
-						}
-						for (i=0;i<field->number_of_components;i++)
-						{
-							if (field->source_fields[0]->values[i] > field->source_values[i])
-							{
-								field->values[i]=field->source_fields[0]->values[i];
-								if (calculate_derivatives)
-								{
-									for (j=0;j<element_dimension;j++)
-									{
-										(*temp)=(*temp2);
-										temp++;
-										temp2++;
-									}
-								}
-							}
-							else
-							{
-								field->values[i]=field->source_values[i];
-								if (calculate_derivatives)
-								{
-									for (j=0;j<element_dimension;j++)
-									{
-										(*temp)=0.0;
-										temp++;
-										temp2++; /* To ensure that the following components match */
-									}
-								}
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_CMISS_NUMBER:
-					{
-						/* simply convert the element number into an FE_value */
-						field->values[0]=(FE_value)element->cm.number;
-						/* no derivatives for this type */
-						field->derivatives_valid=0;
-					} break;
-					case COMPUTED_FIELD_COMPONENT:
-					{
-						field->values[0]=
-							field->source_fields[0]->values[field->component_no];
-						if (calculate_derivatives)
-						{
-							temp=field->source_fields[0]->derivatives+
-								field->component_no*element_dimension;
-							for (j=0;j<element_dimension;j++)
-							{
-								field->derivatives[j]=temp[j];
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_COMPOSE:
-					{
-						/* The values from the first source field are inverted in the
-							second source field to get element_xi which is evaluated with
-							the third source field */
-						if (return_code = Computed_field_find_element_xi(field->source_fields[1],
-							field->source_fields[0]->values,
-							field->source_fields[0]->number_of_components,
-							&compose_element, compose_xi, field->compose_element_group,
-							(struct User_interface *)NULL, (float *)NULL, (float *)NULL, 
-							(float *)NULL))
-						{
-							/* calculate the third source_field at this new location */
-							return_code=
-								Computed_field_evaluate_cache_in_element(
-								field->source_fields[2],compose_element,compose_xi,
-								/*top_level*/(struct FE_element *)NULL,calculate_derivatives);
-							for (i=0;i<field->number_of_components;i++)
-							{
-								field->values[i]=field->source_fields[2]->values[i];
-							}
-							if (calculate_derivatives)
-							{
-								temp=field->derivatives;
-								temp2=field->source_fields[2]->derivatives;
-								for (i=0;i<field->number_of_components;i++)
-								{
-									for (j=0;j<element_dimension;j++)
-									{
-										(*temp)=(*temp2);
-										temp++;
-										temp2++;
-									}
-								}
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_COMPOSITE:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]= *(field->source_fields[i]->values);
-							if (calculate_derivatives)
-							{
-								temp=field->derivatives + i*element_dimension;
-								temp2=field->source_fields[i]->derivatives;
-								for (j=0;j<element_dimension;j++)
-								{
-									temp[j]=temp2[j];
-								}
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_CONSTANT:
-					{
-						/* returns constant vector values, zero derivatives (always) */
-						temp=field->derivatives;
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=field->source_values[i];
-							for (j=0;j<element_dimension;j++)
-							{
-								*temp=0.0;
-								temp++;
-							}
-						}
-						field->derivatives_valid=1;
-					} break;
-					case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-					{
-						temp=field->source_fields[0]->values;
-						field->values[3] = fabs(*temp);
-						temp++;
-						j = 0;
-						for (i=1;i < field->source_fields[0]->number_of_components;i++)
-						{
-							if (fabs(*temp) > field->values[3])
-							{
-								field->values[3] = fabs(*temp);
-								j = i;
-							}
-							temp++;
-						}
-						temp=field->source_fields[0]->values;
-						for (i=0;i < field->source_fields[0]->number_of_components - 1;i++)
-						{
-							if ( i == j )
-							{
-								/* Skip over the maximum coordinate */
-								temp++;
-							}
-							field->values[i] = *temp / field->values[3];
-							temp++;
-						}
-						field->derivatives_valid = 0;
-					} break;
-					case COMPUTED_FIELD_CURL:
-					{
-						return_code=Computed_field_evaluate_curl(field,
-							top_level_element_dimension);
-					} break;
-					case COMPUTED_FIELD_CURVE_LOOKUP:
-					{
-						FE_value dx_dt,*jacobian;
-
-						if (calculate_derivatives)
-						{
-							jacobian=field->derivatives;
-						}
-						else
-						{
-							jacobian=(FE_value *)NULL;
-						}
-						/* only slightly dodgy - stores derivatives of curve in start
-							 of derivatives space - must be at least big enough */
-						if (Control_curve_get_values_at_parameter(field->curve,
-							field->source_fields[0]->values[0],field->values,jacobian))
-						{
-							if (jacobian)
-							{
-								/* use product rule to get derivatives */
-								temp=field->source_fields[0]->derivatives;
-								/* count down in following loop because of slightly dodgy bit */
-								for (j=field->number_of_components-1;0<=j;j--)
-								{
-									dx_dt = jacobian[j];
-									for (i=0;i<element_dimension;i++)
-									{
-										jacobian[j*element_dimension+i] = dx_dt*temp[i];
-									}
-								}
-							}
-						}
-						else
-						{
-							return_code=0;
-						}
-					} break;
-					case COMPUTED_FIELD_DEFAULT_COORDINATE:
-					case COMPUTED_FIELD_RC_COORDINATE:
-					{
-						/* once the default_coordinate source field is found, its
-							 calculation is the same as rc_coordinate */
-						return_code=Computed_field_evaluate_rc_coordinate(field,
-							element_dimension,calculate_derivatives);
-					} break;
-					case COMPUTED_FIELD_DIVERGENCE:
-					{
-						return_code=Computed_field_evaluate_divergence(field,
-							top_level_element_dimension);
-					} break;
-					case COMPUTED_FIELD_DOT_PRODUCT:
-					{
-						field->values[0] = 0.0;
-						if (calculate_derivatives)
-						{
-							for (j=0;j<element_dimension;j++)
-							{
-								field->derivatives[j]=0.0;
-							}
-						}
-						temp=field->source_fields[0]->values;
-						temp2=field->source_fields[1]->values;
-						for (i=0;i < field->source_fields[0]->number_of_components;i++)
-						{
-							field->values[0] += (*temp) * (*temp2);
-							temp++;
-							temp2++;
-						}
-						if (calculate_derivatives)
-						{
-							temp=field->source_fields[0]->values;
-							temp2=field->source_fields[1]->derivatives;
-							for (i=0;i < field->source_fields[0]->number_of_components;i++)
-							{
-								for (j=0;j<element_dimension;j++)
-								{
-									field->derivatives[j] += (*temp)*(*temp2);
-									temp2++;
-								}
-								temp++;
-							}
-							temp=field->source_fields[1]->values;
-							temp2=field->source_fields[0]->derivatives;
-							for (i=0;i < field->source_fields[0]->number_of_components;i++)
-							{
-								for (j=0;j<element_dimension;j++)
-								{
-									field->derivatives[j] += (*temp)*(*temp2);
-									temp2++;
-								}
-								temp++;
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_EDIT_MASK:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=field->source_fields[0]->values[i];
-						}
-						if (calculate_derivatives)
-						{
-							temp=field->derivatives;
-							temp2=field->source_fields[0]->derivatives;
-							for (i=0;i<field->number_of_components;i++)
-							{
-								for (j=0;j<element_dimension;j++)
-								{
-									(*temp)=(*temp2);
-									temp++;
-									temp2++;
-								}
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_EXTERNAL:
-					{
-						total_values = field->number_of_source_values * 12 + 2;
-						for (i = 0 ; i < field->number_of_source_fields ; i++)
-						{
-							total_values+=field->source_fields[i]->number_of_components * 12;
-							if (calculate_derivatives /* and not never || always give derivatives */)
-							{
-								total_values+=field->source_fields[i]->number_of_components *
-									(element_dimension * 12 + 20);
-							}
-						}
-						if (ALLOCATE(temp_string, char, total_values))
-						{
-							index = 0;
-							for (i = 0 ; i < field->number_of_source_values ; i++)
-							{
-								sprintf(temp_string + index, "%10.5e ", field->source_values[i]);
-								index += 12;
-							}
-							for (i = 0 ; i < field->number_of_source_fields ; i++)
-							{
-								for (j = 0 ; j < field->source_fields[i]->number_of_components ; j++)
-								{
-									sprintf(temp_string + index, "%10.5e ", field->source_fields[i]->values[j]);
-									index += 12;
-									if (calculate_derivatives /* and not never || always give derivatives */)
-									{
-										sprintf(temp_string + index, "#deriv=%d %n", element_dimension,
-											&k);
-										index += k;
-										for (k = 0 ; k < element_dimension ; k++)
+										top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
+										for (k=0;k<element_dimension;k++)
 										{
-											sprintf(temp_string + index, "%10.5e ",
-												field->source_fields[i]->derivatives[j * element_dimension + k]);
-											index += 12;
+											top_level_xi[j] +=
+												element_to_top_level[j*(element_dimension+1)+k+1]*xi[k];
 										}
 									}
-								}
-							}
-							sprintf(temp_string + index, "\n");
-							Child_process_send_string_to_stdin(field->child_process,temp_string);
-							DEALLOCATE(temp_string);
-							if (temp_string = Child_process_get_line_from_stdout(field->child_process,
-								field->timeout))
-							{
-								index = 0;
-								for (i = 0 ; i < field->number_of_components ; i++)
-								{
-									sscanf(temp_string + index, "%f%n", &(field->values[i]), &j);
-									index += j;
-									sscanf(temp_string + index, "%s%n", buffer, &j);
-									if (!strncmp(buffer, "#deriv=", 7))
-									{
-										index += j;
-										/* Should check to see derivatives are supplied for
-											all or none of the components and set the derivatives
-											valid flag appropriately */
-										if (sscanf(buffer + 7, "%d", &k) && k == element_dimension)
-										{											
-											for (k = 0 ; k < element_dimension ; k++)
-											{
-												sscanf(temp_string + index, "%f%n",
-													&(field->derivatives[i * element_dimension + k]), &j);
-												index += j;
-											}
-										}
-									}
-								}
-								DEALLOCATE(temp_string);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_in_element."
-									"  Invalid response from child process");
-								return_code = 0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_in_element."
-								"  Unable to allocate temporary string");
-							return_code = 0;
-						}
-					} break;
-					case COMPUTED_FIELD_FIBRE_AXES:
-					case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-					{
-						return_code=Computed_field_evaluate_fibre_axes(field,
-							top_level_element_dimension);
-					} break;
-					case COMPUTED_FIELD_FINITE_ELEMENT:
-					{
-						enum Value_type value_type;
-
-						value_type=get_FE_field_value_type(field->fe_field);
-						/* component number -1 = calculate all components */
-						switch (value_type)
-						{
-							case FE_VALUE_VALUE:
-							{
-								if (calculate_derivatives)
-								{
-									return_code=calculate_FE_element_field(-1,
-										field->fe_element_field_values,xi,field->values,
-										field->derivatives);
 								}
 								else
 								{
-									return_code=calculate_FE_element_field(-1,
-										field->fe_element_field_values,xi,field->values,
-										(FE_value *)NULL);
+									display_message(ERROR_MESSAGE,
+										"Computed_field_evaluate_cache_in_element.  "
+										"No top-level element found to evaluate field %s on",
+										field->name);
+									return_code=0;
+								}
+							}
+						} break;
+					}
+
+					/* 2. Precalculate any source fields that this field depends on. For type
+						COMPUTED_FIELD_FINITE_ELEMENT, this means getting
+						FE_element_field_values. */
+					if (return_code)
+					{
+						switch (field->type)
+						{
+							case COMPUTED_FIELD_2D_STRAIN:
+							{
+								/* always calculate derivatives of undeformed and deformed coordinate fields */
+								return_code=
+									Computed_field_evaluate_cache_in_element(field->source_fields[0],
+										element,xi,top_level_element,1)&&
+									Computed_field_evaluate_cache_in_element(field->source_fields[1],
+										element,xi,top_level_element,1)&&
+									Computed_field_evaluate_cache_in_element(field->source_fields[2],
+										element,xi,top_level_element,0);
+							} break;
+							case COMPUTED_FIELD_COMPOSE:
+							{
+								/* only calculate the first source_field at this location */
+								return_code=
+									Computed_field_evaluate_cache_in_element(
+										field->source_fields[0],element,xi,top_level_element,0);
+							} break;
+							case COMPUTED_FIELD_DEFAULT_COORDINATE:
+							{
+								if (Computed_field_get_default_coordinate_source_field_in_element(
+									field,element))
+								{
+									/* calculate values of source_field */
+									return_code=Computed_field_evaluate_cache_in_element(
+										field->source_fields[0],element,xi,top_level_element,
+										calculate_derivatives);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_evaluate_cache_in_element.  "
+										"Could not get default coordinate source_field");
+									return_code=0;
 								}
 							} break;
-							case INT_VALUE:
+							case COMPUTED_FIELD_EMBEDDED:
 							{
-								int *int_values;
-
-								/* no derivatives for this value_type */
-								field->derivatives_valid=0;
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_at_element.  "
+									"Cannot evaluate an embedded field in elements");
+								return_code=0;
+							} break;
+							case COMPUTED_FIELD_FIBRE_AXES:
+							case COMPUTED_FIELD_FIBRE_SHEET_AXES:
+							{
 								if (calculate_derivatives)
 								{
 									display_message(ERROR_MESSAGE,
 										"Computed_field_evaluate_cache_in_element.  "
-										"Derivatives not defined for integer fields");
+										"Derivatives not available for fibre_axes/fibre_sheet_axes");
 									return_code=0;
 								}
 								else
 								{
-									if (ALLOCATE(int_values,int,field->number_of_components))
+									/* coordinate field must be evaluated on the top_level_element
+										and derivatives are always required for it */
+									return_code=
+										Computed_field_evaluate_cache_in_element(
+											field->source_fields[0],element,xi,top_level_element,0)&&
+										Computed_field_evaluate_cache_in_element(
+											field->source_fields[1],top_level_element,top_level_xi,
+											top_level_element,1);
+								}
+							} break;
+							case COMPUTED_FIELD_FINITE_ELEMENT:
+							{
+								/* ensure we have FE_element_field_values for element, with
+									derivatives_calculated if requested */
+								return_code=
+									Computed_field_calculate_FE_element_field_values_for_element(
+										field,calculate_derivatives,element,top_level_element);
+							} break;
+							case COMPUTED_FIELD_CURL:
+							case COMPUTED_FIELD_DIVERGENCE:
+							case COMPUTED_FIELD_GRADIENT:
+							{
+								/* always calculate derivatives of vector/scalar and coordinate
+									fields and evaluate on the top_level_element */
+								return_code=
+									Computed_field_evaluate_cache_in_element(field->source_fields[0],
+										top_level_element,top_level_xi,top_level_element,1)&&
+									Computed_field_evaluate_cache_in_element(field->source_fields[1],
+										top_level_element,top_level_xi,top_level_element,1);
+							} break;
+							default:
+							{
+								/* calculate values of source_fields, derivatives only if requested */
+								for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+								{
+									return_code=
+										Computed_field_evaluate_cache_in_element(
+											field->source_fields[i],element,xi,top_level_element,
+											calculate_derivatives);
+								}
+							} break;
+						}
+					}
+
+					/* 3. Calculate the field */
+					if (return_code)
+					{
+						/* set the flag indicating if derivatives are valid, assuming all values
+							will be successfully calculated. Note that some types always get
+							derivatives since they are so inexpensive to calculate. */
+						field->derivatives_valid=calculate_derivatives;
+						switch (field->type)
+						{
+							case COMPUTED_FIELD_2D_STRAIN:
+							{
+								return_code=
+									Computed_field_evaluate_2D_strain(field,element_dimension);
+							} break;
+							case COMPUTED_FIELD_ADD:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=
+										field->source_values[0]*field->source_fields[0]->values[i]+
+										field->source_values[1]*field->source_fields[1]->values[i];
+								}
+								if (calculate_derivatives)
+								{
+									temp=field->derivatives;
+									temp1=field->source_fields[0]->derivatives;
+									temp2=field->source_fields[1]->derivatives;
+									for (i=(field->number_of_components*element_dimension);
+										  0<i;i--)
 									{
-										return_code=calculate_FE_element_field_int_values(-1,
-											field->fe_element_field_values,xi,int_values);
+										(*temp)=field->source_values[0]*(*temp1)+
+											field->source_values[1]*(*temp2);
+										temp++;
+										temp1++;
+										temp2++;
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_CLAMP_MAXIMUM:
+							{
+								if (calculate_derivatives)
+								{
+									temp=field->derivatives;
+									temp2=field->source_fields[0]->derivatives;
+								}
+								for (i=0;i<field->number_of_components;i++)
+								{
+									if (field->source_fields[0]->values[i] < field->source_values[i])
+									{
+										field->values[i]=field->source_fields[0]->values[i];
+										if (calculate_derivatives)
+										{
+											for (j=0;j<element_dimension;j++)
+											{
+												(*temp)=(*temp2);
+												temp++;
+												temp2++;
+											}
+										}
+									}
+									else
+									{
+										field->values[i]=field->source_values[i];
+										if (calculate_derivatives)
+										{
+											for (j=0;j<element_dimension;j++)
+											{
+												(*temp)=0.0;
+												temp++;
+												temp2++; /* To ensure that the following components match */
+											}
+										}
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_CLAMP_MINIMUM:
+							{
+								if (calculate_derivatives)
+								{
+									temp=field->derivatives;
+									temp2=field->source_fields[0]->derivatives;
+								}
+								for (i=0;i<field->number_of_components;i++)
+								{
+									if (field->source_fields[0]->values[i] > field->source_values[i])
+									{
+										field->values[i]=field->source_fields[0]->values[i];
+										if (calculate_derivatives)
+										{
+											for (j=0;j<element_dimension;j++)
+											{
+												(*temp)=(*temp2);
+												temp++;
+												temp2++;
+											}
+										}
+									}
+									else
+									{
+										field->values[i]=field->source_values[i];
+										if (calculate_derivatives)
+										{
+											for (j=0;j<element_dimension;j++)
+											{
+												(*temp)=0.0;
+												temp++;
+												temp2++; /* To ensure that the following components match */
+											}
+										}
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_CMISS_NUMBER:
+							{
+								/* simply convert the element number into an FE_value */
+								field->values[0]=(FE_value)element->cm.number;
+								/* no derivatives for this type */
+								field->derivatives_valid=0;
+							} break;
+							case COMPUTED_FIELD_COMPONENT:
+							{
+								field->values[0]=
+									field->source_fields[0]->values[field->component_no];
+								if (calculate_derivatives)
+								{
+									temp=field->source_fields[0]->derivatives+
+										field->component_no*element_dimension;
+									for (j=0;j<element_dimension;j++)
+									{
+										field->derivatives[j]=temp[j];
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_COMPOSE:
+							{
+								/* The values from the first source field are inverted in the
+									second source field to get element_xi which is evaluated with
+									the third source field */
+								if (return_code = Computed_field_find_element_xi(field->source_fields[1],
+									field->source_fields[0]->values,
+									field->source_fields[0]->number_of_components,
+									&compose_element, compose_xi, field->compose_element_group,
+									(struct User_interface *)NULL, (float *)NULL, (float *)NULL, 
+									(float *)NULL))
+								{
+									/* calculate the third source_field at this new location */
+									return_code=
+										Computed_field_evaluate_cache_in_element(
+											field->source_fields[2],compose_element,compose_xi,
+											/*top_level*/(struct FE_element *)NULL,calculate_derivatives);
+									for (i=0;i<field->number_of_components;i++)
+									{
+										field->values[i]=field->source_fields[2]->values[i];
+									}
+									if (calculate_derivatives)
+									{
+										temp=field->derivatives;
+										temp2=field->source_fields[2]->derivatives;
 										for (i=0;i<field->number_of_components;i++)
 										{
-											field->values[i]=(FE_value)int_values[i];
+											for (j=0;j<element_dimension;j++)
+											{
+												(*temp)=(*temp2);
+												temp++;
+												temp2++;
+											}
 										}
-										DEALLOCATE(int_values);
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_COMPOSITE:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]= *(field->source_fields[i]->values);
+									if (calculate_derivatives)
+									{
+										temp=field->derivatives + i*element_dimension;
+										temp2=field->source_fields[i]->derivatives;
+										for (j=0;j<element_dimension;j++)
+										{
+											temp[j]=temp2[j];
+										}
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_CONSTANT:
+							{
+								/* returns constant vector values, zero derivatives (always) */
+								temp=field->derivatives;
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=field->source_values[i];
+									for (j=0;j<element_dimension;j++)
+									{
+										*temp=0.0;
+										temp++;
+									}
+								}
+								field->derivatives_valid=1;
+							} break;
+							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
+							{
+								temp=field->source_fields[0]->values;
+								field->values[3] = fabs(*temp);
+								temp++;
+								j = 0;
+								for (i=1;i < field->source_fields[0]->number_of_components;i++)
+								{
+									if (fabs(*temp) > field->values[3])
+									{
+										field->values[3] = fabs(*temp);
+										j = i;
+									}
+									temp++;
+								}
+								temp=field->source_fields[0]->values;
+								for (i=0;i < field->source_fields[0]->number_of_components - 1;i++)
+								{
+									if ( i == j )
+									{
+										/* Skip over the maximum coordinate */
+										temp++;
+									}
+									field->values[i] = *temp / field->values[3];
+									temp++;
+								}
+								field->derivatives_valid = 0;
+							} break;
+							case COMPUTED_FIELD_CURL:
+							{
+								return_code=Computed_field_evaluate_curl(field,
+									top_level_element_dimension);
+							} break;
+							case COMPUTED_FIELD_CURVE_LOOKUP:
+							{
+								FE_value dx_dt,*jacobian;
+
+								if (calculate_derivatives)
+								{
+									jacobian=field->derivatives;
+								}
+								else
+								{
+									jacobian=(FE_value *)NULL;
+								}
+								/* only slightly dodgy - stores derivatives of curve in start
+									of derivatives space - must be at least big enough */
+								if (Control_curve_get_values_at_parameter(field->curve,
+									field->source_fields[0]->values[0],field->values,jacobian))
+								{
+									if (jacobian)
+									{
+										/* use product rule to get derivatives */
+										temp=field->source_fields[0]->derivatives;
+										/* count down in following loop because of slightly dodgy bit */
+										for (j=field->number_of_components-1;0<=j;j--)
+										{
+											dx_dt = jacobian[j];
+											for (i=0;i<element_dimension;i++)
+											{
+												jacobian[j*element_dimension+i] = dx_dt*temp[i];
+											}
+										}
+									}
+								}
+								else
+								{
+									return_code=0;
+								}
+							} break;
+							case COMPUTED_FIELD_DEFAULT_COORDINATE:
+							case COMPUTED_FIELD_RC_COORDINATE:
+							{
+								/* once the default_coordinate source field is found, its
+									calculation is the same as rc_coordinate */
+								return_code=Computed_field_evaluate_rc_coordinate(field,
+									element_dimension,calculate_derivatives);
+							} break;
+							case COMPUTED_FIELD_DIVERGENCE:
+							{
+								return_code=Computed_field_evaluate_divergence(field,
+									top_level_element_dimension);
+							} break;
+							case COMPUTED_FIELD_DOT_PRODUCT:
+							{
+								field->values[0] = 0.0;
+								if (calculate_derivatives)
+								{
+									for (j=0;j<element_dimension;j++)
+									{
+										field->derivatives[j]=0.0;
+									}
+								}
+								temp=field->source_fields[0]->values;
+								temp2=field->source_fields[1]->values;
+								for (i=0;i < field->source_fields[0]->number_of_components;i++)
+								{
+									field->values[0] += (*temp) * (*temp2);
+									temp++;
+									temp2++;
+								}
+								if (calculate_derivatives)
+								{
+									temp=field->source_fields[0]->values;
+									temp2=field->source_fields[1]->derivatives;
+									for (i=0;i < field->source_fields[0]->number_of_components;i++)
+									{
+										for (j=0;j<element_dimension;j++)
+										{
+											field->derivatives[j] += (*temp)*(*temp2);
+											temp2++;
+										}
+										temp++;
+									}
+									temp=field->source_fields[1]->values;
+									temp2=field->source_fields[0]->derivatives;
+									for (i=0;i < field->source_fields[0]->number_of_components;i++)
+									{
+										for (j=0;j<element_dimension;j++)
+										{
+											field->derivatives[j] += (*temp)*(*temp2);
+											temp2++;
+										}
+										temp++;
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_EDIT_MASK:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=field->source_fields[0]->values[i];
+								}
+								if (calculate_derivatives)
+								{
+									temp=field->derivatives;
+									temp2=field->source_fields[0]->derivatives;
+									for (i=0;i<field->number_of_components;i++)
+									{
+										for (j=0;j<element_dimension;j++)
+										{
+											(*temp)=(*temp2);
+											temp++;
+											temp2++;
+										}
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_EXTERNAL:
+							{
+								total_values = field->number_of_source_values * 12 + 2;
+								for (i = 0 ; i < field->number_of_source_fields ; i++)
+								{
+									total_values+=field->source_fields[i]->number_of_components * 12;
+									if (calculate_derivatives /* and not never || always give derivatives */)
+									{
+										total_values+=field->source_fields[i]->number_of_components *
+											(element_dimension * 12 + 20);
+									}
+								}
+								if (ALLOCATE(temp_string, char, total_values))
+								{
+									index = 0;
+									for (i = 0 ; i < field->number_of_source_values ; i++)
+									{
+										sprintf(temp_string + index, "%10.5e ", field->source_values[i]);
+										index += 12;
+									}
+									for (i = 0 ; i < field->number_of_source_fields ; i++)
+									{
+										for (j = 0 ; j < field->source_fields[i]->number_of_components ; j++)
+										{
+											sprintf(temp_string + index, "%10.5e ", field->source_fields[i]->values[j]);
+											index += 12;
+											if (calculate_derivatives /* and not never || always give derivatives */)
+											{
+												sprintf(temp_string + index, "#deriv=%d %n", element_dimension,
+													&k);
+												index += k;
+												for (k = 0 ; k < element_dimension ; k++)
+												{
+													sprintf(temp_string + index, "%10.5e ",
+														field->source_fields[i]->derivatives[j * element_dimension + k]);
+													index += 12;
+												}
+											}
+										}
+									}
+									sprintf(temp_string + index, "\n");
+									Child_process_send_string_to_stdin(field->child_process,temp_string);
+									DEALLOCATE(temp_string);
+									if (temp_string = Child_process_get_line_from_stdout(field->child_process,
+										field->timeout))
+									{
+										index = 0;
+										for (i = 0 ; i < field->number_of_components ; i++)
+										{
+											sscanf(temp_string + index, "%f%n", &(field->values[i]), &j);
+											index += j;
+											sscanf(temp_string + index, "%s%n", buffer, &j);
+											if (!strncmp(buffer, "#deriv=", 7))
+											{
+												index += j;
+												/* Should check to see derivatives are supplied for
+													all or none of the components and set the derivatives
+													valid flag appropriately */
+												if (sscanf(buffer + 7, "%d", &k) && k == element_dimension)
+												{											
+													for (k = 0 ; k < element_dimension ; k++)
+													{
+														sscanf(temp_string + index, "%f%n",
+															&(field->derivatives[i * element_dimension + k]), &j);
+														index += j;
+													}
+												}
+											}
+										}
+										DEALLOCATE(temp_string);
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
+											"Computed_field_evaluate_cache_in_element."
+											"  Invalid response from child process");
+										return_code = 0;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_evaluate_cache_in_element."
+										"  Unable to allocate temporary string");
+									return_code = 0;
+								}
+							} break;
+							case COMPUTED_FIELD_FIBRE_AXES:
+							case COMPUTED_FIELD_FIBRE_SHEET_AXES:
+							{
+								return_code=Computed_field_evaluate_fibre_axes(field,
+									top_level_element_dimension);
+							} break;
+							case COMPUTED_FIELD_FINITE_ELEMENT:
+							{
+								enum Value_type value_type;
+
+								value_type=get_FE_field_value_type(field->fe_field);
+								/* component number -1 = calculate all components */
+								switch (value_type)
+								{
+									case FE_VALUE_VALUE:
+									{
+										if (calculate_derivatives)
+										{
+											return_code=calculate_FE_element_field(-1,
+												field->fe_element_field_values,xi,field->values,
+												field->derivatives);
+										}
+										else
+										{
+											return_code=calculate_FE_element_field(-1,
+												field->fe_element_field_values,xi,field->values,
+												(FE_value *)NULL);
+										}
+									} break;
+									case INT_VALUE:
+									{
+										int *int_values;
+
+										/* no derivatives for this value_type */
+										field->derivatives_valid=0;
+										if (calculate_derivatives)
+										{
+											display_message(ERROR_MESSAGE,
+												"Computed_field_evaluate_cache_in_element.  "
+												"Derivatives not defined for integer fields");
+											return_code=0;
+										}
+										else
+										{
+											if (ALLOCATE(int_values,int,field->number_of_components))
+											{
+												return_code=calculate_FE_element_field_int_values(-1,
+													field->fe_element_field_values,xi,int_values);
+												for (i=0;i<field->number_of_components;i++)
+												{
+													field->values[i]=(FE_value)int_values[i];
+												}
+												DEALLOCATE(int_values);
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"Computed_field_evaluate_cache_in_element.  "
+													"Not enough memory for int_values");
+												return_code=0;
+											}
+										}
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
 											"Computed_field_evaluate_cache_in_element.  "
-											"Not enough memory for int_values");
+											"Unsupported value type %s in finite_element field",
+											Value_type_string(value_type));
+										return_code=0;
+									} break;
+								}
+							} break;
+							case COMPUTED_FIELD_GRADIENT:
+							{
+								return_code=Computed_field_evaluate_gradient(field,
+									top_level_element_dimension);
+							} break;
+							case COMPUTED_FIELD_MAGNITUDE:
+							{
+								field->values[0]=0.0;
+								if (calculate_derivatives)
+								{
+									for (j=0;j<element_dimension;j++)
+									{
+										field->derivatives[j]=0.0;
+									}
+								}
+								temp=field->source_fields[0]->values;
+								temp2=field->source_fields[0]->derivatives;
+								for (i=field->source_fields[0]->number_of_components;0<i;i--)
+								{
+									field->values[0] += ((*temp)*(*temp));
+									if (calculate_derivatives)
+									{
+										for (j=0;j<element_dimension;j++)
+										{
+											field->derivatives[j] += 2.0*(*temp)*(*temp2);
+											temp2++;
+										}
+									}
+									temp++;
+								}
+								field->values[0]=sqrt(field->values[0]);
+							} break;
+							case COMPUTED_FIELD_NODE_VALUE:
+							case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_in_element.  "
+									"Cannot evaluate node_value in elements");
+								return_code=0;
+							} break;
+							case COMPUTED_FIELD_OFFSET:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=
+										field->source_values[i]+field->source_fields[0]->values[i];
+								}
+								if (calculate_derivatives)
+								{
+									temp=field->derivatives;
+									temp2=field->source_fields[0]->derivatives;
+									for (i=0;i<field->number_of_components;i++)
+									{
+										for (j=0;j<element_dimension;j++)
+										{
+											(*temp)=(*temp2);
+											temp++;
+											temp2++;
+										}
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_PROJECTION:
+							{
+								return_code=Computed_field_evaluate_projection_matrix(field,
+									element_dimension, calculate_derivatives);
+							} break;
+							case COMPUTED_FIELD_RC_VECTOR:
+							{
+								return_code=Computed_field_evaluate_rc_vector(field);
+								/* no derivatives for this type */
+								field->derivatives_valid=0;
+							} break;
+							case COMPUTED_FIELD_SCALE:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=
+										field->source_values[i]*field->source_fields[0]->values[i];
+								}
+								if (calculate_derivatives)
+								{
+									temp=field->derivatives;
+									temp2=field->source_fields[0]->derivatives;
+									for (i=0;i<field->number_of_components;i++)
+									{
+										for (j=0;j<element_dimension;j++)
+										{
+											(*temp)=field->source_values[i]*(*temp2);
+											temp++;
+											temp2++;
+										}
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_SUM_COMPONENTS:
+							{
+								/* weighted sum of components */
+								temp=field->source_fields[0]->values;
+								sum=0.0;
+								for (i=0;i<field->source_fields[0]->number_of_components;i++)
+								{
+									sum += temp[i]*field->source_values[i];
+								}
+								field->values[0]=sum;
+								if (calculate_derivatives)
+								{
+									for (j=0;j<element_dimension;j++)
+									{
+										temp=field->source_fields[0]->derivatives + j;
+										sum=0.0;
+										for (i=0;i<field->source_fields[0]->number_of_components;i++)
+										{
+											sum += (*temp)*field->source_values[i];
+											temp += element_dimension;
+										}
+										field->derivatives[j]=sum;
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_XI_COORDINATES:
+							{
+								/* returns the values in xi, up to the element_dimension and padded
+									with zeroes */
+								temp=field->derivatives;
+								for (i=0;i<field->number_of_components;i++)
+								{
+									if (i<element_dimension)
+									{
+										field->values[i]=xi[i];
+									}
+									else
+									{
+										field->values[i]=0.0;
+									}
+									for (j=0;j<element_dimension;j++)
+									{
+										if (i==j)
+										{
+											*temp = 1.0;
+										}
+										else
+										{
+											*temp = 0.0;
+										}
+										temp++;
+									}
+								}
+								/* derivatives are always calculated since they are merely part of
+									the identity matrix */
+								field->derivatives_valid=1;
+							} break;
+							case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
+							{
+								if (field->texture_mapping)
+								{
+									if (mapping = FIND_BY_IDENTIFIER_IN_LIST
+										(Computed_field_element_texture_mapping,element)
+										(top_level_element, field->texture_mapping))
+									{
+										if (element == top_level_element)
+										{
+											temp=field->derivatives;
+											for (i = 0 ; i < element_dimension ; i++)
+											{
+												field->values[i] = mapping->offset[i] + xi[i];
+												if (calculate_derivatives)
+												{
+													for (j=0;j<element_dimension;j++)
+													{
+														if (i==j)
+														{
+															*temp = 1.0;
+														}
+														else
+														{
+															*temp = 0.0;
+														}
+														temp++;
+													}
+												}
+											}
+										}
+										else
+										{
+											temp = element_to_top_level;
+											temp2 = field->derivatives;
+											for (i = 0 ; i < top_level_element_dimension ; i++)
+											{
+												field->values[i] = mapping->offset[i] + (*temp);
+												temp++;
+												for (j = 0 ; j < element->shape->dimension ; j++)
+												{
+													field->values[i] += (*temp) * xi[j];
+													if (calculate_derivatives)
+													{
+														*temp2 = *temp;
+														*temp2++;
+													}
+													temp++;
+												}
+											}
+										}
+									}
+									else
+									{
+										FE_element_to_element_string(element,&temp_string);
+										display_message(ERROR_MESSAGE,
+											"Computed_field_evaluate_cache_in_element."
+											"  Element %s not found in Xi texture coordinate mapping",
+											temp_string);
+										DEALLOCATE(temp_string);
 										return_code=0;
 									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_evaluate_cache_in_element.  "
+										"Xi texture coordinate mapping not calculated");
+									return_code=0;
 								}
 							} break;
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_in_element.  "
-									"Unsupported value type %s in finite_element field",
-									Value_type_string(value_type));
+									"Computed_field_evaluate_cache_in_element.  Unknown field type");
 								return_code=0;
 							} break;
 						}
-					} break;
-					case COMPUTED_FIELD_GRADIENT:
-					{
-						return_code=Computed_field_evaluate_gradient(field,
-							top_level_element_dimension);
-					} break;
-					case COMPUTED_FIELD_MAGNITUDE:
-					{
-						field->values[0]=0.0;
-						if (calculate_derivatives)
-						{
-							for (j=0;j<element_dimension;j++)
-							{
-								field->derivatives[j]=0.0;
-							}
-						}
-						temp=field->source_fields[0]->values;
-						temp2=field->source_fields[0]->derivatives;
-						for (i=field->source_fields[0]->number_of_components;0<i;i--)
-						{
-							field->values[0] += ((*temp)*(*temp));
-							if (calculate_derivatives)
-							{
-								for (j=0;j<element_dimension;j++)
-								{
-									field->derivatives[j] += 2.0*(*temp)*(*temp2);
-									temp2++;
-								}
-							}
-							temp++;
-						}
-						field->values[0]=sqrt(field->values[0]);
-					} break;
-					case COMPUTED_FIELD_NODE_VALUE:
-					case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_in_element.  "
-							"Cannot evaluate node_value in elements");
-						return_code=0;
-					} break;
-					case COMPUTED_FIELD_OFFSET:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=
-								field->source_values[i]+field->source_fields[0]->values[i];
-						}
-						if (calculate_derivatives)
-						{
-							temp=field->derivatives;
-							temp2=field->source_fields[0]->derivatives;
-							for (i=0;i<field->number_of_components;i++)
-							{
-								for (j=0;j<element_dimension;j++)
-								{
-									(*temp)=(*temp2);
-									temp++;
-									temp2++;
-								}
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_PROJECTION:
-					{
-						return_code=Computed_field_evaluate_projection_matrix(field,
-							element_dimension, calculate_derivatives);
-					} break;
-					case COMPUTED_FIELD_RC_VECTOR:
-					{
-						return_code=Computed_field_evaluate_rc_vector(field);
-						/* no derivatives for this type */
-						field->derivatives_valid=0;
-					} break;
-					case COMPUTED_FIELD_SCALE:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=
-								field->source_values[i]*field->source_fields[0]->values[i];
-						}
-						if (calculate_derivatives)
-						{
-							temp=field->derivatives;
-							temp2=field->source_fields[0]->derivatives;
-							for (i=0;i<field->number_of_components;i++)
-							{
-								for (j=0;j<element_dimension;j++)
-								{
-									(*temp)=field->source_values[i]*(*temp2);
-									temp++;
-									temp2++;
-								}
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_SAMPLE_TEXTURE:
-					{
-						/* Could generalise to 1D and 3D textures */
-						Texture_get_pixel_values(field->texture,
-							field->source_fields[0]->values[0],
-							field->source_fields[0]->values[1], texture_values);
-						field->values[0] =  texture_values[0];
-						field->values[1] =  texture_values[1];
-						field->values[2] =  texture_values[2];
-						field->derivatives_valid = 0;
-					} break;
-					case COMPUTED_FIELD_SUM_COMPONENTS:
-					{
-						/* weighted sum of components */
-						temp=field->source_fields[0]->values;
-						sum=0.0;
-						for (i=0;i<field->source_fields[0]->number_of_components;i++)
-						{
-							sum += temp[i]*field->source_values[i];
-						}
-						field->values[0]=sum;
-						if (calculate_derivatives)
-						{
-							for (j=0;j<element_dimension;j++)
-							{
-								temp=field->source_fields[0]->derivatives + j;
-								sum=0.0;
-								for (i=0;i<field->source_fields[0]->number_of_components;i++)
-								{
-									sum += (*temp)*field->source_values[i];
-									temp += element_dimension;
-								}
-								field->derivatives[j]=sum;
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_XI_COORDINATES:
-					{
-						/* returns the values in xi, up to the element_dimension and padded
-							 with zeroes */
-						temp=field->derivatives;
-						for (i=0;i<field->number_of_components;i++)
-						{
-							if (i<element_dimension)
-							{
-								field->values[i]=xi[i];
-							}
-							else
-							{
-								field->values[i]=0.0;
-							}
-							for (j=0;j<element_dimension;j++)
-							{
-								if (i==j)
-								{
-									*temp = 1.0;
-								}
-								else
-								{
-									*temp = 0.0;
-								}
-								temp++;
-							}
-						}
-						/* derivatives are always calculated since they are merely part of
-							 the identity matrix */
-						field->derivatives_valid=1;
-					} break;
-					case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-					{
-						if (field->texture_mapping)
-						{
-							if (mapping = FIND_BY_IDENTIFIER_IN_LIST
-								(Computed_field_element_texture_mapping,element)
-								(top_level_element, field->texture_mapping))
-							{
-								if (element == top_level_element)
-								{
-									temp=field->derivatives;
-									for (i = 0 ; i < element_dimension ; i++)
-									{
-										field->values[i] = mapping->offset[i] + xi[i];
-										if (calculate_derivatives)
-										{
-											for (j=0;j<element_dimension;j++)
-											{
-												if (i==j)
-												{
-													*temp = 1.0;
-												}
-												else
-												{
-													*temp = 0.0;
-												}
-												temp++;
-											}
-										}
-									}
-								}
-								else
-								{
-									temp = element_to_top_level;
-									temp2 = field->derivatives;
-									for (i = 0 ; i < top_level_element_dimension ; i++)
-									{
-										field->values[i] = mapping->offset[i] + (*temp);
-										temp++;
-										for (j = 0 ; j < element->shape->dimension ; j++)
-										{
-											field->values[i] += (*temp) * xi[j];
-											if (calculate_derivatives)
-											{
-												*temp2 = *temp;
-												*temp2++;
-											}
-											temp++;
-										}
-									}
-								}
-							}
-							else
-							{
-								FE_element_to_element_string(element,&temp_string);
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_in_element."
-									"  Element %s not found in Xi texture coordinate mapping",
-									temp_string);
-								DEALLOCATE(temp_string);
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_in_element.  "
-								"Xi texture coordinate mapping not calculated");
-							return_code=0;
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_in_element.  Unknown field type");
-						return_code=0;
-					} break;
+					}
 				}
-			}
-
-			/* 5. Store information about what is cached, or clear it if error */
-			if (return_code&&calculate_derivatives&&!(field->derivatives_valid))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_cache_in_element.  "
-					"Derivatives unavailable for field %s of type %s",field->name,
-					Computed_field_type_to_string(field->type));
-				return_code=0;
-			}
-			if (return_code)
-			{
-				if (field->element)
+				if (return_code&&calculate_derivatives&&!(field->derivatives_valid))
 				{
-					DEACCESS(FE_element)(&field->element);
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_cache_in_element.  "
+						"Derivatives unavailable for field %s of type %s",field->name,
+						Computed_field_type_to_string(field));
+					return_code=0;
 				}
-				field->element=ACCESS(FE_element)(element);
-				for (i=0;i<element_dimension;i++)
+				if (return_code)
 				{
-					field->xi[i]=xi[i];
+					if (field->element)
+					{
+						DEACCESS(FE_element)(&field->element);
+					}
+					field->element=ACCESS(FE_element)(element);
+					for (i=0;i<element_dimension;i++)
+					{
+						field->xi[i]=xi[i];
+					}
+					for (;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+					{
+						field->xi[i]=0.0;
+					}
 				}
-				for (;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+				else
 				{
-					field->xi[i]=0.0;
-				}
-			}
-			else
-			{
-				/* make sure value cache is marked as invalid */
-				if (field->element)
-				{
-					DEACCESS(FE_element)(&field->element);
+					/* make sure value cache is marked as invalid */
+					if (field->element)
+					{
+						DEACCESS(FE_element)(&field->element);
+					}
 				}
 			}
 		}
@@ -4005,11 +4341,51 @@ is avoided.
 	return (return_code);
 } /* Computed_field_evaluate_cache_in_element */
 
-char *Computed_field_evaluate_component_as_string_in_element(
+int Computed_field_evaluate_source_fields_cache_in_element(
+	struct Computed_field *field,struct FE_element *element,FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Calculates the cache values of each source field in <field> in <element>, if it 
+is defined over the element.
+Upon successful return the element values of the source fields are stored in their
+cache.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_field_evaluate_source_fields_cache_in_element);
+	if (field&&element&&xi)
+	{
+		return_code = 1;
+		/* calculate values of source_fields, derivatives only if requested */
+		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		{
+			return_code=
+				Computed_field_evaluate_cache_in_element(
+					field->source_fields[i],element,xi,top_level_element,
+					calculate_derivatives);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_source_fields_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_source_fields_cache_in_element */
+
+char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
@@ -4018,83 +4394,7 @@ FE_VALUE_VALUE, requests the string from it, otherwise calls
 Computed_field_evaluate_cache_in_element and converts the value for
 <component_number> to a string (since result may already be in cache).
 
-The <top_level_element> parameter has the same use as in
-Computed_field_evaluate_cache_in_element.
-
-Some basic field types such as CMISS_NUMBER have special uses in this function.
-It is up to the calling function to DEALLOCATE the returned string.
-???RC.  Allow derivatives to be evaluated as string too?
-==============================================================================*/
-{
-	char *return_string,tmp_string[50];
-
-	ENTER(Computed_field_evaluate_component_as_string_in_element);
-	return_string=(char *)NULL;
-	if (field&&element&&xi&&(0<=component_number)&&
-		(component_number < field->number_of_components))
-	{
-		if ((COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&
-			(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
-		{
-			/* ensure we have FE_element_field_values for element, without
-				 requiring derivatives to be calculated  */
-			if (Computed_field_calculate_FE_element_field_values_for_element(
-				field,/*calculate_derivatives*/0,element,top_level_element))
-			{
-				calculate_FE_element_field_as_string(component_number,
-					field->fe_element_field_values,xi,&return_string);
-			}
-		}
-		else
-		{
-			if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
-			{
-				/* put out the cmiss number as a string */
-				sprintf(tmp_string,"%d",element->cm.number);
-				return_string=duplicate_string(tmp_string);
-			}
-			else
-			{
-				/* write the component value in %g format */
-				if (Computed_field_evaluate_cache_in_element(field,element,xi,
-					top_level_element,/*calculate_derivatives*/0))
-				{
-					sprintf(tmp_string,"%g",field->values[component_number]);
-					return_string=duplicate_string(tmp_string);
-				}
-			}
-		}
-		if (!return_string)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_component_as_string_in_element.  Failed");
-			/* clear the cache since values may be half set */
-			Computed_field_clear_cache(field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_component_as_string_in_element.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Computed_field_evaluate_component_as_string_in_element */
-
-char *Computed_field_evaluate_as_string_in_element(struct Computed_field *field,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
-
-DESCRIPTION :
-Returns a string describing the value/s of the <field> at <element>:<xi>. If the
-field is based on an FE_field but not returning FE_values, it is asked to supply
-the string. Otherwise, a string built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_in_element. The FE_value
-exception is used since it is likely the values are already in the cache in
-most cases, or can be used by other fields again if calculated now.
+Use -1 as the <component_number> if you want all the components.
 
 The <top_level_element> parameter has the same use as in
 Computed_field_evaluate_cache_in_element.
@@ -4109,55 +4409,83 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 	ENTER(Computed_field_evaluate_as_string_in_element);
 	return_string=(char *)NULL;
-	if (field&&element&&xi)
+	if (field&&element&&xi&&(-1<=component_number)&&
+		(component_number < field->number_of_components))
 	{
-		if ((COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&
-			(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
+		if (COMPUTED_FIELD_NEW_TYPES==field->type)
 		{
-			/* ensure we have FE_element_field_values for element, without
-				 requiring derivatives to be calculated  */
-			if (Computed_field_calculate_FE_element_field_values_for_element(
-				field,/*calculate_derivatives*/0,element,top_level_element))
+			if (field->computed_field_evaluate_as_string_in_element_function)
 			{
-				/* component_number of -1 = all components */
-				calculate_FE_element_field_as_string(/*component_number*/-1,
-					field->fe_element_field_values,xi,&return_string);
+				return_string = 
+					field->computed_field_evaluate_as_string_in_element_function(
+					field, component_number, element, xi, top_level_element);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_as_string_in_element.  "
+					"No function defined.");
 			}
 		}
 		else
 		{
-			error=0;
-			if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
+			if ((COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&
+				(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
 			{
-				/* put out the cmiss number as a string */
-				sprintf(tmp_string,"%d",element->cm.number);
-				append_string(&return_string,tmp_string,&error);
+				/* ensure we have FE_element_field_values for element, without
+					requiring derivatives to be calculated  */
+				if (Computed_field_calculate_FE_element_field_values_for_element(
+					field,/*calculate_derivatives*/0,element,top_level_element))
+				{
+					calculate_FE_element_field_as_string(component_number,
+						field->fe_element_field_values,xi,&return_string);
+				}
 			}
 			else
 			{
-				/* write the component values in %g format, comma separated */
-				if (Computed_field_evaluate_cache_in_element(field,element,xi,
-					top_level_element,/*calculate_derivatives*/0))
+				if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
 				{
-					for (i=0;i<field->number_of_components;i++)
+					/* put out the cmiss number as a string */
+					sprintf(tmp_string,"%d",element->cm.number);
+					return_string=duplicate_string(tmp_string);
+				}
+				else
+				{
+					/* write the component value in %g format */
+					if (Computed_field_evaluate_cache_in_element(field,element,xi,
+						top_level_element,/*calculate_derivatives*/0))
 					{
-						if (0<i)
+						if (-1 == component_number)
 						{
-							sprintf(tmp_string,",%g",field->values[i]);
+							for (i=0;i<field->number_of_components;i++)
+							{
+								if (0<i)
+								{
+									sprintf(tmp_string,",%g",field->values[i]);
+								}
+								else
+								{
+									sprintf(tmp_string,"%g",field->values[i]);
+								}
+								append_string(&return_string,tmp_string,&error);
+							}
 						}
 						else
 						{
-							sprintf(tmp_string,"%g",field->values[i]);
+							sprintf(tmp_string,"%g",field->values[component_number]);
+							return_string=duplicate_string(tmp_string);
 						}
-						append_string(&return_string,tmp_string,&error);
 					}
 				}
+			}
+			if (!return_string)
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_as_string_in_element.  Failed");
 			}
 		}
 		if (!return_string)
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_as_string_in_element.  Failed");
 			/* clear the cache since values may be half set */
 			Computed_field_clear_cache(field);
 		}
@@ -4165,12 +4493,84 @@ It is up to the calling function to DEALLOCATE the returned string.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_as_string_in_element.  Invalid argument(s)");
+			"Computed_field_evaluate_as_string_in_element.  "
+			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_string);
 } /* Computed_field_evaluate_as_string_in_element */
+
+char *Computed_field_default_evaluate_as_string_in_element(
+	struct Computed_field *field,int component_number,
+	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+/*******************************************************************************
+LAST MODIFIED : 30 June 2000
+
+DESCRIPTION :
+Returns a string representing the value of <field>.<component_number> at
+<element>:<xi>. Calls Computed_field_evaluate_cache_in_element and converts 
+the value for <component_number> to a string (since result may already be in 
+cache).
+
+Use -1 as the <component_number> if you want all the components.
+
+The <top_level_element> parameter has the same use as in
+Computed_field_evaluate_cache_in_element.
+==============================================================================*/
+{
+	char *return_string,tmp_string[50];
+	int error,i;
+
+	ENTER(Computed_field_default_evaluate_as_string_in_element);
+	return_string=(char *)NULL;
+	if (field&&element&&xi&&(-1<=component_number)&&
+		(component_number < field->number_of_components))
+	{
+		error = 0;
+		/* write the component value in %g format */
+		if (Computed_field_evaluate_cache_in_element(field,element,xi,
+			top_level_element,/*calculate_derivatives*/0))
+		{
+			if (-1 == component_number)
+			{
+				for (i=0;i<field->number_of_components;i++)
+				{
+					if (0<i)
+					{
+						sprintf(tmp_string,",%g",field->values[i]);
+					}
+					else
+					{
+						sprintf(tmp_string,"%g",field->values[i]);
+					}
+					append_string(&return_string,tmp_string,&error);
+				}
+			}
+			else
+			{
+				sprintf(tmp_string,"%g",field->values[component_number]);
+				return_string=duplicate_string(tmp_string);
+			}
+		}
+		if (!return_string)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_default_evaluate_as_string_in_element.  Failed");
+			/* clear the cache since values may be half set */
+			Computed_field_clear_cache(field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_evaluate_as_string_in_element.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_default_evaluate_as_string_in_element */
 
 int Computed_field_evaluate_in_element(struct Computed_field *field,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element,
@@ -4389,595 +4789,603 @@ fields with the name 'coordinates' are quite pervasive.
 		/* does cache need recomputing? */
 		if (node != field->node)
 		{
-			/* 1. Precalculate any source fields that this field depends on */
-			switch(field->type)
+			/* make sure we have allocated values AND derivatives, or nothing */
+			if (!field->values)
 			{
-				case COMPUTED_FIELD_COMPOSE:
+				/* get enough space for derivatives in highest dimension element */
+				if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+					ALLOCATE(field->derivatives,FE_value,
+						MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
 				{
-					/* only calculate the first source_field at this location */
-					return_code=
-						Computed_field_evaluate_cache_at_node(
-						field->source_fields[0],node);
-				} break;
-				case COMPUTED_FIELD_DEFAULT_COORDINATE:
-				{
-					if (Computed_field_get_default_coordinate_source_field_at_node(
-						field,node))
+					if (field->values)
 					{
-						/* calculate values of source_field */
-						return_code=Computed_field_evaluate_cache_at_node(
-							field->source_fields[0],node);
+						DEALLOCATE(field->values);
+					}
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				if (COMPUTED_FIELD_NEW_TYPES == field->type)
+				{
+					if (field->computed_field_evaluate_cache_at_node_function)
+					{
+						return_code = 
+							field->computed_field_evaluate_cache_at_node_function(
+								field, node);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"Computed_field_evaluate_cache_at_node.  "
-							"Could not get default coordinate source_field");
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_EMBEDDED:
-				{
-					/* Need to evaluate the source field in the element and xi described
-						by the fe_field rather than at the node so I do it down below */
-				} break;
-				default:
-				{
-					/* calculate values of source_fields */
-					for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-					{
-						return_code=Computed_field_evaluate_cache_at_node(
-							field->source_fields[i],node);
-					}
-				} break;
-			}
-
-			/* 2. Allocate values and derivative cache */
-			/*???RC Code the same as in Computed_field_evaluate_cache_at_node. Could
-				change to separate cache for node values. See ???RC comments above */
-			if (return_code)
-			{
-				/* make sure we have allocated values AND derivatives, or nothing */
-				if (!field->values)
-				{
-					/* get enough space for derivatives in highest dimension element */
-					if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
-						ALLOCATE(field->derivatives,FE_value,
-							MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
-					{
-						if (field->values)
-						{
-							DEALLOCATE(field->values);
-						}
-						return_code=0;
+							"No function defined.");
+						return_code = 0;
 					}
 				}
-			}
-
-			/* 3. Calculate the field */
-			if (return_code)
-			{
-				switch (field->type)
+				else
 				{
-					case COMPUTED_FIELD_2D_STRAIN:
+					/* 1. Precalculate any source fields that this field depends on */
+					switch(field->type)
 					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
-							"Cannot evaluate gradient at nodes");
-						return_code=0;
-					} break;
-					case COMPUTED_FIELD_ADD:
-					{
-						for (i=0;i<field->number_of_components;i++)
+						case COMPUTED_FIELD_COMPOSE:
 						{
-							field->values[i]=
-								field->source_values[0]*field->source_fields[0]->values[i]+
-								field->source_values[1]*field->source_fields[1]->values[i];
-						}
-					} break;
-					case COMPUTED_FIELD_CLAMP_MAXIMUM:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							if (field->source_fields[0]->values[i] < field->source_values[i])
-							{
-								field->values[i]=field->source_fields[0]->values[i];
-							}
-							else
-							{
-								field->values[i]=field->source_values[i];
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_CLAMP_MINIMUM:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							if (field->source_fields[0]->values[i] > field->source_values[i])
-							{
-								field->values[i]=field->source_fields[0]->values[i];
-							}
-							else
-							{
-								field->values[i]=field->source_values[i];
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_CMISS_NUMBER:
-					{
-						/* simply convert the node number into an FE_value */
-						field->values[0]=(FE_value)get_FE_node_cm_node_identifier(node);
-					} break;
-					case COMPUTED_FIELD_COMPONENT:
-					{
-						field->values[0]=
-							field->source_fields[0]->values[field->component_no];
-					} break;
-					case COMPUTED_FIELD_COMPOSE:
-					{
-						/* The values from the first source field are inverted in the
-							second source field to get element_xi which is evaluated with
-							the third source field */
-						if (return_code = Computed_field_find_element_xi(field->source_fields[1],
-							field->source_fields[0]->values,
-							field->source_fields[0]->number_of_components, &element, xi,
-							field->compose_element_group, (struct User_interface *)NULL,
-							(float *)NULL, (float *)NULL, (float *)NULL))
-						{
-							/* calculate the third source_field at this new location */
+							/* only calculate the first source_field at this location */
 							return_code=
-								Computed_field_evaluate_cache_in_element(
-								field->source_fields[2],element,xi,
-								/*top_level*/(struct FE_element *)NULL,0);
-							for (i=0;i<field->number_of_components;i++)
+								Computed_field_evaluate_cache_at_node(
+									field->source_fields[0],node);
+						} break;
+						case COMPUTED_FIELD_DEFAULT_COORDINATE:
+						{
+							if (Computed_field_get_default_coordinate_source_field_at_node(
+								field,node))
 							{
-								field->values[i]=field->source_fields[2]->values[i];
-							}
-						}
-					} break;
-					case COMPUTED_FIELD_COMPOSITE:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]= *(field->source_fields[i]->values);
-						}
-					} break;
-					case COMPUTED_FIELD_CONSTANT:
-					{
-						/* returns constant vector values, zero derivatives (always) */
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=field->source_values[i];
-						}
-					} break;
-					case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-					{
-						temp=field->source_fields[0]->values;
-						field->values[3] = fabs(*temp);
-						temp++;
-						j = 0;
-						for (i=1;i < field->source_fields[0]->number_of_components;i++)
-						{
-							if (fabs(*temp) > field->values[3])
-							{
-								field->values[3] = fabs(*temp);
-								j = i;
-							}
-							temp++;
-						}
-						temp=field->source_fields[0]->values;
-						for (i=0;i < field->source_fields[0]->number_of_components - 1;i++)
-						{
-							if ( i == j )
-							{
-								/* Skip over the maximum coordinate */
-								temp++;
-							}
-							field->values[i] = *temp / field->values[3];
-							temp++;
-						}
-					} break;
-					case COMPUTED_FIELD_CURVE_LOOKUP:
-					{
-						return_code=Control_curve_get_values_at_parameter(field->curve,
-							field->source_fields[0]->values[0],field->values,
-							/*derivatives*/(FE_value *)NULL);
-					} break;
-					case COMPUTED_FIELD_DEFAULT_COORDINATE:
-					case COMPUTED_FIELD_RC_COORDINATE:
-					{
-						/* once the default_coordinate source field is found, its
-							 calculation is the same as rc_coordinate */
-						return_code=Computed_field_evaluate_rc_coordinate(field,
-							/*element_dimension*/0,/*calculate_derivatives*/0);
-					} break;
-					case COMPUTED_FIELD_DOT_PRODUCT:
-					{
-						field->values[0] = 0.0;
-						temp=field->source_fields[0]->values;
-						temp2=field->source_fields[1]->values;
-						for (i=0;i < field->source_fields[0]->number_of_components;i++)
-						{
-							field->values[0] += *temp * *temp2;
-							temp++;
-							temp2++;
-						}
-					} break;
-					case COMPUTED_FIELD_EDIT_MASK:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=field->source_fields[0]->values[i];
-						}
-					} break;
-					case COMPUTED_FIELD_EMBEDDED:
-					{
-						if (get_FE_nodal_element_xi_value(node,
-							field->fe_field, /* component */ 0,
-							/* version */ 0, FE_NODAL_VALUE, &element, xi))
-						{
-							/* now calculate source_fields[0] */
-							if(Computed_field_evaluate_cache_in_element(
-								field->source_fields[0],element,xi,(struct FE_element *)NULL,0))
-							{
-								for (i=0;i<field->number_of_components;i++)
-								{
-									field->values[i] = field->source_fields[0]->values[i];
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-						else
-						{
-							return_code = 0;
-						}
-					} break;
-					case COMPUTED_FIELD_EXTERNAL:
-					{
-						total_values = field->number_of_source_values;
-						for (i = 0 ; i < field->number_of_source_fields ; i++)
-						{
-							total_values+=field->source_fields[i]->number_of_components;
-						}
-						if (ALLOCATE(temp_string, char, total_values * 12 + 2))
-						{
-							k = 0;
-							for (i = 0 ; i < field->number_of_source_values ; i++)
-							{
-								sprintf(temp_string + k, "%10.5e ", field->source_values[i]);
-								k += 12;
-							}
-							for (i = 0 ; i < field->number_of_source_fields ; i++)
-							{
-								for (j = 0 ; j < field->source_fields[i]->number_of_components ; j++)
-								{
-									sprintf(temp_string + k, "%10.5e ", field->source_fields[i]->values[j]);
-									k += 12;
-								}
-							}
-							sprintf(temp_string + k, "\n");
-							Child_process_send_string_to_stdin(field->child_process,temp_string);
-							DEALLOCATE(temp_string);
-							if (temp_string = Child_process_get_line_from_stdout(field->child_process,
-								field->timeout))
-							{
-								k = 0;
-								for (i = 0 ; i < field->number_of_components ; i++)
-								{
-									sscanf(temp_string + k, "%f%n", &(field->values[i]), &j);
-									k += j;
-								}
-								DEALLOCATE(temp_string);
+								/* calculate values of source_field */
+								return_code=Computed_field_evaluate_cache_at_node(
+									field->source_fields[0],node);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_at_node."
-									"  Invalid response from child process");
-								return_code = 0;
+									"Computed_field_evaluate_cache_at_node.  "
+									"Could not get default coordinate source_field");
+								return_code=0;
 							}
-						}
-						else
+						} break;
+						case COMPUTED_FIELD_EMBEDDED:
 						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_at_node."
-								"  Unable to allocate temporary string");
-							return_code = 0;
-						}
-					} break;
-					case COMPUTED_FIELD_FIBRE_AXES:
-					case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
-							"Cannot evaluate fibre_axes/fibre_sheet_axes at nodes");
-						return_code=0;
-					} break;
-					case COMPUTED_FIELD_FINITE_ELEMENT:
-					{
-						double double_value;
-						enum Value_type value_type;
-						float float_value;
-						int int_value;
-						struct FE_field_component fe_field_component;
-						
-						/* not very efficient - should cache FE_node_field or similar */
-						fe_field_component.field=field->fe_field;
-						value_type=get_FE_field_value_type(field->fe_field);
-						for (i=0;(i<field->number_of_components)&&return_code;i++)
+							/* Need to evaluate the source field in the element and xi described
+								by the fe_field rather than at the node so I do it down below */
+						} break;
+						default:
 						{
-							fe_field_component.number=i;
-							switch (value_type)
+							/* calculate values of source_fields */
+							for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
 							{
-								case DOUBLE_VALUE:
+								return_code=Computed_field_evaluate_cache_at_node(
+									field->source_fields[i],node);
+							}
+						} break;
+					}
+
+					/* 2. Calculate the field */
+					if (return_code)
+					{
+						switch (field->type)
+						{
+							case COMPUTED_FIELD_2D_STRAIN:
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_at_node.  "
+									"Cannot evaluate gradient at nodes");
+								return_code=0;
+							} break;
+							case COMPUTED_FIELD_ADD:
+							{
+								for (i=0;i<field->number_of_components;i++)
 								{
-									return_code=get_FE_nodal_double_value(node,
-										&fe_field_component,field->version_number,
-										field->nodal_value_type,&double_value);
-									field->values[i] = (FE_value)double_value;
-								} break;
-								case FE_VALUE_VALUE:
+									field->values[i]=
+										field->source_values[0]*field->source_fields[0]->values[i]+
+										field->source_values[1]*field->source_fields[1]->values[i];
+								}
+							} break;
+							case COMPUTED_FIELD_CLAMP_MAXIMUM:
+							{
+								for (i=0;i<field->number_of_components;i++)
 								{
-									return_code=get_FE_nodal_FE_value_value(node,
-										&fe_field_component,field->version_number,
-										field->nodal_value_type,&(field->values[i]));
-								} break;
-								case FLT_VALUE:
+									if (field->source_fields[0]->values[i] < field->source_values[i])
+									{
+										field->values[i]=field->source_fields[0]->values[i];
+									}
+									else
+									{
+										field->values[i]=field->source_values[i];
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_CLAMP_MINIMUM:
+							{
+								for (i=0;i<field->number_of_components;i++)
 								{
-									return_code=get_FE_nodal_float_value(node,&fe_field_component,
-										field->version_number,field->nodal_value_type,&float_value);
-									field->values[i] = (FE_value)float_value;
-								} break;
-								case INT_VALUE:
+									if (field->source_fields[0]->values[i] > field->source_values[i])
+									{
+										field->values[i]=field->source_fields[0]->values[i];
+									}
+									else
+									{
+										field->values[i]=field->source_values[i];
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_CMISS_NUMBER:
+							{
+								/* simply convert the node number into an FE_value */
+								field->values[0]=(FE_value)get_FE_node_cm_node_identifier(node);
+							} break;
+							case COMPUTED_FIELD_COMPONENT:
+							{
+								field->values[0]=
+									field->source_fields[0]->values[field->component_no];
+							} break;
+							case COMPUTED_FIELD_COMPOSE:
+							{
+								/* The values from the first source field are inverted in the
+									second source field to get element_xi which is evaluated with
+									the third source field */
+								if (return_code = Computed_field_find_element_xi(field->source_fields[1],
+									field->source_fields[0]->values,
+									field->source_fields[0]->number_of_components, &element, xi,
+									field->compose_element_group, (struct User_interface *)NULL,
+									(float *)NULL, (float *)NULL, (float *)NULL))
 								{
-									return_code=get_FE_nodal_int_value(node,&fe_field_component,
-										field->version_number,field->nodal_value_type,&int_value);
-									field->values[i] = (FE_value)int_value;
-								} break;
-								default:
+									/* calculate the third source_field at this new location */
+									return_code=
+										Computed_field_evaluate_cache_in_element(
+											field->source_fields[2],element,xi,
+											/*top_level*/(struct FE_element *)NULL,0);
+									for (i=0;i<field->number_of_components;i++)
+									{
+										field->values[i]=field->source_fields[2]->values[i];
+									}
+								}
+							} break;
+							case COMPUTED_FIELD_COMPOSITE:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]= *(field->source_fields[i]->values);
+								}
+							} break;
+							case COMPUTED_FIELD_CONSTANT:
+							{
+								/* returns constant vector values, zero derivatives (always) */
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=field->source_values[i];
+								}
+							} break;
+							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
+							{
+								temp=field->source_fields[0]->values;
+								field->values[3] = fabs(*temp);
+								temp++;
+								j = 0;
+								for (i=1;i < field->source_fields[0]->number_of_components;i++)
+								{
+									if (fabs(*temp) > field->values[3])
+									{
+										field->values[3] = fabs(*temp);
+										j = i;
+									}
+									temp++;
+								}
+								temp=field->source_fields[0]->values;
+								for (i=0;i < field->source_fields[0]->number_of_components - 1;i++)
+								{
+									if ( i == j )
+									{
+										/* Skip over the maximum coordinate */
+										temp++;
+									}
+									field->values[i] = *temp / field->values[3];
+									temp++;
+								}
+							} break;
+							case COMPUTED_FIELD_CURVE_LOOKUP:
+							{
+								return_code=Control_curve_get_values_at_parameter(field->curve,
+									field->source_fields[0]->values[0],field->values,
+									/*derivatives*/(FE_value *)NULL);
+							} break;
+							case COMPUTED_FIELD_DEFAULT_COORDINATE:
+							case COMPUTED_FIELD_RC_COORDINATE:
+							{
+								/* once the default_coordinate source field is found, its
+									calculation is the same as rc_coordinate */
+								return_code=Computed_field_evaluate_rc_coordinate(field,
+									/*element_dimension*/0,/*calculate_derivatives*/0);
+							} break;
+							case COMPUTED_FIELD_DOT_PRODUCT:
+							{
+								field->values[0] = 0.0;
+								temp=field->source_fields[0]->values;
+								temp2=field->source_fields[1]->values;
+								for (i=0;i < field->source_fields[0]->number_of_components;i++)
+								{
+									field->values[0] += *temp * *temp2;
+									temp++;
+									temp2++;
+								}
+							} break;
+							case COMPUTED_FIELD_EDIT_MASK:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=field->source_fields[0]->values[i];
+								}
+							} break;
+							case COMPUTED_FIELD_EMBEDDED:
+							{
+								if (get_FE_nodal_element_xi_value(node,
+									field->fe_field, /* component */ 0,
+									/* version */ 0, FE_NODAL_VALUE, &element, xi))
+								{
+									/* now calculate source_fields[0] */
+									if(Computed_field_evaluate_cache_in_element(
+										field->source_fields[0],element,xi,(struct FE_element *)NULL,0))
+									{
+										for (i=0;i<field->number_of_components;i++)
+										{
+											field->values[i] = field->source_fields[0]->values[i];
+										}
+									}
+									else
+									{
+										return_code = 0;
+									}
+								}
+								else
+								{
+									return_code = 0;
+								}
+							} break;
+							case COMPUTED_FIELD_EXTERNAL:
+							{
+								total_values = field->number_of_source_values;
+								for (i = 0 ; i < field->number_of_source_fields ; i++)
+								{
+									total_values+=field->source_fields[i]->number_of_components;
+								}
+								if (ALLOCATE(temp_string, char, total_values * 12 + 2))
+								{
+									k = 0;
+									for (i = 0 ; i < field->number_of_source_values ; i++)
+									{
+										sprintf(temp_string + k, "%10.5e ", field->source_values[i]);
+										k += 12;
+									}
+									for (i = 0 ; i < field->number_of_source_fields ; i++)
+									{
+										for (j = 0 ; j < field->source_fields[i]->number_of_components ; j++)
+										{
+											sprintf(temp_string + k, "%10.5e ", field->source_fields[i]->values[j]);
+											k += 12;
+										}
+									}
+									sprintf(temp_string + k, "\n");
+									Child_process_send_string_to_stdin(field->child_process,temp_string);
+									DEALLOCATE(temp_string);
+									if (temp_string = Child_process_get_line_from_stdout(field->child_process,
+										field->timeout))
+									{
+										k = 0;
+										for (i = 0 ; i < field->number_of_components ; i++)
+										{
+											sscanf(temp_string + k, "%f%n", &(field->values[i]), &j);
+											k += j;
+										}
+										DEALLOCATE(temp_string);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"Computed_field_evaluate_cache_at_node."
+											"  Invalid response from child process");
+										return_code = 0;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_evaluate_cache_at_node."
+										"  Unable to allocate temporary string");
+									return_code = 0;
+								}
+							} break;
+							case COMPUTED_FIELD_FIBRE_AXES:
+							case COMPUTED_FIELD_FIBRE_SHEET_AXES:
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_at_node.  "
+									"Cannot evaluate fibre_axes/fibre_sheet_axes at nodes");
+								return_code=0;
+							} break;
+							case COMPUTED_FIELD_FINITE_ELEMENT:
+							{
+								double double_value;
+								enum Value_type value_type;
+								float float_value;
+								int int_value;
+								struct FE_field_component fe_field_component;
+						
+								/* not very efficient - should cache FE_node_field or similar */
+								fe_field_component.field=field->fe_field;
+								value_type=get_FE_field_value_type(field->fe_field);
+								for (i=0;(i<field->number_of_components)&&return_code;i++)
+								{
+									fe_field_component.number=i;
+									switch (value_type)
+									{
+										case DOUBLE_VALUE:
+										{
+											return_code=get_FE_nodal_double_value(node,
+												&fe_field_component,field->version_number,
+												field->nodal_value_type,&double_value);
+											field->values[i] = (FE_value)double_value;
+										} break;
+										case FE_VALUE_VALUE:
+										{
+											return_code=get_FE_nodal_FE_value_value(node,
+												&fe_field_component,field->version_number,
+												field->nodal_value_type,&(field->values[i]));
+										} break;
+										case FLT_VALUE:
+										{
+											return_code=get_FE_nodal_float_value(node,&fe_field_component,
+												field->version_number,field->nodal_value_type,&float_value);
+											field->values[i] = (FE_value)float_value;
+										} break;
+										case INT_VALUE:
+										{
+											return_code=get_FE_nodal_int_value(node,&fe_field_component,
+												field->version_number,field->nodal_value_type,&int_value);
+											field->values[i] = (FE_value)int_value;
+										} break;
+										default:
+										{
+											display_message(ERROR_MESSAGE,
+												"Computed_field_evaluate_cache_at_node.  "
+												"Unsupported value type %s in finite_element field",
+												Value_type_string(value_type));
+											return_code=0;
+										}
+									}
+								}
+								if (!return_code)
 								{
 									display_message(ERROR_MESSAGE,
 										"Computed_field_evaluate_cache_at_node.  "
-										"Unsupported value type %s in finite_element field",
-										Value_type_string(value_type));
-									return_code=0;
+										"Error evaluating finite_element field at node");
 								}
-							}
-						}
-						if (!return_code)
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_at_node.  "
-								"Error evaluating finite_element field at node");
-						}
-					} break;
-					case COMPUTED_FIELD_GRADIENT:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
-							"Cannot evaluate gradient at nodes");
-						return_code=0;
-					} break;
-					case COMPUTED_FIELD_MAGNITUDE:
-					{
-						field->values[0]=0.0;
-						temp=field->source_fields[0]->values;
-						for (i=field->source_fields[0]->number_of_components;0<i;i--)
-						{
-							field->values[0] += ((*temp)*(*temp));
-							temp++;
-						}
-						field->values[0]=sqrt(field->values[0]);
-					} break;
-					case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME: 			 
-					{						
-						fe_field_component.field=field->fe_field;
-						value_type=get_FE_field_value_type(field->fe_field);
-						for (i=0;(i<field->number_of_components)&&return_code;i++)
-						{
-							fe_field_component.number=i;
-							if (FE_nodal_value_version_exists(node,&fe_field_component,
-								field->version_number,field->nodal_value_type))
+							} break;
+							case COMPUTED_FIELD_GRADIENT:
 							{
-								switch (value_type)
-								{									
-									case FE_VALUE_ARRAY_VALUE:
-									{										
-										return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
-											&fe_field_component,field->version_number,
-											field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
-											&(field->values[i]));									
-									} break;
-								
-									case SHORT_ARRAY_VALUE:
-									{
-										return_code=get_FE_nodal_short_array_value_at_FE_value_time(
-											node,&fe_field_component,field->version_number,
-											field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
-											&short_value);
-										field->values[i] = (FE_value)short_value;									
-									} break;	
-									case DOUBLE_ARRAY_VALUE: 				
-									case FLT_ARRAY_VALUE:
-									case INT_ARRAY_VALUE:			
-									case UNSIGNED_ARRAY_VALUE:
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_evaluate_cache_at_node. value type %s "
-											"not yet supported. Write the code!",
-											Value_type_string(value_type));
-										return_code=0;
-									}break;
-									default:
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_evaluate_cache_at_node.  "
-											"Unsupported value type %s in node_value field",
-											Value_type_string(value_type));
-										return_code=0;
-									}
-								}
-							}
-							else
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_at_node.  "
+									"Cannot evaluate gradient at nodes");
+								return_code=0;
+							} break;
+							case COMPUTED_FIELD_MAGNITUDE:
 							{
-								/* use 0 for all undefined components */
-								field->values[i]=0.0;
-							}
-						}
-						if (!return_code)
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_at_node.  "
-								"Error evaluating node_value field at node");
-						}
-					} break;
-					case COMPUTED_FIELD_NODE_VALUE:
-					{					
-						fe_field_component.field=field->fe_field;
-						value_type=get_FE_field_value_type(field->fe_field);
-						for (i=0;(i<field->number_of_components)&&return_code;i++)
-						{
-							fe_field_component.number=i;
-							if (FE_nodal_value_version_exists(node,&fe_field_component,
-								field->version_number,field->nodal_value_type))
-							{
-								switch (value_type)
+								field->values[0]=0.0;
+								temp=field->source_fields[0]->values;
+								for (i=field->source_fields[0]->number_of_components;0<i;i--)
 								{
-									case DOUBLE_VALUE:
+									field->values[0] += ((*temp)*(*temp));
+									temp++;
+								}
+								field->values[0]=sqrt(field->values[0]);
+							} break;
+							case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME: 			 
+							{						
+								fe_field_component.field=field->fe_field;
+								value_type=get_FE_field_value_type(field->fe_field);
+								for (i=0;(i<field->number_of_components)&&return_code;i++)
+								{
+									fe_field_component.number=i;
+									if (FE_nodal_value_version_exists(node,&fe_field_component,
+										field->version_number,field->nodal_value_type))
 									{
-										return_code=get_FE_nodal_double_value(node,
-											&fe_field_component,field->version_number,
-											field->nodal_value_type,&double_value);
-										field->values[i] = (FE_value)double_value;
-									} break;
-									case FE_VALUE_VALUE:
+										switch (value_type)
+										{									
+											case FE_VALUE_ARRAY_VALUE:
+											{										
+												return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
+													&fe_field_component,field->version_number,
+													field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
+													&(field->values[i]));									
+											} break;
+								
+											case SHORT_ARRAY_VALUE:
+											{
+												return_code=get_FE_nodal_short_array_value_at_FE_value_time(
+													node,&fe_field_component,field->version_number,
+													field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
+													&short_value);
+												field->values[i] = (FE_value)short_value;									
+											} break;	
+											case DOUBLE_ARRAY_VALUE: 				
+											case FLT_ARRAY_VALUE:
+											case INT_ARRAY_VALUE:			
+											case UNSIGNED_ARRAY_VALUE:
+											{
+												display_message(ERROR_MESSAGE,
+													"Computed_field_evaluate_cache_at_node. value type %s "
+													"not yet supported. Write the code!",
+													Value_type_string(value_type));
+												return_code=0;
+											}break;
+											default:
+											{
+												display_message(ERROR_MESSAGE,
+													"Computed_field_evaluate_cache_at_node.  "
+													"Unsupported value type %s in node_value field",
+													Value_type_string(value_type));
+												return_code=0;
+											}
+										}
+									}
+									else
 									{
-										return_code=get_FE_nodal_FE_value_value(node,
-											&fe_field_component,field->version_number,
-											field->nodal_value_type,&(field->values[i]));
-									} break;
-									case FLT_VALUE:
-									{
-										return_code=get_FE_nodal_float_value(node,
-											&fe_field_component,field->version_number,
-											field->nodal_value_type,&float_value);
-										field->values[i] = (FE_value)float_value;
-									} break;
-									case INT_VALUE:
-									{
-										return_code=get_FE_nodal_int_value(node,&fe_field_component,
-											field->version_number,field->nodal_value_type,&int_value);
-										field->values[i] = (FE_value)int_value;
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE,
-											"Computed_field_evaluate_cache_at_node.  "
-											"Unsupported value type %s in node_value field",
-											Value_type_string(value_type));
-										return_code=0;
+										/* use 0 for all undefined components */
+										field->values[i]=0.0;
 									}
 								}
-							}
-							else
+								if (!return_code)
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_evaluate_cache_at_node.  "
+										"Error evaluating node_value field at node");
+								}
+							} break;
+							case COMPUTED_FIELD_NODE_VALUE:
+							{					
+								fe_field_component.field=field->fe_field;
+								value_type=get_FE_field_value_type(field->fe_field);
+								for (i=0;(i<field->number_of_components)&&return_code;i++)
+								{
+									fe_field_component.number=i;
+									if (FE_nodal_value_version_exists(node,&fe_field_component,
+										field->version_number,field->nodal_value_type))
+									{
+										switch (value_type)
+										{
+											case DOUBLE_VALUE:
+											{
+												return_code=get_FE_nodal_double_value(node,
+													&fe_field_component,field->version_number,
+													field->nodal_value_type,&double_value);
+												field->values[i] = (FE_value)double_value;
+											} break;
+											case FE_VALUE_VALUE:
+											{
+												return_code=get_FE_nodal_FE_value_value(node,
+													&fe_field_component,field->version_number,
+													field->nodal_value_type,&(field->values[i]));
+											} break;
+											case FLT_VALUE:
+											{
+												return_code=get_FE_nodal_float_value(node,
+													&fe_field_component,field->version_number,
+													field->nodal_value_type,&float_value);
+												field->values[i] = (FE_value)float_value;
+											} break;
+											case INT_VALUE:
+											{
+												return_code=get_FE_nodal_int_value(node,&fe_field_component,
+													field->version_number,field->nodal_value_type,&int_value);
+												field->values[i] = (FE_value)int_value;
+											} break;
+											default:
+											{
+												display_message(ERROR_MESSAGE,
+													"Computed_field_evaluate_cache_at_node.  "
+													"Unsupported value type %s in node_value field",
+													Value_type_string(value_type));
+												return_code=0;
+											}
+										}
+									}
+									else
+									{
+										/* use 0 for all undefined components */
+										field->values[i]=0.0;
+									}
+								}
+								if (!return_code)
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_evaluate_cache_at_node.  "
+										"Error evaluating node_value field at node");
+								}
+							} break;				
+							case COMPUTED_FIELD_OFFSET:
 							{
-								/* use 0 for all undefined components */
-								field->values[i]=0.0;
-							}
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=
+										field->source_values[i] + field->source_fields[0]->values[i];
+								}
+							} break;
+							case COMPUTED_FIELD_PROJECTION:
+							{
+								return_code=Computed_field_evaluate_projection_matrix(field,
+									/*element_dimension*/0, /*calculate_derivatives*/0);
+							} break;
+							case COMPUTED_FIELD_RC_VECTOR:
+							{
+								/* once the default_coordinate source field is found, its
+									calculation is the same as rc_coordinate */
+								return_code=Computed_field_evaluate_rc_vector(field);
+							} break;
+							case COMPUTED_FIELD_SCALE:
+							{
+								for (i=0;i<field->number_of_components;i++)
+								{
+									field->values[i]=
+										field->source_values[i]*field->source_fields[0]->values[i];
+								}
+							} break;
+							case COMPUTED_FIELD_SUM_COMPONENTS:
+							{
+								/* weighted sum of components */
+								temp=field->source_fields[0]->values;
+								sum=0.0;
+								for (i=0;i<field->source_fields[0]->number_of_components;i++)
+								{
+									sum += temp[i]*field->source_values[i];
+								}
+								field->values[0]=sum;
+							} break;
+							case COMPUTED_FIELD_XI_COORDINATES:
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_at_node.  "
+									"Cannot evaluate xi at nodes");
+								return_code=0;
+							} break;
+							case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_at_node.  "
+									"Currently cannot evaluate xi texture coordinates at nodes");
+								return_code=0;
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_evaluate_cache_at_node.  Unknown field type");
+								return_code=0;
+							} break;
 						}
-						if (!return_code)
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_evaluate_cache_at_node.  "
-								"Error evaluating node_value field at node");
-						}
-					} break;				
-					case COMPUTED_FIELD_OFFSET:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=
-								field->source_values[i] + field->source_fields[0]->values[i];
-						}
-					} break;
-					case COMPUTED_FIELD_PROJECTION:
-					{
-						return_code=Computed_field_evaluate_projection_matrix(field,
-							/*element_dimension*/0, /*calculate_derivatives*/0);
-					} break;
-					case COMPUTED_FIELD_RC_VECTOR:
-					{
-						/* once the default_coordinate source field is found, its
-							 calculation is the same as rc_coordinate */
-						return_code=Computed_field_evaluate_rc_vector(field);
-					} break;
-					case COMPUTED_FIELD_SAMPLE_TEXTURE:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
-							"Currently cannot evaluate sample texture at nodes");
-						return_code=0;
-					} break;
-					case COMPUTED_FIELD_SCALE:
-					{
-						for (i=0;i<field->number_of_components;i++)
-						{
-							field->values[i]=
-								field->source_values[i]*field->source_fields[0]->values[i];
-						}
-					} break;
-					case COMPUTED_FIELD_SUM_COMPONENTS:
-					{
-						/* weighted sum of components */
-						temp=field->source_fields[0]->values;
-						sum=0.0;
-						for (i=0;i<field->source_fields[0]->number_of_components;i++)
-						{
-							sum += temp[i]*field->source_values[i];
-						}
-						field->values[0]=sum;
-					} break;
-					case COMPUTED_FIELD_XI_COORDINATES:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
-							"Cannot evaluate xi at nodes");
-						return_code=0;
-					} break;
-					case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
-							"Currently cannot evaluate xi texture coordinates at nodes");
-						return_code=0;
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  Unknown field type");
-						return_code=0;
-					} break;
+					}
 				}
-			}
 
-			/* 4. Store information about what is cached, or clear it if error */
-			if (return_code)
-			{
-				if (field->node)
+				/* Store information about what is cached, or clear it if error */
+				if (return_code)
 				{
-					DEACCESS(FE_node)(&field->node);
+					if (field->node)
+					{
+						DEACCESS(FE_node)(&field->node);
+					}
+					field->node=ACCESS(FE_node)(node);
 				}
-				field->node=ACCESS(FE_node)(node);
-			}
-			else
-			{
-				/* make sure value cache is marked as invalid */
-				if (field->node)
+				else
 				{
-					DEACCESS(FE_node)(&field->node);
+					/* make sure value cache is marked as invalid */
+					if (field->node)
+					{
+						DEACCESS(FE_node)(&field->node);
+					}
 				}
 			}
 		}
@@ -4993,10 +5401,47 @@ fields with the name 'coordinates' are quite pervasive.
 	return (return_code);
 } /* Computed_field_evaluate_cache_at_node */
 
-char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
-	struct FE_node *node)
+int Computed_field_evaluate_source_fields_cache_at_node(
+	struct Computed_field *field,struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 17 October 1999
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Calculates the cache values of each source field in <field> at <node>, if it 
+is defined.
+Upon successful return the node values of the source fields are stored in their
+cache.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_evaluate_source_fields_cache_at_node);
+	if (field&&node)
+	{
+		return_code = 1;
+		/* calculate values of source_fields */
+		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		{
+			return_code=Computed_field_evaluate_cache_at_node(
+				field->source_fields[i],node);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_source_fields_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_source_fields_cache_at_node */
+
+char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
+	int component_number, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 3 July 2000
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. If the
@@ -5005,6 +5450,8 @@ the string. Otherwise, a string built up of comma separated values evaluated
 for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
 is used since it is likely the values are already in the cache in most cases,
 or can be used by other fields again if calculated now.
+The <component_number> indicates which component to calculate.  Use -1 to 
+create a string which represents all the components.
 Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
@@ -5014,66 +5461,108 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 	ENTER(Computed_field_evaluate_as_string_at_node);
 	return_string=(char *)NULL;
-	if (field&&node)
+	if (field&&node&&(component_number >= -1)&&
+		(component_number<field->number_of_components))
 	{
-		if (((COMPUTED_FIELD_FINITE_ELEMENT==field->type)||
-			(COMPUTED_FIELD_NODE_VALUE==field->type))&&
-			(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
+		if (COMPUTED_FIELD_NEW_TYPES==field->type)
 		{
-			if (get_FE_nodal_value_as_string(node,field->fe_field,
-				/*component_number*/0,field->version_number,field->nodal_value_type,
-				&return_string))
+			if (field->computed_field_evaluate_as_string_at_node_function)
 			{
-				error=0;
-				for (i=1;i<field->number_of_components;i++)
-				{
-					if (get_FE_nodal_value_as_string(node,field->fe_field,
-						i,field->version_number,field->nodal_value_type,&temp_string))
-					{
-						append_string(&return_string,",",&error);
-						append_string(&return_string,temp_string,&error);
-						DEALLOCATE(temp_string);
-					}
-				}
+				return_string = 
+					field->computed_field_evaluate_as_string_at_node_function(
+					field, component_number, node);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_as_string_at_node.  "
+					"No function defined.");
 			}
 		}
 		else
 		{
-			error=0;
-			if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
+			if (((COMPUTED_FIELD_FINITE_ELEMENT==field->type)||
+				(COMPUTED_FIELD_NODE_VALUE==field->type))&&
+				(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
 			{
-				/* put out the cmiss number as a string */
-				sprintf(tmp_string,"%d",get_FE_node_cm_node_identifier(node));
-				append_string(&return_string,tmp_string,&error);
-			}
-			else
-			{
-				/* write the component values in %g format, comma separated */
-				if (Computed_field_evaluate_cache_at_node(field,node))
+				if (-1 == component_number)
 				{
-					for (i=0;i<field->number_of_components;i++)
+					if (get_FE_nodal_value_as_string(node,field->fe_field,
+						/*component_number*/0,field->version_number,field->nodal_value_type,
+						&return_string))
 					{
-						if (0<i)
+						error=0;
+						for (i=1;i<field->number_of_components;i++)
 						{
-							sprintf(tmp_string,",%g",field->values[i]);
+							if (get_FE_nodal_value_as_string(node,field->fe_field,
+								i,field->version_number,field->nodal_value_type,&temp_string))
+							{
+								append_string(&return_string,",",&error);
+								append_string(&return_string,temp_string,&error);
+								DEALLOCATE(temp_string);
+							}
 						}
-						else
-						{
-							sprintf(tmp_string,"%g",field->values[i]);
-						}
-						append_string(&return_string,tmp_string,&error);
 					}
 				}
 				else
 				{
-					error=1;
+					if (get_FE_nodal_value_as_string(node,field->fe_field,
+						component_number,field->version_number,field->nodal_value_type,
+						&return_string))
+					{
+						error=0;
+					}
 				}
+			}
+			else
+			{
+				error=0;
+				if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
+				{
+					/* put out the cmiss number as a string */
+					sprintf(tmp_string,"%d",get_FE_node_cm_node_identifier(node));
+					append_string(&return_string,tmp_string,&error);
+				}
+				else
+				{
+					/* write the component values in %g format, comma separated */
+					if (Computed_field_evaluate_cache_at_node(field,node))
+					{
+						if (-1 == component_number)
+						{
+							for (i=0;i<field->number_of_components;i++)
+							{
+								if (0<i)
+								{
+									sprintf(tmp_string,",%g",field->values[i]);
+								}
+								else
+								{
+									sprintf(tmp_string,"%g",field->values[i]);
+								}
+							append_string(&return_string,tmp_string,&error);
+							}
+						}
+						else
+						{
+							sprintf(tmp_string,"%g",field->values[component_number]);
+							append_string(&return_string,tmp_string,&error);
+						}
+					}
+					else
+					{
+						error=1;
+					}
+				}
+			}
+			if (!return_string)
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_as_string_at_node.  Failed");
 			}
 		}
 		if (!return_string)
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_as_string_at_node.  Failed");
 			/* clear the cache since values may be half set */
 			Computed_field_clear_cache(field);
 		}
@@ -5087,6 +5576,74 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 	return (return_string);
 } /* Computed_field_evaluate_as_string_at_node */
+
+char *Computed_field_default_evaluate_as_string_at_node(
+	struct Computed_field *field, int component_number, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns a string describing the value/s of the <field> at the <node>. A string 
+built up of comma separated values evaluated
+for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
+is used since it is likely the values are already in the cache in most cases,
+or can be used by other fields again if calculated now.
+The <component_number> indicates which component to calculate.  Use -1 to 
+create a string which represents all the components.
+It is up to the calling function to DEALLOCATE the returned string.
+==============================================================================*/
+{
+	char *return_string,tmp_string[50];
+	int error,i;
+
+	ENTER(Computed_field_evaluate_as_string_at_node);
+	return_string=(char *)NULL;
+	if (field&&node&&(component_number >= -1)&&
+		(component_number<field->number_of_components))
+	{
+		error = 0;
+		/* write the component values in %g format, comma separated */
+		if (Computed_field_evaluate_cache_at_node(field,node))
+		{
+			if (-1 == component_number)
+			{
+				for (i=0;i<field->number_of_components;i++)
+				{
+					if (0<i)
+					{
+						sprintf(tmp_string,",%g",field->values[i]);
+					}
+					else
+					{
+						sprintf(tmp_string,"%g",field->values[i]);
+					}
+					append_string(&return_string,tmp_string,&error);
+				}
+			}
+			else
+			{
+				sprintf(tmp_string,"%g",field->values[component_number]);
+				return_string=duplicate_string(tmp_string);
+			}
+		}
+		if (!return_string)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_default_evaluate_as_string_at_node.  Failed");
+			/* clear the cache since values may be half set */
+			Computed_field_clear_cache(field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_evaluate_as_string_at_node.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_default_evaluate_as_string_at_node */
 
 int Computed_field_evaluate_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values)
@@ -5170,389 +5727,41 @@ should not be managed at the time it is modified by this function.
 	ENTER(Computed_field_set_values_at_node);
 	if (field&&node&&values)
 	{
-		return_code=1;
-		switch (field->type)
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			case COMPUTED_FIELD_CLAMP_MAXIMUM:
+			if (field->computed_field_set_values_at_node_function)
 			{
-				/* clamps to limits of maximums when setting values too */
-				if (ALLOCATE(source_values,FE_value,field->number_of_components))
-				{
-					for (i=0;i<field->number_of_components;i++)
-					{
-						if (values[i] > field->source_values[i])
-						{
-							source_values[i] = field->source_values[i];
-						}
-						else
-						{
-							source_values[i] = values[i];
-						}
-					}
-					return_code=Computed_field_set_values_at_node(
-						field->source_fields[0],node,source_values);
-					DEALLOCATE(source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_CLAMP_MINIMUM:
+				return_code = 
+					field->computed_field_set_values_at_node_function(
+					field, node, values);
+			}
+			else
 			{
-				/* clamps to limits of minimums when setting values too */
-				if (ALLOCATE(source_values,FE_value,field->number_of_components))
-				{
-					for (i=0;i<field->number_of_components;i++)
-					{
-						if (values[i] < field->source_values[i])
-						{
-							source_values[i] = field->source_values[i];
-						}
-						else
-						{
-							source_values[i] = values[i];
-						}
-					}
-					return_code=Computed_field_set_values_at_node(
-						field->source_fields[0],node,source_values);
-					DEALLOCATE(source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_COMPONENT:
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_values_at_node.  "
+					"No function defined.");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			return_code=1;
+			switch (field->type)
 			{
-				/* need current field values to partially set */
-				if (ALLOCATE(source_values,FE_value,
-					field->source_fields[0]->number_of_components))
+				case COMPUTED_FIELD_CLAMP_MAXIMUM:
 				{
-					if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-						source_values))
-					{
-						/* set value of the component leaving other components intact */
-						source_values[field->component_no] = values[0];
-						return_code=Computed_field_set_values_at_node(
-							field->source_fields[0],node,source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-					DEALLOCATE(source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_COMPOSITE:
-			{
-				/* set values of individual scalar fields */
-				for (i=0;(i<field->number_of_components)&&return_code;i++)
-				{
-					return_code=Computed_field_set_values_at_node(
-						field->source_fields[i],node,&(values[i]));
-				}
-			} break;
-			case COMPUTED_FIELD_DEFAULT_COORDINATE:
-			{
-				FE_value non_rc_coordinates[3];
-				struct Coordinate_system rc_coordinate_system;
-
-				if (Computed_field_get_default_coordinate_source_field_at_node(
-					field,node))
-				{
-					/* convert RC values back into source coordinate system */
-					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-					return_code=
-						convert_Coordinate_system(&rc_coordinate_system,values,
-							&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
-							/*jacobian*/(float *)NULL)&&
-						Computed_field_set_values_at_node(field->source_fields[0],
-							node,non_rc_coordinates);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_at_node.  "
-						"Could not get default coordinate source_field");
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_EDIT_MASK:
-			{
-				/* need current field values to partially set */
-				if (ALLOCATE(source_values,FE_value,
-					field->source_fields[0]->number_of_components))
-				{
-					if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-						source_values))
-					{
-						/* set value of the component leaving other components intact */
-						for (i=0;i<field->number_of_components;i++)
-						{
-							if (field->source_values[i])
-							{
-								source_values[i] = values[i];
-							}
-						}
-						return_code=Computed_field_set_values_at_node(
-							field->source_fields[0],node,source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-					DEALLOCATE(source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_FINITE_ELEMENT:
-			{
-				double double_value;
-				enum Value_type value_type;
-				float float_value;
-				int int_value;
-				struct FE_field_component fe_field_component;
-
-				fe_field_component.field=field->fe_field;
-				value_type=get_FE_field_value_type(field->fe_field);
-				for (i=0;(i<field->number_of_components)&&return_code;i++)
-				{
-					fe_field_component.number=i;
-					/* set values all versions; to set values for selected version only,
-						 use COMPUTED_FIELD_NODE_VALUE instead */
-					k=get_FE_node_field_component_number_of_versions(node,
-						field->fe_field,i);
-					for (j=0;(j<k)&&return_code;j++)
-					{
-						switch (value_type)
-						{
-							case DOUBLE_VALUE:
-							{
-								double_value=(double)values[i];
-								return_code=set_FE_nodal_double_value(node,
-									&fe_field_component,j,field->nodal_value_type,double_value);
-							} break;
-							case FE_VALUE_VALUE:
-							{
-								return_code=set_FE_nodal_FE_value_value(node,
-									&fe_field_component,j,field->nodal_value_type,values[i]);
-							} break;
-							case FLT_VALUE:
-							{
-								float_value=(float)values[i];
-								return_code=set_FE_nodal_float_value(node,
-									&fe_field_component,j,field->nodal_value_type,float_value);
-							} break;
-							case INT_VALUE:
-							{
-								int_value=(int)floor(values[i]+0.5);
-								return_code=set_FE_nodal_float_value(node,
-									&fe_field_component,j,field->nodal_value_type,int_value);
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_at_node.  "
-									"Could not set finite_element field %s at node",field->name);
-								return_code=0;
-							}
-						}
-					}
-				}
-				if (!return_code)
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_at_node.  "
-						"Could not set finite_element field %s at node",field->name);
-				}
-			} break;
-			case COMPUTED_FIELD_MAGNITUDE:
-			{
-				FE_value magnitude;
-
-				/* need current vector field values "magnify" */
-				if (ALLOCATE(source_values,FE_value,
-					field->source_fields[0]->number_of_components))
-				{
-					if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-						source_values))
-					{
-						/* if the source field is not a zero vector, set its magnitude to
-							 the given value */
-						magnitude = 0.0;
-						for (i=0;i<field->number_of_components;i++)
-						{
-							magnitude += source_values[i]*source_values[i];
-						}
-						if (0.0 < magnitude)
-						{
-							magnitude = values[0] / magnitude;
-							for (i=0;i<field->number_of_components;i++)
-							{
-								source_values[i] *= magnitude;
-							}
-							return_code=Computed_field_set_values_at_node(
-								field->source_fields[0],node,source_values);
-						}
-						else
-						{
-							/* not an error; just a warning */
-							display_message(WARNING_MESSAGE,
-								"Magnitude field %s cannot be inverted for zero vector",
-								field->name);
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-					DEALLOCATE(source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-			{
-				display_message(ERROR_MESSAGE,"Computed_field_set_values_at_node. "
-					" %s not implemented yet. Write the code!",field->name);
-				/*If we ever need to write the code for this, make it so that we set the array */
-				/*values based upon the field->time ONLY if the time correspondes EXACTLY to an*/
-				/* array index. No "tking the nearest one" or anything nasty like that */
-				return_code=0;
-			}break;	
-			case COMPUTED_FIELD_NODE_VALUE:
-			{
-				double double_value;
-				enum Value_type value_type;
-				float float_value;
-				int int_value;
-				struct FE_field_component fe_field_component;
-
-				fe_field_component.field=field->fe_field;
-				value_type=get_FE_field_value_type(field->fe_field);
-				for (i=0;(i<field->number_of_components)&&return_code;i++)
-				{
-					fe_field_component.number=i;
-					/* only set nodal value/versions that exist */
-					if (FE_nodal_value_version_exists(node,&fe_field_component,
-						field->version_number,field->nodal_value_type))
-					{
-						switch (value_type)
-						{
-							case DOUBLE_VALUE:
-							{
-								double_value=(double)values[i];
-								return_code=set_FE_nodal_double_value(node,
-									&fe_field_component,j,field->nodal_value_type,double_value);
-							} break;
-							case FE_VALUE_VALUE:
-							{
-								return_code=set_FE_nodal_FE_value_value(node,
-									&fe_field_component,j,field->nodal_value_type,values[i]);
-							} break;
-							case FLT_VALUE:
-							{
-								float_value=(float)values[i];
-								return_code=set_FE_nodal_float_value(node,
-									&fe_field_component,j,field->nodal_value_type,float_value);
-							} break;
-							case INT_VALUE:
-							{
-								int_value=(int)floor(values[i]+0.5);
-								return_code=set_FE_nodal_float_value(node,
-									&fe_field_component,j,field->nodal_value_type,int_value);
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_at_node.  "
-									"Could not set finite_element field %s at node",field->name);
-								return_code=0;
-							}
-						}
-					}
-				}
-				if (!return_code)
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_at_node.  "
-						"Could not set node_value field at node",field->name);
-					return_code=0;
-				}
-			} break;			
-			case COMPUTED_FIELD_OFFSET:
-			{
-				/* reverse the offset */
-				if (ALLOCATE(source_values,FE_value,field->number_of_components))
-				{
-					for (i=0;i<field->number_of_components;i++)
-					{
-						source_values[i] = values[i] - field->source_values[i];
-					}
-					return_code=Computed_field_set_values_at_node(
-						field->source_fields[0],node,source_values);
-					DEALLOCATE(source_values);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_RC_COORDINATE:
-			{
-				FE_value non_rc_coordinates[3];
-				struct Coordinate_system rc_coordinate_system;
-
-				/* convert RC values back into source coordinate system */
-				rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-				return_code=
-					convert_Coordinate_system(&rc_coordinate_system,values,
-						&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
-						/*jacobian*/(float *)NULL)&&
-					Computed_field_set_values_at_node(field->source_fields[0],
-						node,non_rc_coordinates);
-			} break;
-			case COMPUTED_FIELD_RC_VECTOR:
-			{
-				FE_value jacobian[9],non_rc_coordinates[3],rc_coordinates[3],sum;
-				int coordinates_per_vector,number_of_vectors;
-				struct Coordinate_system rc_coordinate_system;
-
-				rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-				/* need jacobian at current coordinate position for converting to
-					 coordinate system of source vector field (=source_fields[0]) */
-				if (Computed_field_evaluate_cache_at_node(field->source_fields[1],node)
-					&&Computed_field_extract_rc(field->source_fields[1],
-						/*element_dimension*/0,rc_coordinates,/*dx_dxi*/(FE_value *)NULL)&&
-					convert_Coordinate_system(&rc_coordinate_system,rc_coordinates,
-						&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
-						jacobian))
-				{
+					/* clamps to limits of maximums when setting values too */
 					if (ALLOCATE(source_values,FE_value,field->number_of_components))
 					{
-						number_of_vectors=field->number_of_components/3;
-						coordinates_per_vector=
-							field->source_fields[0]->number_of_components/number_of_vectors;
-						for (i=0;i<number_of_vectors;i++)
+						for (i=0;i<field->number_of_components;i++)
 						{
-							for (j=0;j<coordinates_per_vector;j++)
+							if (values[i] > field->source_values[i])
 							{
-								sum=0.0;
-								for (k=0;k<3;k++)
-								{
-									sum += jacobian[j*3+k]*values[i*3+k];
-								}
-								source_values[i*coordinates_per_vector+j]=sum;
+								source_values[i] = field->source_values[i];
+							}
+							else
+							{
+								source_values[i] = values[i];
 							}
 						}
 						return_code=Computed_field_set_values_at_node(
@@ -5563,59 +5772,426 @@ should not be managed at the time it is modified by this function.
 					{
 						return_code=0;
 					}
-				}
-				else
+				} break;
+				case COMPUTED_FIELD_CLAMP_MINIMUM:
 				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_SCALE:
-			{
-				/* reverse the scaling - unless any scale_factors are zero */
-				if (ALLOCATE(source_values,FE_value,field->number_of_components))
-				{
-					for (i=0;(i<field->number_of_components)&&return_code;i++)
+					/* clamps to limits of minimums when setting values too */
+					if (ALLOCATE(source_values,FE_value,field->number_of_components))
 					{
-						if (0.0 != field->source_values[i])
+						for (i=0;i<field->number_of_components;i++)
 						{
-							source_values[i] = values[i] / field->source_values[i];
+							if (values[i] < field->source_values[i])
+							{
+								source_values[i] = field->source_values[i];
+							}
+							else
+							{
+								source_values[i] = values[i];
+							}
+						}
+						return_code=Computed_field_set_values_at_node(
+							field->source_fields[0],node,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_COMPONENT:
+				{
+					/* need current field values to partially set */
+					if (ALLOCATE(source_values,FE_value,
+						field->source_fields[0]->number_of_components))
+					{
+						if (Computed_field_evaluate_at_node(field->source_fields[0],node,
+							source_values))
+						{
+							/* set value of the component leaving other components intact */
+							source_values[field->component_no] = values[0];
+							return_code=Computed_field_set_values_at_node(
+								field->source_fields[0],node,source_values);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_set_values_at_node.  "
-								"Cannot invert scale field %s with zero scale factor",
-								field->name);
+							return_code=0;
+						}
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_COMPOSITE:
+				{
+					/* set values of individual scalar fields */
+					for (i=0;(i<field->number_of_components)&&return_code;i++)
+					{
+						return_code=Computed_field_set_values_at_node(
+							field->source_fields[i],node,&(values[i]));
+					}
+				} break;
+				case COMPUTED_FIELD_DEFAULT_COORDINATE:
+				{
+					FE_value non_rc_coordinates[3];
+					struct Coordinate_system rc_coordinate_system;
+
+					if (Computed_field_get_default_coordinate_source_field_at_node(
+						field,node))
+					{
+						/* convert RC values back into source coordinate system */
+						rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+						return_code=
+							convert_Coordinate_system(&rc_coordinate_system,values,
+								&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
+								/*jacobian*/(float *)NULL)&&
+							Computed_field_set_values_at_node(field->source_fields[0],
+								node,non_rc_coordinates);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_set_values_at_node.  "
+							"Could not get default coordinate source_field");
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_EDIT_MASK:
+				{
+					/* need current field values to partially set */
+					if (ALLOCATE(source_values,FE_value,
+						field->source_fields[0]->number_of_components))
+					{
+						if (Computed_field_evaluate_at_node(field->source_fields[0],node,
+							source_values))
+						{
+							/* set value of the component leaving other components intact */
+							for (i=0;i<field->number_of_components;i++)
+							{
+								if (field->source_values[i])
+								{
+									source_values[i] = values[i];
+								}
+							}
+							return_code=Computed_field_set_values_at_node(
+								field->source_fields[0],node,source_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_FINITE_ELEMENT:
+				{
+					double double_value;
+					enum Value_type value_type;
+					float float_value;
+					int int_value;
+					struct FE_field_component fe_field_component;
+
+					fe_field_component.field=field->fe_field;
+					value_type=get_FE_field_value_type(field->fe_field);
+					for (i=0;(i<field->number_of_components)&&return_code;i++)
+					{
+						fe_field_component.number=i;
+						/* set values all versions; to set values for selected version only,
+							use COMPUTED_FIELD_NODE_VALUE instead */
+						k=get_FE_node_field_component_number_of_versions(node,
+							field->fe_field,i);
+						for (j=0;(j<k)&&return_code;j++)
+						{
+							switch (value_type)
+							{
+								case DOUBLE_VALUE:
+								{
+									double_value=(double)values[i];
+									return_code=set_FE_nodal_double_value(node,
+										&fe_field_component,j,field->nodal_value_type,double_value);
+								} break;
+								case FE_VALUE_VALUE:
+								{
+									return_code=set_FE_nodal_FE_value_value(node,
+										&fe_field_component,j,field->nodal_value_type,values[i]);
+								} break;
+								case FLT_VALUE:
+								{
+									float_value=(float)values[i];
+									return_code=set_FE_nodal_float_value(node,
+										&fe_field_component,j,field->nodal_value_type,float_value);
+								} break;
+								case INT_VALUE:
+								{
+									int_value=(int)floor(values[i]+0.5);
+									return_code=set_FE_nodal_float_value(node,
+										&fe_field_component,j,field->nodal_value_type,int_value);
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_set_values_at_node.  "
+										"Could not set finite_element field %s at node",field->name);
+									return_code=0;
+								}
+							}
+						}
+					}
+					if (!return_code)
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_set_values_at_node.  "
+							"Could not set finite_element field %s at node",field->name);
+					}
+				} break;
+				case COMPUTED_FIELD_MAGNITUDE:
+				{
+					FE_value magnitude;
+
+					/* need current vector field values "magnify" */
+					if (ALLOCATE(source_values,FE_value,
+						field->source_fields[0]->number_of_components))
+					{
+						if (Computed_field_evaluate_at_node(field->source_fields[0],node,
+							source_values))
+						{
+							/* if the source field is not a zero vector, set its magnitude to
+								the given value */
+							magnitude = 0.0;
+							for (i=0;i<field->number_of_components;i++)
+							{
+								magnitude += source_values[i]*source_values[i];
+							}
+							if (0.0 < magnitude)
+							{
+								magnitude = values[0] / magnitude;
+								for (i=0;i<field->number_of_components;i++)
+								{
+									source_values[i] *= magnitude;
+								}
+								return_code=Computed_field_set_values_at_node(
+									field->source_fields[0],node,source_values);
+							}
+							else
+							{
+								/* not an error; just a warning */
+								display_message(WARNING_MESSAGE,
+									"Magnitude field %s cannot be inverted for zero vector",
+									field->name);
+							}
+						}
+						else
+						{
+							return_code=0;
+						}
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+				{
+					display_message(ERROR_MESSAGE,"Computed_field_set_values_at_node. "
+						" %s not implemented yet. Write the code!",field->name);
+					/*If we ever need to write the code for this, make it so that we set the array */
+					/*values based upon the field->time ONLY if the time correspondes EXACTLY to an*/
+					/* array index. No "tking the nearest one" or anything nasty like that */
+					return_code=0;
+				}break;	
+				case COMPUTED_FIELD_NODE_VALUE:
+				{
+					double double_value;
+					enum Value_type value_type;
+					float float_value;
+					int int_value;
+					struct FE_field_component fe_field_component;
+
+					fe_field_component.field=field->fe_field;
+					value_type=get_FE_field_value_type(field->fe_field);
+					for (i=0;(i<field->number_of_components)&&return_code;i++)
+					{
+						fe_field_component.number=i;
+						/* only set nodal value/versions that exist */
+						if (FE_nodal_value_version_exists(node,&fe_field_component,
+							field->version_number,field->nodal_value_type))
+						{
+							switch (value_type)
+							{
+								case DOUBLE_VALUE:
+								{
+									double_value=(double)values[i];
+									return_code=set_FE_nodal_double_value(node,
+										&fe_field_component,j,field->nodal_value_type,double_value);
+								} break;
+								case FE_VALUE_VALUE:
+								{
+									return_code=set_FE_nodal_FE_value_value(node,
+										&fe_field_component,j,field->nodal_value_type,values[i]);
+								} break;
+								case FLT_VALUE:
+								{
+									float_value=(float)values[i];
+									return_code=set_FE_nodal_float_value(node,
+										&fe_field_component,j,field->nodal_value_type,float_value);
+								} break;
+								case INT_VALUE:
+								{
+									int_value=(int)floor(values[i]+0.5);
+									return_code=set_FE_nodal_float_value(node,
+										&fe_field_component,j,field->nodal_value_type,int_value);
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_set_values_at_node.  "
+										"Could not set finite_element field %s at node",field->name);
+									return_code=0;
+								}
+							}
+						}
+					}
+					if (!return_code)
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_set_values_at_node.  "
+							"Could not set node_value field at node",field->name);
+						return_code=0;
+					}
+				} break;			
+				case COMPUTED_FIELD_OFFSET:
+				{
+					/* reverse the offset */
+					if (ALLOCATE(source_values,FE_value,field->number_of_components))
+					{
+						for (i=0;i<field->number_of_components;i++)
+						{
+							source_values[i] = values[i] - field->source_values[i];
+						}
+						return_code=Computed_field_set_values_at_node(
+							field->source_fields[0],node,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_RC_COORDINATE:
+				{
+					FE_value non_rc_coordinates[3];
+					struct Coordinate_system rc_coordinate_system;
+
+					/* convert RC values back into source coordinate system */
+					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+					return_code=
+						convert_Coordinate_system(&rc_coordinate_system,values,
+							&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
+							/*jacobian*/(float *)NULL)&&
+						Computed_field_set_values_at_node(field->source_fields[0],
+							node,non_rc_coordinates);
+				} break;
+				case COMPUTED_FIELD_RC_VECTOR:
+				{
+					FE_value jacobian[9],non_rc_coordinates[3],rc_coordinates[3],sum;
+					int coordinates_per_vector,number_of_vectors;
+					struct Coordinate_system rc_coordinate_system;
+
+					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+					/* need jacobian at current coordinate position for converting to
+						coordinate system of source vector field (=source_fields[0]) */
+					if (Computed_field_evaluate_cache_at_node(field->source_fields[1],node)
+						&&Computed_field_extract_rc(field->source_fields[1],
+							/*element_dimension*/0,rc_coordinates,/*dx_dxi*/(FE_value *)NULL)&&
+						convert_Coordinate_system(&rc_coordinate_system,rc_coordinates,
+							&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
+							jacobian))
+					{
+						if (ALLOCATE(source_values,FE_value,field->number_of_components))
+						{
+							number_of_vectors=field->number_of_components/3;
+							coordinates_per_vector=
+								field->source_fields[0]->number_of_components/number_of_vectors;
+							for (i=0;i<number_of_vectors;i++)
+							{
+								for (j=0;j<coordinates_per_vector;j++)
+								{
+									sum=0.0;
+									for (k=0;k<3;k++)
+									{
+										sum += jacobian[j*3+k]*values[i*3+k];
+									}
+									source_values[i*coordinates_per_vector+j]=sum;
+								}
+							}
+							return_code=Computed_field_set_values_at_node(
+								field->source_fields[0],node,source_values);
+							DEALLOCATE(source_values);
+						}
+						else
+						{
 							return_code=0;
 						}
 					}
-					if (return_code)
+					else
 					{
-						return_code=Computed_field_set_values_at_node(
-							field->source_fields[0],node,source_values);
+						return_code=0;
 					}
-					DEALLOCATE(source_values);
-				}
-				else
+				} break;
+				case COMPUTED_FIELD_SCALE:
 				{
+					/* reverse the scaling - unless any scale_factors are zero */
+					if (ALLOCATE(source_values,FE_value,field->number_of_components))
+					{
+						for (i=0;(i<field->number_of_components)&&return_code;i++)
+						{
+							if (0.0 != field->source_values[i])
+							{
+								source_values[i] = values[i] / field->source_values[i];
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_set_values_at_node.  "
+									"Cannot invert scale field %s with zero scale factor",
+									field->name);
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							return_code=Computed_field_set_values_at_node(
+								field->source_fields[0],node,source_values);
+						}
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_set_values_at_node.  "
+						"Cannot set values for field %s of type %s",field->name,
+						Computed_field_type_to_string(field));
 					return_code=0;
-				}
-			} break;
-			default:
+				} break;
+			}
+			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_set_values_at_node.  "
-					"Cannot set values for field %s of type %s",field->name,
-					Computed_field_type_to_string(field->type));
-				return_code=0;
-			} break;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_at_node.  "
-				"Failed for field %s of type %s",field->name,
-				Computed_field_type_to_string(field->type));
+					"Failed for field %s of type %s",field->name,
+					Computed_field_type_to_string(field));
+			}
 		}
 	}
 	else
@@ -5825,136 +6401,395 @@ Note that the values array will not be modified by this function. Also,
 	ENTER(Computed_field_set_values_in_element);
 	if (field&&element&&element->shape&&number_in_xi&&values)
 	{
-		return_code=1;
-		element_dimension=element->shape->dimension;
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			if (0<number_in_xi[i])
+			if (field->computed_field_set_values_in_element_function)
 			{
-				number_of_points *= (number_in_xi[i]+1);
+				return_code = 
+					field->computed_field_set_values_in_element_function(
+					field, element, number_in_xi, values);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_set_values_in_element.  "
-					"number_in_xi must be positive");
-				return_code=0;
+					"No function defined.");
+				return_code = 0;
 			}
 		}
-		if (return_code)
+		else
 		{
-			switch (field->type)
+			return_code=1;
+			element_dimension=element->shape->dimension;
+			number_of_points=1;
+			for (i=0;(i<element_dimension)&&return_code;i++)
 			{
-				case COMPUTED_FIELD_CLAMP_MAXIMUM:
+				if (0<number_in_xi[i])
 				{
-					FE_value max;
-
-					/* clamps to limits of maximums when setting values too */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
+					number_of_points *= (number_in_xi[i]+1);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_set_values_in_element.  "
+						"number_in_xi must be positive");
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				switch (field->type)
+				{
+					case COMPUTED_FIELD_CLAMP_MAXIMUM:
 					{
-						i=0;
-						for (k=0;k<field->number_of_components;k++)
+						FE_value max;
+
+						/* clamps to limits of maximums when setting values too */
+						if (ALLOCATE(source_values,FE_value,
+							number_of_points*field->number_of_components))
 						{
-							max=field->source_values[k];
+							i=0;
+							for (k=0;k<field->number_of_components;k++)
+							{
+								max=field->source_values[k];
+								for (j=0;j<number_of_points;j++)
+								{
+									if (values[i] > max)
+									{
+										source_values[i] = max;
+									}
+									else
+									{
+										source_values[i] = values[i];
+									}
+									i++;
+								}
+							}
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+							DEALLOCATE(source_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_CLAMP_MINIMUM:
+					{
+						FE_value min;
+
+						/* clamps to limits of maximums when setting values too */
+						if (ALLOCATE(source_values,FE_value,
+							number_of_points*field->number_of_components))
+						{
+							i=0;
+							for (k=0;k<field->number_of_components;k++)
+							{
+								min=field->source_values[k];
+								for (j=0;j<number_of_points;j++)
+								{
+									if (values[i] < min)
+									{
+										source_values[i] = min;
+									}
+									else
+									{
+										source_values[i] = values[i];
+									}
+									i++;
+								}
+							}
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+							DEALLOCATE(source_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_COMPONENT:
+					{
+						int offset;
+
+						/* need current field values to partially set */
+						if (Computed_field_get_values_in_element(field->source_fields[0],
+							element,number_in_xi,&source_values))
+						{
+							/* insert the component values into this array */
+							offset=number_of_points*field->component_no;
 							for (j=0;j<number_of_points;j++)
 							{
-								if (values[i] > max)
+								source_values[offset+j]=values[j];
+							}
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+							DEALLOCATE(source_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_COMPOSITE:
+					{
+						/* set all the scalars separately */
+						for (k=0;(k<field->number_of_components)&&return_code;k++)
+						{
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,
+								values+k*number_of_points);
+						}
+					} break;
+					case COMPUTED_FIELD_DEFAULT_COORDINATE:
+					{
+						FE_value non_rc_coordinates[3],rc_coordinates[3];
+						struct Coordinate_system rc_coordinate_system;
+
+						if (Computed_field_get_default_coordinate_source_field_in_element(
+							field,element))
+						{
+							rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+							/* 3 values for non-rc coordinate system */
+							if (ALLOCATE(source_values,FE_value,number_of_points*3))
+							{
+								for (j=0;(j<number_of_points)&&return_code;j++)
 								{
-									source_values[i] = max;
+									for (k=0;k<3;k++)
+									{
+										rc_coordinates[k]=values[k*number_of_points+j];
+									}
+									/* convert RC values back into source coordinate system */
+									if (convert_Coordinate_system(&rc_coordinate_system,
+										rc_coordinates,&(field->source_fields[0]->coordinate_system),
+										non_rc_coordinates,/*jacobian*/(float *)NULL))
+									{
+										for (k=0;k<3;k++)
+										{
+											source_values[k*number_of_points+j]=non_rc_coordinates[k];
+										}
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								if (return_code)
+								{
+									return_code=Computed_field_set_values_in_element(
+										field->source_fields[0],element,number_in_xi,source_values);
+								}
+								DEALLOCATE(source_values);
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_set_values_in_element.  "
+								"Could not get default coordinate source_field");
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_EDIT_MASK:
+					{
+						int offset;
+
+						/* need current field values to partially set */
+						if (Computed_field_get_values_in_element(field->source_fields[0],
+							element,number_in_xi,&source_values))
+						{
+							/* insert the components with mask on into this array */
+							for (k=0;k<field->number_of_components;k++)
+							{
+								if (field->source_values[k])
+								{
+									offset=k*number_of_points;
+									for (j=0;j<number_of_points;j++)
+									{
+										source_values[offset+j] = values[offset+j];
+									}
+								}
+							}
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+							DEALLOCATE(source_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_FINITE_ELEMENT:
+					{
+						enum Value_type value_type;
+						int grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*int_values,
+							offset;
+
+						if (FE_element_field_is_grid_based(element,field->fe_field)&&
+							get_FE_element_field_grid_map_number_in_xi(element,
+								field->fe_field,grid_map_number_in_xi))
+						{
+							for (i=0;(i<element_dimension)&&return_code;i++)
+							{
+								if (number_in_xi[i] != grid_map_number_in_xi[i])
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_set_values_in_element.  "
+										"Finite element has different grid number_in_xi");
+									return_code=0;
+								}
+							}
+							if (return_code)
+							{
+								value_type=get_FE_field_value_type(field->fe_field);
+								switch (value_type)
+								{
+									case FE_VALUE_VALUE:
+									{
+										for (k=0;(k<field->number_of_components)&&return_code;k++)
+										{
+											if (!set_FE_element_field_component_grid_FE_value_values(
+												element,field->fe_field,k,values+k*number_of_points))
+											{
+												display_message(ERROR_MESSAGE,
+													"Computed_field_set_values_in_element.  "
+													"Unable to set finite element grid FE_value values");
+												return_code=0;
+											}
+										}
+									} break;
+									case INT_VALUE:
+									{
+										if (ALLOCATE(int_values,int,number_of_points))
+										{
+											for (k=0;(k<field->number_of_components)&&return_code;k++)
+											{
+												offset=k*number_of_points;
+												for (j=0;j<number_of_points;j++)
+												{
+													/*???RC this conversion could be a little dodgy */
+													int_values[j]=(int)(values[offset+j]);
+												}
+												if (!set_FE_element_field_component_grid_int_values(
+													element,field->fe_field,k,int_values))
+												{
+													display_message(ERROR_MESSAGE,
+														"Computed_field_set_values_in_element.  "
+														"Unable to set finite element grid int values");
+													return_code=0;
+												}
+											}
+											DEALLOCATE(int_values);
+										}
+										else
+										{
+											return_code=0;
+										}
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"Computed_field_set_values_in_element.  "
+											"Unsupported value_type for finite_element field");
+										return_code=0;
+									} break;
+								}
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_set_values_in_element.  "
+								"Finite element field %s is not grid based in element",
+								field->name);
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_MAGNITUDE:
+					{
+						FE_value magnitude;
+						int zero_warning;
+
+						/* need current field values to "magnify" */
+						if (Computed_field_get_values_in_element(field->source_fields[0],
+							element,number_in_xi,&source_values))
+						{
+							zero_warning=0;
+							for (j=0;j<number_of_points;j++)
+							{
+								/* if the source field is not a zero vector, set its magnitude to
+									the given value */
+								magnitude = 0.0;
+								for (k=0;k<field->number_of_components;k++)
+								{
+									magnitude += source_values[k*number_of_points+j]*
+										source_values[k*number_of_points+j];
+								}
+								if (0.0 < magnitude)
+								{
+									magnitude = values[j] / magnitude;
+									for (k=0;k<field->number_of_components;k++)
+									{
+										source_values[k*number_of_points+j] *= magnitude;
+									}
 								}
 								else
 								{
-									source_values[i] = values[i];
+									zero_warning=1;
 								}
-								i++;
 							}
-						}
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_CLAMP_MINIMUM:
-				{
-					FE_value min;
-
-					/* clamps to limits of maximums when setting values too */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
-					{
-						i=0;
-						for (k=0;k<field->number_of_components;k++)
-						{
-							min=field->source_values[k];
-							for (j=0;j<number_of_points;j++)
+							if (zero_warning)
 							{
-								if (values[i] < min)
-								{
-									source_values[i] = min;
-								}
-								else
-								{
-									source_values[i] = values[i];
-								}
-								i++;
+								/* not an error; just a warning */
+								display_message(WARNING_MESSAGE,
+									"Magnitude field %s cannot be inverted for zero vectors",
+									field->name);
 							}
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+							DEALLOCATE(source_values);
 						}
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_COMPONENT:
-				{
-					int offset;
-
-					/* need current field values to partially set */
-					if (Computed_field_get_values_in_element(field->source_fields[0],
-						element,number_in_xi,&source_values))
-					{
-						/* insert the component values into this array */
-						offset=number_of_points*field->component_no;
-						for (j=0;j<number_of_points;j++)
+						else
 						{
-							source_values[offset+j]=values[j];
+							return_code=0;
 						}
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
+					} break;
+					case COMPUTED_FIELD_OFFSET:
 					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_COMPOSITE:
-				{
-					/* set all the scalars separately */
-					for (k=0;(k<field->number_of_components)&&return_code;k++)
-					{
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,
-							values+k*number_of_points);
-					}
-				} break;
-				case COMPUTED_FIELD_DEFAULT_COORDINATE:
-				{
-					FE_value non_rc_coordinates[3],rc_coordinates[3];
-					struct Coordinate_system rc_coordinate_system;
+						FE_value offset_value;
+						int offset;
 
-					if (Computed_field_get_default_coordinate_source_field_in_element(
-						field,element))
+						/* reverse the offset */
+						if (ALLOCATE(source_values,FE_value,
+							number_of_points*field->number_of_components))
+						{
+							for (k=0;k<field->number_of_components;k++)
+							{
+								offset=k*number_of_points;
+								offset_value=field->source_values[k];
+								for (j=0;j<number_of_points;j++)
+								{
+									source_values[offset+j] = values[offset+j] - offset_value;
+								}
+							}
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+							DEALLOCATE(source_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_RC_COORDINATE:
 					{
+						FE_value non_rc_coordinates[3],rc_coordinates[3];
+						struct Coordinate_system rc_coordinate_system;
+
 						rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
 						/* 3 values for non-rc coordinate system */
 						if (ALLOCATE(source_values,FE_value,number_of_points*3))
@@ -5991,384 +6826,144 @@ Note that the values array will not be modified by this function. Also,
 						{
 							return_code=0;
 						}
-					}
-					else
+					} break;
+					case COMPUTED_FIELD_RC_VECTOR:
 					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_values_in_element.  "
-							"Could not get default coordinate source_field");
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_EDIT_MASK:
-				{
-					int offset;
+						FE_value jacobian[9],non_rc_coordinates[3],
+							rc_coordinates[3],*rc_coordinate_values,sum;
+						int coordinates_per_vector,m,number_of_vectors;
+						struct Computed_field *rc_coordinate_field;
+						struct Coordinate_system rc_coordinate_system;
 
-					/* need current field values to partially set */
-					if (Computed_field_get_values_in_element(field->source_fields[0],
-						element,number_in_xi,&source_values))
-					{
-						/* insert the components with mask on into this array */
-						for (k=0;k<field->number_of_components;k++)
+						/* need current rc_coordinate positions for converting to
+							coordinate system of source vector field */
+						if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
+							field->source_fields[1]))
 						{
-							if (field->source_values[k])
+							if (Computed_field_get_values_in_element(rc_coordinate_field,
+								element,number_in_xi,&rc_coordinate_values))
 							{
-								offset=k*number_of_points;
-								for (j=0;j<number_of_points;j++)
+								rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+								/* 3 values for non-rc coordinate system */
+								if (ALLOCATE(source_values,FE_value,
+									number_of_points*field->source_fields[0]->number_of_components))
 								{
-									source_values[offset+j] = values[offset+j];
-								}
-							}
-						}
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_FINITE_ELEMENT:
-				{
-					enum Value_type value_type;
-					int grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*int_values,
-						offset;
-
-					if (FE_element_field_is_grid_based(element,field->fe_field)&&
-						get_FE_element_field_grid_map_number_in_xi(element,
-							field->fe_field,grid_map_number_in_xi))
-					{
-						for (i=0;(i<element_dimension)&&return_code;i++)
-						{
-							if (number_in_xi[i] != grid_map_number_in_xi[i])
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_in_element.  "
-									"Finite element has different grid number_in_xi");
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							value_type=get_FE_field_value_type(field->fe_field);
-							switch (value_type)
-							{
-								case FE_VALUE_VALUE:
-								{
-									for (k=0;(k<field->number_of_components)&&return_code;k++)
+									for (j=0;(j<number_of_points)&&return_code;j++)
 									{
-										if (!set_FE_element_field_component_grid_FE_value_values(
-											element,field->fe_field,k,values+k*number_of_points))
+										for (k=0;k<3;k++)
 										{
-											display_message(ERROR_MESSAGE,
-												"Computed_field_set_values_in_element.  "
-												"Unable to set finite element grid FE_value values");
+											rc_coordinates[k]=
+												rc_coordinate_values[k*number_of_points+j];
+										}
+										/* need jacobian at current coordinate position for
+											converting to coordinate system of source vector field
+											(=source_fields[0]) */
+										if (convert_Coordinate_system(&rc_coordinate_system,
+											rc_coordinates,&field->source_fields[0]->coordinate_system,
+											non_rc_coordinates,jacobian))
+										{
+											number_of_vectors=field->number_of_components/3;
+											coordinates_per_vector=
+												field->source_fields[0]->number_of_components/
+												number_of_vectors;
+											for (i=0;i<number_of_vectors;i++)
+											{
+												for (m=0;m<coordinates_per_vector;m++)
+												{
+													sum=0.0;
+													for (k=0;k<3;k++)
+													{
+														sum +=
+															jacobian[m*3+k]*values[(i*3+k)*number_of_points+j];
+													}
+													source_values[(i*coordinates_per_vector+m)*
+														number_of_points+j]=sum;
+												}
+											}
+										}
+										else
+										{
 											return_code=0;
 										}
 									}
-								} break;
-								case INT_VALUE:
-								{
-									if (ALLOCATE(int_values,int,number_of_points))
+									if (return_code)
 									{
-										for (k=0;(k<field->number_of_components)&&return_code;k++)
-										{
-											offset=k*number_of_points;
-											for (j=0;j<number_of_points;j++)
-											{
-												/*???RC this conversion could be a little dodgy */
-												int_values[j]=(int)(values[offset+j]);
-											}
-											if (!set_FE_element_field_component_grid_int_values(
-												element,field->fe_field,k,int_values))
-											{
-												display_message(ERROR_MESSAGE,
-													"Computed_field_set_values_in_element.  "
-													"Unable to set finite element grid int values");
-												return_code=0;
-											}
-										}
-										DEALLOCATE(int_values);
+										return_code=Computed_field_set_values_in_element(
+											field->source_fields[0],element,number_in_xi,source_values);
 									}
-									else
-									{
-										return_code=0;
-									}
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_set_values_in_element.  "
-										"Unsupported value_type for finite_element field");
-									return_code=0;
-								} break;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_values_in_element.  "
-							"Finite element field %s is not grid based in element",
-							field->name);
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_MAGNITUDE:
-				{
-					FE_value magnitude;
-					int zero_warning;
-
-					/* need current field values to "magnify" */
-					if (Computed_field_get_values_in_element(field->source_fields[0],
-						element,number_in_xi,&source_values))
-					{
-						zero_warning=0;
-						for (j=0;j<number_of_points;j++)
-						{
-							/* if the source field is not a zero vector, set its magnitude to
-								 the given value */
-							magnitude = 0.0;
-							for (k=0;k<field->number_of_components;k++)
-							{
-								magnitude += source_values[k*number_of_points+j]*
-									source_values[k*number_of_points+j];
-							}
-							if (0.0 < magnitude)
-							{
-								magnitude = values[j] / magnitude;
-								for (k=0;k<field->number_of_components;k++)
-								{
-									source_values[k*number_of_points+j] *= magnitude;
+									DEALLOCATE(source_values);
 								}
-							}
-							else
-							{
-								zero_warning=1;
-							}
-						}
-						if (zero_warning)
-						{
-							/* not an error; just a warning */
-							display_message(WARNING_MESSAGE,
-								"Magnitude field %s cannot be inverted for zero vectors",
-								field->name);
-						}
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_OFFSET:
-				{
-					FE_value offset_value;
-					int offset;
-
-					/* reverse the offset */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
-					{
-						for (k=0;k<field->number_of_components;k++)
-						{
-							offset=k*number_of_points;
-							offset_value=field->source_values[k];
-							for (j=0;j<number_of_points;j++)
-							{
-								source_values[offset+j] = values[offset+j] - offset_value;
-							}
-						}
-						return_code=Computed_field_set_values_in_element(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_RC_COORDINATE:
-				{
-					FE_value non_rc_coordinates[3],rc_coordinates[3];
-					struct Coordinate_system rc_coordinate_system;
-
-					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-					/* 3 values for non-rc coordinate system */
-					if (ALLOCATE(source_values,FE_value,number_of_points*3))
-					{
-						for (j=0;(j<number_of_points)&&return_code;j++)
-						{
-							for (k=0;k<3;k++)
-							{
-								rc_coordinates[k]=values[k*number_of_points+j];
-							}
-							/* convert RC values back into source coordinate system */
-							if (convert_Coordinate_system(&rc_coordinate_system,
-								rc_coordinates,&(field->source_fields[0]->coordinate_system),
-								non_rc_coordinates,/*jacobian*/(float *)NULL))
-							{
-								for (k=0;k<3;k++)
-								{
-									source_values[k*number_of_points+j]=non_rc_coordinates[k];
-								}
+								DEALLOCATE(rc_coordinate_values);
 							}
 							else
 							{
 								return_code=0;
 							}
-						}
-						if (return_code)
-						{
-							return_code=Computed_field_set_values_in_element(
-								field->source_fields[0],element,number_in_xi,source_values);
-						}
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_RC_VECTOR:
-				{
-					FE_value jacobian[9],non_rc_coordinates[3],
-						rc_coordinates[3],*rc_coordinate_values,sum;
-					int coordinates_per_vector,m,number_of_vectors;
-					struct Computed_field *rc_coordinate_field;
-					struct Coordinate_system rc_coordinate_system;
-
-					/* need current rc_coordinate positions for converting to
-						 coordinate system of source vector field */
-					if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
-						field->source_fields[1]))
-					{
-						if (Computed_field_get_values_in_element(rc_coordinate_field,
-							element,number_in_xi,&rc_coordinate_values))
-						{
-							rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-							/* 3 values for non-rc coordinate system */
-							if (ALLOCATE(source_values,FE_value,
-								number_of_points*field->source_fields[0]->number_of_components))
-							{
-								for (j=0;(j<number_of_points)&&return_code;j++)
-								{
-									for (k=0;k<3;k++)
-									{
-										rc_coordinates[k]=
-											rc_coordinate_values[k*number_of_points+j];
-									}
-									/* need jacobian at current coordinate position for
-										 converting to coordinate system of source vector field
-										 (=source_fields[0]) */
-									if (convert_Coordinate_system(&rc_coordinate_system,
-										rc_coordinates,&field->source_fields[0]->coordinate_system,
-										non_rc_coordinates,jacobian))
-									{
-										number_of_vectors=field->number_of_components/3;
-										coordinates_per_vector=
-											field->source_fields[0]->number_of_components/
-											number_of_vectors;
-										for (i=0;i<number_of_vectors;i++)
-										{
-											for (m=0;m<coordinates_per_vector;m++)
-											{
-												sum=0.0;
-												for (k=0;k<3;k++)
-												{
-													sum +=
-														jacobian[m*3+k]*values[(i*3+k)*number_of_points+j];
-												}
-												source_values[(i*coordinates_per_vector+m)*
-													number_of_points+j]=sum;
-											}
-										}
-									}
-									else
-									{
-										return_code=0;
-									}
-								}
-								if (return_code)
-								{
-									return_code=Computed_field_set_values_in_element(
-										field->source_fields[0],element,number_in_xi,source_values);
-								}
-								DEALLOCATE(source_values);
-							}
-							DEALLOCATE(rc_coordinate_values);
+							Computed_field_end_wrap(&rc_coordinate_field);
 						}
 						else
 						{
 							return_code=0;
 						}
-						Computed_field_end_wrap(&rc_coordinate_field);
-					}
-					else
+					} break;
+					case COMPUTED_FIELD_SCALE:
 					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_SCALE:
-				{
-					FE_value scale_value;
-					int offset;
+						FE_value scale_value;
+						int offset;
 
-					/* reverse the scaling */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
-					{
-						for (k=0;(k<field->number_of_components)&&return_code;k++)
+						/* reverse the scaling */
+						if (ALLOCATE(source_values,FE_value,
+							number_of_points*field->number_of_components))
 						{
-							offset=k*number_of_points;
-							scale_value=field->source_values[k];
-							if (0.0 != scale_value)
+							for (k=0;(k<field->number_of_components)&&return_code;k++)
 							{
-								for (j=0;j<number_of_points;j++)
+								offset=k*number_of_points;
+								scale_value=field->source_values[k];
+								if (0.0 != scale_value)
 								{
-									source_values[offset+j] = values[offset+j] / scale_value;
+									for (j=0;j<number_of_points;j++)
+									{
+										source_values[offset+j] = values[offset+j] / scale_value;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_set_values_in_element.  "
+										"Cannot invert scale field %s with zero scale factor",
+										field->name);
+									return_code=0;
 								}
 							}
-							else
+							if (return_code)
 							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_in_element.  "
-									"Cannot invert scale field %s with zero scale factor",
-									field->name);
-								return_code=0;
+								return_code=Computed_field_set_values_in_element(
+									field->source_fields[0],element,number_in_xi,source_values);
 							}
+							DEALLOCATE(source_values);
 						}
-						if (return_code)
+						else
 						{
-							return_code=Computed_field_set_values_in_element(
-								field->source_fields[0],element,number_in_xi,source_values);
+							return_code=0;
 						}
-						DEALLOCATE(source_values);
-					}
-					else
+					} break;
+					default:
 					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_set_values_in_element.  "
+							"Cannot set values for field %s of type %s",field->name,
+							Computed_field_type_to_string(field));
 						return_code=0;
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_in_element.  "
-						"Cannot set values for field %s of type %s",field->name,
-						Computed_field_type_to_string(field->type));
-					return_code=0;
-				} break;
+					} break;
+				}
 			}
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_in_element.  "
-				"Failed for field %s of type %s",field->name,
-				Computed_field_type_to_string(field->type));
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_values_in_element.  "
+					"Failed for field %s of type %s",field->name,
+					Computed_field_type_to_string(field));
+			}
 		}
 	}
 	else
@@ -6777,59 +7372,75 @@ Computed_field_set_values_in_[managed_]element.
 	if (field&&element&&number_in_xi&&element->shape&&
 		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=element->shape->dimension))
 	{
-		switch (field->type)
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			case COMPUTED_FIELD_DEFAULT_COORDINATE:
+			if (field->computed_field_get_native_discretization_in_element_function)
 			{
-				if (Computed_field_get_default_coordinate_source_field_in_element(
-					field,element))
+				return_code = 
+					field->computed_field_get_native_discretization_in_element_function(
+					field, element, number_in_xi);
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		else
+		{
+			switch (field->type)
+			{
+				case COMPUTED_FIELD_DEFAULT_COORDINATE:
 				{
-					return_code=
-						Computed_field_get_native_discretization_in_element(
-							field->source_fields[0],element,number_in_xi);
-				}
-				else
+					if (Computed_field_get_default_coordinate_source_field_in_element(
+						field,element))
+					{
+						return_code=
+							Computed_field_get_native_discretization_in_element(
+								field->source_fields[0],element,number_in_xi);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_get_native_discretization_in_element.  "
+							"Could not get default coordinate source_field");
+						return_code=0;
+					}
+					/* must clear the cache to remove default coordinate source field */
+					Computed_field_clear_cache(field);
+				} break;
+				case COMPUTED_FIELD_FINITE_ELEMENT:
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_get_native_discretization_in_element.  "
-						"Could not get default coordinate source_field");
+					if (FE_element_field_is_grid_based(element,field->fe_field))
+					{
+						return_code=get_FE_element_field_grid_map_number_in_xi(element,
+							field->fe_field,number_in_xi);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_CLAMP_MAXIMUM:
+				case COMPUTED_FIELD_CLAMP_MINIMUM:
+				case COMPUTED_FIELD_COMPONENT:
+				case COMPUTED_FIELD_COMPOSITE:
+					/* note: only find out if first field of composite grid based! */
+				case COMPUTED_FIELD_EDIT_MASK:
+				case COMPUTED_FIELD_MAGNITUDE:
+				case COMPUTED_FIELD_OFFSET:
+				case COMPUTED_FIELD_PROJECTION:
+				case COMPUTED_FIELD_RC_COORDINATE:
+				case COMPUTED_FIELD_RC_VECTOR:
+				case COMPUTED_FIELD_SCALE:
+				{
+					return_code=Computed_field_get_native_discretization_in_element(
+						field->source_fields[0],element,number_in_xi);
+				} break;
+				default:
+				{
 					return_code=0;
-				}
-				/* must clear the cache to remove default coordinate source field */
-				Computed_field_clear_cache(field);
-			} break;
-			case COMPUTED_FIELD_FINITE_ELEMENT:
-			{
-				if (FE_element_field_is_grid_based(element,field->fe_field))
-				{
-					return_code=get_FE_element_field_grid_map_number_in_xi(element,
-						field->fe_field,number_in_xi);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_CLAMP_MAXIMUM:
-			case COMPUTED_FIELD_CLAMP_MINIMUM:
-			case COMPUTED_FIELD_COMPONENT:
-			case COMPUTED_FIELD_COMPOSITE:
-				/* note: only find out if first field of composite grid based! */
-			case COMPUTED_FIELD_EDIT_MASK:
-			case COMPUTED_FIELD_MAGNITUDE:
-			case COMPUTED_FIELD_OFFSET:
-			case COMPUTED_FIELD_PROJECTION:
-			case COMPUTED_FIELD_RC_COORDINATE:
-			case COMPUTED_FIELD_RC_VECTOR:
-			case COMPUTED_FIELD_SCALE:
-			{
-				return_code=Computed_field_get_native_discretization_in_element(
-					field->source_fields[0],element,number_in_xi);
-			} break;
-			default:
-			{
-				return_code=0;
-			} break;
+				} break;
+			}
 		}
 	}
 	else
@@ -6843,6 +7454,36 @@ Computed_field_set_values_in_[managed_]element.
 
 	return (return_code);
 } /* Computed_field_get_native_discretization_in_element */
+
+int Computed_field_default_get_native_discretization_in_element(
+	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Inherits its result from the first source field.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_default_get_native_discretization_in_element);
+	if (field&&element&&number_in_xi&&element->shape&&
+		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=element->shape->dimension))
+	{
+		return_code=Computed_field_get_native_discretization_in_element(
+			field->source_fields[0],element,number_in_xi);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_get_native_discretization_in_element.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_get_native_discretization_in_element */
 
 int Computed_field_get_number_of_components(struct Computed_field *field)
 /*******************************************************************************
@@ -6981,6 +7622,31 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 	return (return_code);
 } /* Computed_field_set_coordinate_system */
 
+char *Computed_field_get_type_string(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns the string which identifies the type.
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Computed_field_get_type_string);
+	if (field)
+	{
+		return_string = field->type_string;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_field_get_type.  Missing field");
+		return_string = (char *)NULL;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_get_type_string */
+
 enum Computed_field_type Computed_field_get_type(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 24 December 1998
@@ -7006,7 +7672,7 @@ Returns the type of the computed <field> eg. COMPUTED_FIELD_FINITE_ELEMENT etc.
 	return (type);
 } /* Computed_field_get_type */
 
-char *Computed_field_type_to_string(enum Computed_field_type field_type)
+char *Computed_field_type_to_string(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 23 March 2000
 
@@ -7019,7 +7685,7 @@ The calling function must not deallocate the returned string.
 	char *field_type_string;
 
 	ENTER(Computed_field_type_to_string);
-	switch (field_type)
+	switch (field->type)
 	{
 		case COMPUTED_FIELD_2D_STRAIN:
 		{
@@ -7113,6 +7779,10 @@ The calling function must not deallocate the returned string.
 		{
 			field_type_string="magnitude";
 		} break;
+		case COMPUTED_FIELD_NEW_TYPES:
+		{
+			field_type_string=field->type_string;
+		} break;
 		case COMPUTED_FIELD_NODE_VALUE:
 		{
 			field_type_string="node_value";
@@ -7136,10 +7806,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_RC_VECTOR:
 		{
 			field_type_string="rc_vector";
-		} break;
-		case COMPUTED_FIELD_SAMPLE_TEXTURE:
-		{
-			field_type_string="sample_texture";
 		} break;
 		case COMPUTED_FIELD_SCALE:
 		{
@@ -7187,24 +7853,42 @@ returned as FE_value when evaluated.
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		switch (field->type)
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			case COMPUTED_FIELD_EMBEDDED:
+			if (field->computed_field_has_numerical_components_function)
 			{
-				return_code=Computed_field_has_numerical_components(
-					field->source_fields[0],(void *)NULL);
-			} break;
-			case COMPUTED_FIELD_FINITE_ELEMENT:
-			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-			case COMPUTED_FIELD_NODE_VALUE:
+				return_code = field->computed_field_has_numerical_components_function(
+					field);
+			}
+			else
 			{
-				return_code=Value_type_is_numeric_simple(
-					get_FE_field_value_type(field->fe_field));
-			} break;
-			default:
+				display_message(ERROR_MESSAGE,
+					"Computed_field_has_numerical_components.  "
+					"No function defined.");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			switch (field->type)
 			{
-				return_code=1;
-			} break;
+				case COMPUTED_FIELD_EMBEDDED:
+				{
+					return_code=Computed_field_has_numerical_components(
+						field->source_fields[0],(void *)NULL);
+				} break;
+				case COMPUTED_FIELD_FINITE_ELEMENT:
+				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+				case COMPUTED_FIELD_NODE_VALUE:
+				{
+					return_code=Value_type_is_numeric_simple(
+						get_FE_field_value_type(field->fe_field));
+				} break;
+				default:
+				{
+					return_code=1;
+				} break;
+			}
 		}
 	}
 	else
@@ -7216,6 +7900,31 @@ returned as FE_value when evaluated.
 
 	return (return_code);
 } /* Computed_field_has_numerical_components */
+
+int Computed_field_default_has_numerical_components(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Most computed fields have numerical components so this function returns 1.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_default_has_numerical_components);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_numerical_components.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Computed_field_default_has_numerical_components */
 
 int Computed_field_is_scalar(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
@@ -10165,7 +10874,8 @@ although its cache may be lost.
 } /* Computed_field_set_type_offset */
 
 int Computed_field_get_type_projection(struct Computed_field *field,
-  struct Computed_field **source_field, int *number_of_components, double **projection_matrix)
+	struct Computed_field **source_field, int *number_of_components,
+	double **projection_matrix)
 /*******************************************************************************
 LAST MODIFIED : 5 May 2000
 
@@ -10471,91 +11181,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_rc_vector */
-
-int Computed_field_get_type_sample_texture(struct Computed_field *field,
-	struct Computed_field **texture_coordinate_field, struct Texture **texture)
-/*******************************************************************************
-LAST MODIFIED : 15 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SAMPLE_TEXTURE, the 
-texture_coordinate_field and texure itself are returned - 
-otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_sample_texture);
-	if (field&&(COMPUTED_FIELD_SAMPLE_TEXTURE==field->type)&&
-		texture&&texture_coordinate_field)
-	{
-		*texture_coordinate_field=field->source_fields[0];
-		*texture = field->texture;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_sample_texture.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_sample_texture */
-
-int Computed_field_set_type_sample_texture(struct Computed_field *field,
-	struct Computed_field *texture_coordinate_field, struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 16 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SAMPLE_TEXTURE with the supplied
-texture.  Sets the number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_sample_texture);
-
-	if (field&&texture&&(3>=texture_coordinate_field->number_of_components))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_SAMPLE_TEXTURE;
-			field->number_of_components=3;
-			field->texture = ACCESS(Texture)(texture);
-			source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_rc_coordinate.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_sample_texture.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_sample_texture */
 
 int Computed_field_get_type_scale(struct Computed_field *field,
 	struct Computed_field **source_field,FE_value **scale_factors)
@@ -11449,157 +12074,177 @@ will belong.
 	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
 		search_element_group)
 	{
-		switch (field->type)
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			case COMPUTED_FIELD_FINITE_ELEMENT:
+			if (field->computed_field_set_values_in_element_function)
 			{
-				/* Attempt to find correct element by searching */
-				find_element_xi_data.field = field;
-				find_element_xi_data.values = values;
-				find_element_xi_data.number_of_values = number_of_values;
-				find_element_xi_data.found_number_of_xi = 0;
-				find_element_xi_data.found_derivatives = (FE_value *)NULL;
-				find_element_xi_data.tolerance = 1e-06;
-				if (ALLOCATE(find_element_xi_data.found_values, FE_value, number_of_values))
+				return_code = 
+					field->computed_field_find_element_xi_function(
+					field, values, number_of_values, element, xi,
+					search_element_group);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_find_element_xi_function.  "
+					"No function defined.");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			switch (field->type)
+			{
+				case COMPUTED_FIELD_FINITE_ELEMENT:
 				{
-					*element = (struct FE_element *)NULL;
-					
-					/* Look up element specially if we can */
-					if (Computed_field_find_element_xi_special(field, 
-						&field->find_element_xi_cache,
-						values, number_of_values, element, xi, search_element_group,
-						user_interface, &find_element_xi_data,
-						hint_minimums, hint_maximums, hint_resolution))
+					/* Attempt to find correct element by searching */
+					find_element_xi_data.field = field;
+					find_element_xi_data.values = values;
+					find_element_xi_data.number_of_values = number_of_values;
+					find_element_xi_data.found_number_of_xi = 0;
+					find_element_xi_data.found_derivatives = (FE_value *)NULL;
+					find_element_xi_data.tolerance = 1e-06;
+					if (ALLOCATE(find_element_xi_data.found_values, FE_value, number_of_values))
 					{
-						if (*element)
+						*element = (struct FE_element *)NULL;
+					
+						/* Look up element specially if we can */
+						if (Computed_field_find_element_xi_special(field, 
+							&field->find_element_xi_cache,
+							values, number_of_values, element, xi, search_element_group,
+							user_interface, &find_element_xi_data,
+							hint_minimums, hint_maximums, hint_resolution))
 						{
-							return_code = 1;						
+							if (*element)
+							{
+								return_code = 1;						
+							}
+							else
+							{
+								return_code = 0;
+							}
 						}
 						else
 						{
-							return_code = 0;
+							/* Try the cached element first */
+							if (!*element && field->element && Computed_field_iterative_element_conditional(
+								field->element, (void *)&find_element_xi_data))
+							{
+								*element = field->element;
+							}
+							/* Now try every element */
+							if (!*element)
+							{
+								*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
+									(Computed_field_iterative_element_conditional,
+										&find_element_xi_data, search_element_group);
+							}
+							if (*element)
+							{
+								number_of_xi = get_FE_element_dimension(*element);
+								for (i = 0 ; i < number_of_xi ; i++)
+								{
+									xi[i] = find_element_xi_data.xi[i];
+								}
+								return_code = 1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_find_element_xi.  Unable to find an element xi for values given.");
+								return_code = 0;
+							}
+						}
+						DEALLOCATE(find_element_xi_data.found_values);
+						if (find_element_xi_data.found_derivatives)
+						{
+							DEALLOCATE(find_element_xi_data.found_derivatives);
 						}
 					}
 					else
 					{
-						/* Try the cached element first */
-						if (!*element && field->element && Computed_field_iterative_element_conditional(
-							field->element, (void *)&find_element_xi_data))
-						{
-							*element = field->element;
-						}
-						/* Now try every element */
-						if (!*element)
-						{
-							*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
-							(Computed_field_iterative_element_conditional,
-								&find_element_xi_data, search_element_group);
-						}
-						if (*element)
-						{
-							number_of_xi = get_FE_element_dimension(*element);
-							for (i = 0 ; i < number_of_xi ; i++)
-							{
-								xi[i] = find_element_xi_data.xi[i];
-							}
-							return_code = 1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_find_element_xi.  Unable to find an element xi for values given.");
-							return_code = 0;
-						}
+						display_message(ERROR_MESSAGE,
+							"Computed_field_find_element_xi.  Unable to allocate value memory.");
+						return_code = 0;
 					}
-					DEALLOCATE(find_element_xi_data.found_values);
-					if (find_element_xi_data.found_derivatives)
-					{
-						DEALLOCATE(find_element_xi_data.found_derivatives);
-					}
-				}
-				else
+				} break;
+				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_find_element_xi.  Unable to allocate value memory.");
-					return_code = 0;
-				}
-			} break;
-			case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-			{
-				if (number_of_values<=3)
-				{
-					for (i = 0 ; i < number_of_values ; i++)
+					if (number_of_values<=3)
 					{
-						floor_values[i] = floor(values[i]);
-					}
-					for ( ; i < 3 ; i++)
-					{
-						floor_values[i] = 0.0;
-					}
-					if (field->texture_mapping)
-					{
-						return_code=0;
-						/* Check the last successful mapping first */
-						if (field->find_element_xi_mapping&&
-							Computed_field_element_texture_mapping_has_values(
-							field->find_element_xi_mapping, (void *)floor_values))
+						for (i = 0 ; i < number_of_values ; i++)
 						{
-							return_code = 1;
+							floor_values[i] = floor(values[i]);
 						}
-						else
+						for ( ; i < 3 ; i++)
 						{
-							/* Find in the list */
-							if (mapping = FIRST_OBJECT_IN_LIST_THAT(Computed_field_element_texture_mapping)
-								(Computed_field_element_texture_mapping_has_values, (void *)floor_values,
-								field->texture_mapping))
+							floor_values[i] = 0.0;
+						}
+						if (field->texture_mapping)
+						{
+							return_code=0;
+							/* Check the last successful mapping first */
+							if (field->find_element_xi_mapping&&
+								Computed_field_element_texture_mapping_has_values(
+									field->find_element_xi_mapping, (void *)floor_values))
 							{
-								REACCESS(Computed_field_element_texture_mapping)(&(field->find_element_xi_mapping),
-									mapping);
 								return_code = 1;
 							}
-						}
-						if (return_code)
-						{
-							*element = field->find_element_xi_mapping->element;
-							for (i = 0 ; i < (*element)->shape->dimension ; i++)
+							else
 							{
-								xi[i] = values[i] - floor_values[i];	
+								/* Find in the list */
+								if (mapping = FIRST_OBJECT_IN_LIST_THAT(Computed_field_element_texture_mapping)
+									(Computed_field_element_texture_mapping_has_values, (void *)floor_values,
+										field->texture_mapping))
+								{
+									REACCESS(Computed_field_element_texture_mapping)(&(field->find_element_xi_mapping),
+										mapping);
+									return_code = 1;
+								}
 							}
-							if (!IS_OBJECT_IN_GROUP(FE_element)(*element, search_element_group))
+							if (return_code)
 							{
-								*element = (struct FE_element *)NULL;
+								*element = field->find_element_xi_mapping->element;
+								for (i = 0 ; i < (*element)->shape->dimension ; i++)
+								{
+									xi[i] = values[i] - floor_values[i];	
+								}
+								if (!IS_OBJECT_IN_GROUP(FE_element)(*element, search_element_group))
+								{
+									*element = (struct FE_element *)NULL;
+									display_message(ERROR_MESSAGE,
+										"Computed_field_find_element_xi.  Element is not in specified group");
+									return_code=0;
+								}
+							}
+							else
+							{
 								display_message(ERROR_MESSAGE,
-									"Computed_field_find_element_xi.  Element is not in specified group");
+									"Computed_field_find_element_xi.  Unable to find mapping for given values");
 								return_code=0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_find_element_xi.  Unable to find mapping for given values");
+								"Computed_field_find_element_xi.  Xi texture coordinate mapping not calculated");
 							return_code=0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_find_element_xi.  Xi texture coordinate mapping not calculated");
+							"Computed_field_find_element_xi.  Only implemented for three or less values");
 						return_code=0;
 					}
-				}
-				else
+				} break;
+				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_find_element_xi.  Only implemented for three or less values");
+						"Computed_field_find_element_xi.  Field type not implemented");
 					return_code=0;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_find_element_xi.  Field type not implemented");
-				return_code=0;
-			} break;
+				} break;
+			}
 		}
 	}
 	else
@@ -11730,7 +12375,7 @@ LAST MODIFIED : 3 December 1999
 DESCRIPTION :
 Modifier function to set the field from a command. <set_field_data_void> should
 point to a struct Set_Computed_field_conditional_data containing the
-computed_field_package and an optional conditional function for narrowing the
+computed_field_manager and an optional conditional function for narrowing the
 range of fields available for selection. If the conditional_function is NULL,
 this function works just like set_Computed_field.
 ==============================================================================*/
@@ -11744,7 +12389,7 @@ this function works just like set_Computed_field.
 	if (state&&(field_address=(struct Computed_field **)field_address_void)&&
 		(set_field_data=
 			(struct Set_Computed_field_conditional_data *)set_field_data_void)&&
-		set_field_data->computed_field_package)
+		set_field_data->computed_field_manager)
 	{
 		if (current_token=state->current_token)
 		{
@@ -11766,15 +12411,14 @@ this function works just like set_Computed_field.
 					component_no=-1;
 					if (!(selected_field=
 						FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(current_token,
-						set_field_data->computed_field_package->computed_field_manager)))
+						set_field_data->computed_field_manager)))
 					{
 						if (field_component_name=strchr(current_token,'.'))
 						{
 							*field_component_name='\0';
 							field_component_name++;
 							if (selected_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-								name)(current_token,set_field_data->computed_field_package->
-									computed_field_manager))
+								name)(current_token,set_field_data->computed_field_manager))
 							{
 								/* get the component number */
 								for (i=0;(i<selected_field->number_of_components)&&
@@ -11808,8 +12452,8 @@ this function works just like set_Computed_field.
 										/* get or make wrapper for field component */
 										if (!(selected_field=
 											Computed_field_manager_get_component_wrapper(
-												set_field_data->computed_field_package->
-												computed_field_manager,selected_field,component_no)))
+												set_field_data->computed_field_manager,
+												selected_field,component_no)))
 										{
 											display_message(WARNING_MESSAGE,
 												"set_Computed_field_component.  "
@@ -12158,21 +12802,24 @@ and allows its contents to be modified.
 				ACCESS(Computed_field)(fibre_angle_field);
 			}
 			/* deformed coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &deformed_coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
 			/* undeformed coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[1]).to_be_modified= &undeformed_coordinate_field;
 			(option_table[1]).user_data= &set_coordinate_field_data;
 			/* fibre_angle */
-			set_scalar_field_data.computed_field_package=computed_field_package;
+			set_scalar_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_scalar_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
@@ -12279,7 +12926,8 @@ and allows its contents to be modified.
 			set_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_package=computed_field_package;
+			set_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_field_array_data.number_of_fields=2;
 			set_field_array_data.conditional_data= &set_field_data;
 			(option_table[0]).to_be_modified= source_fields;
@@ -12293,6 +12941,7 @@ and allows its contents to be modified.
 				return_code = Computed_field_set_type_add(field,
 					source_fields[0], scale_factors[0],
 					source_fields[1], scale_factors[1]);
+				Computed_field_set_coordinate_system_from_sources(field);
 			}
 			DEACCESS(Computed_field)(&source_fields[0]);
 			DEACCESS(Computed_field)(&source_fields[1]);
@@ -12356,7 +13005,8 @@ maximums as there are components in the field.
 		set_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_package=computed_field_package;
+		set_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		/* get source_field and maximums - from field if of type clamp_maximum */
 		source_field=(struct Computed_field *)NULL;
 		maximums=(FE_value *)NULL;
@@ -12452,6 +13102,7 @@ maximums as there are components in the field.
 			{
 				return_code=
 					Computed_field_set_type_clamp_maximum(field,source_field,maximums);
+				Computed_field_set_coordinate_system_from_sources(field);
 			}
 			if (!return_code)
 			{
@@ -12536,7 +13187,8 @@ minimums as there are components in the field.
 		set_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_package=computed_field_package;
+		set_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		/* get source_field and minimums - from field if of type clamp_minimum */
 		source_field=(struct Computed_field *)NULL;
 		minimums=(FE_value *)NULL;
@@ -12632,6 +13284,7 @@ minimums as there are components in the field.
 			{
 				return_code=
 					Computed_field_set_type_clamp_minimum(field,source_field,minimums);
+				Computed_field_set_coordinate_system_from_sources(field);
 			}
 			if (!return_code)
 			{
@@ -12804,6 +13457,7 @@ and allows its contents to be modified.
 	struct Computed_field *field,*calculate_values_field,*find_element_xi_field,
 		*texture_coordinates_field;
 	struct Computed_field_package *computed_field_package;
+	struct Coordinate_system *coordinate_system_ptr;
 	struct GROUP(FE_element) *search_element_group;
 	struct Set_Computed_field_conditional_data set_calculate_values_field_data,
 		set_find_element_xi_field_data, set_texture_coordinates_field_data;
@@ -12814,15 +13468,18 @@ and allows its contents to be modified.
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
-		set_calculate_values_field_data.computed_field_package=computed_field_package;
+		set_calculate_values_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		set_calculate_values_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_calculate_values_field_data.conditional_function_user_data=(void *)NULL;
-		set_find_element_xi_field_data.computed_field_package=computed_field_package;
+		set_find_element_xi_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		set_find_element_xi_field_data.conditional_function=
 			Computed_field_is_find_element_xi_capable;
 		set_find_element_xi_field_data.conditional_function_user_data=(void *)NULL;
-		set_texture_coordinates_field_data.computed_field_package=computed_field_package;
+		set_texture_coordinates_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		set_texture_coordinates_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_texture_coordinates_field_data.conditional_function_user_data=(void *)NULL;
@@ -12880,9 +13537,16 @@ and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code=Computed_field_set_type_compose(field,
+				if (return_code=Computed_field_set_type_compose(field,
 					texture_coordinates_field, find_element_xi_field,
-					calculate_values_field, search_element_group);
+					calculate_values_field, search_element_group))
+				{
+					/* Set default coordinate system */
+					/* Inherit from third source field */
+					coordinate_system_ptr = 
+						Computed_field_get_coordinate_system(calculate_values_field);
+					Computed_field_set_coordinate_system(field, coordinate_system_ptr);
+				}
 			}
 			if (!return_code)
 			{
@@ -12964,7 +13628,8 @@ and allows its contents to be modified.
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
-		set_scalar_field_data.computed_field_package=computed_field_package;
+		set_scalar_field_data.computed_field_manager=
+          computed_field_package->computed_field_manager;
 		set_scalar_field_data.conditional_function=Computed_field_is_scalar;
 		set_scalar_field_data.conditional_function_user_data=(void *)NULL;
 		/* get valid parameters for composite field */
@@ -13310,7 +13975,8 @@ and allows its contents to be modified.
 			set_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_package=computed_field_package;
+			set_field_data.computed_field_manager=
+            computed_field_package->computed_field_manager;
 			(option_table[0]).to_be_modified= &source_field;
 			(option_table[0]).user_data= &set_field_data;
 			return_code=process_multiple_options(state,option_table)&&
@@ -13386,14 +14052,16 @@ and allows its contents to be modified.
 			option_table=CREATE(Option_table)();
 
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+            computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
-			set_vector_field_data.computed_field_package=computed_field_package;
+			set_vector_field_data.computed_field_manager=
+            computed_field_package->computed_field_manager;
 			set_vector_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -13475,7 +14143,8 @@ and allows its contents to be modified.
 			{
 				ACCESS(Control_curve)(curve);
 			}
-			set_source_field_data.computed_field_package=computed_field_package;
+			set_source_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_source_field_data.conditional_function=Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &source_field;
@@ -13609,14 +14278,16 @@ and allows its contents to be modified.
 			option_table=CREATE(Option_table)();
 
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
-			set_vector_field_data.computed_field_package=computed_field_package;
+			set_vector_field_data.computed_field_manager=
+            computed_field_package->computed_field_manager;
 			set_vector_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -13712,7 +14383,8 @@ and allows its contents to be modified.
 			set_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_package=computed_field_package;
+			set_field_data.computed_field_manager=
+            computed_field_package->computed_field_manager;
 			set_field_array_data.number_of_fields=2;
 			set_field_array_data.conditional_data= &set_field_data;
 			(option_table[0]).to_be_modified= source_fields;
@@ -13784,7 +14456,8 @@ edit_mask flags as there are components in the field.
 		set_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_package=computed_field_package;
+		set_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		/* get source_field and edit_mask - from field if of type edit_mask */
 		source_field=(struct Computed_field *)NULL;
 		edit_mask=(FE_value *)NULL;
@@ -13880,6 +14553,7 @@ edit_mask flags as there are components in the field.
 			{
 				return_code=
 					Computed_field_set_type_edit_mask(field,source_field,edit_mask);
+				Computed_field_set_coordinate_system_from_sources(field);
 			}
 			if (!return_code)
 			{
@@ -13977,7 +14651,8 @@ and allows its contents to be modified.
 			set_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_package=computed_field_package;
+			set_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			(option_table[1]).to_be_modified= &source_field;
 			(option_table[1]).user_data= &set_field_data;
 			if (return_code=process_multiple_options(state,option_table))
@@ -13985,6 +14660,7 @@ and allows its contents to be modified.
 				if (fe_field&&source_field)
 				{
 					return_code=Computed_field_set_type_embedded(field,fe_field,source_field);
+					Computed_field_set_coordinate_system_from_sources(field);
 				}
 				else
 				{
@@ -14066,7 +14742,8 @@ and allows its contents to be modified.
 	{
 		filename = (char *)NULL;
 		return_code=1;
-		set_source_field_data.computed_field_package=computed_field_package;
+		set_source_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -14313,14 +14990,16 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(coordinate_field);
 			ACCESS(Computed_field)(fibre_field);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
 			/* fibre */
-			set_fibre_field_data.computed_field_package=computed_field_package;
+			set_fibre_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_fibre_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
@@ -14404,14 +15083,16 @@ already) and allows its contents to be modified.
 			ACCESS(Computed_field)(coordinate_field);
 			ACCESS(Computed_field)(fibre_field);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
 			/* fibre */
-			set_fibre_field_data.computed_field_package=computed_field_package;
+			set_fibre_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_fibre_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
@@ -14691,7 +15372,11 @@ FE_field being made and/or modified.
 					{
 						/* must make sure the computed field is set to type
 							 FINITE_ELEMENT for correct handling in define_Computed_field */
-						return_code=Computed_field_set_type_finite_element(field,fe_field);
+						if (return_code=Computed_field_set_type_finite_element(field,fe_field))
+						{
+							Computed_field_set_coordinate_system(field,
+								get_FE_field_coordinate_system(fe_field));
+						}
 					}
 					DEACCESS(FE_field)(&fe_field);
 				}
@@ -14784,14 +15469,16 @@ and allows its contents to be modified.
 			option_table=CREATE(Option_table)();
 
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* scalar */
-			set_scalar_field_data.computed_field_package=computed_field_package;
+			set_scalar_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_scalar_field_data.conditional_function=
 				Computed_field_is_scalar;
 			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
@@ -14871,7 +15558,8 @@ and allows its contents to be modified.
 			set_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_package=computed_field_package;
+			set_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			(option_table[0]).to_be_modified= &source_field;
 			(option_table[0]).user_data= &set_field_data;
 			return_code=process_multiple_options(state,option_table)&&
@@ -15042,8 +15730,12 @@ and allows its contents to be modified.
 				if (FE_NODAL_UNKNOWN != nodal_value_type)
 				{
 					/* user enters version number starting at 1; field stores it as 0 */
-					return_code=Computed_field_set_type_node_value(field,fe_field,
-						nodal_value_type,version_number-1);
+					if (return_code=Computed_field_set_type_node_value(field,fe_field,
+						nodal_value_type,version_number-1))
+					{
+						Computed_field_set_coordinate_system(field,
+							get_FE_field_coordinate_system(fe_field));
+					}
 				}
 				else
 				{
@@ -15230,7 +15922,8 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 			{
 				(value_type_version_option_table[0]).user_data=
 					&nodal_value_type_option_table;
-				set_time_field_data.computed_field_package=computed_field_package;
+				set_time_field_data.computed_field_manager=
+					computed_field_package->computed_field_manager;
 				set_time_field_data.conditional_function=Computed_field_is_scalar;
 				set_time_field_data.conditional_function_user_data=(void *)NULL;
 				(value_type_version_option_table[1]).to_be_modified= &time_field;
@@ -15244,8 +15937,12 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 				if (FE_NODAL_UNKNOWN != nodal_value_type)
 				{
 					/* user enters version number starting at 1; field stores it as 0 */
-					return_code=Computed_field_set_type_node_array_value_at_time(field,fe_field,
-						nodal_value_type,version_number-1,time_field);
+					if (return_code=Computed_field_set_type_node_array_value_at_time(field,fe_field,
+						nodal_value_type,version_number-1,time_field))
+					{
+						Computed_field_set_coordinate_system(field,
+							get_FE_field_coordinate_system(fe_field));
+					}
 				}
 				else
 				{
@@ -15330,7 +16027,8 @@ offsets as there are components in the field.
 		set_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_package=computed_field_package;
+		set_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		/* get source_field and offsets - from field if of type offset */
 		source_field=(struct Computed_field *)NULL;
 		offsets=(FE_value *)NULL;
@@ -15426,6 +16124,7 @@ offsets as there are components in the field.
 			{
 				return_code=
 					Computed_field_set_type_offset(field,source_field,offsets);
+				Computed_field_set_coordinate_system_from_sources(field);
 			}
 			if (!return_code)
 			{
@@ -15515,7 +16214,8 @@ and allows its contents to be modified.
 		set_field_data.conditional_function=
 			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_package=computed_field_package;
+		set_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		/* get valid parameters for projection field */
 		source_field=(struct Computed_field *)NULL;
 		projection_matrix=(double *)NULL;
@@ -15701,7 +16401,8 @@ and allows its contents to be modified.
 		{
 			/* have ACCESS/DEACCESS because set_Computed_field does */
 			ACCESS(Computed_field)(coordinate_field);
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -15784,14 +16485,16 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(coordinate_field);
 			ACCESS(Computed_field)(vector_field);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
 			/* vector */
-			set_vector_field_data.computed_field_package=computed_field_package;
+			set_vector_field_data.computed_field_manager=
+				computed_field_package->computed_field_manager;
 			set_vector_field_data.conditional_function=
 				Computed_field_is_orientation_scale_capable;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -15813,82 +16516,6 @@ and allows its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_rc_vector */
-
-static int define_Computed_field_type_sample_texture(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 16 March 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_TYPE_SAMPLE_TEXTURE (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinates",NULL,NULL,set_Computed_field_conditional},
-		{"texture",NULL,NULL,set_Texture},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *source_field,*field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_field_data;
-	struct Texture *texture;
-
-	ENTER(define_Computed_field_type_sample_texture);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		source_field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_SAMPLE_TEXTURE==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_sample_texture(field,
-				&source_field, &texture);
-		}
-		else
-		{
-			if (!(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-				computed_field_package->computed_field_manager)))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_sample_texture.  No fields defined");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_Computed_field does */
-			ACCESS(Computed_field)(source_field);
-			texture = (struct Texture *)NULL;
-			set_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_field_data.conditional_function_user_data=
-				(void *)Computed_field_has_up_to_3_numerical_components;
-			set_field_data.computed_field_package=computed_field_package;
-			(option_table[0]).to_be_modified= &source_field;
-			(option_table[0]).user_data= &set_field_data;
-			(option_table[1]).to_be_modified= &texture;
-			(option_table[1]).user_data= computed_field_package->texture_manager;			
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_sample_texture(field,source_field,texture);
-			DEACCESS(Computed_field)(&source_field);
-			DEACCESS(Texture)(&texture);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_sample_texture.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_sample_texture */
 
 int define_Computed_field_type_scale(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
@@ -15935,7 +16562,8 @@ scale_factors as there are components in the field.
 		set_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_package=computed_field_package;
+		set_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		/* get source_field and scale_factors - from field if of type scale */
 		source_field=(struct Computed_field *)NULL;
 		scale_factors=(FE_value *)NULL;
@@ -16031,6 +16659,7 @@ scale_factors as there are components in the field.
 			{
 				return_code=
 					Computed_field_set_type_scale(field,source_field,scale_factors);
+				Computed_field_set_coordinate_system_from_sources(field);
 			}
 			if (!return_code)
 			{
@@ -16115,7 +16744,8 @@ there are components in field.
 		set_field_data.conditional_function=
 			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_package=computed_field_package;
+		set_field_data.computed_field_manager=
+			computed_field_package->computed_field_manager;
 		/* get source_field and weights - from field if of type sum_components */
 		source_field=(struct Computed_field *)NULL;
 		weights=(FE_value *)NULL;
@@ -16344,6 +16974,44 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_xi_texture_coordinates */
 
+struct Add_type_to_option_table_data
+{
+	struct Option_table *option_table;
+	void *field_void;
+	void *computed_field_package_void;
+};
+
+static int Computed_field_add_type_to_option_table(struct Computed_field_type_data *type,
+	void *add_type_to_option_table_data_void)
+/*******************************************************************************
+LAST MODIFIED : 3 July 2000
+
+DESCRIPTION :
+Adds <type> to the <option_table> so it is available to the commands.
+==============================================================================*/
+{
+	int return_code;
+	struct Add_type_to_option_table_data *data;
+
+	ENTER(Computed_field_add_type_to_option_table);
+	if (type&&(data=(struct Add_type_to_option_table_data *)
+		add_type_to_option_table_data_void))
+	{
+		Option_table_add_entry(data->option_table,type->name,data->field_void,
+			type->define_type_user_data,
+			type->define_Computed_field_type_function);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_add_type_to_option_table.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_add_type_to_option_table */
+
 static int define_Computed_field_type(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -16358,10 +17026,13 @@ and its parameter fields and values.
 ==============================================================================*/
 {
 	int return_code;
+	struct Add_type_to_option_table_data data;
+	struct Computed_field_package *computed_field_package;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type);
-	if (state)
+	if (state && (computed_field_package = (struct Computed_field_package *)
+		computed_field_package_void))
 	{
 		if (state->current_token)
 		{
@@ -16457,9 +17128,6 @@ and its parameter fields and values.
 			/* rc_vector */
 			Option_table_add_entry(option_table,"rc_vector",field_void,
 				computed_field_package_void,define_Computed_field_type_rc_vector);
-			/* sample_texture */
-			Option_table_add_entry(option_table,"sample_texture",field_void,
-				computed_field_package_void,define_Computed_field_type_sample_texture);
 			/* scale */
 			Option_table_add_entry(option_table,"scale",field_void,
 				computed_field_package_void,define_Computed_field_type_scale);
@@ -16473,6 +17141,15 @@ and its parameter fields and values.
 			Option_table_add_entry(option_table,"xi_texture_coordinates",field_void,
 				computed_field_package_void,
 				define_Computed_field_type_xi_texture_coordinates);
+
+			/* new_types */
+			data.option_table = option_table;
+			data.field_void = field_void;
+			data.computed_field_package_void = computed_field_package_void;
+			FOR_EACH_OBJECT_IN_LIST(Computed_field_type_data)(
+				Computed_field_add_type_to_option_table, (void *)&data,
+				computed_field_package->computed_field_type_list);
+
 			return_code=Option_table_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
 		}
@@ -16522,8 +17199,8 @@ to modify it if it was.
 			{NULL,NULL,NULL,NULL}
 		};
 	char *current_token;
-	struct Coordinate_system coordinate_system, *coordinate_system_ptr;
-	int i, return_code;
+	struct Coordinate_system coordinate_system;
+	int return_code;
 	struct Computed_field *field;
 
 	ENTER(define_Computed_field_coordinate_system);
@@ -16541,97 +17218,22 @@ to modify it if it was.
 				{
 					/* parse coordinate_system */
 					(option_table[0]).to_be_modified= &coordinate_system;
-					if(return_code=process_option(state,option_table)&&
-						Computed_field_set_coordinate_system(field,&coordinate_system))
+					if(return_code=process_option(state,option_table))
 					{
-						return_code=define_Computed_field_type(state,field_void,
-							computed_field_package_void);
+						if(return_code=define_Computed_field_type(state,field_void,
+							computed_field_package_void))
+						{
+							/* Override the type set by define_Computed_field_type */
+							return_code = Computed_field_set_coordinate_system(
+								field,&coordinate_system);
+						}
 					}
 				}
 				else
 				{
-					/* not setting coordinate system so try and get it from the source fields */
+					/* Default coordinate system should be set when type is defined */
 					return_code=define_Computed_field_type(state,field_void,
 						computed_field_package_void);
-					switch (field->type)
-					{
-						case COMPUTED_FIELD_CMISS_NUMBER:
-						case COMPUTED_FIELD_COMPONENT:
-						case COMPUTED_FIELD_COMPOSITE:
-						case COMPUTED_FIELD_CONSTANT:
-						case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-						case COMPUTED_FIELD_CURL:
-						case COMPUTED_FIELD_CURVE_LOOKUP:
-						case COMPUTED_FIELD_DEFAULT_COORDINATE:
-						case COMPUTED_FIELD_DIVERGENCE:
-						case COMPUTED_FIELD_DOT_PRODUCT:
-						case COMPUTED_FIELD_EXTERNAL:
-						case COMPUTED_FIELD_FIBRE_AXES:
-						case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-						case COMPUTED_FIELD_GRADIENT:
-						case COMPUTED_FIELD_MAGNITUDE:
-						case COMPUTED_FIELD_PROJECTION:
-						case COMPUTED_FIELD_RC_COORDINATE:
-						case COMPUTED_FIELD_RC_VECTOR:
-						case COMPUTED_FIELD_SAMPLE_TEXTURE:
-						case COMPUTED_FIELD_SUM_COMPONENTS:
-						case COMPUTED_FIELD_XI_COORDINATES:
-						case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-						case COMPUTED_FIELD_2D_STRAIN:
-						{
-							/* Always RC which is the default */
-						} break;
-						case COMPUTED_FIELD_ADD:
-						case COMPUTED_FIELD_CLAMP_MAXIMUM:
-						case COMPUTED_FIELD_CLAMP_MINIMUM:
-						case COMPUTED_FIELD_EDIT_MASK:
-						case COMPUTED_FIELD_EMBEDDED:
-						case COMPUTED_FIELD_OFFSET:
-						case COMPUTED_FIELD_SCALE:
-						{
-							/* Inherit from source fields */
-							if (field->number_of_source_fields > 0)
-							{
-								coordinate_system_ptr = 
-									Computed_field_get_coordinate_system(field->source_fields[0]);
-								Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-								i = 1;
-								while (i < field->number_of_source_fields && 
-									Coordinate_systems_match(coordinate_system_ptr,
-										Computed_field_get_coordinate_system(field->source_fields[1])))
-								{
-									i++;
-								}
-								if (i < field->number_of_source_fields)
-								{
-									display_message(WARNING_MESSAGE,
-										"define_Computed_field_coordinate_system."
-										"  Source fields differ in coordinate system\n"
-										"     Defaulting to coordinate system from first source field.");
-								}
-							}
-						} break;
-						case COMPUTED_FIELD_COMPOSE:
-						{
-							/* Inherit from third source field */
-							coordinate_system_ptr = 
-								Computed_field_get_coordinate_system(field->source_fields[2]);
-							Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-						} break;
-						case COMPUTED_FIELD_FINITE_ELEMENT:
-						case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-						case COMPUTED_FIELD_NODE_VALUE:
-						{
-							/* Inherit from FE field */
-							Computed_field_set_coordinate_system(field,
-								get_FE_field_coordinate_system(field->fe_field));
-						} break;
-						default:
-						{
-							display_message(WARNING_MESSAGE,
-								"define_Computed_field_coordinate_system.  Unknown computed field type");
-						}
-					}
 				}
 			}
 			else
@@ -16890,7 +17492,7 @@ Writes the properties of the <field> to the command window.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *component_name,*field_name,*temp_string, *texture_name, *curve_name;
+	char *component_name,*field_name,*temp_string, *curve_name;
 	int i,return_code;
 
 	ENTER(list_Computed_field);
@@ -16908,321 +17510,326 @@ Writes the properties of the <field> to the command window.
 			DEALLOCATE(temp_string);
 		}
 		display_message(INFORMATION_MESSAGE,"  field type = %s\n",
-			Computed_field_type_to_string(field->type));
-		switch (field->type)
+			Computed_field_type_to_string(field));
+		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			case COMPUTED_FIELD_2D_STRAIN:
+			if (field->list_Computed_field_function)
 			{
-				display_message(INFORMATION_MESSAGE,
-					"    deformed coordinate field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,
-					"    undeformed coordinate field : %s\n",
-					field->source_fields[1]->name);
-				display_message(INFORMATION_MESSAGE,
-					"    fibre angle field : %s\n",
-					field->source_fields[2]->name);
-			} break;
-			case COMPUTED_FIELD_ADD:
+				field->list_Computed_field_function(field);
+			}
+			else
 			{
-				display_message(INFORMATION_MESSAGE,
-					"    field 1 : %s\n    scale factor 1 : %g\n",
-					field->source_fields[0]->name,field->source_values[0]);
-				display_message(INFORMATION_MESSAGE,
-					"    field 2 : %s\n    scale factor 2 : %g\n",
-					field->source_fields[1]->name,field->source_values[1]);
-			} break;
-			case COMPUTED_FIELD_CLAMP_MAXIMUM:
+				display_message(ERROR_MESSAGE,"list_Computed_field.  "
+					"Function not defined.");
+				return_code=0;
+			}
+		}
+		else
+		{
+			switch (field->type)
 			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    maximums :");
-				for (i=0;i<field->source_fields[0]->number_of_components;i++)
+				case COMPUTED_FIELD_2D_STRAIN:
 				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;
-			case COMPUTED_FIELD_CLAMP_MINIMUM:
-			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    minimums :");
-				for (i=0;i<field->source_fields[0]->number_of_components;i++)
-				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;
-			case COMPUTED_FIELD_COMPONENT:
-			{
-				if (component_name=Computed_field_get_component_name(
-					field->source_fields[0],field->component_no))
-				{
-					display_message(INFORMATION_MESSAGE,"    component : %s.%s\n",
-						field->source_fields[0]->name,component_name);
-					DEALLOCATE(component_name);
-				}
-				else
-				{
-					return_code=0;
-				}
-			} break;
-			case COMPUTED_FIELD_COMPOSE:
-			{
-				display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
-				display_message(INFORMATION_MESSAGE," %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    find element xi field :");
-				display_message(INFORMATION_MESSAGE," %s\n",
-					field->source_fields[1]->name);
-				display_message(INFORMATION_MESSAGE,"    calculate values field :");
-				display_message(INFORMATION_MESSAGE," %s\n",
-					field->source_fields[2]->name);
-			} break;
-			case COMPUTED_FIELD_COMPOSITE:
-			{
-				display_message(INFORMATION_MESSAGE,"    number_of_scalars : %d\n",
-					field->number_of_source_fields);
-				display_message(INFORMATION_MESSAGE,"    scalars :");
-				for (i=0;i<field->number_of_source_fields;i++)
-				{
-					display_message(INFORMATION_MESSAGE," %s",
-						field->source_fields[i]->name);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;
-			case COMPUTED_FIELD_CONSTANT:
-			{
-				display_message(INFORMATION_MESSAGE,"    number_of_values : %d\n",
-					field->number_of_source_values);
-				display_message(INFORMATION_MESSAGE,"    values :");
-				for (i=0;i<field->number_of_source_values;i++)
-				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;
-			case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    field : %s\n",field->source_fields[0]->name);
-			} break;
-			case COMPUTED_FIELD_CURL:
-			case COMPUTED_FIELD_DIVERGENCE:
-			case COMPUTED_FIELD_RC_VECTOR:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    coordinate field : %s\n",field->source_fields[1]->name);
-				display_message(INFORMATION_MESSAGE,
-					"    vector field : %s\n",field->source_fields[0]->name);
-			} break;
-			case COMPUTED_FIELD_CURVE_LOOKUP:
-			{
-				if (return_code=GET_NAME(Control_curve)(field->curve,&curve_name))
-				{
-					display_message(INFORMATION_MESSAGE,"    curve : %s\n",
-						curve_name);
-					display_message(INFORMATION_MESSAGE,"    source field : %s\n",
-						field->source_fields[0]->name);
-					DEALLOCATE(curve_name);
-				}
-			} break;
-			case COMPUTED_FIELD_DOT_PRODUCT:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    field 1 : %s\n    field 2 : %s\n",
-					field->source_fields[0]->name, field->source_fields[1]->name);
-			} break;
-			case COMPUTED_FIELD_EDIT_MASK:
-			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    edit mask :");
-				for (i=0;i<field->source_fields[0]->number_of_components;i++)
-				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;
-			case COMPUTED_FIELD_EMBEDDED:
-			{
-				if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-				{
-					display_message(INFORMATION_MESSAGE,"    element_xi fe_field: %s\n",field_name);
-					DEALLOCATE(field_name);
 					display_message(INFORMATION_MESSAGE,
-						"    field : %s\n",field->source_fields[0]->name);
-				}
-			} break;
-			case COMPUTED_FIELD_EXTERNAL:
-			{
-				display_message(INFORMATION_MESSAGE,"    external_filename : %s\n",
-					field->child_filename);
-				display_message(INFORMATION_MESSAGE,"    number_of_source_values : %d\n",
-					field->number_of_source_values);
-				if (field->number_of_source_values)
+						"    deformed coordinate field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,
+						"    undeformed coordinate field : %s\n",
+						field->source_fields[1]->name);
+					display_message(INFORMATION_MESSAGE,
+						"    fibre angle field : %s\n",
+						field->source_fields[2]->name);
+				} break;
+				case COMPUTED_FIELD_ADD:
 				{
-					display_message(INFORMATION_MESSAGE,"    source_values :");
-					for (i=0;i<field->number_of_source_values;i++)
+					display_message(INFORMATION_MESSAGE,
+						"    field 1 : %s\n    scale factor 1 : %g\n",
+						field->source_fields[0]->name,field->source_values[0]);
+					display_message(INFORMATION_MESSAGE,
+						"    field 2 : %s\n    scale factor 2 : %g\n",
+						field->source_fields[1]->name,field->source_values[1]);
+				} break;
+				case COMPUTED_FIELD_CLAMP_MAXIMUM:
+				{
+					display_message(INFORMATION_MESSAGE,"    field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    maximums :");
+					for (i=0;i<field->source_fields[0]->number_of_components;i++)
 					{
-						display_message(INFORMATION_MESSAGE," %f",
-							field->source_values[i]);
+						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 					}
 					display_message(INFORMATION_MESSAGE,"\n");
-				}
-				display_message(INFORMATION_MESSAGE,"    number_of_source_fields : %d\n",
-					field->number_of_source_fields);
-				if (field->number_of_source_fields)
-				{				
-					display_message(INFORMATION_MESSAGE,"    source_fields :");
+				} break;
+				case COMPUTED_FIELD_CLAMP_MINIMUM:
+				{
+					display_message(INFORMATION_MESSAGE,"    field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    minimums :");
+					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"\n");
+				} break;
+				case COMPUTED_FIELD_COMPONENT:
+				{
+					if (component_name=Computed_field_get_component_name(
+						field->source_fields[0],field->component_no))
+					{
+						display_message(INFORMATION_MESSAGE,"    component : %s.%s\n",
+							field->source_fields[0]->name,component_name);
+						DEALLOCATE(component_name);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_COMPOSE:
+				{
+					display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
+					display_message(INFORMATION_MESSAGE," %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    find element xi field :");
+					display_message(INFORMATION_MESSAGE," %s\n",
+						field->source_fields[1]->name);
+					display_message(INFORMATION_MESSAGE,"    calculate values field :");
+					display_message(INFORMATION_MESSAGE," %s\n",
+						field->source_fields[2]->name);
+				} break;
+				case COMPUTED_FIELD_COMPOSITE:
+				{
+					display_message(INFORMATION_MESSAGE,"    number_of_scalars : %d\n",
+						field->number_of_source_fields);
+					display_message(INFORMATION_MESSAGE,"    scalars :");
 					for (i=0;i<field->number_of_source_fields;i++)
 					{
 						display_message(INFORMATION_MESSAGE," %s",
 							field->source_fields[i]->name);
 					}
 					display_message(INFORMATION_MESSAGE,"\n");
-				}
-				display_message(INFORMATION_MESSAGE,"    timeout %d\n",
-					field->timeout);
-			} break;
-			case COMPUTED_FIELD_FIBRE_AXES:
-			case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    coordinate field : %s\n",field->source_fields[1]->name);
-				display_message(INFORMATION_MESSAGE,
-					"    fibre field : %s\n",field->source_fields[0]->name);
-			} break;
-			case COMPUTED_FIELD_FINITE_ELEMENT:
-			{
-				if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+				} break;
+				case COMPUTED_FIELD_CONSTANT:
 				{
-					display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-					DEALLOCATE(field_name);
-				}
-				display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
-					CM_field_type_string(get_FE_field_CM_field_type(field->fe_field)));
-				display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
-					Value_type_string(get_FE_field_value_type(field->fe_field)));
-			} break;
-			case COMPUTED_FIELD_GRADIENT:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    coordinate field : %s\n",field->source_fields[1]->name);
-				display_message(INFORMATION_MESSAGE,
-					"    scalar field : %s\n",field->source_fields[0]->name);
-			} break;
-			case COMPUTED_FIELD_MAGNITUDE:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    field : %s\n",field->source_fields[0]->name);
-			} break;
-			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-			{
-				if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-				{
-					display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-					display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-						get_FE_nodal_value_type_string(field->nodal_value_type));
-					display_message(INFORMATION_MESSAGE,
-						"    time field : %s\n",field->source_fields[0]->name);
-					display_message(INFORMATION_MESSAGE,"    version : %d\n",
-						field->version_number+1);
-					DEALLOCATE(field_name);
-				}
-			} break;
-			case COMPUTED_FIELD_NODE_VALUE:
-			{
-				if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-				{
-					display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-					display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-						get_FE_nodal_value_type_string(field->nodal_value_type));
-					display_message(INFORMATION_MESSAGE,"    version : %d\n",
-						field->version_number+1);
-					DEALLOCATE(field_name);
-				}
-			} break;
-			case COMPUTED_FIELD_OFFSET:
-			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    offsets :");
-				for (i=0;i<field->source_fields[0]->number_of_components;i++)
-				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;		
-			case COMPUTED_FIELD_PROJECTION:
-			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    number_of_components : %d\n",
-					field->number_of_components);
-				display_message(INFORMATION_MESSAGE,"    projection_matrix : ");
-				for (i=0;i<((field->number_of_components + 1) * 
-					(field->source_fields[0]->number_of_components + 1));i++)
-				{
-					display_message(INFORMATION_MESSAGE," %g",field->projection_matrix[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;		
-			case COMPUTED_FIELD_RC_COORDINATE:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    coordinate field : %s\n",field->source_fields[0]->name);
-			} break;
-			case COMPUTED_FIELD_SAMPLE_TEXTURE:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    texture coordinate field : %s\n",field->source_fields[0]->name);
-				if (return_code=GET_NAME(Texture)(field->texture,&texture_name))
+					display_message(INFORMATION_MESSAGE,"    number_of_values : %d\n",
+						field->number_of_source_values);
+					display_message(INFORMATION_MESSAGE,"    values :");
+					for (i=0;i<field->number_of_source_values;i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"\n");
+				} break;
+				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 				{
 					display_message(INFORMATION_MESSAGE,
-						"    texture : %s\n",texture_name);
-					DEALLOCATE(texture_name);
-				}
-			} break;
-			case COMPUTED_FIELD_SCALE:
-			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    scale_factors :");
-				for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						"    field : %s\n",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_CURL:
+				case COMPUTED_FIELD_DIVERGENCE:
+				case COMPUTED_FIELD_RC_VECTOR:
 				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;
-			case COMPUTED_FIELD_SUM_COMPONENTS:
-			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    weights :");
-				for (i=0;i<field->source_fields[0]->number_of_components;i++)
+					display_message(INFORMATION_MESSAGE,
+						"    coordinate field : %s\n",field->source_fields[1]->name);
+					display_message(INFORMATION_MESSAGE,
+						"    vector field : %s\n",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_CURVE_LOOKUP:
 				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					if (return_code=GET_NAME(Control_curve)(field->curve,&curve_name))
+					{
+						display_message(INFORMATION_MESSAGE,"    curve : %s\n",
+							curve_name);
+						display_message(INFORMATION_MESSAGE,"    source field : %s\n",
+							field->source_fields[0]->name);
+						DEALLOCATE(curve_name);
+					}
+				} break;
+				case COMPUTED_FIELD_DOT_PRODUCT:
+				{
+					display_message(INFORMATION_MESSAGE,
+						"    field 1 : %s\n    field 2 : %s\n",
+						field->source_fields[0]->name, field->source_fields[1]->name);
+				} break;
+				case COMPUTED_FIELD_EDIT_MASK:
+				{
+					display_message(INFORMATION_MESSAGE,"    field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    edit mask :");
+					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"\n");
+				} break;
+				case COMPUTED_FIELD_EMBEDDED:
+				{
+					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+					{
+						display_message(INFORMATION_MESSAGE,"    element_xi fe_field: %s\n",field_name);
+						DEALLOCATE(field_name);
+						display_message(INFORMATION_MESSAGE,
+							"    field : %s\n",field->source_fields[0]->name);
+					}
+				} break;
+				case COMPUTED_FIELD_EXTERNAL:
+				{
+					display_message(INFORMATION_MESSAGE,"    external_filename : %s\n",
+						field->child_filename);
+					display_message(INFORMATION_MESSAGE,"    number_of_source_values : %d\n",
+						field->number_of_source_values);
+					if (field->number_of_source_values)
+					{
+						display_message(INFORMATION_MESSAGE,"    source_values :");
+						for (i=0;i<field->number_of_source_values;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %f",
+								field->source_values[i]);
+						}
+						display_message(INFORMATION_MESSAGE,"\n");
+					}
+					display_message(INFORMATION_MESSAGE,"    number_of_source_fields : %d\n",
+						field->number_of_source_fields);
+					if (field->number_of_source_fields)
+					{				
+						display_message(INFORMATION_MESSAGE,"    source_fields :");
+						for (i=0;i<field->number_of_source_fields;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %s",
+								field->source_fields[i]->name);
+						}
+						display_message(INFORMATION_MESSAGE,"\n");
+					}
+					display_message(INFORMATION_MESSAGE,"    timeout %d\n",
+						field->timeout);
+				} break;
+				case COMPUTED_FIELD_FIBRE_AXES:
+				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
+				{
+					display_message(INFORMATION_MESSAGE,
+						"    coordinate field : %s\n",field->source_fields[1]->name);
+					display_message(INFORMATION_MESSAGE,
+						"    fibre field : %s\n",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_FINITE_ELEMENT:
+				{
+					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+					{
+						display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
+						DEALLOCATE(field_name);
+					}
+					display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
+						CM_field_type_string(get_FE_field_CM_field_type(field->fe_field)));
+					display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
+						Value_type_string(get_FE_field_value_type(field->fe_field)));
+				} break;
+				case COMPUTED_FIELD_GRADIENT:
+				{
+					display_message(INFORMATION_MESSAGE,
+						"    coordinate field : %s\n",field->source_fields[1]->name);
+					display_message(INFORMATION_MESSAGE,
+						"    scalar field : %s\n",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_MAGNITUDE:
+				{
+					display_message(INFORMATION_MESSAGE,
+						"    field : %s\n",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+				{
+					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+					{
+						display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
+						display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
+							get_FE_nodal_value_type_string(field->nodal_value_type));
+						display_message(INFORMATION_MESSAGE,
+							"    time field : %s\n",field->source_fields[0]->name);
+						display_message(INFORMATION_MESSAGE,"    version : %d\n",
+							field->version_number+1);
+						DEALLOCATE(field_name);
+					}
+				} break;
+				case COMPUTED_FIELD_NODE_VALUE:
+				{
+					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+					{
+						display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
+						display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
+							get_FE_nodal_value_type_string(field->nodal_value_type));
+						display_message(INFORMATION_MESSAGE,"    version : %d\n",
+							field->version_number+1);
+						DEALLOCATE(field_name);
+					}
+				} break;
+				case COMPUTED_FIELD_OFFSET:
+				{
+					display_message(INFORMATION_MESSAGE,"    field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    offsets :");
+					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"\n");
+				} break;		
+				case COMPUTED_FIELD_PROJECTION:
+				{
+					display_message(INFORMATION_MESSAGE,"    field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    number_of_components : %d\n",
+						field->number_of_components);
+					display_message(INFORMATION_MESSAGE,"    projection_matrix : ");
+					for (i=0;i<((field->number_of_components + 1) * 
+						(field->source_fields[0]->number_of_components + 1));i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",field->projection_matrix[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"\n");
+				} break;		
+				case COMPUTED_FIELD_RC_COORDINATE:
+				{
+					display_message(INFORMATION_MESSAGE,
+						"    coordinate field : %s\n",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_SCALE:
+				{
+					display_message(INFORMATION_MESSAGE,"    field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    scale_factors :");
+					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"\n");
+				} break;
+				case COMPUTED_FIELD_SUM_COMPONENTS:
+				{
+					display_message(INFORMATION_MESSAGE,"    field : %s\n",
+						field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    weights :");
+					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"\n");
+				} break;
+				case COMPUTED_FIELD_CMISS_NUMBER:
+				case COMPUTED_FIELD_DEFAULT_COORDINATE:
+				case COMPUTED_FIELD_XI_COORDINATES:
+				{
+					/* no extra parameters */
+				} break;
+				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
+				{
+					display_message(INFORMATION_MESSAGE,"    seed_element : %d\n",
+						field->seed_element->cm.number);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"list_Computed_field.  Unknown field type");
+					return_code=0;
 				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;
-			case COMPUTED_FIELD_CMISS_NUMBER:
-			case COMPUTED_FIELD_DEFAULT_COORDINATE:
-			case COMPUTED_FIELD_XI_COORDINATES:
-			{
-				/* no extra parameters */
-			} break;
-			case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-			{
-				display_message(INFORMATION_MESSAGE,"    seed_element : %d\n",
-					field->seed_element->cm.number);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"list_Computed_field.  Unknown field type");
-				return_code=0;
 			}
 		}
 		/* write the names of the components */
@@ -17276,8 +17883,7 @@ are created automatically by the program.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *command_prefix,*component_name,*field_name,*temp_string, *texture_name,
-		*curve_name;
+	char *command_prefix,*component_name,*field_name,*temp_string, *curve_name;
 	int i,return_code;
 
 	ENTER(list_Computed_field_commands);
@@ -17294,274 +17900,279 @@ are created automatically by the program.
 				DEALLOCATE(temp_string);
 			}
 			display_message(INFORMATION_MESSAGE," %s",
-				Computed_field_type_to_string(field->type));
-			switch (field->type)
+				Computed_field_type_to_string(field));
+			if (COMPUTED_FIELD_NEW_TYPES == field->type)
 			{
-				case COMPUTED_FIELD_2D_STRAIN:
+				if (field->list_Computed_field_commands_function)
 				{
-					display_message(INFORMATION_MESSAGE,
-						" deformed_coordinates %s undeformed_coordinates %s fibre_angle %s",
-						field->source_fields[0]->name, field->source_fields[1]->name,
-						field->source_fields[2]->name);
-				} break;
-				case COMPUTED_FIELD_ADD:
+					field->list_Computed_field_commands_function(field);
+				}
+				else
 				{
-					display_message(INFORMATION_MESSAGE,
-						" fields %s %s scale_factors %g %g",
-						field->source_fields[0]->name,field->source_fields[1]->name,
-						field->source_values[0],field->source_values[1]);
-				} break;
-				case COMPUTED_FIELD_CLAMP_MAXIMUM:
+					display_message(ERROR_MESSAGE,"list_Computed_field_commands.  "
+						"Function not defined.");
+					return_code=0;
+				}
+			}
+			else
+			{
+				switch (field->type)
 				{
-					display_message(INFORMATION_MESSAGE," field %s maximums",
-						field->source_fields[0]->name);
-					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+					case COMPUTED_FIELD_2D_STRAIN:
 					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-				} break;
-				case COMPUTED_FIELD_CLAMP_MINIMUM:
-				{
-					display_message(INFORMATION_MESSAGE," field %s minimums",
-						field->source_fields[0]->name);
-					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						display_message(INFORMATION_MESSAGE,
+							" deformed_coordinates %s undeformed_coordinates %s fibre_angle %s",
+							field->source_fields[0]->name, field->source_fields[1]->name,
+							field->source_fields[2]->name);
+					} break;
+					case COMPUTED_FIELD_ADD:
 					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-				} break;
-				case COMPUTED_FIELD_COMPONENT:
-				{
-					if (component_name=Computed_field_get_component_name(
-						field->source_fields[0],field->component_no))
+						display_message(INFORMATION_MESSAGE,
+							" fields %s %s scale_factors %g %g",
+							field->source_fields[0]->name,field->source_fields[1]->name,
+							field->source_values[0],field->source_values[1]);
+					} break;
+					case COMPUTED_FIELD_CLAMP_MAXIMUM:
 					{
-						display_message(INFORMATION_MESSAGE," %s.%s",
-							field->source_fields[0]->name,component_name);
-						DEALLOCATE(component_name);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_COMPOSE:
-				{
-					display_message(INFORMATION_MESSAGE," texture_coordinates_field %s"
-						" find_element_xi_field %s calculate_values_field %s",
-						field->source_fields[0]->name, field->source_fields[1]->name,
-						field->source_fields[2]->name);
-				} break;
-				case COMPUTED_FIELD_COMPOSITE:
-				{
-					display_message(INFORMATION_MESSAGE," number_of_scalars %d scalars",
-						field->number_of_source_fields);
-					for (i=0;i<field->number_of_source_fields;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %s",
-							field->source_fields[i]->name);
-					}
-				} break;
-				case COMPUTED_FIELD_CONSTANT:
-				{
-					display_message(INFORMATION_MESSAGE," number_of_values %d values",
-						field->number_of_source_values);
-					for (i=0;i<field->number_of_source_values;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-				} break;
-				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" field %s",field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_CURL:
-				case COMPUTED_FIELD_DIVERGENCE:
-				case COMPUTED_FIELD_RC_VECTOR:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" coordinate %s vector %s",field->source_fields[1]->name,
-						field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_CURVE_LOOKUP:
-				{
-					if (return_code=
-						GET_NAME(Control_curve)(field->curve,&curve_name))
-					{
-						display_message(INFORMATION_MESSAGE," curve %s source %s",
-							curve_name,field->source_fields[0]->name);
-						DEALLOCATE(curve_name);
-					}
-				} break;
-				case COMPUTED_FIELD_DOT_PRODUCT:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" fields %s %s",field->source_fields[0]->name,
-						field->source_fields[1]->name);
-				} break;
-				case COMPUTED_FIELD_EDIT_MASK:
-				{
-					display_message(INFORMATION_MESSAGE," field %s edit_mask",
-						field->source_fields[0]->name);
-					for (i=0;i<field->source_fields[0]->number_of_components;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-				} break;
-				case COMPUTED_FIELD_EMBEDDED:
-				{
-					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-					{
-						display_message(INFORMATION_MESSAGE," element_xi %s field %s",field_name,
+						display_message(INFORMATION_MESSAGE," field %s maximums",
 							field->source_fields[0]->name);
-						DEALLOCATE(field_name);
-					}
-				} break;
-				case COMPUTED_FIELD_EXTERNAL:
-				{
-					display_message(INFORMATION_MESSAGE," number_of_values %d",
-						field->number_of_source_values);
-					display_message(INFORMATION_MESSAGE," number_of_fields %d",
-						field->number_of_source_fields);
-					display_message(INFORMATION_MESSAGE," filename %s",
-						field->child_filename);
-					if (field->number_of_source_values)
-					{
-						display_message(INFORMATION_MESSAGE," values");
-						for (i=0;i<field->number_of_source_values;i++)
+						for (i=0;i<field->source_fields[0]->number_of_components;i++)
 						{
-							display_message(INFORMATION_MESSAGE," %f",
-								field->source_values[i]);
+							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 						}
-					}
-					if (field->number_of_source_fields)
-					{				
-						display_message(INFORMATION_MESSAGE," fields");
+					} break;
+					case COMPUTED_FIELD_CLAMP_MINIMUM:
+					{
+						display_message(INFORMATION_MESSAGE," field %s minimums",
+							field->source_fields[0]->name);
+						for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+						}
+					} break;
+					case COMPUTED_FIELD_COMPONENT:
+					{
+						if (component_name=Computed_field_get_component_name(
+							field->source_fields[0],field->component_no))
+						{
+							display_message(INFORMATION_MESSAGE," %s.%s",
+								field->source_fields[0]->name,component_name);
+							DEALLOCATE(component_name);
+						}
+						else
+						{
+							return_code=0;
+						}
+					} break;
+					case COMPUTED_FIELD_COMPOSE:
+					{
+						display_message(INFORMATION_MESSAGE," texture_coordinates_field %s"
+							" find_element_xi_field %s calculate_values_field %s",
+							field->source_fields[0]->name, field->source_fields[1]->name,
+							field->source_fields[2]->name);
+					} break;
+					case COMPUTED_FIELD_COMPOSITE:
+					{
+						display_message(INFORMATION_MESSAGE," number_of_scalars %d scalars",
+							field->number_of_source_fields);
 						for (i=0;i<field->number_of_source_fields;i++)
 						{
 							display_message(INFORMATION_MESSAGE," %s",
 								field->source_fields[i]->name);
 						}
-					}
-					display_message(INFORMATION_MESSAGE," timeout %d",
-						field->timeout);
-			} break;
-				case COMPUTED_FIELD_FIBRE_AXES:
-				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" coordinate %s fibre %s",field->source_fields[1]->name,
-						field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_FINITE_ELEMENT:
-				{
-					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+					} break;
+					case COMPUTED_FIELD_CONSTANT:
 					{
-						display_message(INFORMATION_MESSAGE," fe_field %s",field_name);
-						DEALLOCATE(field_name);
-					}
-				} break;
-				case COMPUTED_FIELD_GRADIENT:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" coordinate %s scalar %s",field->source_fields[1]->name,
-						field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_MAGNITUDE:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" field %s",field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-				{
-					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-					{
-						display_message(INFORMATION_MESSAGE," fe_field %s %s time %s version %d",
-							field_name,get_FE_nodal_value_type_string(field->nodal_value_type),
-							field->source_fields[0]->name,field->version_number+1);
-						DEALLOCATE(field_name);
-					}
-				} break;
-				case COMPUTED_FIELD_NODE_VALUE:
-				{
-					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-					{
-						display_message(INFORMATION_MESSAGE," fe_field %s %s version %d",
-							field_name,
-							get_FE_nodal_value_type_string(field->nodal_value_type),
-							field->version_number+1);
-						DEALLOCATE(field_name);
-					}
-				} break;
-				case COMPUTED_FIELD_OFFSET:
-				{
-					display_message(INFORMATION_MESSAGE," field %s offsets",
-						field->source_fields[0]->name);
-					for (i=0;i<field->source_fields[0]->number_of_components;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-				} break;
-				case COMPUTED_FIELD_PROJECTION:
-				{
-					display_message(INFORMATION_MESSAGE," field %s number_of_components %d",
-						field->source_fields[0]->name, field->number_of_components);
-					display_message(INFORMATION_MESSAGE," projection_matrix");
-					for (i=0;i<((field->number_of_components + 1) * 
-						(field->source_fields[0]->number_of_components + 1));i++)
-					{
-						display_message(INFORMATION_MESSAGE," %g",field->projection_matrix[i]);
-					}
-				} break;		
-				case COMPUTED_FIELD_RC_COORDINATE:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" coordinate %s",field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_SAMPLE_TEXTURE:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" coordinates %s",field->source_fields[0]->name);
-					if (return_code=GET_NAME(Texture)(field->texture,&texture_name))
+						display_message(INFORMATION_MESSAGE," number_of_values %d values",
+							field->number_of_source_values);
+						for (i=0;i<field->number_of_source_values;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+						}
+					} break;
+					case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 					{
 						display_message(INFORMATION_MESSAGE,
-							" texture %s",texture_name);
-						DEALLOCATE(texture_name);
-					}
-				} break;
-				case COMPUTED_FIELD_SCALE:
-				{
-					display_message(INFORMATION_MESSAGE," field %s scale_factors",
-						field->source_fields[0]->name);
-					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+							" field %s",field->source_fields[0]->name);
+					} break;
+					case COMPUTED_FIELD_CURL:
+					case COMPUTED_FIELD_DIVERGENCE:
+					case COMPUTED_FIELD_RC_VECTOR:
 					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-					}
-				} break;
-				case COMPUTED_FIELD_SUM_COMPONENTS:
-				{
-					display_message(INFORMATION_MESSAGE," field %s weights",
-						field->source_fields[0]->name);
-					for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						display_message(INFORMATION_MESSAGE,
+							" coordinate %s vector %s",field->source_fields[1]->name,
+							field->source_fields[0]->name);
+					} break;
+					case COMPUTED_FIELD_CURVE_LOOKUP:
 					{
-						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+						if (return_code=
+							GET_NAME(Control_curve)(field->curve,&curve_name))
+						{
+							display_message(INFORMATION_MESSAGE," curve %s source %s",
+								curve_name,field->source_fields[0]->name);
+							DEALLOCATE(curve_name);
+						}
+					} break;
+					case COMPUTED_FIELD_DOT_PRODUCT:
+					{
+						display_message(INFORMATION_MESSAGE,
+							" fields %s %s",field->source_fields[0]->name,
+							field->source_fields[1]->name);
+					} break;
+					case COMPUTED_FIELD_EDIT_MASK:
+					{
+						display_message(INFORMATION_MESSAGE," field %s edit_mask",
+							field->source_fields[0]->name);
+						for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+						}
+					} break;
+					case COMPUTED_FIELD_EMBEDDED:
+					{
+						if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+						{
+							display_message(INFORMATION_MESSAGE," element_xi %s field %s",field_name,
+								field->source_fields[0]->name);
+							DEALLOCATE(field_name);
+						}
+					} break;
+					case COMPUTED_FIELD_EXTERNAL:
+					{
+						display_message(INFORMATION_MESSAGE," number_of_values %d",
+							field->number_of_source_values);
+						display_message(INFORMATION_MESSAGE," number_of_fields %d",
+							field->number_of_source_fields);
+						display_message(INFORMATION_MESSAGE," filename %s",
+							field->child_filename);
+						if (field->number_of_source_values)
+						{
+							display_message(INFORMATION_MESSAGE," values");
+							for (i=0;i<field->number_of_source_values;i++)
+							{
+								display_message(INFORMATION_MESSAGE," %f",
+									field->source_values[i]);
+							}
+						}
+						if (field->number_of_source_fields)
+						{				
+							display_message(INFORMATION_MESSAGE," fields");
+							for (i=0;i<field->number_of_source_fields;i++)
+							{
+								display_message(INFORMATION_MESSAGE," %s",
+									field->source_fields[i]->name);
+							}
+						}
+						display_message(INFORMATION_MESSAGE," timeout %d",
+							field->timeout);
+					} break;
+					case COMPUTED_FIELD_FIBRE_AXES:
+					case COMPUTED_FIELD_FIBRE_SHEET_AXES:
+					{
+						display_message(INFORMATION_MESSAGE,
+							" coordinate %s fibre %s",field->source_fields[1]->name,
+							field->source_fields[0]->name);
+					} break;
+					case COMPUTED_FIELD_FINITE_ELEMENT:
+					{
+						if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+						{
+							display_message(INFORMATION_MESSAGE," fe_field %s",field_name);
+							DEALLOCATE(field_name);
+						}
+					} break;
+					case COMPUTED_FIELD_GRADIENT:
+					{
+						display_message(INFORMATION_MESSAGE,
+							" coordinate %s scalar %s",field->source_fields[1]->name,
+							field->source_fields[0]->name);
+					} break;
+					case COMPUTED_FIELD_MAGNITUDE:
+					{
+						display_message(INFORMATION_MESSAGE,
+							" field %s",field->source_fields[0]->name);
+					} break;
+					case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+					{
+						if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+						{
+							display_message(INFORMATION_MESSAGE," fe_field %s %s time %s version %d",
+								field_name,get_FE_nodal_value_type_string(field->nodal_value_type),
+								field->source_fields[0]->name,field->version_number+1);
+							DEALLOCATE(field_name);
+						}
+					} break;
+					case COMPUTED_FIELD_NODE_VALUE:
+					{
+						if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+						{
+							display_message(INFORMATION_MESSAGE," fe_field %s %s version %d",
+								field_name,
+								get_FE_nodal_value_type_string(field->nodal_value_type),
+								field->version_number+1);
+							DEALLOCATE(field_name);
+						}
+					} break;
+					case COMPUTED_FIELD_OFFSET:
+					{
+						display_message(INFORMATION_MESSAGE," field %s offsets",
+							field->source_fields[0]->name);
+						for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+						}
+					} break;
+					case COMPUTED_FIELD_PROJECTION:
+					{
+						display_message(INFORMATION_MESSAGE," field %s number_of_components %d",
+							field->source_fields[0]->name, field->number_of_components);
+						display_message(INFORMATION_MESSAGE," projection_matrix");
+						for (i=0;i<((field->number_of_components + 1) * 
+							(field->source_fields[0]->number_of_components + 1));i++)
+						{
+							display_message(INFORMATION_MESSAGE," %g",field->projection_matrix[i]);
+						}
+					} break;		
+					case COMPUTED_FIELD_RC_COORDINATE:
+					{
+						display_message(INFORMATION_MESSAGE,
+							" coordinate %s",field->source_fields[0]->name);
+					} break;
+					case COMPUTED_FIELD_SCALE:
+					{
+						display_message(INFORMATION_MESSAGE," field %s scale_factors",
+							field->source_fields[0]->name);
+						for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+						}
+					} break;
+					case COMPUTED_FIELD_SUM_COMPONENTS:
+					{
+						display_message(INFORMATION_MESSAGE," field %s weights",
+							field->source_fields[0]->name);
+						for (i=0;i<field->source_fields[0]->number_of_components;i++)
+						{
+							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+						}
+					} break;
+					case COMPUTED_FIELD_CMISS_NUMBER:
+					case COMPUTED_FIELD_DEFAULT_COORDINATE:
+					case COMPUTED_FIELD_XI_COORDINATES:
+					{
+						/* no extra parameters */
+					} break;
+					case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
+					{
+						display_message(INFORMATION_MESSAGE," seed_element %d",
+							field->seed_element->cm.number);
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"list_Computed_field.  Unknown field type");
+						return_code=0;
 					}
-				} break;
-				case COMPUTED_FIELD_CMISS_NUMBER:
-				case COMPUTED_FIELD_DEFAULT_COORDINATE:
-				case COMPUTED_FIELD_XI_COORDINATES:
-				{
-					/* no extra parameters */
-				} break;
-				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-				{
-					display_message(INFORMATION_MESSAGE," seed_element %d",
-						field->seed_element->cm.number);
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"list_Computed_field.  Unknown field type");
-					return_code=0;
 				}
 			}
 			display_message(INFORMATION_MESSAGE,"\n");
@@ -17633,7 +18244,7 @@ components and coordinate system.
 	{
 		display_message(INFORMATION_MESSAGE,"%s",field->name);
 		display_message(INFORMATION_MESSAGE," : %s",
-			Computed_field_type_to_string(field->type));
+			Computed_field_type_to_string(field));
 		display_message(INFORMATION_MESSAGE,", %d component(s)",
 			field->number_of_components);
 		if (temp_string=Coordinate_system_string(&field->coordinate_system))
@@ -17681,7 +18292,6 @@ its name matches the contents of the <other_computed_field_void>.
 			&&(field->computed_field_manager==
 				other_computed_field->computed_field_manager)
 			&&(field->seed_element==other_computed_field->seed_element)
-			&&(field->texture==other_computed_field->texture)
 			&&(field->number_of_source_fields==
 				other_computed_field->number_of_source_fields)
 			&&(field->number_of_source_values==
@@ -17717,6 +18327,30 @@ its name matches the contents of the <other_computed_field_void>.
 				else
 				{
 					return_code = 0;
+				}
+			}
+			if (return_code && (field->type == COMPUTED_FIELD_NEW_TYPES))
+			{
+				if (field->type_string == other_computed_field->type_string)
+				{
+					
+					if (field->computed_field_type_specific_contents_match_function)
+					{
+						return_code = 
+							field->computed_field_type_specific_contents_match_function(
+							field, other_computed_field);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_contents_match.  "
+							"Type specific contents match function undefined.");
+						return_code = 0;					
+					}
+				}
+				else
+				{
+					return_code = 0;					
 				}
 			}
 		}
@@ -18199,7 +18833,6 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 struct Computed_field_package *CREATE(Computed_field_package)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_element) *fe_element_manager,
-	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Control_curve) *control_curve_manager)
 /*******************************************************************************
 LAST MODIFIED : 5 November 1999
@@ -18216,7 +18849,7 @@ FE_fields.
 	struct Computed_field_package *computed_field_package;
 
 	ENTER(CREATE(Computed_field_package));
-	if (fe_field_manager&&fe_element_manager&&texture_manager&&
+	if (fe_field_manager&&fe_element_manager&&
 		control_curve_manager)
 	{
 		if (ALLOCATE(computed_field_package,struct Computed_field_package,1)&&
@@ -18225,14 +18858,15 @@ FE_fields.
 		{
 			computed_field_package->fe_field_manager=fe_field_manager;
 			computed_field_package->fe_element_manager=fe_element_manager;
-			computed_field_package->texture_manager=texture_manager;
 			computed_field_package->control_curve_manager=control_curve_manager;
 			computed_field_package->control_curve_manager_callback_id=
 				MANAGER_REGISTER(Control_curve)(Computed_field_Control_curve_change,
 					(void *)computed_field_package,control_curve_manager);
 			computed_field_package->fe_field_manager_callback_id=
 				MANAGER_REGISTER(FE_field)(Computed_field_FE_field_change,
-					(void *)computed_field_package,fe_field_manager);
+				  (void *)computed_field_package,fe_field_manager);
+			computed_field_package->computed_field_type_list =
+			  CREATE(LIST(Computed_field_type_data))();
 		}
 		else
 		{
@@ -18275,6 +18909,8 @@ Cancels any further messages from managers.
 		MANAGER_DEREGISTER(Control_curve)(
 			computed_field_package->control_curve_manager_callback_id,
 			computed_field_package->control_curve_manager);
+		DESTROY(LIST(Computed_field_type_data))(
+			&computed_field_package->computed_field_type_list);
 		DEALLOCATE(*package_address);
 	}
 	else
@@ -18318,6 +18954,48 @@ allow interfacing to the choose_object widgets.
 
 	return (computed_field_manager);
 } /* Computed_field_package_get_computed_field_manager */
+
+int Computed_field_package_add_type(
+	struct Computed_field_package *computed_field_package, char *name,
+	Define_Computed_field_type_function define_Computed_field_type_function,
+	void *define_type_user_data)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Adds the type of Computed_field described by <name> and 
+<define_Computed_field_type_function> to those in the LIST held by the 
+<computed_field_package>.  This type is then added to the 
+define_Computed_field_type option table when parsing commands.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_type_data *data;
+
+	ENTER(Computed_field_package_add_type);
+	if (computed_field_package && name && define_Computed_field_type_function)
+	{
+		if(data = CREATE(Computed_field_type_data)(name,
+			define_Computed_field_type_function, define_type_user_data))
+		{
+			return_code = ADD_OBJECT_TO_LIST(Computed_field_type_data)(data,
+				computed_field_package->computed_field_type_list);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_package_add_type.  Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_package_add_type */
 
 int Computed_field_can_be_destroyed(struct Computed_field *field)
 /*******************************************************************************

@@ -607,7 +607,7 @@ currently selected.
       Computed_field_package_get_computed_field_manager(
 				cell->computed_field_package)))
     {
-      if (value_string = Computed_field_evaluate_component_as_string_in_element(
+      if (value_string = Computed_field_evaluate_as_string_in_element(
         field,comp_no,element,xi,top_level_element))
       {
         sprintf(description,"Currently editing a grid point with cell type: "
@@ -1975,7 +1975,8 @@ the field value, otherwise N/A.
 				(cell->distributed).grid_field_widget)))
 		{
 			if (value_string=Computed_field_evaluate_as_string_in_element(
-				grid_field,(cell->distributed).element_point_identifier.element,
+				grid_field,/*component_number*/-1, 
+				(cell->distributed).element_point_identifier.element,
 				(cell->distributed).xi,top_level_element))
 			{
 				XmTextFieldSetString((cell->distributed).grid_value_text,

@@ -1287,7 +1287,7 @@ Extracts values from the specified element point and sets up the cell window.
               computed_field_package)))
         {
           if (value_string =
-            Computed_field_evaluate_component_as_string_in_element(field,
+            Computed_field_evaluate_as_string_in_element(field,
               component_number,element,xi,top_level_element))
           {
             /* !!!!
@@ -1325,7 +1325,7 @@ Extracts values from the specified element point and sets up the cell window.
               computed_field_package)))
         {
           if (value_string =
-            Computed_field_evaluate_component_as_string_in_element(field,
+            Computed_field_evaluate_as_string_in_element(field,
               component_number,element,xi,top_level_element))
           {
             /* !!!!

@@ -4049,7 +4049,8 @@ Creates the unemap_package scene, if isn't already present.
 					package->texture_manager);
 
 				Scene_set_graphical_element_mode(map_scene,GRAPHICAL_ELEMENT_EMPTY,
-					package->computed_field_package,package->element_manager,
+					Computed_field_package_get_computed_field_manager(
+					package->computed_field_package),package->element_manager,
 					package->element_group_manager,package->fe_field_manager,
 					package->node_manager,package->node_group_manager,
 					package->data_manager,package->data_group_manager,

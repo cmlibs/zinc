@@ -125,7 +125,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* material/light changes, etc. */
 	enum Scene_graphical_element_mode graphical_element_mode;
 	/* fields and computed_fields */
-	struct Computed_field_package *computed_field_package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	void *computed_field_manager_callback_id;
 	struct MANAGER(FE_field) *fe_field_manager;
 	/* elements and element groups: */
@@ -3704,7 +3704,7 @@ from the default versions of these functions.
 			scene->access_count=0;
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
 			/* fields, elements, nodes and data */
-			scene->computed_field_package=(struct Computed_field_package *)NULL;
+			scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 			scene->fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
 			scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
@@ -3794,7 +3794,7 @@ Closes the scene and disposes of the scene data structure.
 			Scene_disable_interactive_streamlines(scene);
 			Scene_set_graphical_element_mode(scene,
 				GRAPHICAL_ELEMENT_NONE,
-				(struct Computed_field_package *)NULL,
+				(struct MANAGER(Computed_field) *)NULL,
 				(struct MANAGER(FE_element) *)NULL,
 				(struct MANAGER(GROUP(FE_element)) *)NULL,
 				(struct MANAGER(FE_field) *)NULL,
@@ -4170,7 +4170,7 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
-	struct Computed_field_package *computed_field_package,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
@@ -4199,7 +4199,7 @@ material and spectrum.
 
 	ENTER(Scene_set_graphical_element_mode);
 	if (scene&&((GRAPHICAL_ELEMENT_NONE == graphical_element_mode)||(
-		computed_field_package&&element_manager&&element_group_manager&&
+		computed_field_manager&&element_manager&&element_group_manager&&
 		fe_field_manager&&node_manager&&node_group_manager&&data_manager&&
 		data_group_manager&&element_point_ranges_selection&&element_selection&&
 		node_selection&&data_selection)))
@@ -4208,7 +4208,7 @@ material and spectrum.
 		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
 		{
 			scene->graphical_element_mode=graphical_element_mode;
-			scene->computed_field_package=(struct Computed_field_package *)NULL;
+			scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
 			/* turn off element_group_manager callbacks */
 			if (scene->element_group_manager_callback_id)
@@ -4242,7 +4242,7 @@ material and spectrum.
 			/* check managers consistent current mode - unless this is
 				 GRAPHICAL_ELEMENT_NONE so setting for the first time */
 			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)||(
-				(computed_field_package == scene->computed_field_package)&&
+				(computed_field_manager == scene->computed_field_manager)&&
 				(element_manager == scene->element_manager)&&
 				(element_group_manager == scene->element_group_manager)&&
 				(fe_field_manager == scene->fe_field_manager)&&
@@ -4256,7 +4256,7 @@ material and spectrum.
 					if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
 					{
 						scene->graphical_element_mode=graphical_element_mode;
-						scene->computed_field_package=computed_field_package;
+						scene->computed_field_manager=computed_field_manager;
 						scene->element_manager=element_manager;
 						scene->element_group_manager=element_group_manager;
 						scene->fe_field_manager=fe_field_manager;
@@ -4413,7 +4413,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 				source->streamline_manager);
 		}
 		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
-			source->computed_field_package,source->element_manager,
+			source->computed_field_manager,source->element_manager,
 			source->element_group_manager,source->fe_field_manager,
 			source->node_manager,source->node_group_manager,
 			source->data_manager,source->data_group_manager,
@@ -6285,7 +6285,7 @@ the same element group to be added twice.
 							scene->node_group_manager,
 							scene->data_manager,
 							scene->data_group_manager,
-							scene->computed_field_package,
+							scene->computed_field_manager,
 							scene->element_point_ranges_selection,
 							scene->element_selection,
 							scene->node_selection,
@@ -6303,8 +6303,7 @@ the same element group to be added twice.
 									/*???RC later get this from region */
 									default_coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(
 										Computed_field,name)("default_coordinate",
-											Computed_field_package_get_computed_field_manager(
-												scene->computed_field_package));
+											scene->computed_field_manager);
 									GT_element_group_set_default_coordinate_field(
 										gt_element_group,default_coordinate_field);
 									/* set default circle and element discretization in group */
@@ -6352,8 +6351,7 @@ the same element group to be added twice.
 													element_xi_coordinate_field=
 														FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 															"element_xi_coordinate",
-															Computed_field_package_get_computed_field_manager(
-																scene->computed_field_package));
+															scene->computed_field_manager);
 													if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
 														(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
 														(void *)NULL,data_group)&&
@@ -8057,7 +8055,7 @@ Parser commands for modifying scenes - lighting, etc.
 						{
 							Scene_set_graphical_element_mode(scene,
 								graphical_element_mode,
-								modify_scene_data->computed_field_package,
+								modify_scene_data->computed_field_manager,
 								modify_scene_data->element_manager,
 								modify_scene_data->element_group_manager,
 								modify_scene_data->fe_field_manager,
@@ -8265,8 +8263,8 @@ updates graphics of settings affected by the changes (probably all).
 			(option_table[i]).to_be_modified= &clear_flag;
 			i++;
 			/* default_coordinate */
-			set_coordinate_field_data.computed_field_package=
-				scene->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				scene->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;

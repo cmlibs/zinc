@@ -132,7 +132,7 @@ Stores information for moving through and digitizing the movie.
 	struct LIST(GT_object) *glyph_list;
 	struct LIST(Node_status) *placed_list,*pending_list,*problem_list;
 	struct Mirage_view **views;
-	struct Computed_field_package *computed_field_package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -253,7 +253,7 @@ undo function.
 
 int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(FE_basis) *basis_manager,
-	struct Computed_field_package *computed_field_package,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,

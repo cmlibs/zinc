@@ -695,7 +695,8 @@ the field value, otherwise N/A.
 				Computed_field_is_defined_in_element(grid_field,element))
 			{
 				if (field_value_string=Computed_field_evaluate_as_string_in_element(
-					grid_field,element,element_point_viewer->xi,top_level_element))
+					grid_field,/*component_number*/-1,element,
+					element_point_viewer->xi,top_level_element))
 				{
 					/* only set string from field if different from that shown */
 					if (strcmp(field_value_string,value_string))

@@ -409,7 +409,7 @@ Implements GFX APPLY PROJECTION
 			source_field=(struct Computed_field *)NULL;
 
 			option_table=CREATE(Option_table)();
-			/* ndc_projection, texture_projection, user_viewport_projection */
+			/* ndc_projection, texture_projection, viewport_projection */
 			projection_type=projection_type_strings[1];
 			Option_table_add_enumerator(option_table,
 			  sizeof(projection_type_strings)/sizeof(char *),
@@ -421,8 +421,8 @@ Implements GFX APPLY PROJECTION
 			Option_table_add_entry(option_table,"projection_field",&projection_field_name,
 				(void *)1, set_name);
 			/* source_field */
-			set_source_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_source_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(command_data->computed_field_package);
 			set_source_field_data.conditional_function=Computed_field_has_3_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"source_field",&source_field,
@@ -1359,16 +1359,18 @@ Executes a GFX CREATE CYLINDERS command.
 			Option_table_add_entry(option_table,"constant_radius",&constant_radius,
 				NULL,set_float);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -1387,8 +1389,9 @@ Executes a GFX CREATE CYLINDERS command.
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* radius_scalar */
-			set_radius_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_radius_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_radius_field_data.conditional_function=Computed_field_is_scalar;
 			set_radius_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"radius_scalar",&radius_field,
@@ -1712,16 +1715,18 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			Option_table_add_entry(option_table,"centre",glyph_centre,
 				&(number_of_components),set_float_vector);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -1740,8 +1745,9 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			Option_table_add_entry(option_table,"glyph",&glyph,
 				command_data->glyph_list,set_Graphics_object);
 			/* label */
-			set_label_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_label_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_label_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_label_field_data.conditional_function_user_data=(void *)NULL;
@@ -1755,8 +1761,9 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 				&native_discretization_field,command_data->fe_field_manager,
 				set_FE_field);
 			/* orientation */
-			set_orientation_scale_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_orientation_scale_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_orientation_scale_field_data.conditional_function=
 				Computed_field_is_orientation_scale_capable;
 			set_orientation_scale_field_data.conditional_function_user_data=
@@ -2437,8 +2444,9 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 			(option_table[i]).to_be_modified= &graphics_object_name;
 			i++;
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -2468,8 +2476,9 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 			(option_table[i]).to_be_modified= &time;
 			i++;
 			/* vector */
-			set_stream_vector_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_stream_vector_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -2708,8 +2717,9 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 			(option_table[i]).to_be_modified= &graphics_object_name;
 			i++;
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -2739,8 +2749,9 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 			(option_table[i]).to_be_modified= &time;
 			i++;
 			/* vector */
-			set_stream_vector_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_stream_vector_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -2913,8 +2924,9 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 
 			option_table=CREATE(Option_table)();
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -2926,8 +2938,9 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 			/* time */
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* vector */
-			set_stream_vector_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_stream_vector_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -3585,16 +3598,18 @@ Executes a GFX CREATE ISO_SURFACES command.
 			Option_table_add_entry(option_table,"clipping",&clipping,
 				NULL,set_Clipping);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -3610,8 +3625,9 @@ Executes a GFX CREATE ISO_SURFACES command.
 			Option_table_add_entry(option_table,"from",&element_group,
 				command_data->element_group_manager,set_FE_element_group);
 			/* iso_scalar */
-			set_scalar_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_scalar_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_scalar_field_data.conditional_function=Computed_field_is_scalar;
 			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"iso_scalar",&scalar_field,
@@ -3639,8 +3655,9 @@ Executes a GFX CREATE ISO_SURFACES command.
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
 			/* surface_data_density */
-			set_surface_data_density_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_surface_data_density_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_surface_data_density_field_data.conditional_function=
 				Computed_field_has_up_to_4_numerical_components;
 			set_surface_data_density_field_data.conditional_function_user_data=
@@ -4177,16 +4194,18 @@ Executes a GFX CREATE LINES command.
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -4919,16 +4938,18 @@ Executes a GFX CREATE NODE_POINTS command.
 			Option_table_add_entry(option_table,"centre",glyph_centre,
 				&(number_of_components),set_float_vector);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -4941,8 +4962,9 @@ Executes a GFX CREATE NODE_POINTS command.
 			Option_table_add_entry(option_table,"glyph",&glyph,
 				command_data->glyph_list,set_Graphics_object);
 			/* label */
-			set_label_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_label_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_label_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_label_field_data.conditional_function_user_data=(void *)NULL;
@@ -4952,8 +4974,9 @@ Executes a GFX CREATE NODE_POINTS command.
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* orientation */
-			set_orientation_scale_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_orientation_scale_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_orientation_scale_field_data.conditional_function=
 				Computed_field_is_orientation_scale_capable;
 			set_orientation_scale_field_data.conditional_function_user_data=
@@ -5192,16 +5215,18 @@ Executes a GFX CREATE DATA_POINTS command.
 			Option_table_add_entry(option_table,"centre",glyph_centre,
 				&(number_of_components),set_float_vector);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -5214,8 +5239,9 @@ Executes a GFX CREATE DATA_POINTS command.
 			Option_table_add_entry(option_table,"glyph",&glyph,
 				command_data->glyph_list,set_Graphics_object);
 			/* label */
-			set_label_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_label_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_label_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_label_field_data.conditional_function_user_data=(void *)NULL;
@@ -5225,8 +5251,9 @@ Executes a GFX CREATE DATA_POINTS command.
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* orientation */
-			set_orientation_scale_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_orientation_scale_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_orientation_scale_field_data.conditional_function=
 				Computed_field_is_orientation_scale_capable;
 			set_orientation_scale_field_data.conditional_function_user_data=
@@ -5763,8 +5790,9 @@ Executes a GFX CREATE SCENE command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
-				modify_scene_data.computed_field_package=
-					command_data->computed_field_package;
+				modify_scene_data.computed_field_manager=
+					Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package);
 				modify_scene_data.element_manager=command_data->element_manager;
 				modify_scene_data.element_group_manager=
 					command_data->element_group_manager;
@@ -6340,16 +6368,18 @@ Executes a GFX CREATE STREAMLINES command.
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -6400,8 +6430,9 @@ Executes a GFX CREATE STREAMLINES command.
 			/* time */
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* vector */
-			set_stream_vector_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_stream_vector_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -6741,16 +6772,18 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -6792,8 +6825,9 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
 			/* vector */
-			set_stream_vector_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_stream_vector_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -7117,16 +7151,18 @@ Executes a GFX CREATE SURFACES command.
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
@@ -7161,8 +7197,9 @@ Executes a GFX CREATE SURFACES command.
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
 			/* texture_coordinates */
-			set_texture_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_texture_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_texture_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_texture_coordinate_field_data.conditional_function_user_data=
@@ -7547,8 +7584,9 @@ Modifies the properties of a texture.
 				Option_table_add_entry(option_table, "element_group", &data->element_group,
 					command_data->element_group_manager, set_FE_element_group);
 				/* field */
-				set_field_data.computed_field_package=
-					command_data->computed_field_package;
+				set_field_data.computed_field_manager=
+					Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 				set_field_data.conditional_function=
 					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 				set_field_data.conditional_function_user_data=(void *)NULL;
@@ -7567,8 +7605,9 @@ Modifies the properties of a texture.
 				Option_table_add_entry(option_table, "width_texels", &data->width_texels, 
 					NULL, set_int_positive);
 				/* texture_coordinates */
-				set_texture_coordinates_field_data.computed_field_package=
-					command_data->computed_field_package;
+				set_texture_coordinates_field_data.computed_field_manager=
+					Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 				set_texture_coordinates_field_data.conditional_function=
 					Computed_field_is_find_element_xi_capable;
 				set_texture_coordinates_field_data.conditional_function_user_data=
@@ -8114,8 +8153,9 @@ Executes a GFX CREATE TEXMAP command.
 			ACCESS(Computed_field)(coordinate_field);;
 			(option_table[0]).to_be_modified= &out_file_name;
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -8372,7 +8412,8 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 					tracking_editor_close_cb,
 					&(command_data->background_colour),
 					command_data->basis_manager,
-					command_data->computed_field_package,
+					Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package),
 					command_data->element_manager,
 					command_data->element_group_manager,
 					command_data->fe_field_manager,
@@ -8729,24 +8770,27 @@ Executes a GFX CREATE VOLUMES command.
 			Option_table_add_entry(option_table,"clipping",&clipping,
 				NULL,set_Clipping);
 			/* coordinate */
-			set_coordinate_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			set_data_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_data_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_data_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
 			/* displacement_map_field */
-			set_displacement_map_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_displacement_map_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_displacement_map_field_data.conditional_function=
 				Computed_field_has_up_to_4_numerical_components;
 			set_displacement_map_field_data.conditional_function_user_data=
@@ -8772,8 +8816,9 @@ Executes a GFX CREATE VOLUMES command.
 			Option_table_add_entry(option_table,"seed_element",
 				&seed_element,command_data->element_manager,set_FE_element_dimension_3);
 			/* smooth_field */
-			set_blur_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_blur_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_blur_field_data.conditional_function=
 				Computed_field_has_up_to_4_numerical_components;
 			set_blur_field_data.conditional_function_user_data=(void *)NULL;
@@ -8783,8 +8828,9 @@ Executes a GFX CREATE VOLUMES command.
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
 			/* surface_data_density */
-			set_surface_data_density_field_data.computed_field_package=
-				command_data->computed_field_package;
+			set_surface_data_density_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			set_surface_data_density_field_data.conditional_function=
 				Computed_field_has_up_to_4_numerical_components;
 			set_surface_data_density_field_data.conditional_function_user_data=
@@ -12797,8 +12843,9 @@ DESCRIPTION :
 			set_destination_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_destination_field_data.conditional_function_user_data=(void *)NULL;
-			set_destination_field_data.computed_field_package =
-				command_data->computed_field_package;
+			set_destination_field_data.computed_field_manager =
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			(option_table[i]).to_be_modified= &destination_computed_field;
 			(option_table[i]).user_data= &set_destination_field_data;
 			i++;
@@ -12820,8 +12867,9 @@ DESCRIPTION :
 			set_source_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
-			set_source_field_data.computed_field_package =
-				command_data->computed_field_package;
+			set_source_field_data.computed_field_manager =
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
 			(option_table[i]).to_be_modified= &source_computed_field;
 			(option_table[i]).user_data= &set_source_field_data;
 			i++;
@@ -13102,7 +13150,9 @@ Executes a GFX LIST FIELD.
 			set_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_package=computed_field_package;
+			set_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					computed_field_package);
 			(option_table[0]).to_be_modified= &commands_flag;
 			(option_table[1]).to_be_modified= &computed_field;
 			(option_table[1]).user_data= &set_field_data;
@@ -13165,7 +13215,7 @@ Executes a GFX LIST FIELD.
 		else
 		{
 			display_message(ERROR_MESSAGE,"gfx_list_Computed_field.  "
-				"Missing computed_field_manager_void");
+				"Missing computed_field_package_void");
 			return_code=0;
 		}
 	}
@@ -15619,8 +15669,9 @@ Parameter <help_mode> should be NULL when calling this function.
 				g_element_command_data.default_material=
 					command_data->default_graphical_material;
 				g_element_command_data.glyph_list=command_data->glyph_list;
-				g_element_command_data.computed_field_package=
-					command_data->computed_field_package;
+				g_element_command_data.computed_field_manager=
+					Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package);
 				g_element_command_data.element_manager=command_data->element_manager;
 				g_element_command_data.fe_field_manager=command_data->fe_field_manager;
 				g_element_command_data.graphical_material_manager=
@@ -15758,9 +15809,14 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 				shift_Parse_state(state,1);				
 				/* initialise defaults */
 				glyph_flag = 0;
-				material = ACCESS(Graphical_material)(
-					get_GT_object_default_material(graphics_object));
-				spectrum = ACCESS(Spectrum)(get_GT_object_spectrum(graphics_object));
+				if (material = get_GT_object_default_material(graphics_object))
+				{
+					ACCESS(Graphical_material)(material);
+				}
+				if (spectrum = get_GT_object_spectrum(graphics_object))
+				{
+					ACCESS(Spectrum)(spectrum);
+				}
 				(option_table[0]).to_be_modified=&glyph_flag;
 				(option_table[1]).to_be_modified=&material;
 				(option_table[1]).user_data=command_data->graphical_material_manager;
@@ -16099,8 +16155,9 @@ Executes a GFX MODIFY command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
-				modify_scene_data.computed_field_package=
-					command_data->computed_field_package;
+				modify_scene_data.computed_field_manager=
+					Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package);
 				modify_scene_data.element_manager=command_data->element_manager;
 				modify_scene_data.element_group_manager=
 					command_data->element_group_manager;

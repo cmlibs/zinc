@@ -33,12 +33,14 @@ if a value is already known.
 
 #include "command/parser.h"
 #include "finite_element/finite_element.h"
+#include "general/debug.h"
 #include "general/geometry.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/texture.h"
 #include "curve/control_curve.h"
+#include "user_interface/message.h"
 
 /*
 Global types
@@ -81,12 +83,12 @@ DESCRIPTION :
 	COMPUTED_FIELD_PROJECTION,         /* Projects coordinates through a perspective projection matrix */
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
-	COMPUTED_FIELD_SAMPLE_TEXTURE,     /* extracts values from a texture */
 	COMPUTED_FIELD_SCALE,              /* individ'ly scale components of field */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
 	COMPUTED_FIELD_XI_COORDINATES,     /* element coordinate xi */
 	COMPUTED_FIELD_XI_TEXTURE_COORDINATES, /* continuous coordinates based on xi */
-	COMPUTED_FIELD_2D_STRAIN           /* wrinkling strain calculation */
+	COMPUTED_FIELD_2D_STRAIN,          /* wrinkling strain calculation */
+	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
 };
 
 struct Computed_field;
@@ -125,7 +127,7 @@ fields in the manager.
 {
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field) *conditional_function;
 	void *conditional_function_user_data;
-	struct Computed_field_package *computed_field_package;
+	struct MANAGER(Computed_field) *computed_field_manager;
 }; /* struct Set_Computed_field_conditional_data */
 
 struct Set_Computed_field_array_data
@@ -331,11 +333,11 @@ Returns true if the field is of an embedded type or depends on any computed
 fields which are or an embedded type.
 ==============================================================================*/
 
-char *Computed_field_evaluate_component_as_string_in_element(
+char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element);
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
@@ -344,26 +346,7 @@ FE_VALUE_VALUE, requests the string from it, otherwise calls
 Computed_field_evaluate_cache_in_element and converts the value for
 <component_number> to a string (since result may already be in cache).
 
-The <top_level_element> parameter has the same use as in
-Computed_field_evaluate_cache_in_element.
-
-Some basic field types such as CMISS_NUMBER have special uses in this function.
-It is up to the calling function to DEALLOCATE the returned string.
-???RC.  Allow derivatives to be evaluated as string too?
-==============================================================================*/
-
-char *Computed_field_evaluate_as_string_in_element(struct Computed_field *field,
-	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
-
-DESCRIPTION :
-Returns a string describing the value/s of the <field> at <element>:<xi>. If the
-field is based on an FE_field but not returning FE_values, it is asked to supply
-the string. Otherwise, a string built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_in_element. The FE_value
-exception is used since it is likely the values are already in the cache in
-most cases, or can be used by other fields again if calculated now.
+Use -1 as the <component_number> if you want all the components.
 
 The <top_level_element> parameter has the same use as in
 Computed_field_evaluate_cache_in_element.
@@ -404,9 +387,9 @@ number_of_components
 ==============================================================================*/
 
 char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
-	struct FE_node *node);
+	int component_number, struct FE_node *node);
 /*******************************************************************************
-LAST MODIFIED : 17 October 1999
+LAST MODIFIED : 3 July 2000
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. If the
@@ -415,6 +398,8 @@ the string. Otherwise, a string built up of comma separated values evaluated
 for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
 is used since it is likely the values are already in the cache in most cases,
 or can be used by other fields again if calculated now.
+The <component_number> indicates which component to calculate.  Use -1 to 
+create a string which represents all the components.
 Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
@@ -661,7 +646,15 @@ DESCRIPTION :
 Returns the type of the computed <field> eg. COMPUTED_FIELD_FINITE_ELEMENT etc.
 ==============================================================================*/
 
-char *Computed_field_type_to_string(enum Computed_field_type field_type);
+char *Computed_field_get_type_string(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns the string which identifies the type.
+==============================================================================*/
+
+char *Computed_field_type_to_string(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 25 January 1999
 
@@ -1699,7 +1692,6 @@ components, coordinate system and type.
 struct Computed_field_package *CREATE(Computed_field_package)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_element) *fe_element_manager,
-	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Control_curve) *control_curve_manager);
 /*******************************************************************************
 LAST MODIFIED : 9 November 1999

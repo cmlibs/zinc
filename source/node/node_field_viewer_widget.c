@@ -163,7 +163,8 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 			} break;
 			case COMPUTED_FIELD_CMISS_NUMBER:
 			{
-				temp_string=Computed_field_evaluate_as_string_at_node(field,node);
+				temp_string=Computed_field_evaluate_as_string_at_node(field,
+					/*component_number*/-1,node);
 			} break;
 			default:
 			{

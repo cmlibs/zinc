@@ -884,10 +884,10 @@ Manager Callback Module functions
 ---------------------------------
 */
 
-static void Graphics_window_Scene_viewer_view_changed(Widget widget,
-	void *window_void,void *scene_viewer_void)
+static void Graphics_window_Scene_viewer_view_changed(struct Scene_viewer *scene_viewer,
+	void *dummy_void, void *window_void)
 /*******************************************************************************
-LAST MODIFIED : 8 October 1998
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Called whenever the view changes in parallel and perspective mode by mouse
@@ -898,12 +898,10 @@ layout_modes, eg. GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC.
 {
 	int changed_pane,pane_no;
 	struct Graphics_window *window;
-	struct Scene_viewer *scene_viewer;
 
 	ENTER(Graphics_window_Scene_viewer_view_changed);
-	USE_PARAMETER(widget);
-	if ((window=(struct Graphics_window *)window_void)&&
-		(scene_viewer=(struct Scene_viewer *)scene_viewer_void))
+	USE_PARAMETER(dummy_void);
+	if ((window=(struct Graphics_window *)window_void)&&scene_viewer)
 	{
 		changed_pane=-1;
 		for (pane_no=0;pane_no<window->number_of_panes;pane_no++)
@@ -2649,8 +2647,6 @@ will be printed on the windows title bar.
 									viewing_area[2]=graphics_window->viewing_area3;
 									viewing_area[3]=graphics_window->viewing_area4;
 									return_code=1;
-									callback.procedure=Graphics_window_Scene_viewer_view_changed;
-									callback.data=graphics_window;
 									for (pane_no=0;return_code&&
 										(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES);pane_no++)
 									{
@@ -2667,8 +2663,10 @@ will be printed on the windows title bar.
 												graphics_window->interactive_tool);
 											/* get scene_viewer transform callbacks to allow
 												 synchronising of views in multiple panes */
-											Scene_viewer_set_transform_callback(
-												graphics_window->scene_viewer[pane_no],&callback);
+											Scene_viewer_sync_add_callback(
+												graphics_window->scene_viewer[pane_no],
+												Graphics_window_Scene_viewer_view_changed,
+												graphics_window);
 											/*???RC temporary */
 											Scene_viewer_set_transform_rate(
 												graphics_window->scene_viewer[pane_no],2.0,1.5,2.0);

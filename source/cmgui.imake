@@ -687,6 +687,11 @@ COMMAND_SRCS = \
 	command/command_window.c \
 	command/example_path.c \
 	command/parser.c 
+COMPUTED_FIELD_SRCS = \
+	computed_field/computed_field.c \
+	computed_field/computed_field_find_xi.c \
+	computed_field/computed_field_sample_texture.c \
+	computed_field/computed_field_window_projection.c
 CURVE_SRCS = \
 	curve/control_curve.c \
 	curve/control_curve_editor.c \
@@ -709,8 +714,6 @@ ELEMENT_SRCS = \
 	element/element_point_viewer_widget.c \
 	element/element_point_tool.c
 FINITE_ELEMENT_SRCS = \
-	computed_field/computed_field.c \
-	computed_field/computed_field_find_xi.c \
 	finite_element/export_finite_element.c \
 	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element.c \
@@ -868,6 +871,7 @@ SRCS_1 = \
 	$(COLOUR_SRCS) \
 	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
+	$(COMPUTED_FIELD_SRCS) \
 	$(CURVE_SRCS) \
 	$(DATA_SRCS) \
 	$(DOF3_SRCS) \
