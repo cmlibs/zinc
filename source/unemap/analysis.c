@@ -4281,10 +4281,12 @@ DESCRIPTION :
 			overlay_colours=(Pixel *)NULL;
 			/*???DB.  Under Linux the overlay_colours_string is in some sort of read
 				only memory and can't be modified */
-			if (overlay_colours_string&&(temp_string_1=duplicate_string(
-				overlay_colours_string)))
+			if (overlay_colours_string)
 			{
-				overlay_colours_string=temp_string_1;
+				overlay_colours_string=duplicate_string(overlay_colours_string);
+			}
+			if (temp_string_1=overlay_colours_string)
+			{
 				while (*temp_string_1)
 				{
 					/* skip leading spaces and commas */
@@ -4296,7 +4298,6 @@ DESCRIPTION :
 						temp_string_1 += strcspn(temp_string_1," ,");
 					}
 				}
-				DEALLOCATE(overlay_colours_string);
 			}
 			if ((0<number_of_overlay_colours)&&ALLOCATE(overlay_colours,Pixel,
 				number_of_overlay_colours))
@@ -4325,6 +4326,7 @@ DESCRIPTION :
 					}
 				}
 			}
+			DEALLOCATE(overlay_colours_string);
 			signal_drawing_information->number_of_signal_overlay_colours=
 				number_of_overlay_colours;
 			signal_drawing_information->signal_overlay_colours=overlay_colours;
