@@ -956,6 +956,10 @@ Reads samples out of the file and sends them down the acquired socket.
 	unsigned long number_of_samples;
 
 	ENTER(acquired_thread_function);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter acquired_thread_function\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 	if (acquired_file=(FILE *)acquired_file_void)
 	{
@@ -978,6 +982,12 @@ Reads samples out of the file and sends them down the acquired socket.
 		fread((char *)&number_of_channels,sizeof(number_of_channels),1,
 			acquired_file);
 		fread((char *)&number_of_samples,sizeof(number_of_samples),1,acquired_file);
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,
+			"channel_number=%d, number_of_channels=%d, number_of_samples=%lu\n",
+			channel_number,number_of_channels,number_of_samples);
+#endif /* defined (DEBUG) */
 		if (INVALID_SOCKET!=acquired_socket)
 		{
 			/* send message down acquired socket */
@@ -1049,6 +1059,10 @@ Reads samples out of the file and sends them down the acquired socket.
 			ReleaseMutex(acquired_socket_mutex);
 		}
 	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave acquired_thread_function\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -2252,14 +2266,12 @@ DESCRIPTION :
 							(DWORD)FILE_ATTRIBUTE_NORMAL,(HANDLE)NULL))
 #else /* defined (WINDOWS_IO) */
 						/*???debug */
-						if (acquired_file=fopen_UNEMAP_HARDWARE("save.sig","wb"))
-/*						if (acquired_file=tmpfile())*/
+/*						if (acquired_file=fopen_UNEMAP_HARDWARE("save.sig","wb"))*/
+						if (acquired_file=tmpfile())
 #endif /* defined (WINDOWS_IO) */
 						{
 							if (unemap_write_samples_acquired(channel_number,acquired_file))
 							{
-								/*???debug */
-/*								fclose(acquired_file);*/
 								acquired_big_endian=big_endian;
 #if defined (NO_ACQUIRED_THREAD)
 								return_code=1;

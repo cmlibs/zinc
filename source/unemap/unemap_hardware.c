@@ -7035,13 +7035,13 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #endif /* defined (WINDOWS) */
 
 	ENTER(unemap_configure);
+#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,
 		"enter unemap_configure %g %d %p %u %p %p %g %d\n",sampling_frequency_slave,
 		number_of_samples_in_buffer,scrolling_window,scrolling_message,
 		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
 		synchronization_card);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	if (sampling_frequency_slave<0)
@@ -7304,6 +7304,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 							hardware_buffer_size *=
 								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 						}
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -7329,7 +7330,6 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (USE_VIRTUAL_LOCK)
 					working_set_size=(11*memory_status.dwAvailPhys)/10;
@@ -7799,13 +7799,13 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 			number_of_samples_in_buffer);
 		return_code=0;
 	}
+#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,
 		"leave unemap_configure %d %g %p %u %p %p %d %d\n",return_code,
 		module_sampling_frequency,module_scrolling_window,module_scrolling_message,
 		module_scrolling_callback,module_scrolling_callback_data,
 		module_scrolling_refresh_period,module_NI_CARDS[0].hardware_buffer_size);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
