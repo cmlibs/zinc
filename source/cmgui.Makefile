@@ -900,6 +900,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_steerable_filter.c \
 	image_processing/computed_field_sterology_measures.c \
 	image_processing/computed_field_throw_away_weakest.c \
+	image_processing/computed_field_volterra_filter.c \
 	image_processing/computed_field_wavelet_decomp.c \
 	image_processing/computed_field_wavelet_reconstruct.c \
 	image_processing/computed_field_wiener_filter.c \

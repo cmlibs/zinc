@@ -96,7 +96,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_sterology_measures.h"
 
 #include "image_processing/computed_field_throw_away_weakest.h"
-
+#include "image_processing/computed_field_volterra_filter.h"
 #include "image_processing/computed_field_wavelet_decomp.h"
 #include "image_processing/computed_field_wavelet_reconstruct.h"
 #include "image_processing/computed_field_wiener_filter.h"
@@ -24484,7 +24484,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_throw_away_weakest(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
+					
+				Computed_field_register_types_volterra_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_wavelet_decomp(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
