@@ -16594,7 +16594,7 @@ Note this will also return true if <field> is not defined at both nodes.
 			return_code = ((!node_field_1) && (!node_field_2)) || (
 				node_field_1 && node_field_2 && 
 				FE_node_fields_match(node_field_1, node_field_2,
-					/*ignore_field_and_time_version*/0, /*ignore_component_value*/0));
+					/*ignore_field_and_time_version*/0, /*ignore_component_value*/1));
 		}
 	}
 	else
