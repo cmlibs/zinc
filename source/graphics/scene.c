@@ -553,7 +553,10 @@ Responds to changes in the graphics object.
 	ENTER(Scene_object_graphics_object_update_callback);
 	if (graphics_object && (scene_object=(struct Scene_object *)scene_object_void))
 	{
-		Scene_update_time_behaviour(scene_object->scene, graphics_object);		
+		if (scene_object->scene)
+		{
+			Scene_update_time_behaviour(scene_object->scene, graphics_object);		
+		}
 		Scene_object_changed_internal(scene_object);
 		return_code=1;
 	}
@@ -587,8 +590,11 @@ visible.
 		if (g_VISIBLE==scene_object->visibility)
 		{
 			Scene_object_changed_external(scene_object);
-			Scene_update_time_behaviour_with_gt_element_group(scene_object->scene,
-				gt_element_group);
+			if (scene_object->scene)
+			{
+				Scene_update_time_behaviour_with_gt_element_group(
+					scene_object->scene, gt_element_group);
+			}
 		}
 		return_code=1;
 	}
