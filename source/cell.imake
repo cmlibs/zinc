@@ -243,6 +243,7 @@ UNEMAP_SRCS = \
 	unemap/bard.c \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
+	unemap/delauney.c \
 	unemap/drawing_2d.c \
 	unemap/edf.c \
 	unemap/eimaging_time_dialog.c \
