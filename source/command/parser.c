@@ -2866,18 +2866,17 @@ all be initialised to zero).
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE," NAMES");
-				display_message(INFORMATION_MESSAGE,"[");
+				display_message(INFORMATION_MESSAGE," ");
 				for (i = 0 ; i < data->number_of_tokens ; i++)
 				{
 					if (i > 0)
 					{
-						display_message(INFORMATION_MESSAGE,",");
+						display_message(INFORMATION_MESSAGE,"|");
 					}
 					display_message(INFORMATION_MESSAGE,data->tokens[i].string);
 				}
-				display_message(INFORMATION_MESSAGE,"]");
 			}
+			valid_token = 0;
 		}
 	}
 	else
