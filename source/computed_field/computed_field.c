@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 5 October 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -3975,7 +3975,7 @@ number_of_components.
 int Computed_field_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 5 October 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -4167,6 +4167,7 @@ should not be managed at the time it is modified by this function.
 					Computed_field_type_to_string(field));
 			}
 		}
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
@@ -4342,7 +4343,7 @@ It is up to the calling function to deallocate the returned values.
 int Computed_field_set_values_in_element(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 5 October 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -4615,6 +4616,7 @@ Note that the values array will not be modified by this function. Also,
 					Computed_field_type_to_string(field));
 			}
 		}
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
