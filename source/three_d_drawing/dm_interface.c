@@ -29,6 +29,8 @@ typedef struct USTMSCpair
 #include <dmedia/dm_buffer.h>
 #include <dmedia/dm_image.h>
 #endif /* defined (SGI_DIGITAL_MEDIA) */
+#define GL_GLEXT_PROTOTYPES
+#define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
 #include <GL/gl.h>
 #if !defined (SGI_DIGITAL_MEDIA)
