@@ -1127,10 +1127,12 @@ ifeq ($(SYSNAME),win32)
 	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == win32
    # Link in the OBJECT_PATH and copy to the BIN_PATH as often the OBJECT_PATH is kept locally.
+   # Need to remove the $(BIN_PATH)/$(BIN_TARGET) before copying it over as AIX blocks if someone is running the old version.
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	$(LINK) -o $(BIN_TARGET) $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
+	rm $(BIN_PATH)/$(BIN_TARGET) ; \
 	cp $(BIN_TARGET) $(BIN_PATH)/$(BIN_TARGET)
 
 # Force is a dummy rule used to ensure some objects are made every time as the
