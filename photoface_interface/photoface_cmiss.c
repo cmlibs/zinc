@@ -2809,6 +2809,7 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 									i++;									
 								}
 							}
+							fclose(eye_file);
 						}
 						else
 						{
