@@ -1126,12 +1126,120 @@ Note: xi changes from 0 to 1 over each element direction.
 	return (xi_points);
 } /* Xi_discretization_mode_get_xi_points */
 
-char **Xi_discretization_mode_get_valid_strings(int *number_of_valid_strings)
+int Xi_discretization_mode_get_element_point_xi(
+	enum Xi_discretization_mode xi_discretization_mode,int dimension,
+	int *number_in_xi,int element_point_number,FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 22 March 1999
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
+Returns in <xi> the single xi location for <element_point_number> from those
+that would be returned by Xi_discretization_mode_get_xi_points.
+Fails for truly random discretization modes.
+==============================================================================*/
+{
+	int i,j,k,m,n,number_of_xi_points,return_code;
+
+	ENTER(Xi_discretization_mode_get_element_point_xi);
+	if (((XI_DISCRETIZATION_CELL_CENTRES==xi_discretization_mode)||
+		(XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode))&&
+		(0<dimension)&&(3>=dimension)&&number_in_xi&&xi&&
+		(number_of_xi_points=Xi_discretization_mode_get_number_of_xi_points(
+			xi_discretization_mode,dimension,number_in_xi))&&
+		(0 <= element_point_number)&&(element_point_number < number_of_xi_points))
+	{
+		return_code=1;
+		switch (xi_discretization_mode)
+		{
+			case XI_DISCRETIZATION_CELL_CENTRES:
+			{
+				switch (dimension)
+				{
+					case 1:
+					{
+						xi[0] = ((float)element_point_number + 0.5)/(float)number_in_xi[0];
+						xi[1] = 0.0;
+						xi[2] = 0.0;
+					} break;
+					case 2:
+					{
+						j = (element_point_number / number_in_xi[0]);
+						i = (element_point_number % number_in_xi[0]);
+						xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
+						xi[1] = ((float)j + 0.5)/(float)number_in_xi[1];
+						xi[2] = 0.0;
+					} break;
+					case 3:
+					{
+						m = number_in_xi[0]*number_in_xi[1];
+						k = element_point_number / m;
+						n = element_point_number % m;
+						j = n / number_in_xi[0];
+						i = n % number_in_xi[0];
+						xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
+						xi[1] = ((float)j + 0.5)/(float)number_in_xi[1];
+						xi[2] = ((float)k + 0.5)/(float)number_in_xi[2];
+					} break;
+				}
+			} break;
+			case XI_DISCRETIZATION_CELL_CORNERS:
+			{
+				switch (dimension)
+				{
+					case 1:
+					{
+						xi[0] = (float)element_point_number/(float)number_in_xi[0];
+						xi[1] = 0.0;
+						xi[2] = 0.0;
+						xi++;
+					} break;
+					case 2:
+					{
+						j = (element_point_number / (number_in_xi[0]+1));
+						i = (element_point_number % (number_in_xi[0]+1));
+						xi[0] = (float)i/(float)number_in_xi[0];
+						xi[1] = (float)j/(float)number_in_xi[1];
+						xi[2] = 0.0;
+					} break;
+					case 3:
+					{
+						m = (number_in_xi[0]+1)*(number_in_xi[1]+1);
+						k = element_point_number / m;
+						n = element_point_number % m;
+						j = n / (number_in_xi[0]+1);
+						i = n % (number_in_xi[0]+1);
+						xi[0] = (float)i/(float)number_in_xi[0];
+						xi[1] = (float)j/(float)number_in_xi[1];
+						xi[2] = (float)k/(float)number_in_xi[2];
+					} break;
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Xi_discretization_mode_get_element_point_xi.  "
+					"Unsupported xi_discretization_mode");
+				return_code=0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Xi_discretization_mode_get_element_point_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Xi_discretization_mode_get_element_point_xi */
+
+char **Xi_discretization_mode_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
 Xi_discretization_modes - obtained from function Xi_discretization_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
@@ -1172,7 +1280,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Xi_discretization_mode_get_valid_strings.  Invalid argument");
+			"Xi_discretization_mode_get_valid_strings.  Invalid argument(s)");
 		valid_strings=(char **)NULL;
 	}
 	LEAVE;

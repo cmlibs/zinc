@@ -286,6 +286,18 @@ returned as triples with remaining xi coordinates 0 for 1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 
+int Xi_discretization_mode_get_element_point_xi(
+	enum Xi_discretization_mode xi_discretization_mode,int dimension,
+	int *number_in_xi,int element_point_number,FE_value *xi);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Returns in <xi> the single xi location for <element_point_number> from those
+that would be returned by Xi_discretization_mode_get_xi_points.
+Fails for truly random discretization modes.
+==============================================================================*/
+
 char **Xi_discretization_mode_get_valid_strings(int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 22 March 1999
