@@ -629,45 +629,6 @@ Main program for the CMISS Graphical User Interface
 	ENTER(WinMain);
 #endif /* defined (WINDOWS) */
 	return_code=1;
-	/* display the version */
-	display_message(INFORMATION_MESSAGE, VERSION "\n");
-
-	/* check for command_list (needed because don't open_user_interface for
-		command_list) */
-	command_list=0;
-	batch_mode = 0;
-	no_display = 0;
-	i=1;
-	while ((i<argc)&&strcmp("-command_list",argv[i]))
-	{
-		i++;
-	}
-	if (i<argc)
-	{
-		command_list=1;
-	}
-	i=1;
-	while ((i<argc)&&strncmp("-batch",argv[i],3))
-	{
-		i++;
-	}
-	if (i<argc)
-	{
-		batch_mode = 1;
-	}
-	i=1;
-	while ((i<argc)&&strncmp("-no_display",argv[i],4))
-	{
-		i++;
-	}
-	if (i<argc)
-	{
-		no_display = 1;
-	}
-
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-	create_interpreter(&status);
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	/* initialize application specific global variables */
 	execute_command = CREATE(Execute_command)(cmiss_execute_command,
@@ -676,30 +637,7 @@ Main program for the CMISS Graphical User Interface
 	set_command = CREATE(Execute_command)(cmiss_set_command,
 		(void *)(&command_data));
 	command_data.set_command= set_command;
-	if(no_display || command_list)
-	{
-		command_data.user_interface= (struct User_interface *)NULL;
-	}
-	else
-	{
-		user_interface.local_machine_info=(struct Machine_information *)NULL;
-#if defined (MOTIF)
-		user_interface.application_context=(XtAppContext)NULL;
-		user_interface.application_name="cmgui";
-		user_interface.application_shell=(Widget)NULL;
-		user_interface.argc_address= &argc;
-		user_interface.argv=argv;
-		user_interface.class_name="Cmgui";
-		user_interface.display=(Display *)NULL;
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
-		user_interface.instance=current_instance;
-		user_interface.main_window=(HWND)NULL;
-		user_interface.main_window_state=initial_main_window_state;
-		user_interface.command_line=command_line;
-#endif /* defined (WINDOWS) */
-		command_data.user_interface= &user_interface;
-	}
+	command_data.user_interface= (struct User_interface *)NULL;
 #if !defined (WINDOWS_DEV_FLAG)
 	command_data.control_curve_editor_dialog=(Widget)NULL;
 	command_data.data_grabber_dialog=(Widget)NULL;
@@ -741,9 +679,134 @@ Main program for the CMISS Graphical User Interface
 	(set_file_name_option_table[0]).user_data=
 		&(command_data.example_directory);
 	command_data.set_file_name_option_table=set_file_name_option_table;
+
+	command_data.default_light=(struct Light *)NULL;
+	command_data.light_manager=(struct MANAGER(Light) *)NULL;
+	command_data.default_light_model=(struct Light_model *)NULL;
+	command_data.light_model_manager=(struct MANAGER(Light_model) *)NULL;
+	command_data.environment_map_manager=(struct MANAGER(Environment_map) *)NULL;
+	command_data.texture_manager=(struct MANAGER(Texture) *)NULL;
+	command_data.volume_texture_manager=(struct MANAGER(VT_volume_texture) *)NULL;
+	command_data.default_graphical_material=(struct Graphical_material *)NULL;
+	command_data.graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
+	command_data.default_spectrum=(struct Spectrum *)NULL;
+	command_data.spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	command_data.graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
+	command_data.control_curve_manager=(struct MANAGER(Control_curve) *)NULL;
+	command_data.basis_manager=(struct MANAGER(FE_basis) *)NULL;
+	command_data.element_manager=(struct MANAGER(FE_element) *)NULL;
+	command_data.element_group_manager=(struct MANAGER(GROUP(FE_element) *))NULL;
+	command_data.node_manager=(struct MANAGER(FE_node) *)NULL;
+	command_data.node_group_manager=(struct MANAGER(GROUP(FE_node) *))NULL;
+	command_data.data_manager=(struct MANAGER(FE_node) *)NULL;
+	command_data.data_group_manager=(struct MANAGER(GROUP(FE_node) *))NULL;
+	command_data.interactive_streamline_manager=(struct MANAGER(Interactive_streamline) *)NULL;
+	command_data.streampoint_list=(struct Streampoint *)NULL;
+	command_data.graphics_object_list=(struct LIST(GT_object) *)NULL;
+	command_data.glyph_list=(struct LIST(GT_object) *)NULL;	
+	command_data.element_point_ranges_selection=(struct Element_point_ranges_selection *)NULL;
+	command_data.element_selection=(struct FE_element_selection *)NULL;
+	command_data.data_selection=(struct FE_node_selection *)NULL;
+	command_data.node_selection=(struct FE_node_selection *)NULL;
+	command_data.interactive_tool_manager=(struct MANAGER(Interactive_tool) *)NULL;
+	command_data.computed_field_package=(struct Computed_field_package *)NULL;
+	command_data.default_scene=(struct Scene *)NULL;
+	command_data.scene_manager=(struct MANAGER(Scene) *)NULL;
+	command_data.unemap_package=(struct Unemap_package *)NULL;
+	command_data.command_window=(struct Command_window *)NULL;
+	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
+	command_data.transform_tool=(struct Transform_tool *)NULL;
+	command_data.node_tool=(struct Node_tool *)NULL;
+	command_data.element_tool=(struct Element_tool *)NULL;
+	command_data.data_tool=(struct Node_tool *)NULL;
+	command_data.element_point_tool=(struct Element_point_tool *)NULL;
+	command_data.transform_tool=(struct Transform_tool *)NULL;
+	command_data.node_tool=(struct Node_tool *)NULL;
+	command_data.element_tool=(struct Element_tool *)NULL;
+	command_data.data_tool=(struct Node_tool *)NULL;
+	command_data.element_point_tool=(struct Element_point_tool *)NULL;
+	command_data.element_creator=(struct Element_creator *)NULL;
+	command_data.examples_directory=(char *)NULL;
+	command_data.cm_examples_directory=(char *)NULL;
+	command_data.cm_parameters_file_name=(char *)NULL;
+	command_data.default_time_keeper = (struct Time_keeper *)NULL;
+	command_data.background_colour.red=(float)0;
+	command_data.background_colour.green=(float)0;
+	command_data.background_colour.blue=(float)0;
+	command_data.foreground_colour.red=(float)1;
+	command_data.foreground_colour.green=(float)1;
+	command_data.foreground_colour.blue=(float)1;
+	command_data.examples_directory=(char *)NULL;
+	command_data.help_directory=(char *)NULL;
+	command_data.help_url=(char *)NULL;
+
+	/* display the version */
+	display_message(INFORMATION_MESSAGE, VERSION "\n");
+
+	/* check for command_list (needed because don't open_user_interface for
+		command_list) */
+	command_list=0;
+	batch_mode = 0;
+	no_display = 0;
+	i=1;
+	while ((i<argc)&&strcmp("-command_list",argv[i]))
+	{
+		i++;
+	}
+	if (i<argc)
+	{
+		command_list=1;
+	}
+	i=1;
+	while ((i<argc)&&strncmp("-batch",argv[i],3))
+	{
+		i++;
+	}
+	if (i<argc)
+	{
+		batch_mode = 1;
+	}
+	i=1;
+	while ((i<argc)&&strncmp("-no_display",argv[i],4))
+	{
+		i++;
+	}
+	if (i<argc)
+	{
+		no_display = 1;
+	}
+
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+	create_interpreter(&status);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
+
+	if(no_display || command_list)
+	{
+		command_data.user_interface= (struct User_interface *)NULL;
+	}
+	else
+	{
+		user_interface.local_machine_info=(struct Machine_information *)NULL;
+#if defined (MOTIF)
+		user_interface.application_context=(XtAppContext)NULL;
+		user_interface.application_name="cmgui";
+		user_interface.application_shell=(Widget)NULL;
+		user_interface.argc_address= &argc;
+		user_interface.argv=argv;
+		user_interface.class_name="Cmgui";
+		user_interface.display=(Display *)NULL;
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+		user_interface.instance=current_instance;
+		user_interface.main_window=(HWND)NULL;
+		user_interface.main_window_state=initial_main_window_state;
+		user_interface.command_line=command_line;
+#endif /* defined (WINDOWS) */
+		command_data.user_interface= &user_interface;
+	}
+
 	/* create the managers */
 	/* light manager */
-	command_data.default_light=(struct Light *)NULL;
 	if (command_data.light_manager=CREATE(MANAGER(Light))())
 	{
 		if (command_data.default_light=CREATE(Light)("default"))
@@ -764,7 +827,6 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-	command_data.default_light_model=(struct Light_model *)NULL;
 	if (command_data.light_model_manager=CREATE(MANAGER(Light_model))())
 	{
 		if (command_data.default_light_model=CREATE(Light_model)("default"))
@@ -791,7 +853,6 @@ Main program for the CMISS Graphical User Interface
 	/* volume texture manager */
 	command_data.volume_texture_manager=CREATE(MANAGER(VT_volume_texture))();
 	/* graphical material manager */
-	command_data.default_graphical_material=(struct Graphical_material *)NULL;
 	if (command_data.graphical_material_manager=
 		CREATE(MANAGER(Graphical_material))())
 	{
@@ -830,7 +891,6 @@ Main program for the CMISS Graphical User Interface
 		}	
 	}
 	/* spectrum manager */
-	command_data.default_spectrum=(struct Spectrum *)NULL;
 	if (command_data.spectrum_manager=CREATE(MANAGER(Spectrum))())
 	{
 		if (command_data.default_spectrum=CREATE(Spectrum)("default"))
@@ -847,6 +907,8 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
+	/* graphics window manager.  Note there is no default window. */
+	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 	/* FE_element_field_info manager */
 		/*???DB.  To be done */
 	all_FE_element_field_info=CREATE(LIST(FE_element_field_info))();
@@ -880,7 +942,6 @@ Main program for the CMISS Graphical User Interface
 	command_data.interactive_streamline_manager=
 		CREATE(MANAGER(Interactive_streamline))();
 
-	command_data.streampoint_list=(struct Streampoint *)NULL;
 	/* create graphics object list */
 		/*???RC.  Eventually want graphics object manager */
 	command_data.graphics_object_list=CREATE(LIST(GT_object))();
@@ -1050,7 +1111,6 @@ Main program for the CMISS Graphical User Interface
 
 	/* scene manager */
 		/*???RC.   LOTS of managers need to be created before this */
-	command_data.default_scene=(struct Scene *)NULL;
 	if (command_data.scene_manager=CREATE(MANAGER(Scene))())
 	{
 		if (command_data.default_scene=CREATE(Scene)("default"))
@@ -1085,8 +1145,6 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-	/* graphics window manager.  Note there is no default window. */
-	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 #if defined (UNEMAP)	
 	command_data.unemap_package = CREATE(Unemap_package)(
 		command_data.fe_field_manager,command_data.element_group_manager,
@@ -1103,7 +1161,6 @@ Main program for the CMISS Graphical User Interface
 	/* initialize the coordinate widget manager */
 		/*???DB.  Still needs to be turned into a manager */
 	coord_widget_init();
-	command_data.command_window=(struct Command_window *)NULL;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=CREATE(MANAGER(Movie_graphics))();
@@ -1154,11 +1211,6 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-	command_data.transform_tool=(struct Transform_tool *)NULL;
-	command_data.node_tool=(struct Node_tool *)NULL;
-	command_data.element_tool=(struct Element_tool *)NULL;
-	command_data.data_tool=(struct Node_tool *)NULL;
-	command_data.element_point_tool=(struct Element_point_tool *)NULL;
 	if (command_data.user_interface)
 	{
 		command_data.transform_tool=CREATE(Transform_tool)(
@@ -1196,7 +1248,6 @@ Main program for the CMISS Graphical User Interface
 			command_data.element_point_ranges_selection,
 			command_data.default_graphical_material);
 	}
-	command_data.element_creator=(struct Element_creator *)NULL;
 
 	if (return_code)
 	{
