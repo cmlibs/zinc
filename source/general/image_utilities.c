@@ -25,6 +25,8 @@ Utilities for handling images.
 #if defined (IMAGEMAGICK)
 /* image magick interfaces */
 #include "magick/api.h"
+#define MagickFalse 0
+#define MagickTrue 1
 #endif /* defined (IMAGEMAGICK) */
 
 /* #define DEBUG 1 */
@@ -33,8 +35,7 @@ Utilities for handling images.
 Module constants
 ----------------
 */
-#define MagickFalse 0
-#define MagickTrue 1
+
 #if ! defined (IMAGEMAGICK)
 
 #define TIFF_HI_LO 0x4D4D
