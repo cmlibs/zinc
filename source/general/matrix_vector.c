@@ -312,8 +312,7 @@ DESCRIPTION :
 Set matrix <a> to the 4x4 identity.
 ==============================================================================*/
 {
-	double *value;
-	int i, j, return_code;
+	int return_code;
 
 	ENTER(identity_matrix4);
 	if (a)
