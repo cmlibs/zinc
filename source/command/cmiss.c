@@ -11624,6 +11624,71 @@ use node_manager and node_selection.
 	return (return_code);
 } /* gfx_destroy_nodes */
 
+static int gfx_destroy_Scene(struct Parse_state *state,
+	void *dummy_to_be_modified, void *scene_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+Executes a GFX DESTROY SCENE command.
+==============================================================================*/
+{
+	char *current_token;
+	struct Scene *scene;
+	int return_code;
+	struct MANAGER(Scene) *scene_manager;
+
+	ENTER(gfx_destroy_Scene);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (scene_manager = (struct MANAGER(Scene) *)scene_manager_void))
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (scene = FIND_BY_IDENTIFIER_IN_MANAGER(Scene, name)(
+					current_token, scene_manager))
+				{
+					if (REMOVE_OBJECT_FROM_MANAGER(Scene)(scene, scene_manager))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Could not remove scene %s from manager", current_token);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Unknown scene: %s", current_token);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " SCENE_NAME");
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing scene name");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gfx_destroy_Scene.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_destroy_Scene */
+
 static int gfx_destroy_vtextures(struct Parse_state *state,
 	void *dummy_to_be_modified,void *volume_texture_manager_void)
 /*******************************************************************************
@@ -11771,7 +11836,7 @@ Executes a GFX DESTROY WINDOW command.
 static int execute_command_gfx_destroy(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 September 2001
+LAST MODIFIED : 5 December 2001
 
 DESCRIPTION :
 Executes a GFX DESTROY command.
@@ -11826,6 +11891,9 @@ Executes a GFX DESTROY command.
 				/* nodes */
 				Option_table_add_entry(option_table, "nodes", (void *)0,
 					command_data_void, gfx_destroy_nodes);
+				/* scene */
+				Option_table_add_entry(option_table, "scene", NULL,
+					command_data->scene_manager, gfx_destroy_Scene);
 				/* spectrum */
 				Option_table_add_entry(option_table, "spectrum", NULL,
 					command_data->spectrum_manager, gfx_destroy_spectrum);
