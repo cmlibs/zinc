@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED :2 October 2001
+LAST MODIFIED : 19 October 2001
 
 DESCRIPTION :
 ===========================================================================*/
@@ -3725,7 +3725,7 @@ The callback for resizing an analysis interval drawing area.
 static void destroy_Analysis_window(Widget widget,
 	XtPointer analysis_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1996
+LAST MODIFIED : 19 October 2001
 
 DESCRIPTION :
 This function expects <analysis_window> to be a pointer to an analysis window.
@@ -3738,8 +3738,6 @@ analysis window and frees the memory associated with the analysis window.
 	struct Analysis_window *analysis;
 
 	ENTER(destroy_Analysis_window);
-/*???debug */
-printf("enter destroy_Analysis_window\n");
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_window *)analysis_window)
