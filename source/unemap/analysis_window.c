@@ -3738,6 +3738,8 @@ analysis window and frees the memory associated with the analysis window.
 	struct Analysis_window *analysis;
 
 	ENTER(destroy_Analysis_window);
+/*???debug */
+printf("enter destroy_Analysis_window\n");
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_window *)analysis_window)

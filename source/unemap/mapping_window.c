@@ -2216,7 +2216,7 @@ Write the electrode values for the current map to a file.
 	struct Device **electrode;
 	struct Map *map;
 	struct Mapping_window *mapping;	
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 
 	ENTER(write_electrode_values_file);
 	return_code=0;
@@ -5492,7 +5492,7 @@ window.
 		xmin,xpos,xstart,ymax,ymin,ypos,ystart;
 	Pixel *spectrum_pixels;
 	struct Map_drawing_information *drawing_information;
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 	XCharStruct bounds;
 	XFontStruct *font;
 #if defined (UNEMAP_USE_NODES)

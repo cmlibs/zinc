@@ -14295,7 +14295,7 @@ Responds to update callbacks from the time object.
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
 #if defined (UNEMAP_USE_3D)
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 #endif
 	XColor colour, spectrum_rgb[MAX_SPECTRUM_COLOURS];
 
@@ -17025,7 +17025,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 	struct Analysis_work_area *analysis;
 	struct Map *map;
 	struct Mapping_window *mapping;
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 	XButtonEvent *event;
 	XmDrawingAreaCallbackStruct *callback;
 
@@ -17036,7 +17036,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 	analysis=(struct Analysis_work_area *)NULL;
 	map=(struct Map *)NULL;
 	mapping=(struct Mapping_window *)NULL;
-	sub_map=(struct sub_Map *)NULL;
+	sub_map=(struct Sub_map *)NULL;
 	event=(XButtonEvent *)NULL;
 	callback=(XmDrawingAreaCallbackStruct *)NULL;
 	USE_PARAMETER(widget);

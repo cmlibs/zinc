@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 18 September 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -664,7 +664,7 @@ Module functions
 ----------------
 */
 
-int destroy_sub_Map(struct sub_Map **sub_map)
+int destroy_Sub_map(struct Sub_map **sub_map)
 /*******************************************************************************
 LAST MODIFIED : 25 July 2001
 
@@ -674,10 +674,10 @@ Destroy a sub map
 {
 	int return_code;
 	struct Map_frame *frame;
-	struct sub_Map *the_sub_map;
+	struct Sub_map *the_sub_map;
 
-	ENTER(destroy_sub_Map);
-	if(sub_map&&(the_sub_map=*sub_map))
+	ENTER(destroy_Sub_map);
+	if (sub_map&&(the_sub_map=*sub_map))
 	{
 		DEALLOCATE(the_sub_map->electrode_value);
 		DEALLOCATE(the_sub_map->max_x);
@@ -701,52 +701,52 @@ Destroy a sub map
 			XFree((char *)(frame->image));
 		}
 
-		/* free the sub_Map  structure */
+		/* free the Sub_map  structure */
 		DEALLOCATE(the_sub_map);
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"destroy_sub_Map. Invalid arguments");
+			"destroy_Sub_map. Invalid arguments");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}/* destroy_sub_Map */
+}/* destroy_Sub_map */
 
-int map_destroy_sub_Maps(struct Map *map)
+int map_destroy_Sub_maps(struct Map *map)
 /*******************************************************************************
 LAST MODIFIED : 7 September 2001
 
 DESCRIPTION :
-Destroy  sub_Maps in <map>. Assumes first_sub_map is the 1st sub map 
-in an array of number_of_sub_maps sub_Maps.
+Destroy  Sub_maps in <map>. Assumes first_sub_map is the 1st sub map 
+in an array of number_of_sub_maps Sub_maps.
 ==============================================================================*/
 {
 	int i,number_of_sub_maps,return_code;
-	struct sub_Map **sub_map,**first_sub_map;
+	struct Sub_map **sub_map,**first_sub_map;
 
-	ENTER(map_destroy_sub_Maps);
-	sub_map=(struct sub_Map **)NULL;
-	first_sub_map=(struct sub_Map **)NULL;
+	ENTER(map_destroy_Sub_maps);
+	sub_map=(struct Sub_map **)NULL;
+	first_sub_map=(struct Sub_map **)NULL;
 	return_code=1;
 	/*not necessarily an error if below untrue, as may be no sub_maps to destroy*/
-	if((number_of_sub_maps=map->number_of_sub_maps)&&(map->sub_map))
+	if ((number_of_sub_maps=map->number_of_sub_maps)&&(map->sub_map))
 	{
 		first_sub_map=map->sub_map;
 		sub_map=first_sub_map;
 		for(i=0;i<number_of_sub_maps;i++)
 		{
-			if(sub_map&&*sub_map)
+			if (sub_map&&*sub_map)
 			{
-				return_code=destroy_sub_Map(sub_map);
+				return_code=destroy_Sub_map(sub_map);
 				sub_map++;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"map_destroy_sub_Maps. Expected a sub_Map to destroy");
+					"map_destroy_Sub_maps. Expected a Sub_map to destroy");
 				return_code=0;
 			}
 		}
@@ -756,9 +756,9 @@ in an array of number_of_sub_maps sub_Maps.
 	}
 	LEAVE;
 	return(return_code);
-}/* map_destroy_sub_Maps */
+}/* map_destroy_Sub_maps */
 
-int map_add_sub_Map(struct Map *map,struct sub_Map *sub_map)
+int map_add_Sub_map(struct Map *map,struct Sub_map *sub_map)
 /*******************************************************************************
 LAST MODIFIED : 7 September  2001
 
@@ -767,51 +767,51 @@ Add <sub_map> to the list in <map>
 ==============================================================================*/
 {
 	int return_code;
-	struct sub_Map **new_sub_maps;
+	struct Sub_map **new_sub_maps;
 
-	ENTER(map_add_sub_Map);
+	ENTER(map_add_Sub_map);
 	return_code=1;
-	if(map&&sub_map)
+	if (map&&sub_map)
 	{
 		map->number_of_sub_maps++;
-		REALLOCATE(new_sub_maps,map->sub_map,struct sub_Map *,map->number_of_sub_maps);
+		REALLOCATE(new_sub_maps,map->sub_map,struct Sub_map *,map->number_of_sub_maps);
 		map->sub_map=new_sub_maps;
 		map->sub_map[map->number_of_sub_maps-1]=sub_map;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"map_add_sub_Map. invalid arguments");
+			"map_add_Sub_map. invalid arguments");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}/* map_add_sub_Map */
+}/* map_add_Sub_map */
 
-struct sub_Map *create_sub_Map(int number_of_drawn_regions,
+struct Sub_map *create_Sub_map(int number_of_drawn_regions,
 	int number_of_electrodes,int x_offset,int y_offset,int height,int width,
-	int potential_time_index,float frame_time)
+	float frame_time,int use_potential_time)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION :
-Create a sub map
+Create a sub map.
 ==============================================================================*/
 {
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 
-	ENTER(create_sub_Map);
-	sub_map=(struct sub_Map *)NULL;
-	if((number_of_drawn_regions>0)&&(number_of_electrodes>0))
+	ENTER(create_Sub_map);
+	sub_map=(struct Sub_map *)NULL;
+	if ((number_of_drawn_regions>0)&&(number_of_electrodes>0))
 	{
-		if(ALLOCATE(sub_map,struct sub_Map,1))
+		if (ALLOCATE(sub_map,struct Sub_map,1))
 		{	
 			sub_map->height=height;
 			sub_map->width=width;
 			sub_map->x_offset=x_offset;
 			sub_map->y_offset=y_offset;
-			sub_map->potential_time_index=potential_time_index;
-			sub_map->frame_time=frame_time;			
+			sub_map->frame_time=frame_time;
+			sub_map->use_potential_time=use_potential_time;
 			sub_map->maximum_value=0; 
 			sub_map->frame.maximum_screen_x= -1;
 			sub_map->frame.maximum_screen_y= -1;
@@ -833,42 +833,43 @@ Create a sub map
 			ALLOCATE(sub_map->electrode_y,int,number_of_electrodes);
 			ALLOCATE(sub_map->start_x,int,number_of_drawn_regions);
 			ALLOCATE(sub_map->start_y,int,number_of_drawn_regions);	
-			if(!((sub_map->electrode_value)&&(sub_map->max_x)
+			if (!((sub_map->electrode_value)&&(sub_map->max_x)
 				&&(sub_map->max_y)&&(sub_map->min_x)&&(sub_map->min_y)&&
 				(sub_map->stretch_x)&&(sub_map->stretch_y)&&(sub_map->electrode_x)&&
 				(sub_map->electrode_y)&&(sub_map->start_x)&&(sub_map->start_y)))
 			{				
-				display_message(ERROR_MESSAGE,"create_sub_Map. Out of memory for contents");
-				destroy_sub_Map(&sub_map);
+				display_message(ERROR_MESSAGE,
+					"create_Sub_map.  Out of memory for contents");
+				destroy_Sub_map(&sub_map);
 			}			
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_sub_Map. Out of memory");
+				"create_Sub_map. Out of memory");
 		}
 	}
 	else
 	{	
 		display_message(ERROR_MESSAGE,
-			"create_sub_Map. Invalid arguments");
+			"create_Sub_map. Invalid arguments");
 	}
 	return(sub_map);
-}/* create_sub_Map*/
+} /* create_Sub_map*/
 
 #if defined (UNEMAP_USE_3D)
 static int set_mapping_FE_node_coord_values(struct FE_node *node,
 	struct FE_field *position_field,
 	int coords_comp_0_num_versions,int coords_comp_1_num_versions,
-	int coords_comp_2_num_versions,FE_value *coords_comp_0,FE_value *coords_comp_1,
-	FE_value *coords_comp_2,enum Region_type	region_type)
+	int coords_comp_2_num_versions,FE_value *coords_comp_0,
+	FE_value *coords_comp_1,FE_value *coords_comp_2,enum Region_type region_type)
 /*******************************************************************************
 LAST MODIFIED : 3 September 1999
 
 DESCRIPTION :
-sets a node's values storage with the coordinate system component versions and values, 
-<coords_comp_X_num_versions>,<coords_comp_X>,  using <field_order_info>
-==============================================================================*/	
+sets a node's values storage with the coordinate system component versions and
+values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
+==============================================================================*/
 {
 	enum FE_nodal_value_type *component_value_types;
 	FE_value *value;
@@ -6472,7 +6473,7 @@ NULL if not successful.
 			map->number_of_sub_maps=0;
 			map->number_of_movie_frames=0;
 			map->sub_map_number=0;
-			map->sub_map=(struct sub_Map **)NULL;
+			map->sub_map=(struct Sub_map **)NULL;
 			map->contour_x_spacing=0;
 			map->contour_y_spacing=0;
 			map->number_of_region_rows=1;
@@ -6622,7 +6623,7 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 		DEALLOCATE((*map)->auxiliary_y);
 		DEALLOCATE((*map)->draw_region_number);
 		DEALLOCATE((*map)->electrode_drawn);
-		map_destroy_sub_Maps(*map);
+		map_destroy_Sub_maps(*map);
 		DEALLOCATE(*map);
 	}
 	LEAVE;
@@ -6658,7 +6659,7 @@ Called by (see also) update_colour_map_unemap.
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_copy=(struct Spectrum *)NULL;	
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 
 	ENTER(update_colour_map_unemap_original);
 #if !defined (UNEMAP_USE_3D)
@@ -7107,7 +7108,7 @@ DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
 Removes 3d drawing for non-current region(s).
 ==============================================================================*/
-{	
+{
 	char *fit_name;
 	/* up vector for the scene. */
 	double z_up[3]={0.0,0.0,1.0};
@@ -7116,25 +7117,27 @@ Removes 3d drawing for non-current region(s).
 	struct FE_field *fit_field,*map_position_field;
 	struct FE_field_order_info *field_order_info;
 	struct Computed_field *data_field;
-	float frame_time,minimum, maximum;
-	int default_torso_loaded,delauney_map,display_all_regions,nodes_rejected_or_accepted,
-		range_set,return_code;
+	float frame_time,minimum,maximum;
+	int default_torso_loaded,delauney_map,display_all_regions,
+		nodes_rejected_or_accepted,range_set,return_code,*times;
 	enum Map_type map_type;
 	char undecided_accepted;
 	struct Map_drawing_information *drawing_information;
 	struct Rig *rig;
 	struct Region_list_item *region_item;
 	struct Region *current_region,*region;
+	struct Signal_buffer *buffer;
 	struct Interpolation_function *function;
 	struct Unemap_package *unemap_package;
 	struct Scene *scene;
 	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
 	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
 		*delauney_torso_element_group;
 	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
+
 	ENTER(draw_map_3d);
 	fit_name=(char *)NULL;
 	field_order_info=(struct FE_field_order_info *)NULL;	
@@ -7158,7 +7161,7 @@ Removes 3d drawing for non-current region(s).
 	unrejected_node_group=(struct GROUP(FE_node) *)NULL;		
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	sub_map=(struct sub_Map *)NULL;
+	sub_map=(struct Sub_map *)NULL;
 	if (map&&(drawing_information=map->drawing_information))
 	{		
 		range_set=0;
@@ -7213,8 +7216,26 @@ Removes 3d drawing for non-current region(s).
 		if ((map->rig_pointer)&&(rig= *(map->rig_pointer)))
 		{					
 			return_code=1;				
-			undecided_accepted=map->undecided_accepted;			
-			frame_time=sub_map->frame_time; 
+			undecided_accepted=map->undecided_accepted;
+			if (sub_map->use_potential_time)
+			{
+				if ((map->potential_time)&&(*(map->potential_time))&&(rig->devices)&&
+					(*(rig->devices))&&((*(rig->devices))->signal)&&
+					(buffer=(*(rig->devices))->signal->buffer)&&(times=buffer->times))
+				{
+					frame_time=(float)((times)[*(map->potential_time)])*1000./
+						(buffer->frequency);
+				}
+				else
+				{
+					frame_time=0;
+				}
+				sub_map->frame_time=frame_time;
+			}
+			else
+			{
+				frame_time=sub_map->frame_time; 
+			}
 			current_region=get_Rig_current_region(rig);				
 			/*if current_region NULL, displaying all regions*/
 			if (!current_region)
@@ -7584,7 +7605,7 @@ drawing) and sub_map_rows, sub_map_cols, the number of sub_map rows and columns.
 	return(return_code);
 } /* get_number_of_sub_maps_x_step_y_step_rows_cols */
 
-static int draw_2d_fill_in_image(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_fill_in_image(struct Map *map,struct Sub_map *sub_map,
 	Pixel *spectrum_pixels)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2001
@@ -7701,7 +7722,7 @@ Fill in the 2D map pixel image.
 }/* draw_2d_fill_in_image */
 
 static int draw_2d_constant_thickness_contours(struct Map *map,
-	struct sub_Map *sub_map,struct Drawing_2d *drawing,float *pixel_value,
+	struct Sub_map *sub_map,struct Drawing_2d *drawing,float *pixel_value,
 	char draw_boundary)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2001
@@ -8063,7 +8084,7 @@ draw the constant thickness contours
 	return(return_code);
 }/* draw_2d_constant_thickness_contours */
 
-static int set_sub_map_min_max(struct sub_Map *sub_map, float max_f,
+static int set_sub_map_min_max(struct Sub_map *sub_map, float max_f,
 	float min_f,int minimum_x,int maximum_x,int minimum_y,int maximum_y)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2001
@@ -8120,7 +8141,7 @@ based upon its  sub_map(s)'  min and max.
 {
 	float min_f,max_f;
 	int i;	
-	struct sub_Map *sub_map;
+	struct Sub_map *sub_map;
 	int return_code;
 
 	ENTER(set_map_2d_map_min_max);
@@ -8134,11 +8155,11 @@ based upon its  sub_map(s)'  min and max.
 			for (i=0;i<map->number_of_sub_maps;i++)
 			{
 				sub_map=map->sub_map[i];				
-				if(sub_map->minimum_value<min_f)
+				if (sub_map->minimum_value<min_f)
 				{
 					min_f=sub_map->minimum_value;
 				}
-				if(sub_map->maximum_value>max_f)
+				if (sub_map->maximum_value>max_f)
 				{
 					max_f=sub_map->maximum_value;
 				}
@@ -8160,7 +8181,7 @@ based upon its  sub_map(s)'  min and max.
 }/* set_map_2d_map_min_max */
 
 static int set_map_2d_no_interpolation_min_max(struct Map *map,
-	struct sub_Map *sub_map)
+	struct Sub_map *sub_map)
 /*******************************************************************************
 LAST MODIFIED : 18 September 2001
 
@@ -8191,7 +8212,7 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 	electrode_value=(float *)NULL;
 	draw_region_number=(int *)NULL;
 	signal=(struct Signal *)NULL;
-	if(map&&sub_map)
+	if (map&&sub_map)
 	{
 		return_code=1;
 		undecided_accepted=map->undecided_accepted;
@@ -8224,7 +8245,7 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 				{
 					if (current_region==(*electrode)->description->region)
 					{
-						if((signal=(*electrode)->signal)&&((ACCEPTED==signal->status)||
+						if ((signal=(*electrode)->signal)&&((ACCEPTED==signal->status)||
 							(undecided_accepted&&(UNDECIDED==signal->status))))
 						{						
 							f_approx= *electrode_value;
@@ -8259,7 +8280,7 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 									}
 								}
 							}
-						}/* if((signal=(*electrode)->signal) */
+						}/* if ((signal=(*electrode)->signal) */
 					}/* if (current_region==*/
 					electrode++;
 					screen_x++;
@@ -8284,7 +8305,7 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 	return(return_code);
 }/* set_map_2d_no_interpolation_min_max */
 
-static int draw_2d_contour_values(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_contour_values(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2001
@@ -8324,7 +8345,7 @@ Works off map min and max values, not sub_map.
 		map_x_offset=sub_map->x_offset;
 		map_y_offset=sub_map->y_offset;
 		font=drawing_information->font;
-		if(frame=&(sub_map->frame))
+		if (frame=&(sub_map->frame))
 		{
 			if ((frame->contour_x)&&(frame->contour_y))
 			{
@@ -8455,7 +8476,7 @@ Works off map min and max values, not sub_map.
   return(return_code);
 }/* draw_2d_contour_values */
 
-static int draw_2d_fibres(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_fibres(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing,int screen_region_width, int screen_region_height)
 /*******************************************************************************
 LAST MODIFIED :10 September 2001
@@ -8492,7 +8513,7 @@ Draw the fibres
   display=(Display *)NULL;	
   region_item=(struct Region_list_item *)NULL;
   drawing_information=(struct Map_drawing_information *)NULL;
-  if(map&&sub_map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+  if (map&&sub_map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
 		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
 		 &&(rig=*(map->rig_pointer)))
   {	
@@ -8958,7 +8979,7 @@ Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
 	return(return_code);
 }/* confine_text_to_map */
 
-static int draw_2d_extrema(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_extrema(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2001
@@ -9129,7 +9150,7 @@ draw the extrema
   return(return_code);
 }/* draw_2d_extrema */
 
-static int draw_2d_landmarks(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_landmarks(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
 LAST MODIFIED : 10 September 2001
@@ -9280,10 +9301,10 @@ draw the landmarks
   return(return_code);
 }/* draw_2d_landmarks */
 
-static int write_map_title(struct Map *map,struct sub_Map *sub_map,
+static int write_map_title(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION :
 Write the title,using the sub_map->potential_time
@@ -9294,24 +9315,17 @@ Write the title,using the sub_map->potential_time
 	int ascent,descent,direction,map_width,map_height,map_x_offset,map_y_offset,
 		return_code,title_length,x_string,y_string;
 	struct Map_drawing_information *drawing_information;
-	struct Signal_buffer *buffer;
-	struct Signal *signal;
-	struct Device *device;
 	Display *display;
 	XCharStruct bounds;
 	XFontStruct *font;
 
 	ENTER(write_map_title);	
-	buffer=(struct Signal_buffer *)NULL;
-	signal=(struct Signal *)NULL;
-	device=(struct Device *)NULL;
 	font=(XFontStruct *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	display=(Display *)NULL;
 	if (drawing&&sub_map&&(drawing->user_interface)&&
-		(display=drawing->user_interface->display)&&map&&(map->electrodes)&&
-		(device=*map->electrodes)&&(signal=device->signal)&&
-		(buffer=signal->buffer)&&(drawing_information=map->drawing_information))
+		(display=drawing->user_interface->display)&&map&&
+		(drawing_information=map->drawing_information))
 	{
 		return_code=1;
 		map_width=sub_map->width;
@@ -9319,11 +9333,10 @@ Write the title,using the sub_map->potential_time
 		map_x_offset=sub_map->x_offset;
 		map_y_offset=sub_map->y_offset;
 		font=drawing_information->font;
-		/* write the title,using the sub_map->potential_time_index */							
+		/* write the title, using the frame time */							
 		title_x=map_width/2+map_x_offset;
 		title_y=0;
-		title_value=(float)((buffer->times)[sub_map->potential_time_index])*1000./
-			(buffer->frequency);
+		title_value=sub_map->frame_time;
 		sprintf(title,"%.4g",title_value);
 		title_length=strlen(title);
 		XTextExtents(font,title,title_length,&direction,&ascent,&descent,
@@ -9546,7 +9559,7 @@ a static string of length 11.
 	return(return_code);
 }/* set_electrode_2d_name_and_colour */
 
-static int draw_2d_electrode(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_electrode(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing,int screen_x,int screen_y,
 	GC *graphics_context,char *name,struct Device *electrode)
 /*******************************************************************************
@@ -9682,7 +9695,7 @@ Actually draw the map from the calculated data.
 	struct Device	**electrode;
 	struct Map_drawing_information *drawing_information;
 	struct Map_frame *frame;
-  struct sub_Map *sub_map;
+  struct Sub_map *sub_map;
 	XImage *frame_image;
 
 	ENTER(draw_2d_show_map);
@@ -9696,9 +9709,9 @@ Actually draw the map from the calculated data.
 	electrode=(struct Device **)NULL;
 	electrode_drawn=(char *)NULL;
 	electrode_value=(float *)NULL;
-  sub_map=(struct sub_Map *)NULL;
+  sub_map=(struct Sub_map *)NULL;
 
-	if(map&&(sub_map_number>-1)&&
+	if (map&&(sub_map_number>-1)&&
 	  (sub_map_number<map->number_of_sub_maps)&&
 	   (sub_map=map->sub_map[sub_map_number])&&
 		 drawing&&(drawing_information=map->drawing_information)&&
@@ -9851,7 +9864,7 @@ Actually draw the map from the calculated data.
 }/* draw_2d_show_map */
 
 static int draw_2d_perform_projection_update_ranges(struct Map *map,
-	struct sub_Map *sub_map,struct Device_description *description,
+	struct Sub_map *sub_map,struct Device_description *description,
 	float *x_item,float *y_item,char *first)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2001
@@ -9866,7 +9879,7 @@ Perform projection and update ranges for 2d map
 
 	ENTER(draw_2d_perform_projection_update_ranges);
 	position=(struct Position *)NULL;
-	if(map&&sub_map&&description&&first)
+	if (map&&sub_map&&description&&first)
 	{
 		return_code=1;
 		draw_region_number=map->draw_region_number;
@@ -10012,10 +10025,10 @@ Perform projection and update ranges for 2d map
 }/* draw_2d_perform_projection_update_ranges */
 
 static int draw_2d_calculate_electrode_value(struct Map *map,
-	struct sub_Map *sub_map,char *electrode_drawn,struct Device	**electrode,
+	struct Sub_map *sub_map,char *electrode_drawn,struct Device	**electrode,
 	float *f_value)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION :
 Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
@@ -10025,8 +10038,8 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	double integral;
 	enum Map_type map_type;
 	float a,*float_value,frame_time,frame_time_freq,proportion;
-	int after,before,datum,end_search_interval,event_number,found,i,middle,
-		number_of_signals,potential_time_index,return_code,start_search_interval,
+	int after,before,buffer_index,datum,end_search_interval,event_number,found,i,
+		middle,number_of_signals,return_code,start_search_interval,time_index,
 		*times;
 	short int	*short_int_value;
 	struct Event *event;
@@ -10042,7 +10055,6 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	float_value=(float *)NULL;
 	if (map&&sub_map&&electrode_drawn)
 	{
-		potential_time_index=sub_map->potential_time_index;
 		frame_time=sub_map->frame_time;
 		return_code=1;
 		if ((map->type)&&(NO_MAP_FIELD!=(map_type= *(map->type)))&&(map->datum)&&
@@ -10171,20 +10183,29 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 								(UNDECIDED==signal->status)))&&
 							(buffer=signal->buffer)&&(times=buffer->times))
 						{
+							/* calculate buffer index from the frame_time */
+							buffer_index=(int)(frame_time*(buffer->frequency)/1000.0)-
+								(buffer->times)[0];
+							if (buffer_index<0)
+							{
+								buffer_index=0;
+							}
+							if (buffer_index>=buffer->number_of_samples)
+							{
+								buffer_index=buffer->number_of_samples-1;
+							}
 							switch (buffer->value_type)
 							{
 								case SHORT_INT_VALUE:
 								{
-									*f_value=((float)((buffer->signals.
-										short_int_values)[(potential_time_index)*
-											(buffer->number_of_signals)+(signal->index)])-
+									*f_value=((float)((buffer->signals.short_int_values)[
+										buffer_index*(buffer->number_of_signals)+(signal->index)])-
 										((*electrode)->channel->offset))*
 										((*electrode)->channel->gain);
 								} break;
 								case FLOAT_VALUE:
 								{
-									*f_value=((buffer->signals.float_values)[
-										(potential_time_index)*
+									*f_value=((buffer->signals.float_values)[buffer_index*
 										(buffer->number_of_signals)+(signal->index)]-
 										((*electrode)->channel->offset))*
 										((*electrode)->channel->gain);
@@ -10442,7 +10463,7 @@ An experimental function. Only works for Torso maps?
 	int return_code;
 
 	ENTER(set_just_map_pixel_value);
-	if(just_map_pixel_value&&num_pixels&&min_x_pixel&&max_x_pixel&&min_y_pixel&&
+	if (just_map_pixel_value&&num_pixels&&min_x_pixel&&max_x_pixel&&min_y_pixel&&
 		max_y_pixel)
 	{
 		return_code=1;
@@ -10495,7 +10516,7 @@ An experimental function. Only works for Torso maps?
 	float c,fl_act_height,fl_act_width,fl_q_col_width,fl_q_row_height,left_y,right_y,
 		*new_pixel_value,pu,pv;
 	ENTER(gouraud_from_pixel_value);
-	if(map&&just_map_pixel_value&&min_f&&max_f&&pixel_value)
+	if (map&&just_map_pixel_value&&min_f&&max_f&&pixel_value)
 	{
 		return_code=1;
 		/* Gouraud shading from pixel_value (f_approx) values */
@@ -10622,7 +10643,7 @@ An experimental function. Only works for Torso maps?
 {
 	int return_code;
 	ENTER(gouraud_from_mesh);
-	if(top_x&&bot_x&&left_y&&right_y&&f_approx&&f)
+	if (top_x&&bot_x&&left_y&&right_y&&f_approx&&f)
 	{
 		return_code=1;
 		/* this does Gourand shading, using the mesh row and column corners */
@@ -10665,7 +10686,7 @@ Set <f_approx> from <function>
 #endif /* defined(GOURAUD_FROM_MESH) */
 
 	ENTER(draw_2d_calculate_f_approx);
-	if(f_approx)
+	if (f_approx)
 	{
 		f=function->f;
 		dfdx=function->dfdx;
@@ -10816,7 +10837,7 @@ DESCRIPTION : (possibly) draw map boundary
 	return(return_code);	
 } /* draw_2d_map_boundary */
 
-static int draw_2d_set_min_x_max_x(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_set_min_x_max_x(struct Map *map,struct Sub_map *sub_map,
 	float *a,float pi,enum Projection_type map_projection_type)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2001
@@ -10835,7 +10856,7 @@ sets <sub_map>'s min_x, max_x min_y max_y
 	ENTER(draw_2d_set_min_x_max_x);
 	region_item=(struct Region_list_item *)NULL;
 	region=(struct Region *)NULL;
-	if(map&&sub_map&&(rig= *(map->rig_pointer))&&
+	if (map&&sub_map&&(rig= *(map->rig_pointer))&&
 		(0<(number_of_regions=rig->number_of_regions)))
 	{
 		return_code=1;
@@ -10896,7 +10917,7 @@ sets <sub_map>'s min_x, max_x min_y max_y
 }/* draw_2d_set_min_x_max_x */
 
 static int draw_2d_calc_map_to_screen_transform(struct Map *map,
-	struct sub_Map *sub_map,Display *display,int screen_region_width,
+	struct Sub_map *sub_map,Display *display,int screen_region_width,
 	int screen_region_height,int x_border,int y_border,int ascent,int descent)
 /*******************************************************************************
 LAST MODIFIED : 10 September 2001
@@ -10911,7 +10932,7 @@ Calculate the screen to map transform for the 2d Map.
 		*start_y;
 
 	ENTER(draw_2d_calc_map_to_screen_transform);
-	if(map&&display&&sub_map)
+	if (map&&display&&sub_map)
 	{
 		return_code=1;
 		map_height=sub_map->height;
@@ -10998,7 +11019,7 @@ Calculate the screen to map transform for the 2d Map.
 	return(return_code); 
 }/* draw_2d_calc_map_to_screen_transform */
 
-static int draw_2d_construct_image_map(struct Map *map,struct sub_Map *sub_map,
+static int draw_2d_construct_image_map(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing,int recalculate,
 	char undecided_accepted,float pi_over_2,float pi,float two_pi,
 	int screen_region_height,int screen_region_width)
@@ -11066,7 +11087,7 @@ Construct a colour map image for colour map or contours or  values  in the
 	min_y=(float *)NULL;
 	start_x=(int *)NULL;
 	start_y=(int *)NULL;
-	if(map&&sub_map&&drawing&&(drawing_information=map->drawing_information))
+	if (map&&sub_map&&drawing&&(drawing_information=map->drawing_information))
 	{
 		return_code=1;		
 		map_width=sub_map->width;
@@ -11478,8 +11499,8 @@ Construct a colour map image for colour map or contours or  values  in the
 					}/* if (ALLOCATE(background_map_boundary_base,char, */
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"draw_2d_construct_image_map. Insufficient memory for background_map_boundary_base");
+						display_message(ERROR_MESSAGE,"draw_2d_construct_image_map.  ",
+							"Insufficient memory for background_map_boundary_base");
 					}
 				}/*	if (recalculate>1) */	
 			} /* if (return_code) */
@@ -11497,11 +11518,12 @@ Construct a colour map image for colour map or contours or  values  in the
 	return(return_code);
 }/* draw_2d_construct_image_map*/
 
-static int draw_2d_make_map(struct Map *map,int recalculate,struct Drawing_2d *drawing,
-	int map_width,int map_height, int map_x_offset,int map_y_offset,
-	int potential_time_index,float frame_time)
+static int draw_2d_make_map(struct Map *map,int recalculate,
+	struct Drawing_2d *drawing,int map_width,int map_height,int map_x_offset,
+	int map_y_offset,float frame_time,int use_potential_time)
 /*******************************************************************************
-LAST MODIFIED : 17 September 2001
+LAST MODIFIED : 17 October 2001
+
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
 at <map_x_offset> <map_y_offset>. <map_width>, <map_height> <map_x_offset> 
@@ -11510,6 +11532,8 @@ If <recalculate> is >0 then the
 colours for the pixels are recalculated.  If <recalculate> is >1 then the
 interpolation functions are also recalculated.  If <recalculate> is >2 then the
 <map> is resized to match the <drawing>.
+
+
 ???Would like to develop a "PostScript driver" for X.  To get an idea of whats
 involved I'll put a PostScript switch into this routine so that it either draws
 to the drawing or writes to a postscript file.
@@ -11535,8 +11559,8 @@ comparison with 3D maps.
 	float *y_item=(float *)NULL;
 	int ascent,descent,direction,*draw_region_number,i,number_of_devices,
 		number_of_drawn_regions,number_of_electrodes,number_of_regions,
-		region_number,return_code,screen_region_height,screen_region_width,x_border,
-		x_name_border,y_border,y_name_border;
+		region_number,return_code,screen_region_height,screen_region_width,*times,
+		x_border,x_name_border,y_border,y_name_border;
 	int *screen_x=(int *)NULL;
 	int *screen_y=(int *)NULL;
 	int *start_x=(int *)NULL;
@@ -11549,9 +11573,10 @@ comparison with 3D maps.
 		(struct Map_drawing_information *)NULL;
 	struct Region *current_region=(struct Region *)NULL;
 	struct Rig *rig=(struct Rig *)NULL;
+	struct Sub_map *sub_map=(struct Sub_map *)NULL;
+	struct Signal_buffer *buffer;
 	XCharStruct bounds;
 	XFontStruct *font=(XFontStruct *)NULL;
-	struct sub_Map *sub_map=(struct sub_Map *)NULL;
 
 	ENTER(draw_2d_make_map);
 	return_code=1;
@@ -11630,7 +11655,7 @@ comparison with 3D maps.
 				pi=2*pi_over_2;
 				two_pi=2*pi;
 				DEALLOCATE(map->draw_region_number);				
-				if(ALLOCATE(draw_region_number,int,number_of_regions))
+				if (ALLOCATE(draw_region_number,int,number_of_regions))
 				{	
 					for (i=0;i<number_of_regions;i++)
 					{
@@ -11670,7 +11695,7 @@ comparison with 3D maps.
 					map->draw_region_number=draw_region_number;
 					DEALLOCATE(map->electrodes);
 					DEALLOCATE(map->electrode_drawn);					
-					if(ALLOCATE(electrode,struct Device *,number_of_electrodes)&&
+					if (ALLOCATE(electrode,struct Device *,number_of_electrodes)&&
 						ALLOCATE(electrode_drawn,char,number_of_electrodes)&&
 						ALLOCATE(x,float,number_of_electrodes)&&
 						ALLOCATE(y,float,number_of_electrodes)&&
@@ -11678,11 +11703,27 @@ comparison with 3D maps.
 					{
 						map->electrodes=electrode;
 						map->electrode_drawn=electrode_drawn;															
-						if((sub_map=create_sub_Map(number_of_drawn_regions,number_of_electrodes,
-							map_x_offset,map_y_offset,map_height,map_width,potential_time_index,
-							frame_time))
-							&&(map_add_sub_Map(map,sub_map)))
+						if ((sub_map=create_Sub_map(number_of_drawn_regions,
+							number_of_electrodes,map_x_offset,map_y_offset,map_height,
+							map_width,frame_time,use_potential_time))&&
+							(map_add_Sub_map(map,sub_map)))
 						{
+							if (use_potential_time)
+							{
+								if ((map->potential_time)&&(*(map->potential_time))&&
+									(rig->devices)&&(*(rig->devices))&&
+									((*(rig->devices))->signal)&&
+									(buffer=(*(rig->devices))->signal->buffer)&&
+									(times=buffer->times))
+								{
+									sub_map->frame_time=(float)((times)[*(map->potential_time)])*
+										1000./(buffer->frequency);
+								}
+								else
+								{
+									sub_map->frame_time=0;
+								}
+							}
 							screen_x=sub_map->electrode_x;
 							screen_y=sub_map->electrode_y;
 							electrode_value=sub_map->electrode_value;													
@@ -11854,15 +11895,15 @@ comparison with 3D maps.
 static int draw_2d_electrical_imaging_maps(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED 27 September 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION:
 Draw multiple sub maps on the same window for Electrical Imaging.
 ==============================================================================*/
 {
 	float frame_time;
-	int num_maps,sub_map_rows,sub_map_cols,count,x_step,y_step,j,map_width,map_height,
-		map_x_offset,map_y_offset,potential_time_index,return_code,*times;				
+	int num_maps,sub_map_rows,sub_map_cols,count,x_step,y_step,j,map_width,
+		map_height,map_x_offset,map_y_offset,return_code,*times;
 	struct Electrical_imaging_event *eimaging_event;	
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
@@ -11876,7 +11917,7 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 	times=(int *)NULL;
 	rig=(struct Rig *)NULL;
 	device=(struct Device *)NULL;	
-	if(map&&drawing)
+	if (map&&drawing)
 	{
 		return_code=1;
 		rig= *(map->rig_pointer);
@@ -11885,8 +11926,6 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 		buffer=signal->buffer;
 		times=buffer->times;
 		eimaging_event=*map->first_eimaging_event;
-
-		potential_time_index=*map->potential_time;
 		frame_time=(int)((float)((times)[*(map->potential_time)])
 			*1000./buffer->frequency);
 		map->number_of_movie_frames=0;
@@ -11894,7 +11933,7 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 		map->end_time=map->start_time;	
 
 		/* Destroy any existing sub maps */
-		map_destroy_sub_Maps(map);								
+		map_destroy_Sub_maps(map);								
 		/*get size and position of sub_maps*/
 		get_number_of_sub_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
 			&x_step,&y_step,&sub_map_rows,&sub_map_cols);	 
@@ -11905,14 +11944,13 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 		count=0;
 		j=1;
 		/* loop through and create all the sub maps*/	
-		while(count<num_maps)
+		while (count<num_maps)
 		{	
-			/*set the sub_map's times from the electrical imaging events */
-			potential_time_index=eimaging_event->time;
+			/* set the sub_map's times from the electrical imaging events */
 			frame_time=(int)((float)((times)[eimaging_event->time])
 				*1000./buffer->frequency+0.5);			
 			return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
-				map_x_offset,map_y_offset,potential_time_index,frame_time);	
+				map_x_offset,map_y_offset,frame_time,0);	
 			map_x_offset+=x_step;						
 			count++;
 			j++;
@@ -11924,7 +11962,7 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 			}	
 			eimaging_event=eimaging_event->next;					
 		}
-		if(recalculate>1)
+		if (recalculate>1)
 		{
 			set_map_2d_map_min_max(map);
 		}
@@ -11940,60 +11978,49 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"draw_2d_electrical_imaging_maps. Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"draw_2d_electrical_imaging_maps. Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
 }/* draw_2d_electrical_imaging_maps */
 
-static int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+static int draw_map_2d(struct Map *map,int recalculate,
+	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED 27 September 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION:
-Draws all the sub maps of the 2D <map>, by first making it with draw_2d_make_map, 
-then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
+Draws all the sub maps of the 2D <map>, by first making it with
+draw_2d_make_map, then drawing it with draw_2d_show_map. Arranges the sub maps
+on the page.
 ==============================================================================*/
 {
 	float end_time,start_time,frame_time;
 	int frame_number,number_of_frames,map_width,map_height,map_x_offset,
-		map_y_offset,potential_time_index,
-		return_code,*times;			 	
-	struct Signal *signal;
-	struct Signal_buffer *buffer;
-	struct Rig *rig;
-	struct Device *device;
+		map_y_offset,return_code,*times;			 	
 
 	ENTER(draw_map_2d);
-	signal=(struct Signal *)NULL;
-	buffer=(struct Signal_buffer *)NULL;
-	times=(int *)NULL;
-	rig=(struct Rig *)NULL;
-	device=(struct Device *)NULL;
-	if(map&&drawing)
-	{			
+	return_code=0;
+	if (map&&drawing)
+	{
 		return_code=1;	
 		if ((*map->first_eimaging_event)&&
 			(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
 		{	
-			/*draw lots of little maps*/
+			/* draw lots of little maps*/
 			draw_2d_electrical_imaging_maps(map,recalculate,drawing);
 		}
 		else
-		{	
-			rig= *(map->rig_pointer);
-			device=*(rig->devices);
-			signal=(device)->signal;
-			buffer=signal->buffer;
-			times=buffer->times;
-			if(map->number_of_movie_frames)
+		{
+			if (map->number_of_movie_frames)
 			{											
-				if(recalculate>2)
+				if (recalculate>2)
 				{	
 					/*making movies, on location*/				
 					/* Destroy any existing sub maps */
-					map_destroy_sub_Maps(map);				
+					map_destroy_Sub_maps(map);				
 					map_width=drawing->width;
 					map_height=drawing->height;				
 					map_x_offset=0;
@@ -12003,32 +12030,21 @@ then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
 					end_time=map->end_time;
 					number_of_frames=map->number_of_movie_frames;
 					frame_number=0;				 				
-					/*make the sub_maps(frames) */
+					/* make the sub_maps(frames) */
 					for(frame_number=0;frame_number<number_of_frames;frame_number++)
 					{
 						frame_time=((float)(number_of_frames-frame_number-1)*(start_time)+
-							(float)frame_number*(end_time))/(float)(number_of_frames-1);						
-						/*calculate potential_time_index from the frame_time*/
-						potential_time_index=(int)(frame_time*buffer->frequency/1000.0)-
-							(buffer->times)[0];
-						if (potential_time_index<0)
-						{
-							potential_time_index=0;
-						}
-						if (potential_time_index>=buffer->number_of_samples)
-						{
-							potential_time_index=buffer->number_of_samples-1;
-						}
-						return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
-							map_x_offset,map_y_offset,potential_time_index,frame_time);
+							(float)frame_number*(end_time))/(float)(number_of_frames-1);
+						return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
+							map_height,map_x_offset,map_y_offset,frame_time,0);
 					}
-					/* draw the first frame of movie*/
+					/* draw the first frame of movie */
 					recalculate=1;
 					set_map_2d_map_min_max(map);	
 					update_colour_map_unemap(map,drawing);				
 					draw_2d_show_map(map,0,recalculate,drawing);
 				}
-				else if(recalculate==0)
+				else if (recalculate==0)
 				{	
 					/* draw the current frame of a movie*/
 					recalculate=1;				
@@ -12039,28 +12055,26 @@ then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
 					map->number_of_movie_frames=0;
 				}
 			}
-			/*could have changed from above*/
-			if(!map->number_of_movie_frames)
+			/* could have changed from above */
+			if (!map->number_of_movie_frames)
 			{
-				/* set the (single) sub_map's times from the map. map times controled*/
-				/* from the time object */
-				potential_time_index=*map->potential_time;
-				frame_time=(int)((float)((times)[*(map->potential_time)])
-					*1000./buffer->frequency);
+				/* set the (single) sub_map's times from the map. map times
+					controlled from the time object */
+				frame_time=0;
 				map->number_of_movie_frames=0;
 				map->start_time=frame_time;
 				map->end_time=map->start_time;	
 				/* Destroy any existing sub maps */
-				map_destroy_sub_Maps(map);
+				map_destroy_Sub_maps(map);
 				/*just one sub map*/
 				map_width=drawing->width;
 				map_height=drawing->height;				
 				map_x_offset=0;
 				map_y_offset=0;
 				map->sub_map_number=0;			
-				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
-					map_x_offset,map_y_offset,potential_time_index,frame_time);
-				if(recalculate>1)
+				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
+					map_height,map_x_offset,map_y_offset,frame_time,1);
+				if (recalculate>1)
 				{
 					set_map_2d_map_min_max(map);
 				}
@@ -12075,12 +12089,13 @@ then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
-}/* draw_map_2d */
+
+	return (return_code);
+} /* draw_map_2d */
 
 int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION:
 Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
@@ -12091,24 +12106,27 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 	ENTER(draw_map);
 	if (map)
 	{
+		if ((map->rig_pointer)&&(*(map->rig_pointer)))
+		{
 #if defined (UNEMAP_USE_3D) 
-		/* 3d map for 3d projection */
-		if (map->projection_type==THREED_PROJECTION)
-		{			
-			return_code=draw_map_3d(map);	
-			/*???JW.  update_colour_map_unemap() necessary for old style colour strip
-				at top of mapping window. Will become obselete when only cmgui methods
-				used  */						
-			update_colour_map_unemap(map,drawing);		
-		}
-		else
-		{				
+			/* 3d map for 3d projection */
+			if (map->projection_type==THREED_PROJECTION)
+			{			
+				return_code=draw_map_3d(map);	
+				/*???JW.  update_colour_map_unemap() necessary for old style colour
+					strip at top of mapping window. Will become obselete when only cmgui
+					methods used  */						
+				update_colour_map_unemap(map,drawing);		
+			}
+			else
+			{				
+				draw_map_2d(map,recalculate,drawing);
+			}
+#else /* defined (UNEMAP_USE_3D) */
+			/* 2d map */
 			draw_map_2d(map,recalculate,drawing);
-		}	/*defined( UNEMAP_USE_3D) */
-#else/* defined (UNEMAP_USE_3D) */
-		/* 2d map */
-		draw_map_2d(map,recalculate,drawing);
-#endif /*defined( UNEMAP_USE_3D) */	
+#endif /* defined( UNEMAP_USE_3D) */	
+		}
 	}
 	else
 	{

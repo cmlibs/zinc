@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 5 July 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -301,9 +301,9 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 }; /* struct Map_frame */
 
-struct sub_Map
+struct Sub_map
 /*******************************************************************************
-LAST MODIFIED : 14 September 2001
+LAST MODIFIED : 17 October 2001
 
 DESCRIPTION :
 Data unique to each sub map, passed from calculate step to show step.
@@ -313,9 +313,9 @@ Data unique to each sub map, passed from calculate step to show step.
 		*electrode_value,frame_time,*max_x,*max_y,*min_x,
 		*min_y,*stretch_x,*stretch_y;
 	int *electrode_x,*electrode_y,height,number_of_drawn_regions,
-		*start_x,*start_y,potential_time_index,width,x_offset,y_offset;
+		*start_x,*start_y,width,x_offset,y_offset,use_potential_time;
 	struct Map_frame frame;	
-};
+}; /* struct Sub_map */
 
 struct Map
 /*******************************************************************************
@@ -381,7 +381,7 @@ DESCRIPTION : The Map.
 	struct Unemap_package *unemap_package;
 	float end_time,start_time;
 	int number_of_sub_maps,number_of_movie_frames,sub_map_number;
-	struct sub_Map **sub_map;
+	struct Sub_map **sub_map;
 	int contour_x_spacing,contour_y_spacing;
 	/* rows and columns for drawing regions */
 	int number_of_region_rows,number_of_region_columns;
