@@ -1,23 +1,22 @@
 /*******************************************************************************
 FILE : callback.c
 
-LAST MODIFIED : 19 June 1996
+LAST MODIFIED : 17 March 2000
 
 DESCRIPTION :
-Contains definitions to allow creation of standardised widgets.  An example of
-how this should be performed may be found in colour/colour.h and colour/colour.c
-???DB.  Is this level of abstraction required ?
+Macro definition for lists of callbacks between objects.
 ==============================================================================*/
 #include "general/callback.h"
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 
 /*
 Module types
 ------------
 */
+
+#if defined (OLD_CODE)
 FULL_DECLARE_LIST_TYPE(Callback_data);
 
 struct Callback_data_call_list_struct
@@ -25,11 +24,14 @@ struct Callback_data_call_list_struct
 	Widget calling_widget;
 	void *new_data;
 };
+#endif /* defined (OLD_CODE) */
 
 /*
 Module functions
 ----------------
 */
+
+#if defined (OLD_CODE)
 DECLARE_SIMPLE_LIST_OBJECT_FUNCTIONS(Callback_data)
 
 DECLARE_LIST_FUNCTIONS(Callback_data)
@@ -55,11 +57,14 @@ Changes a data item of the input_module widget.
 
 	return (return_code);
 } /* callback_data_call_list */
+#endif /* defined (OLD_CODE) */
 
 /*
 Global functions
 ----------------
 */
+
+#if defined (OLD_CODE)
 void callback_call_list(struct LIST(Callback_data) *callback_list,
 	Widget calling_widget,void *new_data)
 /*******************************************************************************
@@ -78,3 +83,4 @@ Changes a data item of the input_module widget.
 		callback_list);
 	LEAVE;
 } /* callback_call_list */
+#endif /* defined (OLD_CODE) */
