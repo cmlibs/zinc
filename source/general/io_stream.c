@@ -1404,7 +1404,7 @@ Implements the stdio function fseek on stream where possible.
 					} break;
 					case SEEK_END:
 					{
-						location = stream->data_length + offset;
+						location = stream->memory_block->data_length + offset;
 					} break;
 					default:
 					{
@@ -1415,7 +1415,7 @@ Implements the stdio function fseek on stream where possible.
 				}
 				if (return_code)
 				{
-					if ((location >= 0) && (location < stream->data_length))
+					if ((location >= 0) && (location < stream->memory_block->data_length))
 					{
 						stream->memory_block_index = location;
 						stream->buffer_valid_index = 0;
