@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.c
 
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 9 October 2002
 
 DESCRIPTION :
 The functions for manipulating lights.
@@ -1057,7 +1057,7 @@ Infinite/directional lights are not affected by these values.
 int set_Light_attenuation(struct Light *light, float constant_attenuation,
 	float linear_attenuation, float quadratic_attenuation)
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 9 October 2002
 
 DESCRIPTION :
 Sets the constant, linear and quadratic attentuation factors which control
@@ -1070,8 +1070,8 @@ Infinite/directional lights are not affected by these values.
 	int return_code;
 
 	ENTER(set_Light_attenuation);
-	/*???RC Add checks non-negative? */
-	if (light)
+	if (light && (0.0 <= constant_attenuation) && (0.0 <= linear_attenuation) &&
+		(0.0 <= quadratic_attenuation))
 	{
 		light->constant_attenuation = constant_attenuation;
 		light->linear_attenuation = linear_attenuation;
@@ -1447,7 +1447,7 @@ Sets the light_type of the light (infinite/point/spot).
 int modify_Light(struct Parse_state *state,void *light_void,
 	void *modify_light_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 9 October 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1567,7 +1567,7 @@ DESCRIPTION :
 					&light_colour, NULL, set_Colour);
 				/* constant_attenuation */
 				Option_table_add_entry(option_table, "constant_attenuation",
-					&constant_attenuation, NULL, set_float);
+					&constant_attenuation, NULL, set_float_non_negative);
 				/* cutoff */
 				Option_table_add_entry(option_table, "cut_off",
 					&spot_cutoff, NULL, set_float);
@@ -1588,13 +1588,13 @@ DESCRIPTION :
 				DEALLOCATE(valid_strings);
 				/* linear_attenuation */
 				Option_table_add_entry(option_table, "linear_attenuation",
-					&linear_attenuation, NULL, set_float);
+					&linear_attenuation, NULL, set_float_non_negative);
 				/* position */
 				Option_table_add_entry(option_table, "position",
 					position, &num_floats, set_float_vector);
 				/* quadratic_attenuation */
 				Option_table_add_entry(option_table, "quadratic_attenuation",
-					&quadratic_attenuation, NULL, set_float);
+					&quadratic_attenuation, NULL, set_float_non_negative);
 				return_code = Option_table_multi_parse(option_table, state);
 				if (return_code)
 				{
@@ -1629,6 +1629,7 @@ DESCRIPTION :
 						}
 					}
 				}
+				DESTROY(Option_table)(&option_table);
 				if (light_to_be_modified)
 				{
 					DESTROY(Light)(&light_to_be_modified_copy);
@@ -1703,7 +1704,7 @@ Writes the properties of the <light> to the command window.
 			case SPOT_LIGHT:
 			{
 				display_message(INFORMATION_MESSAGE,
-					"  attenuation  constant = %g linear = %g quadratic = %g\n",
+					"  attenuation  constant = %g, linear = %g, quadratic = %g\n",
 					light->constant_attenuation,
 					light->linear_attenuation,
 					light->quadratic_attenuation);
