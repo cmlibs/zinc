@@ -21611,7 +21611,9 @@ Executes a GFX command.
 		{"grab_frame",NULL,NULL,execute_command_gfx_grab_frame},
 		{"list",NULL,NULL,execute_command_gfx_list},
 		{"modify",NULL,NULL,execute_command_gfx_modify},
+#if defined (SGI_MOVIE_FILE)
 		{"movie",NULL,NULL,gfx_movie},
+#endif /* defined (SGI_MOVIE_FILE) */
 		{"node_tool",NULL,NULL,execute_command_gfx_node_tool},
 		{"print",NULL,NULL,execute_command_gfx_print},
 		{"project",NULL,NULL,open_projection_window},
@@ -21693,9 +21695,11 @@ Executes a GFX command.
 				/* modify */
 				(option_table[i]).user_data=command_data_void;
 				i++;
+#if defined (SGI_MOVIE_FILE)
 				/* movie */
 				(option_table[i]).user_data=command_data_void;
 				i++;
+#endif /* defined (SGI_MOVIE_FILE) */
 				/* node_tool */
 				(option_table[i]).to_be_modified=(void *)0;
 				(option_table[i]).user_data=command_data_void;
