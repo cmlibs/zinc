@@ -60,7 +60,11 @@ typedef struct USTMSCpair
 	some point.
 	The code should still run on an older GLX even if it is compiled on a GLX 1.3.
         On hpc1 this code compiles but no valid pbuffers can be created for any FBConfigs
-        returned and so I have disabled it. */
+        returned and so I have disabled it.
+	SAB 26 March 2004 I found a parameter on the AIX Xserver to select the
+	level of pbuffer allocation and changed this to -pbuffer 2 but it didn't help,
+	still no pbuffers (to get a FB you need to make GLX_DOUBLEBUFFER GL_TRUE or DONT_CARE,
+	then you get GLXBadFBConfig errors which seems wrong given that GLX just gave them out). */
 /*???DB.  The old version of GLX (glx.h 1999/12/11), has GLX_VERSION_1_3
 	defined, but doesn't define GLX_PBUFFER_WIDTH, GLX_PBUFFER_HEIGHT and
 	GLX_RGBA_BIT */
@@ -70,6 +74,11 @@ typedef struct USTMSCpair
 #define GLX_fbconfig 1
 #endif /* defined (GLX_VERSION_1_3) */
 #endif /* ! defined (SGI) && ! defined (AIX) */
+#if ! defined (SGI)
+/* Despite being in the Mesa headers we do not want to use the SGI FB extensions on systems
+   other than SGI, the GLX versions are preferable. */
+#undef GLX_SGIX_pbuffer
+#endif /* ! defined (SGI) */
 
 struct Dm_buffer
 {
