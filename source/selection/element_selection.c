@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_selection.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Global store of selected elements for group actions and highlighting.
@@ -152,7 +152,7 @@ highlighting.
 int DESTROY(FE_element_selection)(
 	struct FE_element_selection **element_selection_address)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Destroys the FE_element_selection.
@@ -172,6 +172,7 @@ Destroys the FE_element_selection.
 			&(element_selection->newly_unselected_element_list));
 		DESTROY(LIST(CALLBACK(FE_element_selection_change)))(
 			&(element_selection->change_callback_list));
+		DEALLOCATE(*element_selection_address);
 		return_code=1;
 	}
 	else

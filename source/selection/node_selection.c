@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_selection.c
 
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Global store of selected nodes for group actions and highlighting.
@@ -148,7 +148,7 @@ Creates the global store of selected nodes for group actions and highlighting.
 int DESTROY(FE_node_selection)(
 	struct FE_node_selection **node_selection_address)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Destroys the FE_node_selection.
@@ -165,6 +165,7 @@ Destroys the FE_node_selection.
 		DESTROY(LIST(FE_node))(&(node_selection->newly_unselected_node_list));
 		DESTROY(LIST(CALLBACK(FE_node_selection_change)))(
 			&(node_selection->change_callback_list));
+		DEALLOCATE(*node_selection_address);
 		return_code=1;
 	}
 	else
