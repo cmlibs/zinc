@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : debug.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 Function definitions for debugging.
@@ -13,31 +13,38 @@ Function definitions for debugging.
 #include "user_interface/message.h"
 #include "general/debug.h"
 
+/*#define MEMORY_CHECKING*/
+
 #if defined (MEMORY_CHECKING)
 /* Must override all these Macros before we use them to ensure we don't get
 	stuck in an infinite loop of allocating */
+#undef ALLOCATE
 #define ALLOCATE( result , type , number ) \
 ( result = ( type *) malloc( ( number ) * sizeof( type ) ))
 
+#undef DEALLOCATE
 #define DEALLOCATE( ptr ) \
 { free((char *) ptr ); ( ptr )=NULL;}
 
+#undef ENTER
 #define ENTER( function_name )
 
+#undef LEAVE
 #define LEAVE
 
+#undef REALLOCATE
 #define REALLOCATE( final , initial , type , number ) \
 ( final = ( type *) realloc( (char *)( initial ) , \
 	( number ) * sizeof( type )))
+
 #include "general/compare.h"
 #include "general/indexed_list_private.h"
-#endif
+#endif /* defined (MEMORY_CHECKING) */
 
 /*
 Module types
 ------------
 */
-
 #if defined (MEMORY_CHECKING)
 struct Memory_block
 /*******************************************************************************
@@ -58,7 +65,6 @@ Keeps a record of where a block of memory was allocated
 Module functions
 ----------------
 */
-
 #if defined (MEMORY_CHECKING)
 static struct Memory_block *CREATE(Memory_block)(void *pointer,
 	char *filename, int line, char *type_string, int size,
@@ -70,7 +76,8 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Memory_block *block;
-	
+
+	ENTER(CREATE(Memory_block));
 	if (ALLOCATE(block, struct Memory_block, 1))
 	{
 		block->ptr = pointer;
@@ -87,8 +94,8 @@ DESCRIPTION :
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Memory_block).  Unable to allocate memory for memory_block type string identifier");
+				display_message(ERROR_MESSAGE,"CREATE(Memory_block).  "
+					"Unable to allocate memory for memory_block type string identifier");
 				DEALLOCATE(block);
 				DEALLOCATE(block->filename_line);
 				block = (struct Memory_block *)NULL;
@@ -96,21 +103,22 @@ DESCRIPTION :
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Memory_block).  Unable to allocate memory for memory_block string identifier");
+			display_message(ERROR_MESSAGE,"CREATE(Memory_block).  "
+				"Unable to allocate memory for memory_block string identifier");
 			DEALLOCATE(block);
 			block = (struct Memory_block *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Memory_block).  Unable to allocate memory for memory_block list structure");
+		display_message(ERROR_MESSAGE,"CREATE(Memory_block).  "
+			"Unable to allocate memory for memory_block list structure");
 		block = (struct Memory_block *)NULL;
 	}
+	LEAVE;
 	
-	return(block);
-}
+	return (block);
+} /* CREATE(Memory_block) */
 
 int DESTROY(Memory_block)(struct Memory_block **block_address)
 /*******************************************************************************
@@ -122,6 +130,7 @@ DESCRIPTION :
 	int return_code;
 	struct Memory_block *block;
 
+	ENTER(DESTROY(Memory_block));
 	if (block_address && (block = *block_address))
 	{
 		if (block->access_count <= 0)
@@ -151,9 +160,10 @@ DESCRIPTION :
 			"DESTROY(Memory_block).  Invalid arguments.");
 		return_code = 0;
 	}
+	LEAVE;
 
 	return (return_code);
-}
+} /* DESTROY(Memory_block) */
 
 DECLARE_LIST_TYPES(Memory_block);
 
@@ -167,247 +177,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Memory_block,ptr,void *,compare_pointer)
 DECLARE_INDEXED_LIST_FUNCTIONS(Memory_block)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Memory_block,ptr,void *,
 	compare_pointer)
-
-#if defined (MEMORY_CHECKING)
-static int maximum_count = 1;
-static struct LIST(Memory_block) *memory_block_list =
-   (struct LIST(Memory_block) *)NULL;
 #endif /* defined (MEMORY_CHECKING) */
-
-#endif /* defined (MEMORY_CHECKING) */
-
-
-/*
-Global variables
-----------------
-*/
-/* temporary storage string */
-char global_temp_string[GLOBAL_TEMP_STRING_SIZE];
-
-/*
-Global functions
-----------------
-*/
-
-#if defined (USE_PARAMETER_ON)
-void use_parameter(int dummy, ... )
-/*******************************************************************************
-LAST MODIFIED : 26 November 2001
-
-DESCRIPTION :
-Definition of function which is called in the development stage (when
-USE_PARAMETER_ON is defined) to swallow unused parameters to functions which
-would otherwise cause compiler warnings. For example, parameter <dummy_void>
-is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
-==============================================================================*/
-{
-	if (dummy)
-	{
-	}
-} /* use_parameter */
-#endif /* defined (USE_PARAMETER_ON) */
-
-#if !defined (OPTIMISED)
-
-char *allocate(unsigned size,char *filename,int line, char *type)
-/*******************************************************************************
-LAST MODIFIED : 26 November 2001
-
-DESCRIPTION :
-Wrapper for allocate which keeps track of allocated memory.
-==============================================================================*/
-{
-	char *result;
-#if defined (MEMORY_CHECKING)
-	struct Memory_block *new_block;
-#endif /* defined (MEMORY_CHECKING) */
-
-	ENTER(allocate);
-#if !defined (MEMORY_CHECKING)
-	USE_PARAMETER(filename);
-	USE_PARAMETER(line);
-	USE_PARAMETER(type);
-#endif /* !defined (MEMORY_CHECKING) */
-	if (0<size)
-	{
-		result=malloc(size);
-		if (!result)
-		{
-			display_message(ERROR_MESSAGE,"allocate.  Insufficient memory.  Size=%d",
-				size);
-		}
-#if defined (MEMORY_CHECKING)
-		else
-		{
-			if (!memory_block_list)
-			{
-				memory_block_list = CREATE(LIST(Memory_block))();
-			}
-			if (new_block=CREATE(Memory_block)((void *)result,
-				filename, line, type, size, maximum_count))
-			{
-				if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
-				{
-					display_message(ERROR_MESSAGE,
-						"allocate.  Unable to add Memory_block to list");
-					DESTROY(Memory_block)(&new_block);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"allocate.  Unable to create Memory_block");
-			}
-		}
-#endif /* defined (MEMORY_CHECKING) */
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,"allocate.  Zero size");
-#if defined (MEMORY_CHECKING)
-		display_message(WARNING_MESSAGE,"%s : %10d",filename,line);
-#endif
-		result=(char *)NULL;
-	}
-	LEAVE;
-
-	return (result);
-} /* allocate */
-
-void deallocate(char *ptr,char *filename,int line)
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
-
-DESCRIPTION :
-Wrapper for deallocate which keeps track of allocated memory.
-==============================================================================*/
-{
-#if defined (MEMORY_CHECKING)
-	struct Memory_block *block;
-#endif /* defined (MEMORY_CHECKING) */
-
-	ENTER(deallocate);
-#if !defined (MEMORY_CHECKING)
-	USE_PARAMETER(filename);
-	USE_PARAMETER(line);
-#endif /* !defined (MEMORY_CHECKING) */
-	if (ptr)
-	{
-#if defined (MEMORY_CHECKING)
-		if (memory_block_list && (block = 
-			FIND_BY_IDENTIFIER_IN_LIST(Memory_block,ptr)(ptr, memory_block_list)))
-		{
-			REMOVE_OBJECT_FROM_LIST(Memory_block)(block, memory_block_list);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"deallocate.  Could not find ptr %x in memory block list",ptr);
-			display_message(ERROR_MESSAGE,
-				"deallocate.  called from %s at line %d",filename,line);
-			printf("deallocate.  Could not find ptr %x in memory block list\n",ptr);
-			printf("deallocate.  called from %s at line %d\n",filename,line);
-		}
-#endif /* defined (MEMORY_CHECKING) */
-		free(ptr);
-	}
-	LEAVE;
-} /* deallocate */
-
-char *reallocate(char *ptr,unsigned size,char *filename,int line, char *type)
-/*******************************************************************************
-LAST MODIFIED : 25 July 1998
-
-DESCRIPTION :
-Wrapper for reallocate which keeps track of allocated memory.
-==============================================================================*/
-{
-	char *result;
-#if defined (MEMORY_CHECKING)
-	struct Memory_block *block,*new_block;
-#endif /* defined (MEMORY_CHECKING) */
-
-	ENTER(reallocate);
-#if !defined (MEMORY_CHECKING)
-	USE_PARAMETER(filename);
-	USE_PARAMETER(line);
-	USE_PARAMETER(type);
-#endif /* !defined (MEMORY_CHECKING) */
-	if (0<size)
-	{
-#if defined (MEMORY_CHECKING)
-		if (!memory_block_list)
-		{
-			memory_block_list = CREATE(LIST(Memory_block))();
-		}
-		if (ptr)
-		{
-			if (!(block = FIND_BY_IDENTIFIER_IN_LIST(Memory_block,ptr)(ptr, memory_block_list)))
-			{
-				display_message(ERROR_MESSAGE,
-					"reallocate.  Could not find ptr %x in memory block list", ptr);
-				display_message(ERROR_MESSAGE,
-					"reallocate.  called from %s at line %d.", filename, line);
-				printf("reallocate.  Could not find ptr %x in memory block list\n", ptr);
-				printf("reallocate.  called from %s at line %d.\n", filename, line);
-			}
-		}
-		else
-		{
-			block=(struct Memory_block *)NULL;
-		}
-#endif /* defined (MEMORY_CHECKING) */
-		result=realloc(ptr,size);
-		if (!result)
-		{
-			display_message(ERROR_MESSAGE,
-				"reallocate.  Insufficient memory.  Size=%d",size);
-		}
-#if defined (MEMORY_CHECKING)
-		else
-		{
-			if (block)
-			{
-				if (strcmp(type, block->type))
-				{
-					display_message(ERROR_MESSAGE,
-						"reallocate.  Allocation types don't match %s realloced at %s : %10d",
-						block->filename_line, filename, line);
-				}
-				REMOVE_OBJECT_FROM_LIST(Memory_block)(block, memory_block_list);
-			}
-			if (new_block=CREATE(Memory_block)((void *)result,
-				filename, line, type, size, maximum_count))
-			{
-				if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
-				{
-					display_message(ERROR_MESSAGE,
-						"reallocate.  Unable to add Memory_block to list");
-					DESTROY(Memory_block)(&new_block);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"reallocate.  Unable to create Memory_block");
-			}
-		}
-#endif /* defined (MEMORY_CHECKING) */
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,"reallocate.  Zero size requested ");
-#if defined (MEMORY_CHECKING)
-		display_message(WARNING_MESSAGE,"%s : %10d",filename,line);
-#endif
-		result=ptr;
-	}
-	LEAVE;
-
-	return (result);
-} /* reallocate */
-
-#endif /* !defined (OPTIMISED) */
 
 #if defined (MEMORY_CHECKING)
 struct List_memory_data
@@ -417,9 +187,10 @@ struct List_memory_data
 	int show_structures;
 	int total;
 	int *count_total;
-};
+}; /* struct List_memory_data */
 
-static int list_memory_block(struct Memory_block *block, void *list_memory_data_void)
+static int list_memory_block(struct Memory_block *block,
+	void *list_memory_data_void)
 /*******************************************************************************
 LAST MODIFIED : 28 February 2000
 
@@ -430,7 +201,8 @@ DESCRIPTION :
 	struct List_memory_data *list_memory_data;
 
 	ENTER(list_memory_block);
-	if (block && (list_memory_data = (struct List_memory_data *)list_memory_data_void))
+	if (block&&
+		(list_memory_data = (struct List_memory_data *)list_memory_data_void))
 	{
 		if (list_memory_data->show_pointers)
 		{
@@ -446,7 +218,8 @@ DESCRIPTION :
 		{
 			if (!list_memory_data->count||(block->count==list_memory_data->count))
 			{
-				printf("%s size %d type %s\n",block->filename_line,block->size,block->type);
+				printf("%s size %d type %s\n",block->filename_line,block->size,
+					block->type);
 			}
 			list_memory_data->count_total[block->count] += block->size;
 			list_memory_data->total += block->size;
@@ -458,8 +231,8 @@ DESCRIPTION :
 				printf("   \"%s\"\n", (char *)block->ptr);
 			}
 #if defined (DEBUG)
-		/* This code, while useful for debugging, causes this file to be dependent
-			on parts of cmgui it shouldn't. */
+			/* This code, while useful for debugging, causes this file to be dependent
+				on parts of cmgui it shouldn't. */
 			else if (!strcmp(block->type, "struct FE_field"))
 			{
 				list_FE_field(block->ptr, NULL);
@@ -482,6 +255,332 @@ DESCRIPTION :
 	return (return_code);
 } /* list_memory_block */
 #endif /* defined (MEMORY_CHECKING) */
+
+/*
+Module variables
+----------------
+*/
+#if defined (MEMORY_CHECKING)
+/* to prevent recursion when display_message uses allocate, deallocate or
+	reallocate */
+static int display_message_call_in_progress=0;
+static int check_memory_output_on=0,maximum_count=1,total_allocated_memory=0;
+static struct LIST(Memory_block) *memory_block_list =
+   (struct LIST(Memory_block) *)NULL;
+#endif /* defined (MEMORY_CHECKING) */
+
+/*
+Global variables
+----------------
+*/
+/* temporary storage string */
+char global_temp_string[GLOBAL_TEMP_STRING_SIZE];
+
+/*
+Global functions
+----------------
+*/
+#if defined (USE_PARAMETER_ON)
+void use_parameter(int dummy, ... )
+/*******************************************************************************
+LAST MODIFIED : 26 November 2001
+
+DESCRIPTION :
+Definition of function which is called in the development stage (when
+USE_PARAMETER_ON is defined) to swallow unused parameters to functions which
+would otherwise cause compiler warnings. For example, parameter <dummy_void>
+is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
+==============================================================================*/
+{
+	if (dummy)
+	{
+	}
+} /* use_parameter */
+#endif /* defined (USE_PARAMETER_ON) */
+
+#if !defined (OPTIMISED)
+char *allocate(unsigned size,char *filename,int line, char *type)
+/*******************************************************************************
+LAST MODIFIED : 26 November 2001
+
+DESCRIPTION :
+Wrapper for allocate which keeps track of allocated memory.
+==============================================================================*/
+{
+	char *result;
+#if defined (MEMORY_CHECKING)
+	int previous_total_allocated_memory;
+	struct Memory_block *new_block;
+#endif /* defined (MEMORY_CHECKING) */
+
+	ENTER(allocate);
+#if !defined (MEMORY_CHECKING)
+	USE_PARAMETER(filename);
+	USE_PARAMETER(line);
+	USE_PARAMETER(type);
+#endif /* !defined (MEMORY_CHECKING) */
+	if (0<size)
+	{
+		result=malloc(size);
+		if (!result)
+		{
+#if defined (MEMORY_CHECKING)
+			if (!display_message_call_in_progress)
+			{
+				display_message_call_in_progress=1;
+#endif /* defined (MEMORY_CHECKING) */
+				display_message(ERROR_MESSAGE,
+					"allocate.  Insufficient memory.  Size=%d",size);
+#if defined (MEMORY_CHECKING)
+				display_message_call_in_progress=0;
+			}
+#endif /* defined (MEMORY_CHECKING) */
+		}
+#if defined (MEMORY_CHECKING)
+		else
+		{
+			if (!display_message_call_in_progress)
+			{
+				display_message_call_in_progress=1;
+				previous_total_allocated_memory=total_allocated_memory;
+				total_allocated_memory += size;
+				if (check_memory_output_on)
+				{
+					display_message(INFORMATION_MESSAGE,"%d +%d %d %s %d\n",
+						previous_total_allocated_memory,size,total_allocated_memory,
+						filename,line);
+				}
+				if (!memory_block_list)
+				{
+					memory_block_list = CREATE(LIST(Memory_block))();
+				}
+				if (new_block=CREATE(Memory_block)((void *)result,
+					filename, line, type, size, maximum_count))
+				{
+					if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
+					{
+						display_message(ERROR_MESSAGE,
+							"allocate.  Unable to add Memory_block to list");
+						DESTROY(Memory_block)(&new_block);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"allocate.  Unable to create Memory_block");
+				}
+				display_message_call_in_progress=0;
+			}
+		}
+#endif /* defined (MEMORY_CHECKING) */
+	}
+	else
+	{
+#if defined (MEMORY_CHECKING)
+		if (!display_message_call_in_progress)
+		{
+			display_message_call_in_progress=1;
+			display_message(WARNING_MESSAGE,"allocate.  Zero size.  %s : %10d",
+				filename,line);
+			display_message_call_in_progress=0;
+		}
+#else /* defined (MEMORY_CHECKING) */
+		display_message(WARNING_MESSAGE,"allocate.  Zero size");
+#endif /* defined (MEMORY_CHECKING) */
+		result=(char *)NULL;
+	}
+	LEAVE;
+
+	return (result);
+} /* allocate */
+
+void deallocate(char *ptr,char *filename,int line)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Wrapper for deallocate which keeps track of allocated memory.
+==============================================================================*/
+{
+#if defined (MEMORY_CHECKING)
+	int previous_total_allocated_memory;
+	struct Memory_block *block;
+#endif /* defined (MEMORY_CHECKING) */
+
+	ENTER(deallocate);
+#if !defined (MEMORY_CHECKING)
+	USE_PARAMETER(filename);
+	USE_PARAMETER(line);
+#endif /* !defined (MEMORY_CHECKING) */
+	if (ptr)
+	{
+#if defined (MEMORY_CHECKING)
+		if (!display_message_call_in_progress)
+		{
+			display_message_call_in_progress=1;
+			if (memory_block_list && (block = 
+				FIND_BY_IDENTIFIER_IN_LIST(Memory_block,ptr)(ptr, memory_block_list)))
+			{
+				previous_total_allocated_memory=total_allocated_memory;
+				total_allocated_memory -= block->size;
+				if (check_memory_output_on)
+				{
+					display_message(INFORMATION_MESSAGE,"%d -%d %d %s %d\n",
+						previous_total_allocated_memory,block->size,total_allocated_memory,
+						filename,line);
+				}
+				REMOVE_OBJECT_FROM_LIST(Memory_block)(block, memory_block_list);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"deallocate.  Could not find ptr %x in memory block list",ptr);
+				display_message(ERROR_MESSAGE,
+					"deallocate.  called from %s at line %d",filename,line);
+				printf("deallocate.  Could not find ptr %x in memory block list\n",ptr);
+				printf("deallocate.  called from %s at line %d\n",filename,line);
+			}
+			display_message_call_in_progress=0;
+		}
+#endif /* defined (MEMORY_CHECKING) */
+		free(ptr);
+	}
+	LEAVE;
+} /* deallocate */
+
+char *reallocate(char *ptr,unsigned size,char *filename,int line, char *type)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Wrapper for reallocate which keeps track of allocated memory.
+==============================================================================*/
+{
+	char *result;
+#if defined (MEMORY_CHECKING)
+	int previous_size,previous_total_allocated_memory;
+	struct Memory_block *block,*new_block;
+#endif /* defined (MEMORY_CHECKING) */
+
+	ENTER(reallocate);
+#if !defined (MEMORY_CHECKING)
+	USE_PARAMETER(filename);
+	USE_PARAMETER(line);
+	USE_PARAMETER(type);
+#endif /* !defined (MEMORY_CHECKING) */
+	if (0<size)
+	{
+#if defined (MEMORY_CHECKING)
+		if (!display_message_call_in_progress)
+		{
+			display_message_call_in_progress=1;
+			if (!memory_block_list)
+			{
+				memory_block_list = CREATE(LIST(Memory_block))();
+			}
+			if (ptr)
+			{
+				if (!(block = FIND_BY_IDENTIFIER_IN_LIST(Memory_block,ptr)(ptr,
+					memory_block_list)))
+				{
+					display_message(ERROR_MESSAGE,
+						"reallocate.  Could not find ptr %x in memory block list", ptr);
+					display_message(ERROR_MESSAGE,
+						"reallocate.  called from %s at line %d.", filename, line);
+					printf("reallocate.  Could not find ptr %x in memory block list\n",
+						ptr);
+					printf("reallocate.  called from %s at line %d.\n", filename, line);
+				}
+			}
+			else
+			{
+				block=(struct Memory_block *)NULL;
+			}
+			display_message_call_in_progress=0;
+		}
+#endif /* defined (MEMORY_CHECKING) */
+		result=realloc(ptr,size);
+		if (!result)
+		{
+#if defined (MEMORY_CHECKING)
+			if (!display_message_call_in_progress)
+			{
+				display_message_call_in_progress=1;
+#endif /* defined (MEMORY_CHECKING) */
+				display_message(ERROR_MESSAGE,
+					"reallocate.  Insufficient memory.  Size=%d",size);
+#if defined (MEMORY_CHECKING)
+				display_message_call_in_progress=0;
+			}
+#endif /* defined (MEMORY_CHECKING) */
+		}
+#if defined (MEMORY_CHECKING)
+		else
+		{
+			if (!display_message_call_in_progress)
+			{
+				display_message_call_in_progress=1;
+				previous_total_allocated_memory=total_allocated_memory;
+				previous_size=0;
+				if (block)
+				{
+					previous_size=block->size;
+					total_allocated_memory -= block->size;
+					if (strcmp(type, block->type))
+					{
+						display_message(ERROR_MESSAGE,"reallocate.  "
+							"Allocation types don't match %s realloced at %s : %10d",
+							block->filename_line, filename, line);
+					}
+					REMOVE_OBJECT_FROM_LIST(Memory_block)(block, memory_block_list);
+				}
+				total_allocated_memory += size;
+				if (check_memory_output_on)
+				{
+					display_message(INFORMATION_MESSAGE,"%d -%d +%d %d %s %d\n",
+						previous_total_allocated_memory,previous_size,size,
+						total_allocated_memory,filename,line);
+				}
+				if (new_block=CREATE(Memory_block)((void *)result,
+					filename, line, type, size, maximum_count))
+				{
+					if (!ADD_OBJECT_TO_LIST(Memory_block)(new_block,memory_block_list))
+					{
+						display_message(ERROR_MESSAGE,
+							"reallocate.  Unable to add Memory_block to list");
+						DESTROY(Memory_block)(&new_block);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"reallocate.  Unable to create Memory_block");
+				}
+				display_message_call_in_progress=0;
+			}
+		}
+#endif /* defined (MEMORY_CHECKING) */
+	}
+	else
+	{
+#if defined (MEMORY_CHECKING)
+		if (display_message_call_in_progress)
+		{
+			display_message_call_in_progress=1;
+			display_message(WARNING_MESSAGE,
+				"reallocate.  Zero size requested.  %s : %10d",filename,line);
+			display_message_call_in_progress=0;
+		}
+#else /* defined (MEMORY_CHECKING) */
+		display_message(WARNING_MESSAGE,"reallocate.  Zero size requested ");
+#endif /* defined (MEMORY_CHECKING) */
+		result=ptr;
+	}
+	LEAVE;
+
+	return (result);
+} /* reallocate */
+#endif /* !defined (OPTIMISED) */
 
 int list_memory(int count,int show_pointers,int increment_counter,
 	int show_structures)
@@ -565,3 +664,36 @@ actual object type and then the appropriate list function is called.
 
 	return (return_code);
 } /* list_memory */
+
+int set_check_memory_output(int on)
+/*******************************************************************************
+LAST MODIFIED : 16 December 2001
+
+DESCRIPTION :
+If <on> is non-zero then check memory output is turned on, otherwise, it is
+turned off.  Check memory involves calling display_message to give memory
+change information for ALLOCATE, DEALLOCATE and REALLOCATE.  display_message
+is allowed to use ALLOCATE, DEALLOCATE or REALLOCATE (infinite recursion 
+prevented).
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_check_memory_output);
+	return_code=1;
+#if defined (MEMORY_CHECKING)
+	if (on)
+	{
+		check_memory_output_on=1;
+	}
+	else
+	{
+		check_memory_output_on=0;
+	}
+#else /* defined (MEMORY_CHECKING) */
+	USE_PARAMETER(on);
+#endif /* defined (MEMORY_CHECKING) */
+	LEAVE;
+
+	return (return_code);
+} /* set_check_memory_output */

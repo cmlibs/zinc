@@ -78,8 +78,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #endif /* defined (USE_PARAMETER_ON) */
 
 #if !defined (OPTIMISED)
-
-char *allocate(unsigned size,char *file_name,int line_number, char *type);
+char *allocate(unsigned size,char *file_name,int line_number,char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -95,14 +94,14 @@ DESCRIPTION :
 Wrapper for free.
 ==============================================================================*/
 
-char *reallocate(char *ptr,unsigned size,char *file_name,int line_number, char *type);
+char *reallocate(char *ptr,unsigned size,char *file_name,int line_number,
+	char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
 DESCRIPTION :
 Wrapper for realloc.
 ==============================================================================*/
-
 #endif /* !defined (OPTIMISED) */
 
 int list_memory(int count, int show_pointers, int increment_counter, 
@@ -111,22 +110,34 @@ int list_memory(int count, int show_pointers, int increment_counter,
 LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
-Writes out memory blocks currently allocated.  Each time this is called an internal
-counter is incremented and all subsequent ALLOCATIONS marked with this new
-count_number.  i.e. To find a leak run till before the leak (all these allocations
-will be marked count 1), call list_memory increment, 
-do the leaky thing several times (these have count 2), call list_memory increment, 
-do the leaky thing once (so that any old stuff with count 2 should have been deallocated 
-and recreated with count 3) and then list_memory 2.  This should list no memory.
+Writes out memory blocks currently allocated.  Each time this is called an
+internal counter is incremented and all subsequent ALLOCATIONS marked with this
+new count_number.  i.e. To find a leak run till before the leak (all these
+allocations will be marked count 1), call list_memory increment, do the leaky
+thing several times (these have count 2), call list_memory increment, do the
+leaky thing once (so that any old stuff with count 2 should have been
+deallocated and recreated with count 3) and then list_memory 2.  This should
+list no memory.
 If <count_number> is zero all the memory allocated is written out.
 If <count_number> is negative no memory is written out, just the total.
 If <count_number> is positive only the memory with that count is written out.
 ???DB.  printf used because want to make sure that no allocation is going on
 	while printing.
 <show_pointers> toggles the output format to include the actual memory addresses
-or not.  (It isn't useful for testing and output to record the changing addresses).
-If <show_structures> is set then for known types the objects are cast to the
-actual object type and then the appropriate list function is called.
+or not.  (It isn't useful for testing and output to record the changing
+addresses).  If <show_structures> is set then for known types the objects are
+cast to the actual object type and then the appropriate list function is called.
 ==============================================================================*/
 
+int set_check_memory_output(int on);
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+If <on> is non-zero then check memory output is turned on, otherwise, it is
+turned off.  Check memory involves calling display_message to give memory
+change information for ALLOCATE, DEALLOCATE and REALLOCATE.  display_message
+is allowed to use ALLOCATE, DEALLOCATE or REALLOCATE (infinite recursion
+prevented).
+==============================================================================*/
 #endif /* !defined (DEBUG_H) */
