@@ -4083,6 +4083,13 @@ until an explicit "gfx update" is entered.
 	ENTER(Graphics_window_update_now);
 	if (graphics_window)
 	{
+#if defined (NEW_CODE)
+		/* Handle all the X events so that the window resizing gets done */
+		while (XtAppPending(graphics_window->user_interface->application_context))
+		{
+			application_main_step(graphics_window->user_interface);
+		}
+#endif /* defined (NEW_CODE) */
 		for (pane_no=0;pane_no<graphics_window->number_of_panes;pane_no++)
 		{
 			Scene_viewer_redraw_now(graphics_window->scene_viewer[pane_no]);
@@ -4258,7 +4265,7 @@ graphics window on screen.
 		}
 		/* Update the window or offscreen area if possible */
 		if ((!force_onscreen) && (dmbuffer = CREATE(Dm_buffer)(*width, *height, 
-			/*depth_buffer_flag*/1, window->user_interface)))
+			/*depth_buffer_flag*/1, /*shared_display_buffer_flag*/1, window->user_interface)))
 		{
 			Dm_buffer_glx_make_current(dmbuffer);
 			switch (window->layout_mode)
