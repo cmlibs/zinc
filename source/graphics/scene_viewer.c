@@ -1187,7 +1187,7 @@ access this function.
 						if (double_buffer && !picking_on)
 						{
 							/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
-							if (GL_TRUE==gluUnProject(0.00001,0.00001,0.00001,
+							if (GL_TRUE==gluUnProject(0.0001,0.0001,0.0001,
 								modelview_matrix,projection_matrix,viewport,
 								&obj_x,&obj_y,&obj_z))
 							{
