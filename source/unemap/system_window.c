@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 16 September 2002
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -1144,7 +1144,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct Time_keeper *time_keeper,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -1665,6 +1665,7 @@ as a standalone application.
 									computed_field_package),
 								interactive_tool_manager, node_selection))
 							{
+								ACCESS(Unemap_package)(system->unemap_package);
 								/* create and store the map fit field  */
 								map_fit_field = create_mapping_type_fe_field("fit",
 									fe_field_manager, fe_time);
@@ -1776,7 +1777,7 @@ as a standalone application.
 
 int DESTROY(System_window)(struct System_window **system_window_address)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 Destroys the Unemap system window and all its dependent windows.
@@ -1822,6 +1823,7 @@ Destroys the Unemap system window and all its dependent windows.
 		{
 			close_analysis_work_area((Widget)NULL, (XtPointer)&(system->analysis),
 				(XtPointer)NULL);
+			destroy_analysis_work_area(&(system->analysis));
 		}
 		/* close mapping */
 		if ((system->mapping).window_shell)
@@ -1836,6 +1838,9 @@ Destroys the Unemap system window and all its dependent windows.
 			/*XtPopdown(system->window_shell);*/
 			XtDestroyWidget(system->window_shell);
 		}
+	#if defined (UNEMAP_USE_3D)
+		DEACCESS(Unemap_package)(&(system->unemap_package));
+	#endif /* defined (UNEMAP_USE_3D) */
 		*system_window_address = (struct System_window *)NULL;
 		return_code = 1;
 	}
