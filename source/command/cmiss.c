@@ -17,6 +17,7 @@ Functions for executing cmiss commands.
 #include "application/application.h"
 #if defined (CELL)
 #include "cell/cell_window.h"
+#include "cell/cmgui_connection.h"
 #endif /* defined (CELL) */
 #include "comfile/comfile_window.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
@@ -17887,8 +17888,7 @@ Executes "open comfile update execute"
 	USE_PARAMETER(message);
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
-		(*(command_data->execute_command->function))("open comfile update execute",
-			command_data->execute_command->data);
+		Execute_command_execute_string(command_data->execute_command, "open comfile update execute");
 	}
 	else
 	{
@@ -20610,7 +20610,8 @@ Executes a CELL OPEN command.
 	int return_code;
 	struct Cell_window *cell_window;
 	struct Cmiss_command_data *command_data;
-
+	struct Execute_command *execute_command;
+	
 	ENTER(execute_command_cell_open);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
@@ -20624,65 +20625,75 @@ Executes a CELL OPEN command.
 			{
 				if (!(cell_window=command_data->cell_window))
 				{
-					/* create a shell */
-					if (XtVaCreatePopupShell("cell_window_shell",
-						topLevelShellWidgetClass,
-						command_data->user_interface->application_shell,
-						XmNallowShellResize,False,NULL))
+					if (execute_command = CREATE(Execute_command)(cmiss_execute_command,
+						(void *)(command_data)))
 					{
-            /* add Cell 3D */
-						if (cell_window=create_Cell_window(command_data->user_interface,
-							(char *)NULL,command_data->control_curve_manager,
-							command_data->unemap_package,
-              &(command_data->background_colour),command_data->light_manager,
-              command_data->default_light,command_data->light_model_manager,
-              command_data->default_light_model,command_data->scene_manager,
-              command_data->default_scene,command_data->texture_manager,
-              command_data->graphics_object_list,
-              command_data->graphical_material_manager,
-              command_data->glyph_list,command_data->fe_field_manager,
-              command_data->element_group_manager,command_data->node_manager,
-              command_data->node_group_manager,
-              command_data->data_group_manager,
-              command_data->default_graphical_material,
-              command_data->spectrum_manager,command_data->default_spectrum))
+						/* create a shell */
+						if (XtVaCreatePopupShell("cell_window_shell",
+							topLevelShellWidgetClass,
+							command_data->user_interface->application_shell,
+							XmNallowShellResize,False,NULL))
+						{
+							/* add Cell 3D */
+							if (cell_window=create_Cell_window(command_data->user_interface,
+								(char *)NULL,command_data->control_curve_manager,
+								command_data->unemap_package,
+								&(command_data->background_colour),command_data->light_manager,
+								command_data->default_light,command_data->light_model_manager,
+								command_data->default_light_model,command_data->scene_manager,
+								command_data->default_scene,command_data->texture_manager,
+								command_data->graphics_object_list,
+								command_data->graphical_material_manager,
+								command_data->glyph_list,command_data->fe_field_manager,
+								command_data->element_group_manager,command_data->node_manager,
+								command_data->element_manager,command_data->node_group_manager,
+								command_data->data_group_manager,
+								command_data->default_graphical_material,
+								command_data->spectrum_manager,command_data->default_spectrum,
+								execute_command))
 #if defined (OLD_CODE)
 #if defined (CELL_CONTROL_CURVE)
-						if (cell_window=create_Cell_window(shell,close_cell,
-							command_data->user_interface,
-              command_data->control_curve_manager,
-							command_data->unemap_package))
+							if (cell_window=create_Cell_window(shell,close_cell,
+								command_data->user_interface,
+								command_data->control_curve_manager,
+								command_data->unemap_package))
 #else
-            if (cell_window=create_Cell_window(shell,close_cell,
-							command_data->user_interface))
+							if (cell_window=create_Cell_window(shell,close_cell,
+								command_data->user_interface))
 #endif /* defined (CELL_CONTROL_CURVE) */
 #endif /* defined (OLD_CODE) */
-						{
-							command_data->cell_window=cell_window;
+							{
+								command_data->cell_window=cell_window;
 #if defined (CELL)
-							/*create_Shell_list_item(&(cell_window->window_shell),
-								command_data->user_interface);
-							XtAddCallback(cell_window->window_shell,XmNdestroyCallback,
-								close_cell,(XtPointer)cell_window);*/
-							/* manage the cell window */
-							/*XtManageChild(cell_window->shell);*/
-							/* realize the cell window shell */
-							/*XtRealizeWidget(cell_window->window_shell);*/
+								/*create_Shell_list_item(&(cell_window->window_shell),
+								  command_data->user_interface);
+								  XtAddCallback(cell_window->window_shell,XmNdestroyCallback,
+								  close_cell,(XtPointer)cell_window);*/
+								/* manage the cell window */
+								/*XtManageChild(cell_window->shell);*/
+								/* realize the cell window shell */
+								/*XtRealizeWidget(cell_window->window_shell);*/
 #endif /* defined (CELL) */
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"execute_command_cell_open.  Could not create cell_window");
+							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"execute_command_cell_open.  Could not create cell_window");
+								"execute_command_cell_open.  Could not create cell_window shell");
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"execute_command_cell_open.  Could not create cell_window shell");
-					}
+							"execute_command_cell_open.  Could not ALLOCATE Execute_command structure");
+					}	
 				}
-				if (cell_window->shell)
+					if (cell_window->shell)
 				{
 #if defined (CELL)
 					/* pop up the CELL window shell */
@@ -20717,8 +20728,8 @@ Executes a CELL OPEN command.
 
 	return (return_code);
 } /* execute_command_cell_open */
-#endif /* defined (CELL) */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (CELL) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_cell(struct Parse_state *state,
