@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : value.c
 
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 22 May 2000
 
 DESCRIPTION :
 A value type that knows what its type is.  So that can have a single function
@@ -245,6 +245,29 @@ Returns true if the value_type is an array.
 
 	return (return_code);
 } /* Value_type_is_array */
+
+int Value_type_is_numeric_simple(enum Value_type value_type)
+/*******************************************************************************
+LAST MODIFIED : 22 May 2000
+
+DESCRIPTION :
+Returns true if the value_type is a simple number: real, integer etc.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Value_type_is_numeric_simple);
+	return_code=
+		(DOUBLE_VALUE==value_type)||
+		(FE_VALUE_VALUE==value_type)||
+		(FLT_VALUE==value_type)||
+		(INT_VALUE==value_type)||
+		(SHORT_VALUE==value_type)||
+		(UNSIGNED_VALUE==value_type);
+	LEAVE;
+
+	return (return_code);
+} /* Value_type_is_numeric_simple */
 
 enum Value_type Value_type_simple_to_array(enum Value_type value_type)
 /*******************************************************************************

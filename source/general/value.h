@@ -115,6 +115,14 @@ DESCRIPTION :
 Returns true if the value_type is an array.
 ==============================================================================*/
 
+int Value_type_is_numeric_simple(enum Value_type value_type);
+/*******************************************************************************
+LAST MODIFIED : 22 May 2000
+
+DESCRIPTION :
+Returns true if the value_type is a simple number: real, integer etc.
+==============================================================================*/
+
 enum Value_type Value_type_simple_to_array(enum Value_type value_type);
 /*******************************************************************************
 LAST MODIFIED : 16 September 1999
