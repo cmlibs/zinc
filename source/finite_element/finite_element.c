@@ -33804,7 +33804,7 @@ struct FE_field *get_FE_field_manager_matched_field(
 	int number_of_times,enum Value_type time_value_type,
 	struct FE_field_external_information *external)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Using searches the <fe_field_manager> for a field, if one is found it is
@@ -33848,6 +33848,7 @@ The field is returned, or NULL in case of inconsistency.
 #endif /* defined (DEBUG) */
 			if ((field=CREATE(FE_field)())&&
 				set_FE_field_name(field,name)&&						
+				set_FE_field_external_information(field,external)&&						
 				set_FE_field_value_type(field,value_type)&&
 				set_FE_field_number_of_components(field,number_of_components)&&
 				((CONSTANT_FE_FIELD != fe_field_type)||

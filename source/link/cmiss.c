@@ -65,13 +65,17 @@ enum CM_storage_array
 LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
-The array that cm uses to store the array.  Values correspond to those sent by
-cm.
+The array that cm uses to store the array.
 ==============================================================================*/
 {
-	CM_ARRAY_FIX=3,
-	CM_ARRAY_XP=1,
-	CM_ARRAY_YP=2
+	CM_ARRAY_UNKNOWN,
+	CM_ARRAY_FIX,
+	CM_ARRAY_LD,
+	CM_ARRAY_WD,
+	CM_ARRAY_XID,
+	CM_ARRAY_XP,
+	CM_ARRAY_YP,
+	CM_ARRAY_ZD
 }; /* enum CM_storage_array */
 
 struct CM_field_information
@@ -565,7 +569,7 @@ Convert fortran-style strings to C-style printf strings.
 #define NUM_COMPONENT_DATA 3
 static int CMISS_connection_get_data(struct CMISS_connection *connection)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Receives any data from the output data wormhole.
@@ -581,8 +585,10 @@ Receives any data from the output data wormhole.
 		node_field_info_data[NUM_NODE_FIELD_INFO_DATA],number_of_components,
 		number_of_fields,number_of_field_values,number_of_values,primary_id,
 		return_code,secondary_id;
+	struct CM_field_information cm_information;
 	struct Coordinate_system coordinate_system;
 	struct FE_field *field;
+	struct FE_field_external_information external;
 	struct FE_node *node,*old_node,*template_node;
 	struct GROUP(FE_node) *old_node_group;
 	struct MANAGER(FE_node) *FE_node_manager;
@@ -774,6 +780,78 @@ Receives any data from the output data wormhole.
 							{
 								field_values=(FE_value *)NULL;
 							}
+							/* get cm field information */
+							external.compare=compare_FE_field_cm_information;
+							external.destroy=destroy_FE_field_cm_information;
+							external.duplicate=duplicate_FE_field_cm_information;
+							external.information=(void *)&cm_information;
+							wh_output_get_int(connection->data_output,2,node_field_info_data);
+							cm_information.nr=node_field_info_data[0];
+							if (CMISS_NODE_CODE==connection->data_type)
+							{
+								/* node */
+								switch (node_field_info_data[1])
+								{
+									case 1:
+									{
+										cm_information.array=CM_ARRAY_XP;
+										wh_output_get_int(connection->data_output,1,
+											node_field_info_data);
+										cm_information.indices.xp.nj_typ=node_field_info_data[0];
+									} break;
+									case 2:
+									{
+										cm_information.array=CM_ARRAY_YP;
+										wh_output_get_int(connection->data_output,4,
+											node_field_info_data);
+										cm_information.indices.yp.nx=node_field_info_data[0];
+										cm_information.indices.yp.nhx_index=node_field_info_data[1];
+										cm_information.indices.yp.nc=node_field_info_data[2];
+										cm_information.indices.yp.iy=node_field_info_data[3];
+									} break;
+									case 3:
+									{
+										cm_information.array=CM_ARRAY_FIX;
+										wh_output_get_int(connection->data_output,3,
+											node_field_info_data);
+										cm_information.indices.yp.nx=node_field_info_data[0];
+										cm_information.indices.yp.nhx_index=node_field_info_data[1];
+										cm_information.indices.yp.nc=node_field_info_data[2];
+									} break;
+									default:
+									{
+										cm_information.array=CM_ARRAY_UNKNOWN;
+									} break;
+								}
+							}
+							else
+							{
+								/* data */
+								switch (node_field_info_data[1])
+								{
+									case 1:
+									{
+										cm_information.array=CM_ARRAY_ZD;
+									} break;
+									case 2:
+									{
+										cm_information.array=CM_ARRAY_WD;
+									} break;
+									case 3:
+									{
+										cm_information.array=CM_ARRAY_LD;
+									} break;
+									case 4:
+									{
+										cm_information.array=CM_ARRAY_XID;
+									} break;
+									default:
+									{
+										cm_information.array=CM_ARRAY_UNKNOWN;
+									} break;
+								}
+							}
+							/* get components */
 							ALLOCATE(component_names,char *,number_of_components);
 							ALLOCATE(components_number_of_derivatives,int,
 								number_of_components);
@@ -819,11 +897,11 @@ Receives any data from the output data wormhole.
 										&coordinate_system,FE_VALUE_VALUE,
 										number_of_components,component_names,
 										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
-										(struct FE_field_external_information *)NULL))
+										&external))
 									{
-										if(number_of_field_values)
+										if (number_of_field_values)
 										{
-											for(j = 0 ; j < number_of_field_values ; j++)
+											for (j=0;j<number_of_field_values;j++)
 											{
 												set_FE_field_FE_value_value(field,j,field_values[j]);
 											}
@@ -1345,15 +1423,51 @@ while (wh_output_can_open(connection->data_output))
 	return (return_code);
 } /* CMISS_connection_get_data */
 
+static int CMISS_connection_count_node_field(struct FE_node *node,
+	struct FE_field *field,void *count_void)
+/*******************************************************************************
+LAST MODIFIED : 2 September 2001
+
+DESCRIPTION :
+Increments the <count_void> if the field is a cm field.
+==============================================================================*/
+{
+	int *count,return_code;
+	struct CM_field_information *cm_information;
+	struct CMISS_connection_send_node_struct *send_node_struct;
+	struct FE_field_external_information *external;
+
+	ENTER(CMISS_connection_count_node_field);
+	return_code=0;
+	if (node&&field&&(count=(int *)count_void))
+	{
+		return_code=1;
+		if (get_FE_field_external_information(field,&external)&&
+			(compare_FE_field_cm_information==external->compare)&&(cm_information=
+			(struct CM_field_information *)(external->information)))
+		{
+			(*count)++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CMISS_connection_count_node_field.  "
+			"Invalid arguments");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* CMISS_connection_count_node_field */
+
 struct CMISS_connection_send_node_struct
 /*******************************************************************************
-LAST MODIFIED : 2 November 1998
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Contains local information for this routine.
 ==============================================================================*/
 {
-	int in_message;
+	int in_message,number_of_cm_fields;
 	struct CMISS_connection *connection;
 	struct FE_node *template_node;
 }; /* struct CMISS_connection_send_node_struct */
@@ -1361,7 +1475,7 @@ Contains local information for this routine.
 static int CMISS_connection_send_node_field(struct FE_node *node,
 	struct FE_field *field,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Send out node_field information for this node_field.
@@ -1369,14 +1483,18 @@ Send out node_field information for this node_field.
 {
 	char *name;
 	double *temp_field_values;
-	int component_number,i,int_data[4],number_of_components,number_of_values,
+	int component_number,i,int_data[5],number_of_components,number_of_values,
 		return_code;
+	struct CM_field_information *cm_information;
 	struct CMISS_connection_send_node_struct *send_node_struct;
+	struct FE_field_external_information *external;
 
 	ENTER(CMISS_connection_send_node_field);
 	return_code=0;
-	if (node&&field&&(send_node_struct=
-		(struct CMISS_connection_send_node_struct *)user_data))
+	if (node&&field&&get_FE_field_external_information(field,&external)&&
+		(compare_FE_field_cm_information==external->compare)&&(cm_information=
+		(struct CM_field_information *)(external->information))&&
+		(send_node_struct=(struct CMISS_connection_send_node_struct *)user_data))
 	{
 		name=(char *)NULL;
 		if (GET_NAME(FE_field)((struct FE_field *)field,&name))
@@ -1418,6 +1536,62 @@ Send out node_field information for this node_field.
 					"Could not allocate memory");
 			}
 		}
+		/* send cm field information */
+		int_data[0]=cm_information->nr;
+		wh_input_add_int(send_node_struct->connection->data_input,2,int_data);
+		switch (cm_information->array)
+		{
+			case CM_ARRAY_FIX:
+			{
+				int_data[0]=3;
+				int_data[1]=(cm_information->indices).yp.nx;
+				int_data[2]=(cm_information->indices).yp.nhx_index;
+				int_data[3]=(cm_information->indices).yp.nc;
+				number_of_values=4;
+			} break;
+			case CM_ARRAY_LD:
+			{
+				int_data[0]=3;
+				number_of_values=1;
+			} break;
+			case CM_ARRAY_WD:
+			{
+				int_data[0]=2;
+				number_of_values=1;
+			} break;
+			case CM_ARRAY_XID:
+			{
+				int_data[0]=3;
+				number_of_values=1;
+			} break;
+			case CM_ARRAY_XP:
+			{
+				int_data[0]=1;
+				int_data[1]=(cm_information->indices).xp.nj_typ;
+				number_of_values=2;
+			} break;
+			case CM_ARRAY_YP:
+			{
+				int_data[0]=2;
+				int_data[1]=(cm_information->indices).yp.nx;
+				int_data[2]=(cm_information->indices).yp.nhx_index;
+				int_data[3]=(cm_information->indices).yp.nc;
+				int_data[4]=(cm_information->indices).yp.iy;
+				number_of_values=5;
+			} break;
+			case CM_ARRAY_ZD:
+			{
+				int_data[0]=1;
+				number_of_values=1;
+			} break;
+			default:
+			{
+				int_data[0]=0;
+				number_of_values=1;
+			} break;
+		}
+		wh_input_add_int(send_node_struct->connection->data_input,number_of_values,
+			int_data);
 		for (component_number=0;component_number<number_of_components;
 			component_number++)
 		{
@@ -1446,7 +1620,7 @@ Send out node_field information for this node_field.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CMISS_connection_send_node_field.  %s",
+		display_message(ERROR_MESSAGE,"CMISS_connection_send_node_field.  "
 			"Invalid arguments");
 	}
 	LEAVE;
@@ -1536,7 +1710,7 @@ Send out nodal values for this field.
 
 static int CMISS_connection_send_node(struct FE_node *node,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Something has changed globally about the objects this widget uses, so refresh.
@@ -1556,39 +1730,54 @@ Something has changed globally about the objects this widget uses, so refresh.
 			if (send_node_struct->in_message)
 			{
 				wh_input_close_message(send_node_struct->connection->data_input);
+				send_node_struct->in_message=0;
 			}
-			send_node_struct->in_message=1;
 			send_node_struct->template_node=node;
-			wh_input_open_message(send_node_struct->connection->data_input,
-				send_node_struct->connection->data_type,CMISS_CHANGE);
-			/* send the field information */
-			number_of_fields=get_FE_node_number_of_fields(node);
-			wh_input_add_int(send_node_struct->connection->data_input,1,
-				&number_of_fields);
-			for_each_FE_field_at_node(CMISS_connection_send_node_field,user_data,
+			send_node_struct->number_of_cm_fields=0;
+			for_each_FE_field_at_node(CMISS_connection_send_node_field,
+				(void *)&(send_node_struct->number_of_cm_fields),
 				send_node_struct->template_node);
+			if (0<send_node_struct->number_of_cm_fields)
+			{
+				send_node_struct->in_message=1;
+				wh_input_open_message(send_node_struct->connection->data_input,
+					send_node_struct->connection->data_type,CMISS_CHANGE);
+				/* send the field information */
+				number_of_fields=get_FE_node_number_of_fields(node);
+				wh_input_add_int(send_node_struct->connection->data_input,1,
+					&number_of_fields);
+				for_each_FE_field_at_node(CMISS_connection_send_node_field,user_data,
+					send_node_struct->template_node);
+			}
 		}
-		/* send the node data */
-		wh_input_open_message(send_node_struct->connection->data_input,0,
-			get_FE_node_cm_node_identifier(node));
-		send_nodal_values_data.nodal_values=(double *)NULL;
-		send_nodal_values_data.number_of_nodal_values=0;
-		if (for_each_FE_field_at_node(CMISS_connection_send_nodal_values,
-			&send_nodal_values_data,node))
+		if (0<send_node_struct->number_of_cm_fields)
 		{
-			/* possible conversion issues here */
-			wh_input_add_double(send_node_struct->connection->data_input,
-				send_nodal_values_data.number_of_nodal_values,
-				send_nodal_values_data.nodal_values);
-			return_code=1;
+			/* send the node data */
+			wh_input_open_message(send_node_struct->connection->data_input,0,
+				get_FE_node_cm_node_identifier(node));
+			send_nodal_values_data.nodal_values=(double *)NULL;
+			send_nodal_values_data.number_of_nodal_values=0;
+			if (for_each_FE_field_at_node(CMISS_connection_send_nodal_values,
+				&send_nodal_values_data,node))
+			{
+				/* possible conversion issues here */
+				wh_input_add_double(send_node_struct->connection->data_input,
+					send_nodal_values_data.number_of_nodal_values,
+					send_nodal_values_data.nodal_values);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"CMISS_connection_send_node.  %s",
+					"Could not allocate memory");
+			}
+			DEALLOCATE(send_nodal_values_data.nodal_values);
+			wh_input_close_message(send_node_struct->connection->data_input);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CMISS_connection_send_node.  %s",
-				"Could not allocate memory");
+			return_code=1;
 		}
-		DEALLOCATE(send_nodal_values_data.nodal_values);
-		wh_input_close_message(send_node_struct->connection->data_input);
 	}
 	else
 	{
@@ -1799,7 +1988,7 @@ Contains local information for this routine.
 	struct FE_element_field_info *element_field_info;
 	struct FE_element_shape *element_shape;
 	struct CMISS_connection *connection;
-}; /* struct CMISS_connection_send_node_struct */
+}; /* struct CMISS_connection_send_element_struct */
 
 static int CMISS_connection_send_element_field(
 	struct FE_element_field *element_field,void *user_data)
