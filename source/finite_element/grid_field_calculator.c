@@ -16,6 +16,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #include "curve/control_curve.h"
 #include "curve/control_curve_editor_dialog.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_vector_operations.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/grid_field_calculator.h"
@@ -573,8 +574,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 		if (coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			"xi_texture_coordinates",computed_field_manager))
 		{
-			if ((COMPUTED_FIELD_XI_TEXTURE_COORDINATES==
-				Computed_field_get_type(coordinate_field))&&
+			if (Computed_field_is_type_xi_texture_coordinates(coordinate_field)&&
 				Computed_field_get_type_xi_texture_coordinates(coordinate_field,
 					&seed_element))
 			{
@@ -604,8 +604,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(grid_calc->coord_field_widget,
 				coordinate_field);
 			XtSetSensitive(grid_calc->seed_element_entry,
-				(COMPUTED_FIELD_XI_TEXTURE_COORDINATES==
-					Computed_field_get_type(coordinate_field)));
+				Computed_field_is_type_xi_texture_coordinates(coordinate_field));
 		}
 		if (!(constant_1_curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
 			"constant_1",grid_calc->control_curve_manager)))
@@ -717,8 +716,7 @@ Callback for change of coordinate field.
 	if ((grid_calc=(struct Grid_field_calculator *)grid_calc_void)&&
 		(coordinate_field=(struct Computed_field *)coordinate_field_void))
 	{
-		if ((COMPUTED_FIELD_XI_TEXTURE_COORDINATES==
-			Computed_field_get_type(coordinate_field))&&
+		if (Computed_field_is_type_xi_texture_coordinates(coordinate_field)&&
 			Computed_field_get_type_xi_texture_coordinates(coordinate_field,
 				&seed_element))
 		{
@@ -726,8 +724,7 @@ Callback for change of coordinate field.
 				grid_calc->seed_element_widget,seed_element);
 		}
 		XtSetSensitive(grid_calc->seed_element_entry,
-			(COMPUTED_FIELD_XI_TEXTURE_COORDINATES==
-				Computed_field_get_type(coordinate_field)));
+			Computed_field_is_type_xi_texture_coordinates(coordinate_field));
 	}
 	else
 	{

@@ -30,7 +30,7 @@ DESCRIPTION :
 {
 #if !defined (WINDOWS_DEV_FLAG)
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
-		*examples_directory,*help_directory,*help_url;
+		*examples_directory,*example_comfile,*help_directory,*help_url;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #if defined (CELL)
 	struct Cell_window *cell_window;

@@ -23376,7 +23376,7 @@ DESCRIPTION :
 Executes a SET DIR command.
 ==============================================================================*/
 {
-	char *directory_name, *example_directory, example_flag, *token;
+	char *comfile_name, *directory_name, *example_directory, example_flag, *token;
 	int file_name_length, return_code;
 	struct Cmiss_command_data *command_data;
 	static struct Modifier_entry option_table[]=
@@ -23408,13 +23408,26 @@ Executes a SET DIR command.
 						{							
 							/* Lookup the example path */
 							if (example_directory = 
-								resolve_example_path(command_data->examples_directory, directory_name))
+								resolve_example_path(command_data->examples_directory, 
+								directory_name, &comfile_name))
 							{
 								if (command_data->example_directory)
 								{
 									DEALLOCATE(command_data->example_directory);
 								}
 								command_data->example_directory=example_directory;
+								if (command_data->example_comfile)
+								{
+									DEALLOCATE(command_data->example_comfile);
+								}
+								if (comfile_name)
+								{
+									command_data->example_comfile = comfile_name;
+								}
+								else
+								{
+									command_data->example_comfile = (char *)NULL;
+								}
 #if defined (PERL_INTERPRETER)
 								/* Set the interpreter variable */
 								interpreter_set_string("example", example_directory, 

@@ -257,36 +257,6 @@ wrappers need to be automatically created for each FE_field.
 	struct LIST(Computed_field_type_data) *computed_field_type_list;
 }; /* struct Computed_field_package */
 
-struct Computed_field_element_texture_mapping
-/*******************************************************************************
-LAST MODIFIED : 15 March 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	/* Holds the pointer to the element, I don't access it so that the
-		default object functions can be used.  The pointer is not
-		referenced, just used as a label */
-	struct FE_element *element;
-	/* The three offsets for the xi1 = 0, xi2 = 0, xi3 = 0 corner. */
-	float offset[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-
-	int access_count;
-}; /* struct Computed_field_element_texture_mapping */
-
-struct Computed_field_element_texture_mapping_fifo
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Simple linked-list node structure for building a FIFO stack for the mapping
-structure - needed for consistent growth of xi_texture_coordinates.
-==============================================================================*/
-{
-	struct Computed_field_element_texture_mapping *mapping_item;
-	struct Computed_field_element_texture_mapping_fifo *next;
-}; /* struct Computed_field_element_texture_mapping_fifo */
-
 /*
 Module functions
 ----------------
@@ -295,90 +265,6 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
-
-struct Computed_field_element_texture_mapping *CREATE(Computed_field_element_texture_mapping)
-		 (void)
-/*******************************************************************************
-LAST MODIFIED : 16 March 1999
-
-DESCRIPTION :
-Creates a basic Computed_field with the given <name>. Its type is initially
-COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
-==============================================================================*/
-{
-	struct Computed_field_element_texture_mapping *mapping_item;
-
-	ENTER(CREATE(Computed_field_element_texture_mapping));
-	
-	if (ALLOCATE(mapping_item,struct Computed_field_element_texture_mapping,1))
-	{
-		mapping_item->element = (struct FE_element *)NULL;
-		mapping_item->offset[0] = 0.0;
-		mapping_item->offset[1] = 0.0;
-		mapping_item->offset[2] = 0.0;
-		mapping_item->access_count = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_element_texture_mapping).  Not enough memory");
-		mapping_item = (struct Computed_field_element_texture_mapping *)NULL;
-	}
-	LEAVE;
-
-	return (mapping_item);
-} /* CREATE(Computed_field_element_texture_mapping) */
-
-int DESTROY(Computed_field_element_texture_mapping)
-	  (struct Computed_field_element_texture_mapping **mapping_address)
-/*******************************************************************************
-LAST MODIFIED : 26 May 1999
-
-DESCRIPTION :
-Frees memory/deaccess mapping at <*mapping_address>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(DESTROY(Computed_field_element_texture_mapping));
-	if (mapping_address&&*mapping_address)
-	{
-		if (0 >= (*mapping_address)->access_count)
-		{
-			if ((*mapping_address)->element)
-			{
-				DEACCESS(FE_element)(&((*mapping_address)->element));
-			}
-			DEALLOCATE(*mapping_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Computed_field_element_texture_mapping).  Positive access_count");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_field_element_texture_mapping).  Missing mapping");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Computed_field_element_texture_mapping) */
-
-DECLARE_OBJECT_FUNCTIONS(Computed_field_element_texture_mapping)
-DECLARE_LIST_TYPES(Computed_field_element_texture_mapping);
-FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field_element_texture_mapping);
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field_element_texture_mapping,
-  element,struct FE_element *,compare_pointer)
-DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_element_texture_mapping)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(
-	Computed_field_element_texture_mapping,
-	element,struct FE_element *,compare_pointer)
 
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
    (char *name, Define_Computed_field_type_function 
@@ -666,19 +552,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEACCESS(GROUP(FE_element))(&field->compose_element_group);
 		}
 	
-		/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
-		if (field->seed_element)
-		{
-			DEACCESS(FE_element)(&(field->seed_element));
-		}
-		if (field->texture_mapping)
-		{
-			DESTROY_LIST(Computed_field_element_texture_mapping)
-				(&field->texture_mapping);
-			field->texture_mapping =
-				(struct LIST(Computed_field_element_texture_mapping) *)NULL;
-		}
-		
 		/* for COMPUTED_FIELD_EXTERNAL only */
 		if (field->child_filename)
 		{
@@ -906,8 +779,6 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 			field->element=(struct FE_element *)NULL;
 			field->node=(struct FE_node *)NULL;
 
-			field->find_element_xi_mapping=(struct Computed_field_element_texture_mapping *)NULL;
-
 			field->find_element_xi_cache=(struct Computed_field_find_element_xi_special_cache *)NULL;
 
 			/* for COMPUTED_FIELD_COMPONENT only */
@@ -916,11 +787,6 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 			/* for COMPUTED_FIELD_COMPOSE only */
 			field->compose_element_group = (struct GROUP(FE_element) *)NULL;
 
-			/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
-			field->seed_element = (struct FE_element *)NULL;
-			field->texture_mapping =
-				(struct LIST(Computed_field_element_texture_mapping) *)NULL;
-			
 			/* for COMPUTED_FIELD_EXTERNAL only */
 			field->child_filename = (char *)NULL;
 			field->child_process = (struct Child_process *)NULL;
@@ -1123,7 +989,6 @@ functions to check if read_only flag is set.
 	FE_value *source_values;
 	int i,return_code;
 	struct Computed_field **source_fields;
-	struct LIST(Computed_field_element_texture_mapping) *texture_mapping;
 	void *type_specific_data;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name));
@@ -1179,11 +1044,7 @@ functions to check if read_only flag is set.
 					((0==source->number_of_source_fields)||ALLOCATE(source_fields,
 					struct Computed_field *,source->number_of_source_fields))&&
 					((0==source->number_of_source_values)||ALLOCATE(source_values,
-						FE_value,source->number_of_source_values))&&
-					((!source->texture_mapping)||(texture_mapping=
-						CREATE_LIST(Computed_field_element_texture_mapping)())&&
-						(COPY_LIST(Computed_field_element_texture_mapping)
-							(texture_mapping,source->texture_mapping))))
+						FE_value,source->number_of_source_values)))
 				{
 					if ((!source->type_specific_data)||
 						(!source->computed_field_copy_type_specific_function)||
@@ -1207,13 +1068,6 @@ functions to check if read_only flag is set.
 						/* for COMPUTED_FIELD_COMPOSE only */
 						REACCESS(GROUP(FE_element))(&destination->compose_element_group,
 							source->compose_element_group);
-
-						/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
-						REACCESS(FE_element)(&destination->seed_element,source->seed_element);
-						if (source->texture_mapping)
-						{
-							destination->texture_mapping = texture_mapping;
-						}
 
 						/* for COMPUTED_FIELD_EXTERNAL only */
 						if (source->child_filename)
@@ -1629,11 +1483,6 @@ Only certain field types require a special implementation of this function.
 		if (field->element)
 		{
 			DEACCESS(FE_element)(&field->element);
-		}
-		if (field->find_element_xi_mapping)
-		{
-			DEACCESS(Computed_field_element_texture_mapping)
-				(&field->find_element_xi_mapping);
 		}
 		if (field->find_element_xi_cache)
 		{
@@ -2278,7 +2127,6 @@ is avoided.
 		compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int cache_is_valid,element_dimension,i,index,j,k,return_code,total_values,
 		top_level_element_dimension;
-	struct Computed_field_element_texture_mapping *mapping;
 	struct FE_element *compose_element;
 
 	ENTER(Computed_field_evaluate_cache_in_element);
@@ -2356,7 +2204,6 @@ is avoided.
 					{
 						case COMPUTED_FIELD_FIBRE_AXES:
 						case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-						case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 						{
 							if (CM_ELEMENT == element->cm.type)
 							{
@@ -2749,77 +2596,6 @@ is avoided.
 										}
 										field->derivatives[j]=sum;
 									}
-								}
-							} break;
-							case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-							{
-								if (field->texture_mapping)
-								{
-									if (mapping = FIND_BY_IDENTIFIER_IN_LIST
-										(Computed_field_element_texture_mapping,element)
-										(top_level_element, field->texture_mapping))
-									{
-										if (element == top_level_element)
-										{
-											temp=field->derivatives;
-											for (i = 0 ; i < element_dimension ; i++)
-											{
-												field->values[i] = mapping->offset[i] + xi[i];
-												if (calculate_derivatives)
-												{
-													for (j=0;j<element_dimension;j++)
-													{
-														if (i==j)
-														{
-															*temp = 1.0;
-														}
-														else
-														{
-															*temp = 0.0;
-														}
-														temp++;
-													}
-												}
-											}
-										}
-										else
-										{
-											temp = element_to_top_level;
-											temp2 = field->derivatives;
-											for (i = 0 ; i < top_level_element_dimension ; i++)
-											{
-												field->values[i] = mapping->offset[i] + (*temp);
-												temp++;
-												for (j = 0 ; j < element->shape->dimension ; j++)
-												{
-													field->values[i] += (*temp) * xi[j];
-													if (calculate_derivatives)
-													{
-														*temp2 = *temp;
-														*temp2++;
-													}
-													temp++;
-												}
-											}
-										}
-									}
-									else
-									{
-										FE_element_to_element_string(element,&temp_string);
-										display_message(ERROR_MESSAGE,
-											"Computed_field_evaluate_cache_in_element."
-											"  Element %s not found in Xi texture coordinate mapping field %s",
-											temp_string, field->name);
-										DEALLOCATE(temp_string);
-										return_code=0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_evaluate_cache_in_element.  "
-										"Xi texture coordinate mapping not calculated");
-									return_code=0;
 								}
 							} break;
 							default:
@@ -3487,13 +3263,6 @@ fields with the name 'coordinates' are quite pervasive.
 									sum += temp[i]*field->source_values[i];
 								}
 								field->values[0]=sum;
-							} break;
-							case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_at_node.  "
-									"Currently cannot evaluate xi texture coordinates at nodes");
-								return_code=0;
 							} break;
 							default:
 							{
@@ -5170,10 +4939,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_SUM_COMPONENTS:
 		{
 			field_type_string="sum_components";
-		} break;
-		case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-		{
-			field_type_string="xi_texture_coordinates";
 		} break;
 		default:
 		{
@@ -7073,334 +6838,6 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_sum_components */
 
-int Computed_field_get_type_xi_texture_coordinates(struct Computed_field *field,
-	struct FE_element **seed_element)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_XI_TEXTURE_COORDINATES, 
-the seed element used for the mapping is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_xi_texture_coordinates);
-	if (field&&seed_element)
-	{
-		*seed_element=field->seed_element;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_xi_texture_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_xi_texture_coordinates */
-
-static int write_Computed_field_element_texture_mapping(
-	struct Computed_field_element_texture_mapping *mapping,
-	void *user_data)
-{
-	USE_PARAMETER(user_data);
-	printf("Mapping %p Element %p (%f %f %f)\n",
-		mapping, mapping->element,
-		mapping->offset[0], mapping->offset[1], mapping->offset[2]);
-
-	return( 1 );
-}
-
-static int Computed_field_xi_texture_coordinates_add_neighbours(
-	struct Computed_field_element_texture_mapping *mapping_item,
-	struct LIST(Computed_field_element_texture_mapping) *texture_mapping,
-	struct Computed_field_element_texture_mapping_fifo **last_to_be_checked)
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Add the neighbours that haven't already been put in the texture_mapping list and 
-puts each new member in the texture_mapping list and the to_be_checked list.
-==============================================================================*/
-{
-	FE_value xi[3];
-	int face_number, i, return_code;
-	struct Computed_field_element_texture_mapping *mapping_neighbour;
-	struct Computed_field_element_texture_mapping_fifo *fifo_node;
-	struct FE_element *neighbour_element;
-
-	ENTER(Computed_field_xi_texture_coordinates_add_neighbours);
-	if (mapping_item && texture_mapping && last_to_be_checked &&
-		(*last_to_be_checked))
-	{
-		return_code=1;
-		
-		for (i = 0;return_code&&(i<(mapping_item->element->shape->dimension*2));i++)
-		{
-			xi[0] = 0.5;
-			xi[1] = 0.5;
-			xi[2] = 0.5;
-			switch (i)
-			{
-				case 0:
-				{
-					xi[0] = 0.0;
-				} break;
-				case 1:
-				{
-					xi[0] = 1.0;
-				} break;
-				case 2:
-				{
-					xi[1] = 0.0;
-				} break;
-				case 3:
-				{
-					xi[1] = 1.0;
-				} break;
-				case 4:
-				{
-					xi[2] = 0.0;
-				} break;
-				case 5:
-				{
-					xi[2] = 1.0;
-				} break;
-			}
-			if ((FE_element_shape_find_face_number_for_xi(mapping_item->element->shape, xi,
-				&face_number)) && (neighbour_element = 
-				adjacent_FE_element(mapping_item->element, face_number)))
-			{
-				if(!(mapping_neighbour = FIND_BY_IDENTIFIER_IN_LIST(
-					Computed_field_element_texture_mapping, element)
-					(neighbour_element, texture_mapping)))
-				{
-					if (ALLOCATE(fifo_node,
-						struct Computed_field_element_texture_mapping_fifo,1)&&
-						(mapping_neighbour = 
-							CREATE(Computed_field_element_texture_mapping)()))
-					{
-						REACCESS(FE_element)(&mapping_neighbour->element, neighbour_element);
-						mapping_neighbour->offset[0] = mapping_item->offset[0];
-						mapping_neighbour->offset[1] = mapping_item->offset[1];
-						mapping_neighbour->offset[2] = mapping_item->offset[2];
-						switch (i)
-						{
-							case 0:
-							{
-								mapping_neighbour->offset[0] -= 1.0;
-							} break;
-							case 1:
-							{
-								mapping_neighbour->offset[0] += 1.0;
-							} break;
-							case 2:
-							{
-								mapping_neighbour->offset[1] -= 1.0;
-							} break;
-							case 3:
-							{
-								mapping_neighbour->offset[1] += 1.0;
-							} break;
-							case 4:
-							{
-								mapping_neighbour->offset[2] -= 1.0;
-							} break;
-							case 5:
-							{
-								mapping_neighbour->offset[2] += 1.0;
-							} break;
-						}
-						if (ADD_OBJECT_TO_LIST(Computed_field_element_texture_mapping)(
-							mapping_neighbour, texture_mapping))
-						{
-							/* fill the fifo_node for the mapping_item; put at end of list */
-							fifo_node->mapping_item=mapping_neighbour;
-							fifo_node->next=
-								(struct Computed_field_element_texture_mapping_fifo *)NULL;
-							(*last_to_be_checked)->next = fifo_node;
-							(*last_to_be_checked) = fifo_node;
-						}
-						else
-						{
-							printf("Error adding neighbour\n");
-							write_Computed_field_element_texture_mapping(mapping_neighbour, NULL);
-							printf("Texture mapping list\n");
-							FOR_EACH_OBJECT_IN_LIST(Computed_field_element_texture_mapping)(
-								write_Computed_field_element_texture_mapping, NULL, texture_mapping);
-							DEALLOCATE(fifo_node);
-							DESTROY(Computed_field_element_texture_mapping)(
-								&mapping_neighbour);
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_xi_texture_coordinates.  "
-							"Unable to allocate member");
-						DEALLOCATE(fifo_node);
-						return_code=0;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_xi_texture_coordinates_add_neighbours.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return(return_code);
-	LEAVE;
-} /* Computed_field_xi_texture_coordinates_add_neighbours */
-
-int Computed_field_set_type_xi_texture_coordinates(struct Computed_field *field,
-	struct FE_element *seed_element, struct MANAGER(FE_element) *fe_element_manager)
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XI_TEXTURE_COORDINATES.
-The seed element is set to the number given and the mapping calculated.
-Sets the number of components to the dimension of the given element.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code;
-	struct CM_element_information cm;
-	struct Computed_field_element_texture_mapping *mapping_item;
-	struct FE_element *element;
-	struct LIST(Computed_field_element_texture_mapping) *texture_mapping;
-	struct Computed_field_element_texture_mapping_fifo *fifo_node,
-		*first_to_be_checked,*last_to_be_checked;
-
-	ENTER(Computed_field_set_type_xi_texture_coordinates);
-	if (field&&seed_element)
-	{
-		first_to_be_checked=last_to_be_checked=
-			(struct Computed_field_element_texture_mapping_fifo *)NULL;
-		/* 1. make dynamic allocations for any new type-specific data */
-		if (texture_mapping = CREATE_LIST(Computed_field_element_texture_mapping)())
-		{
-			/* Add seed element */
-			cm.number=seed_element->cm.number;
-			cm.type=seed_element->cm.type;
-			if ((element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-				&cm,fe_element_manager)) && (element==seed_element))
-			{
-				if (ALLOCATE(fifo_node,
-					struct Computed_field_element_texture_mapping_fifo,1)&&
-					(mapping_item=CREATE(Computed_field_element_texture_mapping)()))
-				{
-					REACCESS(FE_element)(&mapping_item->element, element);
-					ADD_OBJECT_TO_LIST(Computed_field_element_texture_mapping)
-						(mapping_item, texture_mapping);
-					/* fill the fifo_node for the mapping_item; put at end of list */
-					fifo_node->mapping_item=mapping_item;
-					fifo_node->next=
-						(struct Computed_field_element_texture_mapping_fifo *)NULL;
-					first_to_be_checked=last_to_be_checked=fifo_node;
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_type_xi_texture_coordinates.  "
-						"Unable to allocate member");
-					DEALLOCATE(fifo_node);
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_xi_texture_coordinates.  "
-					"Unable to find seed element");
-				return_code=0;
-			}
-			if (return_code)
-			{
-				while (return_code && first_to_be_checked)
-				{
-					return_code = Computed_field_xi_texture_coordinates_add_neighbours(
-						first_to_be_checked->mapping_item, texture_mapping,
-						&last_to_be_checked);
-
-#if defined (DEBUG)
-					printf("Item removed\n");
-					write_Computed_field_element_texture_mapping(mapping_item, NULL);
-#endif /* defined (DEBUG) */
-
-					/* remove first_to_be_checked */
-					fifo_node=first_to_be_checked;
-					if (!(first_to_be_checked=first_to_be_checked->next))
-					{
-						last_to_be_checked=
-							(struct Computed_field_element_texture_mapping_fifo *)NULL;
-					}
-					DEALLOCATE(fifo_node);
-
-#if defined (DEBUG)
-					printf("Texture mapping list\n");
-					FOR_EACH_OBJECT_IN_LIST(Computed_field_element_texture_mapping)(
-						write_Computed_field_element_texture_mapping, NULL, texture_mapping);
-					printf("To be checked list\n");
-					FOR_EACH_OBJECT_IN_LIST(Computed_field_element_texture_mapping)(
-						write_Computed_field_element_texture_mapping, NULL, to_be_checked);
-#endif /* defined (DEBUG) */
-				}
-			}
-			/* clean up to_be_checked list */
-			while (first_to_be_checked)
-			{
-				fifo_node = first_to_be_checked;
-				first_to_be_checked = first_to_be_checked->next;
-				DEALLOCATE(fifo_node);
-			}
-			if (!return_code)
-			{
-				DESTROY_LIST(Computed_field_element_texture_mapping)(&texture_mapping);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_xi_texture_coordinates.  Unable to create list");
-			return_code=0;
-		}
-		if(return_code)
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_XI_TEXTURE_COORDINATES;
-			field->number_of_components=seed_element->shape->dimension;
-			field->source_fields=(struct Computed_field **)NULL;
-			field->number_of_source_fields=0;
-			field->seed_element = ACCESS(FE_element)(seed_element);
-			field->texture_mapping = texture_mapping;
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_xi_texture_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_xi_texture_coordinates */
-
 int Computed_field_is_in_use(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 26 January 1999
@@ -7510,40 +6947,6 @@ to modify and destroy it.
 	return (return_code);
 } /* Computed_field_set_read_write */
 
-static int Computed_field_element_texture_mapping_has_values(
-	struct Computed_field_element_texture_mapping *mapping, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 26 May 1999
-
-DESCRIPTION :
-Compares the user_data values with the offsets in the <mapping>
-==============================================================================*/
-{
-	FE_value *values;
-	int return_code;
-
-	ENTER(Computed_field_element_texture_mapping_has_values);
-	if (mapping && (values = (FE_value *)user_data))
-	{
-		return_code = 0;
-		if ((values[0] == mapping->offset[0])&&
-			 (values[1] == mapping->offset[1])&&
-			 (values[2] == mapping->offset[2]))
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_element_texture_mapping_has_values.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_element_texture_mapping_has_values */
-
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, struct GROUP(FE_element) *search_element_group)
@@ -7561,9 +6964,7 @@ The <search_element_group> is the set of elements from which the chosen element
 will belong.
 ==============================================================================*/
 {
-	FE_value floor_values[3];
-	int i, return_code;
-	struct Computed_field_element_texture_mapping *mapping;
+	int return_code;
 
 	ENTER(Computed_field_find_element_xi);
 	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
@@ -7588,85 +6989,9 @@ will belong.
 		}
 		else
 		{
-			switch (field->type)
-			{
-				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-				{
-					if (number_of_values<=3)
-					{
-						for (i = 0 ; i < number_of_values ; i++)
-						{
-							floor_values[i] = floor(values[i]);
-						}
-						for ( ; i < 3 ; i++)
-						{
-							floor_values[i] = 0.0;
-						}
-						if (field->texture_mapping)
-						{
-							return_code=0;
-							/* Check the last successful mapping first */
-							if (field->find_element_xi_mapping&&
-								Computed_field_element_texture_mapping_has_values(
-									field->find_element_xi_mapping, (void *)floor_values))
-							{
-								return_code = 1;
-							}
-							else
-							{
-								/* Find in the list */
-								if (mapping = FIRST_OBJECT_IN_LIST_THAT(Computed_field_element_texture_mapping)
-									(Computed_field_element_texture_mapping_has_values, (void *)floor_values,
-										field->texture_mapping))
-								{
-									REACCESS(Computed_field_element_texture_mapping)(&(field->find_element_xi_mapping),
-										mapping);
-									return_code = 1;
-								}
-							}
-							if (return_code)
-							{
-								*element = field->find_element_xi_mapping->element;
-								for (i = 0 ; i < (*element)->shape->dimension ; i++)
-								{
-									xi[i] = values[i] - floor_values[i];	
-								}
-								if (!IS_OBJECT_IN_GROUP(FE_element)(*element, search_element_group))
-								{
-									*element = (struct FE_element *)NULL;
-									display_message(ERROR_MESSAGE,
-										"Computed_field_find_element_xi.  Element is not in specified group");
-									return_code=0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_find_element_xi.  Unable to find mapping for given values");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Computed_field_find_element_xi.  Xi texture coordinate mapping not calculated");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_find_element_xi.  Only implemented for three or less values");
-						return_code=0;
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_find_element_xi.  Field type not implemented");
-					return_code=0;
-				} break;
-			}
+			display_message(ERROR_MESSAGE,
+				"Computed_field_find_element_xi.  Field type not implemented");
+			return_code=0;
 		}
 	}
 	else
@@ -7708,10 +7033,6 @@ a set of values.
 				{
 					return_code=0;
 				}
-			} break;
-			case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-			{
-				return_code=1;
 			} break;
 			default:
 			{
@@ -9825,57 +9146,6 @@ there are components in field.
 	return (return_code);
 } /* define_Computed_field_type_sum_components */
 
-static int define_Computed_field_type_xi_texture_coordinates(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 16 March 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_XI_TEXTURE_COORDINATES (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"seed_element",NULL,NULL,set_FE_element_top_level},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *field;
-	struct Computed_field_package *computed_field_package;
-	struct FE_element *seed_element;	
-
-	ENTER(define_Computed_field_type_xi_texture_coordinates);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		if (return_code)
-		{
-			seed_element = (struct FE_element *)NULL;
-			(option_table[0]).to_be_modified= &seed_element;
-			(option_table[0]).user_data=computed_field_package->fe_element_manager;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_xi_texture_coordinates(field,
-				seed_element, computed_field_package->fe_element_manager);
-			if (seed_element)
-			{
-				DEACCESS(FE_element)(&seed_element);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_xi_texture_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_xi_texture_coordinates */
-
 struct Add_type_to_option_table_data
 {
 	struct Option_table *option_table;
@@ -9981,11 +9251,6 @@ and its parameter fields and values.
 			/* sum_components */
 			Option_table_add_entry(option_table,"sum_components",field_void,
 				computed_field_package_void,define_Computed_field_type_sum_components);
-			/* xi_texture_coordinates */
-			Option_table_add_entry(option_table,"xi_texture_coordinates",field_void,
-				computed_field_package_void,
-				define_Computed_field_type_xi_texture_coordinates);
-
 			/* new_types */
 			data.option_table = option_table;
 			data.field_void = field_void;
@@ -10508,11 +9773,6 @@ Writes the properties of the <field> to the command window.
 					}
 					display_message(INFORMATION_MESSAGE,"\n");
 				} break;
-				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-				{
-					display_message(INFORMATION_MESSAGE,"    seed_element : %d\n",
-						field->seed_element->cm.number);
-				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
@@ -10727,11 +9987,6 @@ are created automatically by the program.
 							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 						}
 					} break;
-					case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
-					{
-						display_message(INFORMATION_MESSAGE," seed_element %d",
-							field->seed_element->cm.number);
-					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,
@@ -10853,7 +10108,6 @@ its name matches the contents of the <other_computed_field_void>.
 			/* Ignoring other coordinate_system parameters */
 			&&(field->type==other_computed_field->type)
 			&&(field->component_no==other_computed_field->component_no)
-			&&(field->seed_element==other_computed_field->seed_element)
 			&&(field->number_of_source_fields==
 				other_computed_field->number_of_source_fields)
 			&&(field->number_of_source_values==

@@ -104,10 +104,6 @@ DESCRIPTION :
 	/* last node at which values calculated - ACCESSed by field */
 	struct FE_node *node;
 
-	/* last mapping successfully used by Computed_field_find_element_xi so 
-		that it can first try this element again */
-	struct Computed_field_element_texture_mapping *find_element_xi_mapping;
-
 	/* cache used by external routine Computed_field_find_element_xi_special,
 	 contains all sorts of things we don't want to include in computed_field */
 	struct Computed_field_find_element_xi_special_cache *find_element_xi_cache;
@@ -117,10 +113,6 @@ DESCRIPTION :
 
 	/* for COMPUTED_FIELD_COMPOSE only */
 	struct GROUP(FE_element) *compose_element_group;
-
-	/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
-	struct FE_element *seed_element;
-	struct LIST(Computed_field_element_texture_mapping) *texture_mapping;
 
 	/* for COMPUTED_FIELD_EXTERNAL only */
 	char *child_filename;

@@ -35,6 +35,7 @@ DESCRIPTION :
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_vector_operations.h"
@@ -228,7 +229,7 @@ Display a cmgui warning message.
 } /* display_warning_message */
 
 static int cmgui_execute_comfile(char *comfile_name,char *example_id,
-	char *examples_directory,char *example_symbol,
+	char *examples_directory,char *example_symbol,char **example_comfile_name,
 	struct Execute_command *execute_command)
 /*******************************************************************************
 LAST MODIFIED : 16 October 1998
@@ -264,8 +265,15 @@ Executes the comfile specified on the command line.
 				}
 				else
 				{
-					strcat(global_temp_string,"example_");
-					strcat(global_temp_string,example_id);
+					if (*example_comfile_name)
+					{
+						strcat(global_temp_string,*example_comfile_name);
+					}
+					else
+					{
+						strcat(global_temp_string,"example_");
+						strcat(global_temp_string,example_id);
+					}
 				}
 				strcat(global_temp_string,";");
 				strcat(global_temp_string,example_symbol);
@@ -1055,6 +1063,12 @@ Main program for the CMISS Graphical User Interface
 				command_data.computed_field_package, 
 				command_data.texture_manager);
 		}
+		if (command_data.element_manager)
+		{
+			Computed_field_register_type_integration(
+				command_data.computed_field_package, 
+				command_data.element_manager);
+		}
 		if (command_data.fe_field_manager)
 		{
 			computed_field_finite_element_package =
@@ -1826,14 +1840,15 @@ Main program for the CMISS Graphical User Interface
 					{
 						/* Can't get the startupComfile name without X at the moment */
 						cmgui_execute_comfile(user_settings.startup_comfile, NULL,
-							NULL, NULL, execute_command);
+							NULL, NULL, (char **)NULL, execute_command);
 					}
 					if (example_id||comfile_name)
 					{
 						/* open the command line comfile */
 						cmgui_execute_comfile(comfile_name,example_id,
 							command_data.examples_directory,
-							CMGUI_EXAMPLE_DIRECTORY_SYMBOL,execute_command);
+							CMGUI_EXAMPLE_DIRECTORY_SYMBOL, &command_data.example_comfile,
+							execute_command);
 						DEALLOCATE(comfile_name);
 						DEALLOCATE(example_id);
 					}

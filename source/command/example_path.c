@@ -13,15 +13,17 @@ DESCRIPTION :
 #include <sys/time.h>
 #include <fcntl.h>
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
-
+#include "command/example_path.h"
 
 /*
 Global functions
 ----------------
 */
 
-char *resolve_example_path(char *example_path, char *directory_name)
+char *resolve_example_path(char *example_path, char *directory_name,
+	char **comfile_name)
 /*******************************************************************************
 LAST MODIFIED : 17 April 2000
 
@@ -31,10 +33,13 @@ a short example name into a full path.  The returned string is ALLOCATED.
 Code is basically a repeat from general/child_process but don't want to create
 an object and want to encapsulate the whole process in one file for calling
 from the back end.
+<*comfile_name> is allocated and returned as well if the resolve function
+returns a string for it.  This too must be DEALLOCATED by the calling function.
 ==============================================================================*/
 {
 #define BLOCKSIZE (100)
-	char end[3] = {04, 10, 00}, *filename, last_char, *new_string, *return_string;
+	char end[3] = {04, 10, 00}, *filename, last_char, *new_string, *return_string,
+		*space_offset;
 	fd_set readfds;
 	int flags, index, string_size, stdin_filedes[2], stdout_filedes[2], 
 		timeout;
@@ -132,6 +137,18 @@ from the back end.
 
 						if (return_string)
 						{
+							/* Look for a space separator in the returned string */
+							if (space_offset = strchr(return_string, ' '))
+							{
+								*comfile_name = duplicate_string(space_offset + 1);
+								/* Terminate the first string and process 
+									as before */
+								*space_offset = 0;
+							}
+							else
+							{
+								*comfile_name = (char *)NULL;
+							}
 							if (ALLOCATE(new_string, char,
 								strlen(return_string) + strlen(example_path) + 5))
 							{

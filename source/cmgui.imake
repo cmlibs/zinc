@@ -301,7 +301,8 @@ INTERPRETER_SRCS =
 INTERPRETER_LIB =
 #else /* !defined (PERL_INTERPRETER) */
 #if defined (CMISS_ROOT_DEFINED)
-INTERPRETER_PATH = $(CMISS_ROOT)/perl_interpreter
+/* INTERPRETER_PATH = $(CMISS_ROOT)/perl_interpreter */
+INTERPRETER_PATH = /usr/people/blackett/perl_interpreter
 #else /* defined (CMISS_ROOT_DEFINED) */
 INTERPRETER_PATH = $(CMGUI_DEV_ROOT)/perl_interpreter
 #endif /* defined (CMISS_ROOT_DEFINED) */
@@ -705,6 +706,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_derivatives.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
+	computed_field/computed_field_integration.c \
 	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \
 	computed_field/computed_field_vector_operations.c \

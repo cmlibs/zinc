@@ -68,7 +68,6 @@ DESCRIPTION :
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
-	COMPUTED_FIELD_XI_TEXTURE_COORDINATES, /* continuous coordinates based on xi */
 	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
 };
 
@@ -1003,30 +1002,6 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ???RC May want the number of components to be user-selectable; for now, stick
 with 3.
-==============================================================================*/
-
-int Computed_field_get_type_xi_texture_coordinates(struct Computed_field *field,
-	struct FE_element **seed_element);
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_XI_TEXTURE_COORDINATES, 
-the seed element used for the mapping is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_xi_texture_coordinates(struct Computed_field *field,
-	struct FE_element *seed_element, struct MANAGER(FE_element) *fe_element_manager);
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XI_TEXTURE_COORDINATES.
-The seed element is set to the number given and the mapping calculated.
-Sets the number of components to the dimension of the given element.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
 ==============================================================================*/
 
 int Computed_field_is_in_use(struct Computed_field *field);
