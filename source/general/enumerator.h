@@ -95,7 +95,7 @@ strings it contains must NOT be deallocated.
 
 #if defined (FULL_NAMES)
 #define STRING_TO_ENUMERATOR( enumerator_type ) \
-	string_to_enumerator ## enumerator_type
+	string_to_enumerator_ ## enumerator_type
 #else
 #define STRING_TO_ENUMERATOR( enumerator_type ) ste_ ## enumerator_type
 #endif
