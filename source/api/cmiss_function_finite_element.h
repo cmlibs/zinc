@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_finite_element.h
 
-LAST MODIFIED : 4 November 2004
+LAST MODIFIED : 17 February 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_function_element, Cmiss_function_element_xi
@@ -199,6 +199,16 @@ LAST MODIFIED : 26 April 2004
 
 DESCRIPTION :
 Returns a variable that refers to the element part of the
+<function_finite_element>.
+==============================================================================*/
+
+Cmiss_function_variable_id Cmiss_function_finite_element_time(
+	Cmiss_function_id function_finite_element);
+/*******************************************************************************
+LAST MODIFIED : 17 February 2005
+
+DESCRIPTION :
+Returns a variable that refers to the time part of the
 <function_finite_element>.
 ==============================================================================*/
 

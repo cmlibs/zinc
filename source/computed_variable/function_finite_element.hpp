@@ -187,6 +187,7 @@ class Function_finite_element : public Function
 			nodal_values(struct FE_node *node),
 			nodal_values(enum FE_nodal_value_type value_type),
 			nodal_values(Function_size_type version),
+			time(),
 			xi(),
 			xi(Function_size_type);
 		// return the number of components
@@ -225,6 +226,8 @@ class Function_finite_element : public Function
 		//   ACCESS(FE_element) and DEACCESS(FE_element) to manage the lifetime of
 		//   the returned element
 		struct FE_element* element_value() const;
+		// return the time value
+		Scalar Function_finite_element::time_value();
 		// return the xi value 1<=index<=number_of_xi
 		Scalar xi_value(Function_size_type index) const;
 		// get the component value 1<=number<=number_of_components

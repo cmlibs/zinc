@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_finite_element.cpp
 
-LAST MODIFIED : 4 November 2004
+LAST MODIFIED : 17 February 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_function_element, Cmiss_function_element_xi
@@ -483,6 +483,31 @@ Returns a variable that refers to the element part of the
 		result=reinterpret_cast<Cmiss_function_variable_id>(
 			new Function_variable_handle(((*function_finite_element_handle_address)->
 			element)()));
+	}
+
+	return (result);
+}
+
+Cmiss_function_variable_id Cmiss_function_finite_element_time(
+	Cmiss_function_id function_finite_element)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2005
+
+DESCRIPTION :
+Returns a variable that refers to the time part of the <function_finite_element>.
+==============================================================================*/
+{
+	Cmiss_function_variable_id result;
+	Function_finite_element_handle *function_finite_element_handle_address;
+
+	result=0;
+	if ((function_finite_element_handle_address=
+		reinterpret_cast<Function_finite_element_handle *>(
+		function_finite_element))&&(*function_finite_element_handle_address))
+	{
+		result=reinterpret_cast<Cmiss_function_variable_id>(
+			new Function_variable_handle(((*function_finite_element_handle_address)->
+			time)()));
 	}
 
 	return (result);

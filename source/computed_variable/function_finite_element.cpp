@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 23 January 2005
+// LAST MODIFIED : 17 February 2005
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -2909,6 +2909,91 @@ Function_variable_iterator_representation_atomic_nodal_values::
 	}
 }
 
+// forward declaration so that can use _handle
+class Function_variable_value_time;
+typedef boost::intrusive_ptr<Function_variable_value_time>
+	Function_variable_value_time_handle;
+
+class Function_variable_value_time :
+	public Function_variable_matrix<Scalar>
+//******************************************************************************
+// LAST MODIFIED : 17 February 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// constructor
+		Function_variable_value_time(
+			const Function_finite_element_handle& function_finite_element):
+			Function_variable_matrix<Scalar>(function_finite_element,1,1){};
+		// destructor
+		~Function_variable_value_time(){};
+	// inherited
+	public:
+		Function_variable_handle clone() const
+		{
+			return (Function_variable_handle(
+				new Function_variable_value_time(*this)));
+		};
+		string_handle get_string_representation()
+		{
+			string_handle return_string;
+			std::ostringstream out;
+
+			if (return_string=new std::string)
+			{
+				out << "value_time";
+				*return_string=out.str();
+			}
+
+			return (return_string);
+		};
+		Function_variable_matrix_scalar_handle operator()(
+			Function_size_type row,Function_size_type column) const
+		{
+			Function_variable_matrix_scalar_handle result(0);
+
+			if ((1==row)&&(1==column))
+			{
+				Function_finite_element_handle function_finite_element=
+					boost::dynamic_pointer_cast<Function_finite_element,Function>(function());
+
+				result=Function_variable_matrix_scalar_handle(
+					new Function_variable_value_time(function_finite_element));
+			}
+
+			return (result);
+		};
+		Function_size_type number_of_rows() const
+		{
+			return (1);
+		};
+		Function_size_type number_of_columns() const
+		{
+			return (1);
+		};
+		bool get_entry(Scalar& value) const
+		{
+			bool result;
+			Function_finite_element_handle function_finite_element;
+
+			result=false;
+			if ((1==row_private)&&(1==column_private)&&(function_finite_element=
+				boost::dynamic_pointer_cast<Function_finite_element,Function>(function())))
+			{
+				value=function_finite_element->time_value();
+				result=true;
+			}
+
+			return (result);
+		};
+	private:
+		// copy constructor
+		Function_variable_value_time(
+			const Function_variable_value_time& variable_value_time):
+			Function_variable_matrix<Scalar>(variable_value_time){}
+};
 
 // global classes
 // ==============
@@ -3880,6 +3965,30 @@ Function_variable_handle Function_finite_element::nodal_values(
 		Function_finite_element_handle(this),(Function_size_type)0,
 		(struct FE_node *)NULL,FE_NODAL_UNKNOWN,version,
 		(struct FE_time_sequence *)NULL)));
+}
+
+Function_variable_handle Function_finite_element::time()
+//******************************************************************************
+// LAST MODIFIED : 16 February 2005
+//
+// DESCRIPTION :
+// Returns the time input.
+//==============================================================================
+{
+	return (Function_variable_handle
+		(new Function_variable_value_time(
+		Function_finite_element_handle(this))));
+}
+
+Scalar Function_finite_element::time_value()
+//******************************************************************************
+// LAST MODIFIED : 16 February 2005
+//
+// DESCRIPTION :
+// Returns the time input.
+//==============================================================================
+{
+	return (this->time_private);
 }
 
 Function_variable_handle Function_finite_element::xi()
