@@ -627,25 +627,26 @@ actual object type and then the appropriate list function is called.
 		list_memory_data.show_structures = show_structures;
 		list_memory_data.total = 0;
 
+		printf("Cmiss Memory Dump\n");
+
 		if (memory_block_list)
 		{
 			FOR_EACH_OBJECT_IN_LIST(Memory_block)(list_memory_block, 
 				(void *)&list_memory_data, memory_block_list);
 		}
 
-		printf("\n\n\n\n\n");
 		for (i = 1 ; i < maximum_count + 1 ; i++)
 		{
-			printf("Allocated memory with count %3d: %12d\n", i, 
+			printf("  Allocated memory with count %3d: %12d\n", i, 
 				list_memory_data.count_total[i]);
 		}
 		DEALLOCATE(list_memory_data.count_total);
-		printf("Total allocated memory:          %12d\n", list_memory_data.total);
+		printf("Total allocated memory:            %12d\n", list_memory_data.total);
 		if (increment_counter)
 		{
 			maximum_count++;
+			printf("Now allocating with count: %d\n", maximum_count);
 		}
-		printf("\nNow allocating with count: %d\n", maximum_count);
 		return_code = 1;
 	}
 	else
