@@ -1053,6 +1053,9 @@ DESCRIPTION :
 	struct Spectrum_render_data *render_data;
 
 	ENTER(draw_surfaceGL);
+#if ! defined GL_VERSION_1_3
+	USE_PARAMETER(tangentpoints);
+#endif /* ! defined GL_VERSION_1_3 */
 	/* checking arguments */
 	if (surfpts&&(1<npts1)&&(1<npts2)&&((!data)||(render_data=
 		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
@@ -1122,11 +1125,13 @@ DESCRIPTION :
 					normal_point_1=normalpoints;
 					normal_point_2=normalpoints+npts1;
 				}
+#if defined GL_VERSION_1_3
 				if (tangentpoints)
 				{
 					tangent_point_1=tangentpoints;
 					tangent_point_2=tangentpoints+npts1;
 				}
+#endif /* defined GL_VERSION_1_3 */
 				if (texturepoints)
 				{
 					texture_point_1 = texturepoints;
