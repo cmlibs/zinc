@@ -33,6 +33,14 @@ graphics/matrix.c
 
 #define TINY 1.0e-20
 
+const double identity_matrix4[16]=
+{
+	1.0, 0.0, 0.0, 0.0,
+	0.0, 1.0, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.0, 0.0, 0.0, 1.0
+};
+
 int cross_product3(double *a,double *b,double *result)
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998

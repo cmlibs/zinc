@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.h
 
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 3 April 2000
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -27,6 +27,8 @@ vector or matrix routines that should be in here are listed in matrix_vector.c.
 #define MATRIX_VECTOR_H
 
 #include "general/value.h"
+
+extern const double identity_matrix4[16];
 
 int cross_product3(double *a,double *b,double *result);
 /*******************************************************************************
@@ -113,7 +115,6 @@ DESCRIPTION :
 Returns in the m rows x n columns matrix <c> that is the product of
 m x s matrix <a> and s x n matrix <b>.
 ==============================================================================*/
-
 
 int multiply_matrix_float(int m,int s,int n,float *a,float *b,float *c);
 /*******************************************************************************
