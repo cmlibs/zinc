@@ -55,7 +55,7 @@ static char computed_field_fuzzy_clustering_type_string[] = "fuzzy_clustering";
 
 int Computed_field_is_type_fuzzy_clustering(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -132,7 +132,7 @@ we know to invalidate the image cache.
 static int Computed_field_fuzzy_clustering_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -178,7 +178,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_fuzzy_clustering_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -241,7 +241,7 @@ Copy the type specific data used by this type.
 int Computed_field_fuzzy_clustering_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -275,7 +275,7 @@ DESCRIPTION :
 static int Computed_field_fuzzy_clustering_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Compare the type specific data
@@ -317,7 +317,7 @@ Compare the type specific data
 #define Computed_field_fuzzy_clustering_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -326,7 +326,7 @@ Check the source fields using the default.
 #define Computed_field_fuzzy_clustering_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -335,7 +335,7 @@ Check the source fields using the default.
 #define Computed_field_fuzzy_clustering_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -344,7 +344,7 @@ Window projection does have numerical components.
 #define Computed_field_fuzzy_clustering_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 No special criteria.
@@ -352,7 +352,7 @@ No special criteria.
 
 static int Image_cache_fuzzy_clustering(struct Image_cache *image, int number_of_classes)
 /*******************************************************************************
-LAST MODIFIED : 8 January 2004
+LAST MODIFIED : 22 December 2004
 
 DESCRIPTION :
 Perform a fuzzy_clustering extraction operation on the image cache.
@@ -628,7 +628,7 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 static int Computed_field_fuzzy_clustering_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -672,7 +672,7 @@ static int Computed_field_fuzzy_clustering_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -718,7 +718,7 @@ Evaluate the fields cache at the node.
 #define Computed_field_fuzzy_clustering_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -727,7 +727,7 @@ Print the values calculated in the cache.
 #define Computed_field_fuzzy_clustering_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -736,7 +736,7 @@ Print the values calculated in the cache.
 #define Computed_field_fuzzy_clustering_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Not implemented yet.
@@ -745,7 +745,7 @@ Not implemented yet.
 #define Computed_field_fuzzy_clustering_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Not implemented yet.
@@ -754,7 +754,7 @@ Not implemented yet.
 #define Computed_field_fuzzy_clustering_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -763,7 +763,7 @@ Inherit result from first source field.
 #define Computed_field_fuzzy_clustering_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Not implemented yet.
@@ -772,7 +772,7 @@ Not implemented yet.
 static int list_Computed_field_fuzzy_clustering(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 5 January 2004
+LAST MODIFIED : 5 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -803,7 +803,7 @@ DESCRIPTION :
 static char *Computed_field_fuzzy_clustering_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 5 January 2004
+LAST MODIFIED : 5 December 2004
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -868,7 +868,7 @@ Returns allocated command string for reproducing field. Includes type.
 #define Computed_field_fuzzy_clustering_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
-LAST MODIFIED : 5 January 2004
+LAST MODIFIED : 5 December 2004
 
 DESCRIPTION :
 Works out whether time influences the field.
@@ -969,7 +969,7 @@ int Computed_field_get_type_fuzzy_clustering(struct Computed_field *field,
 	int *dimension, int *number_of_classes, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 17 December 2003
+LAST MODIFIED : 17 December 2004
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_fuzzy_clustering, the
@@ -1022,7 +1022,7 @@ parameters defining it are returned.
 static int define_Computed_field_type_fuzzy_clustering(struct Parse_state *state,
 	void *field_void, void *computed_field_fuzzy_clustering_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2003
+LAST MODIFIED : 18 December 2004
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_fuzzy_clustering (if it is not
@@ -1236,7 +1236,7 @@ int Computed_field_register_types_fuzzy_clustering(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
-LAST MODIFIED : 12 December 2003
+LAST MODIFIED : 12 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
