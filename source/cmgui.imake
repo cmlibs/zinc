@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 7 July 2000
+XCOMM LAST MODIFIED : 10 July 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -795,6 +795,7 @@ GRAPHICS_SRCS = \
 	graphics/volume_texture_editor_dialog.c \
 	graphics/write_to_video.c 
 INTERACTION_SRCS = \
+	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
 	interaction/interactive_tool.c \
 	interaction/interactive_toolbar_widget.c \
