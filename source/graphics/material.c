@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -115,7 +115,7 @@ DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphical_material)
 
 int direct_render_Graphical_material(struct Graphical_material *material)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Directly outputs the graphics library commands for activating <material>.
@@ -258,7 +258,10 @@ material results.
 				values[2]=(material->specular).blue;
 				glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,values);
 				glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(material->shininess)*128.);
-				execute_Texture(material->texture);
+				if (material->texture)
+				{
+					execute_Texture(material->texture);
+				}
 				return_code=1;
 #if defined (OLD_CODE)
 			} break;
