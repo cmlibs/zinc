@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -198,7 +198,7 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 
 struct Element_to_glyph_set_data
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Data for converting a finite element into a set of glyphs displaying information
@@ -227,20 +227,52 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 	enum Graphics_select_mode select_mode;
 	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
+	FE_value base_size[3], centre[3], scale_factors[3];
 	float time;
 	int face_number,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct Computed_field *coordinate_field,*data_field,*label_field,
-		*orientation_scale_field;
+	struct Computed_field *coordinate_field, *data_field, *variable_scale_field,
+		*label_field, *orientation_scale_field;
 	struct FE_field *native_discretization_field;
 	struct GROUP(FE_element) *element_group;
 	struct GT_object *glyph,*graphics_object;
-	Triple exact_xi,glyph_centre,glyph_size,glyph_scale_factors;
+	Triple exact_xi;
 }; /* struct Element_to_glyph_set_data */
 
 /*
 Global functions
 ----------------
 */
+
+int make_glyph_orientation_scale_axes(
+	int number_of_orientation_scale_values, FE_value *orientation_scale_values,
+	FE_value *axis1,FE_value *axis2, FE_value *axis3, FE_value *size);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Computes the three glyph orientation axes from the <orientation_scale_values>.
+
+The orientation is understood from the number_of_orientation_scale_values as:
+0 = zero scalar (no vector/default orientation);
+1 = scalar (no vector/default orientation);
+2 = 1 2-D vector (2nd glyph axis is normal in plane, 3rd is out of 2-D plane);
+3 = 1 3-D vector (orthogonal 2nd and 3rd glyph axes are arbitrarily chosen);
+4 = 2 2-D vectors (3rd glyph axis taken as out of 2-D plane);
+6 = 2 3-D vectors (3rd glyph axis found from cross product);
+9 = 3 3-D vectors = complete definition of glyph axes;
+
+The scaling behaviour depends on the number of vectors interpreted above, where:
+0 = isotropic scaling on all three axes by scalar;
+1 = isotropic scaling on all three axes by magnitude of vector;
+2 = scaling in direction of 2 vectors, ie. they keep their current length, unit
+    vector in 3rd axis;
+3 = scaling in direction of 3 vectors - ie. they keep their current length.
+
+Function returns the axes as unit vectors with their magnitudes in the <size>
+array. This is always possible if there is a scalar (or zero scalar), but where
+zero vectors are either read or calculated from the <orientation_scale_values>,
+these are simply returned, since no valid direction can be produced.
+==============================================================================*/
 
 char *Use_element_type_string(enum Use_element_type use_element_type);
 /*******************************************************************************
@@ -327,27 +359,29 @@ Used for selection and highlighting of elements.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
-	struct FE_element *element,struct FE_element *top_level_element,
+	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
-	int number_of_xi_points,Triple *xi_points,
-	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
-	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
-	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode,int element_selected,
-	struct Multi_range *selected_ranges,int *point_numbers);
+	int number_of_xi_points, Triple *xi_points, struct GT_object *glyph,
+	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	struct Computed_field *orientation_scale_field,
+	struct Computed_field *variable_scale_field,
+	struct Computed_field *data_field, struct Computed_field *label_field,
+	enum Graphics_select_mode select_mode, int element_selected,
+	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
 about fields defined over it.
-At each of the <number_of_xi_points> <xi_points> the <glyph> of <glyph_size>
-with its centre located at <glyph_centre> is displayed.
+At each of the <number_of_xi_points> <xi_points> the <glyph> of at least
+<base_size> with the given glyph <centre> is displayed.
 The optional <orientation_scale_field> can be used to orient and scale the
-glyph in a manner depending on the number of components in the field (see
-function make_glyph_orientation_scale_axes). The three <glyph_scale_factors>
-multiply the scaling effect in each axis taken from the
-<orientation_scale_field>.
+glyph in a manner depending on the number of components in the field. The
+optional <variable_scale_field> can provide signed scaling independently of the
+glyph axis directions. See function make_glyph_orientation_scale_axes for
+details. The combined scale from the above 2 fields is multiplied in each axis
+by the <scale_factors> then added to the base_size.
 The optional <data_field> (currently only a scalar) is calculated as data over
 the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
@@ -363,28 +397,31 @@ If <point_numbers> are supplied then points numbers for OpenGL picking are taken
 from this array, otherwise they are sequential, starting at 0.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
+- the coordinate system of the variable_scale_field is ignored/not used.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
-	struct GROUP(FE_node) *node_group,struct MANAGER(FE_node) *node_manager,
-	struct Computed_field *coordinate_field,struct GT_object *glyph,
-	Triple glyph_centre,Triple glyph_size,
-	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
-	struct Computed_field *data_field,struct Computed_field *label_field,
+	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
+	struct Computed_field *coordinate_field, struct GT_object *glyph,
+	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	struct Computed_field *orientation_scale_field,
+	struct Computed_field *variable_scale_field,
+	struct Computed_field *data_field, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list);
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
-Creates a GT_glyph_set displaying a <glyph> of size <glyph_size>, with centre
-at <glyph_centre>, at each node in <node_group> (or <node_manager> if the former
-is NULL).
+Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
+given glyph <centre> at each node in <node_group> (or <node_manager> if the
+former is NULL).
 The optional <orientation_scale_field> can be used to orient and scale the
-glyph in a manner depending on the number of components in the field (see
-function make_glyph_orientation_scale_axes). The three <glyph_scale_factors>
-multiply the scaling effect in each axis taken from the
-<orientation_scale_field>.
+glyph in a manner depending on the number of components in the field. The
+optional <variable_scale_field> can provide signed scaling independently of the
+glyph axis directions. See function make_glyph_orientation_scale_axes for
+details. The combined scale from the above 2 fields is multiplied in each axis
+by the <scale_factors> then added to the base_size.
 The optional <data_field> is calculated as data over the glyph_set, for later
 colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
@@ -392,9 +429,9 @@ The <select_mode> controls whether node cmiss numbers are output as integer
 names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
 the nodes (not) in the <selected_node_list> are rendered only. This
 functionality is only supported if <node_group> is supplied.
-
 Notes:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
+- the coordinate system of the variable_scale_field is ignored/not used.
 ==============================================================================*/
 
 struct GT_polyline *create_GT_polyline_from_FE_element(
@@ -574,37 +611,6 @@ xi(parent) = b + A.xi(element)
 while A is the remainder of the matrix. (Appropriate matrices are given by the
 face_to_element member of struct FE_element_shape, and by function
 FE_element_get_top_level_element_conversion.)
-==============================================================================*/
-
-int make_glyph_orientation_scale_axes(int number_of_values,
-	FE_value *orientation_scale_values,FE_value *axis1,FE_value *axis2,
-	FE_value *axis3,FE_value *size);
-/*******************************************************************************
-LAST MODIFIED : 14 February 1999
-
-DESCRIPTION :
-Computes the three glyph orientation axes from the <orientation_scale_values>.
-
-The orientation is understood from the number_of_values as:
-0 = zero scalar (no vector/default orientation);
-1 = scalar (no vector/default orientation);
-2 = 1 2-D vector (2nd glyph axis is normal in plane, 3rd is out of 2-D plane);
-3 = 1 3-D vector (orthogonal 2nd and 3rd glyph axes are arbitrarily chosen);
-4 = 2 2-D vectors (3rd glyph axis taken as out of 2-D plane);
-6 = 2 3-D vectors (3rd glyph axis found from cross product);
-9 = 3 3-D vectors = complete definition of glyph axes;
-
-The scaling behaviour depends on the number of vectors interpreted above, where:
-0 = isotropic scaling on all three axes by scalar;
-1 = isotropic scaling on all three axes by magnitude of vector;
-2 = scaling in direction of 2 vectors, ie. they keep their current length, unit
-    vector in 3rd axis;
-3 = scaling in direction of 3 vectors - ie. they keep their current length.
-
-Function returns the axes as unit vectors with their magnitudes in the <size>
-array. This is always possible if there is a scalar (or zero scalar), but where
-zero vectors are either read or calculated from the <orientation_scale_values>,
-these are simply returned, since no valid direction can be produced.
 ==============================================================================*/
 
 struct VT_vector_field *interpolate_vector_field_on_FE_element(double ximax[3],

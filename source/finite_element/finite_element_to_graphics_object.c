@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 24 November 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -18,6 +18,7 @@ The functions for creating graphical objects from finite elements.
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
+#include "general/mystring.h"
 #include "graphics/graphics_object.h"
 #include "graphics/iso_field_calculation.h"
 #include "graphics/spectrum.h"
@@ -50,19 +51,19 @@ For checking fields of a node.
 
 struct Node_to_glyph_set_data
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Used with iterators for building glyph sets from nodes.
 ==============================================================================*/
 {
 	char **label;
+	FE_value base_size[3], centre[3], scale_factors[3];
 	GTDATA *data;
-	int n_data_components,*name;
-	struct Computed_field *coordinate_field,*data_field,*label_field,
-		*orientation_scale_field;
-	Triple glyph_centre,glyph_size,glyph_scale_factors;
-	Triple *point,*axis1,*axis2,*axis3;
+	int n_data_components, *name;
+	struct Computed_field *coordinate_field, *data_field, *label_field,
+		*orientation_scale_field, *variable_scale_field;
+	Triple *point, *axis1, *axis2, *axis3, *scale;
 }; /* struct Node_to_glyph_set_data */
 
 /*
@@ -232,7 +233,7 @@ computed_fields_of_node->number_of_nodes++.
 static int node_to_glyph_set(struct FE_node *node,
 	void *node_to_glyph_set_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Iterator function for adding a glyph showing a node and fields to a glyph_set.
@@ -240,124 +241,141 @@ Up to calling function to call Computed_field_clear_cache for any computed
 fields used here.
 ==============================================================================*/
 {
-	FE_value a[3],b[3],c[3],centre1,centre2,centre3,coordinates[3],
-		orientation_scale[9],size[3],size1,size2,size3;
-	struct Computed_field  **current_field_address,*coordinate_field,*data_field,
-		*label_field,*orientation_scale_field,*required_fields[4];
-	int j,number_of_orientation_scale_components, num_of_fields,return_code;
+	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
+		variable_scale[3];
+	struct Computed_field **current_field_address, *coordinate_field, *data_field,
+		*label_field, *orientation_scale_field, *required_fields[4],
+		*variable_scale_field;
+	int j, number_of_fields, number_of_orientation_scale_components,
+		number_of_variable_scale_components, return_code;
 	struct Node_to_glyph_set_data *node_to_glyph_set_data;
-	Triple *point,*axis1,*axis2,*axis3;
+	Triple *axis1, *axis2, *axis3, *point, *scale;
 
 	ENTER(node_to_glyph_set);
 	/* must set following to 0 = valid if no orientation_scale_field */
-	number_of_orientation_scale_components=0;
-	if (node&&(node_to_glyph_set_data=
-		(struct Node_to_glyph_set_data *)node_to_glyph_set_data_void)&&
-		(point=node_to_glyph_set_data->point)&&
-		(axis1=node_to_glyph_set_data->axis1)&&
-		(axis2=node_to_glyph_set_data->axis2)&&
-		(axis3=node_to_glyph_set_data->axis3)&&
-		(coordinate_field=node_to_glyph_set_data->coordinate_field)&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&& 
-		((!(orientation_scale_field=node_to_glyph_set_data->orientation_scale_field)
-			||(9>=(number_of_orientation_scale_components=
-				Computed_field_get_number_of_components(orientation_scale_field)))))&&
-		((!(data_field=node_to_glyph_set_data->data_field))||
-			node_to_glyph_set_data->data)&&
-		((!(label_field=node_to_glyph_set_data->label_field))||
-			node_to_glyph_set_data->label))
+	number_of_orientation_scale_components = 0;
+	number_of_variable_scale_components = 0;
+	if (node && (node_to_glyph_set_data =
+		(struct Node_to_glyph_set_data *)node_to_glyph_set_data_void) &&
+		(coordinate_field=node_to_glyph_set_data->coordinate_field) &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)) && 
+		((!(orientation_scale_field =
+			node_to_glyph_set_data->orientation_scale_field)) ||
+			(9 >= (number_of_orientation_scale_components =
+				Computed_field_get_number_of_components(orientation_scale_field)))) &&
+		((!(data_field = node_to_glyph_set_data->data_field)) ||
+			node_to_glyph_set_data->data) &&
+		((!(label_field = node_to_glyph_set_data->label_field)) ||
+			node_to_glyph_set_data->label) &&
+		((!(variable_scale_field = node_to_glyph_set_data->variable_scale_field)) ||
+			(3 >= (number_of_variable_scale_components =
+				Computed_field_get_number_of_components(variable_scale_field)))) &&
+		(point = node_to_glyph_set_data->point) &&
+		(axis1 = node_to_glyph_set_data->axis1) &&
+		(axis2 = node_to_glyph_set_data->axis2) &&
+		(axis3 = node_to_glyph_set_data->axis3) &&
+		(scale = node_to_glyph_set_data->scale))
 	{
 		return_code=1;
-		/* set up the node_to_point_data fields in a format for FE_node_fields_defined */
-		num_of_fields = 0;	
+		/* prepare fields for check with FE_node_computed_fields_defined */
+		number_of_fields = 0;	
 		if (coordinate_field)
 		{ 
-			required_fields[num_of_fields]=coordinate_field;
-			num_of_fields++;			
+			required_fields[number_of_fields]=coordinate_field;
+			number_of_fields++;			
 		}	
 		if (data_field)
 		{ 
-			required_fields[num_of_fields]=data_field;
-			num_of_fields++;			
+			required_fields[number_of_fields]=data_field;
+			number_of_fields++;			
 		}			
 		if (label_field)
 		{ 
-			required_fields[num_of_fields]=label_field;
-			num_of_fields++;			
+			required_fields[number_of_fields]=label_field;
+			number_of_fields++;			
 		}			
 		if (orientation_scale_field)
 		{ 
-			required_fields[num_of_fields]=orientation_scale_field;
-			num_of_fields++;			
+			required_fields[number_of_fields]=orientation_scale_field;
+			number_of_fields++;			
 		}	
+		if (variable_scale_field)
+		{ 
+			required_fields[number_of_fields]=variable_scale_field;
+			number_of_fields++;			
+		}
 		current_field_address = required_fields;		
 		/* if there's no node coordinate field, do nothing, but no error */
-		if(FE_node_computed_fields_defined(node,num_of_fields,
+		if (FE_node_computed_fields_defined(node,number_of_fields,
 			current_field_address)) 
 		{
 			/* clear coordinates in case coordinate field is not 3 component */
-			coordinates[0]=0.0;
-			coordinates[1]=0.0;
-			coordinates[2]=0.0;
+			coordinates[0] = 0.0;
+			coordinates[1] = 0.0;
+			coordinates[2] = 0.0;
 			/* evaluate the fields at the node */
 			if (Computed_field_evaluate_at_node(coordinate_field,node,coordinates)&&
-				((!orientation_scale_field)||Computed_field_evaluate_at_node(
+				((!orientation_scale_field) || Computed_field_evaluate_at_node(
 					orientation_scale_field,node,orientation_scale))&&
+				((!variable_scale_field) || Computed_field_evaluate_at_node(
+					variable_scale_field, node, variable_scale)) &&
 				((!data_field)||Computed_field_evaluate_at_node(data_field,node,
 					node_to_glyph_set_data->data))&&
 				((!label_field)||(*(node_to_glyph_set_data->label) =
 					Computed_field_evaluate_as_string_at_node(label_field,
 					/*component_number*/-1,node)))&&
 				make_glyph_orientation_scale_axes(
-					number_of_orientation_scale_components,orientation_scale,a,b,c,size))
+					number_of_orientation_scale_components, orientation_scale,
+					a, b, c, size))
 			{
-				return_code=1;
-				centre1=(FE_value)(node_to_glyph_set_data->glyph_centre[0]);
-				centre2=(FE_value)(node_to_glyph_set_data->glyph_centre[1]);
-				centre3=(FE_value)(node_to_glyph_set_data->glyph_centre[2]);
-				/* size = base_size + variable_size * scale_factor */
-				size1 = node_to_glyph_set_data->glyph_size[0] +
-					size[0]*node_to_glyph_set_data->glyph_scale_factors[0];
-				size2 = node_to_glyph_set_data->glyph_size[1] +
-					size[1]*node_to_glyph_set_data->glyph_scale_factors[1];
-				size3 = node_to_glyph_set_data->glyph_size[2] +
-					size[2]*node_to_glyph_set_data->glyph_scale_factors[2];
-				for (j=0;j<3;j++)
+				for (j = 0; j < 3; j++)
 				{
-					a[j] *= size1;
-					b[j] *= size2;
-					c[j] *= size3;
-					(*point)[j]=(coordinates[j]-centre1*a[j]-centre2*b[j]-centre3*c[j]);
-					(*axis1)[j]=a[j];
-					(*axis2)[j]=b[j];
-					(*axis3)[j]=c[j];
+					(*scale)[j] = node_to_glyph_set_data->base_size[j] +
+						size[j]*node_to_glyph_set_data->scale_factors[j];
+				}
+				for (j = 0; j < number_of_variable_scale_components; j++)
+				{
+					(*scale)[j] *= variable_scale[j];
+				}
+				for (j = 0; j < 3; j++)
+				{
+					(*point)[j] = coordinates[j] -
+						node_to_glyph_set_data->centre[0]*(*scale)[0]*a[j] -
+						node_to_glyph_set_data->centre[1]*(*scale)[1]*b[j] -
+						node_to_glyph_set_data->centre[2]*(*scale)[2]*c[j];
+					(*axis1)[j] = a[j];
+					(*axis2)[j] = b[j];
+					(*axis3)[j] = c[j];
 				}
 				(node_to_glyph_set_data->point)++;
 				(node_to_glyph_set_data->axis1)++;
 				(node_to_glyph_set_data->axis2)++;
 				(node_to_glyph_set_data->axis3)++;
+				(node_to_glyph_set_data->scale)++;
+
 				if (node_to_glyph_set_data->data_field)
 				{
-					(node_to_glyph_set_data->data) +=
+					node_to_glyph_set_data->data +=
 						node_to_glyph_set_data->n_data_components;
+				}
+				if (node_to_glyph_set_data->name)
+				{
+					*(node_to_glyph_set_data->name) =
+						get_FE_node_cm_node_identifier(node);
+					(node_to_glyph_set_data->name)++;
 				}
 				if (node_to_glyph_set_data->label_field)
 				{
 					(node_to_glyph_set_data->label)++;
 				}
-				if (node_to_glyph_set_data->name)
-				{
-					*(node_to_glyph_set_data->name)=get_FE_node_cm_node_identifier(node);
-					(node_to_glyph_set_data->name)++;
-				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"node_to_glyph_set.  Error reading node fields");
+					"node_to_glyph_set.  Error calculating node fields");
 				return_code=0;
 			}
-		}/*if if(FE_node_computed_fields_defined() */
+		}
 	}
 	else
 	{
@@ -453,6 +471,292 @@ but are indirectly connected (e.g. mesh with slit)
 Global functions
 ----------------
 */
+
+int make_glyph_orientation_scale_axes(
+	int number_of_orientation_scale_values, FE_value *orientation_scale_values,
+	FE_value *axis1,FE_value *axis2, FE_value *axis3, FE_value *size)
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Computes the three glyph orientation axes from the <orientation_scale_values>.
+
+The orientation is understood from the number_of_orientation_scale_values as:
+0 = zero scalar (no vector/default orientation);
+1 = scalar (no vector/default orientation);
+2 = 1 2-D vector (2nd glyph axis is normal in plane, 3rd is out of 2-D plane);
+3 = 1 3-D vector (orthogonal 2nd and 3rd glyph axes are arbitrarily chosen);
+4 = 2 2-D vectors (3rd glyph axis taken as out of 2-D plane);
+6 = 2 3-D vectors (3rd glyph axis found from cross product);
+9 = 3 3-D vectors = complete definition of glyph axes;
+
+The scaling behaviour depends on the number of vectors interpreted above, where:
+0 = isotropic scaling on all three axes by scalar;
+1 = isotropic scaling on all three axes by magnitude of vector;
+2 = scaling in direction of 2 vectors, ie. they keep their current length, unit
+    vector in 3rd axis;
+3 = scaling in direction of 3 vectors - ie. they keep their current length.
+
+Function returns the axes as unit vectors with their magnitudes in the <size>
+array. This is always possible if there is a scalar (or zero scalar), but where
+zero vectors are either read or calculated from the <orientation_scale_values>,
+these are simply returned, since no valid direction can be produced.
+==============================================================================*/
+{
+	float magnitude;
+	int return_code;
+
+	ENTER(make_glyph_orientation_scale_axes);
+	if (((0 == number_of_orientation_scale_values) ||
+		((0<number_of_orientation_scale_values) && orientation_scale_values)) &&
+		axis1 && axis2 && axis3 && size)
+	{
+		return_code=1;
+		switch (number_of_orientation_scale_values)
+		{
+			case 0:
+			{
+				/* zero scalar; axes = x,y,z */
+				size[0]=size[1]=size[2]=0.0;
+				axis1[0]=1.0;
+				axis1[1]=0.0;
+				axis1[2]=0.0;
+				axis2[0]=0.0;
+				axis2[1]=1.0;
+				axis2[2]=0.0;
+				axis3[0]=0.0;
+				axis3[1]=0.0;
+				axis3[2]=1.0;
+			} break;
+			case 1:
+			{
+				/* scalar; axes = x,y,z */
+				size[0]=size[1]=size[2]=orientation_scale_values[0];
+				axis1[0]=1.0;
+				axis1[1]=0.0;
+				axis1[2]=0.0;
+				axis2[0]=0.0;
+				axis2[1]=1.0;
+				axis2[2]=0.0;
+				axis3[0]=0.0;
+				axis3[1]=0.0;
+				axis3[2]=1.0;
+			} break;
+			case 2:
+			{
+				/* 1 2-D vector */
+				axis1[0]=orientation_scale_values[0];
+				axis1[1]=orientation_scale_values[1];
+				axis1[2]=0.0;
+				if (0.0<(magnitude=sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1])))
+				{
+					axis1[0] /= magnitude;
+					axis1[1] /= magnitude;
+				}
+				size[0]=size[1]=size[2]=magnitude;
+				/* get axis2 orthogonal to axis 1 in x-y plane (in right hand sense) */
+				axis2[0]=-axis1[1];
+				axis2[1]=axis1[0];
+				axis2[2]=0.0;
+				/* axis3 is along the z-axis, of same length as other axes */
+				axis3[0]=0.0;
+				axis3[1]=0.0;
+				axis3[2]=1.0;
+			} break;
+			case 3:
+			{
+				/* 1 3-D vector */
+				axis1[0]=orientation_scale_values[0];
+				axis1[1]=orientation_scale_values[1];
+				axis1[2]=orientation_scale_values[2];
+				/* get magnitude of axis1 vector to make axis2 and axis3 this size */
+				if (0.0<(magnitude=
+					sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1]+axis1[2]*axis1[2])))
+				{
+					axis1[0] /= magnitude;
+					axis1[1] /= magnitude;
+					axis1[2] /= magnitude;
+					size[0]=size[1]=size[2]=magnitude;
+					/* get axis3, non-colinear with axis1 */
+					axis3[0]=0.0;
+					axis3[1]=0.0;
+					axis3[2]=0.0;
+					if (fabs(axis1[0]) < fabs(axis1[1]))
+					{
+						if (fabs(axis1[2]) < fabs(axis1[0]))
+						{
+							axis3[2]=1.0;
+						}
+						else
+						{
+							axis3[0]=1.0;
+						}
+					}
+					else
+					{
+						if (fabs(axis1[2]) < fabs(axis1[1]))
+						{
+							axis3[2]=1.0;
+						}
+						else
+						{
+							axis3[1]=1.0;
+						}
+					}
+					/* get axis2 = axis3 (x) axis1 = vector orthogonal to axis1 */
+					axis2[0]=axis3[1]*axis1[2]-axis3[2]*axis1[1];
+					axis2[1]=axis3[2]*axis1[0]-axis3[0]*axis1[2];
+					axis2[2]=axis3[0]*axis1[1]-axis3[1]*axis1[0];
+					/* make axis2 unit length */
+					magnitude=sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1]+axis2[2]*axis2[2]);
+					axis2[0] /= magnitude;
+					axis2[1] /= magnitude;
+					axis2[2] /= magnitude;
+					/* get axis3 = axis1 (x) axis2 = unit vector */
+					axis3[0]=axis1[1]*axis2[2]-axis1[2]*axis2[1];
+					axis3[1]=axis1[2]*axis2[0]-axis1[0]*axis2[2];
+					axis3[2]=axis1[0]*axis2[1]-axis1[1]*axis2[0];
+				}
+				else
+				{
+					/* magnitude of axis1 zero, so clear axis2 and axis3 */
+					axis2[0]=0.0;
+					axis2[1]=0.0;
+					axis2[2]=0.0;
+					axis3[0]=0.0;
+					axis3[1]=0.0;
+					axis3[2]=0.0;
+					size[0]=size[1]=size[2]=0.0;
+				}
+			} break;
+			case 4:
+			{
+				/* 2 2-D vectors */
+				/* axis 1 */
+				axis1[0]=orientation_scale_values[0];
+				axis1[1]=orientation_scale_values[1];
+				axis1[2]=0.0;
+				if (0.0<(magnitude=sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1])))
+				{
+					axis1[0] /= magnitude;
+					axis1[1] /= magnitude;
+				}
+				size[0]=magnitude;
+				/* axis 2 */
+				axis2[0]=orientation_scale_values[2];
+				axis2[1]=orientation_scale_values[3];
+				axis2[2]=0.0;
+				if (0.0<(magnitude=sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1])))
+				{
+					axis2[0] /= magnitude;
+					axis2[1] /= magnitude;
+				}
+				size[1]=magnitude;
+				/* axis3 is a unit vector along the z-axis with zero size */
+				axis3[0]=0.0;
+				axis3[1]=0.0;
+				axis3[2]=1.0;
+				size[2]=0.0;
+			} break;
+			case 6:
+			{
+				/* 2 3-D vectors */
+				/* axis 1 */
+				axis1[0]=orientation_scale_values[0];
+				axis1[1]=orientation_scale_values[1];
+				axis1[2]=orientation_scale_values[2];
+				if (0.0<(magnitude=
+					sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1]+axis1[2]*axis1[2])))
+				{
+					axis1[0] /= magnitude;
+					axis1[1] /= magnitude;
+					axis1[2] /= magnitude;
+				}
+				size[0]=magnitude;
+				/* axis 2 */
+				axis2[0]=orientation_scale_values[3];
+				axis2[1]=orientation_scale_values[4];
+				axis2[2]=orientation_scale_values[5];
+				if (0.0<(magnitude=
+					sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1]+axis2[2]*axis2[2])))
+				{
+					axis2[0] /= magnitude;
+					axis2[1] /= magnitude;
+					axis2[2] /= magnitude;
+				}
+				size[1]=magnitude;
+				/* get axis3 = axis1 (x) axis2 */
+				axis3[0]=axis1[1]*axis2[2]-axis1[2]*axis2[1];
+				axis3[1]=axis1[2]*axis2[0]-axis1[0]*axis2[2];
+				axis3[2]=axis1[0]*axis2[1]-axis1[1]*axis2[0];
+				/* make axis3 a unit vector, with zero size */
+				if (0.0<(magnitude=
+					sqrt(axis3[0]*axis3[0]+axis3[1]*axis3[1]+axis3[2]*axis3[2])))
+				{
+					axis3[0] /= magnitude;
+					axis3[1] /= magnitude;
+					axis3[2] /= magnitude;
+				}
+				size[2]=0.0;
+			} break;
+			case 9:
+			{
+				/* 3 3-D vectors */
+				/* axis 1 */
+				axis1[0]=orientation_scale_values[0];
+				axis1[1]=orientation_scale_values[1];
+				axis1[2]=orientation_scale_values[2];
+				if (0.0<(magnitude=
+					sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1]+axis1[2]*axis1[2])))
+				{
+					axis1[0] /= magnitude;
+					axis1[1] /= magnitude;
+					axis1[2] /= magnitude;
+				}
+				size[0]=magnitude;
+				/* axis 2 */
+				axis2[0]=orientation_scale_values[3];
+				axis2[1]=orientation_scale_values[4];
+				axis2[2]=orientation_scale_values[5];
+				if (0.0<(magnitude=
+					sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1]+axis2[2]*axis2[2])))
+				{
+					axis2[0] /= magnitude;
+					axis2[1] /= magnitude;
+					axis2[2] /= magnitude;
+				}
+				size[1]=magnitude;
+				/* axis 3 */
+				axis3[0]=orientation_scale_values[6];
+				axis3[1]=orientation_scale_values[7];
+				axis3[2]=orientation_scale_values[8];
+				if (0.0<(magnitude=
+					sqrt(axis3[0]*axis3[0]+axis3[1]*axis3[1]+axis3[2]*axis3[2])))
+				{
+					axis3[0] /= magnitude;
+					axis3[1] /= magnitude;
+					axis3[2] /= magnitude;
+				}
+				size[2]=magnitude;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,"make_glyph_orientation_scale_axes.  "
+					"Invalid number_of_orientation_scale_values");
+				return_code=0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"make_glyph_orientation_scale_axes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* make_glyph_orientation_scale_axes */
 
 char *Use_element_type_string(enum Use_element_type use_element_type)
 /*******************************************************************************
@@ -834,25 +1138,27 @@ Used for selection and highlighting of elements.
 } /* CM_element_information_from_graphics_name */
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
-	struct GROUP(FE_node) *node_group,struct MANAGER(FE_node) *node_manager,
-	struct Computed_field *coordinate_field,struct GT_object *glyph,
-	Triple glyph_centre,Triple glyph_size,
-	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
-	struct Computed_field *data_field,struct Computed_field *label_field,
+	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
+	struct Computed_field *coordinate_field, struct GT_object *glyph,
+	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	struct Computed_field *orientation_scale_field,
+	struct Computed_field *variable_scale_field,
+	struct Computed_field *data_field, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
-Creates a GT_glyph_set displaying a <glyph> of size <glyph_size>, with centre
-at <glyph_centre>, at each node in <node_group> (or <node_manager> if the former
-is NULL).
+Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
+given glyph <centre> at each node in <node_group> (or <node_manager> if the
+former is NULL).
 The optional <orientation_scale_field> can be used to orient and scale the
-glyph in a manner depending on the number of components in the field (see
-function make_glyph_orientation_scale_axes). The three <glyph_scale_factors>
-multiply the scaling effect in each axis taken from the
-<orientation_scale_field>.
+glyph in a manner depending on the number of components in the field. The
+optional <variable_scale_field> can provide signed scaling independently of the
+glyph axis directions. See function make_glyph_orientation_scale_axes for
+details. The combined scale from the above 2 fields is multiplied in each axis
+by the <scale_factors> then added to the base_size.
 The optional <data_field> is calculated as data over the glyph_set, for later
 colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
@@ -860,56 +1166,64 @@ The <select_mode> controls whether node cmiss numbers are output as integer
 names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
 the nodes (not) in the <selected_node_list> are rendered only. This
 functionality is only supported if <node_group> is supplied.
-
 Notes:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
+- the coordinate system of the variable_scale_field is ignored/not used.
 ==============================================================================*/
 {
 	char **labels;
 	GTDATA *data;
-	int i,n_data_components,*names,num_of_fields,number_of_points,return_code;
+	int i, n_data_components, *names, number_of_fields, number_of_points,
+		return_code;
 	struct GT_glyph_set *glyph_set;
 	struct LIST(FE_node) *node_list;
 	struct Node_to_glyph_set_data node_to_glyph_set_data;
-	Triple *axis1_list,*axis2_list,*axis3_list,*point_list;
+	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
 	struct Computed_field *required_fields[4];
 	struct Computed_fields_of_node *computed_fields_of_node;
 
 	ENTER(create_GT_glyph_set_from_FE_node_group);
 	if ((node_group||node_manager)&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		((!orientation_scale_field)||
-			(9>=Computed_field_get_number_of_components(orientation_scale_field)))&&
-		glyph&&glyph_centre&&glyph_size&&glyph_scale_factors&&
+		((!orientation_scale_field) ||
+			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
+		glyph && centre && base_size && scale_factors &&
+		((!variable_scale_field) ||
+			(3 >=	Computed_field_get_number_of_components(variable_scale_field))) &&
 		(((GRAPHICS_DRAW_SELECTED!=select_mode)&&
 			(GRAPHICS_DRAW_UNSELECTED!=select_mode))||selected_node_list))
 	{
 		if (computed_fields_of_node=CREATE(Computed_fields_of_node)())
 		{
-			num_of_fields = 0;	
+			number_of_fields = 0;	
 			computed_fields_of_node->num_coordinate=1;
 			computed_fields_of_node->required_fields=required_fields;	
 			if (coordinate_field)
-			{ 
-				required_fields[num_of_fields]=coordinate_field;
-				num_of_fields++;			
-			}	
+			{
+				required_fields[number_of_fields]=coordinate_field;
+				number_of_fields++;
+			}
 			if (data_field)
-			{ 
-				required_fields[num_of_fields]=data_field;
-				num_of_fields++;			
-			}			
+			{
+				required_fields[number_of_fields]=data_field;
+				number_of_fields++;
+			}
 			if (label_field)
-			{ 
-				required_fields[num_of_fields]=label_field;
-				num_of_fields++;			
-			}			
+			{
+				required_fields[number_of_fields]=label_field;
+				number_of_fields++;
+			}
 			if (orientation_scale_field)
-			{ 
-				required_fields[num_of_fields]=orientation_scale_field;
-				num_of_fields++;			
-			}			
-			computed_fields_of_node->num_required_fields=num_of_fields;
+			{
+				required_fields[number_of_fields]=orientation_scale_field;
+				number_of_fields++;			
+			}
+			if (variable_scale_field)
+			{
+				required_fields[number_of_fields]=variable_scale_field;
+				number_of_fields++;			
+			}
+			computed_fields_of_node->num_required_fields=number_of_fields;
 
 			node_list=(struct LIST(FE_node) *)NULL;
 			if (node_group&&((GRAPHICS_DRAW_SELECTED==select_mode)||
@@ -964,24 +1278,25 @@ Notes:
 			{
 				number_of_points=computed_fields_of_node->number_of_nodes;
 				if (0<number_of_points)
-				{		
-					point_list=(Triple *)NULL;
-					axis1_list=(Triple *)NULL;
-					axis2_list=(Triple *)NULL;
-					axis3_list=(Triple *)NULL;
-					labels=(char **)NULL;
-					n_data_components=0;
-					data=(GTDATA *)NULL;
-					names=(int *)NULL;
+				{
+					point_list = (Triple *)NULL;
+					axis1_list = (Triple *)NULL;
+					axis2_list = (Triple *)NULL;
+					axis3_list = (Triple *)NULL;
+					scale_list = (Triple *)NULL;
+					labels = (char **)NULL;
+					n_data_components = 0;
+					data = (GTDATA *)NULL;
+					names = (int *)NULL;
 					if (data_field)
 					{
 						n_data_components =
 							Computed_field_get_number_of_components(data_field);
-						ALLOCATE(data,GTDATA,number_of_points*n_data_components);
+						ALLOCATE(data, GTDATA, number_of_points*n_data_components);
 					}
 					if (label_field)
 					{
-						ALLOCATE(labels,char *,number_of_points);
+						ALLOCATE(labels, char *, number_of_points);
 						/* clear labels array pointers so new glyph_set not corrupted */
 						for (i=0;i<number_of_points;i++)
 						{
@@ -993,41 +1308,38 @@ Notes:
 						ALLOCATE(names,int,number_of_points);
 					}
 					if (((!n_data_components)||data)&&((!label_field)||labels)&&
-						((GRAPHICS_NO_SELECT==select_mode)||names)&&
-						ALLOCATE(point_list,Triple,number_of_points)&&
-						ALLOCATE(axis1_list,Triple,number_of_points)&&
-						ALLOCATE(axis2_list,Triple,number_of_points)&&
-						ALLOCATE(axis3_list,Triple,number_of_points)&&
+						((GRAPHICS_NO_SELECT==select_mode)||names) &&
+						ALLOCATE(point_list, Triple, number_of_points) &&
+						ALLOCATE(axis1_list, Triple, number_of_points) &&
+						ALLOCATE(axis2_list, Triple, number_of_points) &&
+						ALLOCATE(axis3_list, Triple, number_of_points) &&
+						ALLOCATE(scale_list, Triple, number_of_points) &&
 						(glyph_set=CREATE(GT_glyph_set)(number_of_points,point_list,
-							axis1_list,axis2_list,axis3_list,glyph,labels,
+							axis1_list,axis2_list,axis3_list,scale_list,glyph,labels,
 							n_data_components,data,/*object_name*/0,names)))
 					{
 						/* set up information for the iterator */
-						node_to_glyph_set_data.glyph_centre[0]=glyph_centre[0];
-						node_to_glyph_set_data.glyph_centre[1]=glyph_centre[1];
-						node_to_glyph_set_data.glyph_centre[2]=glyph_centre[2];
-						node_to_glyph_set_data.glyph_size[0]=glyph_size[0];
-						node_to_glyph_set_data.glyph_size[1]=glyph_size[1];
-						node_to_glyph_set_data.glyph_size[2]=glyph_size[2];
-						node_to_glyph_set_data.glyph_scale_factors[0]=
-							glyph_scale_factors[0];
-						node_to_glyph_set_data.glyph_scale_factors[1]=
-							glyph_scale_factors[1];
-						node_to_glyph_set_data.glyph_scale_factors[2]=
-							glyph_scale_factors[2];
-						node_to_glyph_set_data.point=point_list;
-						node_to_glyph_set_data.axis1=axis1_list;
-						node_to_glyph_set_data.axis2=axis2_list;
-						node_to_glyph_set_data.axis3=axis3_list;
-						node_to_glyph_set_data.data=data;
-						node_to_glyph_set_data.label=labels;
-						node_to_glyph_set_data.coordinate_field=coordinate_field;
-						node_to_glyph_set_data.orientation_scale_field=
+						for (i = 0; i < 3; i++)
+						{
+							node_to_glyph_set_data.base_size[i] = base_size[i];
+							node_to_glyph_set_data.centre[i] = centre[i];
+							node_to_glyph_set_data.scale_factors[i] = scale_factors[i];
+						}
+						node_to_glyph_set_data.point = point_list;
+						node_to_glyph_set_data.axis1 = axis1_list;
+						node_to_glyph_set_data.axis2 = axis2_list;
+						node_to_glyph_set_data.axis3 = axis3_list;
+						node_to_glyph_set_data.scale = scale_list;
+						node_to_glyph_set_data.data = data;
+						node_to_glyph_set_data.label = labels;
+						node_to_glyph_set_data.coordinate_field = coordinate_field;
+						node_to_glyph_set_data.orientation_scale_field =
 							orientation_scale_field;
-						node_to_glyph_set_data.data_field=data_field;
-						node_to_glyph_set_data.n_data_components=n_data_components;
-						node_to_glyph_set_data.label_field=label_field;
-						node_to_glyph_set_data.name=names;
+						node_to_glyph_set_data.variable_scale_field = variable_scale_field;
+						node_to_glyph_set_data.data_field = data_field;
+						node_to_glyph_set_data.n_data_components = n_data_components;
+						node_to_glyph_set_data.label_field = label_field;
+						node_to_glyph_set_data.name = names;
 						if (node_list)
 						{
 							return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(node_to_glyph_set,
@@ -1049,6 +1361,10 @@ Notes:
 						{
 							Computed_field_clear_cache(orientation_scale_field);
 						}
+						if (variable_scale_field)
+						{
+							Computed_field_clear_cache(variable_scale_field);
+						}
 						if (data_field)
 						{
 							Computed_field_clear_cache(data_field);
@@ -1068,6 +1384,7 @@ Notes:
 						DEALLOCATE(axis1_list);
 						DEALLOCATE(axis2_list);
 						DEALLOCATE(axis3_list);
+						DEALLOCATE(scale_list);
 						DEALLOCATE(data);
 						DEALLOCATE(labels);
 						DEALLOCATE(names);
@@ -1205,7 +1522,7 @@ Notes:
 		if (!polyline)
 		{
 			display_message(ERROR_MESSAGE,
-				"create_GT_glyph_set_from_FE_element.  Failed");
+				"create_GT_polyline_from_FE_element.  Failed");
 		}
 	}
 	else
@@ -5496,313 +5813,30 @@ parent elements where necessary.
 	return (return_code);
 } /* convert_xi_points_from_element_to_parent */
 
-int make_glyph_orientation_scale_axes(int number_of_values,
-	FE_value *orientation_scale_values,FE_value *axis1,FE_value *axis2,
-	FE_value *axis3,FE_value *size)
-/*******************************************************************************
-LAST MODIFIED : 14 February 1999
-
-DESCRIPTION :
-Computes the three glyph orientation axes from the <orientation_scale_values>.
-
-The orientation is understood from the number_of_values as:
-0 = zero scalar (no vector/default orientation);
-1 = scalar (no vector/default orientation);
-2 = 1 2-D vector (2nd glyph axis is normal in plane, 3rd is out of 2-D plane);
-3 = 1 3-D vector (orthogonal 2nd and 3rd glyph axes are arbitrarily chosen);
-4 = 2 2-D vectors (3rd glyph axis taken as out of 2-D plane);
-6 = 2 3-D vectors (3rd glyph axis found from cross product);
-9 = 3 3-D vectors = complete definition of glyph axes;
-
-The scaling behaviour depends on the number of vectors interpreted above, where:
-0 = isotropic scaling on all three axes by scalar;
-1 = isotropic scaling on all three axes by magnitude of vector;
-2 = scaling in direction of 2 vectors, ie. they keep their current length, unit
-    vector in 3rd axis;
-3 = scaling in direction of 3 vectors - ie. they keep their current length.
-
-Function returns the axes as unit vectors with their magnitudes in the <size>
-array. This is always possible if there is a scalar (or zero scalar), but where
-zero vectors are either read or calculated from the <orientation_scale_values>,
-these are simply returned, since no valid direction can be produced.
-==============================================================================*/
-{
-	float magnitude;
-	int return_code;
-
-	ENTER(make_glyph_orientation_scale_axes);
-	if (((0==number_of_values)||((0<number_of_values)&&orientation_scale_values))
-		&&axis1&&axis2&&axis3&&size)
-	{
-		return_code=1;
-		switch (number_of_values)
-		{
-			case 0:
-			{
-				/* zero scalar; axes = x,y,z */
-				size[0]=size[1]=size[2]=0.0;
-				axis1[0]=1.0;
-				axis1[1]=0.0;
-				axis1[2]=0.0;
-				axis2[0]=0.0;
-				axis2[1]=1.0;
-				axis2[2]=0.0;
-				axis3[0]=0.0;
-				axis3[1]=0.0;
-				axis3[2]=1.0;
-			} break;
-			case 1:
-			{
-				/* scalar; axes = x,y,z */
-				size[0]=size[1]=size[2]=orientation_scale_values[0];
-				axis1[0]=1.0;
-				axis1[1]=0.0;
-				axis1[2]=0.0;
-				axis2[0]=0.0;
-				axis2[1]=1.0;
-				axis2[2]=0.0;
-				axis3[0]=0.0;
-				axis3[1]=0.0;
-				axis3[2]=1.0;
-			} break;
-			case 2:
-			{
-				/* 1 2-D vector */
-				axis1[0]=orientation_scale_values[0];
-				axis1[1]=orientation_scale_values[1];
-				axis1[2]=0.0;
-				if (0.0<(magnitude=sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1])))
-				{
-					axis1[0] /= magnitude;
-					axis1[1] /= magnitude;
-				}
-				size[0]=size[1]=size[2]=magnitude;
-				/* get axis2 orthogonal to axis 1 in x-y plane (in right hand sense) */
-				axis2[0]=-axis1[1];
-				axis2[1]=axis1[0];
-				axis2[2]=0.0;
-				/* axis3 is along the z-axis, of same length as other axes */
-				axis3[0]=0.0;
-				axis3[1]=0.0;
-				axis3[2]=1.0;
-			} break;
-			case 3:
-			{
-				/* 1 3-D vector */
-				axis1[0]=orientation_scale_values[0];
-				axis1[1]=orientation_scale_values[1];
-				axis1[2]=orientation_scale_values[2];
-				/* get magnitude of axis1 vector to make axis2 and axis3 this size */
-				if (0.0<(magnitude=
-					sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1]+axis1[2]*axis1[2])))
-				{
-					axis1[0] /= magnitude;
-					axis1[1] /= magnitude;
-					axis1[2] /= magnitude;
-					size[0]=size[1]=size[2]=magnitude;
-					/* get axis3, non-colinear with axis1 */
-					axis3[0]=0.0;
-					axis3[1]=0.0;
-					axis3[2]=0.0;
-					if (fabs(axis1[0]) < fabs(axis1[1]))
-					{
-						if (fabs(axis1[2]) < fabs(axis1[0]))
-						{
-							axis3[2]=1.0;
-						}
-						else
-						{
-							axis3[0]=1.0;
-						}
-					}
-					else
-					{
-						if (fabs(axis1[2]) < fabs(axis1[1]))
-						{
-							axis3[2]=1.0;
-						}
-						else
-						{
-							axis3[1]=1.0;
-						}
-					}
-					/* get axis2 = axis3 (x) axis1 = vector orthogonal to axis1 */
-					axis2[0]=axis3[1]*axis1[2]-axis3[2]*axis1[1];
-					axis2[1]=axis3[2]*axis1[0]-axis3[0]*axis1[2];
-					axis2[2]=axis3[0]*axis1[1]-axis3[1]*axis1[0];
-					/* make axis2 unit length */
-					magnitude=sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1]+axis2[2]*axis2[2]);
-					axis2[0] /= magnitude;
-					axis2[1] /= magnitude;
-					axis2[2] /= magnitude;
-					/* get axis3 = axis1 (x) axis2 = unit vector */
-					axis3[0]=axis1[1]*axis2[2]-axis1[2]*axis2[1];
-					axis3[1]=axis1[2]*axis2[0]-axis1[0]*axis2[2];
-					axis3[2]=axis1[0]*axis2[1]-axis1[1]*axis2[0];
-				}
-				else
-				{
-					/* magnitude of axis1 zero, so clear axis2 and axis3 */
-					axis2[0]=0.0;
-					axis2[1]=0.0;
-					axis2[2]=0.0;
-					axis3[0]=0.0;
-					axis3[1]=0.0;
-					axis3[2]=0.0;
-					size[0]=size[1]=size[2]=0.0;
-				}
-			} break;
-			case 4:
-			{
-				/* 2 2-D vectors */
-				/* axis 1 */
-				axis1[0]=orientation_scale_values[0];
-				axis1[1]=orientation_scale_values[1];
-				axis1[2]=0.0;
-				if (0.0<(magnitude=sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1])))
-				{
-					axis1[0] /= magnitude;
-					axis1[1] /= magnitude;
-				}
-				size[0]=magnitude;
-				/* axis 2 */
-				axis2[0]=orientation_scale_values[2];
-				axis2[1]=orientation_scale_values[3];
-				axis2[2]=0.0;
-				if (0.0<(magnitude=sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1])))
-				{
-					axis2[0] /= magnitude;
-					axis2[1] /= magnitude;
-				}
-				size[1]=magnitude;
-				/* axis3 is a unit vector along the z-axis with zero size */
-				axis3[0]=0.0;
-				axis3[1]=0.0;
-				axis3[2]=1.0;
-				size[2]=0.0;
-			} break;
-			case 6:
-			{
-				/* 2 3-D vectors */
-				/* axis 1 */
-				axis1[0]=orientation_scale_values[0];
-				axis1[1]=orientation_scale_values[1];
-				axis1[2]=orientation_scale_values[2];
-				if (0.0<(magnitude=
-					sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1]+axis1[2]*axis1[2])))
-				{
-					axis1[0] /= magnitude;
-					axis1[1] /= magnitude;
-					axis1[2] /= magnitude;
-				}
-				size[0]=magnitude;
-				/* axis 2 */
-				axis2[0]=orientation_scale_values[3];
-				axis2[1]=orientation_scale_values[4];
-				axis2[2]=orientation_scale_values[5];
-				if (0.0<(magnitude=
-					sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1]+axis2[2]*axis2[2])))
-				{
-					axis2[0] /= magnitude;
-					axis2[1] /= magnitude;
-					axis2[2] /= magnitude;
-				}
-				size[1]=magnitude;
-				/* get axis3 = axis1 (x) axis2 */
-				axis3[0]=axis1[1]*axis2[2]-axis1[2]*axis2[1];
-				axis3[1]=axis1[2]*axis2[0]-axis1[0]*axis2[2];
-				axis3[2]=axis1[0]*axis2[1]-axis1[1]*axis2[0];
-				/* make axis3 a unit vector, with zero size */
-				if (0.0<(magnitude=
-					sqrt(axis3[0]*axis3[0]+axis3[1]*axis3[1]+axis3[2]*axis3[2])))
-				{
-					axis3[0] /= magnitude;
-					axis3[1] /= magnitude;
-					axis3[2] /= magnitude;
-				}
-				size[2]=0.0;
-			} break;
-			case 9:
-			{
-				/* 3 3-D vectors */
-				/* axis 1 */
-				axis1[0]=orientation_scale_values[0];
-				axis1[1]=orientation_scale_values[1];
-				axis1[2]=orientation_scale_values[2];
-				if (0.0<(magnitude=
-					sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1]+axis1[2]*axis1[2])))
-				{
-					axis1[0] /= magnitude;
-					axis1[1] /= magnitude;
-					axis1[2] /= magnitude;
-				}
-				size[0]=magnitude;
-				/* axis 2 */
-				axis2[0]=orientation_scale_values[3];
-				axis2[1]=orientation_scale_values[4];
-				axis2[2]=orientation_scale_values[5];
-				if (0.0<(magnitude=
-					sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1]+axis2[2]*axis2[2])))
-				{
-					axis2[0] /= magnitude;
-					axis2[1] /= magnitude;
-					axis2[2] /= magnitude;
-				}
-				size[1]=magnitude;
-				/* axis 3 */
-				axis3[0]=orientation_scale_values[6];
-				axis3[1]=orientation_scale_values[7];
-				axis3[2]=orientation_scale_values[8];
-				if (0.0<(magnitude=
-					sqrt(axis3[0]*axis3[0]+axis3[1]*axis3[1]+axis3[2]*axis3[2])))
-				{
-					axis3[0] /= magnitude;
-					axis3[1] /= magnitude;
-					axis3[2] /= magnitude;
-				}
-				size[2]=magnitude;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"make_glyph_orientation_scale_axes.  "
-					"Invalid number_of_orientation_scale_values");
-				return_code=0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"make_glyph_orientation_scale_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* make_glyph_orientation_scale_axes */
-
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
-	struct FE_element *element,struct FE_element *top_level_element,
+	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
-	int number_of_xi_points,Triple *xi_points,
-	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
-	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
-	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode,int element_selected,
-	struct Multi_range *selected_ranges,int *point_numbers)
+	int number_of_xi_points, Triple *xi_points, struct GT_object *glyph,
+	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
+	struct Computed_field *orientation_scale_field,
+	struct Computed_field *variable_scale_field,
+	struct Computed_field *data_field, struct Computed_field *label_field,
+	enum Graphics_select_mode select_mode, int element_selected,
+	struct Multi_range *selected_ranges, int *point_numbers)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
 about fields defined over it.
-At each of the <number_of_xi_points> <xi_points> the <glyph> of <glyph_size>
-with its centre located at <glyph_centre> is displayed.
+At each of the <number_of_xi_points> <xi_points> the <glyph> of at least
+<base_size> with the given glyph <centre> is displayed.
 The optional <orientation_scale_field> can be used to orient and scale the
-glyph in a manner depending on the number of components in the field (see
-function make_glyph_orientation_scale_axes). The three <glyph_scale_factors>
-multiply the scaling effect in each axis taken from the
-<orientation_scale_field>.
+glyph in a manner depending on the number of components in the field. The
+optional <variable_scale_field> can provide signed scaling independently of the
+glyph axis directions. See function make_glyph_orientation_scale_axes for
+details. The combined scale from the above 2 fields is multiplied in each axis
+by the <scale_factors> then added to the base_size.
 The optional <data_field> (currently only a scalar) is calculated as data over
 the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
@@ -5818,94 +5852,99 @@ If <point_numbers> are supplied then points numbers for OpenGL picking are taken
 from this array, otherwise they are sequential, starting at 0.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
+- the coordinate system of the variable_scale_field is ignored/not used.
 ==============================================================================*/
 {
-	char **label,**labels;
-	FE_value a[3],b[3],base_size1,base_size2,base_size3,c[3],centre1,centre2,
-		centre3,coordinates[3],orientation_scale[9],scale_factor1,
-		scale_factor2,scale_factor3,size[3],size1,size2,size3,xi[3];
+	char **label, **labels;
+	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
+		variable_scale[3], xi[3];
 	GTDATA *data;
-	int draw_all,i,j,n_data_components,*name,*names,
-		number_of_orientation_scale_components,point_number,point_selected,
-		points_to_draw;
+	int draw_all, i, j, n_data_components, *name, *names,
+		number_of_orientation_scale_components, number_of_variable_scale_components,
+		point_number, point_selected,	points_to_draw;
 	struct GT_glyph_set *glyph_set;
-	Triple *axis1,*axis1_list,*axis2,*axis2_list,*axis3,*axis3_list,
-		*point,*point_list;
+	Triple *axis1, *axis1_list, *axis2, *axis2_list, *axis3, *axis3_list,
+		*point, *point_list, *scale, *scale_list;
 
 	ENTER(create_GT_glyph_set_from_FE_element);
-	/* must set following to 0 = valid if no orientation_scale_field */
-	number_of_orientation_scale_components=0;
-	if (element&&(element->shape)&&coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		xi_points&&(0<number_of_xi_points)&&glyph&&glyph_centre&&glyph_size&&
+	/* must set following to 0 in case fields not supplied */
+	number_of_orientation_scale_components = 0;
+	number_of_variable_scale_components = 0;
+	if (element && (element->shape) && coordinate_field &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+		(0 < number_of_xi_points) && xi_points && glyph &&
+		centre && base_size && scale_factors &&
 		((!orientation_scale_field)||((9>=(number_of_orientation_scale_components=
 			Computed_field_get_number_of_components(orientation_scale_field)))&&
 			Computed_field_is_orientation_scale_capable(orientation_scale_field,
-				(void *)NULL))))
+				(void *)NULL))) &&
+		((!variable_scale_field)||(3>=(number_of_variable_scale_components=
+			Computed_field_get_number_of_components(variable_scale_field)))))
 	{
 		/* clear coordinates in case coordinate field is not 3 component */
-		coordinates[0]=0.0;
-		coordinates[1]=0.0;
-		coordinates[2]=0.0;
-		glyph_set=(struct GT_glyph_set *)NULL;
-		point_list=(Triple *)NULL;
-		axis1_list=(Triple *)NULL;
-		axis2_list=(Triple *)NULL;
-		axis3_list=(Triple *)NULL;
-		labels=(char **)NULL;
+		coordinates[0] = 0.0;
+		coordinates[1] = 0.0;
+		coordinates[2] = 0.0;
+		glyph_set = (struct GT_glyph_set *)NULL;
+		point_list = (Triple *)NULL;
+		axis1_list = (Triple *)NULL;
+		axis2_list = (Triple *)NULL;
+		axis3_list = (Triple *)NULL;
+		scale_list = (Triple *)NULL;
+		labels = (char **)NULL;
 		n_data_components = 0;
-		data=(GTDATA *)NULL;
-		names=(int *)NULL;
-		if ((GRAPHICS_SELECT_ON==select_mode)||
-			(GRAPHICS_NO_SELECT==select_mode)||
-			((GRAPHICS_DRAW_SELECTED==select_mode)&&element_selected))
+		data = (GTDATA *)NULL;
+		names = (int *)NULL;
+		if ((GRAPHICS_SELECT_ON == select_mode) ||
+			(GRAPHICS_NO_SELECT == select_mode) ||
+			((GRAPHICS_DRAW_SELECTED == select_mode) && element_selected))
 		{
-			points_to_draw=number_of_xi_points;
+			points_to_draw = number_of_xi_points;
 		}
-		else if ((GRAPHICS_DRAW_UNSELECTED==select_mode)&&element_selected)
+		else if ((GRAPHICS_DRAW_UNSELECTED == select_mode) && element_selected)
 		{
-			points_to_draw=0;
+			points_to_draw = 0;
 		}
 		else
 		{
-			points_to_draw=0;
+			points_to_draw = 0;
 			if (selected_ranges)
 			{
-				for (i=0;i<number_of_xi_points;i++)
+				for (i = 0; i < number_of_xi_points; i++)
 				{
 					if (point_numbers)
 					{
-						point_number=point_numbers[i];
+						point_number = point_numbers[i];
 					}
 					else
 					{
-						point_number=i;
+						point_number = i;
 					}
-					if (Multi_range_is_value_in_range(selected_ranges,point_number))
+					if (Multi_range_is_value_in_range(selected_ranges, point_number))
 					{
 						points_to_draw++;
 					}
 				}
 			}
-			if (GRAPHICS_DRAW_UNSELECTED==select_mode)
+			if (GRAPHICS_DRAW_UNSELECTED == select_mode)
 			{
-				points_to_draw=number_of_xi_points-points_to_draw;
+				points_to_draw = number_of_xi_points - points_to_draw;
 			}
 		}
-		if (0<points_to_draw)
+		if (0 < points_to_draw)
 		{
-			draw_all = (points_to_draw==number_of_xi_points);
+			draw_all = (points_to_draw == number_of_xi_points);
 			if (data_field)
 			{
 				n_data_components = Computed_field_get_number_of_components(data_field);
-				ALLOCATE(data,GTDATA,points_to_draw*n_data_components);
+				ALLOCATE(data, GTDATA, points_to_draw*n_data_components);
 			}
 			if (label_field)
 			{
-				if (ALLOCATE(labels,char *,points_to_draw))
+				if (ALLOCATE(labels, char *, points_to_draw))
 				{
 					/* clear labels array pointers so new glyph_set not corrupted */
-					for (i=0;i<points_to_draw;i++)
+					for (i = 0; i < points_to_draw; i++)
 					{
 						labels[i] = (char *)NULL;
 					}
@@ -5916,112 +5955,110 @@ Note:
 				ALLOCATE(names,int,points_to_draw);
 			}
 			/* store element number as object_name for editing GT_object primitives */
-			if ((data||(!n_data_components))&&((!label_field)||labels)&&
-				((GRAPHICS_NO_SELECT==select_mode)||names)&&
-				ALLOCATE(point_list,Triple,points_to_draw)&&
-				ALLOCATE(axis1_list,Triple,points_to_draw)&&
-				ALLOCATE(axis2_list,Triple,points_to_draw)&&
-				ALLOCATE(axis3_list,Triple,points_to_draw)&&
-				(glyph_set=CREATE(GT_glyph_set)(points_to_draw,point_list,
-					axis1_list,axis2_list,axis3_list,glyph,labels,
-					n_data_components,data,
-					CM_element_information_to_graphics_name(element->identifier),names)))
+			if ((data || (!n_data_components)) && ((!label_field) || labels) &&
+				((GRAPHICS_NO_SELECT == select_mode) || names) &&
+				ALLOCATE(point_list, Triple, points_to_draw) &&
+				ALLOCATE(axis1_list, Triple, points_to_draw) &&
+				ALLOCATE(axis2_list, Triple, points_to_draw) &&
+				ALLOCATE(axis3_list, Triple, points_to_draw) &&
+				ALLOCATE(scale_list, Triple, points_to_draw) &&
+				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
+					axis1_list, axis2_list, axis3_list, scale_list, glyph, labels,
+					n_data_components, data,
+					CM_element_information_to_graphics_name(element->identifier), names)))
 			{
-				/* get values from Triple arrays to FE_values for speed */
-				base_size1=(FE_value)glyph_size[0];
-				base_size2=(FE_value)glyph_size[1];
-				base_size3=(FE_value)glyph_size[2];
-				centre1=(FE_value)glyph_centre[0];
-				centre2=(FE_value)glyph_centre[1];
-				centre3=(FE_value)glyph_centre[2];
-				scale_factor1=glyph_scale_factors[0];
-				scale_factor2=glyph_scale_factors[1];
-				scale_factor3=glyph_scale_factors[2];
-				point=point_list;
-				axis1=axis1_list;
-				axis2=axis2_list;
-				axis3=axis3_list;
-				name=names;
-				label=labels;
-				for (i=0;(i<number_of_xi_points)&&glyph_set;i++)
+				point = point_list;
+				axis1 = axis1_list;
+				axis2 = axis2_list;
+				axis3 = axis3_list;
+				scale = scale_list;
+				name = names;
+				label = labels;
+				for (i = 0; (i < number_of_xi_points) && glyph_set; i++)
 				{
 					if (point_numbers)
 					{
-						point_number=point_numbers[i];
+						point_number = point_numbers[i];
 					}
 					else
 					{
-						point_number=i;
+						point_number = i;
 					}
 					if (!draw_all)
 					{
 						if (selected_ranges)
 						{
-							point_selected=Multi_range_is_value_in_range(selected_ranges,
-								point_number);
+							point_selected =
+								Multi_range_is_value_in_range(selected_ranges, point_number);
 						}
 						else
 						{
-							point_selected=0;
+							point_selected = 0;
 						}
 					}
-					if (draw_all||
-						((GRAPHICS_DRAW_SELECTED==select_mode)&&point_selected)||
-						((GRAPHICS_DRAW_UNSELECTED==select_mode)&&(!point_selected)))
+					if (draw_all ||
+						((GRAPHICS_DRAW_SELECTED == select_mode) && point_selected) ||
+						((GRAPHICS_DRAW_UNSELECTED == select_mode) && (!point_selected)))
 					{
-						if (names)
-						{
-							*name = point_number;
-						}
-						xi[0]=(FE_value)xi_points[i][0];
-						xi[1]=(FE_value)xi_points[i][1];
-						xi[2]=(FE_value)xi_points[i][2];
+						xi[0] = (FE_value)xi_points[i][0];
+						xi[1] = (FE_value)xi_points[i][1];
+						xi[2] = (FE_value)xi_points[i][2];
 						/* evaluate all the fields in order orientation_scale, coordinate
 							 then data (if each specified). Reason for this order is that the
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
-						if (((!orientation_scale_field)||
+						if (((!orientation_scale_field) ||
 							Computed_field_evaluate_in_element(orientation_scale_field,
-								element,xi,top_level_element,orientation_scale,
-								(FE_value *)NULL))&&
+								element, xi, top_level_element, orientation_scale,
+								(FE_value *)NULL)) &&
+							((!variable_scale_field) ||
+								Computed_field_evaluate_in_element(variable_scale_field,
+									element, xi, top_level_element, variable_scale,
+									(FE_value *)NULL)) &&
 							Computed_field_evaluate_in_element(coordinate_field,element,xi,
 								top_level_element,coordinates,(FE_value *)NULL)&&
-							((!data_field)||Computed_field_evaluate_in_element(
-								data_field,element,xi,top_level_element,data,
-								(FE_value *)NULL))&&
-							((!label_field)||(*label =
+							((!data_field) || Computed_field_evaluate_in_element(
+								data_field, element, xi, top_level_element, data,
+								(FE_value *)NULL)) &&
+							((!label_field) || (*label =
 								Computed_field_evaluate_as_string_in_element(label_field,
-									/*component_number*/-1,element,xi,top_level_element)))&&
+									/*component_number*/-1, element, xi, top_level_element))) &&
 							make_glyph_orientation_scale_axes(
-								number_of_orientation_scale_components,orientation_scale,
-								a,b,c,size))
+								number_of_orientation_scale_components, orientation_scale,
+								a, b, c, size))
 						{
-							/* size = base_size + variable_size * scale_factor */
-							size1 = base_size1+size[0]*scale_factor1;
-							size2 = base_size2+size[1]*scale_factor2;
-							size3 = base_size3+size[2]*scale_factor3;
-							for (j=0;j<3;j++)
+							for (j = 0; j < 3; j++)
 							{
-								a[j] *= size1;
-								b[j] *= size2;
-								c[j] *= size3;
-								(*point)[j]=
-									(coordinates[j]-centre1*a[j]-centre2*b[j]-centre3*c[j]);
-								(*axis1)[j]=a[j];
-								(*axis2)[j]=b[j];
-								(*axis3)[j]=c[j];
+								(*scale)[j] = base_size[j] + size[j]*scale_factors[j];
+							}
+							for (j = 0; j < number_of_variable_scale_components; j++)
+							{
+								(*scale)[j] *= variable_scale[j];
+							}
+							for (j = 0; j < 3; j++)
+							{
+								(*point)[j] = coordinates[j] -
+									centre[0]*(*scale)[0]*a[j] -
+									centre[1]*(*scale)[1]*b[j] -
+									centre[2]*(*scale)[2]*c[j];
+								(*axis1)[j] = a[j];
+								(*axis2)[j] = b[j];
+								(*axis3)[j] = c[j];
 							}
 							point++;
 							axis1++;
 							axis2++;
 							axis3++;
+							scale++;
+
 							if (data_field)
 							{
-								data+=n_data_components;
+								data += n_data_components;
 							}
 							if (names)
 							{
+								*name = point_number;
 								name++;
 							}
 							if (labels)
@@ -6042,6 +6079,10 @@ Note:
 				{
 					Computed_field_clear_cache(orientation_scale_field);
 				}
+				if (variable_scale_field)
+				{
+					Computed_field_clear_cache(variable_scale_field);
+				}
 				if (data_field)
 				{
 					Computed_field_clear_cache(data_field);
@@ -6057,6 +6098,7 @@ Note:
 				DEALLOCATE(axis1_list);
 				DEALLOCATE(axis2_list);
 				DEALLOCATE(axis3_list);
+				DEALLOCATE(scale_list);
 				DEALLOCATE(data);
 				DEALLOCATE(labels);
 				DEALLOCATE(names);
@@ -7277,7 +7319,7 @@ printf("Warp called: volume1 = %s, volume2 = %s,  element = %d, coordinates = %s
 int element_to_glyph_set(struct FE_element *element,
 	void *element_to_glyph_set_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information about the
@@ -7293,7 +7335,7 @@ fields defined over it.
 	Triple *xi_points;
 
 	ENTER(element_to_glyph_set);
-	if (element&&(element->shape)&&(element_to_glyph_set_data=
+	if (element && (element->shape) && (element_to_glyph_set_data=
 		(struct Element_to_glyph_set_data *)element_to_glyph_set_data_void))
 	{
 		return_code=1;
@@ -7306,18 +7348,18 @@ fields defined over it.
 			element_to_glyph_set_data->face_number,
 			element_to_glyph_set_data->element_group))
 		{
-			dimension=get_FE_element_dimension(element);
-			top_level_element=(struct FE_element *)NULL;
-			for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+			dimension = get_FE_element_dimension(element);
+			top_level_element = (struct FE_element *)NULL;
+			for (i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 			{
-				top_level_number_in_xi[i]=element_to_glyph_set_data->number_in_xi[i];
+				top_level_number_in_xi[i] = element_to_glyph_set_data->number_in_xi[i];
 			}
 			/* determine discretization of element for graphic */
 			if (get_FE_element_discretization(element,
 				element_to_glyph_set_data->element_group,
 				element_to_glyph_set_data->face_number,
 				element_to_glyph_set_data->native_discretization_field,
-				top_level_number_in_xi,&top_level_element,number_in_xi))
+				top_level_number_in_xi, &top_level_element, number_in_xi))
 			{
 				if (element_to_glyph_set_data->xi_discretization_mode 
 					== XI_DISCRETIZATION_CELL_RANDOM)
@@ -7327,17 +7369,19 @@ fields defined over it.
 				}
 				if (xi_points=Xi_discretization_mode_get_xi_points(
 					element_to_glyph_set_data->xi_discretization_mode,
-					dimension,number_in_xi,element_to_glyph_set_data->exact_xi,
+					dimension,number_in_xi, element_to_glyph_set_data->exact_xi,
 					&number_of_xi_points))
 				{
-					if (glyph_set=create_GT_glyph_set_from_FE_element(
-						element,top_level_element,
+					if (glyph_set = create_GT_glyph_set_from_FE_element(
+						element, top_level_element,
 						element_to_glyph_set_data->coordinate_field,
-						number_of_xi_points,xi_points,element_to_glyph_set_data->glyph,
-						element_to_glyph_set_data->glyph_centre,
-						element_to_glyph_set_data->glyph_size,
+						number_of_xi_points, xi_points,
+						element_to_glyph_set_data->glyph,
+						element_to_glyph_set_data->base_size,
+						element_to_glyph_set_data->centre,
+						element_to_glyph_set_data->scale_factors,
 						element_to_glyph_set_data->orientation_scale_field,
-						element_to_glyph_set_data->glyph_scale_factors,
+						element_to_glyph_set_data->variable_scale_field,
 						element_to_glyph_set_data->data_field,
 						element_to_glyph_set_data->label_field,
 						element_to_glyph_set_data->select_mode,
