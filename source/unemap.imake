@@ -28,6 +28,7 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 
 #if defined (IRIX) /* switch OperatingSystem */
 /* 1 IRIX */
+#define IMAGEMAGICK
 #if defined (O64)
 /* 1.1 IRIX-O64 */
 /* the O64 version can be either OPTIMISED or not but only one version is kept
@@ -278,6 +279,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #endif /* defined (O64) */
 #elif defined (LINUX) /* switch OperatingSystem */
 /* 2 LINUX */
+#define IMAGEMAGICK
 #if defined (USE_UNEMAP_NODES)
 /* 2.1 LINUX-USE_UNEMAP_NODES */
 /* this version uses nodes for as much as possible , */
@@ -440,6 +442,33 @@ WINDOWING_SYSTEM = -DMOTIF
 WINDOWING_SYSTEM = -DWINDOWS
 #endif /* (OLD_CODE) */
 
+#if !defined (IMAGEMAGICK)
+IMAGEMAGICK_SWITCH =
+IMAGEMAGICK_LIB = 
+#else /* !defined (IMAGEMAGICK) */
+#if defined (CMISS_ROOT_DEFINED)
+IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_utils
+#else /* defined (CMISS_ROOT_DEFINED) */
+IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_utils
+#endif /* defined (CMISS_ROOT_DEFINED) */
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include/
+#if defined (IRIX) /* switch OperatingSystem */
+IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
+#if defined (O64)
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib64/libMagick.a $(IMAGEMAGICK_PATH)/lib64/libtiff.a $(IMAGEMAGICK_PATH)/lib64/libjpeg.a $(IMAGEMAGICK_PATH)/lib64/libz.a
+#else /* defined (O64) */
+#if defined (OPTIMISED)
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libz.a
+#else /* defined (OPTIMISED) */
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libz.a
+#endif /* defined (OPTIMISED) */
+#endif /* defined (O64) */
+#elif defined(LINUX) /* switch OperatingSystem */
+IMAGEMAGICK_SWITCH = -DIMAGEMAGICK -D_FILE_OFFSET_BITS=64
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/liblinux/libtiff.a $(IMAGEMAGICK_PATH)/liblinux/libjpeg.a $(IMAGEMAGICK_PATH)/liblinux/libz.a
+#endif /* switch OperatingSystem */
+#endif /* !defined (IMAGEMAGICK) */
+
 #if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
@@ -512,7 +541,7 @@ LIB = -lMrm -lXm -lXt -lX11 -lPW -lm
 LIB = -lMrm -lXm -lXt -lX11 -lXpm -lm
 #endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
-LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm -lpthread
+LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm -lXext -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM ???DB.  What is g2c for?  Stops linking on my laptop
 XCOMM LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
@@ -544,7 +573,7 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) $(USE_NODES_SWITCH) \
 	$(EXTERNAL_INPUT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
-	$(GRAPHICS_LIBRARY_SWITCH) \
+	$(GRAPHICS_LIBRARY_SWITCH) $(IMAGEMAGICK_SWITCH)\
 	-DNOT_ACQUISITION_ONLY \
 	-DSPECTRAL_TOOLS \
 	$(END_ALL_DEFINES)
@@ -553,23 +582,23 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) $(USE_NODES_SWITCH) \
 	$(EXTERNAL_INPUT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
-	-DNOT_ACQUISITION_ONLY \
+	$(IMAGEMAGICK_SWITCH) -DNOT_ACQUISITION_ONLY \
 	-DSPECTRAL_TOOLS \
 	$(END_ALL_DEFINES)
 #endif /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
 	$(SOURCE_DIRECTORY_INC) \
-	$(WORMHOLE_INC) $(UIDH_INC) \
+	$(WORMHOLE_INC) $(IMAGEMAGICK_INC) $(UIDH_INC) \
 	$(END_ALL_INCLUDES)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
 #if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
-ALL_LIB = $(GRAPHICS_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
+ALL_LIB = $(GRAPHICS_LIB) $(IMAGEMAGICK_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
 #else
-ALL_LIB = $(LIB) $(EXTERNAL_INPUT_LIB)
+ALL_LIB = $(IMAGEMAGICK_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
 #endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 
 COMMAND_SRCS = \
