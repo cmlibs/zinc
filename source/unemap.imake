@@ -618,11 +618,10 @@ Target : $(OBJS) unemap.ObjSuffix
 	This allows us to make a memory checking version without creating a new
 	extension */
 general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
-	if [ ! -d $(OBJECT_PATH)/general ]; \
+	if [ ! -d $(OBJECT_PATH)/general ]; then \
 		mkdir -p $(OBJECT_PATH)/general; \
 	fi
-	if [ -f general/debug.c ]; \
-	then \
+	if [ -f general/debug.c ]; then \
 		$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.ObjSuffix $(ALL_FLAGS) -DMEMORY_CHECKING general/debug.c; \
 	else \
 		$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.ObjSuffix $(ALL_FLAGS) -DMEMORY_CHECKING $(PRODUCT_PATH)/general/debug.c; \
