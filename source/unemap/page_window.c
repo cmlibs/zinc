@@ -2011,7 +2011,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int i,j,k,return_code;
-	struct Device *scrolling_device;
 
 	ENTER(remove_scrolling_device);
 	return_code=0;
