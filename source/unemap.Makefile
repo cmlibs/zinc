@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 23 December 2003
+# LAST MODIFIED : 14 May 2004
 #
 # DESCRIPTION :
 #
@@ -1322,6 +1322,8 @@ SIG2TEXT_SRCS = \
 	general/matrix_vector.c \
 	general/myio.c \
 	general/mystring.c \
+	unemap/analysis.c \
+	unemap/analysis_calculate.c \
 	unemap/rig.c \
 	unemap/rig_node.c \
 	user_interface/message.c
