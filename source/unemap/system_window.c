@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -1128,7 +1128,7 @@ struct System_window *create_System_window(Widget shell,
 #endif /* defined (UNEMAP_USE_NODES) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -1540,7 +1540,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_System_window.  Missing user_interface");
+			"create_System_window. Invalid arguments");
 		system=(struct System_window *)NULL;
 	}
 	LEAVE;

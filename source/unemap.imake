@@ -459,6 +459,10 @@ COMMAND_SRCS = \
 	command/parser.c
 
 #if defined (USE_UNEMAP_NODES)
+CHOOSE_SRCS = \
+	choose/choose_fe_field.c \
+	choose/choose_node_group.c \
+	choose/chooser.c
 COLOUR_SRCS = \
 	colour/edit_var.c
 COMPUTED_FIELD_SRCS = \
@@ -570,6 +574,7 @@ UNEMAP_SRCS = \
 	unemap/unemap_package.c \
 	unemap/unemap_hardware_client.c
 #else
+CHOOSE_SRCS =
 COLOUR_SRCS =
 COMPUTED_FIELD_SRCS =
 CURVE_SRCS =
@@ -636,6 +641,7 @@ USER_INTERFACE_SRCS = \
 	user_interface/user_interface.c
 
 SRCS = \
+	$(CHOOSE_SRCS) \
 	$(COLOUR_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -253,7 +253,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 19 Julyy 2000
 
 DESCRIPTION :
 Main program for unemap
@@ -830,17 +830,14 @@ Main program for unemap
 				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 			}
 		}
-
-		/* interactive_tools */
-		node_tool=CREATE(Node_tool)(interactive_tool_manager,node_manager,
-			/*data_manager*/0,node_selection,computed_field_package,
-			default_graphical_material);
+		node_tool=CREATE(Node_tool)(interactive_tool_manager,fe_field_manager,
+			node_manager,/*use_data*/0,node_group_manager,element_manager,
+			node_selection,computed_field_package,default_graphical_material,
+			&user_interface);		
 		transform_tool=CREATE(Transform_tool)(interactive_tool_manager);
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
 			fe_basis_manager,element_manager,computed_field_manager);	
-		/* FE_element_field_info manager */
-		/*???DB.  To be done */
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 		/*???DB.  To be done */

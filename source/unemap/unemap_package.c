@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 19 June 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Contains function definitions for unemap package.
