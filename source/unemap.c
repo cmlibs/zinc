@@ -744,7 +744,7 @@ Main program for unemap
 		/* create the main window */
 #if defined (NOT_ACQUISITION_ONLY)
 		time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default",user_interface));
+			CREATE(Time_keeper)("default",event_dispatcher,user_interface));
 #if defined (UNEMAP_USE_3D)
 		texture_manager=CREATE_MANAGER(Texture)();	
 		fe_field_manager=CREATE_MANAGER(FE_field)();
