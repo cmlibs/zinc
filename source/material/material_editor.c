@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material_editor.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -123,7 +123,7 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 
 static int material_editor_draw_sphere(struct Material_editor *material_editor)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 Uses gl to draw a sphere with a lighting source.
@@ -137,7 +137,7 @@ Uses gl to draw a sphere with a lighting source.
 #define sphere_view_spacing 1.2
 	int i,j,return_code;
 #if defined (OPENGL_API)
-	float texture_height,texture_width;
+	float texture_depth, texture_height, texture_width;
 	GLdouble angle,aspect,coordinates[3],cos_angle,horiz_factor,horiz_offset,
 		lower_coordinate,lower_radius,sin_angle,texture_coordinates[2],
 		upper_coordinate,upper_radius,vert_factor,vert_offset,viewport_size[4];
@@ -212,8 +212,8 @@ Uses gl to draw a sphere with a lighting source.
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		if (material_editor->background==0)
 		{
-			/* no textures on the RGB background */
-			execute_Texture((struct Texture *)NULL);
+			/* no material on the RGB background */
+			execute_Graphical_material((struct Graphical_material *)NULL);
 			glDisable(GL_LIGHTING);
 			glBegin(GL_TRIANGLES);
 			/* red */
@@ -242,11 +242,12 @@ Uses gl to draw a sphere with a lighting source.
 		glEnable(GL_LIGHTING);
 		if (texture=Graphical_material_get_texture(material_editor->edit_material))
 		{
-			Texture_get_physical_size(texture,&texture_width,&texture_height);
-			horiz_factor=2.0*texture_width/sphere_horiz;
-			horiz_offset=-0.5*texture_width;
-			vert_factor=2.0*texture_height/sphere_vert;
-			vert_offset=-0.5*texture_height;
+			Texture_get_physical_size(texture,&texture_width, &texture_height,
+				&texture_depth);
+			horiz_factor = 2.0*texture_width/sphere_horiz;
+			horiz_offset = -0.5*texture_width;
+			vert_factor = 2.0*texture_height/sphere_vert;
+			vert_offset = -0.5*texture_height;
 		}
 		/* loop from bottom to top */
 		for(j=0;j<sphere_vert;j++)
@@ -287,6 +288,8 @@ Uses gl to draw a sphere with a lighting source.
 			}
 			glEnd();
 		}
+		/* turn off material */
+		execute_Graphical_material((struct Graphical_material *)NULL);
 #endif /* defined (OPENGL_API) */
 	}
 	else
