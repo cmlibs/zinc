@@ -1077,6 +1077,7 @@ structure itself.
 				DEACCESS(GROUP(FE_node))(&(node_editor->node_group));
 			}
 		}
+		DEALLOCATE(*node_editor_address);
 		return_code=1;
 	}
 	else
