@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -754,7 +754,7 @@ ensure the ENUMERATOR_STRING function returns a string for each value here.
 
 struct FE_field_external_information;
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 A structure that allows external tools have their field information/identifier.
@@ -767,8 +767,11 @@ typedef int (Compare_FE_field_external_information)( \
 	struct FE_field_external_information *, \
 	struct FE_field_external_information *);
 
-typedef int (Copy_FE_field_external_information)( \
-	struct FE_field_external_information **, \
+typedef int (Destroy_FE_field_external_information)( \
+	struct FE_field_external_information **);
+
+typedef struct FE_field_external_information * \
+	(Duplicate_FE_field_external_information)( \
 	struct FE_field_external_information *);
 
 struct FE_field_external_information
@@ -779,62 +782,13 @@ struct FE_field_external_information
 		is theirs */
 		/*???DB.  Does not allow for more than one external tool of each type */
 	Compare_FE_field_external_information *compare;
-	/* the destination is first and the source second */
-	/* if the source is NULL then the destination should be deallocated */
-	Copy_FE_field_external_information *copy;
+	/* for destroying the structure */
+	Destroy_FE_field_external_information *destroy;
+	/* for duplicating the structure */
+	Duplicate_FE_field_external_information *duplicate;
 	/* the external tool's field information */
 	void *information;
 }; /* struct FE_field_external_information */
-
-#if defined (REDO_CM_field_information)
-/*???DB.  Being redone */
-int get_FE_field_external_information(struct FE_field *field,
-	struct FE_field_external_information *external_information);
-/*******************************************************************************
-LAST MODIFIED : 31 August 2001
-
-DESCRIPTION :
-Returns the <cm_field_information> of the <field>.
-==============================================================================*/
-
-int set_FE_field_CM_field_information(struct FE_field *field,
-	struct CM_field_information *cm_field_information);
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Sets the <cm_field_information> of the <field>.
-Should only call this function for unmanaged fields.
-==============================================================================*/
-
-enum CM_field_type get_CM_field_information_type(
-	struct CM_field_information *field_info);
-/*******************************************************************************
-LAST MODIFIED : 4 February 1999
-
-DESCRIPTION :
-gets the name type and indice of field_info.
-==============================================================================*/
-
-int set_CM_field_information(struct CM_field_information *field_info,
-	enum CM_field_type type, int *indices);
-/*******************************************************************************
-LAST MODIFIED : 4 February 1999
-
-DESCRIPTION :
-Sets the type and indices (if any) of field_info. Any inidces passed as a 
-pointer to an array.
-==============================================================================*/
-
-int compare_CM_field_information(struct CM_field_information *field_info1,
-	struct CM_field_information *field_info2);
-/*******************************************************************************
-LAST MODIFIED: 4 February 1999
-
-DESCRIPTION:
-Compares the CM_Field_information structures, field_info1 and field_info2.
-==============================================================================*/
-#endif /* defined (REDO_CM_field_information) */
 
 DECLARE_LIST_TYPES(FE_field);
 
@@ -3222,16 +3176,25 @@ Modifies the already calculated <values>.
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(CM_field_type);
 
-int COPY(FE_field_external_information)(
-	struct FE_field_external_information **destination_address,
-	struct FE_field_external_information *source);
+int get_FE_field_external_information(struct FE_field *field,
+	struct FE_field_external_information **external_information);
 /*******************************************************************************
-LAST MODIFIED: 31 August 2001
+LAST MODIFIED : 2 September 2001
 
-DESCRIPTION:
-Copies the FE_field_external_information from source to destination.
+DESCRIPTION :
+Creates a copy of the <external_information> of the <field>.
 ==============================================================================*/
 
+int set_FE_field_external_information(struct FE_field *field,
+	struct FE_field_external_information *external_information);
+/*******************************************************************************
+LAST MODIFIED : 2 September 2001
+
+DESCRIPTION :
+Copies the <external_information> into the <field>.
+
+Should only call this function for unmanaged fields.
+==============================================================================*/
 
 struct FE_field *CREATE(FE_field)(void);
 /*******************************************************************************
@@ -4285,9 +4248,9 @@ int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void);
 LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
-Conditional function returning true if the <field> is a coodinate field, as
-defined by having a CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE
-and from 1 to 3 components.
+Conditional function returning true if the <field> is a coodinate field
+(defined by having a CM_field_type of coordinate) has a Value_type of
+FE_VALUE_VALUE and has from 1 to 3 components.
 ==============================================================================*/
 
 int FE_field_is_anatomical_fibre_field(struct FE_field *field,void *dummy_void);
@@ -4295,9 +4258,9 @@ int FE_field_is_anatomical_fibre_field(struct FE_field *field,void *dummy_void);
 LAST MODIFIED : 16 July 1998
 
 DESCRIPTION :
-Returns true if the field is of type ANATOMICAL and it has a FIBRE coordinate
-system. Used with FIRST_OBJECT_IN_LIST_THAT(FE_field) to get any fibre field
-that may be defined over a group of elements.
+Conditional function returning true if the <field> is a anatomical field
+(defined by having a CM_field_type of anatomical), has a Value_type of
+FE_VALUE_VALUE, has from 1 to 3 components, and has a FIBRE coordinate system.
 ==============================================================================*/
 
 int FE_field_is_defined_at_node(struct FE_field *field, struct FE_node *node);
@@ -4442,24 +4405,22 @@ DESCRIPTION :
 ???DB.  Came from command.c .  Knows too much about nodes/elements to stay there
 ==============================================================================*/
 
-int FE_element_field_is_type_CM_coordinate(
-	struct FE_element_field *element_field, void *dummy);
+int FE_element_field_is_coordinate_field(struct FE_element_field *element_field,
+	void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED: 11 February 1999
+LAST MODIFIED : 2 September 2001
 
-DESCRIPTION:
-returns true if <element_field> has a field of type CM_coordinate
-Not static as used in command/cmiss.c
+DESCRIPTION :
+Returns a non-zero if the <element_field> is for a coordinate field.
 ==============================================================================*/
 
-int FE_element_field_is_type_CM_anatomical(
-	struct FE_element_field *element_field, void *dummy);
+int FE_element_field_is_anatomical_fibre_field(
+	struct FE_element_field *element_field,void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED: 11 February 1999
+LAST MODIFIED : 2 September 2001
 
-DESCRIPTION:
-returns true if <element_field> has a field of type CM_anatomical
-Not static as used in projection/projection.c
+DESCRIPTION :
+Returns a non-zero if the <element_field> is for a anatomical fibre field.
 ==============================================================================*/
 
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape, 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : projection.c
 
-LAST MODIFIED : 1 July 1999
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 ???DB.  Started as mapping.c in emap
@@ -1755,7 +1755,7 @@ Project the element using a "rasterization" method
 
 static int find_coordinate_field(struct FE_element *element,void *void_field)
 /*******************************************************************************
-LAST MODIFIED : 12 February 1999
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Succeeds if a coordinate field is defined for the element.
@@ -1774,7 +1774,7 @@ Succeeds if a coordinate field is defined for the element.
 			(element->information->fields->element_field_list))
 		{
 			if (element_field=FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-				 FE_element_field_is_type_CM_coordinate,(void *)NULL,
+				 FE_element_field_is_coordinate_field,(void *)NULL,
 				element->information->fields->element_field_list))
 			{
 				return_code=1;
@@ -1792,7 +1792,8 @@ Succeeds if a coordinate field is defined for the element.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"find_coordinate_field.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"find_coordinate_field.  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -1802,7 +1803,7 @@ Succeeds if a coordinate field is defined for the element.
 
 static int find_anatomical_field(struct FE_element *element,void *void_field)
 /*******************************************************************************
-LAST MODIFIED : 12 February 1999
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Succeeds if a anatomical field is defined for the element.
@@ -1821,7 +1822,7 @@ Succeeds if a anatomical field is defined for the element.
 			(element->information->fields->element_field_list))
 		{
 			if (element_field=FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-				 FE_element_field_is_type_CM_anatomical,(void *)NULL,
+				 FE_element_field_is_anatomical_fibre_field,(void *)NULL,
 				element->information->fields->element_field_list))
 			{
 				return_code=1;

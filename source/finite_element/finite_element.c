@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -20047,7 +20047,7 @@ int inherit_FE_element_field(struct FE_element *element,struct FE_field *field,
 	FE_value **coordinate_transformation_address,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.
@@ -20106,7 +20106,7 @@ column of the <coordinate_transformation> matrix.
 			{
 				/* if <field> is NULL check for a coordinate field */
 				element_field=FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-					FE_element_field_is_type_CM_coordinate,(void *)NULL,
+					FE_element_field_is_coordinate_field,(void *)NULL,
 					field_info->element_field_list);
 				return_code=1;
 			}
@@ -27891,7 +27891,7 @@ for another field in the list is output first.
 struct FE_field *get_FE_element_default_coordinate_field(
 	struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 13 May 1999
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Returns the first coordinate field defined over <element>, recursively getting
@@ -27908,7 +27908,7 @@ it from its first parent if it has no node scale field information.
 		if (element->information&&element->information->fields)
 		{
 			if (element_field=FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-				FE_element_field_is_type_CM_coordinate,(void *)NULL,
+				FE_element_field_is_coordinate_field,(void *)NULL,
 				element->information->fields->element_field_list))
 			{
 				field=element_field->field;
@@ -27916,7 +27916,8 @@ it from its first parent if it has no node scale field information.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"get_FE_element_default_coordinate_field.  No coordinate field found");
+					"get_FE_element_default_coordinate_field.  "
+					"No coordinate field found");
 				field=(struct FE_field *)NULL;
 			}
 		}
@@ -32927,89 +32928,104 @@ This version assumes all valid enumerator values are sequential from 1.
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(CM_field_type)
 
-int COPY(FE_field_external_information)(
-	struct FE_field_external_information **destination_address,
-	struct FE_field_external_information *source)
+int get_FE_field_external_information(struct FE_field *field,
+	struct FE_field_external_information **external_information)
 /*******************************************************************************
-LAST MODIFIED: 31 August 2001
+LAST MODIFIED : 2 September 2001
 
-DESCRIPTION:
-Copies the FE_field_external_information from source to destination.
+DESCRIPTION :
+Creates a copy of the <external_information> of the <field>.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_field_external_information *destination;
 
-	ENTER(COPY(FE_field_external_information));
-	return_code=0;
-	if (destination_address)
+	ENTER(get_FE_field_external_information);
+	if (field&&external_information)
 	{
-		destination= *destination_address;
-		if (source)
+		if (field->external)
 		{
-			if (source->copy)
+			if (field->external->duplicate)
 			{
-				if (destination)
-				{
-					if (destination->copy)
-					{
-						if (source->copy!=destination->copy)
-						{
-							(destination->copy)(destination_address,
-								(struct FE_field_external_information *)NULL);
-						}
-						(source->copy)(destination_address,source);
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"COPY(FE_field_external_information).  Invalid destination");
-					}
-				}
-				else
-				{
-					(source->copy)(destination_address,source);
-					return_code=1;
-				}
+				*external_information=(field->external->duplicate)(field->external);
+				return_code=1;
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"COPY(FE_field_external_information).  Invalid source");
+				display_message(ERROR_MESSAGE,"get_FE_field_external_information.  "
+					"Invalid external field information");
 			}
 		}
 		else
 		{
-			if (destination)
+			*external_information=(struct FE_field_external_information *)NULL;
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_field_external_information.  Invalid argument(s)");
+	}
+	return_code=0;
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_field_external_information */
+
+int set_FE_field_external_information(struct FE_field *field,
+	struct FE_field_external_information *external_information)
+/*******************************************************************************
+LAST MODIFIED : 2 September 2001
+
+DESCRIPTION :
+Copies the <external_information> into the <field>.
+
+Should only call this function for unmanaged fields.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_FE_field_external_information);
+	if (field)
+	{
+		return_code=1;
+		if (field->external)
+		{
+			if (field->external->destroy)
 			{
-				if (destination->copy)
-				{
-					(destination->copy)(destination_address,
-						(struct FE_field_external_information *)NULL);
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"COPY(FE_field_external_information).  Invalid destination");
-				}
+				(field->external->destroy)(&(field->external));
 			}
 			else
 			{
-				return_code=1;
+				display_message(ERROR_MESSAGE,"set_FE_field_external_information.  "
+					"Invalid external field information");
+				return_code=0;
+			}
+		}
+		if (external_information)
+		{
+			if (external_information->duplicate)
+			{
+				field->external=(external_information->duplicate)(external_information);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"set_FE_field_external_information.  "
+					"Invalid external_information");
+				return_code=0;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"COPY(FE_field_external_information).  Missing destination_address");
+			"set_FE_field_external_information.  Invalid argument");
 	}
+	return_code=0;
 	LEAVE;
 
 	return (return_code);
-} /* COPY(FE_field_external_information) */
+} /* set_FE_field_external_information */
 
 struct FE_field *CREATE(FE_field)(void)
 /*******************************************************************************
@@ -33290,7 +33306,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_field,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_field,name)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 If the <destination> has an access_count > 1 then it is deemed to be in use. In
@@ -33371,8 +33387,33 @@ if any other <source> and <destination> parameters do not match.
 				if (!matching_fields)
 				{
 					destination->cm_field_type=source->cm_field_type;
-					COPY(FE_field_external_information)(&(destination->external),
-						source->external);
+					if (destination->external)
+					{
+						if (destination->external->destroy)
+						{
+							(destination->external->destroy)(&(destination->external));
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
+								"Invalid destination->external");
+						}
+					}
+					if (source->external)
+					{
+						if (source->external->duplicate)
+						{
+							destination->external=(source->external->duplicate)(
+								source->external);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name).  "
+								"Invalid source->external");
+						}
+					}
 					destination->fe_field_type=source->fe_field_type;
 					REACCESS(FE_field)(&(destination->indexer_field),
 						source->indexer_field);
@@ -38664,9 +38705,9 @@ int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void)
 LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
-Conditional function returning true if the <field> is a coordinate field, as
-defined by having a CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE
-and from 1 to 3 components.
+Conditional function returning true if the <field> is a coordinate field
+(defined by having a CM_field_type of coordinate) has a Value_type of
+FE_VALUE_VALUE and has from 1 to 3 components.
 ==============================================================================*/
 {
 	int return_code;
@@ -38692,28 +38733,32 @@ and from 1 to 3 components.
 	return (return_code);
 } /* FE_field_is_coordinate_field */
 
-int FE_field_is_anatomical_fibre_field(struct FE_field *field, void *dummy_void)
+int FE_field_is_anatomical_fibre_field(struct FE_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
-Returns true if the field is of type ANATOMICAL and it has a FIBRE coordinate
-system. Used with FIRST_OBJECT_IN_LIST_THAT(FE_field) to get any fibre field
-that may be defined over a group of elements.
+Conditional function returning true if the <field> is a anatomical field
+(defined by having a CM_field_type of anatomical), has a Value_type of
+FE_VALUE_VALUE, has from 1 to 3 components, and has a FIBRE coordinate system.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(FE_field_is_anatomical_fibre_field);
-	if (field&&!dummy_void)
+	USE_PARAMETER(dummy_void);
+	if (field)
 	{
 		return_code=(CM_ANATOMICAL_FIELD==field->cm_field_type)&&
+			(FE_VALUE_VALUE==field->value_type)&&
+			(1<=field->number_of_components)&&
+			(3>=field->number_of_components)&&
 			(FIBRE==field->coordinate_system.type);		
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_is_anatomical_fibre_field.  Invalid argument(s)");
+			"FE_field_is_anatomical_fibre_field.  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
@@ -39658,7 +39703,7 @@ DESCRIPTION :
 int smooth_field_over_element(struct FE_element *element,
 	void *void_smooth_field_over_element_data)
 /*******************************************************************************
-LAST MODIFIED : 7 August 2001
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 ???DB.  Needs to be extended to use get_nodal_value, but what about scale
@@ -39700,7 +39745,7 @@ DESCRIPTION :
 			if (!(smooth_field_over_element_data->field))
 			{
 				if (element_field=FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-					FE_element_field_is_type_CM_coordinate,(void *)NULL,
+					FE_element_field_is_coordinate_field,(void *)NULL,
 					element->information->fields->element_field_list))
 				{
 					/* DEACCESS'd in execute_command_gfx_smooth */
@@ -40368,61 +40413,60 @@ DESCRIPTION :
 	return (return_code);
 } /* smooth_field_over_element */
 
-int FE_element_field_is_type_CM_coordinate(
-	struct FE_element_field *element_field, void *dummy)
+int FE_element_field_is_coordinate_field(struct FE_element_field *element_field,
+	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED: 30 August 2001
+LAST MODIFIED : 2 September 2001
 
-DESCRIPTION:
-returns true if <element_field> has a field of type CM_coordinate
-Not static as used in command/cmiss.c
+DESCRIPTION :
+Returns a non-zero if the <element_field> is for a coordinate field.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(FE_element_field_is_type_CM_coordinate);
-	if (element_field&&!dummy)
+	ENTER(FE_element_field_is_coordinate_field);
+	return_code=0;
+	if (element_field)
 	{
-		return_code=(CM_COORDINATE_FIELD==element_field->field->cm_field_type); 	
+		return_code=FE_field_is_coordinate_field(element_field->field,dummy_void); 	
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_element_is_type_CM_coordinate. Invalid arguments");
-		return_code = 0;
+			"FE_element_field_is_coordinate_field.  Invalid argument");
 	}
 	LEAVE;
 
 	return (return_code);
-}/* FE_node_element_is_type_CM_coordinate */
+} /* FE_element_field_is_coordinate_field */
 
-int FE_element_field_is_type_CM_anatomical(
-	struct FE_element_field *element_field, void *dummy)
+int FE_element_field_is_anatomical_fibre_field(
+	struct FE_element_field *element_field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED: 30 August 2001
+LAST MODIFIED : 2 September 2001
 
-DESCRIPTION:
-returns true if <element_field> has a field of type CM_anatomical
-Not static as used in projection/projection.c
+DESCRIPTION :
+Returns a non-zero if the <element_field> is for a anatomical fibre field.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(FE_element_field_is_type_CM_anatomical);
-	if (element_field&&!dummy)
+	ENTER(FE_element_field_is_anatomical_fibre_field);
+	return_code=0;
+	if (element_field)
 	{
-		return_code = (CM_ANATOMICAL_FIELD==element_field->field->cm_field_type); 	
+		return_code=FE_field_is_anatomical_fibre_field(element_field->field,
+			dummy_void);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_element_is_type_CM_anatomical. Invalid arguments");
-		return_code = 0;
+			"FE_element_field_is_anatomical_fibre_field. Invalid argument");
 	}
 	LEAVE;
 
 	return (return_code);
-}/* FE_node_element_is_type_CM_anatomical */
+} /* FE_element_field_is_anatomical_fibre_field */
 
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape, 
 	FE_value *xi, int *face_number)
