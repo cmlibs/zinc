@@ -718,7 +718,7 @@ with the same text.
 									partial_match_count++;
 									if (!matching_entry)
 									{
-										matching_entry = entry;
+										matching_entry = sub_entry;
 									}
 								}
 							}
