@@ -1,13 +1,14 @@
 //******************************************************************************
 // FILE : function_variable_matrix_implementation.cpp
 //
-// LAST MODIFIED : 21 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
 
 #include <sstream>
 
+#include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_specific.hpp"
 
@@ -22,7 +23,7 @@ EXPORT template<typename Value_type>
 class Function_variable_iterator_representation_atomic_matrix :
 	public Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 13 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -219,13 +220,8 @@ class Function_variable_iterator_representation_atomic_matrix :
 			result=false;
 			if (representation_matrix)
 			{
-				if (
-					((0==atomic_variable)&&(0==representation_matrix->atomic_variable))||
-					(atomic_variable&&(representation_matrix->atomic_variable)&&
-					(*atomic_variable== *(representation_matrix->atomic_variable))))
-				{
-					result=true;
-				}
+				result=
+					equivalent(atomic_variable,representation_matrix->atomic_variable);
 			}
 
 			return (result);
@@ -402,7 +398,7 @@ EXPORT template<typename Value_type>
 bool Function_variable_matrix<Value_type>::equality_atomic(
 	const Function_variable_handle& variable) const
 //******************************************************************************
-// LAST MODIFIED : 13 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Need typeid because want most derived class to be the same (some functions
@@ -416,7 +412,7 @@ bool Function_variable_matrix<Value_type>::equality_atomic(
 	if (variable_matrix=boost::dynamic_pointer_cast<
 		Function_variable_matrix<Value_type>,Function_variable>(variable))
 	{
-		result=(function_private==variable_matrix->function())&&
+		result=equivalent(function_private,variable_matrix->function())&&
 			(row==variable_matrix->row)&&(column==variable_matrix->column)&&
 			(typeid(*this)==typeid(*variable_matrix));
 	}
@@ -534,6 +530,175 @@ Function_variable_matrix<Value_type>::~Function_variable_matrix()
 //==============================================================================
 {
 	// do nothing
+}
+
+EXPORT template<typename Value_type>
+Scalar Function_variable_matrix<Value_type>::norm() const
+//******************************************************************************
+// LAST MODIFIED : 6 August 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool valid;
+	boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+		temp_variable;
+	Function_size_type i,j,number_of_columns,number_of_rows;
+	Scalar result;
+	Value_type sum,value;
+
+	number_of_rows=this->number_of_rows();
+	number_of_columns=this->number_of_columns();
+	valid=true;
+	sum=0;
+	i=1;
+	while (valid&&(i<=number_of_rows))
+	{
+		j=1;
+		while (valid&&(j<=number_of_columns))
+		{
+			if ((temp_variable=(*this)(i,j))&&
+				(temp_variable->get_entry(value)))
+			{
+				sum += value*value;
+			}
+			else
+			{
+				valid=false;
+			}
+			j++;
+		}
+		i++;
+	}
+	if (valid)
+	{
+		result=std::sqrt((Scalar)sum);
+	}
+	else
+	{
+		result= -1;
+	}
+
+	return (result);
+}
+
+EXPORT template<typename Value_type>
+Function_variable_handle Function_variable_matrix<Value_type>::operator-(
+	const Function_variable& second) const
+//******************************************************************************
+// LAST MODIFIED : 17 August 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_variable_handle result(0);
+
+	try
+	{
+		const Function_variable_matrix<Value_type>& second_matrix=
+			dynamic_cast<const Function_variable_matrix<Value_type>&>(second);
+		Function_size_type number_of_columns,number_of_rows;
+
+		number_of_rows=this->number_of_rows();
+		number_of_columns=this->number_of_columns();
+		if ((number_of_rows==second_matrix.number_of_rows())&&
+			(number_of_columns==second_matrix.number_of_columns()))
+		{
+			bool valid;
+			boost::intrusive_ptr< Function_matrix<Value_type> > temp_function;
+			boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+				temp_variable;
+			Function_size_type i,j;
+			ublas::matrix<Value_type,ublas::column_major>
+				temp_matrix(number_of_rows,number_of_columns);
+			Value_type value_1,value_2;
+
+			valid=true;
+			i=0;
+			while (valid&&(i<number_of_rows))
+			{
+				j=0;
+				while (valid&&(j<number_of_columns))
+				{
+					if ((temp_variable=(*this)(i+1,j+1))&&
+						(temp_variable->get_entry(value_1))&&
+						(temp_variable=second_matrix(i+1,j+1))&&
+						(temp_variable->get_entry(value_2)))
+					{
+						temp_matrix(i,j)=value_1-value_2;
+					}
+					else
+					{
+						valid=false;
+					}
+					j++;
+				}
+				i++;
+			}
+			if (valid&&(temp_function=new Function_matrix<Value_type>(temp_matrix)))
+			{
+				result=temp_function->output();
+			}
+		}
+	}
+	catch (std::bad_cast)
+	{
+		// general case
+		Function_size_type number_of_columns,number_of_rows;
+
+		number_of_rows=this->number_of_rows();
+		number_of_columns=this->number_of_columns();
+		if ((0<number_of_rows)&&(0<number_of_columns))
+		{
+			bool valid;
+			boost::intrusive_ptr< Function_matrix<Value_type> > temp_function;
+			boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+				temp_variable;
+			Function_size_type i,j;
+			Function_variable_iterator second_iterator,second_iterator_end;
+			boost::intrusive_ptr< Function_variable_value_specific<Value_type> >
+				variable_value;
+			ublas::matrix<Value_type,ublas::column_major>
+				temp_matrix(number_of_rows,number_of_columns);
+			Value_type value_1,value_2;
+
+			valid=true;
+			i=0;
+			second_iterator=second.begin_atomic();
+			second_iterator_end=second.end_atomic();
+			while (valid&&(i<number_of_rows))
+			{
+				j=0;
+				while (valid&&(j<number_of_columns))
+				{
+					if ((temp_variable=(*this)(i+1,j+1))&&
+						(temp_variable->get_entry(value_1))&&
+						(second_iterator!=second_iterator_end)&&
+						(variable_value=boost::dynamic_pointer_cast<
+						Function_variable_value_specific<Value_type>,
+						Function_variable_value>((*second_iterator)->value()))&&
+						(variable_value->set(value_2,*second_iterator)))
+					{
+						temp_matrix(i,j)=value_1-value_2;
+						second_iterator++;
+					}
+					else
+					{
+						valid=false;
+					}
+					j++;
+				}
+				i++;
+			}
+			if (valid&&(second_iterator==second_iterator_end)&&
+				(temp_function=new Function_matrix<Value_type>(temp_matrix)))
+			{
+				result=temp_function->output();
+			}
+		}
+	}
+
+	return (result);
 }
 
 

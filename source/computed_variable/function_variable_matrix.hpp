@@ -1,12 +1,11 @@
 //******************************************************************************
 // FILE : function_variable_matrix.hpp
 //
-// LAST MODIFIED : 21 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A variable that is a matrix.
 //
-//???DB.  Should be template?
 //???DB.  Transpose?
 //==============================================================================
 #if !defined (__FUNCTION_VARIABLE_MATRIX_HPP__)
@@ -20,7 +19,7 @@ EXPORT template<typename Value_type>
 EXPORT template<typename Value_type>
 class Function_variable_matrix : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An identifier for a matrix.
@@ -31,6 +30,9 @@ class Function_variable_matrix : public Function_variable
 {
 	friend class
 		Function_variable_iterator_representation_atomic_matrix<Value_type>;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	// inherited
 	public:
 		virtual string_handle get_string_representation();
@@ -41,11 +43,13 @@ class Function_variable_matrix : public Function_variable
 		virtual std::reverse_iterator<Function_variable_iterator> rend_atomic()
 			const;
 		virtual Function_size_type number_differentiable();
+		virtual Scalar norm() const;
+		virtual Function_variable_handle operator-(const Function_variable&) const;
 	// additional
 	public:
 		// get a matrix entry variable
 		virtual boost::intrusive_ptr< Function_variable_matrix<Value_type> >
-			operator()(Function_size_type row=1,Function_size_type column=1)=0;
+			operator()(Function_size_type row=1,Function_size_type column=1) const=0;
 #if defined (TO_BE_DONE)
 		virtual boost::intrusive_ptr< Function_variable_matrix<Value_type> >
 			sub_matrix(Function_size_type row_low,Function_size_type row_high,
