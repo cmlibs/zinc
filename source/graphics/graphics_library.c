@@ -16,7 +16,10 @@ Functions for interfacing with the graphics library.
 #include <GL/glx.h>
 #elif defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
+#if ! defined (WIN32_SYSTEM)
+/* SAB The WIN32 system currently uses GTK GL AREA for open GL. */
 #include <gtk/gtkgl.h>
+#endif /* ! defined (WIN32_SYSTEM) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
 #include "general/debug.h"
@@ -650,7 +653,7 @@ Graphics font name now read in from Cmgui XDefaults file.
 				&text_defaults,resources,XtNumber(resources),NULL);
 			glXUseXFont(text_defaults.graphics_font->fid,0,256,fontOffset);
 #elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
-#if GTK_MAJOR_VERSION >= 2 || defined (WIN32_SYSTEM)
+#if GTK_MAJOR_VERSION >= 2 && ! defined (WIN32_SYSTEM)
 			/* SAB The WIN32 system currently uses GTK GL AREA for open GL. */
 			/* Generate font display lists. */
 
