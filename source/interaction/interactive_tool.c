@@ -385,6 +385,41 @@ callback receiving value changes from the toggle_button.
 	return (widget);
 } /* Interactive_tool_make_button */
 
+int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+If the bring_up_dialog function is defined for <interactive_tool> calls it to
+bring up the dialog for changing its settings.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Interactive_tool_bring_up_dialog);
+	if (interactive_tool)
+	{
+		if (interactive_tool->bring_up_dialog_function)
+		{
+			return_code=(interactive_tool->bring_up_dialog_function)(
+				interactive_tool->tool_data);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_bring_up_dialog.  Invalid argument(s)");
+		return_code=1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Interactive_tool_bring_up_dialog */
+
 int Interactive_tool_name_to_array(
 	struct Interactive_tool *interactive_tool,void *tool_name_address_void)
 /*******************************************************************************

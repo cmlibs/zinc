@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_tool.h
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Active CMGUI tools should create a wrapper Interactive_tool that supplies a
@@ -113,6 +113,15 @@ DESCRIPTION :
 Makes and returns a toggle_button widget representing <interactive_tool> as a
 child of <parent>. <parent> is expected to be a RowColumn widget with an entry
 callback receiving value changes from the toggle_button.
+==============================================================================*/
+
+int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+If the bring_up_dialog function is defined for <interactive_tool> calls it to
+bring up the dialog for changing its settings.
 ==============================================================================*/
 
 char **interactive_tool_manager_get_tool_names(

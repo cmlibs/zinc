@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_toolbar_widget.c
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Widget for choosing the Interactive_tool currently in-use in a dialog from a
@@ -159,7 +159,7 @@ dynamic memory allocations, pointers and callbacks.
 static void interactive_toolbar_widget_entry_CB(Widget widget,
 	void *interactive_toolbar_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Callback from interactive tool buttons - change of tool.
@@ -183,8 +183,15 @@ Callback from interactive tool buttons - change of tool.
 				XtVaGetValues(toggle_button,XmNuserData,&interactive_tool,NULL);
 				if (interactive_tool)
 				{
-					interactive_toolbar->current_interactive_tool=interactive_tool;
-					interactive_toolbar_widget_update(interactive_toolbar);
+					if (interactive_tool != interactive_toolbar->current_interactive_tool)
+					{
+						interactive_toolbar->current_interactive_tool=interactive_tool;
+						interactive_toolbar_widget_update(interactive_toolbar);
+					}
+					else
+					{
+						Interactive_tool_bring_up_dialog(interactive_tool);
+					}
 				}
 				else
 				{
