@@ -7099,23 +7099,53 @@ drawing area.
 										{
 											switch (moving)
 											{
-												case MOVING_LEFT: case MOVING_BOX: case MOVING_RIGHT:
+												case MOVING_LEFT:
+												{
+													if (left_box!=interval->left_box)
+													{
+														buffer->start=SCALE_X(left_box,axes_left,0,
+															1/x_scale);
+														interval->left_box=left_box;
+														change_analysis_interval(analysis);
+													}
+												} break;
+												case MOVING_RIGHT:
+												{
+													if (right_box!=interval->right_box)
+													{
+														buffer->end=SCALE_X(right_box,axes_left,0,
+															1/x_scale);
+														interval->right_box=right_box;
+														change_analysis_interval(analysis);
+													}
+												} break;
+												case MOVING_BOX:
 												{
 													if ((left_box!=interval->left_box)||
 														(right_box!=interval->right_box))
 													{
-														if (left_box!=interval->left_box)
+														int buffer_length,buffer_start;
+
+														buffer_length=(buffer->end)-(buffer->start);
+														/* keep the same number of samples in the
+															interval */
+														buffer_start=SCALE_X(left_box,axes_left,0,
+															1/x_scale);
+														buffer->start=buffer_start+
+															((SCALE_X(right_box,axes_left,0,1/x_scale)-
+															buffer_start)-buffer_length)/2;
+														if (buffer->start<0)
 														{
-															buffer->start=SCALE_X(left_box,axes_left,0,
-																1/x_scale);
-															interval->left_box=left_box;
+															buffer->start=0;
 														}
-														if (right_box!=interval->right_box)
+														buffer->end=buffer->start+buffer_length;
+														if (buffer->end>=buffer->number_of_samples)
 														{
-															buffer->end=SCALE_X(right_box,axes_left,0,
-																1/x_scale);
-															interval->right_box=right_box;
+															buffer->end=(buffer->number_of_samples)-1;
+															buffer->start=(buffer->end)-buffer_length;
 														}
+														interval->left_box=left_box;
+														interval->right_box=right_box;
 														change_analysis_interval(analysis);
 													}
 												} break;
