@@ -726,8 +726,7 @@ because the initialize method is downward chained.
 #if defined (OPENGL_API)
 	Bool direct_rendering;
 	int best_buffer_size,best_depth_size,error_base,event_base,i,
-		major_version_number,minor_version_number,number_of_valid_visual_infos,
-		number_of_visual_infos,value;
+		number_of_valid_visual_infos,number_of_visual_infos,value;
 	XVisualInfo *best_visual_info,**valid_visual_info_list,*visual_info,
 		*visual_info_list,visual_info_template;
 #if defined (OLD_CODE)
@@ -775,7 +774,7 @@ because the initialize method is downward chained.
 		if (True==glXQueryExtension(display,&error_base,&event_base))
 		{
 #if defined (DEBUG)
-			/* find  version numbers for the GLX extension */
+			/* find version numbers for the GLX extension */
 			if (True==glXQueryVersion(display,&major_version_number,
 				&minor_version_number))
 			{
