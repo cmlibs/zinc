@@ -6968,6 +6968,11 @@ and other parameters for formats that require them.
 						sprintf(magick_size, "%dx%d", width, height);
 						magick_image_info->size = magick_size;
 					}
+					if ((1 == cmgui_image_information->number_of_components) || 
+						(2 == cmgui_image_information->number_of_components))
+					{
+						magick_image_info->colorspace = GRAYColorspace;
+					}
 					if (2 == cmgui_image_information->number_of_bytes_per_component)
 					{
 						magick_image_info->depth = 16;
