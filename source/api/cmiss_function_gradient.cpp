@@ -1,15 +1,17 @@
 /*******************************************************************************
 FILE : api/cmiss_function_gradient.cpp
 
-LAST MODIFIED : 26 August 2004
+LAST MODIFIED : 21 October 2004
 
 DESCRIPTION :
-The public interface to the Cmiss_function gradient object.
+The public interface to the Cmiss_function gradient object - composition of
+derivative and transpose.
 ==============================================================================*/
 
 #include <new>
+#include "api/cmiss_function_derivative.h"
 #include "api/cmiss_function_gradient.h"
-#include "computed_variable/function_gradient.hpp"
+#include "api/cmiss_function_matrix_transpose.h"
 
 /*
 Global functions
@@ -20,28 +22,32 @@ Cmiss_function_id Cmiss_function_gradient_create(
 	Cmiss_function_variable_id dependent_variable,
 	Cmiss_function_variable_id independent_variable)
 /*******************************************************************************
-LAST MODIFIED : 26 August 2004
+LAST MODIFIED : 21 October 2004
 
 DESCRIPTION :
 Creates a Cmiss_function gradient with the supplied <dependent_variable> and
 <independent_variable>.
 ==============================================================================*/
 {
-	Cmiss_function_id result;
-	Function_variable_handle *dependent_variable_handle_address,
-		*independent_variable_handle_address;
+	Cmiss_function_id derivative,result;
+	Cmiss_function_variable_list_id independent_variables;
 
 	result=0;
-	if ((dependent_variable_handle_address=reinterpret_cast<
-		Function_variable_handle *>(dependent_variable))&&
-		(independent_variable_handle_address=reinterpret_cast<
-		Function_variable_handle *>(independent_variable)))
+	independent_variables=Cmiss_function_variable_list_create();
+	if (independent_variables&&Cmiss_function_variable_list_add(
+		independent_variables,independent_variable))
 	{
-		result=reinterpret_cast<Cmiss_function_id>(
-			new Function_gradient_handle(new Function_gradient(
-			*dependent_variable_handle_address,
-			*independent_variable_handle_address)));
+		if (derivative=Cmiss_function_derivative_create(dependent_variable,
+			independent_variables))
+		{
+			if (!(result=Cmiss_function_matrix_transpose_create(Cmiss_function_output(
+				derivative))))
+			{
+				Cmiss_function_destroy(&derivative);
+			}
+		}
 	}
+	Cmiss_function_variable_list_destroy(&independent_variables);
 
 	return (result);
 }
