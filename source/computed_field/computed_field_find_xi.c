@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.c
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 16 April 2002
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -12,6 +12,7 @@ lookup of the element.
 
 #include "general/debug.h"
 #include "general/image_utilities.h"
+#include "general/matrix_vector.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "graphics/texture.h"
@@ -35,6 +36,7 @@ struct Computed_field_find_element_xi_special_cache
 	struct Dm_buffer *dmbuffer;
 };
 
+#if defined (OLD_CODE)
 int Computed_field_iterative_element_conditional(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
@@ -166,6 +168,13 @@ Returns true if a valid element xi is found.
 							}
 						}
 					} break;
+					case 3:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_iterative_element_conditional.  "
+							"3-D Elements not supported yet");
+						return_code = 0;
+					} break;
 				}
 			}
 		}
@@ -186,6 +195,280 @@ Returns true if a valid element xi is found.
 
 	return(return_code);
 } /* Computed_field_iterative_element_conditional */
+#endif /* defined (OLD_CODE) */
+
+#define MAX_FIND_XI_ITERATIONS 10
+
+int Computed_field_iterative_element_conditional(
+	struct FE_element *element, void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 16 April 2002
+
+DESCRIPTION :
+Returns true if a valid element xi is found.
+==============================================================================*/
+{
+	double a[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		b[MAXIMUM_ELEMENT_XI_DIMENSIONS], d, sum;
+	FE_value delta, *derivatives, last_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], *values;
+	int converged, i, indx[MAXIMUM_ELEMENT_XI_DIMENSIONS], iterations, j, k,
+		number_of_xi, return_code, simplex_dimensions,
+		simplex_direction[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Computed_field_iterative_find_element_xi_data *data;
+
+	ENTER(Computed_field_iterative_element_conditional);
+	if (element && element->shape &&
+		(data = (struct Computed_field_iterative_find_element_xi_data *)data_void))
+	{
+		number_of_xi = get_FE_element_dimension(element);
+		if (number_of_xi <= data->number_of_values)
+		{
+			return_code = 1;
+			if (data->found_number_of_xi != number_of_xi)
+			{
+				if (REALLOCATE(derivatives, data->found_derivatives, FE_value,
+					data->number_of_values * number_of_xi))
+				{
+					data->found_derivatives = derivatives;
+					data->found_number_of_xi = number_of_xi;
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_iterative_element_conditional.  "
+						"Unable to allocate derivative storage");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				values = data->found_values;
+				derivatives = data->found_derivatives;
+				/* determine whether the element is simplex to limit xi space */
+				simplex_dimensions = 0;
+				switch (element->shape->dimension)
+				{
+					case 2:
+					{
+						if (SIMPLEX_SHAPE == element->shape->type[0])
+						{
+							simplex_dimensions = 2;
+							simplex_direction[0] = 0;
+							simplex_direction[1] = 1;
+						}
+					} break;
+					case 3:
+					{
+						if (SIMPLEX_SHAPE == element->shape->type[0])
+						{
+							if (LINE_SHAPE == element->shape->type[3])
+							{
+								simplex_dimensions = 2;
+								simplex_direction[0] = 0;
+								simplex_direction[1] = 2;
+							}
+							else if (LINE_SHAPE == element->shape->type[5])
+							{
+								simplex_dimensions = 2;
+								simplex_direction[0] = 0;
+								simplex_direction[1] = 1;
+							}
+							else
+							{
+								/* tetrahedron */
+								simplex_dimensions = 3;
+								simplex_direction[0] = 0;
+								simplex_direction[1] = 1;
+								simplex_direction[2] = 2;
+							}
+						}
+						else if (SIMPLEX_SHAPE == element->shape->type[3])
+						{
+							simplex_dimensions = 2;
+							simplex_direction[0] = 1;
+							simplex_direction[1] = 2;
+						}
+					} break;
+				}
+				/* start at centre to find element xi */
+				if (simplex_dimensions)
+				{
+					for (i = 0 ; i < number_of_xi ; i++)
+					{
+						/* not quite centre of tetrahedron; but these are usually linear
+							 so doesn't matter */
+						data->xi[i] = 0.33;
+					}
+				}
+				else
+				{
+					for (i = 0 ; i < number_of_xi ; i++)
+					{
+						data->xi[i] = 0.5;
+					}
+				}
+				converged = 0;
+				iterations = 0;
+				while ((!converged) && return_code)
+				{
+					if (Computed_field_evaluate_in_element(data->field, element, data->xi,
+						/*time*/0, (struct FE_element *)NULL, values, derivatives))
+					{
+						/* least-squares approach: make the derivatives / right hand side
+							 vector into square system to solve for delta-Xi */
+						for (i = 0; i < number_of_xi; i++)
+						{
+							for (j = 0; j < number_of_xi; j++)
+							{
+								sum = 0.0;
+								for (k = 0; k < data->number_of_values; k++)
+								{
+									sum += (double)derivatives[k*number_of_xi + j] *
+										(double)derivatives[k*number_of_xi + i];
+								}
+								a[i*number_of_xi + j] = sum;
+							}
+							sum = 0.0;
+							for (k = 0; k < data->number_of_values; k++)
+							{
+								sum += (double)derivatives[k*number_of_xi + i] *
+									((double)data->values[k] - (double)values[k]);
+							}
+							b[i] = sum;
+						}
+						if (LU_decompose(number_of_xi, a, indx, &d) &&
+							LU_backsubstitute(number_of_xi, a, indx, b))
+						{
+							converged = 1;
+							for (i = 0; i < number_of_xi; i++)
+							{
+								/* converged if all xi increments on or within tolerance */
+								if (fabs(b[i]) > data->tolerance)
+								{
+									converged = 0;
+								}
+								data->xi[i] += b[i];
+							}
+							iterations++;
+							if (!converged)
+							{
+								/* keep xi within simplex bounds plus tolerance */
+								if (simplex_dimensions)
+								{
+									/* calculate distance out of element in xi space */
+									delta = -1.0 - data->tolerance;
+									for (i = 0; i < simplex_dimensions; i++)
+									{
+										delta += data->xi[simplex_direction[i]];
+									}
+									if (delta > 0.0)
+									{
+										/* subtract delta equally from all directions */
+										delta /= simplex_dimensions;
+										for (i = 0; i < simplex_dimensions; i++)
+										{
+											data->xi[simplex_direction[i]] -= delta;
+										}
+									}
+								}
+								/* keep xi within 0.0 to 1.0 bounds plus tolerance */
+								for (i = 0; i < number_of_xi; i++)
+								{
+									if (data->xi[i] < -data->tolerance)
+									{
+										data->xi[i] = -data->tolerance;
+									}
+									else if (data->xi[i] > 1.0 + data->tolerance)
+									{
+										data->xi[i] = 1.0 + data->tolerance;
+									}
+								}
+								if (iterations == MAX_FIND_XI_ITERATIONS)
+								{
+									/* too many iterations; give up */
+									return_code = 0;
+								}
+								else if (1 < iterations)
+								{
+									/* give up if xi not changed this iteration; usually means
+										 the solution is outside this element */
+									return_code = 0;
+									for (i = 0; i < number_of_xi; i++)
+									{
+										if (data->xi[i] != last_xi[i])
+										{
+											return_code = 1;
+										}
+										last_xi[i] = data->xi[i];
+									}
+								}
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_iterative_element_conditional.  "
+								"Singular derivative matrix; cannot evaluate xi");
+							return_code = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_iterative_element_conditional.  "
+							"Could not evaluate field");
+						return_code = 0;
+					}
+				}
+				/* if field has more components than xi-directions, must
+					 check all components have converged */
+				if (converged && (data->number_of_values > number_of_xi))
+				{
+					/* strategy for determining convergence is to multiply
+						 the derivative for each component by the last increment
+						 in xi, stored in b, and ensuring it is larger than the
+						 difference between target and current field values.
+						 Broadly, this means the given component is not wishing
+						 the solution to shift more than the last xi increment.
+						 Note that the increment in xi is doubled to make this
+						 test slightly less strict than original convergence */
+					for (k = 0; k < data->number_of_values; k++)
+					{
+						sum = 0.0;
+						for (i = 0; i < number_of_xi; i++)
+						{
+							sum += (double)derivatives[k*number_of_xi + i] * b[i];
+						}
+						if (2.0*fabs(sum) <
+							fabs((double)data->values[k] - (double)values[k]))
+						{
+							return_code = 0;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_iterative_element_conditional.  "
+				"Unable to solve underdetermined system");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_iterative_element_conditional.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_iterative_element_conditional */
+
+#undef MAX_FIND_XI_ITERATIONS
 
 static int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
@@ -265,7 +548,6 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			Computed_field_evaluate_in_element(data->field, element, xi,
 				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 			glVertex2fv(data->values);
-
 			xi[0] = 1.0;
 			xi[1] = 0.0;
 			Computed_field_evaluate_in_element(data->field, element, xi,
@@ -316,7 +598,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 	struct User_interface *user_interface,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution)
 /*******************************************************************************
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 16 April 2002
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -339,14 +621,15 @@ sequential element_xi lookup should now be performed.
 #if defined (DEBUG)
 	int dummy[1024 * 1024];
 #endif /* defined (DEBUG) */
-	unsigned char colour[4], colour_block[BLOCK_SIZE * BLOCK_SIZE][4], *next_colour;
+	unsigned char *block_ptr, colour[4], colour_block[BLOCK_SIZE * BLOCK_SIZE *4],
+		*next_colour;
 	float ditherx, dithery;
 	struct CM_element_information cm;
 	struct Computed_field_find_element_xi_special_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_element *first_element;
 	struct Render_element_data data;
-	int *block_ptr, gl_list, i, nx, ny, px, py, return_code, scaled_number;
+	int gl_list, i, nx, ny, px, py, return_code, scaled_number;
 
 	ENTER(Computed_field_find_element_xi_special);
 	USE_PARAMETER(number_of_values);
@@ -432,27 +715,33 @@ sequential element_xi lookup should now be performed.
 							glEndList();
 
 							/* Dither things around a bit so that we get elements around the edges */
-							ditherx = 1.0 / hint_resolution[0];
-							dithery = 1.0 / hint_resolution[1];
+							ditherx = (hint_maximums[0] - hint_minimums[0]) / hint_resolution[0];
+							dithery = (hint_maximums[1] - hint_minimums[1]) / hint_resolution[1];
 							glLoadIdentity();
-							glOrtho(0.0 - ditherx, 1.0 - ditherx, 0.0 - dithery, 1.0 - dithery,
-								-1.0, 1.0);
+							glOrtho(hint_minimums[0] - ditherx, hint_maximums[0] - ditherx,
+							        hint_minimums[1] - dithery, hint_maximums[1] - dithery,
+							        -1.0, 1.0);
 							glCallList(gl_list);
 							glLoadIdentity();
-							glOrtho(0.0 + ditherx, 1.0 + ditherx, 0.0 - dithery, 1.0 - dithery,
-								-1.0, 1.0);
+							glOrtho(hint_minimums[0] + ditherx, hint_maximums[0] + ditherx,
+							        hint_minimums[1] - dithery, hint_maximums[1] - dithery,
+							        -1.0, 1.0);
 							glCallList(gl_list);
 							glLoadIdentity();
-							glOrtho(0.0 - ditherx, 1.0 - ditherx, 0.0 + dithery, 1.0 + dithery,
-								-1.0, 1.0);
+							glOrtho(hint_minimums[0] - ditherx, hint_maximums[0] - ditherx,
+							        hint_minimums[1] + dithery, hint_maximums[1] + dithery,
+							        -1.0, 1.0);
 							glCallList(gl_list);
 							glLoadIdentity();
-							glOrtho(0.0 + ditherx, 1.0 + ditherx, 0.0 + dithery, 1.0 + dithery,
-								-1.0, 1.0);
+							glOrtho(hint_minimums[0] + ditherx, hint_maximums[0] + ditherx,
+							        hint_minimums[1] + dithery, hint_maximums[1] + dithery,
+							        -1.0, 1.0);
 							glCallList(gl_list);
 				
 							glLoadIdentity();
-							glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
+							glOrtho(hint_minimums[0], hint_maximums[0],
+							        hint_minimums[1], hint_maximums[1],
+							        -1.0, 1.0);
 							glCallList(gl_list);
 
 							glDeleteLists(gl_list, 1);
@@ -488,10 +777,11 @@ sequential element_xi lookup should now be performed.
 			if (cache->dmbuffer)
 			{
 				Dm_buffer_glx_make_current(cache->dmbuffer);
-				glReadPixels(values[0] * hint_resolution[0],
-					values[1] * hint_resolution[1],
-					1, 1, GL_RGBA, GL_UNSIGNED_BYTE, colour);
-
+				px = (int)((values[0] - hint_minimums[0]) * hint_resolution[0] /
+					(hint_maximums[0] - hint_minimums[0]));
+				py = (int)((values[1] - hint_minimums[1]) * hint_resolution[1] /
+					(hint_maximums[1] - hint_minimums[1]));
+				glReadPixels(px, py, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, colour);
 				scaled_number = (((unsigned int)colour[0] >> (8 - cache->bit_shift)) 
 					<< (2 * cache->bit_shift)) +
 					(((unsigned int)colour[1] >> (8 - cache->bit_shift)) 
@@ -518,17 +808,17 @@ sequential element_xi lookup should now be performed.
 						{
 							*element = (struct FE_element *)NULL;
 							/* Look in all the surrounding pixels for elements */
-							if (values[0] * hint_resolution[0] > BLOCK_SIZE / 2)
+							if (px > BLOCK_SIZE / 2)
 							{
-								px = values[0] * hint_resolution[0] - BLOCK_SIZE / 2;
+								px -= BLOCK_SIZE / 2;
 							}
 							else
 							{
 								px = 0;
 							}
-							if (values[1] * hint_resolution[1] > BLOCK_SIZE / 2)
+							if (py > BLOCK_SIZE / 2)
 							{
-								py = values[1] * hint_resolution[1] - BLOCK_SIZE / 2;
+								py -= BLOCK_SIZE / 2;
 							}
 							else
 							{
@@ -542,39 +832,46 @@ sequential element_xi lookup should now be performed.
 							{
 								nx = hint_resolution[0] - px;
 							}
-							if (py + BLOCK_SIZE < hint_resolution[0])
+							if (py + BLOCK_SIZE < hint_resolution[1])
 							{
 								ny = BLOCK_SIZE;
 							}
 							else
 							{
-								ny = hint_resolution[0] - py;
+								ny = hint_resolution[1] - py;
 							}
 							glReadPixels(px, py, nx, ny, GL_RGBA, GL_UNSIGNED_BYTE, 
 								colour_block);
 
 							while (scaled_number && (*element == (struct FE_element *)NULL))
 							{
-								/* OK, so I don't want to assume what the byte order is inside
-									an int but I do want to compare these multiple byte blocks
-									with a single comparison.  However when I extract a value
-									I want to do it byte by byte into the integer */
-								block_ptr = ((int *)colour_block) + nx * ny - 1;
-								next_colour = (unsigned char *)block_ptr;
-								while(block_ptr >= (int *)colour_block)
+								/* each different colour represents an element to search in.
+									 Following only checks each colour/value once and clears
+									 that colour in the next loop. Continues until either an
+									 element is found or all pixels in the block are black */
+								block_ptr = colour_block + (nx * ny - 1)*4;
+								next_colour = block_ptr;
+								while (block_ptr >= colour_block)
 								{
-									if (*block_ptr)
+									if (block_ptr[0] || block_ptr[1] ||
+										block_ptr[2] || block_ptr[3])
 									{
-										if (*block_ptr == *((int *)colour))
+										if ((block_ptr[0] == colour[0]) &&
+											(block_ptr[1] == colour[1]) &&
+											(block_ptr[2] == colour[2]) &&
+											(block_ptr[3] == colour[3]))
 										{
-											*block_ptr = 0;
+											block_ptr[0] = 0;
+											block_ptr[1] = 0;
+											block_ptr[2] = 0;
+											block_ptr[3] = 0;
 										}
 										else
 										{
-											next_colour = (unsigned char *)block_ptr;
+											next_colour = block_ptr;
 										}
 									}
-									block_ptr--;
+									block_ptr -= 4;
 								}
 								colour[0] = next_colour[0];
 								colour[1] = next_colour[1];
@@ -586,7 +883,6 @@ sequential element_xi lookup should now be performed.
 										<< cache->bit_shift) +
 									((unsigned int)colour[2] >> (8 - cache->bit_shift));
 								cm.number = scaled_number + cache->minimum_element_number - 1;
-							
 								if (scaled_number)
 								{
 									if (*element = FIND_BY_IDENTIFIER_IN_GROUP(FE_element,
@@ -655,8 +951,7 @@ sequential element_xi lookup should now be performed.
 } /* Computed_field_find_element_xi_special */
 
 struct Computed_field_find_element_xi_special_cache 
-*CREATE(Computed_field_find_element_xi_special_cache)
-		 (void)
+*CREATE(Computed_field_find_element_xi_special_cache)(void)
 /*******************************************************************************
 LAST MODIFIED : 20 June 2000
 
@@ -684,7 +979,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 } /* CREATE(Computed_field_find_element_xi_special_cache) */
 
 int DESTROY(Computed_field_find_element_xi_special_cache)
-	  (struct Computed_field_find_element_xi_special_cache **cache_address)
+	(struct Computed_field_find_element_xi_special_cache **cache_address)
 /*******************************************************************************
 LAST MODIFIED : 20 June 2000
 
