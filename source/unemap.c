@@ -1022,7 +1022,7 @@ Main program for unemap
 		else
 		{
 			display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
-				NUMBER_IN_LIST(FE_element_shape)(element_shape_list);
+				NUMBER_IN_LIST(FE_element_shape)(element_shape_list));
 		}
 		DESTROY(MANAGER(Spectrum))(&spectrum_manager);
 		DEACCESS(Graphical_material)(&default_graphical_material);			

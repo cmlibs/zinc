@@ -13,8 +13,10 @@ Should be merged with dm_interface.c
 #include "three_d_drawing/ThreeDDraw.h"
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
-#define GTK_USE_GTKGLAREA
 #include <gtk/gtk.h>
+#if GTK_MAJOR_VERSION < 2
+#define GTK_USE_GTKGLAREA
+#endif /* GTK_MAJOR_VERSION < 2 */
 #if defined (GTK_USE_GTKGLAREA)
 #include <gtkgl/gtkglarea.h>
 #else /* defined (GTK_USE_GTKGLAREA) */
