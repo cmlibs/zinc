@@ -38,3 +38,12 @@ $fun_3=new Cmiss::Function::Element_xi(element=>$heart->get_element(name=>22),xi
 $fun_4=($fun_1a->output())->evaluate(input=>$fun_1a->element_xi(),value=>$fun_3);
 print "$fun_4\n";
 print "\n";
+
+# check evaluating derivative
+$fun_5=$var_1->evaluate_derivative(independent=>[$fun_1a->nodal_values(node=>$heart->get_node(name=>24))]);
+print "$fun_5\n";
+$var_2=new Cmiss::Function_variable::Composite($fun_1a->component(number=>1),$fun_1a->component(number=>3));
+$fun_6=new Cmiss::Function::Integral(integrand_output=>$var_2,integrand_input=>$var_1a,region=>$heart,quadrature_scheme=>"c.Hermite*c.Hermite*l.Lagrange");
+$var_6=$fun_6->output();
+$fun_7=$var_6->evaluate_derivative(independent=>[$fun_1a->nodal_values(node=>$heart->get_node(name=>24))]);
+print "$fun_7\n";
