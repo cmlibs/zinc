@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 3 October 2003
+LAST MODIFIED : 4 November 2003
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -811,6 +811,10 @@ several changes to be applied at once.
 	u32 counter,counter_start;
 
 	ENTER(set_shift_register);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter set_shift_register\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
 	if (ni_card&&
@@ -960,6 +964,10 @@ several changes to be applied at once.
 		}
 		return_code=0;
 	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave set_shift_register\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -1182,6 +1190,7 @@ DESCRIPTION :
 							}
 							READ_WORD(digital_io_lines,word);
 						}
+#if defined (DEBUG)
 						/*???debug */
 						{
 							FILE *unemap_debug;
@@ -1237,7 +1246,6 @@ DESCRIPTION :
 								fclose(unemap_debug);
 							}
 						}
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					} break;
 					case UnEmap_2V1:
@@ -1445,6 +1453,7 @@ DESCRIPTION :
 							fscanf(digital_io_lines," = %d ",&settling_step_max);
 							READ_WORD(digital_io_lines,word);
 						}
+#if defined (DEBUG)
 						/*???debug */
 						{
 							FILE *unemap_debug;
@@ -1570,7 +1579,6 @@ DESCRIPTION :
 								fclose(unemap_debug);
 							}
 						}
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					} break;
 					default:
@@ -5111,7 +5119,7 @@ int unemap_configure(int number_of_channels,int *channel_numbers,
 	float scrolling_frequency,float scrolling_callback_frequency,
 	int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2003
+LAST MODIFIED : 3 November 2003
 
 DESCRIPTION :
 Configures the hardware for sampling the specified channels
@@ -5235,6 +5243,11 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #if defined (NI_DAQ)
 		if (0==module_configured)
 		{
+			/* the hardware service used to call unemap_get_number_of_channels during
+				start up to initialize the NI cards.  Something else reinitializes them
+				after this for W2K.  So, force a search/initialization for cards */
+			DEALLOCATE(module_NI_CARDS);
+			module_number_of_NI_CARDS=0;
 			if (search_for_NI_cards()&&module_NI_CARDS)
 			{
 				return_code=1;
@@ -5245,8 +5258,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					module_configured_channels=(int *)NULL;
 					for (i=0;i<module_number_of_NI_CARDS;i++)
 					{
-						module_NI_CARDS[i].number_of_configured_channels=
-							NUMBER_OF_CHANNELS_ON_NI_CARD;
+						module_NI_CARDS[i].number_of_configured_channels=0;
 						for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
 						{
 							(module_NI_CARDS[i].hardware_buffer_offsets)[j]= -1;
@@ -5445,13 +5457,13 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					{
 						module_sampling_frequency=sampling_frequency;
 					}
+#if defined (DEBUG)
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,
 						"module_sampling_frequency=%g, sampling_interval=%u, "
 						"maximum_number_of_scanned_channels_for_card=%d\n",
 						module_sampling_frequency,sampling_interval,
 						maximum_number_of_scanned_channels_for_card);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					module_sampling_high_count=2;
 					module_sampling_low_count=
@@ -5705,11 +5717,11 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 							total_number_of_scanned_channels*sizeof(i16);
 						do
 						{
+#if defined (DEBUG)
 							/*???debug */
 							display_message(INFORMATION_MESSAGE,
 								"available_physical_memory=%lu, desired_physical_memory=%lu\n",
 								available_physical_memory,desired_physical_memory);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 							i=0;
 							status=0;
@@ -5891,16 +5903,17 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 														{
 															display_message(ERROR_MESSAGE,
 																"unemap_configure.  "
-																"Select_Signal(%d,ND_IN_SCAN_START,"
-																"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d.  %d",
+																"Select_Signal(%d,ND_RTSI_0/ND_IN_SCAN_START,"
+																"ND_IN)_SCAN_START/ND_RTSI_0,ND_LOW_TO_HIGH)="
+																"%d.  %d",
 																(module_NI_CARDS[i]).device_number,status,i);
 														}
 													}
 													else
 													{
 														display_message(ERROR_MESSAGE,"unemap_configure.  "
-															"Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,"
-															"ND_LOW_TO_HIGH)=%d",
+															"Select_Signal(%d,ND_IN_SCAN_START/ND_PFI_7,"
+															"ND_PFI_7/ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH)=%d",
 															(module_NI_CARDS[i]).device_number,status);
 													}
 #if defined (OLD_CODE)
@@ -7409,7 +7422,7 @@ Returns a non-zero if unemap is sampling and zero otherwise.
 
 int unemap_set_isolate_record_mode(int channel_number,int isolate)
 /*******************************************************************************
-LAST MODIFIED : 11 August 2003
+LAST MODIFIED : 4 November 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -7452,8 +7465,13 @@ to a calibration signal.
 				/* isolate external circuits.  Since now through pdu and BattB, has
 					to be crate by crate */
 				if (((-1==card_number)||(0==card_number))&&
-					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)&&
-					!((module_NI_CARDS->unemap_2vx).isolate_mode))
+					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)
+#if defined (OLD_CODE)
+/*???DB.  Possible to turn off system with cards in record.  So, initialization
+	of isolate_mode would be wrong */
+					&&!((module_NI_CARDS->unemap_2vx).isolate_mode)
+#endif /* defined (OLD_CODE) */
+					)
 				{
 					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,0,
 						0);
@@ -7464,8 +7482,13 @@ to a calibration signal.
 					if ((-1==card_number)||(j==card_number))
 					{
 						if (((UnEmap_2V1==ni_card->unemap_hardware_version)||
-							(UnEmap_2V2==ni_card->unemap_hardware_version))&&
-							!((ni_card->unemap_2vx).isolate_mode))
+							(UnEmap_2V2==ni_card->unemap_hardware_version))
+#if defined (OLD_CODE)
+/*???DB.  Possible to turn off system with cards in record.  So, initialization
+	of isolate_mode would be wrong */
+							&&!((ni_card->unemap_2vx).isolate_mode)
+#endif /* defined (OLD_CODE) */
+							)
 						{
 							/* turn off stimulation channels */
 							if (relay_power_on_UnEmap2vx)
@@ -7521,8 +7544,13 @@ to a calibration signal.
 				/* connect external circuits.  Since now through pdu and BattB, has
 					to be crate by crate */
 				if (((-1==card_number)||(0==card_number))&&
-					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)&&
-					((module_NI_CARDS->unemap_2vx).isolate_mode))
+					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)
+#if defined (OLD_CODE)
+/*???DB.  Possible to turn off system with cards in record.  So, initialization
+	of isolate_mode would be wrong */
+					&&((module_NI_CARDS->unemap_2vx).isolate_mode)
+#endif /* defined (OLD_CODE) */
+					)
 				{
 					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,1,
 						0);
@@ -7534,8 +7562,13 @@ to a calibration signal.
 						(0<ni_card->number_of_configured_channels))
 					{
 						if (((UnEmap_2V1==ni_card->unemap_hardware_version)||
-							(UnEmap_2V2==ni_card->unemap_hardware_version))&&
-							((ni_card->unemap_2vx).isolate_mode))
+							(UnEmap_2V2==ni_card->unemap_hardware_version))
+#if defined (OLD_CODE)
+/*???DB.  Possible to turn off system with cards in record.  So, initialization
+	of isolate_mode would be wrong */
+							&&((ni_card->unemap_2vx).isolate_mode)
+#endif /* defined (OLD_CODE) */
+							)
 						{
 							/* turn on stimulation channels */
 							for (i=0;i<8;i++)
@@ -8412,7 +8445,7 @@ int unemap_transfer_samples_acquired(int channel_number,int number_of_samples,
 	Unemap_transfer_samples_function *transfer_samples_function,
 	void *transfer_samples_function_data,int *number_of_samples_transferred)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2003
+LAST MODIFIED : 4 November 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -8435,11 +8468,12 @@ transferred.
 {
 	int number_of_channels,number_transferred,return_code;
 #if defined (NI_DAQ)
-	int end,end2,i,j,k,k_phase,number_of_configured_channels,offset,samples_count,
-		start,transfer_samples_function_result;
+	int i,j,k_phase,number_of_configured_channels,offset,samples_count,
+		transfer_samples_function_result;
 	short int sample,samples[NUMBER_OF_CHANNELS_ON_NI_CARD],*source;
 	struct NI_card *ni_card;
-	unsigned long maximum_number_of_samples,local_number_of_samples;
+	unsigned long end,end2,k,local_number_of_samples,maximum_number_of_samples,
+		start;
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_transfer_samples_acquired);
@@ -8499,17 +8533,21 @@ transferred.
 				maximum_number_of_samples=module_NI_CARDS->hardware_buffer_size;
 			}
 			samples_count=0;
-			start=module_starting_sample_number;
-			if (module_starting_sample_number+local_number_of_samples>
-				maximum_number_of_samples)
+			/* get end of buffer */
+			start=module_starting_sample_number+
+				(module_sample_buffer_size-local_number_of_samples);
+			if (start>maximum_number_of_samples)
+			{
+				start -= maximum_number_of_samples;
+			}
+			if (start+local_number_of_samples>maximum_number_of_samples)
 			{
 				end=maximum_number_of_samples;
-				end2=module_starting_sample_number+local_number_of_samples-
-					maximum_number_of_samples;
+				end2=start+local_number_of_samples-maximum_number_of_samples;
 			}
 			else
 			{
-				end=module_starting_sample_number+local_number_of_samples;
+				end=start+local_number_of_samples;
 				end2=0;
 			}
 			if (0==channel_number)
