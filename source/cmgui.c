@@ -1834,8 +1834,9 @@ Main program for the CMISS Graphical User Interface
 
 				DEACCESS(Spectrum)(&(command_data.default_spectrum));
 				DESTROY(MANAGER(Spectrum))(&command_data.spectrum_manager);
-				DEACCESS(Graphical_material)(&(command_data.default_graphical_material));
+				DEACCESS(Graphical_material)(&(command_data.default_graphical_material));			
 				DEACCESS(Graphical_material)(&(default_selected_material));
+				DEACCESS(Graphical_material)(&(electrode_material));
 				DESTROY(MANAGER(Graphical_material))(&command_data.graphical_material_manager);
 
 				DESTROY(MANAGER(VT_volume_texture))(&command_data.volume_texture_manager);
