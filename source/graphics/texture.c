@@ -791,7 +791,7 @@ currently implemented for the expensive linear filter.
 							}
 							if (0 < padding_bytes)
 							{
-								memset((void *)padding_bytes, 0, padding_bytes);
+								memset((void *)destination, 0, padding_bytes);
 								destination += padding_bytes;
 							}
 						}
