@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2858,7 +2858,7 @@ useful for creating initial meshes.
 	FILE *input_file;
 	int return_code;
 
-	ENTER(Mirage_movie_read_frame_nodes);
+	ENTER(Mirage_movie_frame_nodes_exist_or_error);
 	return_code=1;
 	if (movie&&(frame_no >= movie->start_frame_no)&&
 		(frame_no < movie->start_frame_no+movie->number_of_frames))
@@ -2885,18 +2885,64 @@ useful for creating initial meshes.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Mirage_movie_read_frame_nodes.  Invalid argument(s)");
+			"Mirage_movie_frame_nodes_exist_or_error.  Invalid argument(s)");
 		return_code=1;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Mirage_movie_read_frame_nodes */
+} /* Mirage_movie_frame_nodes_exist_or_error */
 
-int Mirage_movie_read_frame_nodes(struct Mirage_movie *movie,
-	int frame_no)
+int Mirage_movie_unplace_frame(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 1 September 2000
+
+DESCRIPTION :
+Ensures frame <frame_no> is not in the node_status placed and problem lists
+in the <movie> and placed lists in the views.
+==============================================================================*/
+{
+	int return_code,view_no;
+	struct Mirage_view *view;
+	struct Single_range single_range;
+
+	ENTER(Mirage_movie_unplace_frame);
+	if (movie&&(frame_no >= movie->start_frame_no)&&
+		(frame_no < movie->start_frame_no+movie->number_of_frames))
+	{
+		single_range.start = frame_no;
+		single_range.stop = frame_no;
+		/* removing frame_no from movie problem list */
+		FOR_EACH_OBJECT_IN_LIST(Node_status)(Node_status_remove_range_iterator,
+			(void *)&single_range,movie->problem_list);
+		/* removing frame_no from movie placed list */
+		FOR_EACH_OBJECT_IN_LIST(Node_status)(Node_status_remove_range_iterator,
+			(void *)&single_range,movie->placed_list);
+		for (view_no=0;view_no<movie->number_of_views;view_no++)
+		{
+			if (view=movie->views[view_no])
+			{
+				/* removing frame_no from view placed list */
+				FOR_EACH_OBJECT_IN_LIST(Node_status)(Node_status_remove_range_iterator,
+					(void *)&single_range,view->placed_list);
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mirage_movie_unplace_frame.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Mirage_movie_unplace_frame */
+
+int Mirage_movie_read_frame_nodes(struct Mirage_movie *movie,int frame_no)
+/*******************************************************************************
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Reads the nodes for frame <frame_no> in <movie>. If <frame_no> is valid but
@@ -2944,8 +2990,11 @@ it is dangerous (but possibly useful) if it is not.
 			}
 			else
 			{
-				/* use existing node positions in memory */
-				return_code=1;
+				display_message(WARNING_MESSAGE,
+					"Node file '%s' not found; clearing frame %d\n",
+					node_file_name,frame_no);
+				/* use existing node positions in memory, but unplace them */
+				return_code=Mirage_movie_unplace_frame(movie,frame_no);
 			}
 			DEALLOCATE(node_file_name);
 		}
