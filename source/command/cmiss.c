@@ -59,6 +59,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_sobel_filter.h"
 
 #include "computed_field/computed_field_integration.h"
+#include "computed_field/computed_field_lookup.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_set.h"
@@ -13963,7 +13964,7 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 					command_data->material_package);
 				Option_table_add_entry(option_table,"spectrum",&spectrum,
 					command_data->spectrum_manager,set_Spectrum);
-				return_code = Option_table_parse(option_table, state);
+				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 				if (return_code)
 				{
@@ -24070,6 +24071,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 			Computed_field_register_types_fibres(
 				command_data->computed_field_package);
+			if (command_data->root_region)
+			{
+				Computed_field_register_types_lookup(
+					command_data->computed_field_package, 
+					command_data->root_region);
+			}
 			Computed_field_register_types_matrix_operations(
 				command_data->computed_field_package);
 			Computed_field_register_types_vector_operations(

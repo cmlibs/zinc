@@ -660,6 +660,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
 	computed_field/computed_field_integration.c \
+	computed_field/computed_field_lookup.c \
 	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \
 	computed_field/computed_field_set.c \
