@@ -22747,6 +22747,18 @@ Executes a UNEMAP OPEN command.
 	static XtResource resources[]=
 	{
 		{
+			XmNstandardTorso,
+			XmCStandardTorso,
+			XmRString,
+			sizeof(char *),
+			XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
+			XmRString,
+			""
+		}
+	};
+	static XtResource system_window_resources[]=
+	{
+		{
 			XmNx,
 			XmCPosition,
 			XmRPosition,
@@ -22763,15 +22775,6 @@ Executes a UNEMAP OPEN command.
 			XtOffsetOf(struct System_window_data,y),
 			XmRImmediate,
 			(XtPointer) -1
-		},
-		{
-			XmNstandardTorso,
-			XmCStandardTorso,
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
-			XmRString,
-			""
 		}
 	};
 	Widget shell;
@@ -22879,7 +22882,8 @@ Executes a UNEMAP OPEN command.
 								system_window_data.x = -1; /* These defaults match with the */
 								system_window_data.y = -1; /* default resources above */
 								XtVaGetApplicationResources(system->window_shell,
-									&system_window_data,resources,XtNumber(resources),NULL);
+									&system_window_data,system_window_resources,
+									XtNumber(system_window_resources),NULL);
 								if (system_window_data.x == -1)
 								{
 									system_window_data.x = ((command_data->user_interface->
