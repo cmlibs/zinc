@@ -398,8 +398,8 @@ Main program for the CMISS Graphical User Interface
 ==============================================================================*/
 {
 	char *cm_examples_directory,*cm_parameters_file_name,*comfile_name,
-		*example_id,*examples_directory,*version_command_id,version_id_string[100],
-		*version_ptr,version_temp[20];
+		*example_id,*examples_directory,*execute_string,*version_command_id,
+		version_id_string[100],*version_ptr,version_temp[20];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int
 #if defined (WINDOWS)
@@ -778,10 +778,6 @@ Main program for the CMISS Graphical User Interface
 	{
 		no_display = 1;
 	}
-
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-	create_interpreter(&status);
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	if(no_display || command_list)
 	{
@@ -1185,6 +1181,8 @@ Main program for the CMISS Graphical User Interface
 	cm_parameters_file_name=(char *)NULL;
 	/* the comfile is in the examples directory */
 	example_id=(char *)NULL;
+	/* a string executed by the interpreter before loading any comfiles */
+	execute_string=(char *)NULL;
 	/* set no command id supplied */
 	version_command_id=(char *)NULL;
 
@@ -1415,17 +1413,76 @@ Main program for the CMISS Graphical User Interface
 								} break;
 								case 'x':
 								{
-									/* example id */
+									switch (arg[3])
+									{
+										case 'a':
+										{
+											/* example id */
+											i++;
+											if (i<argc)
+											{
+												if (example_id)
+												{
+													DEALLOCATE(example_id);
+												}
+												if (ALLOCATE(example_id,char,strlen(argv[i])+1))
+												{
+													strcpy(example_id,argv[i]);
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"main.  Insufficient memory for example_id");
+													return_code=0;
+												}
+											}
+											else
+											{
+												return_code=0;
+											}
+										} break;
+										case '\0':
+										case 'e':
+										{
+											/* execute */
+											i++;
+											if (i<argc)
+											{
+												if (execute_string)
+												{
+													DEALLOCATE(execute_string);
+												}
+												if (ALLOCATE(execute_string,char,strlen(argv[i])+1))
+												{
+													strcpy(execute_string,argv[i]);
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"main.  Insufficient memory for example_id");
+													return_code=0;
+												}
+											}
+											else
+											{
+												return_code=0;
+											}
+										} break;
+									}
+								} break;
+								case '\0':
+								{
+									/* e goes to execute */
 									i++;
 									if (i<argc)
 									{
-										if (example_id)
+										if (execute_string)
 										{
-											DEALLOCATE(example_id);
+											DEALLOCATE(execute_string);
 										}
-										if (ALLOCATE(example_id,char,strlen(argv[i])+1))
+										if (ALLOCATE(execute_string,char,strlen(argv[i])+1))
 										{
-											strcpy(example_id,argv[i]);
+											strcpy(execute_string,argv[i]);
 										}
 										else
 										{
@@ -1533,6 +1590,10 @@ Main program for the CMISS Graphical User Interface
 				i++;
 			}
 #endif /* defined (MOTIF) */
+
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+			create_interpreter(&status);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 			if(no_display)
 			{
 				command_data.default_time_keeper = (struct Time_keeper *)NULL;
@@ -1758,6 +1819,7 @@ Main program for the CMISS Graphical User Interface
 #if !defined (WINDOWS_DEV_FLAG)
 				if(return_code)
 				{
+
 					if (start_cm||start_mycm)
 					{
 						sprintf(global_temp_string,"create cm");
@@ -1778,6 +1840,10 @@ Main program for the CMISS Graphical User Interface
 						/* start the back-end */
 						cmiss_execute_command(global_temp_string,
 							(void *)(&command_data));
+					}
+					if (execute_string)
+					{
+						cmiss_execute_command(execute_string,(void *)(&command_data));
 					}
 					if (user_settings.startup_comfile)
 					{
@@ -1862,6 +1928,8 @@ Main program for the CMISS Graphical User Interface
 						"    <-epath PATH_TO_EXAMPLES_DIRECTORY>     override the examples directory\n");
 					display_message(INFORMATION_MESSAGE,
 						"    <-example EXAMPLE_ID>                   command file is an example\n");
+					display_message(INFORMATION_MESSAGE,
+						"    <-execute EXECUTE_STRING>               string executed by cmiss before comfiles\n");
 #if defined (OLD_CODE)
 					display_message(INFORMATION_MESSAGE,
 						"    <-host HOSTNAME>                        host that Cmiss is running on\n");
@@ -2007,6 +2075,10 @@ Main program for the CMISS Graphical User Interface
 				if (command_data.example_directory)
 				{
 					DEALLOCATE(command_data.example_directory);
+				}
+				if (execute_string)
+				{
+					DEALLOCATE(execute_string);
 				}
 
 				coord_widget_finish();
