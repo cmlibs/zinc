@@ -62,9 +62,10 @@ class Function_matrix : public Function
 		virtual bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
 		virtual Function_handle get_value(Function_variable_handle atomic_variable);
-	private:
+	protected:
 		// copy constructor
 		Function_matrix(const Function_matrix&);
+	private:
 		// assignment
 		Function_matrix& operator=(const Function_matrix&);
 		// equality
