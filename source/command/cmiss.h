@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 2 February 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -23,7 +23,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 2 February 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -41,9 +41,6 @@ DESCRIPTION :
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Execute_command *execute_command,*set_command;
 #if !defined (WINDOWS_DEV_FLAG)
-	/* "active" groups for tools to record and display selected objects */
-	struct GROUP(FE_element) *active_element_group;
-	struct GROUP(FE_node) *active_data_group,*active_node_group;
 	/* one graphical_node_editor created with default_scene */
 	struct Graphical_node_editor *graphical_node_editor;
 	/* one graphical_element_creator always created */

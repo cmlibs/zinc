@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1359,7 +1359,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 						glyph_scale_factors[1];
 					element_to_glyph_set_data.glyph_scale_factors[2]=
 						glyph_scale_factors[2];
-					element_to_glyph_set_data.glyph_edit_mode=GLYPH_EDIT_OFF;
+					element_to_glyph_set_data.select_mode=GRAPHICS_NO_SELECT;
 					if (element_group)
 					{
 						return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
@@ -2448,34 +2448,6 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 } /* gfx_modify_flow_particles */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-static int group_FE_element_not_same(struct GROUP(FE_element) *element_group,
-	void *other_element_group_void)
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Returns true if <element_group> and <other_element_group> are not the same.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(group_FE_element_not_same);
-	if (element_group&&other_element_group_void)
-	{
-		return_code = (element_group !=
-			(struct GROUP(FE_element) *)other_element_group_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"group_FE_element_not_same.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* group_FE_element_not_same */
-
 static int gfx_create_g_element_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2506,7 +2478,7 @@ Invokes the graphical element group editor.
 			/* initialize defaults - try to get existing ones or at least not the
 				 active group if possible */
 			element_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
-				group_FE_element_not_same,(void *)(command_data->active_element_group),
+				(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,(void *)NULL,
 				command_data->element_group_manager);
 			scene=ACCESS(Scene)(command_data->default_scene);
 			if (command_data->element_group_editor_dialog)
@@ -4419,7 +4391,8 @@ Executes a GFX CREATE NODE_POINTS command.
 					if (glyph_set=create_GT_glyph_set_from_FE_node_group(
 						node_group,command_data->node_manager,rc_coordinate_field,
 						glyph,glyph_centre,glyph_size,wrapper_orientation_scale_field,
-						glyph_scale_factors,data_field,label_field,GLYPH_EDIT_OFF))
+						glyph_scale_factors,data_field,label_field,GRAPHICS_NO_SELECT,
+						(struct LIST(FE_node) *)NULL))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
 						{
@@ -4500,7 +4473,7 @@ Executes a GFX CREATE NODE_POINTS command.
 static int gfx_create_data_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX CREATE DATA_POINTS command.
@@ -4691,7 +4664,8 @@ Executes a GFX CREATE DATA_POINTS command.
 					if (glyph_set=create_GT_glyph_set_from_FE_node_group(
 						data_group,command_data->data_manager,rc_coordinate_field,
 						glyph,glyph_centre,glyph_size,wrapper_orientation_scale_field,
-						glyph_scale_factors,data_field,label_field,GLYPH_EDIT_OFF))
+						glyph_scale_factors,data_field,label_field,GRAPHICS_NO_SELECT,
+						(struct LIST(FE_node) *)NULL))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
 						{
@@ -19287,8 +19261,6 @@ Can now specify individual node groups to write with the <group> option.
 						{
 							fwrite_all_FE_node_groups_data.node_group_manager=
 								command_data->data_group_manager;
-							fwrite_all_FE_node_groups_data.active_node_group =
-								command_data->active_data_group;
 							fwrite_all_FE_node_groups_data.field=field;
 							return_code=file_write_all_FE_node_groups(file_name,
 								(void *)&fwrite_all_FE_node_groups_data);
@@ -19392,8 +19364,6 @@ Can also write individual element groups with the <group> option.
 						{
 							fwrite_all_FE_element_groups_data.element_group_manager=
 								command_data->element_group_manager;
-							fwrite_all_FE_element_groups_data.active_element_group =
-								command_data->active_element_group;
 							fwrite_all_FE_element_groups_data.field=field;
 							return_code=file_write_all_FE_element_groups(file_name,
 								(void *)&fwrite_all_FE_element_groups_data);
@@ -19498,8 +19468,6 @@ Can now specify individual node groups to write with the <group> option.
 						{
 							fwrite_all_FE_node_groups_data.node_group_manager=
 								command_data->node_group_manager;
-							fwrite_all_FE_node_groups_data.active_node_group =
-								command_data->active_node_group;
 							fwrite_all_FE_node_groups_data.field=field;
 							return_code=file_write_all_FE_node_groups(file_name,
 								(void *)&fwrite_all_FE_node_groups_data);
