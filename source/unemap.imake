@@ -408,8 +408,12 @@ WORMHOLE_INC = -I/home/bullivan/wormhole/source
 WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_n32
 WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
 #elif defined(LINUX) /* switch OperatingSystem */
-WORMHOLE_LIB = -L/home/bullivan/wormhole/lib -lwormhole
-WORMHOLE_INC = -I/home/bullivan/wormhole/source
+#if defined (OLD_CODE)
+WORMHOLE_LIB = -L${CMISS_ROOT}/home/bullivan/wormhole/lib -lwormhole
+WORMHOLE_INC = -I${CMISS_ROOT}/home/bullivan/wormhole/source
+#endif /* defined (OLD_CODE) */
+WORMHOLE_LIB = -L/wormhole/lib -lwormhole
+WORMHOLE_INC = -I/wormhole/source
 #endif /* switch OperatingSystem */
 
 START_ALL_DEFINES =
