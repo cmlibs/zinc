@@ -50,7 +50,7 @@ LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 The algorithm used for detecting an event from a signal.
-EDA_INTERVAL = divide the search interval into a user specified number of 
+EDA_INTERVAL = divide the search interval into a user specified number of
 	sub-intervals and select the maximum objective within each sub-interval
 EDA_LEVEL = find the first time in the search interval at which the absolute
 	value of the signal exceeds the user specified level
@@ -131,8 +131,8 @@ int calculate_device_event_markers(struct Device *device,
 LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Calculate the positions of the event markers for a signal/<device>/<device_node> 
-based upon the the start and end times, the number of events, the <detection> 
+Calculate the positions of the event markers for a signal/<device>/<device_node>
+based upon the the start and end times, the number of events, the <detection>
 algorithm and the <objective_values>.
 ==============================================================================*/
 
