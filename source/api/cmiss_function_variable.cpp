@@ -308,7 +308,6 @@ Creates an variable list.
 #endif // defined (NOT_DEBUG)
 }
 
-#if defined (NOT_DEBUG)
 int Cmiss_function_variable_list_destroy(
 	Cmiss_function_variable_list_id *list_address)
 /*******************************************************************************
@@ -335,7 +334,7 @@ Destroys an variable list.
 
 	return (return_code);
 }
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_list_destroy(
 	Cmiss_function_variable_list_id *)
 /*******************************************************************************
@@ -351,6 +350,7 @@ Destroys an variable list.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
 #if defined (NOT_DEBUG)
