@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 23 September 2001
+LAST MODIFIED : 2 January 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -20,6 +20,79 @@ SYNCHRONOUS_STIMULATION - allows stimulators to be started at the same time
 ???DB.  If works then don't need a lot of the start_stimulation_* globals
 	DA_INTERRUPTS_OFF - old way of handling short waveform buffers, now pad
 		buffers
+
+NOTES :
+1 Problem with NT crashing (blue screen) when using a large acquisition buffer
+	Stop message is
+	0x0000000A IRQL_NOT_LESS_OR_EQUAL
+	A  E1429FB4
+	B        1F
+	C         0
+	D  80118149
+	Search MSDN for IRQL_NOT_LESS_OR_EQUAL to get information
+	(Also see unemap_hardware_service.c)
+1.1 Steps to reproduce problem on esp33 (PXI crate, 32MB)
+1.1.1 Have
+unemap.*.samplingFrequencyHz: 5000
+unemap.*.numberOfSamples: 100000
+			in Unemap.  This ensures that will ask for buffer bigger than available
+			RAM.  A high sampling rate is not necessary, but means that the buffer
+			fills quickly
+1.1.2 Set the environment variable UNEMAP_OS_MEMORY_MB, for the hardware
+			service, to 13 (need to re-boot NT for it to take affect)
+1.1.3 Start unemap acquisition with Cancel (default) for configuration
+1.1.4 Leave in isolate mode, start test signal, start sampling and wait for
+			buffer to fill
+1.1.5 Stop sampling and save signals to file.  Wait until saving finished (file
+			written) on client (Linux)
+1.1.6 Start sampling again.  This is where NT will crash.  If it doesn't, exit
+			unemap and repeat 1.1.3-6 .  If can repeat 10 times without crashing then
+			problem is fixed
+1.2 Tried many things, mostly using #defines,
+1.2.1 NO_SCROLLING_CALLBACK
+			Don't have a callback after every so many scans ie don't use
+			Config_DAQ_Event_Message and scrolling_callback_NI .  This fixes the
+			problem and suggests that, during the saving, the address of the callback
+			function or the settings for the event message are being corrupted and
+			the service jumps into protected memory
+1.2.2 CLEAR_DAQ_FOR_START_SAMPLING
+			Do a DAQ_Clear, and set up again the SCAN and event messages.  Does not
+			fix the problem
+1.2.3 USE_VIRTUAL_LOCK
+			Thought that it may be that the buffer isn't being locked in physical
+			memory properly, so tried a different way.  Doesn't fix the problem.
+			Still not sure about locking, because its SCAN_Start that fails when the
+			buffer is too big - error message is
+			unemap_configure.  SCAN_Start failed.  -10447.  3
+			This means "The operating environment is unable to grant a page lock"
+1.2.4 USE_INTERRUPTS_FOR_AI
+			Thought that it may be a DMA conflict between the file I/O (saving
+			signals to disk) and the sampling.  Changed to interrupts for sampling.
+			This means that can't sample as fast (reduce rate to 1000).  Doesn't fix
+			the problem
+1.2.5 WINDOWS_IO
+      Thought that may be something wrong with the generic file I/O (fopen,
+			etc), so swapped to the Microsoft ones.  Doesn't fix the problem
+1.2.6 Upgrade to Service Pack 6a for NT.  Doesn't fix the problem
+1.2.7 RECONFIGURE_FOR_START_SAMPLING, RECONFIGURE_FOR_START_SAMPLING_1 and
+			RECONFIGURE_FOR_START_SAMPLING_2
+			Do a unemap_deconfigure and unemap_configure (also have set up and start
+			scrolling again) before starting sampling.  First actually called
+			unemap_deconfigure and unemap_configure.  Then copied code in.  This fixes
+			the problem.  Disadvantage is that DA has been turned off and scrolling
+			isn't general
+1.2.8 RECONFIGURE_FOR_START_SAMPLING and RECONFIGURE_FOR_START_SAMPLING_2
+			Don't free and allocate again the buffers.  This fixes the problem.  Only
+			differences with CLEAR_DAQ_FOR_START_SAMPLING seem to be that waveform
+			generation and scrolling are stopped and scrolling is set up and started
+			again
+1.2.9 RECONFIGURE_FOR_START_SAMPLING
+			Don't do a DAQ_Clear (clears event messages although the function
+			description gives the impression that it doesn't) or set up the event
+			message.  This fixes the problem
+1.2.10 Upgrade to version 6.6 of NI-DAQ.  Doesn't fix the problem
+1.2.11 Upgrade to version 6.9.1 of NI-DAQ.  This fixes the problem
+
 
 ???To do
 1 Try moving pulse generation set up from unemap_start_sampling to
@@ -153,6 +226,9 @@ Information associated with each NI card/signal conditioning card pair.
 	int anti_aliasing_filter_taps;
 	i16 *da_buffer;
 	u32 da_buffer_size;
+	int stimulation_end_callback_id;
+	Unemap_stimulation_end_callback *stimulation_end_callback;
+	void *stimulation_end_callback_data;
 	struct
 	{
 		/* the current calibrate/record mode of the card */
@@ -209,8 +285,8 @@ int module_number_of_scrolling_channels=0,
 	*module_scrolling_channel_numbers=(int *)NULL,module_scrolling_refresh_period;
 int module_sampling_on=0,module_scrolling_on=1;
 
-Calibration_end_callback *module_calibration_end_callback=
-	(Calibration_end_callback *)NULL;
+Unemap_calibration_end_callback *module_calibration_end_callback=
+	(Unemap_calibration_end_callback *)NULL;
 void *module_calibration_end_callback_data=NULL;
 int *module_calibration_channels=(int *)NULL,
 	module_calibration_number_of_channels=0;
@@ -487,7 +563,7 @@ word[i]='\0';
 
 static int search_for_NI_cards(void)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -746,6 +822,8 @@ DESCRIPTION :
 								fclose(unemap_debug);
 							}
 						}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 					} break;
 					case UnEmap_2V1:
 					case UnEmap_2V2:
@@ -1074,6 +1152,8 @@ DESCRIPTION :
 								fclose(unemap_debug);
 							}
 						}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 					} break;
 					default:
 					{
@@ -1194,6 +1274,10 @@ DESCRIPTION :
 									ni_card->anti_aliasing_filter_taps= -1;
 									ni_card->input_mode=input_mode;
 									ni_card->polarity=polarity;
+									ni_card->stimulation_end_callback_id=0;
+									ni_card->stimulation_end_callback=
+										(Unemap_stimulation_end_callback *)NULL;
+									ni_card->stimulation_end_callback_data=(void *)NULL;
 									if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
 										(UnEmap_2V2==ni_card->unemap_hardware_version))
 									{
@@ -1252,6 +1336,25 @@ DESCRIPTION :
 									{
 										/* configure the card */
 										status=AI_Clear(ni_card->device_number);
+#if defined (USE_INTERRUPTS_FOR_AI)
+										{
+											FILE *use_interrupts;
+
+											if (use_interrupts=fopen_UNEMAP_HARDWARE(
+												"useint.txt","r"))
+											{
+												fclose(use_interrupts);
+												/* use interrupts for transferring AI data */
+												status=Set_DAQ_Device_Info(ni_card->device_number,
+													ND_DATA_XFER_MODE_AI,ND_INTERRUPTS);
+												if (0!=status)
+												{
+													display_message(ERROR_MESSAGE,"search_for_NI_cards.  "
+														"Set_DAQ_Device_Info failed.  %d",status);
+												}
+											}
+										}
+#endif /* defined (USE_INTERRUPTS_FOR_AI) */
 										/* analog input */
 										status=AI_Configure(ni_card->device_number,
 											/* all channels */(i16)(-1),input_mode,
@@ -1673,7 +1776,7 @@ DESCRIPTION :
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"search_for_NI_cards.  AI_Configure failed");
+											"search_for_NI_cards.  AI_Configure failed.  %d",status);
 									}
 									/*???DB.  Moved from unemap_configure end */
 									module_number_of_NI_CARDS++;
@@ -1967,6 +2070,7 @@ DESCRIPTION :
 						"search_for_NI_cards.  Could not read chip_select_line");
 				}
 				fclose(digital_io_lines);
+				/*???debug */
 				{
 					FILE *unemap_debug;
 
@@ -2019,6 +2123,8 @@ DESCRIPTION :
 						fclose(unemap_debug);
 					}
 				}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 #endif /* defined (UNEMAP_1V1) */
 #if defined (UNEMAP_2V1) || defined (UNEMAP_2V2)
 				fscanf(digital_io_lines," %[^=]",word);
@@ -2360,6 +2466,7 @@ DESCRIPTION :
 					word[i]='\0';
 				}
 				fclose(digital_io_lines);
+				/*???debug */
 				{
 					FILE *unemap_debug;
 
@@ -2460,6 +2567,8 @@ DESCRIPTION :
 						fclose(unemap_debug);
 					}
 				}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 #endif /* defined (UNEMAP_2V1) || defined (UNEMAP_2V2) */
 			}
 		}
@@ -3130,6 +3239,54 @@ Always called so that <module_starting_sample_number> and
 #endif /* defined (NI_DAQ) */
 #endif /* defined (WINDOWS) */
 
+#if defined (WINDOWS)
+#if defined (NI_DAQ)
+static void stimulation_end_callback_NI(HWND handle,UINT message,WPARAM wParam,
+	LPARAM lParam)
+/*******************************************************************************
+LAST MODIFIED : 22 November 2001
+
+DESCRIPTION :
+Always called so that <module_starting_sample_number> and
+<module_sample_buffer_size> can be kept up to date.
+==============================================================================*/
+{
+	int i;
+
+	ENTER(stimulation_end_callback_NI);
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+	{
+		i=0;
+		while ((i<module_number_of_NI_CARDS)&&
+			((int)message!=(module_NI_CARDS[i]).stimulation_end_callback_id))
+		{
+			i++;
+		}
+		if (i<module_number_of_NI_CARDS)
+		{
+			if ((module_NI_CARDS[i]).stimulation_end_callback)
+			{
+				(*((module_NI_CARDS[i]).stimulation_end_callback))(
+					(module_NI_CARDS[i]).stimulation_end_callback_data);
+			}
+			do
+			{
+				if ((int)message==(module_NI_CARDS[i]).stimulation_end_callback_id)
+				{
+					(module_NI_CARDS[i]).stimulation_end_callback_id=0;
+					(module_NI_CARDS[i]).stimulation_end_callback=
+						(Unemap_stimulation_end_callback *)NULL;
+					(module_NI_CARDS[i]).stimulation_end_callback_data=(void *)NULL;
+				}
+				i++;
+			} while (i<module_number_of_NI_CARDS);
+		}
+	}
+	LEAVE;
+} /* stimulation_end_callback_NI */
+#endif /* defined (NI_DAQ) */
+#endif /* defined (WINDOWS) */
+
 #if defined (NI_DAQ)
 static int set_NI_gain(struct NI_card *ni_card,int gain)
 /*******************************************************************************
@@ -3182,15 +3339,29 @@ field of <ni_card>.
 				}
 			}
 			status=DAQ_Clear(ni_card_temp->device_number);
+#if defined (DEBUG)
+			/*???debug */
+			display_message(INFORMATION_MESSAGE,"set_NI_gain.  DAQ_Clear(%d)=%d\n",
+				ni_card_temp->device_number,status);
+#endif /* defined (DEBUG) */
 			if (0==status)
 			{
 				if (module_NI_CARDS==ni_card_temp)
 				{
+#if !defined (NO_SCROLLING_CALLBACK)
 					status=Config_DAQ_Event_Message(ni_card_temp->device_number,
 						/* add message */(i16)1,/* channel string */"AI0",
 						/* send message every N scans */(i16)1,
 						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
 						(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
+#if defined (DEBUG)
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,"set_NI_gain.  "
+						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
+						ni_card_temp->device_number,module_scrolling_refresh_period,
+						scrolling_callback_NI,status);
+#endif /* defined (DEBUG) */
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
 					if (0!=status)
 					{
 						display_message(ERROR_MESSAGE,
@@ -3213,21 +3384,32 @@ field of <ni_card>.
 						{
 							if (module_NI_CARDS==ni_card_temp)
 							{
+								/*???DB.  Start USE_INTERRUPTS_FOR_AI */
 								/*???DB.  I don't understand why this is needed, but if it is
 									not present, then get lots of extraneous callbacks (lParam is
 									wrong) */
+#if !defined (NO_SCROLLING_CALLBACK)
 								status=Config_DAQ_Event_Message(
 									module_NI_CARDS[0].device_number,
 									/* clear all messages */(i16)0,
 									/* channel string */(char *)NULL,
 									/* send message every N scans */(i16)0,
 									(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,(HWND)NULL,(i16)0,(u32)0);
+#if defined (DEBUG)
+								/*???debug */
+								display_message(INFORMATION_MESSAGE,"set_NI_gain 2.  "
+									"Config_DAQ_Event_Message(%d,0,NULL,0,0,0,0,0,0,NULL,0,0)=%d\n",
+									module_NI_CARDS[0].device_number,status);
+#endif /* defined (DEBUG) */
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
 								if (0!=status)
 								{
 									display_message(ERROR_MESSAGE,
 										"set_NI_gain.  Config_DAQ_Event_Message 2 failed.  %d",
 										status);
 								}
+#if !defined (USE_INTERRUPTS_FOR_AI)
+#endif /* !defined (USE_INTERRUPTS_FOR_AI) */
 							}
 						}
 						else
@@ -3304,9 +3486,11 @@ static int compare_float(const float *float_1,const float *float_2)
 #if defined (NI_DAQ)
 static int load_NI_DA(i16 da_channel,int number_of_channels,
 	int *channel_numbers,int number_of_voltages,float voltages_per_second,
-	float *voltages,unsigned int number_of_cycles)
+	float *voltages,unsigned int number_of_cycles,
+	Unemap_stimulation_end_callback *stimulation_end_callback,
+	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3327,14 +3511,20 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 <stop_NI_DA>.
 ==============================================================================*/
 {
+	char *channel_string;
 	f64 da_frequency,*da_voltage_buffer;
-	int *channel_number,first_DA_card,i,j,k,*load_card,return_code;
-	i16 *da_buffer,status,stopped;
-	u32 iterations,number_of_cycles_local,number_of_da_points,points;
+	int *channel_number,first_DA_card,i,j,k,*load_card,return_code,
+		stimulation_end_callback_id;
+	i16 *da_buffer,status;
+	u32 number_of_cycles_local,number_of_da_points;
 #if defined (USE_WFM_LOAD)
 	i16 timebase;
 	u32 update_interval;
 #endif /* defined (USE_WFM_LOAD) */
+#if defined (OLD_CODE)
+	i16 stopped;
+	u32 iterations,points;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(load_NI_DA);
 #if defined (DEBUG)
@@ -3494,6 +3684,19 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 						load_card[(channel_numbers[i]-1)/NUMBER_OF_CHANNELS_ON_NI_CARD]=1;
 					}
 				}
+				stimulation_end_callback_id=0;
+				if (stimulation_end_callback)
+				{
+					j=1;
+					for (i=0;i<module_number_of_NI_CARDS;i++)
+					{
+						if (load_card[i])
+						{
+							stimulation_end_callback_id += j;
+						}
+						j *= 2;
+					}
+				}
 				switch (number_of_voltages)
 				{
 					case 0:
@@ -3581,6 +3784,43 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 #endif /* !defined (SYNCHRONOUS_STIMULATION) */
 						}
 #endif /* defined (OLD_CODE) */
+						/*???DB.  Call the existing stimulation_end_callback ? */
+						if ((module_NI_CARDS[i]).stimulation_end_callback)
+						{
+							stimulation_end_callback_NI((HWND)NULL,
+								(UINT)(module_NI_CARDS[i]).stimulation_end_callback_id,
+								(WPARAM)NULL,(LPARAM)NULL);
+						}
+						/* add the stimulation end callback */
+						(module_NI_CARDS[i]).stimulation_end_callback_id=
+							stimulation_end_callback_id;
+						(module_NI_CARDS[i]).stimulation_end_callback=
+							stimulation_end_callback;
+						(module_NI_CARDS[i]).stimulation_end_callback_data=
+							stimulation_end_callback_data;
+						if (stimulation_end_callback)
+						{
+							if (1==da_channel)
+							{
+								channel_string="AO1";
+							}
+							else
+							{
+								channel_string="AO0";
+							}
+							status=Config_DAQ_Event_Message(module_NI_CARDS[i].device_number,
+								/* add message */(i16)1,channel_string,/* completed */(i16)2,
+								(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,(HWND)NULL,
+								(i16)stimulation_end_callback_id,
+								(u32)stimulation_end_callback_NI);
+#if defined (DEBUG)
+							/*???debug */
+							display_message(INFORMATION_MESSAGE,"load_NI_DA.  "
+								"Config_DAQ_Event_Message(%d,1,%s,2,0,0,0,0,0,NULL,%d,%p)=%d\n",
+								module_NI_CARDS[i].device_number,channel_string,
+								stimulation_end_callback_id,stimulation_end_callback_NI,status);
+#endif /* defined (DEBUG) */
+						}
 						/* configure the DA to bipolar +/-10 */
 						status=AO_Configure((module_NI_CARDS[i]).device_number,da_channel,
 							/*bipolar*/(i16)0,/*internal voltage reference*/(i16)0,
@@ -4237,8 +4477,11 @@ Stops the <da_channel> for the specified NI card(s).
 	int return_code;
 #if defined (NI_DAQ)
 	int card_number,i;
-	i16 status,stopped;
+	i16 status;
+#if defined (OLD_CODE)
+	i16 stopped;
 	u32 iterations,points;
+#endif /* defined (OLD_CODE) */
 #endif /* defined (NI_DAQ) */
 
 	ENTER(stop_NI_DA);
@@ -4364,7 +4607,7 @@ Stops the <da_channel> for the specified NI card(s).
 #if defined (NI_DAQ)
 static int calibration_callback(void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Output a square wave which alternates between +/- a known voltage.  Wait for the
@@ -4534,7 +4777,8 @@ stage 4 is calculating the offset
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 							if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
 								number_of_waveform_points,(float)number_of_waveform_points*
-								CALIBRATE_FREQUENCY,calibrate_voltages,0))
+								CALIBRATE_FREQUENCY,calibrate_voltages,0,
+								(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
 							{
 								*calibrate_amplitude=calibrate_voltages[0];
 								ni_card++;
@@ -4902,7 +5146,8 @@ stage 4 is calculating the offset
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 							if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
 								number_of_waveform_points,(float)number_of_waveform_points*
-								CALIBRATE_FREQUENCY,calibrate_voltages,0))
+								CALIBRATE_FREQUENCY,calibrate_voltages,0,
+								(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
 							{
 								*calibrate_amplitude=calibrate_voltages[0];
 								card_number++;
@@ -5059,7 +5304,8 @@ stage 4 is calculating the offset
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 								if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
 									number_of_waveform_points,(float)number_of_waveform_points*
-									CALIBRATE_FREQUENCY,calibrate_voltages,0))
+									CALIBRATE_FREQUENCY,calibrate_voltages,0,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
 								{
 									*calibrate_amplitude=calibrate_voltages[0];
 									card_number++;
@@ -6633,6 +6879,78 @@ DESCRIPTION :
 } /* batt_good_thread_function */
 #endif /* defined (WINDOWS) */
 
+static int file_write_samples_acquired(short int *samples,int number_of_samples,
+	void *file)
+/*******************************************************************************
+LAST MODIFIED : 12 November 2001
+
+DESCRIPTION :
+Used in conjunction with <unemap_transfer_samples_acquired> by
+<unemap_write_samples_acquired>.
+==============================================================================*/
+{
+	int return_code;
+#if defined (WINDOWS_IO)
+	DWORD number_of_bytes_written;
+#endif /* defined (WINDOWS_IO) */
+
+	ENTER(file_write_samples_acquired);
+	return_code=0;
+	if (samples&&(0<number_of_samples)&&file)
+	{
+#if defined (WINDOWS_IO)
+		if (WriteFile((HANDLE)file,(LPCVOID)samples,(DWORD)(number_of_samples*
+			sizeof(short int)),&number_of_bytes_written,(LPOVERLAPPED)NULL))
+		{
+			return_code=number_of_bytes_written/sizeof(short int);
+		}
+		else
+		{
+			return_code=0;
+		}
+#else /* defined (WINDOWS_IO) */
+		return_code=fwrite((char *)samples,sizeof(short int),
+			(size_t)number_of_samples,(FILE *)file);
+#endif /* defined (WINDOWS_IO) */
+	}
+	LEAVE;
+
+	return (return_code);
+} /* file_write_samples_acquired */
+
+static int memory_copy_samples_acquired(short int *samples,
+	int number_of_samples,void *memory_address)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+Used in conjunction with <unemap_transfer_samples_acquired> by
+<unemap_get_samples_acquired>.
+==============================================================================*/
+{
+	int i,return_code;
+	short int *destination,**destination_address,*source;
+
+	ENTER(memory_copy_samples_acquired);
+	return_code=0;
+	if ((source=samples)&&(0<number_of_samples)&&
+		(destination_address=(short int **)memory_address)&&
+		(destination= *destination_address))
+	{
+		for (i=number_of_samples;i>0;i--)
+		{
+			*destination= *source;
+			source++;
+			destination++;
+		}
+		return_code=number_of_samples;
+		*destination_address=destination;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* memory_copy_samples_acquired */
+
 /*
 Global functions
 ----------------
@@ -6648,7 +6966,7 @@ int unemap_configure(float sampling_frequency_slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 January 2002
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified
@@ -6705,18 +7023,25 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status,
 		time_base;
 	u16 sampling_interval;
-	u32 hardware_buffer_size;
+	u32 available_physical_memory,desired_physical_memory,hardware_buffer_size,
+		physical_memory_tolerance;
 #endif /* defined (NI_DAQ) */
 #if defined (WINDOWS)
 	/* for getting the total physical memory */
 	MEMORYSTATUS memory_status;
+#if defined (USE_VIRTUAL_LOCK)
+	SIZE_T working_set_size;
+#endif /* defined (USE_VIRTUAL_LOCK) */
 #endif /* defined (WINDOWS) */
 
 	ENTER(unemap_configure);
-#if defined (DEBUG)
 	/*???debug */
-	display_message(INFORMATION_MESSAGE,"enter unemap_configure %lu\n",
-		module_sample_buffer_size);
+	display_message(INFORMATION_MESSAGE,
+		"enter unemap_configure %g %d %p %u %p %p %g %d\n",sampling_frequency_slave,
+		number_of_samples_in_buffer,scrolling_window,scrolling_message,
+		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
+		synchronization_card);
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	if (sampling_frequency_slave<0)
@@ -6834,11 +7159,22 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					}
 					module_scrolling_channel_numbers=(int *)NULL;
 					module_number_of_scrolling_channels=0;
+#if !defined (NO_SCROLLING_CALLBACK)
 					status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
 						/* add message */(i16)1,/* channel string */"AI0",
 						/* send message every N scans */(i16)1,
 						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,(u32)0,
 						(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
+#if defined (DEBUG)
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,"unemap_configure.  "
+						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
+						module_NI_CARDS[0].device_number,module_scrolling_refresh_period,
+						scrolling_callback_NI,status);
+#endif /* defined (DEBUG) */
+#else /* !defined (NO_SCROLLING_CALLBACK) */
+					status=0;
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
 #if defined (DEBUG)
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,
@@ -6859,15 +7195,25 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					hardware_buffer_size=(hardware_buffer_size+1)*
 						module_scrolling_refresh_period;
 					hardware_buffer_size *= (u32)NUMBER_OF_CHANNELS_ON_NI_CARD;
-					/* limit the total locked memory to a third of physical memory */
 					memory_status.dwLength=sizeof(MEMORYSTATUS);
 					GlobalMemoryStatus(&memory_status);
 #if defined (DEBUG)
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,
-						"total physical memory=%d, available physical memory=%d\n",
-						memory_status.dwTotalPhys,memory_status.dwAvailPhys);
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"total physical memory=%d, available physical memory=%d\n",
+			memory_status.dwTotalPhys,memory_status.dwAvailPhys);
+		fclose(unemap_debug);
+	}
+}
 #endif /* defined (DEBUG) */
+#if defined (OLD_CODE)
+/*???DB.  16 November 2001.  Works (?).  See Martyn's email */
+					/* limit the total locked memory to a third of physical memory */
 					if ((DWORD)(3*module_number_of_NI_CARDS*hardware_buffer_size)*
 						sizeof(i16)>memory_status.dwTotalPhys)
 					{
@@ -6878,28 +7224,182 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 						hardware_buffer_size=(hardware_buffer_size+1)*
 							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 					}
+#endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
+/*???DB.  16 November 2001.  Doesn't work.  See Martyn's email */
+					/* limit the total locked memory to a "half" of available physical
+						memory */
+					if ((DWORD)((u32)(2.2*(float)module_number_of_NI_CARDS*
+						(float)hardware_buffer_size))*
+						sizeof(i16)>memory_status.dwAvailPhys)
+					{
+						hardware_buffer_size=(u32)((float)memory_status.dwAvailPhys/
+							(2.2*(float)module_number_of_NI_CARDS*(float)sizeof(i16)));
+						hardware_buffer_size=(hardware_buffer_size-1)/
+							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						hardware_buffer_size=(hardware_buffer_size+1)*
+							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+					}
+#endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
+/*???DB.  17 November 2001.  Works with os_memory set to 25.  See Martyn's
+	email */
+					/* limit the total locked memory */
+					{
+						char *os_memory_string;
+						u32 os_memory;
+
+						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
+							(1==sscanf(os_memory_string,"%d",&os_memory)))
+						{
+							os_memory *= 1024*1024;
+						}
+						else
+						{
+							os_memory=(memory_status.dwTotalPhys)/3;
+						}
+						if ((DWORD)(2*module_number_of_NI_CARDS*hardware_buffer_size)*
+							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
+						{
+							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
+								(2*module_number_of_NI_CARDS*sizeof(i16)));
+							hardware_buffer_size=(hardware_buffer_size-1)/
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size=(hardware_buffer_size+1)*
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						}
+					}
+#endif /* defined (OLD_CODE) */
+					/* limit the total locked memory */
+					{
+						char *os_memory_string;
+						u32 os_memory;
+
+						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
+							(1==sscanf(os_memory_string,"%d",&os_memory)))
+						{
+							if (os_memory<=0)
+							{
+								/*???DB.  memory_status.dwAvailPhys is not correct, so use
+									bi-section (later) to get most possible */
+/*								os_memory=memory_status.dwTotalPhys-memory_status.dwAvailPhys;*/
+								os_memory=0;
+							}
+							else
+							{
+								os_memory *= 1024*1024;
+							}
+						}
+						else
+						{
+							os_memory=(memory_status.dwTotalPhys)/3;
+						}
+						if ((DWORD)(module_number_of_NI_CARDS*hardware_buffer_size)*
+							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
+						{
+							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
+								(module_number_of_NI_CARDS*sizeof(i16)));
+							hardware_buffer_size /=
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size *=
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						}
+/*???debug */
+{
+	FILE *unemap_debug;
+#if defined (USE_VIRTUAL_LOCK)
+	SIZE_T maximum,minimum;
+#endif /* defined (USE_VIRTUAL_LOCK) */
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"total physical memory=%d, available physical memory=%d\n",
+			memory_status.dwTotalPhys,memory_status.dwAvailPhys);
+		fprintf(unemap_debug,
+			"os_memory=%d, hardware_buffer_size=%d, total buffer memory=%d\n",
+			os_memory,hardware_buffer_size,
+			hardware_buffer_size*module_number_of_NI_CARDS*sizeof(i16));
+#if defined (USE_VIRTUAL_LOCK)
+		GetProcessWorkingSetSize(GetCurrentProcess(),&minimum,&maximum);
+		fprintf(unemap_debug,
+			"minimum working set=%d, maximum working set=%d\n",
+			minimum,maximum);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+		fclose(unemap_debug);
+	}
+}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#if defined (USE_VIRTUAL_LOCK)
+					working_set_size=(11*memory_status.dwAvailPhys)/10;
+					SetProcessWorkingSetSize(GetCurrentProcess(),working_set_size,
+						working_set_size);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+#if defined (DEBUG)
+/*???debug */
+#if defined (USE_VIRTUAL_LOCK)
+{
+	FILE *unemap_debug;
+	SIZE_T maximum,minimum;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		GetProcessWorkingSetSize(GetCurrentProcess(),&minimum,&maximum);
+		fprintf(unemap_debug,
+			"minimum working set=%d, maximum working set=%d\n",
+			minimum,maximum);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (USE_VIRTUAL_LOCK) */
+#endif /* defined (DEBUG) */
+					}
 					for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
 					{
 						channel_vector[i]=i;
 					}
 #endif /* defined (WINDOWS) */
 					/* configure cards */
-					i=0;
-					status=0;
-					while ((0==status)&&(i<module_number_of_NI_CARDS))
+					physical_memory_tolerance=1024*1024;
+					available_physical_memory=0;
+					desired_physical_memory=hardware_buffer_size*
+						module_number_of_NI_CARDS*sizeof(i16);
+					do
 					{
-						(module_NI_CARDS[i]).time_base=time_base;
-						(module_NI_CARDS[i]).sampling_interval=sampling_interval;
-						(module_NI_CARDS[i]).hardware_buffer_size=hardware_buffer_size;
-						if (0==status)
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,
+							"available_physical_memory=%lu, desired_physical_memory=%lu\n",
+							available_physical_memory,desired_physical_memory);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+						i=0;
+						status=0;
+						while ((0==status)&&(i<module_number_of_NI_CARDS))
 						{
+							(module_NI_CARDS[i]).time_base=time_base;
+							(module_NI_CARDS[i]).sampling_interval=sampling_interval;
+							(module_NI_CARDS[i]).hardware_buffer_size=hardware_buffer_size;
 							/* allocate buffer */
+#if defined (USE_VIRTUAL_LOCK)
+							if ((module_NI_CARDS[i]).hardware_buffer=VirtualAlloc(
+								(LPVOID)NULL,(SIZE_T)(((module_NI_CARDS[i]).
+								hardware_buffer_size)*sizeof(i16)),(DWORD)MEM_COMMIT,
+								(DWORD)PAGE_READWRITE))
+#else /* defined (USE_VIRTUAL_LOCK) */
 							if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_MOVEABLE,
 								(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
 								sizeof(i16))))
+#endif /* defined (USE_VIRTUAL_LOCK) */
 							{
+#if defined (USE_VIRTUAL_LOCK)
+								if (TRUE==VirtualLock((module_NI_CARDS[i]).hardware_buffer,
+									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+									sizeof(i16))))
+#else /* defined (USE_VIRTUAL_LOCK) */
 								if ((module_NI_CARDS[i]).hardware_buffer=
 									(i16 *)GlobalLock((module_NI_CARDS[i]).memory_object))
+#endif /* defined (USE_VIRTUAL_LOCK) */
 								{
 									/* working from "Building Blocks" section, p.3-25 (pdf 65) in
 										the "NI-DAQ User Manual" */
@@ -6927,9 +7427,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 													ND_RTSI_CLOCK,ND_BOARD_CLOCK,ND_DONT_CARE);
 												if (0!=status)
 												{
-													display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_RTSI_CLOCK,ND_BOARD_CLOCK,ND_DONT_CARE)=%d",
-														(module_NI_CARDS[i]).device_number,status);
+													display_message(ERROR_MESSAGE,"unemap_configure.  "
+														"Select_Signal(%d,ND_RTSI_CLOCK,ND_BOARD_CLOCK,"
+														"ND_DONT_CARE)=%d.  %d",
+														(module_NI_CARDS[i]).device_number,status,i);
 												}
 											}
 											else
@@ -6939,9 +7440,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 													ND_BOARD_CLOCK,ND_RTSI_CLOCK,ND_DONT_CARE);
 												if (0!=status)
 												{
-													display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_BOARD_CLOCK,ND_RTSI_CLOCK,ND_DONT_CARE)=%d",
-														(module_NI_CARDS[i]).device_number,status);
+													display_message(ERROR_MESSAGE,"unemap_configure.  "
+														"Select_Signal(%d,ND_BOARD_CLOCK,ND_RTSI_CLOCK,"
+														"ND_DONT_CARE)=%d.  %d",
+														(module_NI_CARDS[i]).device_number,status,i);
 												}
 											}
 											if (0==status)
@@ -6991,21 +7493,24 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 														if (0!=status)
 														{
 															display_message(ERROR_MESSAGE,
-																"unemap_configure.  SCAN_Start failed.  %d",
-																status);
+																"unemap_configure.  "
+																"SCAN_Start failed.  %d.  %d.  %lu",status,i,
+																hardware_buffer_size);
 														}
 													}
 													else
 													{
-														display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_IN_SCAN_START,ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d",
-															(module_NI_CARDS[i]).device_number,status);
+														display_message(ERROR_MESSAGE,"unemap_configure.  "
+															"Select_Signal(%d,ND_IN_SCAN_START,"
+															"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d.  %d",
+															(module_NI_CARDS[i]).device_number,status,i);
 													}
 												}
 												else
 												{
-													display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,ND_LOW_TO_HIGH)=%d",
+													display_message(ERROR_MESSAGE,"unemap_configure.  "
+														"Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,"
+														"ND_LOW_TO_HIGH)=%d",
 														(module_NI_CARDS[i]).device_number,status);
 												}
 #if defined (OLD_CODE)
@@ -7053,15 +7558,17 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 													}
 													else
 													{
-														display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_IN_SCAN_START,ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d",
+														display_message(ERROR_MESSAGE,"unemap_configure.  "
+															"Select_Signal(%d,ND_IN_SCAN_START,"
+															"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d",
 															(module_NI_CARDS[i]).device_number,status);
 													}
 												}
 												else
 												{
-													display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,ND_LOW_TO_HIGH)=%d",
+													display_message(ERROR_MESSAGE,"unemap_configure.  "
+														"Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,"
+														"ND_LOW_TO_HIGH)=%d",
 														(module_NI_CARDS[i]).device_number,status);
 												}
 #endif /* defined (OLD_CODE) */
@@ -7072,74 +7579,197 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 											}
 											else
 											{
+#if defined (USE_VIRTUAL_LOCK)
+												VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+													(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+													sizeof(i16)));
+												VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+													(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+													sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
 												GlobalUnlock((module_NI_CARDS[i]).memory_object);
 												GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
 												DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 													/* disable */(i16)0);
 											}
 										}
 										else
 										{
-											display_message(ERROR_MESSAGE,
-												"unemap_configure.  SCAN_Setup failed.  %d.  gain=%d",
-												status,gain_vector[0]);
+											display_message(ERROR_MESSAGE,"unemap_configure.  "
+												"SCAN_Setup failed.  %d.  gain=%d.  %d",status,
+												gain_vector[0],i);
+#if defined (USE_VIRTUAL_LOCK)
+											VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+												sizeof(i16)));
+											VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+												sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
 											GlobalUnlock((module_NI_CARDS[i]).memory_object);
 											GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
 											DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 												/* disable */(i16)0);
 										}
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE,
-											"unemap_configure.  DAQ_DB_Config failed");
+										display_message(ERROR_MESSAGE,"unemap_configure.  "
+											"DAQ_DB_Config failed.  %d.  %d",status,i);
+#if defined (USE_VIRTUAL_LOCK)
+										VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+											sizeof(i16)));
+										VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+											sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
 										GlobalUnlock((module_NI_CARDS[i]).memory_object);
 										GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"unemap_configure.  GlobalLock failed");
+#if defined (USE_VIRTUAL_LOCK)
+										"unemap_configure.  VirtualLock failed.  %d",i);
+									VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+										sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+										"unemap_configure.  GlobalLock failed.  %d",i);
 									GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+									status=1;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"unemap_configure.  GlobalAlloc failed");
+#if defined (USE_VIRTUAL_LOCK)
+									"unemap_configure.  VirtualAlloc failed.  %d",i);
+#else /* defined (USE_VIRTUAL_LOCK) */
+									"unemap_configure.  GlobalAlloc failed.  %d",i);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+								status=1;
 							}
 						}
-					}
+						if (0==status)
+						{
+							available_physical_memory=hardware_buffer_size*
+								module_number_of_NI_CARDS*sizeof(i16);
+						}
+						else
+						{
+							desired_physical_memory=hardware_buffer_size*
+								module_number_of_NI_CARDS*sizeof(i16);
+						}
+						if ((0!=status)||(desired_physical_memory-available_physical_memory>
+							physical_memory_tolerance))
+						{
+							if (desired_physical_memory-available_physical_memory>
+								physical_memory_tolerance)
+							{
+								hardware_buffer_size=(available_physical_memory+
+									desired_physical_memory)/
+									(2*module_number_of_NI_CARDS*sizeof(i16));
+							}
+							else
+							{
+								hardware_buffer_size=available_physical_memory/
+									(module_number_of_NI_CARDS*sizeof(i16));
+							}
+							hardware_buffer_size /=
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size *=
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							while (i>0)
+							{
+								i--;
+								DAQ_Clear((module_NI_CARDS[i]).device_number);
+#if defined (DEBUG)
+								/*???debug */
+								display_message(INFORMATION_MESSAGE,"unemap_configure.  "
+									"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,
+									status);
+#endif /* defined (DEBUG) */
+#if defined (USE_VIRTUAL_LOCK)
+								VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+									sizeof(i16)));
+								VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+									sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+								GlobalUnlock((module_NI_CARDS[i]).memory_object);
+								GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+								DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+								/* disable */(i16)0);
+							}
+						}
+					} while ((0<hardware_buffer_size)&&
+						((desired_physical_memory-available_physical_memory>
+						physical_memory_tolerance)||(0!=status)));
 					module_sample_buffer_size=0;
 					module_starting_sample_number=0;
 					if (0==status)
 					{
 						return_code=1;
+						/*???DB.  Start USE_INTERRUPTS_FOR_AI */
 						/*???DB.  Needed, otherwise WFM_Op (waveform generation) fails */
 						/*???DB.  Don't understand why.  See set_NI_gain */
+#if !defined (NO_SCROLLING_CALLBACK)
 						status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
 							/* clear all messages */(i16)0,/* channel string */(char *)NULL,
 							/* send message every N scans */(i16)0,
 							(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,
 							(HWND)NULL,(i16)0,(u32)0);
+#if defined (DEBUG)
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,"unemap_configure 2.  "
+							"Config_DAQ_Event_Message(%d,0,NULL,0,0,0,0,0,0,NULL,0,0)=%d\n",
+							module_NI_CARDS[0].device_number,status);
+#endif /* defined (DEBUG) */
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
+#if !defined (USE_INTERRUPTS_FOR_AI)
+#endif /* !defined (USE_INTERRUPTS_FOR_AI) */
 						module_configured=1;
 						unemap_set_isolate_record_mode(0,1);
 						unemap_set_antialiasing_filter_frequency(0,
 							initial_antialiasing_filter_frequency);
 					}
+#if defined (OLD_CODE)
 					else
 					{
 						while (i>0)
 						{
 							i--;
 							DAQ_Clear((module_NI_CARDS[i]).device_number);
+#if defined (DEBUG)
+							/*???debug */
+							display_message(INFORMATION_MESSAGE,"unemap_configure.  "
+								"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,status);
+#endif /* defined (DEBUG) */
+#if defined (USE_VIRTUAL_LOCK)
+							VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+								sizeof(i16)));
+							VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+								sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
 							GlobalUnlock((module_NI_CARDS[i]).memory_object);
 							GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
 							DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 							/* disable */(i16)0);
 						}
 					}
+#endif /* defined (OLD_CODE) */
 				}
 				else
 				{
@@ -7169,10 +7799,13 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 			number_of_samples_in_buffer);
 		return_code=0;
 	}
-#if defined (DEBUG)
 	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave unemap_configure %d %lu\n",
-		return_code,module_sample_buffer_size);
+	display_message(INFORMATION_MESSAGE,
+		"leave unemap_configure %d %g %p %u %p %p %d %d\n",return_code,
+		module_sampling_frequency,module_scrolling_window,module_scrolling_message,
+		module_scrolling_callback,module_scrolling_callback_data,
+		module_scrolling_refresh_period,module_NI_CARDS[0].hardware_buffer_size);
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
@@ -7204,7 +7837,7 @@ Returns a non-zero if unemap is configured and zero otherwise.
 
 int unemap_deconfigure(void)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Stops acquisition and signal generation.  Frees buffers associated with the
@@ -7222,6 +7855,7 @@ hardware.
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,"enter unemap_deconfigure %lu\n",
 		module_sample_buffer_size);
+	set_check_memory_output(1);
 #endif /* defined (DEBUG) */
 	return_code=1;
 #if defined (NI_DAQ)
@@ -7237,8 +7871,22 @@ hardware.
 			for (i=0;i<module_number_of_NI_CARDS;i++)
 			{
 				status=DAQ_Clear((module_NI_CARDS[i]).device_number);
+#if defined (DEBUG)
+				/*???debug */
+				display_message(INFORMATION_MESSAGE,"unemap_deconfigure.  "
+					"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,status);
+#endif /* defined (DEBUG) */
+#if defined (USE_VIRTUAL_LOCK)
+				VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+					sizeof(i16)));
+				VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+					sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
 				GlobalUnlock((module_NI_CARDS[i]).memory_object);
 				GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
 				/* turn off double buffering */
 				status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 					/* disable */(i16)0);
@@ -7291,6 +7939,7 @@ hardware.
 #endif /* defined (NI_DAQ) */
 #if defined (DEBUG)
 	/*???debug */
+	set_check_memory_output(0);
 	display_message(INFORMATION_MESSAGE,"leave unemap_deconfigure %d %lu\n",
 		return_code,module_sample_buffer_size);
 #endif /* defined (DEBUG) */
@@ -7527,7 +8176,7 @@ callbacks.  Allows sampling without scrolling.
 	return (return_code);
 } /* unemap_stop_scrolling */
 
-int unemap_calibrate(Calibration_end_callback *calibration_end_callback,
+int unemap_calibrate(Unemap_calibration_end_callback *calibration_end_callback,
 	void *calibration_end_callback_data)
 /*******************************************************************************
 LAST MODIFIED : 3 May 1999
@@ -7566,26 +8215,34 @@ calibrated channels and the <calibration_end_callback_data>.
 	return (return_code);
 } /* unemap_calibrate */
 
+#if defined (CLEAR_DAQ_FOR_START_SAMPLING)
 int unemap_start_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 30 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
 
-Starts the sampling.
-???DB.  Check if already going
+Configures the DAQ and starts the sampling.
+
+The scrolling callback needs to be set up each time otherwise NT crashs (IRQ
+problem, but not on first sample) when using large sampling buffers.
 ==============================================================================*/
 {
 	int return_code;
 #if defined (NI_DAQ)
 	float frequency;
-	int channel_number,i;
-	i16 status,stopped;
-	u32 retrieved;
+	int channel_number,i,j;
+	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
+		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status;
+	struct NI_card *ni_card;
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_start_sampling);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter unemap_start_sampling\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 #if defined (NI_DAQ)
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS)&&
@@ -7604,34 +8261,1178 @@ Starts the sampling.
 				channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 			}
 		}
+		/* reconfigure the DAQ */
+		/* stop any current sampling */
+		status=GPCTR_Control(module_NI_CARDS->device_number,SCAN_COUNTER,ND_RESET);
+		ni_card=module_NI_CARDS;
+		j=module_number_of_NI_CARDS;
+		for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
+		{
+			channel_vector[i]=i;
+		}
+		while (j>0)
+		{
+			status=DAQ_Clear(ni_card->device_number);
+#if defined (DEBUG)
+			/*???debug */
+			display_message(INFORMATION_MESSAGE,"unemap_start_sampling.  "
+				"DAQ_Clear(%d)=%d\n",ni_card->device_number,status);
+#endif /* defined (DEBUG) */
+			if (0==status)
+			{
+				if (module_NI_CARDS==ni_card)
+				{
+#if !defined (NO_SCROLLING_CALLBACK)
+					status=Config_DAQ_Event_Message(module_NI_CARDS->device_number,
+						/* add message */(i16)1,/* channel string */"AI0",
+						/* send message every N scans */(i16)1,
+						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
+						(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
+					if (0!=status)
+					{
+						display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+							"Config_DAQ_Event_Message 1 failed.  %d %d",status,
+							module_scrolling_refresh_period);
+					}
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
+				}
+				status=DAQ_DB_Config(ni_card->device_number,/* enable */(i16)1);
+				if (0==status)
+				{
+					for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
+					{
+						gain_vector[i]=(i16)(ni_card->gain);
+					}
+					status=SCAN_Setup(ni_card->device_number,
+						NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
+					if (0==status)
+					{
+						status=SCAN_Start(ni_card->device_number,
+							(i16 *)(ni_card->hardware_buffer),
+							(u32)(ni_card->hardware_buffer_size),ni_card->time_base,
+							ni_card->sampling_interval,(i16)0,(u16)0);
+						if (0==status)
+						{
+							if (module_NI_CARDS==ni_card)
+							{
+#if !defined (USE_INTERRUPTS_FOR AI)
+								/*???DB.  I don't understand why this is needed, but if it is
+									not present, then get lots of extraneous callbacks (lParam is
+									wrong) */
+#if !defined (NO_SCROLLING_CALLBACK)
+								status=Config_DAQ_Event_Message(module_NI_CARDS->device_number,
+									/* clear all messages */(i16)0,
+									/* channel string */(char *)NULL,
+									/* send message every N scans */(i16)0,
+									(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,(HWND)NULL,(i16)0,(u32)0);
+								if (0!=status)
+								{
+									display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+										"Config_DAQ_Event_Message 2 failed.  %d",status);
+								}
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
+#endif /* !defined (USE_INTERRUPTS_FOR AI) */
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+								"SCAN_Start failed.  %d",status);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+							"SCAN_Setup failed.  %d",status);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+						"DAQ_DB_Config failed.  %d",status);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+					"DAQ_Clear failed.  %d",status);
+			}
+			ni_card++;
+			j--;
+		}
+		module_sample_buffer_size=0;
+		module_starting_sample_number=0;
+		if (module_slave)
+		{
+			return_code=1;
+			module_sampling_on=1;
+		}
+		else
+		{
+			/* set up the conversion signal */
+				/*???DB.  Can most of this be moved into unemap_configure ? */
+			status=GPCTR_Set_Application(module_NI_CARDS->device_number,
+				SCAN_COUNTER,ND_PULSE_TRAIN_GNR);
+			if (0==status)
+			{
+				status=GPCTR_Change_Parameter(module_NI_CARDS->device_number,
+					SCAN_COUNTER,ND_COUNT_1,module_sampling_low_count);
+				if (0==status)
+				{
+					status=GPCTR_Change_Parameter(module_NI_CARDS->device_number,
+						SCAN_COUNTER,ND_COUNT_2,module_sampling_high_count);
+					if (0==status)
+					{
+						status=Select_Signal(module_NI_CARDS->device_number,
+							ND_RTSI_0,ND_GPCTR0_OUTPUT,ND_DONT_CARE);
+						if (0==status)
+						{
+							module_sampling_on=1;
+							/* start the data acquisition */
+							status=GPCTR_Control(module_NI_CARDS->device_number,SCAN_COUNTER,
+								ND_PROGRAM);
+							if (0==status)
+							{
+								return_code=1;
+							}
+							else
+							{
+								module_sampling_on=0;
+								display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+									"GPCTR_Control (ND_PROGRAM) failed");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+								"Select_Signal(%d,ND_RTSI_0,ND_GPCTR0_SOURCE,ND_DONT_CARE)=%d",
+								module_NI_CARDS->device_number,status);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+							"GPCTR_Change_Parameter (high length) failed");
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
+						"GPCTR_Change_Parameter (low length) failed");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_start_sampling.  GPCTR_Set_Application failed");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_start_sampling.  Invalid configuration.  %d %p %d %d %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS,
+			module_sampling_low_count,module_sampling_high_count);
+	}
+#endif /* defined (NI_DAQ) */
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave unemap_start_sampling\n");
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	LEAVE;
+
+	return (return_code);
+} /* unemap_start_sampling */
+#else /* defined (CLEAR_DAQ_FOR_START_SAMPLING) */
+static int unemap_start_sampling_count=0;
+
+int unemap_start_sampling(void)
+/*******************************************************************************
+LAST MODIFIED : 29 December 2001
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+Starts the sampling.
+???DB.  Check if already going
+==============================================================================*/
+{
+	int return_code;
+#if defined (NI_DAQ)
+	float frequency;
+	int channel_number,i;
+	i16 status,stopped;
+	u32 retrieved;
+#endif /* defined (NI_DAQ) */
+
+	ENTER(unemap_start_sampling);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter unemap_start_sampling\n");
+#endif /* defined (DEBUG) */
+	return_code=0;
+#if defined (NI_DAQ)
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS)&&
+		(0<module_sampling_low_count)&&(0<module_sampling_high_count))
+	{
+#if defined (RECONFIGURE_FOR_START_SAMPLING)
+		/*???debug.  deconfigure and configure before starting sampling */
+		{
+			float save_module_sampling_frequency;
+			int save_module_scrolling_refresh_period,save_hardware_buffer_size;
+			HWND save_module_scrolling_window;
+			Unemap_hardware_callback *save_module_scrolling_callback;
+			UINT save_module_scrolling_message;
+			void *save_module_scrolling_callback_data;
+
+			save_module_sampling_frequency=module_sampling_frequency;
+			save_module_scrolling_window=module_scrolling_window;
+			save_module_scrolling_message=module_scrolling_message;
+			save_module_scrolling_callback=module_scrolling_callback;
+			save_module_scrolling_callback_data=module_scrolling_callback_data;
+			save_module_scrolling_refresh_period=module_scrolling_refresh_period;
+			save_hardware_buffer_size=module_NI_CARDS[0].hardware_buffer_size;
+/*			unemap_deconfigure();*/
+{
+#if defined (NI_DAQ)
+	int i;
+	i16 status;
+
+	if (module_configured)
+	{
+		if ((0<module_number_of_NI_CARDS)&&module_NI_CARDS)
+		{
+			/* stop continuous sampling */
+			status=GPCTR_Control(module_NI_CARDS->device_number,SCAN_COUNTER,
+				ND_RESET);
+			/* make sure that in calibrate mode */
+			unemap_set_isolate_record_mode(0,1);
+			for (i=0;i<module_number_of_NI_CARDS;i++)
+			{
+#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
+				status=DAQ_Clear((module_NI_CARDS[i]).device_number);
+				/*???debug */
+				display_message(INFORMATION_MESSAGE,"unemap_start_sampling.  "
+					"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,status);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
+#if defined (USE_VIRTUAL_LOCK)
+				VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+					sizeof(i16)));
+				VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+					sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+				GlobalUnlock((module_NI_CARDS[i]).memory_object);
+				GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
+#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
+				/* turn off double buffering */
+				status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+					/* disable */(i16)0);
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+				if ((PCI6031E_AD_DA==(module_NI_CARDS[i]).type)||
+					(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
+					(PXI6071E_AD_DA==(module_NI_CARDS[i]).type))
+				{
+					/* stop waveform generation */
+					status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
+						/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"unemap_deconfigure.  1.  WFM_Group_Control(%d,CLEAR)=%d\n",
+			(module_NI_CARDS[i]).device_number,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
+					/* set the output voltage to 0 */
+					AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
+						(i16)0);
+					AO_Write((module_NI_CARDS[i]).device_number,STIMULATE_CHANNEL,
+						(i16)0);
+				}
+#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
+				DEALLOCATE((module_NI_CARDS[i]).da_buffer);
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
+			}
+			module_sample_buffer_size=0;
+			module_starting_sample_number=0;
+			module_scrolling_refresh_period=0;
+#if defined (WINDOWS)
+			module_scrolling_window=(HWND)NULL;
+			module_scrolling_message=(UINT)0;
+#endif /* defined (WINDOWS) */
+			module_scrolling_callback=(Unemap_hardware_callback *)NULL;
+			module_scrolling_callback_data=(void *)NULL;
+			module_number_of_scrolling_channels=0;
+			DEALLOCATE(module_scrolling_channel_numbers);
+			DEALLOCATE(module_calibration_channels);
+			DEALLOCATE(module_calibration_offsets);
+			DEALLOCATE(module_calibration_gains);
+		}
+		module_configured=0;
+	}
+#endif /* defined (NI_DAQ) */
+}
+/*			unemap_configure(save_module_sampling_frequency,
+				save_hardware_buffer_size/NUMBER_OF_CHANNELS_ON_NI_CARD,
+				save_module_scrolling_window,save_module_scrolling_message,
+				save_module_scrolling_callback,save_module_scrolling_callback_data,
+				save_module_sampling_frequency/
+				(float)save_module_scrolling_refresh_period,1);*/
+{
+	float sampling_frequency_slave=save_module_sampling_frequency;
+	int number_of_samples_in_buffer=
+		save_hardware_buffer_size/NUMBER_OF_CHANNELS_ON_NI_CARD;
+	HWND scrolling_window=save_module_scrolling_window;
+	UINT scrolling_message=save_module_scrolling_message;
+	Unemap_hardware_callback *scrolling_callback=save_module_scrolling_callback;
+	void *scrolling_callback_data=save_module_scrolling_callback_data;
+	float scrolling_refresh_frequency=save_module_sampling_frequency/
+		(float)save_module_scrolling_refresh_period;
+	int synchronization_card=1;
+
+	float sampling_frequency;
+	int return_code;
+#if defined (NI_DAQ)
+	int i,j,local_synchronization_card;
+	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
+		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status,
+		time_base;
+	u16 sampling_interval;
+	u32 hardware_buffer_size;
+#endif /* defined (NI_DAQ) */
+#if defined (WINDOWS)
+	/* for getting the total physical memory */
+	MEMORYSTATUS memory_status;
+#if defined (USE_VIRTUAL_LOCK)
+	SIZE_T working_set_size;
+#endif /* defined (USE_VIRTUAL_LOCK) */
+#endif /* defined (WINDOWS) */
+
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"enter unemap_configure %g %d %p %u %p %p %g %d\n",sampling_frequency_slave,
+		number_of_samples_in_buffer,scrolling_window,scrolling_message,
+		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
+		synchronization_card);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	return_code=0;
+	if (sampling_frequency_slave<0)
+	{
+		sampling_frequency= -sampling_frequency_slave;
+		module_slave=1;
+	}
+	else
+	{
+		sampling_frequency=sampling_frequency_slave;
+		module_slave=0;
+	}
+	/* check arguments */
+	if ((0<sampling_frequency)&&(0<number_of_samples_in_buffer))
+	{
+#if defined (NI_DAQ)
+		if (0==module_configured)
+		{
+			if (search_for_NI_cards()&&module_NI_CARDS)
+			{
+				if (synchronization_card<1)
+				{
+					local_synchronization_card=0;
+				}
+				else
+				{
+					if (module_number_of_NI_CARDS<synchronization_card)
+					{
+						local_synchronization_card=module_number_of_NI_CARDS-1;
+					}
+					else
+					{
+						local_synchronization_card=synchronization_card-1;
+					}
+				}
+#if defined (DEBUG)
+				/*???debug */
+				display_message(INFORMATION_MESSAGE,
+					"synchronization_card=%d, local_synchronization_card=%d\n",
+					synchronization_card,local_synchronization_card);
+#endif /* defined (DEBUG) */
+				/* drive the A/D conversions as fast as possible */
+				/* use the 20 MHz (50 ns) clock */
+				time_base= -3;
+				sampling_interval=module_NI_CARDS->sampling_interval;
+				if (sampling_interval<=0)
+				{
+					if (PXI6071E_AD_DA==module_NI_CARDS->type)
+					{
+						/* 1.25 MS/s */
+						/* do a A/D conversion every 800 nano-seconds = 16 * 50 ns */
+						sampling_interval=16;
+						/* if scanning can't go at 1.25 MS/s, limit to 0.5 MS/s */
+						sampling_interval=40;
+					}
+					else
+					{
+						/* 100 kS/s */
+						/* do a A/D conversion every 10 micro-seconds = 200 * 50 ns */
+						sampling_interval=200;
+						/*???DB.  What is safe when scanning ? */
+					}
+				}
+				module_sampling_frequency=(float)1;
+				for (i=(int)ceil(log10((double)NUMBER_OF_CHANNELS_ON_NI_CARD));i>0;i--)
+				{
+					module_sampling_frequency *= (float)10;
+				}
+				module_sampling_frequency=(float)1e9/((float)sampling_interval*
+					(float)50*module_sampling_frequency);
+				if ((0<sampling_frequency)&&
+					(sampling_frequency<module_sampling_frequency))
+				{
+					module_sampling_frequency=sampling_frequency;
+				}
+				module_sampling_high_count=2;
+				module_sampling_low_count=
+					(u32)((double)20000000/(double)module_sampling_frequency);
+				module_sampling_frequency=
+					(float)20000000./(float)module_sampling_low_count;
+				module_sampling_low_count -= module_sampling_high_count;
+				if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
+				{
+					if ((0<scrolling_refresh_frequency)&&(scrolling_callback
+#if defined (WINDOWS)
+						||scrolling_window
+#endif /* defined (WINDOWS) */
+						))
+					{
+						module_scrolling_refresh_period=(int)(module_sampling_frequency/
+							scrolling_refresh_frequency);
+						/* have scrolling period divisible by 4 */
+						module_scrolling_refresh_period=
+							(module_scrolling_refresh_period-1)/4;
+						module_scrolling_refresh_period=
+							(module_scrolling_refresh_period+1)*4;
+#if defined (WINDOWS)
+						module_scrolling_window=scrolling_window;
+						module_scrolling_message=scrolling_message;
+#endif /* defined (WINDOWS) */
+						module_scrolling_callback=scrolling_callback;
+						module_scrolling_callback_data=scrolling_callback_data;
+					}
+					else
+					{
+						/* have a callback to keep <module_starting_sample_number> and
+							<module_sample_buffer_size> up to date */
+						module_scrolling_refresh_period=number_of_samples_in_buffer/2;
+#if defined (WINDOWS)
+						module_scrolling_window=(HWND)NULL;
+						module_scrolling_message=(UINT)0;
+#endif /* defined (WINDOWS) */
+						module_scrolling_callback=(Unemap_hardware_callback *)NULL;
+						module_scrolling_callback_data=(void *)NULL;
+					}
+					module_scrolling_channel_numbers=(int *)NULL;
+					module_number_of_scrolling_channels=0;
+#if !defined (NO_SCROLLING_CALLBACK)
+#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
+					status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
+						/* add message */(i16)1,/* channel string */"AI0",
+						/* send message every N scans */(i16)1,
+						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,(u32)0,
+						(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,"unemap_start_sampling.  "
+						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
+						module_NI_CARDS[0].device_number,module_scrolling_refresh_period,
+						scrolling_callback_NI,status);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#else /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+					status=0;
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+#else /* !defined (NO_SCROLLING_CALLBACK) */
+					status=0;
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
+#if defined (DEBUG)
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,
+						"module_sampling_frequency=%g, sampling_interval=%u\n",
+						module_sampling_frequency,sampling_interval);
+#endif /* defined (DEBUG) */
+					if (0!=status)
+					{
+						display_message(ERROR_MESSAGE,
+							"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
+							status,module_scrolling_refresh_period);
+					}
+#if defined (WINDOWS)
+#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
+					/* have number_of_samples_in_buffer divisible by
+						module_scrolling_refresh_period */
+					hardware_buffer_size=(number_of_samples_in_buffer-1)/
+						module_scrolling_refresh_period;
+					hardware_buffer_size=(hardware_buffer_size+1)*
+						module_scrolling_refresh_period;
+					hardware_buffer_size *= (u32)NUMBER_OF_CHANNELS_ON_NI_CARD;
+					memory_status.dwLength=sizeof(MEMORYSTATUS);
+					GlobalMemoryStatus(&memory_status);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"total physical memory=%d, available physical memory=%d\n",
+			memory_status.dwTotalPhys,memory_status.dwAvailPhys);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
+#if defined (OLD_CODE)
+/*???DB.  16 November 2001.  Works (?).  See Martyn's email */
+					/* limit the total locked memory to a third of physical memory */
+					if ((DWORD)(3*module_number_of_NI_CARDS*hardware_buffer_size)*
+						sizeof(i16)>memory_status.dwTotalPhys)
+					{
+						hardware_buffer_size=(u32)(memory_status.dwTotalPhys/
+							(3*module_number_of_NI_CARDS*sizeof(i16)));
+						hardware_buffer_size=(hardware_buffer_size-1)/
+							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						hardware_buffer_size=(hardware_buffer_size+1)*
+							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+					}
+#endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
+/*???DB.  16 November 2001.  Doesn't work.  See Martyn's email */
+					/* limit the total locked memory to a "half" of available physical
+						memory */
+					if ((DWORD)((u32)(2.2*(float)module_number_of_NI_CARDS*
+						(float)hardware_buffer_size))*
+						sizeof(i16)>memory_status.dwAvailPhys)
+					{
+						hardware_buffer_size=(u32)((float)memory_status.dwAvailPhys/
+							(2.2*(float)module_number_of_NI_CARDS*(float)sizeof(i16)));
+						hardware_buffer_size=(hardware_buffer_size-1)/
+							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						hardware_buffer_size=(hardware_buffer_size+1)*
+							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+					}
+#endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
+/*???DB.  17 November 2001.  Works with os_memory set to 25.  See Martyn's
+	email */
+					/* limit the total locked memory */
+					{
+						char *os_memory_string;
+						u32 os_memory;
+
+						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
+							(1==sscanf(os_memory_string,"%d",&os_memory)))
+						{
+							os_memory *= 1024*1024;
+						}
+						else
+						{
+							os_memory=(memory_status.dwTotalPhys)/3;
+						}
+						if ((DWORD)(2*module_number_of_NI_CARDS*hardware_buffer_size)*
+							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
+						{
+							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
+								(2*module_number_of_NI_CARDS*sizeof(i16)));
+							hardware_buffer_size=(hardware_buffer_size-1)/
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size=(hardware_buffer_size+1)*
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						}
+					}
+#endif /* defined (OLD_CODE) */
+					/* limit the total locked memory */
+					{
+						char *os_memory_string;
+						u32 os_memory;
+
+						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
+							(1==sscanf(os_memory_string,"%d",&os_memory)))
+						{
+							if (os_memory<=0)
+							{
+								os_memory=memory_status.dwTotalPhys-memory_status.dwAvailPhys;
+							}
+							else
+							{
+								os_memory *= 1024*1024;
+							}
+						}
+						else
+						{
+							os_memory=(memory_status.dwTotalPhys)/3;
+						}
+						if ((DWORD)(module_number_of_NI_CARDS*hardware_buffer_size)*
+							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
+						{
+							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
+								(module_number_of_NI_CARDS*sizeof(i16)));
+							hardware_buffer_size /=
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size *=
+								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						}
+/*???debug */
+{
+	FILE *unemap_debug;
+#if defined (USE_VIRTUAL_LOCK)
+	SIZE_T maximum,minimum;
+#endif /* defined (USE_VIRTUAL_LOCK) */
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"total physical memory=%d, available physical memory=%d\n",
+			memory_status.dwTotalPhys,memory_status.dwAvailPhys);
+		fprintf(unemap_debug,
+			"os_memory=%d, hardware_buffer_size=%d, total buffer memory=%d\n",
+			os_memory,hardware_buffer_size,
+			hardware_buffer_size*module_number_of_NI_CARDS*sizeof(i16));
+#if defined (USE_VIRTUAL_LOCK)
+		GetProcessWorkingSetSize(GetCurrentProcess(),&minimum,&maximum);
+		fprintf(unemap_debug,
+			"minimum working set=%d, maximum working set=%d\n",
+			minimum,maximum);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+		fclose(unemap_debug);
+	}
+}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#if defined (USE_VIRTUAL_LOCK)
+					working_set_size=(11*memory_status.dwAvailPhys)/10;
+					SetProcessWorkingSetSize(GetCurrentProcess(),working_set_size,
+						working_set_size);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+#if defined (DEBUG)
+/*???debug */
+#if defined (USE_VIRTUAL_LOCK)
+{
+	FILE *unemap_debug;
+	SIZE_T maximum,minimum;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		GetProcessWorkingSetSize(GetCurrentProcess(),&minimum,&maximum);
+		fprintf(unemap_debug,
+			"minimum working set=%d, maximum working set=%d\n",
+			minimum,maximum);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (USE_VIRTUAL_LOCK) */
+#endif /* defined (DEBUG) */
+					}
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
+					for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
+					{
+						channel_vector[i]=i;
+					}
+#endif /* defined (WINDOWS) */
+					/* configure cards */
+					i=0;
+					status=0;
+					while ((0==status)&&(i<module_number_of_NI_CARDS))
+					{
+						(module_NI_CARDS[i]).time_base=time_base;
+						(module_NI_CARDS[i]).sampling_interval=sampling_interval;
+#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
+						(module_NI_CARDS[i]).hardware_buffer_size=hardware_buffer_size;
+						/* allocate buffer */
+#if defined (USE_VIRTUAL_LOCK)
+						if ((module_NI_CARDS[i]).hardware_buffer=VirtualAlloc(
+							(LPVOID)NULL,(SIZE_T)(((module_NI_CARDS[i]).
+							hardware_buffer_size)*sizeof(i16)),(DWORD)MEM_COMMIT,
+							(DWORD)PAGE_READWRITE))
+#else /* defined (USE_VIRTUAL_LOCK) */
+						if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_MOVEABLE,
+							(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
+							sizeof(i16))))
+#endif /* defined (USE_VIRTUAL_LOCK) */
+						{
+#if defined (USE_VIRTUAL_LOCK)
+							if (TRUE==VirtualLock((module_NI_CARDS[i]).hardware_buffer,
+								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+								sizeof(i16))))
+#else /* defined (USE_VIRTUAL_LOCK) */
+							if ((module_NI_CARDS[i]).hardware_buffer=
+								(i16 *)GlobalLock((module_NI_CARDS[i]).memory_object))
+#endif /* defined (USE_VIRTUAL_LOCK) */
+							{
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
+								/* working from "Building Blocks" section, p.3-25 (pdf 65) in
+									the "NI-DAQ User Manual" */
+								/* configuration block.  Start with default settings except
+									for changing to double buffering mode (DAQ_DB_Config).
+									Could also use AI_Configure, AI_Max_Config, DAQ_Config,
+									DAQ_StopTrigger_Config */
+#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
+								status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+									/* enable */(i16)1);
+								if (0==status)
+								{
+									/* set the scan sequence and gain */
+									for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+									{
+										gain_vector[j]=(module_NI_CARDS[i]).gain;
+									}
+									status=SCAN_Setup((module_NI_CARDS[i]).device_number,
+										NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
+									if (0==status)
+									{
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+										if (0==i)
+										{
+											/* set the clock source on the RTSI bus */
+											status=Select_Signal((module_NI_CARDS[i]).device_number,
+												ND_RTSI_CLOCK,ND_BOARD_CLOCK,ND_DONT_CARE);
+											if (0!=status)
+											{
+												display_message(ERROR_MESSAGE,"unemap_configure.  "
+													"Select_Signal(%d,ND_RTSI_CLOCK,ND_BOARD_CLOCK,"
+													"ND_DONT_CARE)=%d.  %d",
+													(module_NI_CARDS[i]).device_number,status,i);
+											}
+										}
+										else
+										{
+											/* use the clock source on the RTSI bus */
+											status=Select_Signal((module_NI_CARDS[i]).device_number,
+												ND_BOARD_CLOCK,ND_RTSI_CLOCK,ND_DONT_CARE);
+											if (0!=status)
+											{
+												display_message(ERROR_MESSAGE,"unemap_configure.  "
+													"Select_Signal(%d,ND_BOARD_CLOCK,ND_RTSI_CLOCK,"
+													"ND_DONT_CARE)=%d.  %d",
+													(module_NI_CARDS[i]).device_number,status,i);
+											}
+										}
+										if (0==status)
+										{
+											if (module_slave&&(local_synchronization_card==i))
+											{
+												/* set to input the A/D conversion signal */
+												status=Select_Signal(
+													(module_NI_CARDS[i]).device_number,
+													ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
+											}
+											else
+											{
+												/* set to output the A/D conversion signal (for use
+													on other crates */
+												status=Select_Signal(
+													(module_NI_CARDS[i]).device_number,ND_PFI_7,
+													ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
+											}
+											if (0==status)
+											{
+												/* configure RTSI */
+												/* set to input the A/D conversion signal */
+												if (module_slave&&(local_synchronization_card==i))
+												{
+													status=Select_Signal(
+														(module_NI_CARDS[i]).device_number,
+														ND_RTSI_0,ND_IN_SCAN_START,ND_LOW_TO_HIGH);
+												}
+												else
+												{
+													status=Select_Signal(
+														(module_NI_CARDS[i]).device_number,
+														ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
+												}
+												if (0==status)
+												{
+#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
+													/* acquisition won't actually start (controlled by
+														conversion signal) */
+													status=SCAN_Start(
+														(module_NI_CARDS[i]).device_number,
+														(i16 *)((module_NI_CARDS[i]).hardware_buffer),
+														(u32)((module_NI_CARDS[i]).hardware_buffer_size),
+														(module_NI_CARDS[i]).time_base,
+														(module_NI_CARDS[i]).sampling_interval,(i16)0,
+														(u16)0);
+													if (0!=status)
+													{
+														display_message(ERROR_MESSAGE,
+															"unemap_configure.  SCAN_Start failed.  %d.  %d",
+															status,i);
+													}
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,"unemap_configure.  "
+														"Select_Signal(%d,ND_IN_SCAN_START,"
+														"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d.  %d",
+														(module_NI_CARDS[i]).device_number,status,i);
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+"unemap_configure.  Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,ND_LOW_TO_HIGH)=%d",
+													(module_NI_CARDS[i]).device_number,status);
+											}
+#if defined (OLD_CODE)
+											/* set to output the A/D conversion signal (for use
+												on other crates */
+											if (!module_slave)
+											{
+												status=Select_Signal(
+													(module_NI_CARDS[i]).device_number,ND_PFI_7,
+													ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
+											}
+											if (0==status)
+											{
+												/* configure RTSI */
+												/* set to input the A/D conversion signal */
+												if (module_slave&&(0==i))
+												{
+													status=Select_Signal(
+														(module_NI_CARDS[i]).device_number,
+														ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
+												}
+												else
+												{
+													status=Select_Signal(
+														(module_NI_CARDS[i]).device_number,
+														ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
+												}
+												if (0==status)
+												{
+													/* acquisition won't actually start (controlled by
+														conversion signal) */
+													status=SCAN_Start(
+														(module_NI_CARDS[i]).device_number,
+														(i16 *)((module_NI_CARDS[i]).hardware_buffer),
+														(u32)((module_NI_CARDS[i]).hardware_buffer_size),
+														(module_NI_CARDS[i]).time_base,
+														(module_NI_CARDS[i]).sampling_interval,(i16)0,
+														(u16)0);
+													if (0!=status)
+													{
+														display_message(ERROR_MESSAGE,
+															"unemap_configure.  SCAN_Start failed.  %d",
+															status);
+													}
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+"unemap_configure.  Select_Signal(%d,ND_IN_SCAN_START,ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d",
+														(module_NI_CARDS[i]).device_number,status);
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+"unemap_configure.  Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,ND_LOW_TO_HIGH)=%d",
+													(module_NI_CARDS[i]).device_number,status);
+											}
+#endif /* defined (OLD_CODE) */
+										}
+										if (0==status)
+										{
+											i++;
+										}
+										else
+										{
+#if defined (USE_VIRTUAL_LOCK)
+											VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+												sizeof(i16)));
+											VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+												sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+											GlobalUnlock((module_NI_CARDS[i]).memory_object);
+											GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+											DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+												/* disable */(i16)0);
+										}
+#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,"unemap_configure.  "
+											"SCAN_Setup failed.  %d.  gain=%d.  %d",status,
+											gain_vector[0],i);
+										/*???debug */
+										display_message(ERROR_MESSAGE,"device_number=%d",
+											(module_NI_CARDS[i]).device_number);
+										for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+										{
+											display_message(ERROR_MESSAGE,"%d.  %d %d",j,
+												channel_vector[j],gain_vector[j]);
+										}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#if defined (USE_VIRTUAL_LOCK)
+										VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+											sizeof(i16)));
+										VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+											sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+										GlobalUnlock((module_NI_CARDS[i]).memory_object);
+										GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+										DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+											/* disable */(i16)0);
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"unemap_configure.  DAQ_DB_Config failed.  %d.  %d",status,
+										i);
+#if defined (USE_VIRTUAL_LOCK)
+									VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+										sizeof(i16)));
+									VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+										sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+									GlobalUnlock((module_NI_CARDS[i]).memory_object);
+									GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+								}
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+#if defined (USE_VIRTUAL_LOCK)
+									"unemap_configure.  VirtualLock failed.  %d",i);
+								VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+									sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+									"unemap_configure.  GlobalLock failed.  %d",i);
+								GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+								status=1;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+#if defined (USE_VIRTUAL_LOCK)
+								"unemap_configure.  VirtualAlloc failed.  %d",i);
+#else /* defined (USE_VIRTUAL_LOCK) */
+								"unemap_configure.  GlobalAlloc failed.  %d",i);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+							status=1;
+						}
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
+					}
+					module_sample_buffer_size=0;
+					module_starting_sample_number=0;
+					if (0==status)
+					{
+						return_code=1;
+						/*???DB.  Start USE_INTERRUPTS_FOR_AI */
+						/*???DB.  Needed, otherwise WFM_Op (waveform generation) fails */
+						/*???DB.  Don't understand why.  See set_NI_gain */
+#if !defined (NO_SCROLLING_CALLBACK)
+#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
+						status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
+							/* clear all messages */(i16)0,/* channel string */(char *)NULL,
+							/* send message every N scans */(i16)0,
+							(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,
+							(HWND)NULL,(i16)0,(u32)0);
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,"unemap_start_sampling 2.  "
+							"Config_DAQ_Event_Message(%d,0,NULL,0,0,0,0,0,0,NULL,0,0)=%d\n",
+							module_NI_CARDS[0].device_number,status);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
+#if !defined (USE_INTERRUPTS_FOR_AI)
+#endif /* !defined (USE_INTERRUPTS_FOR_AI) */
+						module_configured=1;
+						unemap_set_isolate_record_mode(0,1);
+						unemap_set_antialiasing_filter_frequency(0,
+							initial_antialiasing_filter_frequency);
+					}
+					else
+					{
+						while (i>0)
+						{
+							i--;
+							DAQ_Clear((module_NI_CARDS[i]).device_number);
+							/*???debug */
+							display_message(INFORMATION_MESSAGE,"unemap_start_sampling 2.  "
+								"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,status);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+#if defined (USE_VIRTUAL_LOCK)
+							VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+								sizeof(i16)));
+							VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+								sizeof(i16)),(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+							GlobalUnlock((module_NI_CARDS[i]).memory_object);
+							GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_VIRTUAL_LOCK) */
+							DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+							/* disable */(i16)0);
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"unemap_configure.  Invalid sampling frequency.  %d %d",
+						module_sampling_low_count,module_sampling_high_count);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_configure.  Missing module_NI_CARDS");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"unemap_configure.  Hardware is already configured");
+			return_code=0;
+		}
+#endif /* defined (NI_DAQ) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_configure.  Invalid argument(s).  %g %d",sampling_frequency,
+			number_of_samples_in_buffer);
+		return_code=0;
+	}
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"leave unemap_configure %d %g %p %u %p %p %d %d\n",return_code,
+		module_sampling_frequency,module_scrolling_window,module_scrolling_message,
+		module_scrolling_callback,module_scrolling_callback_data,
+		module_scrolling_refresh_period,module_NI_CARDS[0].hardware_buffer_size);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+} /* unemap_configure */
+			unemap_start_scrolling();
+			unemap_set_scrolling_channel(1);
+		}
+#endif /* defined (RECONFIGURE_FOR_START_SAMPLING) */
+		if (UnEmap_1V2==module_NI_CARDS->unemap_hardware_version)
+		{
+			/* force a reset of the filter frequency (because power may have been
+				turned on and off manually */
+			channel_number=1;
+			for (i=0;i<module_number_of_NI_CARDS;i++)
+			{
+				unemap_get_antialiasing_filter_frequency(channel_number,&frequency);
+				module_NI_CARDS[i].anti_aliasing_filter_taps= -1;
+				unemap_set_antialiasing_filter_frequency(channel_number,frequency);
+				channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
+			}
+		}
+#if defined (DEBUG)
+/*???debug */
+#if defined (VIRTUAL_LOCK)
+for (i=0;i<module_number_of_NI_CARDS;i++)
+{
+	display_message(INFORMATION_MESSAGE,"VirtualLock %d %d\n",i,
+		VirtualLock((module_NI_CARDS[i]).hardware_buffer,
+		(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*sizeof(i16))));
+}
+#endif /* defined (VIRTUAL_LOCK) */
+#endif /* defined (DEBUG) */
 		if (!module_slave)
 		{
 			/* stop any current sampling */
 				/*???DB.  Check instead using GPCTR_Watch ? */
+#if defined (DEBUG)
+			/*???debug */
+			display_message(INFORMATION_MESSAGE,"before GPCTR_Control\n");
+#endif /* defined (DEBUG) */
 			status=GPCTR_Control(module_NI_CARDS->device_number,SCAN_COUNTER,
 				ND_RESET);
+#if defined (DEBUG)
+			/*???debug */
+			display_message(INFORMATION_MESSAGE,"GPCTR_Control=%d\n",status);
+#endif /* defined (DEBUG) */
 			/* set up the conversion signal */
 				/*???DB.  Can most of this be moved into unemap_configure ? */
 			if (0==status)
 			{
 				status=GPCTR_Set_Application(module_NI_CARDS->device_number,
 					SCAN_COUNTER,ND_PULSE_TRAIN_GNR);
+#if defined (DEBUG)
+				/*???debug */
+				display_message(INFORMATION_MESSAGE,"GPCTR_Set_Application=%d\n",
+					status);
+#endif /* defined (DEBUG) */
 				if (0==status)
 				{
 					status=GPCTR_Change_Parameter(module_NI_CARDS->device_number,
 						SCAN_COUNTER,ND_COUNT_1,module_sampling_low_count);
+#if defined (DEBUG)
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,"GPCTR_Change_Parameter=%d\n",
+						status);
+#endif /* defined (DEBUG) */
 					if (0==status)
 					{
 						status=GPCTR_Change_Parameter(module_NI_CARDS->device_number,
 							SCAN_COUNTER,ND_COUNT_2,module_sampling_high_count);
+#if defined (DEBUG)
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,"GPCTR_Change_Parameter 2=%d\n",
+							status);
+#endif /* defined (DEBUG) */
 						if (0==status)
 						{
 							status=Select_Signal(module_NI_CARDS->device_number,
 								ND_RTSI_0,ND_GPCTR0_OUTPUT,ND_DONT_CARE);
+#if defined (DEBUG)
+							/*???debug */
+							display_message(INFORMATION_MESSAGE,"Select_Signal=%d\n",status);
+#endif /* defined (DEBUG) */
 							if (0==status)
 							{
 								status=DAQ_Check(module_NI_CARDS->device_number,&stopped,
 									&retrieved);
+#if defined (DEBUG)
+								/*???debug */
+								display_message(INFORMATION_MESSAGE,"DAQ_Check=%d\n",status);
+#endif /* defined (DEBUG) */
 								if (0==status)
 								{
 									module_starting_sample_number=((unsigned long)retrieved/
@@ -7640,12 +9441,28 @@ Starts the sampling.
 										(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
 									module_sample_buffer_size=0;
 									module_sampling_on=1;
+#if defined (DEBUG)
+/*???debug */
+unemap_start_sampling_count++;
+display_message(INFORMATION_MESSAGE,"unemap_start_sampling_count=%d\n",
+	unemap_start_sampling_count);
+if (unemap_start_sampling_count<=2)
+{
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+/*???debug */
+}
+#endif /* defined (DEBUG) */
 									/* start the data acquisition */
 									status=GPCTR_Control(module_NI_CARDS->device_number,
 										SCAN_COUNTER,ND_PROGRAM);
+#if defined (DEBUG)
+									/*???debug */
+									display_message(INFORMATION_MESSAGE,"GPCTR_Control=%d\n",
+										status);
+#endif /* defined (DEBUG) */
 									if (0==status)
 									{
-										return_code=1;
 									}
 									else
 									{
@@ -7720,14 +9537,19 @@ Starts the sampling.
 			module_sampling_low_count,module_sampling_high_count);
 	}
 #endif /* defined (NI_DAQ) */
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave unemap_start_sampling\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
 } /* unemap_start_sampling */
+#endif /* defined (CLEAR_DAQ_FOR_START_SAMPLING) */
 
 int unemap_stop_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 2 December 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -7800,13 +9622,13 @@ many samples were acquired.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"unemap_stop_sampling.  DAQ_Check failed");
+					"unemap_stop_sampling.  DAQ_Check failed.  %d",status);
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_stop_sampling.  GPCTR_Control failed");
+				"unemap_stop_sampling.  GPCTR_Control failed.  %d",status);
 		}
 	}
 	else
@@ -8782,37 +10604,46 @@ assigned to <*number_of_samples>.
 	return (return_code);
 } /* unemap_get_number_of_samples_acquired */
 
-int unemap_write_samples_acquired(int channel_number,FILE *file)
+int unemap_transfer_samples_acquired(int channel_number,
+	Unemap_transfer_samples_function *transfer_samples_function,
+	void *transfer_samples_function_data,int *number_of_samples_transferred)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 12 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
 
 If <channel_number> is valid (between 1 and the total number of channels
-inclusive, then the samples for that channel are written to <file>.  If
-<channel_number> is 0 then the samples for all channels are written to <file>.
+inclusive, then the <samples> for that channel are transferred.  If
+<channel_number> is 0 then the <samples> for all channels are transferred.
 Otherwise the function fails.
+
+The <transfer_samples_function> is used to transfer the samples.  It is called
+with samples (short int *), number_of_samples (int) and
+<transfer_samples_function_data>.  It should return the number of samples
+transferred.
 ==============================================================================*/
 {
-	int return_code;
+	int number_transferred,return_code;
 #if defined (NI_DAQ)
-	int end,end2,i,j,k,number_of_channels,start;
+	int end,end2,i,j,k,number_of_channels,start,transfer_samples_function_result;
 	short int sample,samples[NUMBER_OF_CHANNELS_ON_NI_CARD],*source;
 	struct NI_card *ni_card;
 	unsigned long maximum_number_of_samples,number_of_samples;
 #endif /* defined (NI_DAQ) */
 
-	ENTER(unemap_write_samples_acquired);
+	ENTER(unemap_transfer_samples_acquired);
 #if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,
-		"enter unemap_write_samples_acquired %d %d\n",
+		"enter unemap_transfer_samples_acquired %d %d\n",
 		module_starting_sample_number,module_sample_buffer_size);
 #endif /* defined (DEBUG) */
+	return_code=0;
+	number_transferred=0;
 #if defined (NI_DAQ)
 	/* check arguments */
-	if (file&&(0<=channel_number)&&
+	if (transfer_samples_function&&(0<=channel_number)&&
 		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
 	{
 		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
@@ -8828,9 +10659,6 @@ Otherwise the function fails.
 			{
 				number_of_channels=1;
 			}
-			fwrite((char *)&channel_number,sizeof(channel_number),1,file);
-			fwrite((char *)&number_of_channels,sizeof(number_of_channels),1,file);
-			fwrite((char *)&number_of_samples,sizeof(number_of_samples),1,file);
 			maximum_number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
 				NUMBER_OF_CHANNELS_ON_NI_CARD;
 			if (0==channel_number)
@@ -8848,10 +10676,12 @@ Otherwise the function fails.
 					end=module_starting_sample_number+module_sample_buffer_size;
 					end2=0;
 				}
-				for (k=start;k<end;k++)
+				k=start;
+				while (return_code&&(k<end))
 				{
 					ni_card=module_NI_CARDS;
-					for (i=0;i<module_number_of_NI_CARDS;i++)
+					i=module_number_of_NI_CARDS;
+					while (return_code&&(i>0))
 					{
 						source=(ni_card->hardware_buffer)+(k*NUMBER_OF_CHANNELS_ON_NI_CARD);
 						if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
@@ -8879,17 +10709,27 @@ Otherwise the function fails.
 								samples[j]=source[(ni_card->channel_reorder)[j]];
 							}
 						}
-						fwrite((char *)samples,sizeof(short int),
-							NUMBER_OF_CHANNELS_ON_NI_CARD,file);
+						transfer_samples_function_result=(*transfer_samples_function)(
+							samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
+							transfer_samples_function_data);
+						number_transferred += transfer_samples_function_result;
+						if (NUMBER_OF_CHANNELS_ON_NI_CARD!=transfer_samples_function_result)
+						{
+							return_code=0;
+						}
 						ni_card++;
+						i--;
 					}
+					k++;
 				}
-				if (end2>0)
+				if (return_code&&(end2>0))
 				{
-					for (k=0;k<end2;k++)
+					k=0;
+					while (return_code&&(k<end2))
 					{
 						ni_card=module_NI_CARDS;
-						for (i=0;i<module_number_of_NI_CARDS;i++)
+						i=module_number_of_NI_CARDS;
+						while (return_code&&(i>0))
 						{
 							source=(ni_card->hardware_buffer)+
 								(k*NUMBER_OF_CHANNELS_ON_NI_CARD);
@@ -8918,10 +10758,19 @@ Otherwise the function fails.
 									samples[j]=source[(ni_card->channel_reorder)[j]];
 								}
 							}
-							fwrite((char *)samples,sizeof(short int),
-								NUMBER_OF_CHANNELS_ON_NI_CARD,file);
+							transfer_samples_function_result=(*transfer_samples_function)(
+								samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
+								transfer_samples_function_data);
+							number_transferred += transfer_samples_function_result;
+							if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
+								transfer_samples_function_result)
+							{
+								return_code=0;
+							}
 							ni_card++;
+							i--;
 						}
+						k++;
 					}
 				}
 			}
@@ -8950,7 +10799,8 @@ Otherwise the function fails.
 					(UnEmap_2V2==ni_card->unemap_hardware_version))
 				{
 					/* UnEmap_2V1 and UnEmap_2V2 invert */
-					for (k=start;k<end;k++)
+					k=start;
+					while (return_code&&(k<end))
 					{
 						sample= *source;
 						if (sample<SHRT_MAX)
@@ -8965,17 +10815,26 @@ Otherwise the function fails.
 						i++;
 						if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
 						{
-							fwrite((char *)samples,sizeof(short int),
-								NUMBER_OF_CHANNELS_ON_NI_CARD,file);
+							transfer_samples_function_result=(*transfer_samples_function)(
+								samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
+								transfer_samples_function_data);
+							number_transferred += transfer_samples_function_result;
+							if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
+								transfer_samples_function_result)
+							{
+								return_code=0;
+							}
 							i=0;
 						}
 						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
+						k++;
 					}
-					if (end2>0)
+					if (return_code&&(end2>0))
 					{
 						source=(ni_card->hardware_buffer)+((ni_card->channel_reorder)[
 							(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]);
-						for (k=0;k<end2;k++)
+						k=0;
+						while (return_code&&(k<end2))
 						{
 							sample= *source;
 							if (sample<SHRT_MAX)
@@ -8990,52 +10849,184 @@ Otherwise the function fails.
 							i++;
 							if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
 							{
-								fwrite((char *)samples,sizeof(short int),
-									NUMBER_OF_CHANNELS_ON_NI_CARD,file);
+								transfer_samples_function_result=(*transfer_samples_function)(
+									samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
+									transfer_samples_function_data);
+								number_transferred += transfer_samples_function_result;
+								if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
+									transfer_samples_function_result)
+								{
+									return_code=0;
+								}
 								i=0;
 							}
 							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							k++;
 						}
 					}
 				}
 				else
 				{
-					for (k=start;k<end;k++)
+					k=start;
+					while (return_code&&(k<end))
 					{
 						samples[i]= *source;
 						i++;
 						if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
 						{
-							fwrite((char *)samples,sizeof(short int),
-								NUMBER_OF_CHANNELS_ON_NI_CARD,file);
+							transfer_samples_function_result=(*transfer_samples_function)(
+								samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
+								transfer_samples_function_data);
+							number_transferred += transfer_samples_function_result;
+							if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
+								transfer_samples_function_result)
+							{
+								return_code=0;
+							}
 							i=0;
 						}
 						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
+						k++;
 					}
-					if (end2>0)
+					if (return_code&&(end2>0))
 					{
 						source=(ni_card->hardware_buffer)+((ni_card->channel_reorder)[
 							(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]);
-						for (k=0;k<end2;k++)
+						k=0;
+						while (return_code&&(k<end2))
 						{
 							samples[i]= *source;
 							i++;
 							if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
 							{
-								fwrite((char *)samples,sizeof(short int),
-									NUMBER_OF_CHANNELS_ON_NI_CARD,file);
+								transfer_samples_function_result=(*transfer_samples_function)(
+									samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
+									transfer_samples_function_data);
+								number_transferred += transfer_samples_function_result;
+								if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
+									transfer_samples_function_result)
+								{
+									return_code=0;
+								}
 								i=0;
 							}
 							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							k++;
 						}
 					}
 				}
-				if (i>0)
+				if (return_code&&(i>0))
 				{
-					fwrite((char *)samples,sizeof(short int),i,file);
+					transfer_samples_function_result=(*transfer_samples_function)(
+						samples,i,transfer_samples_function_data);
+					number_transferred += transfer_samples_function_result;
+					if (i!=transfer_samples_function_result)
+					{
+						return_code=0;
+					}
 					i=0;
 				}
 			}
+			if (0==return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_transfer_samples_acquired.  Error transferring samples");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"unemap_transfer_samples_acquired.  Invalid configuration.  %d %p %d",
+				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_transfer_samples_acquired.  Invalid argument(s).  %p %d",
+			transfer_samples_function,channel_number);
+	}
+#endif /* defined (NI_DAQ) */
+	if (number_of_samples_transferred)
+	{
+		*number_of_samples_transferred=number_transferred;
+	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"leave unemap_transfer_samples_acquired %d\n",return_code);
+#endif /* defined (DEBUG) */
+	LEAVE;
+
+	return (return_code);
+} /* unemap_transfer_samples_acquired */
+
+int unemap_write_samples_acquired(int channel_number,FILE *file)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+If <channel_number> is valid (between 1 and the total number of channels
+inclusive, then the samples for that channel are written to <file>.  If
+<channel_number> is 0 then the samples for all channels are written to <file>.
+Otherwise the function fails.
+==============================================================================*/
+{
+	int return_code;
+#if defined (NI_DAQ)
+	int number_of_channels,number_of_samples_transferred;
+	unsigned long number_of_samples;
+#endif /* defined (NI_DAQ) */
+#if defined (WINDOWS_IO)
+	DWORD number_of_bytes_written;
+#endif /* defined (WINDOWS_IO) */
+
+	ENTER(unemap_write_samples_acquired);
+	return_code=0;
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"enter unemap_write_samples_acquired %d %d\n",
+		module_starting_sample_number,module_sample_buffer_size);
+#endif /* defined (DEBUG) */
+#if defined (NI_DAQ)
+	/* check arguments */
+	if (file&&(0<=channel_number)&&
+		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
+	{
+		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		{
+			return_code=1;
+			number_of_samples=module_sample_buffer_size;
+			if (0==channel_number)
+			{
+				number_of_channels=
+					module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
+			}
+			else
+			{
+				number_of_channels=1;
+			}
+#if defined (WINDOWS_IO)
+			WriteFile((HANDLE)file,(LPCVOID)&channel_number,
+				(DWORD)sizeof(channel_number),&number_of_bytes_written,
+				(LPOVERLAPPED)NULL);
+			WriteFile((HANDLE)file,(LPCVOID)&number_of_channels,
+				(DWORD)sizeof(number_of_channels),&number_of_bytes_written,
+				(LPOVERLAPPED)NULL);
+			WriteFile((HANDLE)file,(LPCVOID)&number_of_samples,
+				(DWORD)sizeof(number_of_samples),&number_of_bytes_written,
+				(LPOVERLAPPED)NULL);
+#else /* defined (WINDOWS_IO) */
+			fwrite((char *)&channel_number,sizeof(channel_number),1,file);
+			fwrite((char *)&number_of_channels,sizeof(number_of_channels),1,file);
+			fwrite((char *)&number_of_samples,sizeof(number_of_samples),1,file);
+#endif /* defined (WINDOWS_IO) */
+			return_code=unemap_transfer_samples_acquired(channel_number,
+				file_write_samples_acquired,(void *)file,
+				&number_of_samples_transferred);
 		}
 		else
 		{
@@ -9061,6 +11052,7 @@ Otherwise the function fails.
 	return (return_code);
 } /* unemap_write_samples_acquired */
 
+#if defined (OLD_CODE)
 int unemap_get_samples_acquired(int channel_number,short int *samples)
 /*******************************************************************************
 LAST MODIFIED : 13 November 2000
@@ -9471,9 +11463,66 @@ available physical memory and limits the buffer based on this.
 
 	return (return_code);
 } /* unemap_get_samples_acquired */
+#endif /* defined (OLD_CODE) */
+
+int unemap_get_samples_acquired(int channel_number,short int *samples)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+If <channel_number> is valid (between 1 and the total number of channels
+inclusive), then the <samples> for that channel are returned.  If
+<channel_number> is 0 then the <samples> for all channels are returned.
+Otherwise the function fails.
+
+???DB.  When trying to read back 64 channels sampled at 1kHz for 20s, this
+function hung.  The hardware buffer would be 2.56MB for each card.  So for all
+7 cards the hardware buffers would total 17.92MB.  <samples> would also be
+17.92MB.  The NI crate had 32MB.  So I think that paging was slowing it down
+(drive light was on continuously).  Should have a function that checks on the
+available physical memory and limits the buffer based on this.
+==============================================================================*/
+{
+	int return_code;
+#if defined (NI_DAQ)
+	int number_of_samples_transferred;
+	short int *sample;
+#endif /* defined (NI_DAQ) */
+
+	ENTER(unemap_get_samples_acquired);
+	return_code=0;
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter unemap_get_samples_acquired\n");
+#endif /* defined (DEBUG) */
+#if defined (NI_DAQ)
+	/* check arguments */
+	if (sample=samples)
+	{
+		return_code=unemap_transfer_samples_acquired(channel_number,
+			memory_copy_samples_acquired,(void *)&sample,
+			&number_of_samples_transferred);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_get_samples_acquired.  Invalid argument.  %p",samples);
+	}
+#endif /* defined (NI_DAQ) */
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave unemap_get_samples_acquired %d\n",
+		return_code);
+#endif /* defined (DEBUG) */
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_samples_acquired */
 
 int unemap_get_samples_acquired_background(int channel_number,
-	Acquired_data_callback *callback,void *user_data)
+	Unemap_acquired_data_callback *callback,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 13 November 2000
 
@@ -9952,9 +12001,11 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 
 int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
 	int number_of_voltages,float voltages_per_second,float *voltages,
-	unsigned int number_of_cycles)
+	unsigned int number_of_cycles,
+	Unemap_stimulation_end_callback *stimulation_end_callback,
+	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9979,6 +12030,9 @@ If <number_of_cycles> is zero then the waveform is repeated until
 <unemap_stop_stimulating>, otherwise the waveform is repeated the
 <number_of_cycles> times or until <unemap_stop_stimulating>.
 
+The <stimulation_end_callback> is called with <stimulation_end_callback_data>
+when the stimulation ends.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
@@ -9996,9 +12050,11 @@ Use <unemap_start_stimulating> to start the stimulating.
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"unemap_load_voltage_stimulating %d %p %d %g %p %u\n",
+		fprintf(unemap_debug,
+			"unemap_load_voltage_stimulating %d %p %d %g %p %u %p %p\n",
 			number_of_channels,channel_numbers,number_of_voltages,voltages_per_second,
-			voltages,number_of_cycles);
+			voltages,number_of_cycles,stimulation_end_callback,
+			stimulation_end_callback_data);
 		fclose(unemap_debug);
 	}
 }
@@ -10068,7 +12124,8 @@ Use <unemap_start_stimulating> to start the stimulating.
 				}
 				return_code=load_NI_DA(STIMULATE_CHANNEL,number_of_channels,
 					channel_numbers,number_of_voltages,voltages_per_second,voltages,
-					number_of_cycles);
+					number_of_cycles,stimulation_end_callback,
+					stimulation_end_callback_data);
 				DEALLOCATE(load_card);
 			}
 			else
@@ -10134,9 +12191,11 @@ Use <unemap_start_stimulating> to start the stimulating.
 
 int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
 	int number_of_currents,float currents_per_second,float *currents,
-	unsigned int number_of_cycles)
+	unsigned int number_of_cycles,
+	Unemap_stimulation_end_callback *stimulation_end_callback,
+	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10161,6 +12220,9 @@ used.
 If <number_of_cycles> is zero then the waveform is repeated until
 <unemap_stop_stimulating>, otherwise the waveform is repeated the
 <number_of_cycles> times or until <unemap_stop_stimulating>.
+
+The <stimulation_end_callback> is called with <stimulation_end_callback_data>
+when the stimulation ends.
 
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
@@ -10255,7 +12317,8 @@ Use <unemap_start_stimulating> to start the stimulating.
 				}
 				return_code=load_NI_DA(STIMULATE_CHANNEL,number_of_channels,
 					channel_numbers,number_of_currents,currents_per_second,currents,
-					number_of_cycles);
+					number_of_cycles,stimulation_end_callback,
+					stimulation_end_callback_data);
 				/* set the desired currents to the actual currents used */
 				for (i=0;i<number_of_currents;i++)
 				{
@@ -10827,7 +12890,7 @@ and 0 otherwise.  Otherwise the function fails.
 int unemap_start_calibrating(int channel_number,int number_of_voltages,
 	float voltages_per_second,float *voltages)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10866,7 +12929,8 @@ the actual values used.
 	if (stop_NI_DA(CALIBRATE_CHANNEL,channel_number))
 	{
 		if (load_NI_DA(CALIBRATE_CHANNEL,number_of_channels,&channel_number,
-			number_of_voltages,voltages_per_second,voltages,0))
+			number_of_voltages,voltages_per_second,voltages,0,
+			(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
 		{
 			if (start_NI_DA())
 			{
@@ -11031,11 +13095,6 @@ on.
 						/*handle*/(i16)0,
 						/*message*/(i16)0,
 						(u32)batt_good_callback);
-					status=Config_DAQ_Event_Message(ni_card_temp->device_number,
-						/* add message */(i16)1,/* channel string */"AI0",
-						/* send message every N scans */(i16)1,
-						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
-						(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
 				}
 #endif /* defined (NEW_CODE) */
 				channel_number=1;
