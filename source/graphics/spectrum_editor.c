@@ -1618,7 +1618,8 @@ Creates a spectrum_editor widget.
 										return_code=Scene_add_graphics_object(
 											spectrum_editor->spectrum_editor_scene,
 											spectrum_editor->graphics_object, 0,
-											spectrum_editor->graphics_object->name);
+											spectrum_editor->graphics_object->name,
+											/*fast_changing*/0);
 										Scene_viewer_set_input_mode(
 											spectrum_editor->spectrum_editor_scene_viewer,
 											SCENE_VIEWER_NO_INPUT );
