@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -388,7 +388,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -1159,20 +1159,28 @@ Main program for the CMISS Graphical User Interface
 		command_data.interactive_tool_manager);
 	command_data.node_tool=CREATE(Node_tool)(
 		command_data.interactive_tool_manager,
+		command_data.fe_field_manager,
 		command_data.node_manager,/*use_data*/0,
+		command_data.node_group_manager,
+		command_data.element_manager,
 		command_data.node_selection,
 		command_data.computed_field_package,
-		command_data.default_graphical_material);
+		command_data.default_graphical_material,
+		command_data.user_interface);
 	command_data.element_tool=CREATE(Element_tool)(
 		command_data.interactive_tool_manager,
 		command_data.element_selection,
 		command_data.default_graphical_material);
 	command_data.data_tool=CREATE(Node_tool)(
 		command_data.interactive_tool_manager,
+		command_data.fe_field_manager,
 		command_data.data_manager,/*use_data*/1,
+		command_data.data_group_manager,
+		(struct MANAGER(FE_element) *)NULL,
 		command_data.data_selection,
 		command_data.computed_field_package,
-		command_data.default_graphical_material);
+		command_data.default_graphical_material,
+		command_data.user_interface);
 	command_data.element_point_tool=CREATE(Element_point_tool)(
 		command_data.interactive_tool_manager,
 		command_data.element_point_ranges_selection,

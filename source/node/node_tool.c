@@ -1,13 +1,19 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
 Scene input.
 ==============================================================================*/
 #include <math.h>
+#include <Xm/Protocols.h>
+#include <Xm/MwmUtil.h>
+#include <Xm/Xm.h>
+#include <Xm/ToggleBG.h>
+#include "choose/choose_fe_field.h"
+#include "choose/choose_node_group.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
@@ -20,6 +26,7 @@ Scene input.
 #include "interaction/interactive_event.h"
 #include "node/node_tool.h"
 #include "node/node_tool.uidh"
+#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
 /*
@@ -39,7 +46,7 @@ Module types
 
 struct Node_tool
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -48,12 +55,17 @@ changes in node position and derivatives etc.
 {
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
+	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
 	/* flag indicating that the above manager is actually the data manager */
 	int use_data;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	/* needed for destroy button */
+	struct MANAGER(FE_element) *element_manager;
 	struct FE_node_selection *node_selection;
 	struct Computed_field_package *computed_field_package;
 	struct Graphical_material *rubber_band_material;
+	struct User_interface *user_interface;
 	/* user-settable flags */
 	/* indicates whether node edits can occur with motion_notify events: slower */
 	int motion_update_enabled;
@@ -76,6 +88,11 @@ changes in node position and derivatives etc.
 	struct GT_element_settings *gt_element_settings;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
+
+	Widget coordinate_field_form,coordinate_field_widget,create_button,
+		edit_button,motion_update_button,node_group_form,node_group_widget,
+		select_button;
+	Widget widget,window_shell;
 }; /* struct Node_tool */
 
 struct FE_node_edit_information
@@ -121,6 +138,13 @@ to its position between these two planes.
 Module functions
 ----------------
 */
+
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,coordinate_field_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,create_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,edit_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,node_group_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
 
 static int Node_tool_create_template_node(struct Node_tool *node_tool)
 /*******************************************************************************
@@ -935,6 +959,233 @@ the new node.
 	return (node);
 } /* Node_tool_create_node */
 
+static void Node_tool_close_CB(Widget widget,void *node_tool_void,
+	void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Callback when "close" is selected from the window menu, or it is double
+clicked. How this is made to occur is as follows. The dialog has its
+XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
+WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
+function in response to the close command. See CREATE for more details.
+Function pops down dialog as a response,
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_close_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		XtPopdown(node_tool->window_shell);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,"Node_tool_close_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_close_CB */
+
+static void Node_tool_create_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Callback from toggle button controlling whether nodes are created in
+response to interactive events.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_create_button_CB);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		Node_tool_set_create_enabled(node_tool,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_create_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_create_button_CB */
+
+static void Node_tool_edit_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Callback from toggle button controlling whether nodes are edited in
+response to interactive events.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_edit_button_CB);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		Node_tool_set_edit_enabled(node_tool,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_edit_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_edit_button_CB */
+
+static void Node_tool_motion_update_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Callback from toggle button controlling whether editing motions are updated
+during the edit - if off then updates only once at the end.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_motion_update_button_CB);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		Node_tool_set_motion_update_enabled(node_tool,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_motion_update_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_motion_update_button_CB */
+
+static void Node_tool_select_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Callback from toggle button controlling whether nodes are selected in
+response to interactive events.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_select_button_CB);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		Node_tool_set_select_enabled(node_tool,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_select_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_select_button_CB */
+
+static void Node_tool_update_node_group(Widget widget,
+	void *node_tool_void,void *node_group_void)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2000
+
+DESCRIPTION :
+Callback for change of node group to put the new nodes in.
+==============================================================================*/
+{
+	struct GROUP(FE_node) *node_group;
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_update_node_group);
+	USE_PARAMETER(widget);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		node_group=(struct GROUP(FE_node) *)node_group_void;
+		Node_tool_set_node_group(node_tool,node_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_update_node_group.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_update_node_group */
+
+static void Node_tool_update_coordinate_field(Widget widget,
+	void *node_tool_void,void *coordinate_field_void)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Callback for change of coordinate field.
+==============================================================================*/
+{
+	struct FE_field *coordinate_field;
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_update_coordinate_field);
+	USE_PARAMETER(widget);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		coordinate_field=(struct FE_field *)coordinate_field_void;
+		Node_tool_set_coordinate_field(node_tool,coordinate_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_update_coordinate_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_update_coordinate_field */
+
+static void Node_tool_destroy_selected_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Attempts to destroy all the nodes currently in the global selection.
+==============================================================================*/
+{
+	struct LIST(FE_node) *destroy_node_list;
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_destroy_selected_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		if (destroy_node_list=CREATE(LIST(FE_node))())
+		{
+			COPY_LIST(FE_node)(destroy_node_list,
+				FE_node_selection_get_node_list(node_tool->node_selection));
+			destroy_listed_nodes(destroy_node_list,
+				node_tool->node_manager,node_tool->node_group_manager,
+				node_tool->element_manager,node_tool->node_selection);
+			DESTROY(LIST(FE_node))(&destroy_node_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_destroy_selected_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_destroy_selected_CB */
+
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
 /*******************************************************************************
@@ -1269,7 +1520,7 @@ release.
 
 static int Node_tool_bring_up_interactive_tool_dialog(void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Brings up a dialog for editing settings of the Node_tool - in a standard format
@@ -1283,9 +1534,8 @@ for passing to an Interactive_toolbar.
 	if (node_tool=(struct Node_tool *)node_tool_void)
 	{
 		/* bring up the dialog */
-		display_message(INFORMATION_MESSAGE,
-			"Node_tool_bring_up_interactive_tool_dialog.  Not implemented\n");
-		USE_PARAMETER(node_tool);
+		XtPopup(node_tool->window_shell,XtGrabNone);
+		XtVaSetValues(node_tool->window_shell,XmNiconic,False,NULL);
 		return_code=0;
 	}
 	else
@@ -1363,82 +1613,267 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_node) *node_manager,int use_data,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(FE_element) *element_manager,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
-	struct Graphical_material *rubber_band_material)
+	struct Graphical_material *rubber_band_material,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
 using the <node_selection>.
 The <use_data> flag indicates that <node_manager> and <node_selection>
 refer to data, not nodes, needed since different GT_element_settings types are
-used to represent them. 
+used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
 {
+	Atom WM_DELETE_WINDOW;
 	char *tool_display_name,*tool_name;
+	int init_widgets;
+	MrmType node_tool_dialog_class;
+	static MrmRegisterArg callback_list[]=
+	{
+		{"node_tool_id_select_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,select_button)},
+		{"node_tool_id_edit_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,edit_button)},
+		{"node_tool_id_motion_update_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,motion_update_button)},
+		{"node_tool_id_create_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,create_button)},
+		{"node_tool_id_node_group_form",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,node_group_form)},
+		{"node_tool_id_coord_field_form",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,coordinate_field_form)},
+		{"node_tool_select_btn_CB",
+		 (XtPointer)Node_tool_select_button_CB},
+		{"node_tool_edit_btn_CB",
+		 (XtPointer)Node_tool_edit_button_CB},
+		{"node_tool_motion_update_btn_CB",
+		 (XtPointer)Node_tool_motion_update_button_CB},
+		{"node_tool_create_btn_CB",
+		 (XtPointer)Node_tool_create_button_CB},
+		{"node_tool_destroy_selected_CB",
+		 (XtPointer)Node_tool_destroy_selected_CB}
+	};
+	static MrmRegisterArg identifier_list[]=
+	{
+		{"node_tool_structure",(XtPointer)NULL}
+	};
+	struct Callback_data callback;
 	struct Node_tool *node_tool;
 
 	ENTER(CREATE(Node_tool));
-	if (interactive_tool_manager&&node_manager&&node_selection&&
-		computed_field_package&&rubber_band_material)
+	node_tool=(struct Node_tool *)NULL;
+	if (interactive_tool_manager&&fe_field_manager&&node_manager&&
+		node_group_manager&&(element_manager||use_data)&&node_selection&&
+		computed_field_package&&rubber_band_material&&user_interface)
 	{
-		if (ALLOCATE(node_tool,struct Node_tool,1))
+		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
+			&node_tool_hierarchy,&node_tool_hierarchy_open))
 		{
-			node_tool->interactive_tool_manager=interactive_tool_manager;
-			node_tool->node_manager=node_manager;
-			node_tool->use_data=use_data;
-			node_tool->node_selection=node_selection;
-			node_tool->computed_field_package=computed_field_package;
-			node_tool->rubber_band_material=
-				ACCESS(Graphical_material)(rubber_band_material);
-			node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
-			node_tool->last_picked_node=(struct FE_node *)NULL;
-			node_tool->gt_element_group=(struct GT_element_group *)NULL;
-			node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
-			/* user-settable flags */
-			node_tool->motion_update_enabled=1;
-			node_tool->select_enabled=1;
-			node_tool->edit_enabled=0;
-			node_tool->create_enabled=0;
-			node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
-			node_tool->node_group=(struct GROUP(FE_node) *)NULL;
-			node_tool->coordinate_field=(struct FE_field *)NULL;
-			node_tool->template_node=(struct FE_node *)NULL;
-			/* interactive_tool */
-			if (use_data)
+			if (ALLOCATE(node_tool,struct Node_tool,1))
 			{
-				tool_name="data_tool";
-				tool_display_name="Data tool";
+				node_tool->interactive_tool_manager=interactive_tool_manager;
+				node_tool->fe_field_manager=fe_field_manager;
+				node_tool->node_manager=node_manager;
+				node_tool->use_data=use_data;
+				node_tool->node_group_manager=node_group_manager;
+				node_tool->element_manager=element_manager;
+				node_tool->node_selection=node_selection;
+				node_tool->computed_field_package=computed_field_package;
+				node_tool->rubber_band_material=
+					ACCESS(Graphical_material)(rubber_band_material);
+				node_tool->user_interface=user_interface;
+
+				node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
+				node_tool->last_picked_node=(struct FE_node *)NULL;
+				node_tool->gt_element_group=(struct GT_element_group *)NULL;
+				node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
+				/* user-settable flags */
+				node_tool->motion_update_enabled=1;
+				node_tool->select_enabled=1;
+				node_tool->edit_enabled=0;
+				node_tool->create_enabled=0;
+				node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
+				node_tool->node_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
+					(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
+					(void *)NULL,node_group_manager);
+				node_tool->coordinate_field=(struct FE_field *)NULL;
+				FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(FE_field_is_coordinate_field,
+					(void *)NULL,fe_field_manager);
+				node_tool->template_node=(struct FE_node *)NULL;
+				/* interactive_tool */
+				if (use_data)
+				{
+					tool_name="data_tool";
+					tool_display_name="Data tool";
+				}
+				else
+				{
+					tool_name="node_tool";
+					tool_display_name="Node tool";
+				}
+				node_tool->interactive_tool=CREATE(Interactive_tool)(
+					tool_name,tool_display_name,
+					Node_tool_interactive_event_handler,
+					Node_tool_make_interactive_tool_button,
+					Node_tool_bring_up_interactive_tool_dialog,
+					(void *)node_tool);
+				ADD_OBJECT_TO_MANAGER(Interactive_tool)(
+					node_tool->interactive_tool,
+					node_tool->interactive_tool_manager);
+				node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
+				node_tool->rubber_band=(struct GT_object *)NULL;
+				/* initialise widgets */
+				node_tool->coordinate_field_form=(Widget)NULL;
+				node_tool->coordinate_field_widget=(Widget)NULL;
+				node_tool->create_button=(Widget)NULL;
+				node_tool->edit_button=(Widget)NULL;
+				node_tool->motion_update_button=(Widget)NULL;
+				node_tool->node_group_form=(Widget)NULL;
+				node_tool->node_group_widget=(Widget)NULL;
+				node_tool->select_button=(Widget)NULL;
+				node_tool->widget=(Widget)NULL;
+				node_tool->window_shell=(Widget)NULL;
+
+				/* make the dialog shell */
+				if (node_tool->window_shell=
+					XtVaCreatePopupShell(tool_display_name,
+						topLevelShellWidgetClass,
+						user_interface->application_shell,
+						XmNdeleteResponse,XmDO_NOTHING,
+						XmNmwmDecorations,MWM_DECOR_ALL,
+						XmNmwmFunctions,MWM_FUNC_ALL,
+						/*XmNtransient,FALSE,*/
+						XmNallowShellResize,False,
+						XmNtitle,tool_display_name,
+						NULL))
+				{
+					/* Set up window manager callback for close window message */
+					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(node_tool->window_shell),
+						"WM_DELETE_WINDOW",False);
+					XmAddWMProtocolCallback(node_tool->window_shell,
+						WM_DELETE_WINDOW,Node_tool_close_CB,node_tool);
+					/* Register the shell with the busy signal list */
+					create_Shell_list_item(&(node_tool->window_shell),
+						user_interface);
+					/* register the callbacks */
+					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
+						node_tool_hierarchy,callback_list,XtNumber(callback_list)))
+					{
+						/* assign and register the identifiers */
+						identifier_list[0].value=(XtPointer)node_tool;
+						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
+							node_tool_hierarchy,identifier_list,
+							XtNumber(identifier_list)))
+						{
+							/* fetch node tool widgets */
+							if (MrmSUCCESS==MrmFetchWidget(node_tool_hierarchy,
+								"node_tool",node_tool->window_shell,
+								&(node_tool->widget),&node_tool_dialog_class))
+							{
+								init_widgets=1;
+								if (node_tool->node_group_widget=
+									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_node))(
+										node_tool->node_group_form,
+										node_tool->node_group,node_group_manager,
+										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
+										(void *)NULL))
+								{
+									callback.data=(void *)node_tool;
+									callback.procedure=Node_tool_update_node_group;
+									CHOOSE_OBJECT_SET_CALLBACK(GROUP(FE_node))(
+										node_tool->node_group_widget,&callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
+								if (node_tool->coordinate_field_widget=
+									CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
+										node_tool->coordinate_field_form,
+										node_tool->coordinate_field,fe_field_manager,
+										FE_field_is_coordinate_field,(void *)NULL))
+								{
+									callback.data=(void *)node_tool;
+									callback.procedure=Node_tool_update_coordinate_field;
+									CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
+										node_tool->coordinate_field_widget,&callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
+								if (init_widgets)
+								{
+									XmToggleButtonGadgetSetState(node_tool->create_button,
+										/*state*/node_tool->create_enabled,/*notify*/False);
+									XmToggleButtonGadgetSetState(node_tool->edit_button,
+										/*state*/node_tool->edit_enabled,/*notify*/False);
+									XmToggleButtonGadgetSetState(node_tool->motion_update_button,
+										/*state*/node_tool->motion_update_enabled,/*notify*/False);
+									XmToggleButtonGadgetSetState(node_tool->select_button,
+										/*state*/node_tool->select_enabled,/*notify*/False);
+									XtManageChild(node_tool->widget);
+									XtRealizeWidget(node_tool->window_shell);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"CREATE(Node_tool).  Could not init widgets");
+									DESTROY(Node_tool)(&node_tool);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"CREATE(Node_tool).  Could not fetch node_tool");
+								DESTROY(Node_tool)(&node_tool);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"CREATE(Node_tool).  Could not register identifiers");
+							DESTROY(Node_tool)(&node_tool);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"CREATE(Node_tool).  Could not register callbacks");
+						DESTROY(Node_tool)(&node_tool);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Node_tool).  Could not create Shell");
+					DESTROY(Node_tool)(&node_tool);
+				}
 			}
 			else
 			{
-				tool_name="node_tool";
-				tool_display_name="Node tool";
+				display_message(ERROR_MESSAGE,
+					"CREATE(Node_tool).  Not enough memory");
+				DEALLOCATE(node_tool);
 			}
-			node_tool->interactive_tool=CREATE(Interactive_tool)(
-				tool_name,tool_display_name,
-				Node_tool_interactive_event_handler,
-				Node_tool_make_interactive_tool_button,
-				Node_tool_bring_up_interactive_tool_dialog,
-				(void *)node_tool);
-			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
-				node_tool->interactive_tool,
-				node_tool->interactive_tool_manager);
-			node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
-			node_tool->rubber_band=(struct GT_object *)NULL;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CREATE(Node_tool).  Not enough memory");
+			display_message(ERROR_MESSAGE,
+				"CREATE(Node_tool).  Could not open hierarchy");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"CREATE(Node_tool).  Invalid argument(s)");
-		node_tool=(struct Node_tool *)NULL;
 	}
 	LEAVE;
 
@@ -1482,9 +1917,6 @@ structure itself.
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
-		REACCESS(FE_field)(&(node_tool->coordinate_field),(struct FE_field *)NULL);
-		REACCESS(GROUP(FE_node))(&(node_tool->node_group),
-			(struct GROUP(FE_node) *)NULL);
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}
@@ -1526,7 +1958,7 @@ Returns the coordinate field of nodes created by <node_tool>.
 int Node_tool_set_coordinate_field(struct Node_tool *node_tool,
 	struct FE_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Sets the coordinate field of nodes created by <node_tool>.
@@ -1553,9 +1985,13 @@ Sets the coordinate field of nodes created by <node_tool>.
 			}
 			if (return_code)
 			{
-				REACCESS(FE_field)(&(node_tool->coordinate_field),coordinate_field);
+				node_tool->coordinate_field=coordinate_field;
 				/* lose the current template node, if any */
 				REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
+				/* make sure the current field is shown on the widget */
+				CHOOSE_OBJECT_SET_OBJECT(FE_field)(
+					node_tool->coordinate_field_widget,
+					node_tool->coordinate_field);
 			}
 		}
 	}
@@ -1572,11 +2008,11 @@ Sets the coordinate field of nodes created by <node_tool>.
 
 int Node_tool_get_create_enabled(struct Node_tool *node_tool)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Returns flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Returns flag controlling whether nodes can be created when none are selected
+on a mouse button press.
 ==============================================================================*/
 {
 	int create_enabled;
@@ -1600,27 +2036,52 @@ events, not just at the end of a mouse gesture.
 int Node_tool_set_create_enabled(struct Node_tool *node_tool,
 	int create_enabled)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Sets flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Sets flag controlling whether nodes can be created when none are selected
+on a mouse button press.
 ==============================================================================*/
 {
-	int return_code;
+	int button_state,return_code;
 
 	ENTER(Node_tool_set_create_enabled);
 	if (node_tool)
 	{
+		return_code=1;
 		if (create_enabled)
 		{
-			node_tool->create_enabled=1;
+			if (node_tool->node_group && node_tool->coordinate_field)
+			{
+				/* make sure value of flag is exactly 1 */
+				create_enabled=1;
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"Node_tool must have a group and coordinate field to create nodes");
+				create_enabled=0;
+				return_code=0;
+			}
 		}
-		else
+		if (create_enabled != node_tool->create_enabled)
 		{
-			node_tool->create_enabled=0;
+			node_tool->create_enabled=create_enabled;
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(node_tool->create_button))
+			{
+				button_state=1;
+			}
+			else
+			{
+				button_state=0;
+			}
+			if (button_state != node_tool->create_enabled)
+			{
+				XmToggleButtonGadgetSetState(node_tool->create_button,
+					/*state*/node_tool->create_enabled,/*notify*/False);
+			}
 		}
-		return_code=1;
 	}
 	else
 	{
@@ -1662,25 +2123,40 @@ events, not just at the end of a mouse gesture.
 
 int Node_tool_set_edit_enabled(struct Node_tool *node_tool,int edit_enabled)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Sets flag controlling whether node edits are updated during motion_notify
 events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
-	int return_code;
+	int button_state,return_code;
 
 	ENTER(Node_tool_set_edit_enabled);
 	if (node_tool)
 	{
+		/* make sure value of flag is 1 */
 		if (edit_enabled)
 		{
-			node_tool->edit_enabled=1;
+			edit_enabled=1;
 		}
-		else
+		if (edit_enabled != node_tool->edit_enabled)
 		{
-			node_tool->edit_enabled=0;
+			node_tool->edit_enabled=edit_enabled;
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(node_tool->edit_button))
+			{
+				button_state=1;
+			}
+			else
+			{
+				button_state=0;
+			}
+			if (button_state != node_tool->edit_enabled)
+			{
+				XmToggleButtonGadgetSetState(node_tool->edit_button,
+					/*state*/node_tool->edit_enabled,/*notify*/False);
+			}
 		}
 		return_code=1;
 	}
@@ -1789,18 +2265,33 @@ Sets flag controlling whether node edits are updated during motion_notify
 events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
-	int return_code;
+	int button_state,return_code;
 
 	ENTER(Node_tool_set_motion_update_enabled);
 	if (node_tool)
 	{
+		/* make sure value of flag is 1 */
 		if (motion_update_enabled)
 		{
-			node_tool->motion_update_enabled=1;
+			motion_update_enabled=1;
 		}
-		else
+		if (motion_update_enabled != node_tool->motion_update_enabled)
 		{
-			node_tool->motion_update_enabled=0;
+			node_tool->motion_update_enabled=motion_update_enabled;
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(node_tool->motion_update_button))
+			{
+				button_state=1;
+			}
+			else
+			{
+				button_state=0;
+			}
+			if (button_state != node_tool->motion_update_enabled)
+			{
+				XmToggleButtonGadgetSetState(node_tool->motion_update_button,
+					/*state*/node_tool->motion_update_enabled,/*notify*/False);
+			}
 		}
 		return_code=1;
 	}
@@ -1844,7 +2335,7 @@ Returns the node group new nodes are created in by <node_tool>.
 int Node_tool_set_node_group(struct Node_tool *node_tool,
 	struct GROUP(FE_node) *node_group)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Sets the node group new nodes are created in by <node_tool>.
@@ -1855,8 +2346,14 @@ Sets the node group new nodes are created in by <node_tool>.
 	ENTER(Node_tool_set_node_group);
 	if (node_tool)
 	{
-		REACCESS(GROUP(FE_node))(&(node_tool->node_group),node_group);
 		return_code=1;
+		if (node_group != node_tool->node_group)
+		{
+			node_tool->node_group=node_group;
+			/* make sure the current group is shown */
+			CHOOSE_OBJECT_SET_OBJECT(GROUP(FE_node))(
+				node_tool->node_group_widget,node_tool->node_group);
+		}
 	}
 	else
 	{
@@ -1874,8 +2371,7 @@ int Node_tool_get_select_enabled(struct Node_tool *node_tool)
 LAST MODIFIED : 11 May 2000
 
 DESCRIPTION :
-Returns flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Returns flag controlling whether existing nodes can be selected.
 ==============================================================================*/
 {
 	int select_enabled;
@@ -1899,25 +2395,39 @@ events, not just at the end of a mouse gesture.
 int Node_tool_set_select_enabled(struct Node_tool *node_tool,
 	int select_enabled)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Sets flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Sets flag controlling whether existing nodes can be selected.
 ==============================================================================*/
 {
-	int return_code;
+	int button_state,return_code;
 
 	ENTER(Node_tool_set_select_enabled);
 	if (node_tool)
 	{
+		/* make sure value of flag is 1 */
 		if (select_enabled)
 		{
-			node_tool->select_enabled=1;
+			select_enabled=1;
 		}
-		else
+		if (select_enabled != node_tool->select_enabled)
 		{
-			node_tool->select_enabled=0;
+			node_tool->select_enabled=select_enabled;
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(node_tool->select_button))
+			{
+				button_state=1;
+			}
+			else
+			{
+				button_state=0;
+			}
+			if (button_state != node_tool->select_enabled)
+			{
+				XmToggleButtonGadgetSetState(node_tool->select_button,
+					/*state*/node_tool->select_enabled,/*notify*/False);
+			}
 		}
 		return_code=1;
 	}
@@ -1931,3 +2441,121 @@ events, not just at the end of a mouse gesture.
 
 	return (return_code);
 } /* Node_tool_set_select_enabled */
+
+int destroy_listed_nodes(struct LIST(FE_node) *node_list,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct FE_node_selection *node_selection)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Destroys all the nodes in <node_list> that are not accessed outside
+<node_manager>, the groups in <node_group_manager> and <node_selection>.
+Nodes in use by elements in the <element_manager> cannot be destroyed so are
+immediately ruled out in order to keep them in the node groups and selection.
+<node_group_manager>, <element_manager> and <node_selection> are optional.
+Upon return <node_list> contains all the nodes that could not be destroyed.
+???RC Should really be in its own module.
+==============================================================================*/
+{
+	int number_of_nodes_destroyed,number_of_nodes_not_destroyed,return_code;
+	struct FE_node *node;
+	struct GROUP(FE_node) *node_group;
+	struct LIST(FE_node) *not_destroyed_node_list;
+
+	ENTER(destroy_listed_nodes);
+	if (node_list&&node_manager)
+	{
+		return_code=1;
+		/* build list of nodes that could be destroyed */
+		not_destroyed_node_list=CREATE(LIST(FE_node))();
+		if (element_manager)
+		{
+			COPY_LIST(FE_node)(not_destroyed_node_list,node_list);
+			/* remove all nodes in use by elements = cannot be destroyed */
+			FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+				ensure_top_level_FE_element_nodes_are_not_in_list,
+				(void *)node_list,element_manager);
+			/* remove nodes still in node_list from not_destroyed_node_list so
+				 it lists only those that could not be destroyed */
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+				FE_node_is_in_list,(void *)node_list,not_destroyed_node_list);
+		}
+		if (node_group_manager)
+		{
+			/* remove the nodes from all groups they are in */
+			while (return_code&&(node_group=
+				FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
+					FE_node_group_intersects_list,(void *)node_list,
+					node_group_manager)))
+			{
+				MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
+				if (!REMOVE_OBJECTS_FROM_GROUP_THAT(FE_node)(
+					FE_node_is_in_list,(void *)node_list,node_group))
+				{
+					return_code=0;
+				}
+				MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+			}
+		}
+		if (node_selection)
+		{
+			/* remove nodes from the global node_selection */
+			FE_node_selection_begin_cache(node_selection);
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_unselect_in_FE_node_selection,
+				(void *)node_selection,node_list);
+			FE_node_selection_end_cache(node_selection);
+		}
+		/* now remove the nodes from the manager */
+		number_of_nodes_destroyed=0;
+		while (return_code&&(node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,node_list)))
+		{
+			/* node cannot be destroyed while it is in a list */
+			if (REMOVE_OBJECT_FROM_LIST(FE_node)(node,node_list))
+			{
+				if (FE_node_can_be_destroyed(node))
+				{
+					if (REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager))
+					{
+						number_of_nodes_destroyed++;
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				else
+				{
+					/* add it to not_destroyed_node_list for reporting */
+					ADD_OBJECT_TO_LIST(FE_node)(node,not_destroyed_node_list);
+				}
+			}
+			else
+			{
+				return_code=0;
+			}
+		}
+		if (0<(number_of_nodes_not_destroyed=
+			NUMBER_IN_LIST(FE_node)(not_destroyed_node_list)))
+		{
+			display_message(WARNING_MESSAGE,"%d node(s) destroyed; "
+				"%d node(s) could not be destroyed because in use",
+				number_of_nodes_destroyed,number_of_nodes_not_destroyed);
+			return_code=0;
+		}
+		FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
+			(void *)node_list,not_destroyed_node_list);
+		DESTROY(LIST(FE_node))(&not_destroyed_node_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_destroy_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_listed_nodes */

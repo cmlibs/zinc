@@ -1,13 +1,38 @@
 !*******************************************************************************
 ! FILE : node_tool.uil
 !
-! LAST MODIFIED : 8 May 2000
+! LAST MODIFIED : 18 July 2000
 !
 ! DESCRIPTION :
 ! Interactive tool icons.
 !===============================================================================
-module node_tool
+module node_tool_module
 	version = 'v1.0'
+
+procedure
+	node_tool_id_select_btn;
+	node_tool_id_edit_btn;
+	node_tool_id_motion_update_btn;
+	node_tool_id_create_btn;
+	node_tool_id_node_group_form;
+	node_tool_id_coord_field_form;
+
+	node_tool_select_btn_CB;
+	node_tool_edit_btn_CB;
+	node_tool_motion_update_btn_CB;
+	node_tool_create_btn_CB;
+	node_tool_destroy_selected_CB;
+
+identifier
+	!Pointer to data specific to this instance of the node_tool widget
+	node_tool_structure;
+	!The gap between widgets
+	widget_spacing;
+	!fonts here
+	normal_font;
+	button_font;
+	list_font;
+	heading_font;
 
 value
 	black  : color('black',  foreground);
@@ -98,8 +123,203 @@ value
 			'       .   .  ..   ...  ..      ',
 			'                                ');
 
-!*******************************************************************************
+
+!******************************************************************************
 object
+	node_tool: XmForm
+	{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmRowColumn node_tool_controls;
+			};
+		};
+!*******************************************************************************
+	node_tool_controls: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmVERTICAL;
+!			XmNnumColumns = 1;
+			XmNpacking = XmPACK_TIGHT;
+			};
+		controls
+			{
+  		XmToggleButtonGadget node_tool_select_btn;
+  		XmToggleButtonGadget node_tool_edit_btn;
+  		XmToggleButtonGadget node_tool_motion_update_btn;
+  		XmToggleButtonGadget node_tool_create_btn;
+			XmRowColumn node_tool_node_group_entry;
+			XmRowColumn node_tool_coord_field_entry;
+			XmSeparatorGadget {};
+			XmPushButtonGadget node_tool_destroy_selected_btn;
+			};
+		};
+!*******************************************************************************
+  node_tool_select_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Select");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				node_tool_id_select_btn(node_tool_structure);
+      XmNvalueChangedCallback = procedure
+				node_tool_select_btn_CB(node_tool_structure);
+      };
+    };
+!*******************************************************************************
+  node_tool_edit_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Edit");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				node_tool_id_edit_btn(node_tool_structure);
+      XmNvalueChangedCallback = procedure
+				node_tool_edit_btn_CB(node_tool_structure);
+      };
+    };
+!*******************************************************************************
+  node_tool_motion_update_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Motion update during edit");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				node_tool_id_motion_update_btn(node_tool_structure);
+      XmNvalueChangedCallback = procedure
+				node_tool_motion_update_btn_CB(node_tool_structure);
+      };
+    };
+!*******************************************************************************
+  node_tool_create_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Create");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				node_tool_id_create_btn(node_tool_structure);
+      XmNvalueChangedCallback = procedure
+				node_tool_create_btn_CB(node_tool_structure);
+      };
+    };
+!*******************************************************************************
+  node_tool_node_group_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget node_tool_node_group_label;
+      XmForm node_tool_node_group_form;
+      };
+    };
+  node_tool_node_group_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Put in group:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	node_tool_node_group_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_tool_id_node_group_form(node_tool_structure);
+			};
+		};
+!*******************************************************************************
+  node_tool_coord_field_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget node_tool_coord_field_label;
+      XmForm node_tool_coord_field_form;
+      };
+    };
+  node_tool_coord_field_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Coordinate field:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	node_tool_coord_field_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_tool_id_coord_field_form(node_tool_structure);
+			};
+		};
+!*******************************************************************************
+	node_tool_destroy_selected_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+      XmNfontList = button_font;
+      XmNlabelString = compound_string("Destroy selected");
+      XmNalignment = XmALIGNMENT_CENTER;
+			};
+    callbacks
+      {
+			XmNactivateCallback = procedure
+				node_tool_destroy_selected_CB(node_tool_structure);
+			};
+		};
+!*******************************************************************************
 	data_tool_button: XmToggleButton
 		{
 		arguments
@@ -126,6 +346,6 @@ object
 			XmNshadowThickness = 2;
 			};
 		};
-end module;
 !*******************************************************************************
+end module;
 

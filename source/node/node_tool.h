@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -14,6 +14,7 @@ based on input from devices.
 #include "graphics/material.h"
 #include "interaction/interactive_tool.h"
 #include "selection/node_selection.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global types
@@ -44,19 +45,23 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_node) *node_manager,int use_data,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(FE_element) *element_manager,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
-	struct Graphical_material *rubber_band_material);
+	struct Graphical_material *rubber_band_material,
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
 using the <node_selection>.
 The <use_data> flag indicates that <node_manager> and <node_selection>
 refer to data, not nodes, needed since different GT_element_settings types are
-used to represent them.
+used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
 
 int DESTROY(Node_tool)(struct Node_tool **node_tool_address);
@@ -87,11 +92,11 @@ Sets the coordinate field of nodes created by <node_tool>.
 
 int Node_tool_get_create_enabled(struct Node_tool *node_tool);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Returns flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Returns flag controlling whether nodes can be created when none are selected
+on a mouse button press.
 ==============================================================================*/
 
 int Node_tool_set_create_enabled(struct Node_tool *node_tool,
@@ -115,7 +120,7 @@ events, not just at the end of a mouse gesture.
 
 int Node_tool_set_edit_enabled(struct Node_tool *node_tool,int edit_enabled);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Sets flag controlling whether node edits are updated during motion_notify
@@ -182,18 +187,34 @@ int Node_tool_get_select_enabled(struct Node_tool *node_tool);
 LAST MODIFIED : 11 May 2000
 
 DESCRIPTION :
-Returns flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Returns flag controlling whether existing nodes can be selected.
 ==============================================================================*/
 
 int Node_tool_set_select_enabled(struct Node_tool *node_tool,
 	int select_enabled);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
-Sets flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Sets flag controlling whether existing nodes can be selected.
+==============================================================================*/
+
+int destroy_listed_nodes(struct LIST(FE_node) *node_list,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct FE_node_selection *node_selection);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Destroys all the nodes in <node_list> that are not accessed outside
+<node_manager>, the groups in <node_group_manager> and <node_selection>.
+Nodes in use by elements in the <element_manager> cannot be destroyed so are
+immediately ruled out in order to keep them in the node groups and selection.
+<node_group_manager>, <element_manager> and <node_selection> are optional.
+Upon return <node_list> contains all the nodes that could not be destroyed.
+???RC Should really be in its own module.
 ==============================================================================*/
 
 #endif /* !defined (NODE_TOOL_H) */
