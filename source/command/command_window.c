@@ -706,7 +706,7 @@ Called when the Close function is selected from the window manager menu.
 	LEAVE;
 } /* command_window_close */
 
-static void destroy_Command_window(Widget widget,
+static void destroy_Command_window_callback(Widget widget,
 	XtPointer command_window_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1998
@@ -717,27 +717,20 @@ Destroy the command_window structure and remove the window
 {
 	struct Command_window *command_window;
 
-	ENTER(destroy_Command_window);
+	ENTER(destroy_Command_window_callback);
  	USE_PARAMETER(widget);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
-		if (command_window->out_file)
-		{
-			fclose(command_window->out_file);
-		}
-		destroy_Shell_list_item_from_shell(&(command_window->shell),
-			command_window->user_interface);
-		DEALLOCATE(command_window);
-			/*???DB.  Need more ?  Pass a struct Command_window ** ? */
+		DESTROY(Command_window)(&command_window);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"destroy_Command_window.  Missing command window");
+			"destroy_Command_window_callback.  Missing command window");
 	}
 	LEAVE;
-} /* destroy_Command_window */
+} /* destroy_Command_window_callback */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if defined (WINDOWS)
@@ -1299,7 +1292,7 @@ Create the structures and retrieve the command window from the uil file.
 						&(command_window->shell),user_interface);
 					/* Add destroy callback */
 					XtAddCallback(command_window->shell,XmNdestroyCallback,
-						destroy_Command_window,(XtPointer)command_window);
+						destroy_Command_window_callback,(XtPointer)command_window);
 					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(command_window->shell),
 						"WM_DELETE_WINDOW",FALSE);
 					XmAddWMProtocolCallback(command_window->shell,WM_DELETE_WINDOW,
@@ -1471,6 +1464,38 @@ Create the structures and retrieve the command window from the uil file.
 
 	return (command_window);
 } /* CREATE(Command_window) */
+
+int DESTROY(Command_window)(struct Command_window **command_window_pointer)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION:
+==============================================================================*/
+{
+	int return_code;
+	struct Command_window *command_window;
+
+	if (command_window_pointer && (command_window = (struct Command_window *)
+		command_window_pointer))
+	{
+		if (command_window->out_file)
+		{
+			fclose(command_window->out_file);
+		}
+		destroy_Shell_list_item_from_shell(&(command_window->shell),
+			command_window->user_interface);
+		DEALLOCATE(*command_window_pointer);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Command_window).  Missing command window");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* DESTROY(Command_window) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 int add_to_command_list(char *command,struct Command_window *command_window)

@@ -42,6 +42,13 @@ LAST MODIFIED : 24 July 1998
 DESCRIPTION :
 ==============================================================================*/
 
+int DESTROY(Command_window)(struct Command_window **command_window_pointer);
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION:
+==============================================================================*/
+
 #if !defined (WINDOWS_DEV_FLAG)
 int add_to_command_list(char *command,struct Command_window *command_window);
 /*******************************************************************************
