@@ -32,7 +32,6 @@ The functions for creating graphical objects from finite elements.
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 
 /* following used for encoding a CM_element_information as an integer */
 #define HALF_INT_MAX (INT_MAX/2)
