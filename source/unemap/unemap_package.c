@@ -427,7 +427,9 @@ The fields are filed in with set_unemap_package_fields()
 			package->signal_maximum_field=(struct FE_field *)NULL;	
 			package->signal_status_field=(struct FE_field *)NULL;
 			package->channel_gain_field=(struct FE_field *)NULL;
-			package->channel_offset_field=(struct FE_field *)NULL;	
+			package->channel_offset_field=(struct FE_field *)NULL;
+			package->signal_value_at_time_field=(struct Computed_field *)NULL;
+			package->time_field=(struct Computed_field *)NULL;		
 			package->number_of_maps=0;
 			package->maps_info=(struct Map_info **)NULL;
 			package->number_of_rig_node_groups=0;
@@ -508,7 +510,9 @@ to NULL.
 		DEACCESS(FE_field)(&(package->signal_maximum_field));	
 		DEACCESS(FE_field)(&(package->signal_status_field));
 		DEACCESS(FE_field)(&(package->channel_gain_field));
-		DEACCESS(FE_field)(&(package->channel_offset_field));		
+		DEACCESS(FE_field)(&(package->channel_offset_field));	
+		DEACCESS(Computed_field)(&(package->signal_value_at_time_field));
+		DEACCESS(Computed_field)(&(package->time_field));		
 		for(count=0;count<package->number_of_rig_node_groups;count++)
 		{		
 			DEACCESS(GROUP(FE_node))(&(package->rig_node_groups[count]));
@@ -1189,6 +1193,112 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_signal_status_field */
+
+struct Computed_field *get_unemap_package_signal_value_at_time_field(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+{
+	struct Computed_field *signal_value_at_time_field;
+	ENTER(get_unemap_package_signal_value_at_time_field);
+	if(package)
+	{
+		signal_value_at_time_field=package->signal_value_at_time_field; 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_signal_value_at_time_field."
+				" invalid arguments");
+		signal_value_at_time_field = (struct Computed_field *)NULL;
+	}
+	LEAVE;
+	return (signal_value_at_time_field);
+} /* get_unemap_package_signal_value_at_time_field */
+
+int set_unemap_package_signal_value_at_time_field(struct Unemap_package *package,
+	struct Computed_field *signal_value_at_time_field)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_signal_value_at_time_field);
+	if(package)
+	{
+		return_code =1;	
+		REACCESS(Computed_field)(&(package->signal_value_at_time_field),
+			signal_value_at_time_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_signal_value_at_time_field."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_signal_value_at_time_field */
+
+struct Computed_field *get_unemap_package_time_field(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+{
+	struct Computed_field *time_field;
+	ENTER(get_unemap_package_time_field);
+	if(package)
+	{
+		time_field=package->time_field; 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_time_field."
+				" invalid arguments");
+		time_field = (struct Computed_field *)NULL;
+	}
+	LEAVE;
+	return (time_field);
+} /* get_unemap_package_time_field */
+
+int set_unemap_package_time_field(struct Unemap_package *package,
+	struct Computed_field *time_field)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_time_field);
+	if(package)
+	{
+		return_code =1;	
+		REACCESS(Computed_field)(&(package->time_field),
+			time_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_time_field."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_time_field */
 
 struct FE_field *get_unemap_package_channel_offset_field(
 	struct Unemap_package *package)
@@ -2341,6 +2451,93 @@ Do this last, as it attempts to remove the fields from the managers.
 }/* free_unemap_package_rig_fields */
 
 
+int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package)
+/*******************************************************************************
+LAST MODIFIED : 4 May 2000
+
+DESCRIPTION :
+Frees the time related computed fields (used by the map electrode glyphs) 
+stored in the unemap package.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *computed_field,*temp_field;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	
+	ENTER(free_unemap_package_time_computed_fields);
+	if(unemap_package)
+	{
+		computed_field=(struct Computed_field *)NULL;
+		temp_field=(struct Computed_field *)NULL;
+		computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+		return_code=1;
+		computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
+		computed_field=get_unemap_package_signal_value_at_time_field(unemap_package);
+		temp_field=computed_field;
+		DEACCESS(Computed_field)(&temp_field);
+		if(computed_field)
+		{	
+			if (Computed_field_can_be_destroyed
+				(computed_field))
+			{
+				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
+					(computed_field,computed_field_manager))
+				{
+					computed_field=(struct Computed_field *)NULL;
+					set_unemap_package_signal_value_at_time_field
+						(unemap_package,(struct Computed_field *)NULL);
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+						" Couldn't remove signal_value_at_time_field from manager");
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+					"Couldn't destroy signal_value_at_time_field");
+			}
+		}/* if(computed_field) */
+
+		computed_field=get_unemap_package_time_field(unemap_package);
+		temp_field=computed_field;
+		DEACCESS(Computed_field)(&temp_field);
+		if(computed_field)
+		{	
+			if (Computed_field_can_be_destroyed
+				(computed_field))
+			{
+				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
+					(computed_field,computed_field_manager))
+				{
+					computed_field=(struct Computed_field *)NULL;
+					set_unemap_package_time_field
+						(unemap_package,(struct Computed_field *)NULL);
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+						" Couldn't remove time_field from manager");
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields. "
+					"Couldn't destroy time_field ");
+			}
+		}/* if(computed_field) */
+	}/* if(unemap_package) */
+	else
+	{
+		display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields. "
+				"Invalid arguments ");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/*free_unemap_package_time_computed_fields */
+
 int free_unemap_package_rig_node_group_glyphs(struct Unemap_package *package,
 	int rig_node_group_number)
 /*******************************************************************************
@@ -2385,6 +2582,7 @@ Frees up any glyphs used by the nodes in the rig_node_group
 					(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))
 				{
 					return_code=GT_element_group_remove_settings(gt_element_group,settings);
+
 				}
 			}
 			else
@@ -2461,6 +2659,7 @@ associated with the rig
 		/* free exisitng map nodes, elements, fields. Must do in this order */		
 		return_code=(free_unemap_package_rig_node_groups(package)&&
 		free_unemap_package_rig_computed_fields(package)&&
+		free_unemap_package_time_computed_fields(package)&&
 		free_unemap_package_rig_fields(package));
 	}
 	else

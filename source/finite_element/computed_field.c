@@ -2,7 +2,7 @@
 FILE : computed_field.c
 
 LAST MODIFIED : 23 March 2000
-cre
+
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
 a wrapper Computed_field automatically generated that can be called on to
@@ -4000,9 +4000,7 @@ fields with the name 'coordinates' are quite pervasive.
 	int i,int_value,j,k,return_code,total_values;
 	/* For COMPUTED_FIELD_EMBEDDED and COMPUTED_FIELD_COMPOSE only */
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-#if defined (OLD_CODE)
 	short short_value;
-#endif
 	struct FE_element *element;	
 	struct FE_field_component fe_field_component;
 
@@ -4412,22 +4410,20 @@ fields with the name 'coordinates' are quite pervasive.
 								switch (value_type)
 								{									
 									case FE_VALUE_ARRAY_VALUE:
-									{
-#if defined (OLD_CODE)										
+									{										
 										return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
 											&fe_field_component,field->version_number,
-											field->nodal_value_type,field->time,&(field->values[i]));
-#endif /*#if defined (OLD_CODE)	 */
+											field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
+											&(field->values[i]));									
 									} break;
 								
 									case SHORT_ARRAY_VALUE:
 									{
-#if defined (OLD_CODE)	
 										return_code=get_FE_nodal_short_array_value_at_FE_value_time(
 											node,&fe_field_component,field->version_number,
-											field->nodal_value_type,field->time,&short_value);
-										field->values[i] = (FE_value)short_value;
-#endif /*#if defined (OLD_CODE)	 */
+											field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
+											&short_value);
+										field->values[i] = (FE_value)short_value;									
 									} break;	
 									case DOUBLE_ARRAY_VALUE: 				
 									case FLT_ARRAY_VALUE:
@@ -9332,9 +9328,8 @@ although its cache may be lost.
 
 	ENTER(Computed_field_set_type_node_array_value_at_time);
 	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
-		(0<=version_number))
-	{
-		USE_PARAMETER(time_field);
+		(0<=version_number)&&time_field&&(1==time_field->number_of_components))
+	{		
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
@@ -14145,6 +14140,7 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 		value_type_version_option_table[]=
 		{
 			{NULL,NULL,NULL,NULL},
+			{"time",NULL,NULL,set_Computed_field_conditional},
 			{"version",NULL,NULL,set_int_positive},
 			{NULL,NULL,NULL,NULL}
 		},
@@ -14155,9 +14151,10 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 			{"version",NULL,NULL,set_int_positive},
 			{NULL,NULL,NULL,NULL}
 		};
-	struct Computed_field *field;
+	struct Computed_field *field,*time_field;
 	struct Computed_field_package *computed_field_package;
 	struct FE_field *fe_field;
+	struct Set_Computed_field_conditional_data set_time_field_data;
 
 	ENTER(define_Computed_field_type_node_array_value_at_time);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -14191,14 +14188,13 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 		nodal_value_type_option_table[7].to_be_modified= &nodal_value_type;
 		fe_field=(struct FE_field *)NULL;
 		nodal_value_type=FE_NODAL_UNKNOWN;
+		time_field=(struct Computed_field *)NULL;
 		/* user enters version number starting at 1; field stores it as 0 */
 		version_number=1;
 		if (COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME==Computed_field_get_type(field))
 		{
-#if defined (OLD_CODE)
 			return_code=Computed_field_get_type_node_array_value_at_time(field,&fe_field,
-				&nodal_value_type,&version_number,&time);
-#endif /* #if defined (OLD_CODE) */
+				&nodal_value_type,&version_number,&time_field);
 			version_number++;
 		}
 		if (return_code)
@@ -14207,6 +14203,10 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 			if (fe_field)
 			{
 				ACCESS(FE_field)(fe_field);
+			}
+			if (time_field)
+			{
+				ACCESS(Computed_field)(time_field);
 			}
 			/* try to handle help first */
 			if (current_token=state->current_token)
@@ -14254,7 +14254,12 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 			{
 				(value_type_version_option_table[0]).user_data=
 					&nodal_value_type_option_table;
-				(value_type_version_option_table[1]).to_be_modified= &version_number;
+				set_time_field_data.computed_field_package=computed_field_package;
+				set_time_field_data.conditional_function=Computed_field_has_1_component;
+				set_time_field_data.conditional_function_user_data=(void *)NULL;
+				(value_type_version_option_table[1]).to_be_modified= &time_field;
+				(value_type_version_option_table[1]).user_data= &set_time_field_data;
+				(value_type_version_option_table[2]).to_be_modified= &version_number;
 				return_code=
 					process_multiple_options(state,value_type_version_option_table);
 			}
@@ -14262,11 +14267,9 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 			{
 				if (FE_NODAL_UNKNOWN != nodal_value_type)
 				{
-#if defined (OLD_CODE)
 					/* user enters version number starting at 1; field stores it as 0 */
 					return_code=Computed_field_set_type_node_array_value_at_time(field,fe_field,
-						nodal_value_type,version_number-1,time);
-#endif
+						nodal_value_type,version_number-1,time_field);
 				}
 				else
 				{
@@ -14284,6 +14287,10 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_node_array_value_at_time.  Failed");
 				}
+			}
+			if (time_field)
+			{
+				DEACCESS(Computed_field)(&time_field);
 			}
 			if (fe_field)
 			{
@@ -15912,18 +15919,20 @@ Writes the properties of the <field> to the command window.
 				display_message(INFORMATION_MESSAGE,
 					"    field : %s\n",field->source_fields[0]->name);
 			} break;
-			case COMPUTED_FIELD_OFFSET:
-			{
-				display_message(INFORMATION_MESSAGE,"    field : %s\n",
-					field->source_fields[0]->name);
-				display_message(INFORMATION_MESSAGE,"    offsets :");
-				for (i=0;i<field->source_fields[0]->number_of_components;i++)
-				{
-					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
-				}
-				display_message(INFORMATION_MESSAGE,"\n");
-			} break;		
 			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+			{
+				if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+				{
+					display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
+					display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
+						get_FE_nodal_value_type_string(field->nodal_value_type));
+					display_message(INFORMATION_MESSAGE,
+						"    time field : %s\n",field->source_fields[0]->name);
+					display_message(INFORMATION_MESSAGE,"    version : %d\n",
+						field->version_number+1);
+					DEALLOCATE(field_name);
+				}
+			} break;
 			case COMPUTED_FIELD_NODE_VALUE:
 			{
 				if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
@@ -15936,6 +15945,17 @@ Writes the properties of the <field> to the command window.
 					DEALLOCATE(field_name);
 				}
 			} break;
+			case COMPUTED_FIELD_OFFSET:
+			{
+				display_message(INFORMATION_MESSAGE,"    field : %s\n",
+					field->source_fields[0]->name);
+				display_message(INFORMATION_MESSAGE,"    offsets :");
+				for (i=0;i<field->source_fields[0]->number_of_components;i++)
+				{
+					display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+				}
+				display_message(INFORMATION_MESSAGE,"\n");
+			} break;		
 			case COMPUTED_FIELD_RC_COORDINATE:
 			{
 				display_message(INFORMATION_MESSAGE,
@@ -16245,6 +16265,16 @@ are created automatically by the program.
 					for (i=0;i<field->source_fields[0]->number_of_components;i++)
 					{
 						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+					}
+				} break;
+				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+				{
+					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+					{
+						display_message(INFORMATION_MESSAGE," fe_field %s %s time %s version %d",
+							field_name,get_FE_nodal_value_type_string(field->nodal_value_type),
+							field->source_fields[0]->name,field->version_number+1);
+						DEALLOCATE(field_name);
 					}
 				} break;
 				case COMPUTED_FIELD_NODE_VALUE:

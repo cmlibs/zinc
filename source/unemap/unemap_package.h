@@ -75,6 +75,8 @@ eg light model, and managers. Split into along these lines?
 	struct FE_field *signal_status_field;
 	struct FE_field *channel_gain_field;
 	struct FE_field *channel_offset_field;
+	struct Computed_field *signal_value_at_time_field;
+	struct Computed_field *time_field;
 	int number_of_rig_node_groups;
 	struct GROUP(FE_node) **rig_node_groups;
 	/* info about the last map(s) */
@@ -624,6 +626,15 @@ DESCRIPTION :
 Frees the fields stored in the unemap_package that are used by the rid_node_group
 ==============================================================================*/
 
+int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package);
+/*******************************************************************************
+LAST MODIFIED : 4 May 2000
+
+DESCRIPTION :
+Frees the time related computed fields (used by the map electrode glyphs) 
+stored in the unemap package.
+==============================================================================*/
+
 int free_unemap_package_rig_node_group_glyphs(struct Unemap_package *package,
 	int rig_node_group_number);
 /*******************************************************************************
@@ -923,6 +934,42 @@ LAST MODIFIED : April 18 2000
 
 DESCRIPTION :
 gets the spectrum_manager of the unemap package.
+==============================================================================*/
+
+struct Computed_field *get_unemap_package_signal_value_at_time_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_signal_value_at_time_field(struct Unemap_package *package,
+	struct Computed_field *signal_value_at_time_field);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+
+struct Computed_field *get_unemap_package_time_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_time_field(struct Unemap_package *package,
+	struct Computed_field *time_field);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
 ==============================================================================*/
 
 #endif /* #if defined(UNEMAP_USE_NODES) */

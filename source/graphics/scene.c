@@ -4256,7 +4256,7 @@ it. For example, rendervrml.c needs to output all the window objects in a scene.
 	if (scene&&iterator_function)
 	{
 		return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(iterator_function,
-			user_data,scene->scene_object_list);
+			user_data,scene->scene_object_list);	
 	}
 	else
 	{

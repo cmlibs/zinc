@@ -2069,7 +2069,7 @@ cf read_FE_node_group() in import_finite_element.c
 	node_group=(struct GROUP(FE_node) *)NULL;	
 	if (input_file&&unemap_package)
 	{		
-		/* clear out the old node and element groups, and asscoiated fields */
+		/* clear out the old node and element groups, and asscoiated fields */ 	
 		free_unemap_package_rig_info(unemap_package);	
 		free_unemap_package_maps(unemap_package);
 		if (TEXT==file_type)
@@ -2447,7 +2447,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 													return_code =0;
 												}
 											} break;
-										}	/* switch (signal_value_type) */
+										}	/* switch (signal_value_type) */									
 										/* fill in field based time values*/
 										if(signal_field)
 										{
