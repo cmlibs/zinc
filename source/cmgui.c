@@ -378,6 +378,7 @@ Main program for the CMISS Graphical User Interface
 	char *cm_examples_directory,*cm_parameters_file_name,*comfile_name,
 		*example_id,*examples_directory,*version_command_id,version_id_string[100],
 		*version_ptr,version_temp[20];
+	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int
 #if defined (WINDOWS)
 		WINAPI
@@ -573,15 +574,8 @@ Main program for the CMISS Graphical User Interface
 	};
 #endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
-#if !defined (WINDOWS_DEV_FLAG)
-	static char *default_light_model_properties="ambient 0.2 0.2 0.2 two_sided";
-	static char *default_light_properties=
-		"colour 1.0 1.0 1.0 direction 0.0 -0.5 -1.0";
-#if defined (OLD_GFX_WINDOW)
-		"colour 1.0 1.0 1.0 direction 0.0 -0.5 -1.0 on";
-#endif /* defined (OLD_GFX_WINDOW) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Cmiss_command_data command_data;
+	struct Colour ambient_colour,default_colour;
 	struct Computed_field *computed_field;
 	struct Command_window *command_window;
 	struct Execute_command *execute_command, *set_command;
@@ -594,9 +588,6 @@ Main program for the CMISS Graphical User Interface
 		{CMGUI_EXAMPLE_DIRECTORY_SYMBOL,NULL,NULL,set_file_name},
 		{NULL,NULL,NULL,set_file_name}
 	};
-	struct Modify_light_data modify_light_data;
-	struct Modify_light_model_data modify_light_model_data;
-	struct Parse_state *parse_state;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct User_interface user_interface;
 	User_settings user_settings;
@@ -718,59 +709,39 @@ Main program for the CMISS Graphical User Interface
 	{
 		if (command_data.default_light=CREATE(Light)("default"))
 		{
-			if (parse_state=create_Parse_state(default_light_properties))
+			set_Light_type(command_data.default_light,INFINITE_LIGHT);
+			default_colour.red=1.0;
+			default_colour.green=1.0;
+			default_colour.blue=1.0;		
+			set_Light_colour(command_data.default_light,&default_colour); 
+				
+			set_Light_direction(command_data.default_light,default_light_direction);
+			/*???DB.  Include default as part of manager ? */
+			ACCESS(Light)(command_data.default_light);
+			if (!ADD_OBJECT_TO_MANAGER(Light)(command_data.default_light,
+				command_data.light_manager))
 			{
-				modify_light_data.light_manager=command_data.light_manager;
-				modify_light_data.default_light=(struct Light *)NULL;
-				modify_Light(parse_state,(void *)(command_data.default_light),
-					(void *)(&modify_light_data));
-					/*???DB.  Use set_Light_* instead ? (as for set_Spectrum_*) */
-				destroy_Parse_state(&parse_state);
-				/* ACCESS so can never be destroyed */
-					/*???RC.  But should be able to change: eg. gfx set default light
-						NAME */
-					/*???DB.  Include default as part of manager ? */
-				ACCESS(Light)(command_data.default_light);
-				if (!ADD_OBJECT_TO_MANAGER(Light)(command_data.default_light,
-					command_data.light_manager))
-				{
-					DEACCESS(Light)(&(command_data.default_light));
-				}
+				DEACCESS(Light)(&(command_data.default_light));
 			}
 		}
 	}
-	/* light model manager */
 	command_data.default_light_model=(struct Light_model *)NULL;
 	if (command_data.light_model_manager=CREATE_MANAGER(Light_model)())
 	{
 		if (command_data.default_light_model=CREATE(Light_model)("default"))
 		{
-			if (parse_state=create_Parse_state(default_light_model_properties))
+			ambient_colour.red=0.2;
+			ambient_colour.green=0.2;
+			ambient_colour.blue=0.2;
+			Light_model_set_ambient(command_data.default_light_model,&ambient_colour);
+			Light_model_set_side_mode(command_data.default_light_model,LIGHT_MODEL_TWO_SIDED);
+			/*???DB.  Include default as part of manager ? */
+			ACCESS(Light_model)(command_data.default_light_model);
+			if (!ADD_OBJECT_TO_MANAGER(Light_model)(
+				command_data.default_light_model,command_data.light_model_manager))
 			{
-				modify_light_model_data.light_model_manager=
-					command_data.light_model_manager;
-				modify_light_model_data.default_light_model=
-					(struct Light_model *)NULL;
-				modify_Light_model(parse_state,
-					(void *)(command_data.default_light_model),
-					(void *)(&modify_light_model_data));
-					/*???DB.  Use set_Light_model_* instead ? (as for set_Spectrum_*) */
-				destroy_Parse_state(&parse_state);
-				/* ACCESS so can never be destroyed */
-					/*???RC.  But should be able to change: eg. gfx set default lmodel
-						NAME */
-					/*???DB.  Include default as part of manager ? */
-				ACCESS(Light_model)(command_data.default_light_model);
-				if (!ADD_OBJECT_TO_MANAGER(Light_model)(
-					command_data.default_light_model,command_data.light_model_manager))
-				{
-					DEACCESS(Light_model)(&(command_data.default_light_model));
-				}
-			}
-			else
-			{
-				DESTROY(Light_model)(&(command_data.default_light_model));
-			}
+				DEACCESS(Light_model)(&(command_data.default_light_model));
+			}			
 		}
 	}
 	/* environment map manager */
