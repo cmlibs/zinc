@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 19 April 2002
+XCOMM LAST MODIFIED : 22 April 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -56,7 +56,7 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #define RatioSignalsTarget unemap/ratio_signals64
 #define RegisterTarget unemap/register64
 #define Sig2textTarget unemap/sig2text64
-#define TestDelauneyTarget unemap/test_delauney64
+#define TestDelaunayTarget unemap/test_delaunay64
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware64
 #define Text2sigTarget unemap/text2sig64
 #define Tuff2sigTarget unemap/tuff2sig64
@@ -100,7 +100,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define RatioSignalsTarget unemap/ratio_signals_3d_optimised
 #define RegisterTarget unemap/register_3d_optimised
 #define Sig2textTarget unemap/sig2text_3d_optimised
-#define TestDelauneyTarget unemap/test_delauney_3d_optimised
+#define TestDelaunayTarget unemap/test_delaunay_3d_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_3d_optimised
 #define Text2sigTarget unemap/text2sig_3d_optimised
 #define Tuff2sigTarget unemap/tuff2sig_3d_optimised
@@ -138,7 +138,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals_optimised
 #define RegisterTarget unemap/register_optimised
 #define Sig2textTarget unemap/sig2text_optimised
-#define TestDelauneyTarget unemap/test_delauney_optimised
+#define TestDelaunayTarget unemap/test_delaunay_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_optimised
 #define Text2sigTarget unemap/text2sig_optimised
 #define Tuff2sigTarget unemap/tuff2sig_optimised
@@ -180,7 +180,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals_nodes
 #define RegisterTarget unemap/register_nodes
 #define Sig2textTarget unemap/sig2text_nodes
-#define TestDelauneyTarget unemap/test_delauney_nodes
+#define TestDelaunayTarget unemap/test_delaunay_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_nodes
 #define Text2sigTarget unemap/text2sig_nodes
 #define Tuff2sigTarget unemap/tuff2sig_nodes
@@ -221,7 +221,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals_3d
 #define RegisterTarget unemap/register_3d
 #define Sig2textTarget unemap/sig2text_3d
-#define TestDelauneyTarget unemap/test_delauney_3d
+#define TestDelaunayTarget unemap/test_delaunay_3d
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_3d
 #define Text2sigTarget unemap/text2sig_3d
 #define Tuff2sigTarget unemap/tuff2sig_3d
@@ -263,7 +263,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals32
 #define RegisterTarget unemap/register32
 #define Sig2textTarget unemap/sig2text32
-#define TestDelauneyTarget unemap/test_delauney32
+#define TestDelaunayTarget unemap/test_delaunay32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Text2sigTarget unemap/text2sig32
 #define Tuff2sigTarget unemap/tuff2sig32
@@ -301,7 +301,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals32
 #define RegisterTarget unemap/register32
 #define Sig2textTarget unemap/sig2text32
-#define TestDelauneyTarget unemap/test_delauney32
+#define TestDelaunayTarget unemap/test_delaunay32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Text2sigTarget unemap/text2sig32
 #define Tuff2sigTarget unemap/tuff2sig32
@@ -349,7 +349,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals_linux_nodes
 #define RegisterTarget unemap/register_linux_nodes
 #define Sig2textTarget unemap/sig2text_linux_nodes
-#define TestDelauneyTarget unemap/test_delauney_linux_nodes
+#define TestDelaunayTarget unemap/test_delaunay_linux_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_nodes
 #define Text2sigTarget unemap/text2sig_linux_nodes
 #define Tuff2sigTarget unemap/tuff2sig_linux_nodes
@@ -392,7 +392,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 #define RatioSignalsTarget unemap/ratio_signals_linux_3d
 #define RegisterTarget unemap/register_linux_3d
 #define Sig2textTarget unemap/sig2text_linux_3d
-#define TestDelauneyTarget unemap/test_delauney_linux_3d
+#define TestDelaunayTarget unemap/test_delaunay_linux_3d
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_3d
 #define Text2sigTarget unemap/text2sig_linux_3d
 #define Tuff2sigTarget unemap/tuff2sig_linux_3d
@@ -430,7 +430,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
 #define RatioSignalsTarget unemap/ratio_signals_linux_3d_optimised
 #define RegisterTarget unemap/register_linux_3d_optimised
 #define Sig2textTarget unemap/sig2text_linux_3d_optimised
-#define TestDelauneyTarget unemap/test_delauney_linux_3d_optimised
+#define TestDelaunayTarget unemap/test_delaunay_linux_3d_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_3d_optimised
 #define Text2sigTarget unemap/text2sig_linux_3d_optimised
 #define Tuff2sigTarget unemap/tuff2sig_linux_3d_optimised
@@ -471,7 +471,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_optimised
 #define RatioSignalsTarget unemap/ratio_signals_linux
 #define RegisterTarget unemap/register_linux
 #define Sig2textTarget unemap/sig2text_linux
-#define TestDelauneyTarget unemap/test_delauney_linux
+#define TestDelaunayTarget unemap/test_delaunay_linux
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux
 #define Text2sigTarget unemap/text2sig_linux
 #define Tuff2sigTarget unemap/tuff2sig_linux
@@ -509,7 +509,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
 #define RatioSignalsTarget unemap/ratio_signals_linux_optimised
 #define RegisterTarget unemap/register_linux_optimised
 #define Sig2textTarget unemap/sig2text_linux_optimised
-#define TestDelauneyTarget unemap/test_delauney_linux_optimised
+#define TestDelaunayTarget unemap/test_delaunay_linux_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_optimised
 #define Text2sigTarget unemap/text2sig_linux_optimised
 #define Tuff2sigTarget unemap/tuff2sig_linux_optimised
@@ -846,7 +846,7 @@ UNEMAP_SRCS = \
 	unemap/bard.c \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
-	unemap/delauney.c \
+	unemap/delaunay.c \
 	unemap/edf.c \
 	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
@@ -909,7 +909,7 @@ UNEMAP_SRCS = \
 	unemap/bard.c \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
-	unemap/delauney.c \
+	unemap/delaunay.c \
 	unemap/edf.c \
 	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
@@ -1048,7 +1048,7 @@ ChangeConfigurationTarget ChangeEventsTarget ChangeFrequencyTarget \
 CombineSignalsTarget DifferenceSignalsTarget ExtractSignalTarget FixEcgTarget \
 Img2sigTarget MakePlaqueTarget OpticalSignalsTarget Plt2cnfgTarget \
 Posdat2sigTarget RatioSignalsTarget RegisterTarget Sig2textTarget \
-TestDelauneyTarget TestUnemapHardwareTarget Text2sigTarget Tuff2sigTarget \
+TestDelaunayTarget TestUnemapHardwareTarget Text2sigTarget Tuff2sigTarget \
 UniqueChannelsTarget
 
 AFFINE_SRCS = \
@@ -1332,14 +1332,14 @@ SIG2TEXT_SRCS = \
 
 BuildNormalTarget(Sig2textTarget,$(UTILITIES_PATH),SIG2TEXT_SRCS,SIG2TEXT_OBJSA,SIG2TEXT_OBJSB,SIG2TEXT_OBJS,$(LIB)) 
 
-TEST_DELAUNEY_SRCS = \
-	unemap/utilities/test_delauney.c \
+TEST_DELAUNAY_SRCS = \
+	unemap/utilities/test_delaunay.c \
 	general/debug.c \
 	general/mystring.c \
-	unemap/delauney.c \
+	unemap/delaunay.c \
 	user_interface/message.c
 
-BuildNormalTarget(TestDelauneyTarget,$(UTILITIES_PATH),TEST_DELAUNEY_SRCS,TEST_DELAUNEY_OBJSA,TEST_DELAUNEY_OBJSB,TEST_DELAUNEY_OBJS,$(LIB)) 
+BuildNormalTarget(TestDelaunayTarget,$(UTILITIES_PATH),TEST_DELAUNAY_SRCS,TEST_DELAUNAY_OBJSA,TEST_DELAUNAY_OBJSB,TEST_DELAUNAY_OBJS,$(LIB)) 
 
 TEST_UNEMAP_HARDWARE_SRCS = \
 	unemap/utilities/test_unemap_hardware.c \
@@ -1397,7 +1397,7 @@ UTILITIES_SRCS = \
 	$(TUFF2SIG_SRCS) \
 	$(TEXT2SIG_SRCS) \
 	$(TEST_UNEMAP_HARDWARE_SRCS) \
-	$(TEST_DELAUNEY_SRCS) \
+	$(TEST_DELAUNAY_SRCS) \
 	$(SIG2TEXT_SRCS) \
 	$(REGISTER_SRCS) \
 	$(RATIO_SIGNALS_SRCS) \

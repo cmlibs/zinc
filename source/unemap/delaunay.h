@@ -1,26 +1,26 @@
 /*******************************************************************************
-FILE : delauney.h
+FILE : delaunay.h
 
-LAST MODIFIED : 3 February 2002
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
-Specialized implementations of Delauney triangulation for a cylinder and a
+Specialized implementations of Delaunay triangulation for a cylinder and a
 sphere.
 ==============================================================================*/
-#if !defined (DELAUNEY_H)
-#define DELAUNEY_H
+#if !defined (DELAUNAY_H)
+#define DELAUNAY_H
 
 /*
 Global functions
 ----------------
 */
-int cylinder_delauney(int number_of_vertices,float *vertices,
+int cylinder_delaunay(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address);
 /*******************************************************************************
 LAST MODIFIED : 3 February 2002
 
 DESCRIPTION :
-Calculates the Delauney triangulation of the <vertices> on a cylinder whose axis
+Calculates the Delaunay triangulation of the <vertices> on a cylinder whose axis
 is z.
 <number_of_vertices> is the number of vertices to be triangulated
 <vertices> is an array of length 3*<number_of_vertices> containing the x,y,z
@@ -31,13 +31,13 @@ is z.
 	allocated by the function, containing the vertex numbers for each triangle
 ==============================================================================*/
 
-int sphere_delauney(int number_of_vertices,float *vertices,
+int sphere_delaunay(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address);
 /*******************************************************************************
 LAST MODIFIED : 3 February 2002
 
 DESCRIPTION :
-Calculates the Delauney triangulation of the <vertices> on a sphere whose centre
+Calculates the Delaunay triangulation of the <vertices> on a sphere whose centre
 is the origin.
 <number_of_vertices> is the number of vertices to be triangulated
 <vertices> is an array of length 3*<number_of_vertices> containing the x,y,z
@@ -47,4 +47,4 @@ is the origin.
 <*triangles_address> is an array of length 3*<*number_of_triangles_address>,
 	allocated by the function, containing the vertex numbers for each triangle
 ==============================================================================*/
-#endif /* !defined (DELAUNEY_H) */
+#endif /* !defined (DELAUNAY_H) */

@@ -1,21 +1,123 @@
 /*******************************************************************************
-FILE : test_delauney.c
+FILE : test_delaunay.c
 
-LAST MODIFIED : 16 January 2002
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
-Used to test the Delauney triangularization.
+Used to test the Delaunay triangularization.
 
 Reads in a file with x y z locations, one to a line, and outputs an exnode file
 and an exelem file.
+
+BUILD (for FORTRAN_STANDALONE) :
+gcc -g -c -DFORTRAN_STANDALONE test_delaunay.c -o test_delaunay.o
+g77 -g delaunay.f test_delaunay.o -lm -o test_delaunay
 ==============================================================================*/
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+
+#if defined (FORTRAN_STANDALONE)
+#include <math.h>
+
+#define sphere_delaunay sphere_delaunay__
+
+void sphere_delaunay(int *,double *,int *,int *,int *,double *,int *);
+
+#define ENTER( function_name )
+
+#define LEAVE
+
+#define ALLOCATE( result , type , number ) \
+ ( result = ( 0 < ( number ) ) ? ( type * )malloc( ( number ) * sizeof( type ) ) : ( type * )NULL )
+
+#define DEALLOCATE( ptr ) { if ( ptr ) { free( (char *)( ptr ) ); ( ptr ) = NULL; } }
+
+#define REALLOCATE( final , initial , type , number ) \
+ ( final = ( 0 < ( number ) ) ? ( type * )realloc( (char *)( initial ) , ( number ) * sizeof( type ) ) : ( type * )NULL )
+
+#if !defined (PI)
+#define PI 3.14159265358979323846
+#endif
+
+#define MESSAGE_STRING_SIZE 1000
+static char message_string[MESSAGE_STRING_SIZE];
+
+/*
+Types
+-----
+*/
+enum Message_type
+/*******************************************************************************
+LAST MODIFIED : 31 May 1996
+
+DESCRIPTION :
+The different message types.
+==============================================================================*/
+{
+	ERROR_MESSAGE,
+	INFORMATION_MESSAGE,
+	WARNING_MESSAGE
+}; /* enum Message_type */
+
+/*
+Functions
+---------
+*/
+int display_message(enum Message_type message_type,char *format, ... )
+/*******************************************************************************
+LAST MODIFIED : 7 September 2000
+
+DESCRIPTION :
+A function for displaying a message of the specified <message_type>.  The printf
+form of arguments is used.
+==============================================================================*/
+{
+	int return_code;
+	va_list ap;
+
+	ENTER(display_message);
+	va_start(ap,format);
+	return_code=vsprintf(message_string,format,ap);
+	if (return_code >= (MESSAGE_STRING_SIZE-1))
+	{
+		char error_string[100];
+
+		sprintf(error_string,"Overflow of message_string.  "
+			"Following is truncated to %d characters:",return_code);
+		return_code=printf("ERROR: %s\n",error_string);
+	}
+	switch (message_type)
+	{
+		case ERROR_MESSAGE:
+		{
+			return_code=printf("ERROR: %s\n",message_string);
+		} break;
+		case INFORMATION_MESSAGE:
+		{
+			/* make sure we don't interpret % characters by printing the string */
+			return_code=printf("%s",message_string);
+		} break;
+		case WARNING_MESSAGE:
+		{
+			return_code=printf("WARNING: %s\n",message_string);
+		} break;
+		default:
+		{
+			return_code=printf("UNKNOWN: %s\n",message_string);
+		} break;
+	}
+	va_end(ap);
+	LEAVE;
+
+	return (return_code);
+} /* display_message */
+#else /* defined (FORTRAN_STANDALONE) */
 #include "general/debug.h"
-#include "unemap/delauney.h"
+#include "unemap/delaunay.h"
+#endif /* defined (FORTRAN_STANDALONE) */
 
 /*
 Main program
@@ -23,16 +125,21 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 16 January 2002
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	char out_file_name[81],geometry_type[9];
 	FILE *locations_file,*out_file;
-	float *locations,*locations_temp,x,y,z;
 	int i,id,*id_array,*id_array_temp,number_of_locations,number_of_triangles,
 		return_code,*triangles;
+#if defined (FORTRAN_STANDALONE)
+	int maximum_number_of_triangles;
+	double *locations,*locations_temp,*rworking,x,y,z;
+#else /* defined (FORTRAN_STANDALONE) */
+	float *locations,*locations_temp,x,y,z;
+#endif /* defined (FORTRAN_STANDALONE) */
 
 	return_code=0;
 	/* check arguments */
@@ -52,20 +159,38 @@ DESCRIPTION :
 			i++;
 		}
 		geometry_type[i]='\0';
+#if defined (FORTRAN_STANDALONE)
+		if (!strcmp(geometry_type,"sphere"))
+#else /* defined (FORTRAN_STANDALONE) */
 		if ((!strcmp(geometry_type,"cylinder"))||(!strcmp(geometry_type,"sphere")))
+#endif /* defined (FORTRAN_STANDALONE) */
 		{
 			if (locations_file=fopen(argv[2],"r"))
 			{
 				/* count the number of locations */
 				return_code=1;
 				number_of_locations=0;
+#if defined (FORTRAN_STANDALONE)
+				locations=(double *)NULL;
+#else /* defined (FORTRAN_STANDALONE) */
 				locations=(float *)NULL;
+#endif /* defined (FORTRAN_STANDALONE) */
 				id_array=(int *)NULL;
-				while (return_code&&(4==fscanf(locations_file," %d %g %g %g",&id,&x,&y,
-					&z)))
+				while (return_code&&
+#if defined (FORTRAN_STANDALONE)
+					(4==fscanf(locations_file," %d %lf %lf %lf",&id,&x,&y,&z))
+#else /* defined (FORTRAN_STANDALONE) */
+					(4==fscanf(locations_file," %d %f %f %f",&id,&x,&y,&z))
+#endif /* defined (FORTRAN_STANDALONE) */
+					)
 				{
 					number_of_locations++;
-					if (REALLOCATE(locations_temp,locations,float,3*number_of_locations)&&
+					if (
+#if defined (FORTRAN_STANDALONE)
+						REALLOCATE(locations_temp,locations,double,3*number_of_locations)&&
+#else /* defined (FORTRAN_STANDALONE) */
+						REALLOCATE(locations_temp,locations,float,3*number_of_locations)&&
+#endif /* defined (FORTRAN_STANDALONE) */
 						REALLOCATE(id_array_temp,id_array,int,number_of_locations))
 					{
 						locations=locations_temp;
@@ -102,16 +227,50 @@ DESCRIPTION :
 				{
 					/*???debug */
 					printf("number_of_locations=%d\n",number_of_locations);
+#if defined (FORTRAN_STANDALONE)
+					maximum_number_of_triangles=4*number_of_locations;
+					ALLOCATE(rworking,double,4*maximum_number_of_triangles);
+					ALLOCATE(triangles,int,3*maximum_number_of_triangles);
+					if (rworking&&triangles)
+					{
+						sphere_delaunay(&number_of_locations,locations,
+							&maximum_number_of_triangles,triangles,&number_of_triangles,
+							rworking,&return_code);
+						/*???DB.  Different return code convention */
+						if (0==return_code)
+						{
+							return_code=1;
+							for (i=0;i<3*number_of_triangles;i++)
+							{
+								triangles[i]--;
+							}
+						}
+						else
+						{
+							return_code=0;
+							DEALLOCATE(triangles);
+						}
+					}
+					else
+					{
+						printf("Could not allocate working arrays.  %p %p\n",rworking,
+							triangles);
+						return_code=0;
+						DEALLOCATE(triangles);
+					}
+					DEALLOCATE(rworking);
+#else /* defined (FORTRAN_STANDALONE) */
 					if (!strcmp(geometry_type,"cylinder"))
 					{
-						return_code=cylinder_delauney(number_of_locations,locations,
+						return_code=cylinder_delaunay(number_of_locations,locations,
 							&number_of_triangles,&triangles);
 					}
 					else
 					{
-						return_code=sphere_delauney(number_of_locations,locations,
+						return_code=sphere_delaunay(number_of_locations,locations,
 							&number_of_triangles,&triangles);
 					}
+#endif /* defined (FORTRAN_STANDALONE) */
 					if (return_code)
 					{
 						/*???debug */
@@ -240,7 +399,7 @@ DESCRIPTION :
 	}
 	else
 	{
-		printf("usage: test_delauney SPHERE|CYLINDER locations_file group_name\n");
+		printf("usage: test_delaunay SPHERE|CYLINDER locations_file group_name\n");
 		printf(
 			"  SPHERE|CYLINDER keyword for type of geometry (case insensitive)\n");
 		printf(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 24 April 2002
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -129,7 +129,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->read_order_field=(struct FE_field *)NULL;
 			package->map_fit_field=(struct FE_field *)NULL;			
 			package->signal_field=(struct FE_field *)NULL;
-			package->delauney_signal_field=(struct FE_field *)NULL;
+			package->delaunay_signal_field=(struct FE_field *)NULL;
 			package->signal_minimum_field=(struct FE_field *)NULL;
 			package->signal_maximum_field=(struct FE_field *)NULL;	
 			package->signal_status_field=(struct FE_field *)NULL;
@@ -207,7 +207,7 @@ to NULL.
 		DEACCESS(FE_field)(&(package->read_order_field));
 		DEACCESS(FE_field)(&(package->map_fit_field));
 		DEACCESS(FE_field)(&(package->signal_field));	
-		DEACCESS(FE_field)(&(package->delauney_signal_field));
+		DEACCESS(FE_field)(&(package->delaunay_signal_field));
 		DEACCESS(FE_field)(&(package->signal_minimum_field));
 		DEACCESS(FE_field)(&(package->signal_maximum_field));	
 		DEACCESS(FE_field)(&(package->signal_status_field));
@@ -668,7 +668,7 @@ of map_fit_field and creation of map_3d_package. ??JW Remove from map_3d_package
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct FE_field *get_unemap_package_delauney_signal_field(
+struct FE_field *get_unemap_package_delaunay_signal_field(
 	struct Unemap_package *package)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
@@ -677,24 +677,24 @@ DESCRIPTION :
 gets the field of the unemap package.
 ==============================================================================*/
 {
-	struct FE_field *delauney_signal_field;
-	ENTER(get_unemap_package_delauney_signal_field);
+	struct FE_field *delaunay_signal_field;
+	ENTER(get_unemap_package_delaunay_signal_field);
 	if(package)
 	{
-		delauney_signal_field=package->delauney_signal_field;
+		delaunay_signal_field=package->delaunay_signal_field;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_delauney_signal_field."
+		display_message(ERROR_MESSAGE,"get_unemap_package_delaunay_signal_field."
 				" invalid arguments");
-		delauney_signal_field = (struct FE_field *)NULL;
+		delaunay_signal_field = (struct FE_field *)NULL;
 	}
 	LEAVE;
-	return (delauney_signal_field);
-} /* get_unemap_package_delauney_signal_field */
+	return (delaunay_signal_field);
+} /* get_unemap_package_delaunay_signal_field */
 
-int set_unemap_package_delauney_signal_field(struct Unemap_package *package,
-	struct FE_field *delauney_signal_field)
+int set_unemap_package_delaunay_signal_field(struct Unemap_package *package,
+	struct FE_field *delaunay_signal_field)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
 
@@ -704,21 +704,21 @@ Sets the field of the unemap package.
 {
 	int return_code;
 
-	ENTER(set_unemap_package_delauney_signal_field);
+	ENTER(set_unemap_package_delaunay_signal_field);
 	if(package)
 	{
 		return_code =1;		
-		REACCESS(FE_field)(&(package->delauney_signal_field),delauney_signal_field);
+		REACCESS(FE_field)(&(package->delaunay_signal_field),delaunay_signal_field);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_delauney_signal_field."
+		display_message(ERROR_MESSAGE,"set_unemap_package_delaunay_signal_field."
 				" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	return (return_code);
-} /* set_unemap_package_delauney_signal_field */
+} /* set_unemap_package_delaunay_signal_field */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_NODES)

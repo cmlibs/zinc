@@ -1092,7 +1092,9 @@ for a response from a modal dialog).
 	XtDispatchEvent(&event);
 #endif /* defined (MOTIF) */
 #endif /* defined (OLD_CODE) */
+#if defined (MOTIF)
 	XtAppProcessEvent(user_interface->application_context, XtIMAll);
+#endif /* defined (MOTIF) */
 	return_code=1;
 	LEAVE;
 
@@ -1170,6 +1172,7 @@ DESCRIPTION :
 	return (return_code);
 } /* application_main_loop */
 
+#if defined (MOTIF)
 static void User_interface_property_notify_callback(Widget w, 
 	XtPointer user_interface_void, XEvent *event, Boolean *f)
 /*******************************************************************************
@@ -1202,7 +1205,7 @@ the interface basically the same.
 	LEAVE;
 
 } /* User_interface_property_notify_callback */
-
+#endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
 int set_property_notify_callback(struct User_interface *user_interface,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -34,7 +34,7 @@ DESCRIPTION :
 #include "graphics/spectrum.h"
 #include "time/time.h"
 #include "unemap/drawing_2d.h"
-#include "unemap/delauney.h"
+#include "unemap/delaunay.h"
 #include "unemap/interpolate.h"
 #include "unemap/mapping.h"
 #include "unemap/rig.h"
@@ -3394,7 +3394,7 @@ do similar with the mapped torso node group
 	struct FE_node_order_info *node_order_info;
 	struct Map_3d_package *map_3d_package;
 	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
-		*delauney_torso_element_group;
+		*delaunay_torso_element_group;
 
 	ENTER(make_fit_node_and_element_groups);
 	fit_name=(char *)NULL;
@@ -3402,7 +3402,7 @@ do similar with the mapped torso node group
 	map_3d_package=(struct Map_3d_package *)NULL;
 	element_group=(struct GROUP(FE_element) *)NULL;
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	if (function&&package&&name)
 	{	
 		return_code=1;
@@ -3417,15 +3417,15 @@ do similar with the mapped torso node group
 				element_group=get_map_3d_package_element_group(map_3d_package);
 				mapped_torso_element_group=
 					get_map_3d_package_mapped_torso_element_group(map_3d_package);
-				delauney_torso_element_group=
-					get_map_3d_package_delauney_torso_element_group(map_3d_package);
+				delaunay_torso_element_group=
+					get_map_3d_package_delaunay_torso_element_group(map_3d_package);
 			}
 			if (map_3d_package&&(get_map_3d_package_number_of_map_rows(map_3d_package)
 				  ==function->number_of_rows)&&
 				 (get_map_3d_package_number_of_map_columns(map_3d_package)
 				  ==function->number_of_columns)&&(region->type
 				  ==function->region_type)&&(!nodes_rejected_or_accepted)&&
-				(element_group||mapped_torso_element_group||delauney_torso_element_group)&&
+				(element_group||mapped_torso_element_group||delaunay_torso_element_group)&&
 				(!strcmp(get_map_3d_package_fit_name(map_3d_package),fit_name)))
 			{					
 				/* just have to alter the nodal values */
@@ -3496,7 +3496,7 @@ static int map_draw_constant_thickness_contours(struct Scene *scene,
 	struct Map_drawing_information *map_drawing_information,
 	struct Computed_field *data_field,
 	int number_of_contours,FE_value contour_minimum,FE_value contour_maximum,
-	struct Region *region,int default_torso_loaded,int delauney_map)
+	struct Region *region,int default_torso_loaded,int delaunay_map)
 /*******************************************************************************
 LAST MODIFIED : 31 May 2001
 
@@ -3531,10 +3531,10 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 		/* set_Region_map_3d_package(NULL) in draw_map_3d */
 		if (map_3d_package)
 		{
-			if (delauney_map) /* the interpolation_type, stored in the map?*/
+			if (delaunay_map) /* the interpolation_type, stored in the map?*/
 			{
-				/* do contour on delauney*/
-				element_group=get_map_3d_package_delauney_torso_element_group(map_3d_package);
+				/* do contour on delaunay*/
+				element_group=get_map_3d_package_delaunay_torso_element_group(map_3d_package);
 			}
 			else
 			{
@@ -3853,7 +3853,7 @@ Also applies <number_of_contours> contours to surface.
 #define FIT_PATCH_Z 0.0
 static int make_and_add_map_electrode_position_field(
 	struct Unemap_package *unemap_package,
-	struct GROUP(FE_node) *rig_node_group,struct Region *region,int delauney_map)
+	struct GROUP(FE_node) *rig_node_group,struct Region *region,int delaunay_map)
 /*******************************************************************************
 LAST MODIFIED : 31 August 2001
 
@@ -3888,8 +3888,8 @@ map_electode_position field
 	ENTER(make_and_add_map_electrode_position_fields);
 	if (unemap_package&&rig_node_group&&region)
 	{	
-		/* if delauney, just use the electrode_position_field */
-		if (delauney_map)		
+		/* if delaunay, just use the electrode_position_field */
+		if (delaunay_map)		
 		{
 			map_electrode_position_field=get_Region_electrode_position_field(region);
 			set_Region_map_electrode_position_field(region,map_electrode_position_field);
@@ -4631,12 +4631,12 @@ data field is.
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int map_is_delauney(struct Map *map)
+static int map_is_delaunay(struct Map *map)
 /*******************************************************************************
 LAST MODIFIED : 5 February 2002
 
 DESCRIPTION :
-Determines if a map is delauney, baed upton projection type and if the default 
+Determines if a map is delaunay, baed upton projection type and if the default 
 torso is loaded
 ==============================================================================*/
 {
@@ -4660,7 +4660,7 @@ torso is loaded
 			else
 			{	
 				display_message(ERROR_MESSAGE,
-					"map_is_delauney.  DIRECT_INTERPOLATION for wrong map type ");
+					"map_is_delaunay.  DIRECT_INTERPOLATION for wrong map type ");
 				return_code=0;
 			}
 		}
@@ -4672,12 +4672,12 @@ torso is loaded
 	else
 	{	
 		display_message(ERROR_MESSAGE,
-			"map_is_delauney.  Invalid argument(s)");
+			"map_is_delaunay.  Invalid argument(s)");
 		return_code=0;
 	}	
 	LEAVE;
 	return (return_code);
-}/* map_is_delauney */
+}/* map_is_delaunay */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
@@ -5472,7 +5472,7 @@ vertices_data->vertices we've filled in.
 	return (return_code);
 }/* put_electrode_pos_into_vertices */
 
-static struct FE_element *make_delauney_template_element(
+static struct FE_element *make_delaunay_template_element(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,struct FE_field *data_field,
 	struct FE_field *coordinate_field, struct FE_field *gain_field,
@@ -5481,7 +5481,7 @@ static struct FE_element *make_delauney_template_element(
 LAST MODIFIED :17 November 2000
 
 DESCRIPTION : 
-Makes and accesses and returns the template element for the delauney
+Makes and accesses and returns the template element for the delaunay
 map. <data_field> and <coordinate_field> are defined at the element.
 
 Therefore must deaccess the returned element outside this function
@@ -5507,7 +5507,7 @@ Therefore must deaccess the returned element outside this function
 	struct Standard_node_to_element_map **standard_node_map;
 	void **scale_factor_set_identifiers;
 
-	ENTER(make_delauney_template_element);	
+	ENTER(make_delaunay_template_element);	
 	basis=(struct FE_basis *)NULL;
 	shape=(struct FE_element_shape *)NULL;
 	template_element=(struct FE_element *)NULL;
@@ -5529,7 +5529,7 @@ Therefore must deaccess the returned element outside this function
 				data_coordinate_system=get_FE_field_coordinate_system(data_field);
 				coordinate_system=get_FE_field_coordinate_system(coordinate_field);
 				/* check fields have correct number of components and coordinate_system */
-				/* delauney can only be done on electrodes with RC coord sys, arranged*/
+				/* delaunay can only be done on electrodes with RC coord sys, arranged*/
 				/* approximately in a cylinder */
 				if ((1==get_FE_field_number_of_components(data_field))&&
 					(data_coordinate_system->type==NOT_APPLICABLE)&&
@@ -5578,7 +5578,7 @@ Therefore must deaccess the returned element outside this function
 									}
 									else
 									{														
-										display_message(ERROR_MESSAGE,"make_delauney_template_element could not create " 
+										display_message(ERROR_MESSAGE,"make_delaunay_template_element could not create " 
 											"Standard_node_to_element_map");
 										success=0;
 									}
@@ -5589,7 +5589,7 @@ Therefore must deaccess the returned element outside this function
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"make_delauney_template_element. Could not create data_component");
+									"make_delaunay_template_element. Could not create data_component");
 								success=0;
 							}
 							/* do things for coordinate field*/
@@ -5618,7 +5618,7 @@ Therefore must deaccess the returned element outside this function
 										}
 										else
 										{														
-											display_message(ERROR_MESSAGE,"make_delauney_template_element could not create " 
+											display_message(ERROR_MESSAGE,"make_delaunay_template_element could not create " 
 												"Standard_node_to_element_map");
 											success=0;
 										}
@@ -5629,7 +5629,7 @@ Therefore must deaccess the returned element outside this function
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"make_delauney_template_element. Could not create coord_component");
+										"make_delaunay_template_element. Could not create coord_component");
 									success=0;
 								}							
 							}				
@@ -5641,7 +5641,7 @@ Therefore must deaccess the returned element outside this function
 									define_FE_field_at_element(template_element,offset_field,data_components)))
 								{
 									display_message(ERROR_MESSAGE,
-										"make_delauney_template_element.  Could not define field");
+										"make_delaunay_template_element.  Could not define field");
 									success=0;
 								}
 							}				
@@ -5661,7 +5661,7 @@ Therefore must deaccess the returned element outside this function
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"make_delauney_template_element. "
+								"make_delaunay_template_element. "
 								" Could not set element shape/scale factor info");
 							success=0;
 						}					
@@ -5669,7 +5669,7 @@ Therefore must deaccess the returned element outside this function
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"make_delauney_template_element.  Could not create template_element");
+							"make_delaunay_template_element.  Could not create template_element");
 						success=0;
 					}
 					DEALLOCATE(scale_factor_set_identifiers);
@@ -5678,7 +5678,7 @@ Therefore must deaccess the returned element outside this function
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"make_delauney_template_element.  Invalid  field");
+						"make_delaunay_template_element.  Invalid  field");
 					success=0;
 				}		 	
 				DEACCESS(FE_element_shape)(&shape);	
@@ -5686,7 +5686,7 @@ Therefore must deaccess the returned element outside this function
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"make_delauney_template_element.  Could not create shape");
+					"make_delaunay_template_element.  Could not create shape");
 				success=0;
 			}
 			DEACCESS(FE_basis)(&basis);
@@ -5694,14 +5694,14 @@ Therefore must deaccess the returned element outside this function
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"make_delauney_template_element.  Could not create basis");
+				"make_delaunay_template_element.  Could not create basis");
 			success=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			" make_delauney_template_element. invalid arguments ");
+			" make_delaunay_template_element. invalid arguments ");
 		success=0;
 	}
 	if (success==0)
@@ -5711,17 +5711,17 @@ Therefore must deaccess the returned element outside this function
 	}
 	LEAVE;
 	return(template_element);
-}/* make_delauney_template_element */
+}/* make_delaunay_template_element */
 
-static int make_delauney_node_and_element_group(struct GROUP(FE_node) *source_nodes,
-	struct FE_field *electrode_postion_field,struct FE_field *delauney_signal_field,
+static int make_delaunay_node_and_element_group(struct GROUP(FE_node) *source_nodes,
+	struct FE_field *electrode_postion_field,struct FE_field *delaunay_signal_field,
 	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
 	struct Unemap_package *unemap_package,struct Region *region)
 /*******************************************************************************
 LAST MODIFIED :17 November 2000
 
 DESCRIPTION :
-Given the <source_nodes>, performs delauney triangularisation on them,
+Given the <source_nodes>, performs delaunay triangularisation on them,
 and produces elements (and an element group) from these triangles.
 Produces same name node and data groups for graphics. Defines the 
 <electrode_postion_field> and a data field at the elements. 
@@ -5732,7 +5732,7 @@ are already defined at the nodes.
 Stores node and element groups in region <map_3d_package>
 ==============================================================================*/
 {
-	char delauney_group_name[]="delauney";
+	char delaunay_group_name[]="delaunay";
 	int i,j,number_of_triangles,number_of_vertices,return_code,*triangles,
 		*vertex_number;
 	float *vertices;
@@ -5740,8 +5740,8 @@ Stores node and element groups in region <map_3d_package>
 	struct FE_element *template_element,*element;	
 	struct FE_node *triangle_nodes[3],*vertex_node;	
 	struct FE_node_order_info *node_order_info;
-	struct GROUP(FE_element) *delauney_element_group;
-	struct GROUP(FE_node) *delauney_node_group;
+	struct GROUP(FE_element) *delaunay_element_group;
+	struct GROUP(FE_node) *delaunay_node_group;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct MANAGER(FE_node) *node_manager;			
@@ -5751,18 +5751,18 @@ Stores node and element groups in region <map_3d_package>
 	struct Vertices_data vertices_data;
 	struct Map_3d_package *map_3d_package;
 
-	ENTER(make_delauney_node_and_element_group);
+	ENTER(make_delaunay_node_and_element_group);
 	vertices=(float *)NULL;
 	triangles =(int *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	vertex_node=(struct FE_node *)NULL;
-	delauney_element_group=(struct GROUP(FE_element) *)NULL;
-	delauney_node_group=(struct GROUP(FE_node) *)NULL;
+	delaunay_element_group=(struct GROUP(FE_element) *)NULL;
+	delaunay_node_group=(struct GROUP(FE_node) *)NULL;
 	template_element=(struct FE_element *)NULL;
 	element=(struct FE_element *)NULL;
 	node_order_info=(struct FE_node_order_info *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
-	if (source_nodes&&electrode_postion_field&&delauney_signal_field&&unemap_package
+	if (source_nodes&&electrode_postion_field&&delaunay_signal_field&&unemap_package
 		&&region&&(element_group_manager=
 			get_unemap_package_element_group_manager(unemap_package))&&
 		(node_group_manager=
@@ -5775,7 +5775,7 @@ Stores node and element groups in region <map_3d_package>
 	{			
 		/* check fields defined at all nodes*/
 		if (!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
-			(void *)delauney_signal_field,source_nodes))&&
+			(void *)delaunay_signal_field,source_nodes))&&
 			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
 				(void *)electrode_postion_field,source_nodes))&&
 			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
@@ -5783,8 +5783,8 @@ Stores node and element groups in region <map_3d_package>
 			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
 				(void *)channel_offset_field,source_nodes))&&
 			/*create template element*/
-			(template_element=make_delauney_template_element(basis_manager,element_manager,
-				delauney_signal_field,electrode_postion_field,channel_gain_field,
+			(template_element=make_delaunay_template_element(basis_manager,element_manager,
+				delaunay_signal_field,electrode_postion_field,channel_gain_field,
 				channel_offset_field)))
 		{		
 			element_identifier.type=CM_ELEMENT;
@@ -5798,20 +5798,20 @@ Stores node and element groups in region <map_3d_package>
 				vertices_data.position_field=electrode_postion_field;
 				if ((return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(put_electrode_pos_into_vertices,
 					(void *)&vertices_data,source_nodes))&&
-					/*perform the delauney triangularisation*/
-					(return_code=cylinder_delauney(number_of_vertices,vertices,
+					/*perform the delaunay triangularisation*/
+					(return_code=cylinder_delaunay(number_of_vertices,vertices,
 						&number_of_triangles,&triangles)))
 				{	
 					return_code=1;
 					/* create same name node,element,data groups so can do graphics */	
-					delauney_node_group=make_node_and_element_and_data_groups(
+					delaunay_node_group=make_node_and_element_and_data_groups(
 						node_group_manager,node_manager,element_manager,element_group_manager,
-						data_group_manager,delauney_group_name);
-					MANAGED_GROUP_BEGIN_CACHE(FE_node)(delauney_node_group);
-					delauney_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-						(delauney_group_name,element_group_manager);	
-					MANAGED_GROUP_BEGIN_CACHE(FE_element)(delauney_element_group);						
-					if (delauney_element_group&&delauney_node_group)
+						data_group_manager,delaunay_group_name);
+					MANAGED_GROUP_BEGIN_CACHE(FE_node)(delaunay_node_group);
+					delaunay_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
+						(delaunay_group_name,element_group_manager);	
+					MANAGED_GROUP_BEGIN_CACHE(FE_element)(delaunay_element_group);						
+					if (delaunay_element_group&&delaunay_node_group)
 					{
 						return_code=1;
 						if (return_code)
@@ -5822,7 +5822,7 @@ Stores node and element groups in region <map_3d_package>
 									(void *)node_order_info,source_nodes)))
 							{													
 								/* find nodes from triangle info, put in node group*/
-								/* when full, delauney_node_group should match source_nodes group */
+								/* when full, delaunay_node_group should match source_nodes group */
 								/* but a future mapping may not, and want own same name data and element */
 								/* groups for graphics */
 								vertex_number=triangles;
@@ -5840,22 +5840,22 @@ Stores node and element groups in region <map_3d_package>
 											/* store triangle nodes to make element*/
 											triangle_nodes[j]=vertex_node;
 											if ((!IS_OBJECT_IN_GROUP(FE_node)(vertex_node,
-												delauney_node_group))&&
+												delaunay_node_group))&&
 												(!ADD_OBJECT_TO_GROUP(FE_node)(vertex_node,
-													delauney_node_group)))
+													delaunay_node_group)))
 											{
 												display_message(ERROR_MESSAGE,
-													"make_delauney_node_and_element_group."
+													"make_delaunay_node_and_element_group."
 													" failed to add node to group");
 												REMOVE_OBJECT_FROM_GROUP(FE_node)(vertex_node,
-													delauney_node_group);
+													delaunay_node_group);
 												return_code=0;
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"make_delauney_node_and_element_group."
+												"make_delaunay_node_and_element_group."
 												" vertex node not found");
 											return_code=0;
 										}
@@ -5878,20 +5878,20 @@ Stores node and element groups in region <map_3d_package>
 										{
 											/*set the scale factors */
 											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[0], 
-												delauney_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
+												delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
 											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[1], 
-												delauney_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);	
+												delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);	
 											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[2], 
-												delauney_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
+												delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
 											/* add element to manager*/
 											if (ADD_OBJECT_TO_MANAGER(FE_element)(element,element_manager))
 											{
 												/* add element to group */
 												if (!ADD_OBJECT_TO_GROUP(FE_element)(element,
-													delauney_element_group))
+													delaunay_element_group))
 												{
 													display_message(ERROR_MESSAGE,
-														"make_delauney_node_and_element_group.  "
+														"make_delaunay_node_and_element_group.  "
 														"Could not add element to element_group");
 													/* remove element from manager to destroy it */
 													REMOVE_OBJECT_FROM_MANAGER(FE_element)(element,
@@ -5902,7 +5902,7 @@ Stores node and element groups in region <map_3d_package>
 											else
 											{
 												display_message(ERROR_MESSAGE,
-													"make_delauney_node_and_element_group.  "
+													"make_delaunay_node_and_element_group.  "
 													"Could not add element to element_manager");
 												DESTROY(FE_element)(&element);
 												return_code=0;
@@ -5911,7 +5911,7 @@ Stores node and element groups in region <map_3d_package>
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"make_delauney_node_and_element_group. "
+												"make_delaunay_node_and_element_group. "
 												"Could not set element nodes");
 											DESTROY(FE_element)(&element);
 											return_code=0;
@@ -5920,7 +5920,7 @@ Stores node and element groups in region <map_3d_package>
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											" make_delauney_node_and_element_group. "
+											" make_delaunay_node_and_element_group. "
 											"Could not create element");
 										return_code=0;
 									}
@@ -5944,15 +5944,15 @@ Stores node and element groups in region <map_3d_package>
 											get_unemap_package_Computed_field_manager(unemap_package));
 										set_Region_map_3d_package(region,map_3d_package);
 									}
-									set_map_3d_package_delauney_torso_node_group(map_3d_package,
-										delauney_node_group);
-									set_map_3d_package_delauney_torso_element_group(map_3d_package,
-										delauney_element_group);
+									set_map_3d_package_delaunay_torso_node_group(map_3d_package,
+										delaunay_node_group);
+									set_map_3d_package_delaunay_torso_element_group(map_3d_package,
+										delaunay_element_group);
 								}
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE," make_delauney_node_and_element_group. "
+								display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
 									"Could not make node_order_info");
 								return_code=0;
 							}				
@@ -5960,24 +5960,24 @@ Stores node and element groups in region <map_3d_package>
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE," make_delauney_node_and_element_group. "
+							display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
 								"Could not add groups to managers");
 					
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE," make_delauney_node_and_element_group. "
+						display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
 							"Could not make groups");
 					
 					}		
-					MANAGED_GROUP_END_CACHE(FE_node)(delauney_node_group);
-					MANAGED_GROUP_END_CACHE(FE_element)(delauney_element_group);
+					MANAGED_GROUP_END_CACHE(FE_node)(delaunay_node_group);
+					MANAGED_GROUP_END_CACHE(FE_element)(delaunay_element_group);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE," make_delauney_node_and_element_group. "
-						"Could not do delauney triangularisation ");
+					display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
+						"Could not do delaunay triangularisation ");
 					return_code=0;
 				}
 				if (node_order_info)
@@ -6000,52 +6000,52 @@ Stores node and element groups in region <map_3d_package>
 			else
 			{	
 				display_message(ERROR_MESSAGE,
-					" make_delauney_node_and_element_group. Out of memory");
+					" make_delaunay_node_and_element_group. Out of memory");
 				return_code=0;
 			} 
 		}
 		else
 		{	
 			display_message(ERROR_MESSAGE,
-				" make_delauney_node_and_element_group. failed to make template element");
+				" make_delaunay_node_and_element_group. failed to make template element");
 			return_code=0;
 		} 
 	}
 	else
 	{	
 		display_message(ERROR_MESSAGE,
-			" make_delauney_node_and_element_group. Can't find element group");
+			" make_delaunay_node_and_element_group. Can't find element group");
 		return_code=0;
 	} 
 	LEAVE;
 	return (return_code);
-}/* make_delauney_node_and_element_group */
+}/* make_delaunay_node_and_element_group */
 
-struct Set_delauney_signal_data
+struct Set_delaunay_signal_data
 /*******************************************************************************
 LAST MODIFIED :5 December 2000
 
 DESCRIPTION : 
-Used by iterative_set_delauney_signal_nodal_value
+Used by iterative_set_delaunay_signal_nodal_value
 ==============================================================================*/ 
 {
 	struct FE_field *channel_gain_field,*channel_offset_field,
-		*delauney_signal_field,*signal_field;
+		*delaunay_signal_field,*signal_field;
 	FE_value time;
 	struct MANAGER(FE_node) *node_manager;
-}; /* Set_delauney_signal_data */
+}; /* Set_delaunay_signal_data */
 
 #if defined (OLD_CODE)
-static int iterative_set_delauney_signal_nodal_value(struct FE_node *node,
-	void *set_delauney_signal_data_void)
+static int iterative_set_delaunay_signal_nodal_value(struct FE_node *node,
+	void *set_delaunay_signal_data_void)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2000
 
 DESCRIPTION : Given time, channel_gain_field, channel_offset_field signal_field, 
-and delauney_signal_field in <set_delauney_signal_data_void>, 
-sets the <node> delauney_signal_field. This is scaled and offset.
+and delaunay_signal_field in <set_delaunay_signal_data_void>, 
+sets the <node> delaunay_signal_field. This is scaled and offset.
 NOTES:
-Assumes signal_field,delauney_signal_field defined at the node.
+Assumes signal_field,delaunay_signal_field defined at the node.
 Assumes signal_field is a time based FE_value array field.
 ??JW This function is an interim meaure until we are able to set array fields
 at elements (or any field other than fe_vale fields at elements). 
@@ -6058,31 +6058,31 @@ cf map_set_electrode_colour_from_time
 	short short_value;	
 	struct FE_field_component component;
 	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field,
-		*delauney_signal_field;
+		*delaunay_signal_field;
 	struct FE_node *node_copy;
 	struct MANAGER(FE_node) *node_manager;
-	struct Set_delauney_signal_data *set_delauney_signal_data;
+	struct Set_delaunay_signal_data *set_delaunay_signal_data;
 	
-	ENTER(iterative_set_delauney_signal_nodal_value);
+	ENTER(iterative_set_delaunay_signal_nodal_value);
 	node_copy=(struct FE_node *)NULL;
-	delauney_signal_field=(struct FE_field *)NULL;
+	delaunay_signal_field=(struct FE_field *)NULL;
 	signal_field=(struct FE_field *)NULL;	
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
-	set_delauney_signal_data=(struct Set_delauney_signal_data *)NULL;
-	if (node&&set_delauney_signal_data_void&&(set_delauney_signal_data=
-		(struct Set_delauney_signal_data *)set_delauney_signal_data_void))
+	set_delaunay_signal_data=(struct Set_delaunay_signal_data *)NULL;
+	if (node&&set_delaunay_signal_data_void&&(set_delaunay_signal_data=
+		(struct Set_delaunay_signal_data *)set_delaunay_signal_data_void))
 	{	
-		time=set_delauney_signal_data->time;
-		signal_field=set_delauney_signal_data->signal_field;
-		delauney_signal_field=
-			set_delauney_signal_data->delauney_signal_field;
-		channel_gain_field=set_delauney_signal_data->channel_gain_field;
-		channel_offset_field=set_delauney_signal_data->channel_offset_field;
-		node_manager=set_delauney_signal_data->node_manager;
+		time=set_delaunay_signal_data->time;
+		signal_field=set_delaunay_signal_data->signal_field;
+		delaunay_signal_field=
+			set_delaunay_signal_data->delaunay_signal_field;
+		channel_gain_field=set_delaunay_signal_data->channel_gain_field;
+		channel_offset_field=set_delaunay_signal_data->channel_offset_field;
+		node_manager=set_delaunay_signal_data->node_manager;
 		if (FE_field_is_defined_at_node(signal_field,node)&&
-			FE_field_is_defined_at_node(delauney_signal_field,node)&&
+			FE_field_is_defined_at_node(delaunay_signal_field,node)&&
 			FE_field_is_defined_at_node(channel_gain_field,node)&&
 			FE_field_is_defined_at_node(channel_offset_field,node))
 		{				
@@ -6106,7 +6106,7 @@ cf map_set_electrode_colour_from_time
 				default :
 				{
 					display_message(ERROR_MESSAGE,
-						"iterative_set_delauney_signal_nodal_value. "
+						"iterative_set_delaunay_signal_nodal_value. "
 						" Incorrect signal field value type");
 					return_code=0;
 				} break;
@@ -6123,7 +6123,7 @@ cf map_set_electrode_colour_from_time
 				fe_value+=offset;
 				fe_value*=gain;
 				/* set the signal_value_at_time field from this*/
-				component.field=delauney_signal_field;
+				component.field=delaunay_signal_field;
 				/* create a node to work with */
 				node_copy=CREATE(FE_node)(0,(struct FE_node *)NULL);
 				/* copy it from the manager */
@@ -6137,7 +6137,7 @@ cf map_set_electrode_colour_from_time
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"iterative_set_delauney_signal_nodal_value."
+					display_message(ERROR_MESSAGE,"iterative_set_delaunay_signal_nodal_value."
 						" MANAGER_COPY_WITH_IDENTIFIER failed ");
 					return_code=0;
 				}
@@ -6147,37 +6147,37 @@ cf map_set_electrode_colour_from_time
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"iterative_set_delauney_signal_nodal_value."
+			display_message(ERROR_MESSAGE,"iterative_set_delaunay_signal_nodal_value."
 				" fields not defined at nodes");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"iterative_set_delauney_signal_nodal_value."
+		display_message(ERROR_MESSAGE,"iterative_set_delaunay_signal_nodal_value."
 			" Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code); 
-} /*iterative_set_delauney_signal_nodal_value */
+} /*iterative_set_delaunay_signal_nodal_value */
 #endif /* defined (OLD_CODE) */
 
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int make_and_set_delauney(struct Region *region,
+static int make_and_set_delaunay(struct Region *region,
 	struct Unemap_package *unemap_package,FE_value time,
 	int nodes_rejected_or_accepted)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
 
 DESCRIPTION :
-Makes and/or sets the nodal values in the delauney node and element groups
+Makes and/or sets the nodal values in the delaunay node and element groups
 ==============================================================================*/
 {	
 	int return_code;
-	struct FE_field *electrode_postion_field,*delauney_signal_field,
+	struct FE_field *electrode_postion_field,*delaunay_signal_field,
 		*channel_gain_field, *channel_offset_field;
 #if defined (OLD_CODE)
 	struct FE_node *node;
@@ -6187,13 +6187,13 @@ Makes and/or sets the nodal values in the delauney node and element groups
 	struct GROUP(FE_node) *unrejected_nodes;
 	struct Map_3d_package *map_3d_package;
 #if defined (OLD_CODE)
-	struct Set_delauney_signal_data set_delauney_signal_data;
+	struct Set_delaunay_signal_data set_delaunay_signal_data;
 #endif /* defined (OLD_CODE) */
 
-	ENTER(make_and_set_delauney);
+	ENTER(make_and_set_delaunay);
 	USE_PARAMETER(time);
 	electrode_postion_field=(struct FE_field *)NULL;
-	delauney_signal_field=(struct FE_field *)NULL;
+	delaunay_signal_field=(struct FE_field *)NULL;
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
 #if defined (OLD_CODE)
@@ -6207,19 +6207,19 @@ Makes and/or sets the nodal values in the delauney node and element groups
 		(electrode_postion_field=get_Region_electrode_position_field(region)))
 	{	
 		return_code=1;
-		if (!(delauney_signal_field=get_unemap_package_signal_field(unemap_package))
+		if (!(delaunay_signal_field=get_unemap_package_signal_field(unemap_package))
 			 || !(channel_gain_field=get_unemap_package_channel_gain_field(unemap_package))
 			 || !(channel_offset_field=get_unemap_package_channel_offset_field(unemap_package)))
 		{
-			display_message(ERROR_MESSAGE,"make_and_set_delauney.  "
+			display_message(ERROR_MESSAGE,"make_and_set_delaunay.  "
 						"signal field, gain field or offset field not found ");
 			return_code=0;
 		}
-		/* check if haven't made delauney groups yet, or for newly rejected/accpted */
-		/*electrodes to see if remake delauney groups */
+		/* check if haven't made delaunay groups yet, or for newly rejected/accpted */
+		/*electrodes to see if remake delaunay groups */
 		map_3d_package=get_Region_map_3d_package(region);
 		if (nodes_rejected_or_accepted||(!map_3d_package)||(map_3d_package&&
-			(!get_map_3d_package_delauney_torso_node_group(map_3d_package))))
+			(!get_map_3d_package_delaunay_torso_node_group(map_3d_package))))
 		{
 			
 			if (map_3d_package)
@@ -6227,49 +6227,49 @@ Makes and/or sets the nodal values in the delauney node and element groups
 				/*this will do a deaccess*/
 				set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 			}
-			/*  make delauney groups */
+			/*  make delaunay groups */
 			if ((!map_3d_package)||(map_3d_package&&
-				(!get_map_3d_package_delauney_torso_node_group(map_3d_package))))
+				(!get_map_3d_package_delaunay_torso_node_group(map_3d_package))))
 			{
 				if (return_code&&(unrejected_nodes=get_Region_unrejected_node_group(region)))
 				{
-					return_code=make_delauney_node_and_element_group(unrejected_nodes,
-						electrode_postion_field,delauney_signal_field,
+					return_code=make_delaunay_node_and_element_group(unrejected_nodes,
+						electrode_postion_field,delaunay_signal_field,
 						channel_gain_field,channel_offset_field,unemap_package,region);	
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"make_and_set_delauney"
-							" failed to make delauney node and element groups");
+					display_message(ERROR_MESSAGE,"make_and_set_delaunay"
+							" failed to make delaunay node and element groups");
 				}				
 			}/* if ((!map_3d_package)||(map_3d_package&& */
 		}/* (nodes_rejected_or_accepted) */			
 #if defined (OLD_CODE)
 		/* map_3d_package may have changed*/
 		map_3d_package=get_Region_map_3d_package(region);
-		if (map_3d_package&&(delauney_torso_node_group=
-			get_map_3d_package_delauney_torso_node_group(map_3d_package)))
+		if (map_3d_package&&(delaunay_torso_node_group=
+			get_map_3d_package_delaunay_torso_node_group(map_3d_package)))
 		{		
 			MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
-			/*set the delauney_signal_field at the nodes from time */
-			set_delauney_signal_data.delauney_signal_field=
-				delauney_signal_field;
-			set_delauney_signal_data.signal_field=
+			/*set the delaunay_signal_field at the nodes from time */
+			set_delaunay_signal_data.delaunay_signal_field=
+				delaunay_signal_field;
+			set_delaunay_signal_data.signal_field=
 				get_unemap_package_signal_field(unemap_package);
-			set_delauney_signal_data.channel_gain_field=
+			set_delaunay_signal_data.channel_gain_field=
 				get_unemap_package_channel_gain_field(unemap_package);
-			set_delauney_signal_data.channel_offset_field=
+			set_delaunay_signal_data.channel_offset_field=
 				get_unemap_package_channel_offset_field(unemap_package);
-			set_delauney_signal_data.time=time;
-			set_delauney_signal_data.node_manager=node_manager;
+			set_delaunay_signal_data.time=time;
+			set_delaunay_signal_data.node_manager=node_manager;
 			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
-				(iterative_set_delauney_signal_nodal_value,
-					(void *)(&set_delauney_signal_data),delauney_torso_node_group);
+				(iterative_set_delaunay_signal_nodal_value,
+					(void *)(&set_delaunay_signal_data),delaunay_torso_node_group);
 			MANAGER_END_CACHE(FE_node)(node_manager);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"make_and_set_delauney."
+			display_message(ERROR_MESSAGE,"make_and_set_delaunay."
 				" no group to set");
 			return_code=0;
 		}
@@ -6277,13 +6277,13 @@ Makes and/or sets the nodal values in the delauney node and element groups
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_and_set_delauney."
+		display_message(ERROR_MESSAGE,"make_and_set_delaunay."
 			" Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code);
-}/* make_and_set_delauney */
+}/* make_and_set_delaunay */
 #endif /*defined (UNEMAP_USE_3D) */
 
 /*
@@ -6302,7 +6302,7 @@ DESCRIPTION :
 Draws (or erases) the map contours
 ==============================================================================*/
 {
-	int default_torso_loaded,delauney_map,number_of_constant_contours,
+	int default_torso_loaded,delaunay_map,number_of_constant_contours,
 		number_of_variable_contours,return_code;
 	struct Computed_field *data_field;
 	struct MANAGER(Spectrum) *spectrum_manager;
@@ -6372,11 +6372,11 @@ Draws (or erases) the map contours
 				(map_3d_package = get_Region_map_3d_package(region)))
 			{			
 				data_field = map_get_data_field_for_3d_map(map, map_3d_package);
-				delauney_map = map_is_delauney(map);								
+				delaunay_map = map_is_delaunay(map);								
 				/* draw/remove CONSTANT_THICKNESS contours */
 				map_draw_constant_thickness_contours(scene,map->drawing_information,
 					data_field,number_of_constant_contours,map->contour_minimum,
-					map->contour_maximum,region,default_torso_loaded,delauney_map);				
+					map->contour_maximum,region,default_torso_loaded,delaunay_map);				
 			}				
 			region_item=get_Region_list_item_next(region_item);
 		}/* while(region_item)*/
@@ -6797,15 +6797,15 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 	return (return_code);
 } /* destroy_Map */
 
-static int map_2d_delauney(struct Map *map) 
+static int map_2d_delaunay(struct Map *map) 
 /*******************************************************************************
 LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
-given <map>, do a delauney triangluarisation of map->electrodes.
+given <map>, do a delaunay triangluarisation of map->electrodes.
 Assumes the map is of type TORSO, and hence is cylindrical, and centred about 
 the z axis. 
-The results are stored as map->number_of_gouraud_triangles, the number of delauney 
+The results are stored as map->number_of_gouraud_triangles, the number of delaunay 
 triagles formed by the electrodes, and map->triangle_electrode_indices,
 and array of length 3*number_of_gouraud_triangles containing indices into 
 map->electrodes of pointing to the triangle's electrodes.
@@ -6823,7 +6823,7 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 		**triangle_electrode,*device;
 	struct Device_description *description;	
 
-	ENTER(map_2d_delauney);
+	ENTER(map_2d_delaunay);
 	device=(struct Device *)NULL;
 	electrode=(struct Device **)NULL;
 	accepted_triangle_electrodes=(struct Device **)NULL;
@@ -6888,7 +6888,7 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 				number_of_electrodes++;
 			}/*while(number_of_devices<rig->number_of_devices)*/
 			/*perform deluaney triangularization */
-			if(return_code=cylinder_delauney(number_of_vertices,vertices,
+			if(return_code=cylinder_delaunay(number_of_vertices,vertices,
 				&number_of_triangles,&triangles))								
 			{
 				/*accepted_triangles contains the Device's of the vertices triangles */
@@ -6945,7 +6945,7 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 							if(!found)
 							{
 								display_message(ERROR_MESSAGE,
-									"map_2d_delauney. unmatched triangle vertex");
+									"map_2d_delaunay. unmatched triangle vertex");
 								return_code=0;
 							}
 							i++;
@@ -6959,28 +6959,28 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"map_2d_delauney. Out of memory for map_electrode_triangles");
+							"map_2d_delaunay. Out of memory for map_electrode_triangles");
 						return_code=0;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"map_2d_delauney. Out of memory for accepted_triangles");
+						"map_2d_delaunay. Out of memory for accepted_triangles");
 					return_code=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"map_2d_delauney. cylinder_delauney failed");
+					"map_2d_delaunay. cylinder_delaunay failed");
 				return_code=0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"map_2d_delauney. Out of memory for vertices/electrode_numbers");
+				"map_2d_delaunay. Out of memory for vertices/electrode_numbers");
 			return_code=0;
 		}	
 		DEALLOCATE(vertices);
@@ -6990,12 +6990,12 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"map_2d_delauney. Invalid arguments");
+		display_message(ERROR_MESSAGE,"map_2d_delaunay. Invalid arguments");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}/* map_2d_delauney */
+}/* map_2d_delaunay */
 
 int update_colour_map_unemap_original(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************
@@ -8126,7 +8126,7 @@ opengl texture reasons (at least on the SGI).
 			{
 				DEALLOCATE(map->texture_image);
 			}		
-			/* need to delauney/gouraud information */	
+			/* need to delaunay/gouraud information */	
 			x_offset=(texture_x_length)/2;/*-(-PI*texture_x_length/2PI)*/
 			y_offset=-((z_min*(texture_y_length))/z_range);
 			electrode_postion_field=get_Region_electrode_position_field(region);
@@ -8148,8 +8148,8 @@ opengl texture reasons (at least on the SGI).
 				if ((success=FOR_EACH_OBJECT_IN_GROUP(FE_node)
 					(put_electrode_pos_into_vertices,
 						(void *)&vertices_data,unrejected_node_group))&&
-					/*perform the delauney triangularisation*/
-					(success=cylinder_delauney(number_of_electrodes,vertices,
+					/*perform the delaunay triangularisation*/
+					(success=cylinder_delaunay(number_of_electrodes,vertices,
 						&map->number_of_gouraud_triangles,&map->triangle_electrode_indices)))
 				{	
 					/* make a node_order_info, so can match nodes to vertices  */
@@ -8570,7 +8570,7 @@ Removes 3d drawing for non-current region(s).
 	struct FE_field_order_info *field_order_info;
 	struct Computed_field *data_field,*texture_coords;
 	float frame_time,minimum,maximum;
-	int default_torso_loaded,delauney_map,direct_on_smooth_torso,display_all_regions,
+	int default_torso_loaded,delaunay_map,direct_on_smooth_torso,display_all_regions,
 		nodes_rejected_or_accepted,range_set,return_code,*times;
 	enum Map_type map_type;
 	char undecided_accepted;	
@@ -8588,7 +8588,7 @@ Removes 3d drawing for non-current region(s).
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
 	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
-		*delauney_torso_element_group;
+		*delaunay_torso_element_group;
 	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
 
 	ENTER(draw_map_3d);
@@ -8616,7 +8616,7 @@ Removes 3d drawing for non-current region(s).
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	unrejected_node_group=(struct GROUP(FE_node) *)NULL;		
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	if (map&&(drawing_information=map->drawing_information))
 	{
 		/*destroy the (2d) sub_maps */
@@ -8678,11 +8678,11 @@ Removes 3d drawing for non-current region(s).
 						(map->interpolation_type==DIRECT_INTERPOLATION))
 					{
 						direct_on_smooth_torso=1;
-						delauney_map =0;
+						delaunay_map =0;
 					}
 					else
 					{
-						delauney_map = map_is_delauney(map);
+						delaunay_map = map_is_delaunay(map);
 						direct_on_smooth_torso=0;
 					}
 	
@@ -8717,13 +8717,13 @@ Removes 3d drawing for non-current region(s).
 								element_group=get_map_3d_package_element_group(map_3d_package);
 								mapped_torso_element_group=
 									get_map_3d_package_mapped_torso_element_group(map_3d_package);
-								delauney_torso_element_group=
-									get_map_3d_package_delauney_torso_element_group(map_3d_package);
+								delaunay_torso_element_group=
+									get_map_3d_package_delaunay_torso_element_group(map_3d_package);
 							}
 							/* if no map_3d_package or last one wasn't NO_INTERPOLATION, */
 							/* create a map_3d_package and destroy the any old one*/
 							if ((!map_3d_package)||(map_3d_package&&(element_group||
-								mapped_torso_element_group||delauney_torso_element_group)))
+								mapped_torso_element_group||delaunay_torso_element_group)))
 							{
 								map_3d_package=CREATE(Map_3d_package)(				
 									get_unemap_package_FE_field_manager(unemap_package),
@@ -8798,10 +8798,10 @@ Removes 3d drawing for non-current region(s).
 							}/* if(direct_on_smooth_torso)*/
 							else
 							{								
-								if (delauney_map)
+								if (delaunay_map)
 								{
 									/* DIRECT_INTERPOLATION */
-									make_and_set_delauney(region,unemap_package,time,
+									make_and_set_delaunay(region,unemap_package,time,
 										nodes_rejected_or_accepted);						
 								}
 								else
@@ -8833,11 +8833,11 @@ Removes 3d drawing for non-current region(s).
 							}/*direct_on_smooth_torso*/
 							/* get map_3d_package again, it may have changed */
 							map_3d_package=get_Region_map_3d_package(region);							
-							if (delauney_map)
+							if (delaunay_map)
 							{
 								/* do gouraud torso surface*/
 								element_group=
-									get_map_3d_package_delauney_torso_element_group(map_3d_package);
+									get_map_3d_package_delaunay_torso_element_group(map_3d_package);
 							}
 							else
 							{
@@ -8869,7 +8869,7 @@ Removes 3d drawing for non-current region(s).
 									(drawing_information),
 									get_unemap_package_potential_time_object(unemap_package),
 									get_map_drawing_information_user_interface(drawing_information),
-									delauney_map,!(map->fixed_range),
+									delaunay_map,!(map->fixed_range),
 									(struct Texture *)NULL,(struct Computed_field *)NULL);
 							}
 							else if(direct_on_smooth_torso)
@@ -8899,21 +8899,21 @@ Removes 3d drawing for non-current region(s).
 									spectrum,data_field,(struct Colour*)NULL,
 									get_unemap_package_potential_time_object(unemap_package),
 									get_map_drawing_information_user_interface(drawing_information),
-									delauney_map, !(map->fixed_range),
+									delaunay_map, !(map->fixed_range),
 									(struct Texture *)NULL,(struct Computed_field *)NULL);
 							}											
 						} /*if (map->interpolation_type==NO_INTERPOLATION)*/
 						/* can't do electrodes on default_torso surface yet*/	
 						/*(possibly)  make the map_electrode_position_field, add to the rig nodes*/
 						if ((region->type!=TORSO)||(!(default_torso_loaded&&
-							(!delauney_map)&&direct_on_smooth_torso)))
+							(!delaunay_map)&&direct_on_smooth_torso)))
 						{
 							make_and_add_map_electrode_position_field(unemap_package,
-								rig_node_group,region,delauney_map);
+								rig_node_group,region,delaunay_map);
 						}
 						/*draw (or remove) the arm labels  */				
 						if ((region->type==TORSO)&&(!default_torso_loaded)&&
-							(!delauney_map))/*FOR AJP*/
+							(!delaunay_map))/*FOR AJP*/
 						{
 							draw_torso_arm_labels(drawing_information,region);	
 						}
@@ -8999,7 +8999,7 @@ Removes 3d drawing for non-current region(s).
 					}				
 				}				
 				/* can't do electrodes on default_torso surface yet*/							
-				if ((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
+				if ((region->type!=TORSO)||(!(default_torso_loaded&&(!delaunay_map))))
 				{		 
 					map_draw_map_electrodes(unemap_package,map);
 				}
@@ -11169,16 +11169,16 @@ DESCRIPTION :  Draw the electrode in 2D, and write it's name.
   return(return_code);
 }/* draw_2d_electrode */
 
-int draw_2d_show_delauney_lines(struct Map *map,int sub_map_number,
+int draw_2d_show_delaunay_lines(struct Map *map,int sub_map_number,
   struct Drawing_2d *drawing)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Draws lines of delauney triangles. 
+Draws lines of delaunay triangles. 
 Really a debugging function.
 Could be more efficient, as most lines are shared and will be drawn twice.
-Must call map_2d_delauney first.
+Must call map_2d_delaunay first.
 *******************************************************************************/
 {	
   Display *display;
@@ -11187,7 +11187,7 @@ Must call map_2d_delauney first.
   struct Map_drawing_information *drawing_information;
   struct Sub_map *sub_map;
 
-  ENTER(draw_2d_show_delauney_lines);
+  ENTER(draw_2d_show_delaunay_lines);
   display=(Display *)NULL;
   sub_map=(struct Sub_map *)NULL;
   if (map&&(sub_map_number>-1)&&(sub_map_number<map->number_of_sub_maps)&&
@@ -11226,12 +11226,12 @@ Must call map_2d_delauney first.
 	}
 	else
 	{
-    display_message(ERROR_MESSAGE,"draw_2d_show_delauney_lines. invalid arguments");
+    display_message(ERROR_MESSAGE,"draw_2d_show_delaunay_lines. invalid arguments");
     return_code=0;
   }
   LEAVE;
   return(return_code);
-}/* draw_2d_show_delauney_lines */
+}/* draw_2d_show_delaunay_lines */
 
 static int draw_2d_show_map(struct Map *map,int sub_map_number,
   struct Drawing_2d *drawing)
@@ -11404,7 +11404,7 @@ Actually draw the map from the calculated data.
 			draw_2d_extrema(map,sub_map,drawing);
 		}	
 #if defined (DEBUG)
-		draw_2d_show_delauney_lines(map,sub_map_number,drawing);
+		draw_2d_show_delaunay_lines(map,sub_map_number,drawing);
 #endif /* defined (DEBUG)*/
 	}
 	else
@@ -12348,7 +12348,7 @@ DESCRIPTION :
 Given a triangle's vertex given by the offset <triangle_vertex_index> into the
 array of rectangular cartesian vertices <vertices>, converts this x,y,z into
 <r> <theta> <z_cp> and returns it.
-See cylinder_delauney for definition of <triangle_vertex_index>, <vertices>
+See cylinder_delaunay for definition of <triangle_vertex_index>, <vertices>
 *******************************************************************************/
 {
 	float x,y,z_rc;
@@ -12386,7 +12386,7 @@ Given the triangle defined by <vertex0_index> <vertex1_index>,<vertex2_index>,
 polar coords, and determines if it's min and max theta are either side of 
 <angle>. Takes the minimum angle btwn the two points, i.e PI/2 not 3PI/2.
 Assume all angles from -PI to PI.
-See cylinder_delauney for definition of <vertex0_index> <vertex1_index>
+See cylinder_delaunay for definition of <vertex0_index> <vertex1_index>
 <vertex2_index>,<*vertices>.
 Would be possible to generalise for any polygon, but this would be slower, 
 and I don't see a need.
@@ -12804,7 +12804,7 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 		if(get_map_drawing_information_electrodes_accepted_or_rejected
 			(map->drawing_information)||(!map->triangle_electrode_indices))
 		{					
-			map_2d_delauney(map);
+			map_2d_delaunay(map);
 			set_map_drawing_information_electrodes_accepted_or_rejected
 				(map->drawing_information,0);
 		}
@@ -15193,8 +15193,8 @@ Create and  and set it's components
 			map_3d_package->electrodes_max_z=0;
 			map_3d_package->mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
 			map_3d_package->mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;	
-			map_3d_package->delauney_torso_node_group=(struct GROUP(FE_node) *)NULL;
-			map_3d_package->delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
+			map_3d_package->delaunay_torso_node_group=(struct GROUP(FE_node) *)NULL;
+			map_3d_package->delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
 			map_3d_package->access_count=0.0;
 			
 		}
@@ -15330,15 +15330,15 @@ to NULL.
 			}
 		}
 	
-		map_element_group=map_3d_package->delauney_torso_element_group;
+		map_element_group=map_3d_package->delaunay_torso_element_group;
 		if (map_element_group)
 		{	
-			/* deaccess delauney_torso_element_group. delauney_torso_node_group deaccessed in */
+			/* deaccess delaunay_torso_element_group. delaunay_torso_node_group deaccessed in */
 			/*free_node_and_element_and_data_groups*/
 			temp_map_element_group=map_element_group;
 			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
 			/* this will destroy the elements, but not the nodes, as they're accessed elsewhere*/
-			free_node_and_element_and_data_groups(&(map_3d_package->delauney_torso_node_group),
+			free_node_and_element_and_data_groups(&(map_3d_package->delaunay_torso_node_group),
 				element_manager,element_group_manager,data_manager,
 				data_group_manager,node_manager,node_group_manager);
 		}
@@ -16324,113 +16324,113 @@ Sets the mapped_torso_node_group for map_3d_package
 	return (return_code);
 }/* set_map_3d_package_mapped_torso_node_group */
 
-struct GROUP(FE_element) *get_map_3d_package_delauney_torso_element_group(
+struct GROUP(FE_element) *get_map_3d_package_delaunay_torso_element_group(
 	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
 
 DESCRIPTION :
-gets the delauney_torso_element_group for map_3d_package
+gets the delaunay_torso_element_group for map_3d_package
 ==============================================================================*/
 {
-	struct GROUP(FE_element) *delauney_torso_element_group;
+	struct GROUP(FE_element) *delaunay_torso_element_group;
 
-	ENTER(get_map_3d_package_delauney_torso_element_group);
+	ENTER(get_map_3d_package_delaunay_torso_element_group);
 	if (map_3d_package)
 	{				
-		delauney_torso_element_group=map_3d_package->delauney_torso_element_group;	
+		delaunay_torso_element_group=map_3d_package->delaunay_torso_element_group;	
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_delauney_torso_element_group."
+		display_message(ERROR_MESSAGE,"get_map_3d_package_delaunay_torso_element_group."
 			" invalid arguments");
-		delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
+		delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	}
 	LEAVE;
-	return (delauney_torso_element_group);	
-}/* get_map_3d_package_delauney_torso_element_group */
+	return (delaunay_torso_element_group);	
+}/* get_map_3d_package_delaunay_torso_element_group */
 
-int set_map_3d_package_delauney_torso_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *delauney_torso_element_group)
+int set_map_3d_package_delaunay_torso_element_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_element) *delaunay_torso_element_group)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
 
 DESCRIPTION :
-Sets the delauney_torso_element_group for map_3d_package
+Sets the delaunay_torso_element_group for map_3d_package
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_map_3d_package_delauney_torso_element_group);
+	ENTER(set_map_3d_package_delaunay_torso_element_group);
 	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GROUP(FE_element))
-			(&(map_3d_package->delauney_torso_element_group),delauney_torso_element_group);
+			(&(map_3d_package->delaunay_torso_element_group),delaunay_torso_element_group);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_delauney_torso_element_group."
+		display_message(ERROR_MESSAGE,"set_map_3d_package_delaunay_torso_element_group."
 			" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	return (return_code);
-}/* set_map_3d_package_delauney_torso_element_group */
+}/* set_map_3d_package_delaunay_torso_element_group */
 
-struct GROUP(FE_node) *get_map_3d_package_delauney_torso_node_group(
+struct GROUP(FE_node) *get_map_3d_package_delaunay_torso_node_group(
 	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
 
 DESCRIPTION :
-gets the delauney_torso_node_group for map_3d_package
+gets the delaunay_torso_node_group for map_3d_package
 ==============================================================================*/
 {
-	struct GROUP(FE_node) *delauney_torso_node_group;
+	struct GROUP(FE_node) *delaunay_torso_node_group;
 
-	ENTER(get_map_3d_package_delauney_torso_node_group);
+	ENTER(get_map_3d_package_delaunay_torso_node_group);
 	if (map_3d_package)
 	{				
-		delauney_torso_node_group=map_3d_package->delauney_torso_node_group;	
+		delaunay_torso_node_group=map_3d_package->delaunay_torso_node_group;	
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_delauney_torso_node_group."
+		display_message(ERROR_MESSAGE,"get_map_3d_package_delaunay_torso_node_group."
 			" invalid arguments");
-		delauney_torso_node_group=(struct GROUP(FE_node) *)NULL;
+		delaunay_torso_node_group=(struct GROUP(FE_node) *)NULL;
 	}
 	LEAVE;
-	return (delauney_torso_node_group);	
-}/* get_map_3d_package_delauney_torso_node_group */
+	return (delaunay_torso_node_group);	
+}/* get_map_3d_package_delaunay_torso_node_group */
 
-int set_map_3d_package_delauney_torso_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *delauney_torso_node_group)
+int set_map_3d_package_delaunay_torso_node_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_node) *delaunay_torso_node_group)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2000
 
 DESCRIPTION :
-Sets the delauney_torso_node_group for map_3d_package
+Sets the delaunay_torso_node_group for map_3d_package
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_map_3d_package_delauney_torso_node_group);
+	ENTER(set_map_3d_package_delaunay_torso_node_group);
 	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GROUP(FE_node))
-			(&(map_3d_package->delauney_torso_node_group),delauney_torso_node_group);
+			(&(map_3d_package->delaunay_torso_node_group),delaunay_torso_node_group);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_delauney_torso_node_group."
+		display_message(ERROR_MESSAGE,"set_map_3d_package_delaunay_torso_node_group."
 			" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	return (return_code);
-}/* set_map_3d_package_delauney_torso_node_group */
+}/* set_map_3d_package_delaunay_torso_node_group */
 
 int get_map_drawing_information_viewed_scene(
 	struct Map_drawing_information *map_drawing_information)

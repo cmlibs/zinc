@@ -1,13 +1,16 @@
 /*******************************************************************************
-FILE : delauney.c
+FILE : delaunay.c
 
-LAST MODIFIED : 4 February 2002
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
-Specialized implementations of Delauney triangulation for a cylinder and a
+Specialized implementations of Delaunay triangulation for a cylinder and a
 sphere.
 
 ???DB.  Do as 3-D instead.  Then would be general.  How to get convex hull?
+
+???DB.  22 April 2002
+1.  Does scaling change triangulation for cylinder?
 ==============================================================================*/
 
 /*#define DEBUG*/
@@ -20,14 +23,20 @@ sphere.
 #include <math.h>
 #include "general/debug.h"
 #include "general/geometry.h"
-#include "unemap/delauney.h"
+#include "unemap/delaunay.h"
 #include "user_interface/message.h"
+
+/*
+Module constants
+----------------
+*/
+#define SPHERE_DELAUNAY_TOLERANCE 0.0001
 
 /*
 Module types
 ------------
 */
-struct Delauney_triangle
+struct Delaunay_triangle
 /*******************************************************************************
 LAST MODIFIED : 14 January 2002
 
@@ -41,7 +50,7 @@ sphere.  Uses longitude (theta) and latitude (mu) for the vertex and centre
 {
 	float centre[2],radius2,vertices[6];
 	int vertex_numbers[3];
-}; /* struct Delauney_triangle */
+}; /* struct Delaunay_triangle */
 
 /*
 Module functions
@@ -80,60 +89,47 @@ DESCRIPTION :
 	return (return_code);
 } /* cylinder_normalize_vertex */
 
-static int sphere_normalize_vertex(float *xyz,float *uv)
+static int sphere_normalize(float *xyz,float *normalized_xyz)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2002
+LAST MODIFIED : 24 April 2002
 
 DESCRIPTION :
+Projects a point, <xyz>, onto the surface of a unit sphere, <normalized_xyz>.
+A nonzero return code indicates an error.
 ==============================================================================*/
 {
+	float radius;
 	int return_code;
 
-	ENTER(sphere_normalize_vertex);
+	ENTER(sphere_normalize);
 	return_code=0;
-	if (xyz&&uv)
+	if (xyz&&normalized_xyz)
 	{
-		if ((xyz[0]!=0)||(xyz[1]!=0))
+		radius=(float)sqrt(xyz[0]*xyz[0]+xyz[1]*xyz[1]+xyz[2]*xyz[2]);
+		if (radius>0)
 		{
-			/* longitude (theta) */
-			uv[0]=(float)atan2(xyz[1],xyz[0]);
-			/* latitude (mu) */
-			uv[1]=(float)atan2(xyz[2],sqrt(xyz[0]*xyz[0]+xyz[1]*xyz[1]));
+			normalized_xyz[0]=xyz[0]/radius;
+			normalized_xyz[1]=xyz[1]/radius;
+			normalized_xyz[2]=xyz[2]/radius;
+			return_code=1;
 		}
 		else
 		{
-			/* longitude (theta) */
-			uv[0]=0;
-			/* latitude (mu) */
-			if (xyz[2]>0)
-			{
-				uv[1]=PI/2;
-			}
-			else
-			{
-				if (xyz[2]<0)
-				{
-					uv[1]= -PI/2;
-				}
-				else
-				{
-					uv[1]=0;
-				}
-			}
+			display_message(ERROR_MESSAGE,"sphere_normalize.  "
+				"Point is at origin.  %g %g %g\n",xyz[0],xyz[1],xyz[3]);
 		}
-		return_code=1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"sphere_normalize_vertex.  "
-			"Invalid argument(s).  %p %p",xyz,uv);
+		display_message(ERROR_MESSAGE,"sphere_normalize.  "
+			"Invalid argument(s).  %p %p",xyz,normalized_xyz);
 	}
 	LEAVE;
 
 	return (return_code);
-} /* sphere_normalize_vertex */
+} /* sphere_normalize */
 
-static int cylinder_calculate_circumcentre(struct Delauney_triangle *triangle)
+static int cylinder_calculate_circumcentre(struct Delaunay_triangle *triangle)
 /*******************************************************************************
 LAST MODIFIED : 15 October 2000
 
@@ -174,83 +170,91 @@ DESCRIPTION :
 	return (return_code);
 } /* cylinder_calculate_circumcentre */
 
-static float sphere_calculate_distance(float *uv1,float *uv2)
+static int sphere_calculate_distance(float *normalized_xyz_1,
+	float *normalized_xyz_2,float *distance_address)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2002
+LAST MODIFIED : 26 April 2002
 
 DESCRIPTION :
-uv's are longitudes and latitudes.  The distance between them is the shorter
-distance along the great circle through them.
+Calculates the distance between two points that lie on the unit sphere.  The
+distance between them is the shorter distance along the great circle through
+them.  A nonzero return code indicates an error.
 ==============================================================================*/
 {
-	float distance,dot_product,x1,x2,y1,y2,z1,z2;
+	float distance;
+	int return_code;
 
 	ENTER(sphere_calculate_distance);
 	distance=0;
-	if (uv1&&uv2)
+	if (normalized_xyz_1&&normalized_xyz_2)
 	{
-		x1=cos(uv1[1])*cos(uv1[0]);
-		y1=cos(uv1[1])*sin(uv1[0]);
-		z1=sin(uv1[1]);
-		x2=cos(uv2[1])*cos(uv2[0]);
-		y2=cos(uv2[1])*sin(uv2[0]);
-		z2=sin(uv2[1]);
-		dot_product=x1*x2+y1*y2+z1*z2;
-		distance=acos(dot_product);
-		if (distance<0)
+		distance=normalized_xyz_1[0]*normalized_xyz_2[0]+
+			normalized_xyz_1[1]*normalized_xyz_2[1]+
+			normalized_xyz_1[2]*normalized_xyz_2[2];
+		if (distance< -1)
 		{
-			distance= -distance;
+			distance=PI;
 		}
+		else
+		{
+			if (distance>1)
+			{
+				distance=0;
+			}
+			else
+			{
+				distance=acos(distance);
+			}
+		}
+		*distance_address=distance;
+		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"sphere_calculate_distance.  "
-			"Invalid argument(s).  %p %p",uv1,uv2);
+			"Invalid argument(s).  %p %p",normalized_xyz_1,normalized_xyz_2);
 	}
 	LEAVE;
 
-	return (distance);
+	return (return_code);
 } /* sphere_calculate_distance */
 
-static int sphere_calculate_circumcentre(struct Delauney_triangle *triangle)
+static int sphere_calculate_circumcentre(float *normalized_xyz_1,
+	float *normalized_xyz_2,float *normalized_xyz_3,float *normalized_xyz_centre)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2002
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
 For any 3 points there are two choices for the centre.  The straight line in
 3-space between the two points goes through the centre of the sphere.  One is
-chosen based on the order of the vertices.
+chosen based on the order of the vertices.  A nonzero return code indicates an
+error.
 ==============================================================================*/
 {
-	float centre[3],*vertices,x1,x2,x3,y1,y2,y3,z1,z2,z3;
+	float x12,x13,y12,y13,z12,z13;
 	int return_code;
 
 	ENTER(sphere_calculate_circumcentre);
 	return_code=0;
-	if (triangle)
+	if (normalized_xyz_1&&normalized_xyz_2&&normalized_xyz_3&&
+		normalized_xyz_centre)
 	{
-		vertices=triangle->vertices;
-		x1=cos(vertices[1])*cos(vertices[0]);
-		y1=cos(vertices[1])*sin(vertices[0]);
-		z1=sin(vertices[1]);
-		x2=cos(vertices[3])*cos(vertices[2]);
-		y2=cos(vertices[3])*sin(vertices[2]);
-		z2=sin(vertices[3]);
-		x3=cos(vertices[5])*cos(vertices[4]);
-		y3=cos(vertices[5])*sin(vertices[4]);
-		z3=sin(vertices[5]);
-		centre[0]=(y1-y2)*(z1-z3)-(z1-z2)*(y1-y3);
-		centre[1]=(z1-z2)*(x1-x3)-(x1-x2)*(z1-z3);
-		centre[2]=(x1-x2)*(y1-y3)-(y1-y2)*(x1-x3);
-		if (return_code=sphere_normalize_vertex(centre,triangle->centre))
-		{
-			triangle->radius2=sphere_calculate_distance(triangle->centre,vertices);
-		}
+		x12=normalized_xyz_1[0]-normalized_xyz_2[0];
+		y12=normalized_xyz_1[1]-normalized_xyz_2[1];
+		z12=normalized_xyz_1[2]-normalized_xyz_2[2];
+		x13=normalized_xyz_1[0]-normalized_xyz_3[0];
+		y13=normalized_xyz_1[1]-normalized_xyz_3[1];
+		z13=normalized_xyz_1[2]-normalized_xyz_3[2];
+		normalized_xyz_centre[0]=y12*z13-z12*y13;
+		normalized_xyz_centre[1]=z12*x13-x12*z13;
+		normalized_xyz_centre[2]=x12*y13-y12*x13;
+		return_code=sphere_normalize(normalized_xyz_centre,normalized_xyz_centre);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"sphere_calculate_circumcentre.  "
-			"Invalid argument");
+			"Invalid argument(s).  %p %p %p %p",normalized_xyz_1,normalized_xyz_2,
+			normalized_xyz_3,normalized_xyz_centre);
 	}
 	LEAVE;
 
@@ -261,13 +265,13 @@ chosen based on the order of the vertices.
 Global functions
 ----------------
 */
-int cylinder_delauney(int number_of_vertices,float *vertices,
+int cylinder_delaunay(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address)
 /*******************************************************************************
 LAST MODIFIED : 3 February 2002
 
 DESCRIPTION :
-Calculates the Delauney triangulation of the <vertices> on a cylinder whose axis
+Calculates the Delaunay triangulation of the <vertices> on a cylinder whose axis
 is z.
 <number_of_vertices> is the number of vertices to be triangulated
 <vertices> is an array of length 3*<number_of_vertices> containing the x,y,z
@@ -283,9 +287,9 @@ is z.
 	int *adjacent_vertices,*adjacent_vertex,i,ii,j,k,l,m,maximum_vertex,
 		minimum_vertex,n,number_of_adjacent_vertices,number_of_returned_triangles,
 		number_of_triangles,return_code,*returned_triangles,vertex_number;
-	struct Delauney_triangle **temp_triangles,*triangle,**triangles;
+	struct Delaunay_triangle **temp_triangles,*triangle,**triangles;
 
-	ENTER(cylinder_delauney);
+	ENTER(cylinder_delaunay);
 	return_code=0;
 	/* check the arguments */
 	if ((1<number_of_vertices)&&vertices&&number_of_triangles_address&&
@@ -330,14 +334,14 @@ is z.
 				minimum_vertex,minimum_u1,maximum_z,maximum_vertex);
 #endif /* defined (DEBUG) */
 			number_of_triangles=6;
-			if (ALLOCATE(triangles,struct Delauney_triangle *,number_of_triangles))
+			if (ALLOCATE(triangles,struct Delaunay_triangle *,number_of_triangles))
 			{
 				i=number_of_triangles;
 				do
 				{
 					i--;
 				}
-				while ((i>=0)&&ALLOCATE(triangles[i],struct Delauney_triangle,1));
+				while ((i>=0)&&ALLOCATE(triangles[i],struct Delaunay_triangle,1));
 				if (i<0)
 				{
 					(triangles[0]->vertex_numbers)[0]=minimum_vertex-number_of_vertices;
@@ -536,7 +540,7 @@ is z.
 											adjacent_uvs=adjacent_uv;
 										}
 										return_code=0;
-										display_message(ERROR_MESSAGE,"cylinder_delauney.  "
+										display_message(ERROR_MESSAGE,"cylinder_delaunay.  "
 											"Could not reallocate adjacent vertices");
 									}
 									DEALLOCATE(triangles[j]);
@@ -555,7 +559,7 @@ is z.
 								number_of_triangles -= k;;
 								/* determine new triangles */
 								if (REALLOCATE(temp_triangles,triangles,
-									struct Delauney_triangle *,
+									struct Delaunay_triangle *,
 									number_of_triangles+number_of_adjacent_vertices))
 								{
 									triangles=temp_triangles;
@@ -570,7 +574,7 @@ is z.
 									while (return_code&&(k<number_of_adjacent_vertices))
 									{
 										if (triangle=ALLOCATE(triangles[number_of_triangles],
-											struct Delauney_triangle,1))
+											struct Delaunay_triangle,1))
 										{
 											triangle->vertex_numbers[0]=i;
 											(triangle->vertices)[0]=uv[0];
@@ -597,7 +601,7 @@ is z.
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"cylinder_delauney.  Could not allocate triangle");
+												"cylinder_delaunay.  Could not allocate triangle");
 											return_code=0;
 										}
 									}
@@ -605,7 +609,7 @@ is z.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"cylinder_delauney.  Could not reallocate triangles");
+										"cylinder_delaunay.  Could not reallocate triangles");
 								}
 							}
 							DEALLOCATE(adjacent_vertices);
@@ -728,7 +732,7 @@ is z.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"cylinder_delauney.  Could not allocate returned_triangles");
+								"cylinder_delaunay.  Could not allocate returned_triangles");
 						}
 					}
 					/* tidy up */
@@ -741,7 +745,7 @@ is z.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"cylinder_delauney.  Could not allocate initial triangles 2");
+						"cylinder_delaunay.  Could not allocate initial triangles 2");
 					i++;
 					while (i<number_of_triangles)
 					{
@@ -754,33 +758,33 @@ is z.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"cylinder_delauney.  Could not allocate initial triangles");
+					"cylinder_delaunay.  Could not allocate initial triangles");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"cylinder_delauney.  All vertices have same z.  No triangulation");
+				"cylinder_delaunay.  All vertices have same z.  No triangulation");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cylinder_delauney.  Invalid argument(s) %d %p %p %p",number_of_vertices,
+			"cylinder_delaunay.  Invalid argument(s) %d %p %p %p",number_of_vertices,
 			vertices,number_of_triangles_address,triangles_address);
 	}
 	LEAVE;
 
 	return (return_code);
-} /* cylinder_delauney */
+} /* cylinder_delaunay */
 
-int sphere_delauney(int number_of_vertices,float *vertices,
+int sphere_delaunay(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2002
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
-Calculates the Delauney triangulation of the <vertices> on a sphere whose centre
+Calculates the Delaunay triangulation of the <vertices> on a sphere whose centre
 is the origin.
 <number_of_vertices> is the number of vertices to be triangulated
 <vertices> is an array of length 3*<number_of_vertices> containing the x,y,z
@@ -791,44 +795,511 @@ is the origin.
 	allocated by the function, containing the vertex numbers for each triangle
 ==============================================================================*/
 {
+	float **adjacent_line,**adjacent_lines,distance,dot_product,*edge_vertex_1,
+		*edge_vertex_2,length_1,length_2,*vertex,*vertex_1,*vertex_2,*vertex_3,
+		*vertex_4,xyz_centre[3],x1,x2,x3,x4,y1,y2,y3,y4,z1,z2,z3,z4;
+	int i,j,k,l,maximum_number_of_adjacent_lines,maximum_number_of_triangles,
+		number_of_adjacent_lines,number_of_triangles,return_code,
+		*returned_triangles;
+	struct Triangle
+	{
+		float centre[3],radius,*vertices[3];
+	} **temp_triangles,*triangle,**triangles;
+#if defined (OLD_CODE)
 	float *adjacent_angles,*adjacent_angle,*adjacent_uv,*adjacent_uvs,angle,
 		length,uv[2],*vertex,xref1,xref2,x1,x2,x3,yref1,yref2,y1,y2,y3,zref1,zref2,
 		z1,z2,z3;
 	int *adjacent_vertices,*adjacent_vertex,i,j,k,l,m,n,
 		number_of_adjacent_vertices,number_of_returned_triangles,
 		number_of_triangles,return_code,*returned_triangles,vertex_number;
-	struct Delauney_triangle **temp_triangles,*triangle,**triangles;
+	struct Delaunay_triangle **temp_triangles,*triangle,**triangles;
+#endif /* defined (OLD_CODE) */
 
-	ENTER(sphere_delauney);
+	ENTER(sphere_delaunay);
 	return_code=0;
 	/* check the arguments */
 	if ((2<number_of_vertices)&&vertices&&number_of_triangles_address&&
 		triangles_address)
 	{
+		/* normalize vertices */
+		i=number_of_vertices;
+		vertex=vertices;
+		while ((i>0)&&(return_code=sphere_normalize(vertex,vertex)))
+		{
+			i--;
+			vertex += 3;
+		}
+		if (return_code)
+		{
+			if (4<=number_of_vertices)
+			{
+				/* find a tetrahedron for the initial triangulation (4 triangles) */
+				i=0;
+				vertex=vertices;
+				/* first corner */
+				vertex_1=vertex;
+				/* second corner must be different from first corner and not opposite
+					to first corner */
+				do
+				{
+					i=i+1;
+					vertex += 3;
+					return_code=sphere_calculate_distance(vertex_1,vertex,&distance);
+				} while (return_code&&(i<number_of_vertices-3)&&
+					((distance<=SPHERE_DELAUNAY_TOLERANCE)||
+					(distance>=PI-SPHERE_DELAUNAY_TOLERANCE)));
+				if (return_code&&(SPHERE_DELAUNAY_TOLERANCE<distance)&&
+					(distance<PI-SPHERE_DELAUNAY_TOLERANCE))
+				{
+					vertex_2=vertex;
+					/* third corner can't be on the same line as first two corners */
+					x1=vertices[0];
+					y1=vertices[1];
+					z1=vertices[2];
+					x2=vertex[0];
+					y2=vertex[1];
+					z2=vertex[2];
+					x3=y1*z2-z1*y2;
+					y3=z1*x2-x1*z2;
+					z3=x1*y2-y1*x2;
+					do
+					{
+						i=i+1;
+						vertex += 3;
+						x2=vertex[0];
+						y2=vertex[1];
+						z2=vertex[2];
+						x4=y1*z2-z1*y2;
+						y4=z1*x2-x1*z2;
+						z4=x1*y2-y1*x2;
+						length_1=(float)sqrt(x4*x4+y4*y4+z4*z4);
+						length_2=(float)sqrt((x3-x4)*(x3-x4)+(y3-y4)*(y3-y4)+
+							(z3-z4)*(z3-z4));
+					} while ((i<number_of_vertices-2)&&
+						((length_1<=SPHERE_DELAUNAY_TOLERANCE)||
+						(length_2<=SPHERE_DELAUNAY_TOLERANCE)));
+					if ((length_1>SPHERE_DELAUNAY_TOLERANCE)&&
+						(length_2>SPHERE_DELAUNAY_TOLERANCE))
+					{
+						vertex_3=vertex;
+						/* fourth corner can't be in same plane as other 3 */
+						if (return_code=sphere_calculate_circumcentre(vertex_1,vertex_2,
+							vertex,xyz_centre))
+						{
+							x1=xyz_centre[0];
+							y1=xyz_centre[1];
+							z1=xyz_centre[2];
+							do
+							{
+								i=i+1;
+								vertex += 3;
+								if (return_code=sphere_calculate_circumcentre(vertex_1,
+									vertex_2,vertex,xyz_centre))
+								{
+									x2=xyz_centre[0];
+									y2=xyz_centre[1];
+									z2=xyz_centre[2];
+									x4=y1*z2-z1*y2;
+									y4=z1*x2-x1*z2;
+									z4=x1*y2-y1*x2;
+									length_1=(float)sqrt(x4*x4+y4*y4+z4*z4);
+								}
+							} while (return_code&&(i<number_of_vertices-1)&&
+								(length_1<=SPHERE_DELAUNAY_TOLERANCE));
+							if (return_code&&(length_1>SPHERE_DELAUNAY_TOLERANCE))
+							{
+								vertex_4=vertex;
+								/* determine which side of the first face the fourth corner
+									is */
+								x2=vertex_4[0]-vertex_1[0];
+								y2=vertex_4[1]-vertex_1[1];
+								z2=vertex_4[2]-vertex_1[2];
+								dot_product=x1*x2+y1*y2+z1*z2;
+								if (dot_product>0)
+								{
+									vertex=vertex_2;
+									vertex_2=vertex_3;
+									vertex_3=vertex;
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+				if (return_code)
+				{
+					maximum_number_of_triangles=4;
+					if (ALLOCATE(triangles,struct Triangle *,maximum_number_of_triangles))
+					{
+						i=maximum_number_of_triangles;
+						do
+						{
+							i--;
+						}
+						while ((i>=0)&&ALLOCATE(triangles[i],struct Triangle,1));
+						if (i<0)
+						{
+							/* initial triangulation covers the sphere */
+							triangle=triangles[0];
+							(triangle->vertices)[0]=vertex_1;
+							(triangle->vertices)[1]=vertex_2;
+							(triangle->vertices)[2]=vertex_3;
+							if (sphere_calculate_circumcentre((triangle->vertices)[0],
+								(triangle->vertices)[1],(triangle->vertices)[2],
+								triangle->centre)&&sphere_calculate_distance(
+								(triangle->vertices)[0],triangle->centre,
+								&(triangle->radius)))
+							{
+								triangle=triangles[1];
+								(triangle->vertices)[0]=vertex_1;
+								(triangle->vertices)[1]=vertex_4;
+								(triangle->vertices)[2]=vertex_2;
+								if (sphere_calculate_circumcentre((triangle->vertices)[0],
+									(triangle->vertices)[1],(triangle->vertices)[2],
+									triangle->centre)&&sphere_calculate_distance(
+									(triangle->vertices)[0],triangle->centre,
+									&(triangle->radius)))
+								{
+									triangle=triangles[2];
+									(triangle->vertices)[0]=vertex_2;
+									(triangle->vertices)[1]=vertex_4;
+									(triangle->vertices)[2]=vertex_3;
+									if (sphere_calculate_circumcentre((triangle->vertices)[0],
+										(triangle->vertices)[1],(triangle->vertices)[2],
+										triangle->centre)&&sphere_calculate_distance(
+										(triangle->vertices)[0],triangle->centre,
+										&(triangle->radius)))
+									{
+										triangle=triangles[3];
+										(triangle->vertices)[0]=vertex_3;
+										(triangle->vertices)[1]=vertex_4;
+										(triangle->vertices)[2]=vertex_1;
+										if (sphere_calculate_circumcentre((triangle->vertices)[0],
+											(triangle->vertices)[1],(triangle->vertices)[2],
+											triangle->centre)&&sphere_calculate_distance(
+											(triangle->vertices)[0],triangle->centre,
+											&(triangle->radius)))
+										{
+											number_of_triangles=4;
+										}
+										else
+										{
+											return_code=0;
+										}
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								else
+								{
+									return_code=0;
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+							if (return_code)
+							{
+								i=number_of_vertices;
+								vertex=vertices;
+								adjacent_lines=(float **)NULL;
+								maximum_number_of_adjacent_lines=0;
+								while (return_code&&(i>0))
+								{
+									if ((vertex!=vertex_1)&&(vertex!=vertex_2)&&
+										(vertex!=vertex_3)&&(vertex!=vertex_4))
+									{
+										/* delete the triangles that no longer satisfy the in-circle
+											criterion and create a list of the adjacent lines */
+										number_of_adjacent_lines=0;
+										j=0;
+										while (return_code&&(j<number_of_triangles))
+										{
+											triangle=triangles[j];
+											if (return_code=sphere_calculate_distance(
+												triangle->centre,vertex,&length_1))
+											{
+												if (length_1<=(triangle->radius)+
+													SPHERE_DELAUNAY_TOLERANCE)
+												{
+													/* vertex is inside the triangle's circumcircle */
+													/* add the triangle's edges to the list of adjacent
+														lines */
+													edge_vertex_2=(triangle->vertices)[2];
+													k=0;
+													while (return_code&&(k<3))
+													{
+														edge_vertex_1=edge_vertex_2;
+														edge_vertex_2=(triangle->vertices)[k];
+														/* check for duplicates */
+														l=number_of_adjacent_lines;
+														adjacent_line=adjacent_lines;
+														while ((l>0)&&
+															!(((edge_vertex_1==adjacent_line[0])&&
+															(edge_vertex_2==adjacent_line[1]))||
+															((edge_vertex_2==adjacent_line[0])&&
+															(edge_vertex_1==adjacent_line[1]))))
+														{
+															adjacent_line += 2;
+															l--;
+														}
+														if (l>0)
+														{
+															/* duplicate line.  Remove the match from list */
+															if (l>1)
+															{
+																l=2*number_of_adjacent_lines-2;
+																adjacent_line[0]=adjacent_lines[l];
+																adjacent_line[1]=adjacent_lines[l+1];
+															}
+															number_of_adjacent_lines--;
+														}
+														else
+														{
+															/* new line.  Add to list */
+															if (number_of_adjacent_lines>=
+																maximum_number_of_adjacent_lines)
+															{
+																if (REALLOCATE(adjacent_line,adjacent_lines,
+																	float *,
+																	2*(maximum_number_of_adjacent_lines+5)))
+																{
+																	adjacent_lines=adjacent_line;
+																	maximum_number_of_adjacent_lines += 5;
+																}
+																else
+																{
+																	display_message(ERROR_MESSAGE,
+																		"sphere_delaunay.  "
+																		"Could not REALLOCATE adjacent_lines");
+																	return_code=0;
+																}
+															}
+															if (return_code)
+															{
+																l=2*number_of_adjacent_lines;
+																adjacent_lines[l]=edge_vertex_1;
+																adjacent_lines[l+1]=edge_vertex_2;
+																number_of_adjacent_lines++;
+															}
+														}
+														k++;
+													}
+													if (return_code)
+													{
+														/* delete triangle */
+														if (j<number_of_triangles-1)
+														{
+															triangles[j]=triangles[number_of_triangles-1];
+															triangles[number_of_triangles-1]=triangle;
+														}
+														number_of_triangles--;
+													}
+												}
+												else
+												{
+													j++;
+												}
+											}
+										}
+										if (return_code)
+										{
+											/* create new triangles */
+											if (number_of_triangles+number_of_adjacent_lines>
+												maximum_number_of_triangles)
+											{
+												j=maximum_number_of_triangles;
+												maximum_number_of_triangles=number_of_triangles+
+													number_of_adjacent_lines+10;
+												if (REALLOCATE(temp_triangles,triangles,
+													struct Triangle *,maximum_number_of_triangles))
+												{
+													triangles=temp_triangles;
+													temp_triangles += j;
+													while (return_code&&(j<maximum_number_of_triangles))
+													{
+														if (ALLOCATE(*temp_triangles,struct Triangle,1))
+														{
+															j++;
+															temp_triangles++;
+														}
+														else
+														{
+															maximum_number_of_triangles=j;
+															display_message(ERROR_MESSAGE,"sphere_delaunay.  "
+																"Could not ALLOCATE triangle");
+															return_code=0;
+														}
+													}
+												}
+												else
+												{
+													maximum_number_of_triangles=j;
+													display_message(ERROR_MESSAGE,"sphere_delaunay.  "
+														"Could not REALLOCATE triangles");
+													return_code=0;
+												}
+											}
+											if (return_code)
+											{
+												adjacent_line=adjacent_lines+
+													(2*number_of_adjacent_lines);
+												l=number_of_adjacent_lines;
+												while (return_code&&(l>0))
+												{
+													adjacent_line -= 2;
+													triangle=triangles[number_of_triangles];
+													(triangle->vertices)[0]=vertex;
+													(triangle->vertices)[1]=adjacent_line[0];
+													(triangle->vertices)[2]=adjacent_line[1];
+													if (sphere_calculate_circumcentre(
+														(triangle->vertices)[0],(triangle->vertices)[1],
+														(triangle->vertices)[2],triangle->centre)&&
+														sphere_calculate_distance((triangle->vertices)[0],
+														triangle->centre,&(triangle->radius)))
+													{
+														number_of_triangles++;
+													}
+													else
+													{
+														return_code=0;
+													}
+													l--;
+												}
+											}
+										}
+									}
+									i--;
+									vertex += 3;
+								}
+								DEALLOCATE(adjacent_lines);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"sphere_delaunay.  Could not set up initial trianglulation");
+							}
+							if (return_code)
+							{
+								/* return results */
+								if (ALLOCATE(returned_triangles,int,3*number_of_triangles))
+								{
+									*triangles_address=returned_triangles;
+									*number_of_triangles_address=number_of_triangles;
+									for (i=0;i<number_of_triangles;i++)
+									{
+										triangle=triangles[i];
+										for (j=0;j<3;j++)
+										{
+											*returned_triangles=((triangle->vertices)[j]-vertices)/3;
+											returned_triangles++;
+										}
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"sphere_delaunay.  Could not allocate returned_triangles");
+									return_code=0;
+								}
+							}
+							/* tidy up */
+							for (i=0;i<maximum_number_of_triangles;i++)
+							{
+								DEALLOCATE(triangles[i]);
+							}
+							DEALLOCATE(triangles);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"sphere_delaunay.  Could not allocate initial triangles 2");
+							i++;
+							while (i<maximum_number_of_triangles)
+							{
+								DEALLOCATE(triangles[i]);
+								i++;
+							}
+							DEALLOCATE(triangles);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"sphere_delaunay.  Could not allocate initial triangles.  %d",
+							number_of_triangles);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"sphere_delaunay.  Could not find initial tetrahedron");
+				}
+			}
+			else
+			{
+				number_of_triangles=2;
+				if (ALLOCATE(returned_triangles,int,3*number_of_triangles))
+				{
+					returned_triangles[0]=0;
+					returned_triangles[1]=1;
+					returned_triangles[2]=2;
+					returned_triangles[3]=0;
+					returned_triangles[4]=2;
+					returned_triangles[5]=1;
+					*number_of_triangles_address=number_of_triangles;
+					*triangles_address=returned_triangles;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"sphere_delaunay.  "
+						"Could not allocate returned triangles for 3 vertices.  %d",
+						number_of_triangles);
+					return_code=0;
+				}
+			}
+		}
+#if defined (OLD_CODE)
 		number_of_triangles=2;
-		if (ALLOCATE(triangles,struct Delauney_triangle *,number_of_triangles))
+		if (ALLOCATE(triangles,struct Delaunay_triangle *,number_of_triangles))
 		{
 			i=number_of_triangles;
 			do
 			{
 				i--;
 			}
-			while ((i>=0)&&ALLOCATE(triangles[i],struct Delauney_triangle,1));
+			while ((i>=0)&&ALLOCATE(triangles[i],struct Delaunay_triangle,1));
 			if (i<0)
 			{
 				/* initial triangulation covers the sphere */
 				(triangles[0]->vertex_numbers)[0]=0;
-				sphere_normalize_vertex(vertices,triangles[0]->vertices);
+				sphere_normalize(vertices,triangles[0]->vertices);
 				(triangles[0]->vertex_numbers)[1]=1;
-				sphere_normalize_vertex(vertices+3,(triangles[0]->vertices)+2);
+				sphere_normalize(vertices+3,(triangles[0]->vertices)+2);
 				(triangles[0]->vertex_numbers)[2]=2;
-				sphere_normalize_vertex(vertices+6,(triangles[0]->vertices)+4);
+				sphere_normalize(vertices+6,(triangles[0]->vertices)+4);
 				(triangles[1]->vertex_numbers)[0]=0;
-				sphere_normalize_vertex(vertices,triangles[1]->vertices);
+				sphere_normalize(vertices,triangles[1]->vertices);
 				(triangles[1]->vertex_numbers)[1]=2;
-				sphere_normalize_vertex(vertices+6,(triangles[1]->vertices)+2);
+				sphere_normalize(vertices+6,(triangles[1]->vertices)+2);
 				(triangles[1]->vertex_numbers)[2]=1;
-				sphere_normalize_vertex(vertices+3,(triangles[1]->vertices)+4);
+				sphere_normalize(vertices+3,(triangles[1]->vertices)+4);
 				for (i=0;i<number_of_triangles;i++)
 				{
 					sphere_calculate_circumcentre(triangles[i]);
@@ -853,7 +1324,7 @@ is the origin.
 							(triangles[l]->vertices)[4],(triangles[l]->vertices)[5]);
 					}
 #endif /* defined (DEBUG) */
-					sphere_normalize_vertex(vertex,uv);
+					sphere_normalize(vertex,uv);
 #if defined (DEBUG)
 					/*???debug */
 					printf("vertex %d %g %g %g  %g %g\n",i,vertex[0],vertex[1],
@@ -1052,7 +1523,7 @@ is the origin.
 									adjacent_uvs=adjacent_uv;
 								}
 								return_code=0;
-								display_message(ERROR_MESSAGE,"sphere_delauney.  "
+								display_message(ERROR_MESSAGE,"sphere_delaunay.  "
 									"Could not reallocate adjacent vertices");
 							}
 							DEALLOCATE(triangles[j]);
@@ -1071,7 +1542,7 @@ is the origin.
 						number_of_triangles -= k;;
 						/* determine new triangles */
 						if (REALLOCATE(temp_triangles,triangles,
-							struct Delauney_triangle *,
+							struct Delaunay_triangle *,
 							number_of_triangles+number_of_adjacent_vertices))
 						{
 							triangles=temp_triangles;
@@ -1086,7 +1557,7 @@ is the origin.
 							while (return_code&&(k<number_of_adjacent_vertices))
 							{
 								if (triangle=ALLOCATE(triangles[number_of_triangles],
-									struct Delauney_triangle,1))
+									struct Delaunay_triangle,1))
 								{
 									triangle->vertex_numbers[0]=i;
 									(triangle->vertices)[0]=uv[0];
@@ -1113,7 +1584,7 @@ is the origin.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"sphere_delauney.  Could not allocate triangle");
+										"sphere_delaunay.  Could not allocate triangle");
 									return_code=0;
 								}
 							}
@@ -1121,7 +1592,7 @@ is the origin.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"sphere_delauney.  Could not reallocate triangles");
+								"sphere_delaunay.  Could not reallocate triangles");
 						}
 					}
 					DEALLOCATE(adjacent_vertices);
@@ -1171,7 +1642,7 @@ is the origin.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"sphere_delauney.  Could not allocate returned_triangles");
+							"sphere_delaunay.  Could not allocate returned_triangles");
 					}
 				}
 				/* tidy up */
@@ -1184,7 +1655,7 @@ is the origin.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"sphere_delauney.  Could not allocate initial triangles 2");
+					"sphere_delaunay.  Could not allocate initial triangles 2");
 				i++;
 				while (i<number_of_triangles)
 				{
@@ -1197,16 +1668,17 @@ is the origin.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"sphere_delauney.  Could not allocate initial triangles");
+				"sphere_delaunay.  Could not allocate initial triangles");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"sphere_delauney.  Invalid argument(s) %d %p %p %p",number_of_vertices,
+			"sphere_delaunay.  Invalid argument(s) %d %p %p %p",number_of_vertices,
 			vertices,number_of_triangles_address,triangles_address);
 	}
 	LEAVE;
 
 	return (return_code);
-} /* sphere_delauney */
+} /* sphere_delaunay */
