@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 23 January 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -28,6 +28,7 @@ return to direct rendering, as described with these routines.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/io_stream.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -3206,11 +3207,11 @@ The command is started with the string pointed to by <command_prefix>.
 	return (return_code);
 } /* list_Graphical_material_commands */
 
-int file_read_Graphical_material_name(FILE *file,
+int file_read_Graphical_material_name(struct IO_stream *stream,
 	struct Graphical_material **material_address,
 	struct MANAGER(Graphical_material) *graphical_material_manager)
 /*******************************************************************************
-LAST MODIFIED : 20 June 1996
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Reads a material name from a <file>.  Searchs the list of all materials for one
@@ -3224,9 +3225,9 @@ specified name and the default properties.
 
 	ENTER(file_read_Graphical_material_name);
 	/* check the arguments */
-	if (file&&material_address)
+	if (stream&&material_address)
 	{
-		if (read_string(file,"s",&material_name))
+		if (IO_stream_read_string(stream,"s",&material_name))
 		{
 			/*???DB.  Should this read function be in another module ? */
 			/* either find an existing material of that name, use no material if the

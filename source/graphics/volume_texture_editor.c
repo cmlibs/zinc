@@ -1550,7 +1550,7 @@ Reads the volume texture from a file and updates <texture_window> settings.
 ==============================================================================*/
 {
 	char string_number[10];
-	FILE *in_file;
+	struct IO_stream *in_file;
 	int i,return_code;
 	struct Texture_window *window;
 	struct VT_volume_texture *current_texture;
@@ -1561,7 +1561,8 @@ Reads the volume texture from a file and updates <texture_window> settings.
 	if (file_name&&(window=(struct Texture_window *)texture_window)&&
 		(current_texture=window->current_texture))
 	{
-		if (in_file=fopen(file_name,"r"))
+		if ((in_file = CREATE(IO_stream)(window->io_stream_package))
+			&& (IO_stream_open_for_read(in_file, file_name)))
 		{
 			/* delete any existing node groups */
 			if (current_texture->n_groups>0)
@@ -1607,7 +1608,8 @@ Reads the volume texture from a file and updates <texture_window> settings.
 					XmStringFree(new_item);
 				}
 			}
-			fclose(in_file);
+			IO_stream_close(in_file);
+			DESTROY(IO_stream)(&in_file);			
 		}
 		else
 		{
@@ -5078,9 +5080,10 @@ struct Texture_window *create_texture_edit_window(
 	struct MANAGER(Texture) *texture_manager,
 	struct Material_editor_dialog **material_editor_dialog_address,
 	struct Graphics_buffer_package *graphics_buffer_package,
+	struct IO_stream_package *io_stream_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 6 May 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Create the structures and retrieve the texture window from the uil file.
@@ -5160,6 +5163,7 @@ Create the structures and retrieve the texture window from the uil file.
 			{
 				/* initialize fields to zero here */
 				texture_window->graphics_buffer_package=graphics_buffer_package;
+				texture_window->io_stream_package=io_stream_package;
 				texture_window->user_interface=user_interface;
 				texture_window->default_graphical_material=default_graphical_material;
 				texture_window->graphical_material_manager=graphical_material_manager;

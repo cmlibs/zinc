@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_graphics_object.h
 
-LAST MODIFIED : 20 June 1996
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Function prototype for reading graphics object data from a file.
@@ -17,21 +17,23 @@ Global functions
 ----------------
 */
 int file_read_graphics_objects(char *file_name,
+	struct IO_stream_package *io_stream_package,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct LIST(GT_object) *object_list);
 /*******************************************************************************
-LAST MODIFIED : 20 November 2002
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
 
 int file_read_voltex_graphics_object_from_obj(char *file_name,
+	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum Render_type render_type,
 	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct LIST(GT_object) *object_list);
 /*******************************************************************************
-LAST MODIFIED : 20 November 2002
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 ==============================================================================*/

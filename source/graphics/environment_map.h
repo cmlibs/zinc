@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : environment_map.h
 
-LAST MODIFIED : 21 September 1998
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 The data structures used for representing environment maps.  Used by volume
@@ -112,11 +112,11 @@ DESCRIPTION :
 Write the properties of the <environment_map> to the command window.
 ============================================================================*/
 
-int file_read_Environment_map_name(FILE *file,
+int file_read_Environment_map_name(struct IO_stream *file,
 	struct Environment_map **environment_map_address,
 	struct MANAGER(Environment_map) *environment_map_manager);
 /*******************************************************************************
-LAST MODIFIED : 19 June 1996
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Reads a environment map name from a <file>.  Searchs the list of all environment

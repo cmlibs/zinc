@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture_editor.h
 
-LAST MODIFIED : 6 May 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -10,6 +10,7 @@ DESCRIPTION :
 
 #define SLIDERMAX 100.0
 #include <Mrm/MrmPublic.h>
+#include "general/io_stream.h"
 #include "graphics/environment_map.h"
 #include "graphics/material.h"
 #include "graphics/volume_texture.h"
@@ -24,12 +25,13 @@ Global types
 */
 struct Texture_window
 /*******************************************************************************
-LAST MODIFIED : 6 May 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	struct Graphics_buffer_package *graphics_buffer_package;
+	struct IO_stream_package *io_stream_package;
 	struct User_interface *user_interface;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
@@ -227,6 +229,7 @@ struct Texture_window *create_texture_edit_window(
 	struct MANAGER(Texture) *texture_manager,
 	struct Material_editor_dialog **material_editor_dialog_address,
 	struct Graphics_buffer_package *graphics_buffer_package,
+	struct IO_stream_package *io_stream_package,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004

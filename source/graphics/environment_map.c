@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : environment_map.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 The functions for manipulating environment maps.
@@ -12,6 +12,7 @@ The functions for manipulating environment maps.
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/list_private.h"
+#include "general/io_stream.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -664,11 +665,11 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Environment_map)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Environment_map,name,char *)
 
-int file_read_Environment_map_name(FILE *file,
+int file_read_Environment_map_name(struct IO_stream *stream,
 	struct Environment_map **environment_map_address,
 	struct MANAGER(Environment_map) *environment_map_manager)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1996
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Reads a environment map name from a <file>.  Searchs the list of all environment
@@ -682,9 +683,9 @@ with the specified name and the default properties.
 
 	ENTER(file_read_Environment_map_name);
 	/* check the arguments */
-	if (file&&environment_map_address)
+	if (stream&&environment_map_address)
 	{
-		if (read_string(file,"s",&environment_map_name))
+		if (IO_stream_read_string(stream,"s",&environment_map_name))
 		{
 			/*???DB.  Should this read function be in another module ? */
 			if (environment_map=FIND_BY_IDENTIFIER_IN_MANAGER(Environment_map,name)(

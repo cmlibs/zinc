@@ -13,6 +13,7 @@ Functions for reading graphics object data from a file.
 #include <stdlib.h>
 #include <string.h>
 #include "general/debug.h"
+#include "general/io_stream.h"
 #include "general/mystring.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
@@ -93,7 +94,7 @@ it in <result>.
 	return (return_code);
 } /* normalized_crossproduct */
 
-static int file_read_GT_object_type(FILE *file,
+static int file_read_GT_object_type(struct IO_stream *file,
 	enum GT_object_type *object_type)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
@@ -109,7 +110,7 @@ enumerated <object_type>.
 	ENTER(file_read_GT_object_type);
 	if (file&&object_type)
 	{
-		if (read_string(file,"s",&type_string))
+		if (IO_stream_read_string(file,"s",&type_string))
 		{
 			return_code=get_GT_object_type_from_string(type_string,object_type);
 			DEALLOCATE(type_string);
@@ -132,7 +133,7 @@ enumerated <object_type>.
 	return (return_code);
 } /* file_read_GT_object_type */
 
-static int file_read_GT_polyline_type(FILE *file,
+static int file_read_GT_polyline_type(struct IO_stream *file,
 	enum GT_polyline_type *polyline_type)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
@@ -148,7 +149,7 @@ enumerated <polyline_type>.
 	ENTER(file_read_GT_polyline_type);
 	if (file&&polyline_type)
 	{
-		if (read_string(file,"s",&type_string))
+		if (IO_stream_read_string(file,"s",&type_string))
 		{
 			return_code=get_GT_polyline_type_from_string(type_string,polyline_type);
 			DEALLOCATE(type_string);
@@ -171,7 +172,7 @@ enumerated <polyline_type>.
 	return (return_code);
 } /* file_read_GT_polyline_type */
 
-static int file_read_GT_surface_type(FILE *file,
+static int file_read_GT_surface_type(struct IO_stream *file,
 	enum GT_surface_type *surface_type)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
@@ -187,7 +188,7 @@ enumerated <surface_type>.
 	ENTER(file_read_GT_surface_type);
 	if (file&&surface_type)
 	{
-		if (read_string(file,"s",&type_string))
+		if (IO_stream_read_string(file,"s",&type_string))
 		{
 			return_code=get_GT_surface_type_from_string(type_string,surface_type);
 			DEALLOCATE(type_string);
@@ -215,6 +216,7 @@ Global functions
 ----------------
 */
 int file_read_graphics_objects(char *file_name,
+	struct IO_stream_package *io_stream_package,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct LIST(GT_object) *object_list)
 /*******************************************************************************
@@ -226,7 +228,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	FILE *fp;
 	gtObject *obj;
 	char objname[100];
 	int dummy, i,j,k;
@@ -250,6 +251,7 @@ DESCRIPTION :
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
 	struct GT_userdef *userdef;
+	struct IO_stream *stream;
 	int version;
 	float time;
 
@@ -262,10 +264,11 @@ DESCRIPTION :
 	{
 		/* files without a header default to 1 */
 		version=1;
-		if (fp = fopen(file_name,"r"))
+		if ((stream = CREATE(IO_stream)(io_stream_package))
+			&& (IO_stream_open_for_read(stream, file_name)))
 		{
 			return_code=1;
-			while (return_code&&(fscanf(fp,"%s",objname)!=EOF)&&
+			while (return_code&&(IO_stream_scan(stream,"%s",objname)!=EOF)&&
 				(strcmp(objname,"END_OF_FILE")))
 			{
 #if defined (DEBUG)
@@ -276,53 +279,53 @@ DESCRIPTION :
 				if (fuzzy_string_compare(objname,"CMISS"))
 				{
 					/* version information */
-					if (EOF==(fscanf(fp,"%s",objname))||
+					if (EOF==(IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"exobj")))
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have exobj "
 							"keyword\nValid header is 'CMISS exobj File Version 3'\n");
 					}
-					if ((EOF==fscanf(fp,"%s",objname))||
+					if ((EOF==IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"file")))
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have file keyword\n"
 							"Valid header is 'CMISS exobj File Version 3'\n");						
 					}
-					if ((EOF==fscanf(fp,"%s",objname))||
+					if ((EOF==IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"version")))
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have version "
 							"keyword\nValid header is 'CMISS exobj File Version 2'\n");
 					}
-					if (EOF==fscanf(fp,"%d",&version))
+					if (EOF==IO_stream_scan(stream,"%d",&version))
 					{
 						display_message(ERROR_MESSAGE,
 							"file_read_graphics_objects. Unable to read version");
 						return_code=0;
 					}
-					fscanf(fp,"%s",objname);
+					IO_stream_scan(stream,"%s",objname);
 				}
 				if (return_code)
 				{
 					/* read the object type */
-					if (file_read_GT_object_type(fp,&object_type))
+					if (file_read_GT_object_type(stream,&object_type))
 					{
 						if(version < 3)
 						{
-							fscanf(fp,"%d",&dummy);
-							fscanf(fp,"%d",&dummy);
+							IO_stream_scan(stream,"%d",&dummy);
+							IO_stream_scan(stream,"%d",&dummy);
 							time = 0;
 							display_message(WARNING_MESSAGE,
 								"file_read_graphics_objects.  Activity type and default attribute are obsolete, values ignored\n");
 						}
 						else
 						{
-							fscanf(fp,"%f", &time);
+							IO_stream_scan(stream,"%f", &time);
 						}
-						file_read_Graphical_material_name(fp,&object_material,
+						file_read_Graphical_material_name(stream,&object_material,
 							graphical_material_manager);
 						if (version<2)
 						{
@@ -331,7 +334,7 @@ DESCRIPTION :
 							{
 								for(j=0;j<4;j++)
 								{
-									fscanf(fp,"%f",&(transform[i][j]));
+									IO_stream_scan(stream,"%f",&(transform[i][j]));
 									if (((i==j) && (transform[i][j] != 1)) ||
 										((i != j) && (transform[i][j] != 0)))
 									{
@@ -387,7 +390,7 @@ DESCRIPTION :
 								ALLOCATE(pointlist,Triple,1);
 								for (i=0;i<3;i++)
 								{
-									fscanf(fp,"%f",&((*pointlist)[i]));
+									IO_stream_scan(stream,"%f",&((*pointlist)[i]));
 								}
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								point = CREATE(GT_point)(pointlist,(char *)NULL,
@@ -401,14 +404,14 @@ DESCRIPTION :
 								/*???debug */
 								printf("Reading g_POINTSET\n");
 #endif /* defined (DEBUG) */
-								fscanf(fp,"%d",&npts1);
+								IO_stream_scan(stream,"%d",&npts1);
 								/*???DB.  Check allocation */
 								ALLOCATE(pointlist,Triple,npts1);
 								for (j=0;j<npts1;j++)
 								{
 									for (i=0;i<3;i++)
 									{
-										fscanf(fp,"%f",&(pointlist[j][i]));
+										IO_stream_scan(stream,"%f",&(pointlist[j][i]));
 									}
 								}
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
@@ -427,15 +430,15 @@ DESCRIPTION :
 								/*???debug */
 								printf("Reading g_POLYLINE\n");
 #endif /* defined (DEBUG) */
-								/*fscanf(fp,"%d",&polyline_type);*/
-								if (file_read_GT_polyline_type(fp,&polyline_type))
+								/*IO_stream_scan(stream,"%d",&polyline_type);*/
+								if (file_read_GT_polyline_type(stream,&polyline_type))
 								{
 #if defined (DEBUG)
 									/*???debug */
 									printf("  polyline_type = %d (%s)\n",polyline_type,
 										get_GT_polyline_type_string(polyline_type));
 #endif /* defined (DEBUG) */
-									fscanf(fp,"%d",&npts1);
+									IO_stream_scan(stream,"%d",&npts1);
 									/* must clear the following since passed directly to
 										 CREATE(GT_surface) unless specifically allocated */
 									pointlist=(Triple *)NULL;
@@ -450,7 +453,7 @@ DESCRIPTION :
 											{
 												for (j=0;j<3;j++)
 												{
-													fscanf(fp,"%f",&(pointlist[i][j]));
+													IO_stream_scan(stream,"%f",&(pointlist[i][j]));
 												}
 											}
 										} break;
@@ -461,7 +464,7 @@ DESCRIPTION :
 											{
 												for (j=0;j<3;j++)
 												{
-													fscanf(fp,"%f",&(pointlist[i][j]));
+													IO_stream_scan(stream,"%f",&(pointlist[i][j]));
 												}
 											}
 										} break;
@@ -473,11 +476,11 @@ DESCRIPTION :
 											{
 												for (j=0;j<3;j++)
 												{
-													fscanf(fp,"%f",&(pointlist[i][j]));
+													IO_stream_scan(stream,"%f",&(pointlist[i][j]));
 												}
 												for (j=0;j<3;j++)
 												{
-													fscanf(fp,"%f",&(normallist[i][j]));
+													IO_stream_scan(stream,"%f",&(normallist[i][j]));
 												}
 											}
 										} break;
@@ -489,11 +492,11 @@ DESCRIPTION :
 											{
 												for (j=0;j<3;j++)
 												{
-													fscanf(fp,"%f",&(pointlist[i][j]));
+													IO_stream_scan(stream,"%f",&(pointlist[i][j]));
 												}
 												for (j=0;j<3;j++)
 												{
-													fscanf(fp,"%f",&(normallist[i][j]));
+													IO_stream_scan(stream,"%f",&(normallist[i][j]));
 												}
 											}
 										} break;
@@ -520,17 +523,17 @@ DESCRIPTION :
 								/*???debug */
 								printf("Reading g_SURFACE\n");
 #endif /* defined (DEBUG) */
-								/*fscanf(fp,"%d",&surface_type);*/
-								if (file_read_GT_surface_type(fp,&surface_type))
+								/*IO_stream_scan(stream,"%d",&surface_type);*/
+								if (file_read_GT_surface_type(stream,&surface_type))
 								{
 #if defined (DEBUG)
 									/*???debug */
 									printf("  surface_type = %d (%s)\n",surface_type,
 										get_GT_surface_type_string(surface_type));
 #endif /* defined (DEBUG) */
-									fscanf(fp,"%d",&n_data_components);
-									fscanf(fp,"%d",&npts1);
-									fscanf(fp,"%d",&npts2);
+									IO_stream_scan(stream,"%d",&n_data_components);
+									IO_stream_scan(stream,"%d",&npts1);
+									IO_stream_scan(stream,"%d",&npts2);
 									/* must clear the following since passed directly to
 										 CREATE(GT_surface) unless specifically allocated */
 									pointlist=(Triple *)NULL;
@@ -559,11 +562,11 @@ DESCRIPTION :
 												{
 													for (k=0;k<3;k++)
 													{
-														fscanf(fp,"%f",&(pointlist[j+npts2 * i][k]));
+														IO_stream_scan(stream,"%f",&(pointlist[j+npts2 * i][k]));
 													}
 													for (k=0;k<3;k++)
 													{
-														fscanf(fp,"%f",&(normallist[j+npts2*i][k]));
+														IO_stream_scan(stream,"%f",&(normallist[j+npts2*i][k]));
 													}
 												}
 											}
@@ -576,7 +579,7 @@ DESCRIPTION :
 													{
 														for (k=0;k<n_data_components;k++)
 														{
-															fscanf(fp,"%f",&(data[k+n_data_components*(j+npts2*i)]));
+															IO_stream_scan(stream,"%f",&(data[k+n_data_components*(j+npts2*i)]));
 														}
 													}
 												}
@@ -597,11 +600,11 @@ DESCRIPTION :
 												{
 													for (k=0;k<3;k++)
 													{
-														fscanf(fp,"%f",&(pointlist[i+npts1 * j][k]));
+														IO_stream_scan(stream,"%f",&(pointlist[i+npts1 * j][k]));
 													}
 													for (k=0;k<3;k++)
 													{
-														fscanf(fp,"%f",
+														IO_stream_scan(stream,"%f",
 															&(normallist[i+npts1 * j][k]));
 													}
 												}
@@ -615,7 +618,7 @@ DESCRIPTION :
 													{
 														for (k=0;k<n_data_components;k++)
 														{
-															fscanf(fp,"%f",&(data[k+n_data_components*(i+npts2*j)]));
+															IO_stream_scan(stream,"%f",&(data[k+n_data_components*(i+npts2*j)]));
 														}
 													}
 												}
@@ -650,10 +653,10 @@ DESCRIPTION :
 								{
 									display_message(WARNING_MESSAGE,
 										"file_read_graphics_objects.  Nurb type now redundant, value is ignored");
-									fscanf(fp,"%d",&dummy);
+									IO_stream_scan(stream,"%d",&dummy);
 								}
-								fscanf(fp,"%d %d %d",&sorder,&torder,&corder);
-								fscanf(fp,"%d %d",&sknotcnt,&tknotcnt);
+								IO_stream_scan(stream,"%d %d %d",&sorder,&torder,&corder);
+								IO_stream_scan(stream,"%d %d",&sknotcnt,&tknotcnt);
 								/* must clear the following since passed directly to
 									CREATE(GT_nurbs) unless specifically allocated */
 								sknots=(double *)NULL;
@@ -665,36 +668,36 @@ DESCRIPTION :
 								ALLOCATE(sknots,double,sknotcnt);
 								for (i=0;i<sknotcnt;i++)
 								{
-									fscanf(fp,"%lf",&(sknots[i]));
+									IO_stream_scan(stream,"%lf",&(sknots[i]));
 								}
 								ALLOCATE(tknots,double,tknotcnt);
 								for (i=0;i<tknotcnt;i++)
 								{
-									fscanf(fp,"%lf",&(tknots[i]));
+									IO_stream_scan(stream,"%lf",&(tknots[i]));
 								}
-								fscanf(fp,"%d %d",&maxs,&maxt);
+								IO_stream_scan(stream,"%d %d",&maxs,&maxt);
 								ALLOCATE(controlpts,double,4*maxs*maxt);
 								for (i=0;i<maxs;i++)
 								{
 									for (j=0;j<maxt;j++)
 									{
-										fscanf(fp,"%lf %lf %lf %lf",
+										IO_stream_scan(stream,"%lf %lf %lf %lf",
 											&(controlpts[4*(i + maxs*j)+0]),
 											&(controlpts[4*(i + maxs*j)+1]),
 											&(controlpts[4*(i + maxs*j)+2]),
 											&(controlpts[4*(i + maxs*j)+3]));
 									}
 								}
-								fscanf(fp,"%d",&cknotcnt);
+								IO_stream_scan(stream,"%d",&cknotcnt);
 								if(cknotcnt)
 								{
 									ALLOCATE(cknots,double,cknotcnt);
 									for (i=0;i<cknotcnt;i++)
 									{
-										fscanf(fp,"%lf",&(cknots[i]));
+										IO_stream_scan(stream,"%lf",&(cknots[i]));
 									}
 								}
-								fscanf(fp,"%d",&ccount);
+								IO_stream_scan(stream,"%d",&ccount);
 								if(ccount)
 								{
 									ALLOCATE(trimarray,double,3*ccount);
@@ -702,11 +705,11 @@ DESCRIPTION :
 									{
 										for (j = 0;j<3;j++)
 										{
-											fscanf(fp,"%lf",&(trimarray[3*i+j]));
+											IO_stream_scan(stream,"%lf",&(trimarray[3*i+j]));
 										}
 									}
 								}
-								fscanf(fp,"%d",&pwlcnt);
+								IO_stream_scan(stream,"%d",&pwlcnt);
 								if(pwlcnt)
 								{
 									ALLOCATE(pwlarray,double,3*pwlcnt);
@@ -714,7 +717,7 @@ DESCRIPTION :
 									{
 										for (j=0;j<3;j++)
 										{
-											fscanf(fp,"%lf",&(pwlarray[3*i+j]));
+											IO_stream_scan(stream,"%lf",&(pwlarray[3*i+j]));
 										}
 									}
 								}
@@ -754,7 +757,7 @@ DESCRIPTION :
 								/*???debug */
 								printf("Reading g_USERDEF\n");
 #endif /* defined (DEBUG) */
-								file_read_userdef(fp,&userdef);
+								file_read_userdef(stream,&userdef);
 								GT_OBJECT_ADD(GT_userdef)(obj,time,userdef);
 #if defined (DEBUG)
 								/*???debug */
@@ -793,7 +796,8 @@ DESCRIPTION :
 					}
 				}
 			}
-			fclose(fp);
+			IO_stream_close(stream);
+			DESTROY(IO_stream)(&stream);
 		}
 		else
 		{
@@ -818,6 +822,7 @@ DESCRIPTION :
 } /* file_read_graphics_objects */
 
 int file_read_voltex_graphics_object_from_obj(char *file_name,
+	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum Render_type render_type,
 	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
@@ -835,7 +840,7 @@ DESCRIPTION :
 		return_code, *texturemap_index, triangle, *triangle_list;
 	FE_value rmag, result[3], vector1[3], vector2[3], vectorsum[3], vertex0[3],
 		vertex1[3], vertex2[3];
-	FILE *file;
+	struct IO_stream *file;
 	gtObject *obj;
 	char objname[100];
 	struct Environment_map *environment_map;
@@ -852,7 +857,8 @@ DESCRIPTION :
 	return_code = 1;
 	if (file_name)
 	{
-		if(file = fopen(file_name, "r"))
+		if((file = CREATE(IO_stream)(io_stream_package))
+			&& (IO_stream_open_for_read(file, file_name)))
 		{
 			if(vtexture = CREATE(VT_volume_texture)("temp_read_volume"))
 			{
@@ -1077,7 +1083,9 @@ DESCRIPTION :
 				return_code=0;
 				display_message(ERROR_MESSAGE,
 					"file_read_voltex_graphics_object_from_obj.  Unable to create temporary volume texture");
-			}			
+			}
+			IO_stream_close(file);
+			DESTROY(IO_stream)(&file);			
 		}
 		else
 		{

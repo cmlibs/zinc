@@ -1351,6 +1351,98 @@ DESCRIPTION :
 	return (return_code);
 } /* IO_stream_read_to_memory */
 
+int IO_stream_seek(struct IO_stream *stream, long offset, int whence)
+/*******************************************************************************
+LAST MODIFIED : 6 December 2004
+
+DESCRIPTION :
+Implements the stdio function fseek on stream where possible.
+==============================================================================*/
+{
+	int return_code;
+	long location;
+
+	ENTER(IO_stream_seek);
+
+	if (stream)
+	{
+		return_code = 1;
+		switch (stream->type)
+		{
+			case IO_STREAM_FILE_TYPE:
+			{
+				return_code = !fseek(stream->file_handle, offset, whence);
+				stream->buffer_valid_index = 0;
+			} break;
+			case IO_STREAM_GZIP_FILE_TYPE:
+			{
+				return_code = !gzseek(stream->file_handle, offset, whence);
+				stream->buffer_valid_index = 0;
+			} break;
+			case IO_STREAM_BZ2_FILE_TYPE:
+			{
+				display_message(ERROR_MESSAGE, "IO_stream_seek. "
+					"Unable to seek on bz2 compressed files currently.");
+				return_code = 0;
+			} break;
+			case IO_STREAM_MEMORY_TYPE:
+			{
+				switch (whence)
+				{
+					case SEEK_SET:
+					{
+						location = offset;
+					} break;
+					case SEEK_CUR:
+					{
+						location = stream->memory_block_index + offset;
+					} break;
+					case SEEK_END:
+					{
+						location = stream->data_length + offset;
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"IO_stream_seek. Unknown seek type.");
+						return_code = 0;
+					}
+				}
+				if (return_code)
+				{
+					if ((location >= 0) && (location < stream->data_length))
+					{
+						stream->memory_block_index = location;
+						stream->buffer_valid_index = 0;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"IO_stream_seek. Attempt to seek out of memory block.");
+						return_code = 0;	
+					}
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"IO_stream_seek. IO stream invalid or type not implemented.");
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"IO_stream_seek. Invalid arguments.");
+		return_code = 0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* IO_stream_seek */
+
 int IO_stream_close(struct IO_stream *stream)
 /*******************************************************************************
 LAST MODIFIED : 23 August 2004

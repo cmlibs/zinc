@@ -19,6 +19,7 @@ xi2, xi3 space.
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/io_stream.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -217,8 +218,8 @@ Modifier function to set the volume texture file from a command.
 ==============================================================================*/
 {
 	char *file_name;
-	FILE *in_file;
 	int return_code;
+	struct IO_stream *in_file;
 	struct Option_table *option_table;
 	struct Modify_VT_volume_texture_data *data;
 
@@ -240,7 +241,8 @@ Modifier function to set the volume texture file from a command.
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
-				if (in_file=fopen(file_name,"r"))
+				if ((in_file = CREATE(IO_stream)(data->io_stream_package))
+					&& (IO_stream_open_for_read(in_file, file_name)))
 				{
 					if (strstr(file_name, ".objv") != NULL )
 					{
@@ -297,7 +299,8 @@ Modifier function to set the volume texture file from a command.
 							}
 						}
 					}
-					fclose(in_file);
+					IO_stream_close(in_file);
+					DESTROY(IO_stream)(&in_file);			
 				}
 				else
 				{
@@ -2742,7 +2745,7 @@ Modifier function to set the volume texture from a command.
 } /* set_VT_volume_texture */
 
 int read_volume_texture_from_file(struct VT_volume_texture *texture,
-	FILE *in_file,struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct IO_stream *in_file,struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager)
 /*******************************************************************************
 LAST MODIFIED : 18 May 1998
@@ -2979,7 +2982,7 @@ printf("%p\n",in_file);
 		/* read in xi ranges */
 		for (i=0;i<3;i++)
 		{
-			fscanf(in_file,"%lf",&((texture->ximin)[i]));
+			IO_stream_scan(in_file,"%lf",&((texture->ximin)[i]));
 #if defined (DEBUG)
 /*???debug */
 printf("%g\n",(texture->ximin)[i]);
@@ -2987,7 +2990,7 @@ printf("%g\n",(texture->ximin)[i]);
 		}
 		for (i=0;i<3;i++)
 		{
-			fscanf(in_file,"%lf",&(texture->ximax[i]));
+			IO_stream_scan(in_file,"%lf",&(texture->ximax[i]));
 #if defined (DEBUG)
 /*???debug */
 printf("%g\n",(texture->ximax)[i]);
@@ -3002,7 +3005,7 @@ printf("read ranges\n");
 		n_nodes=1;
 		for (i=0;i<3;i++)
 		{
-			fscanf(in_file,"%d",&dimension);
+			IO_stream_scan(in_file,"%d",&dimension);
 			texture->dimension[i]=dimension;
 			texture->scalar_field->dimension[i]=dimension;
 			texture->clip_field->dimension[i]=dimension;
@@ -3017,7 +3020,7 @@ printf("read ranges\n");
 printf("read discretization\n");
 #endif /* defined (DEBUG) */
 		/* read in the table for translating from file indicies to materials */
-		fscanf(in_file,"%d",&number_of_materials);
+		IO_stream_scan(in_file,"%d",&number_of_materials);
 #if defined (DEBUG)
 /*???debug */
 printf("number_of_materials=%d\n",number_of_materials);
@@ -3103,7 +3106,7 @@ printf("det_map = %p\n", texture->mc_iso_surface->detail_map);
 					texture->global_texture_node_list=node_list;
 					i=0;
 					while ((i<n_cells)&&
-						(1==fscanf(in_file,"%d",&index)))
+						(1==IO_stream_scan(in_file,"%d",&index)))
 					{
 						cell=cell_block+i;
 						cell_list[i]=cell;
@@ -3141,12 +3144,12 @@ printf("det_map = %p\n", texture->mc_iso_surface->detail_map);
 						/* read in the cell scalar values */
 						for (i=0;i<n_cells;i++)
 						{
-							fscanf(in_file,"%lf",&((texture->texture_cell_list)[i]->
+							IO_stream_scan(in_file,"%lf",&((texture->texture_cell_list)[i]->
 								scalar_value));
 						}
 						i=0;
 						while ((i<n_nodes)&&
-							(1==fscanf(in_file,"%d",&index)))
+							(1==IO_stream_scan(in_file,"%d",&index)))
 						{
 							node=node_block+i;
 							node_list[i]=node;
@@ -3183,7 +3186,7 @@ printf("det_map = %p\n", texture->mc_iso_surface->detail_map);
 						if (i==n_nodes)
 						{
 							/* the isovalue */
-							fscanf(in_file,"%lf",&(texture->isovalue));
+							IO_stream_scan(in_file,"%lf",&(texture->isovalue));
 #if defined (DEBUG)
 /*???debug */
 printf("isovalue = %lf\n",texture->isovalue);
@@ -3201,7 +3204,8 @@ printf("isovalue = %lf\n",texture->isovalue);
 							texture->decimation=0;
 							/* load any curves if present */
 							temp_string = (char *)NULL;
-							while (read_string(in_file,"s",&temp_string)&&!feof(in_file))
+							while (IO_stream_read_string(in_file,"s",&temp_string)&&
+								!IO_stream_end_of_stream(in_file))
 							{
 #if defined (DEBUG)
 /*???debug */
@@ -3211,7 +3215,7 @@ printf("read string: %s\n",temp_string);
 								{
 									/* read in the table for translating from file indicies to
 										materials */
-									fscanf(in_file,"%d",&number_of_env_maps);
+									IO_stream_scan(in_file,"%d",&number_of_env_maps);
 #if defined (DEBUG)
 /*???debug */
 printf("number_of_env_maps=%d\n",number_of_env_maps);
@@ -3230,7 +3234,7 @@ printf("number_of_env_maps=%d\n",number_of_env_maps);
 										if (i==number_of_env_maps)
 										{
 											i=0;
-											while ((i<n_cells)&&(1==fscanf(in_file,"%d",&index)))
+											while ((i<n_cells)&&(1==IO_stream_scan(in_file,"%d",&index)))
 											{
 												if (index>0)
 												{
@@ -3253,7 +3257,7 @@ printf("number_of_env_maps=%d\n",number_of_env_maps);
 								{
 									for(i=0;i<n_cells;i++)
 									{
-										fscanf(in_file,"%lf %lf %lf",&(cell_list[i]->cop[0]),
+										IO_stream_scan(in_file,"%lf %lf %lf",&(cell_list[i]->cop[0]),
 											&(cell_list[i]->cop[1]),&(cell_list[i]->cop[2]));
 									}
 								}
@@ -3261,7 +3265,7 @@ printf("number_of_env_maps=%d\n",number_of_env_maps);
 								{
 									for(i=0;i<n_cells;i++)
 									{
-										fscanf(in_file,"%d",&(cell_list[i]->detail));
+										IO_stream_scan(in_file,"%d",&(cell_list[i]->detail));
 									}
 								}
 								if (0==strcmp(temp_string,"Active_nodes"))
@@ -3272,11 +3276,11 @@ printf("number_of_env_maps=%d\n",number_of_env_maps);
 #endif /* defined (DEBUG) */
 									do
 									{
-										fscanf(in_file, "%d", &i);
-										fscanf(in_file, "%lf", &(node_list[i]->scalar_value));
+										IO_stream_scan(in_file, "%d", &i);
+										IO_stream_scan(in_file, "%lf", &(node_list[i]->scalar_value));
 										node_list[i]->active = 1;
 										DEALLOCATE(temp_string);
-										read_string(in_file,"s",&temp_string);
+										IO_stream_read_string(in_file,"s",&temp_string);
 									} while (0!=strcmp(temp_string,"End_of_active_nodes"));
 								}
 								if (0==strcmp(temp_string,"VT_texture_curves:"))
@@ -3289,16 +3293,16 @@ printf("Reading VT_texture_curves\n");
 									{
 										if (ALLOCATE(curve,struct VT_texture_curve,1))
 										{
-											fscanf(in_file,"%d",&(curve->type));
-											fscanf(in_file,"%lf %lf %lf %lf %lf %lf",
+											IO_stream_scan(in_file,"%d",&(curve->type));
+											IO_stream_scan(in_file,"%lf %lf %lf %lf %lf %lf",
 												&(curve->point1[0]),&(curve->point1[1]),
 												&(curve->point1[2]),&(curve->point2[0]),
 												&(curve->point2[1]),&(curve->point2[2]));
-											fscanf(in_file,"%lf %lf %lf %lf %lf %lf",
+											IO_stream_scan(in_file,"%lf %lf %lf %lf %lf %lf",
 												&(curve->point3[0]),&(curve->point3[1]),
 												&(curve->point3[2]),&(curve->point4[0]),
 												&(curve->point4[1]),&(curve->point4[2]));
-											fscanf(in_file,"%lf %lf",&(curve->scalar_value[0]),
+											IO_stream_scan(in_file,"%lf %lf",&(curve->scalar_value[0]),
 												&(curve->scalar_value[1]));
 											/*???DB.  Change to standard lists */
 											add_curve_to_list(texture->texture_curve_list,curve);
@@ -3311,7 +3315,7 @@ printf("Read curve. Type [%d] coords (%lf %lf %lf) (%lf %lf %lf) (%lf %lf %lf) (
 	curve->point3[0],curve->point3[1],curve->point3[2],
 	curve->point4[0],curve->point4[1],curve->point4[2]);
 #endif /* defined (DEBUG) */
-											read_string(in_file,"s",&temp_string);
+											IO_stream_read_string(in_file,"s",&temp_string);
 										}
 									} while (0!=strcmp(temp_string,"End_of_curves"));
 #if defined (DEBUG)
@@ -3328,7 +3332,7 @@ printf("#### WARNING #### Setting Hollow Mode from file\n");
 									display_message(WARNING_MESSAGE,
 										"Setting Hollow Mode from file");
 									texture->hollow_mode_on=1;
-									fscanf(in_file,"%lf",&texture->hollow_isovalue);
+									IO_stream_scan(in_file,"%lf",&texture->hollow_isovalue);
 								}
 								if (0==strcmp(temp_string,"Closed_surface"))
 								{
@@ -3349,8 +3353,8 @@ printf("#### WARNING #### Setting Clip Field from file\n");
 									display_message(WARNING_MESSAGE,
 										"Setting Clip field from file");
 									texture->cutting_plane_on=1;
-									fscanf(in_file,"%lf",&texture->cut_isovalue);
-									fscanf(in_file,"%lf %lf %lf %lf",&texture->cutting_plane[0],
+									IO_stream_scan(in_file,"%lf",&texture->cut_isovalue);
+									IO_stream_scan(in_file,"%lf %lf %lf %lf",&texture->cutting_plane[0],
 										&texture->cutting_plane[1],&texture->cutting_plane[2],
 										&texture->cutting_plane[3]);
 								}
@@ -3362,7 +3366,7 @@ printf("Reading nodal values\n");
 #endif /* defined (DEBUG) */
 									i=0;
 									while ((i<n_nodes)&&
-										(1==fscanf(in_file,"%lf",&((node_list[i])->scalar_value))))
+										(1==IO_stream_scan(in_file,"%lf",&((node_list[i])->scalar_value))))
 									{
 										i++;
 									}
@@ -3387,7 +3391,7 @@ printf("Reading nodal values\n");
 									{
 										for (i=0;i<n;i++)
 										{
-											fscanf(in_file,"%lf",&texture->grid_spacing[i]);
+											IO_stream_scan(in_file,"%lf",&texture->grid_spacing[i]);
 										}
 									}
 									else
@@ -3400,15 +3404,15 @@ printf("Reading nodal values\n");
 								if (0==strcmp(temp_string,"Xi_slits"))
 								{
 									display_message(WARNING_MESSAGE,"Setting Xi_slits from file");
-									fscanf(in_file, "%d", &n_slits);
+									IO_stream_scan(in_file, "%d", &n_slits);
 									for (i=0;i<n_slits;i++)
 									{
-										fscanf(in_file,"%d",&node_index);
-										fscanf(in_file,"%d",&(texture->
+										IO_stream_scan(in_file,"%d",&node_index);
+										IO_stream_scan(in_file,"%d",&(texture->
 											global_texture_node_list[node_index]->node_type));
 										for (j=0;j<8;j++)
 										{
-											fscanf(in_file,"%d",&(texture->global_texture_node_list[
+											IO_stream_scan(in_file,"%d",&(texture->global_texture_node_list[
 												node_index]->cm_node_identifier[j]));
 										}
 									}
@@ -3417,7 +3421,7 @@ printf("Reading nodal values\n");
 								{
 									display_message(WARNING_MESSAGE,
 										"Setting Node_groups from file");
-									fscanf(in_file,"%d",&texture->n_groups);
+									IO_stream_scan(in_file,"%d",&texture->n_groups);
 									if (ALLOCATE(node_groups,struct VT_node_group *,
 										texture->n_groups))
 									{
@@ -3426,15 +3430,15 @@ printf("Reading nodal values\n");
 										{
 											if (ALLOCATE(node_group,struct VT_node_group,1))
 											{
-												if (read_string(in_file,"s",&(node_group->name)))
+												if (IO_stream_read_string(in_file,"s",&(node_group->name)))
 												{
-													fscanf(in_file,"%d",&(node_group->n_nodes));
+													IO_stream_scan(in_file,"%d",&(node_group->n_nodes));
 													if (ALLOCATE(vt_group_nodes,int,node_group->n_nodes))
 													{
 														node_group->nodes=vt_group_nodes;
 														for (j=0;j<node_group->n_nodes;j++)
 														{
-															fscanf(in_file,"%d",&(node_group->nodes[j]));
+															IO_stream_scan(in_file,"%d",&(node_group->nodes[j]));
 														}
 														node_groups[i]=node_group;
 													}
@@ -3536,10 +3540,11 @@ printf("leave read_volume_texture_from_file\n");
 } /* read_volume_texture_from_file */
 
 int read_volume_texture_from_obj_file(struct VT_volume_texture *texture,
-	FILE *in_file,struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct IO_stream *in_file,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager,int deformable)
 /*******************************************************************************
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Reads the volume <texture> from the obj <in_file>.
@@ -3551,7 +3556,7 @@ important to maintain the connectivities and vertex indices so that .obj files
 can be exported with only vertex positions changed.
 ==============================================================================*/
 {
-	char face_word[MAX_OBJ_VERTICES][128], text[512], *word, matname[128];
+	char face_word[MAX_OBJ_VERTICES][128], *text, *word, matname[128];
 	double v[3],v_min,v_max;
 	float *new_normal_vertices, *normal_vertices,
 		*new_texture_vertices, *texture_vertices;
@@ -3657,20 +3662,20 @@ printf("deallocated\n");
 		/* read in xi ranges */
 		for (i=0;i<3;i++)
 		{
-			fscanf(in_file,"%lf",&((texture->ximin)[i]));
+			IO_stream_scan(in_file,"%lf",&((texture->ximin)[i]));
 /*???debug */
 printf("%g\n",(texture->ximin)[i]);
 		}
 		for (i=0;i<3;i++)
 		{
-			fscanf(in_file,"%lf",&(texture->ximax[i]));
+			IO_stream_scan(in_file,"%lf",&(texture->ximax[i]));
 /*???debug */
 printf("%g\n",(texture->ximax)[i]);
 		}
 /*???debug */
 		for (i=0;i<3;i++)
 		{
-			fscanf(in_file,"%d",&dimension);
+			IO_stream_scan(in_file,"%d",&dimension);
 			texture->dimension[i]=dimension;
 			texture->scalar_field->dimension[i]=dimension;
 			texture->clip_field->dimension[i]=dimension;
@@ -3760,7 +3765,9 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 			n_obj_texture_vertices=0;
 			ALLOCATE(normal_vertices, float, 1);
 			ALLOCATE(texture_vertices, float, 1);
-			while (NULL!=fgets(text,512,in_file))
+			while ((!IO_stream_end_of_stream(in_file))&&
+				IO_stream_read_string(in_file,"[^\n]",&text)&&
+				IO_stream_getc(in_file))
 			{
 				/* parse line */
 				word=strtok(text, " \t\n");
@@ -3785,6 +3792,7 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 						}
 					}
 				}
+				DEALLOCATE(text);
 			}
 #if defined (DEBUG)
 			/*???debug */
@@ -3819,7 +3827,7 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 				ALLOCATE(compiled_vertex_list,struct MC_vertex *,n_obj_vertices) &&
 				ALLOCATE(compiled_triangle_list,struct MC_triangle *,n_obj_triangles))
 			{
-				rewind(in_file);
+				IO_stream_seek(in_file, /*offset*/0, SEEK_SET);
 #if defined (DEBUG)
 				/*???debug */
 				printf("done\n");
@@ -3827,7 +3835,9 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 				vertex_index=0;
 				triangle_index=0;
 				line_number=0;
-				while (NULL!=fgets(text, 512, in_file))
+				while ((!IO_stream_end_of_stream(in_file))&&
+				IO_stream_read_string(in_file,"[^\n]",&text)&&
+				IO_stream_getc(in_file))
 				{
 					line_number++;
 					/* parse line */
@@ -4262,6 +4272,7 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 							}
 						}
 					}
+					DEALLOCATE(text);
 				}
 #if defined (DEBUG)
 				/*???debug */

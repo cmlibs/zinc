@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture.h
 
-LAST MODIFIED : 7 January 2003
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Contains data structures for the 3d volumetric textures to be mapped onto
@@ -16,6 +16,7 @@ xi2, xi3 space.
 #define VOLUME_TEXTURE_H
 
 #include <stdio.h>
+#include "general/io_stream.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -389,11 +390,12 @@ DECLARE_MANAGER_TYPES(VT_volume_texture);
 
 struct Modify_VT_volume_texture_data
 /*******************************************************************************
-LAST MODIFIED : 7 January 2003
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
@@ -464,10 +466,11 @@ Modifier function to set the volume texture from a command.
 ==============================================================================*/
 
 int read_volume_texture_from_file(struct VT_volume_texture *texture,
-	FILE *in_file,struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct IO_stream *in_file,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager);
 /*******************************************************************************
-LAST MODIFIED : 20 June 1996
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Reads the volume <texture> from the <in_file>.
@@ -475,10 +478,11 @@ Reads the volume <texture> from the <in_file>.
 ==============================================================================*/
 
 int read_volume_texture_from_obj_file(struct VT_volume_texture *texture,
-	FILE *in_file,struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct IO_stream *in_file,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager,int deformable);
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Reads the volume <texture> from the obj <in_file>.

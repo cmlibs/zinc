@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.h
 
-LAST MODIFIED : 13 March 2002
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 The data structures used for representing graphical materials.
@@ -28,6 +28,15 @@ Global constants
 Global types
 ------------
 */
+struct IO_stream;
+/*******************************************************************************
+LAST MODIFIED : 6 December 2004
+
+DESCRIPTION :
+Declared here to satisfy function prototype.
+==============================================================================*/
+
+
 struct Material_package;
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003;
@@ -350,11 +359,11 @@ Writes on the command window the commands needed to recreate the <material>.
 The command is started with the string pointed to by <command_prefix>.
 ==============================================================================*/
 
-int file_read_Graphical_material_name(FILE *file,
+int file_read_Graphical_material_name(struct IO_stream *file,
 	struct Graphical_material **material_address,
 	struct MANAGER(Graphical_material) *graphical_material_manager);
 /*******************************************************************************
-LAST MODIFIED : 20 January 1994
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 Reads a material name from a <file>.  Searchs the list of all materials for one

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : io_stream.h
 
-LAST MODIFIED : 18 September 2004
+LAST MODIFIED : 6 December 2004
 
 DESCRIPTION :
 A class to provide a consistent IO interface to files, memory, gzip and bzip
@@ -9,6 +9,8 @@ streams.
 ==============================================================================*/
 #if !defined (IO_STREAM_H)
 #define IO_STREAM_H
+
+#include "general/object.h"
 
 /*
 Global types
@@ -131,6 +133,14 @@ int IO_stream_read_to_memory(struct IO_stream *stream, void **stream_data,
 LAST MODIFIED : 13 September 2004
 
 DESCRIPTION :
+==============================================================================*/
+
+int IO_stream_seek(struct IO_stream *stream, long offset, int whence);
+/*******************************************************************************
+LAST MODIFIED : 6 December 2004
+
+DESCRIPTION :
+Implements the stdio function fseek on stream where possible.
 ==============================================================================*/
 
 int IO_stream_deallocate_read_to_memory(struct IO_stream *stream);

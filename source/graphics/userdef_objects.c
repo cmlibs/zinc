@@ -13,6 +13,7 @@ Used to be in graphics_object.h
 #include <stdio.h>
 #include <math.h>
 #include "general/debug.h"
+#include "general/io_stream.h"
 #include "general/matrix_vector.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
@@ -1182,7 +1183,7 @@ Creates a 7 dof heart surgery robot.
 	return (robot_7dof_object);
 } /* create_robot_7dof */
 
-int file_read_userdef(FILE *file,void *userdef_address_void)
+int file_read_userdef(struct IO_stream *file,void *userdef_address_void)
 /*******************************************************************************
 LAST MODIFIED : 12 August 1998
 
@@ -1206,7 +1207,7 @@ newly created object is put at <*userdef_address>.
 		/* make sure the userdef is initially clear */
 		*userdef_address=(struct GT_userdef *)NULL;
 		/* read the type */
-		fscanf(file,"%d",(int *)&type);
+		IO_stream_scan(file,"%d",(int *)&type);
 		switch (type)
 		{
 			case USERDEF_HAIR:
@@ -1214,17 +1215,17 @@ newly created object is put at <*userdef_address>.
 				if (ALLOCATE(hair,struct Userdef_hair,1))
 				{
 					hair->t=0.0;
-					fscanf(file,"%d",&(hair->haircnt));
+					IO_stream_scan(file,"%d",&(hair->haircnt));
 					for (i=0;i<hair->haircnt;i++)
 					{
-						fscanf(file,"%d",&(hair->hairtypearray[i]));
+						IO_stream_scan(file,"%d",&(hair->hairtypearray[i]));
 						if (hair->hairtypearray[i]>4)
 						{
 							for (k=1;k<16;k++)
 							{
 								for (j=0;j<3;j++)
 								{
-									fscanf(file,"%f",&(hair->hair[i][k][j]));
+									IO_stream_scan(file,"%f",&(hair->hair[i][k][j]));
 								}
 							}
 						}

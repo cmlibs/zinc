@@ -7316,6 +7316,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 					command_data->environment_map_manager,command_data->texture_manager,
 					&(command_data->material_editor_dialog), 
 					command_data->graphics_buffer_package,
+					command_data->io_stream_package,
 					command_data->user_interface);
 				return_code=1;
 			}
@@ -7767,6 +7768,8 @@ Executes a GFX CREATE VTEXTURE command.
 							shift_Parse_state(state,1);
 							if (state->current_token)
 							{
+								modify_VT_volume_texture_data.io_stream_package =
+									command_data->io_stream_package;
 								modify_VT_volume_texture_data.graphical_material_manager=
 									Material_package_get_material_manager(command_data->material_package);
 								modify_VT_volume_texture_data.environment_map_manager=
@@ -15123,6 +15126,8 @@ Executes a GFX MODIFY command.
 				Option_table_add_entry(option_table,"texture",NULL, 
 					(void *)command_data, gfx_modify_Texture);
 				/* vtexture */
+				modify_VT_volume_texture_data.io_stream_package =
+					command_data->io_stream_package;
 				modify_VT_volume_texture_data.graphical_material_manager=
 					Material_package_get_material_manager(command_data->material_package);
 				modify_VT_volume_texture_data.environment_map_manager=
@@ -16419,7 +16424,7 @@ otherwise the file of graphics objects is read.
 					/* open the file */
 					if (return_code=check_suffix(&file_name,".exgobj"))
 					{
-						return_code=file_read_graphics_objects(file_name,
+						return_code=file_read_graphics_objects(file_name, command_data->io_stream_package,
 							Material_package_get_material_manager(command_data->material_package),
 							command_data->graphics_object_list);
 					}
@@ -16637,6 +16642,7 @@ otherwise the wavefront obj file is read.
 					if (return_code=check_suffix(&file_name,".obj"))
 					{
 						return_code=file_read_voltex_graphics_object_from_obj(file_name,
+							command_data->io_stream_package,
 							graphics_object_name, render_type, time, 
 							Material_package_get_material_manager(command_data->material_package),
 							Material_package_get_default_material(command_data->material_package),
