@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 11 September 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -5662,7 +5662,7 @@ Checks if the <field_info> matchs the <element_field_lists>.
 static int list_FE_element_field(struct FE_element_field *element_field,
 	void *dummy_user_data)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 11 September 2001
 
 DESCRIPTION :
 Outputs the information contained by the element field.
@@ -5686,7 +5686,7 @@ Outputs the information contained by the element field.
 			display_message(INFORMATION_MESSAGE,field->name);
 			if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
 			{
-				display_message(INFORMATION_MESSAGE,", %s");
+				display_message(INFORMATION_MESSAGE,", %s",type_string);
 			}
 			else
 			{
@@ -5697,7 +5697,7 @@ Outputs the information contained by the element field.
 			if (type_string=Coordinate_system_type_to_string(
 				field->coordinate_system.type))
 			{
-				display_message(INFORMATION_MESSAGE,", %s");
+				display_message(INFORMATION_MESSAGE,", %s",type_string);
 			}
 			else
 			{
@@ -5706,8 +5706,8 @@ Outputs the information contained by the element field.
 				return_code=0;
 			}
 			number_of_components=field->number_of_components;
-			sprintf(line," #Components=%d\n",number_of_components);
-			display_message(INFORMATION_MESSAGE,line);
+			display_message(INFORMATION_MESSAGE,", #Components=%d\n",
+				number_of_components);
 			element_field_component=element_field->components;
 			i=0;
 			while (return_code&&(i<number_of_components))
@@ -5718,157 +5718,164 @@ Outputs the information contained by the element field.
 					display_message(INFORMATION_MESSAGE,component_name);
 					DEALLOCATE(component_name);
 				}
-				if (*element_field_component)
+				if (GENERAL_FE_FIELD==field->fe_field_type)
 				{
-					display_message(INFORMATION_MESSAGE,".  ");
-					if (((*element_field_component)->basis)&&
-						(basis_type=(*element_field_component)->basis->type))
+					if (*element_field_component)
 					{
-						/*???DB.  Only correct for tensor products */
-						number_of_xi_coordinates= *basis_type;
-						basis_type++;
-						j=number_of_xi_coordinates;
-						while (j>0)
+						display_message(INFORMATION_MESSAGE,".  ");
+						if (((*element_field_component)->basis)&&
+							(basis_type=(*element_field_component)->basis->type))
 						{
-							switch (*basis_type)
+							/*???DB.  Only correct for tensor products */
+							number_of_xi_coordinates= *basis_type;
+							basis_type++;
+							j=number_of_xi_coordinates;
+							while (j>0)
 							{
-								case LINEAR_LAGRANGE:
+								switch (*basis_type)
 								{
-									display_message(INFORMATION_MESSAGE,"linear Lagrange");
-								} break;
-								case QUADRATIC_LAGRANGE:
+									case LINEAR_LAGRANGE:
+									{
+										display_message(INFORMATION_MESSAGE,"linear Lagrange");
+									} break;
+									case QUADRATIC_LAGRANGE:
+									{
+										display_message(INFORMATION_MESSAGE,"quadratic Lagrange");
+									} break;
+									case CUBIC_LAGRANGE:
+									{
+										display_message(INFORMATION_MESSAGE,"cubic Lagrange");
+									} break;
+									case CUBIC_HERMITE:
+									{
+										display_message(INFORMATION_MESSAGE,"cubic Hermite");
+									} break;
+									case LAGRANGE_HERMITE:
+									{
+										display_message(INFORMATION_MESSAGE,"Lagrange Hermite");
+									} break;
+									case HERMITE_LAGRANGE:
+									{
+										display_message(INFORMATION_MESSAGE,"Hermite Lagrange");
+									} break;
+								}
+								if (j>1)
 								{
-									display_message(INFORMATION_MESSAGE,"quadratic Lagrange");
-								} break;
-								case CUBIC_LAGRANGE:
-								{
-									display_message(INFORMATION_MESSAGE,"cubic Lagrange");
-								} break;
-								case CUBIC_HERMITE:
-								{
-									display_message(INFORMATION_MESSAGE,"cubic Hermite");
-								} break;
-								case LAGRANGE_HERMITE:
-								{
-									display_message(INFORMATION_MESSAGE,"Lagrange Hermite");
-								} break;
-								case HERMITE_LAGRANGE:
-								{
-									display_message(INFORMATION_MESSAGE,"Hermite Lagrange");
-								} break;
+									display_message(INFORMATION_MESSAGE,"*");
+								}
+								basis_type += j;
+								j--;
 							}
-							if (j>1)
-							{
-								display_message(INFORMATION_MESSAGE,"*");
-							}
-							basis_type += j;
-							j--;
 						}
-					}
-					if ((*element_field_component)->modify)
-					{
-						display_message(INFORMATION_MESSAGE,", modify");
+						if ((*element_field_component)->modify)
+						{
+							display_message(INFORMATION_MESSAGE,", modify");
+						}
+						else
+						{
+							display_message(INFORMATION_MESSAGE,", no modify");
+						}
+						switch ((*element_field_component)->type)
+						{
+							case STANDARD_NODE_TO_ELEMENT_MAP:
+							{
+								display_message(INFORMATION_MESSAGE,", standard node based\n");
+								if (node_to_element_map=(*element_field_component)->map.
+									standard_node_based.node_to_element_maps)
+								{
+									j=(*element_field_component)->map.standard_node_based.
+										number_of_nodes;
+									while (j>0)
+									{
+										if (*node_to_element_map)
+										{
+											number_of_nodal_values=(*node_to_element_map)->
+												number_of_nodal_values;
+											sprintf(line,"      %d.  #Values=%d\n",
+												(*node_to_element_map)->node_index,
+												number_of_nodal_values);
+											display_message(INFORMATION_MESSAGE,line);
+											if (nodal_value_index=(*node_to_element_map)->
+												nodal_value_indices)
+											{
+												sprintf(line,"        Value indices:%n",&line_length);
+												for (k=number_of_nodal_values;k>0;k--)
+												{
+													sprintf(line+line_length," %d%n",*nodal_value_index,
+														&number_of_characters);
+													line_length += number_of_characters;
+													nodal_value_index++;
+												}
+												sprintf(line+line_length,"\n");
+												display_message(INFORMATION_MESSAGE,line);
+											}
+											if (scale_factor_index=(*node_to_element_map)->
+												scale_factor_indices)
+											{
+												sprintf(line,"        Scale factor indices:%n",
+													&line_length);
+												for (k=number_of_nodal_values;k>0;k--)
+												{
+													sprintf(line+line_length," %d%n",*scale_factor_index,
+														&number_of_characters);
+													line_length += number_of_characters;
+													scale_factor_index++;
+												}
+												sprintf(line+line_length,"\n");
+												display_message(INFORMATION_MESSAGE,line);
+											}
+										}
+										j--;
+										node_to_element_map++;
+									}
+								}
+							} break;
+							case GENERAL_NODE_TO_ELEMENT_MAP:
+							{
+								display_message(INFORMATION_MESSAGE,", general node based\n");
+							} break;
+							case FIELD_TO_ELEMENT_MAP:
+							{
+								display_message(INFORMATION_MESSAGE,", field to element\n");
+							} break;
+							case ELEMENT_GRID_MAP:
+							{
+								display_message(INFORMATION_MESSAGE,", grid based\n");
+								number_in_xi=(*element_field_component)->map.element_grid_based.
+									number_in_xi;
+								number_of_xi_coordinates=
+									((*element_field_component)->basis->type)[0];
+								sprintf(line,"      %n",&line_length);
+								for (j=0;j<number_of_xi_coordinates;j++)
+								{
+									if (j>0)
+									{
+										sprintf(line+line_length,", ");
+										line_length += 2;
+									}
+									sprintf(line+line_length,"#xi%d=%d%n",j+1,number_in_xi[j],
+										&number_of_characters);
+									line_length += number_of_characters;
+								}
+								sprintf(line+line_length,"\n");
+								display_message(INFORMATION_MESSAGE,line);
+							} break;
+							default:
+							{
+								display_message(INFORMATION_MESSAGE,"\n");
+							} break;
+						}
 					}
 					else
 					{
-						display_message(INFORMATION_MESSAGE,", no modify");
-					}
-					switch ((*element_field_component)->type)
-					{
-						case STANDARD_NODE_TO_ELEMENT_MAP:
-						{
-							display_message(INFORMATION_MESSAGE,", standard node based\n");
-							if (node_to_element_map=(*element_field_component)->map.
-								standard_node_based.node_to_element_maps)
-							{
-								j=(*element_field_component)->map.standard_node_based.
-									number_of_nodes;
-								while (j>0)
-								{
-									if (*node_to_element_map)
-									{
-										number_of_nodal_values=(*node_to_element_map)->
-											number_of_nodal_values;
-										sprintf(line,"      %d.  #Values=%d\n",
-											(*node_to_element_map)->node_index,
-											number_of_nodal_values);
-										display_message(INFORMATION_MESSAGE,line);
-										if (nodal_value_index=(*node_to_element_map)->
-											nodal_value_indices)
-										{
-											sprintf(line,"        Value indices:%n",&line_length);
-											for (k=number_of_nodal_values;k>0;k--)
-											{
-												sprintf(line+line_length," %d%n",*nodal_value_index,
-													&number_of_characters);
-												line_length += number_of_characters;
-												nodal_value_index++;
-											}
-											sprintf(line+line_length,"\n");
-											display_message(INFORMATION_MESSAGE,line);
-										}
-										if (scale_factor_index=(*node_to_element_map)->
-											scale_factor_indices)
-										{
-											sprintf(line,"        Scale factor indices:%n",
-												&line_length);
-											for (k=number_of_nodal_values;k>0;k--)
-											{
-												sprintf(line+line_length," %d%n",*scale_factor_index,
-													&number_of_characters);
-												line_length += number_of_characters;
-												scale_factor_index++;
-											}
-											sprintf(line+line_length,"\n");
-											display_message(INFORMATION_MESSAGE,line);
-										}
-									}
-									j--;
-									node_to_element_map++;
-								}
-							}
-						} break;
-						case GENERAL_NODE_TO_ELEMENT_MAP:
-						{
-							display_message(INFORMATION_MESSAGE,", general node based\n");
-						} break;
-						case FIELD_TO_ELEMENT_MAP:
-						{
-							display_message(INFORMATION_MESSAGE,", field to element\n");
-						} break;
-						case ELEMENT_GRID_MAP:
-						{
-							display_message(INFORMATION_MESSAGE,", grid based\n");
-							number_in_xi=
-								(*element_field_component)->map.element_grid_based.number_in_xi;
-							number_of_xi_coordinates=
-								((*element_field_component)->basis->type)[0];
-							sprintf(line,"      %n",&line_length);
-							for (j=0;j<number_of_xi_coordinates;j++)
-							{
-								if (j>0)
-								{
-									sprintf(line+line_length,", ");
-									line_length += 2;
-								}
-								printf(line+line_length,"#xi%d=%d%n",j+1,number_in_xi[j],
-									&number_of_characters);
-								line_length += number_of_characters;
-							}
-							sprintf(line+line_length,"\n");
-							display_message(INFORMATION_MESSAGE,line);
-						} break;
-						default:
-						{
-							display_message(INFORMATION_MESSAGE,"\n");
-						} break;
+						display_message(ERROR_MESSAGE,
+							"list_FE_element_field.  Missing element field component");
+						return_code=0;
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"list_FE_element_field.  Missing element field component");
-					return_code=0;
+					display_message(INFORMATION_MESSAGE,"\n");
 				}
 				element_field_component++;
 				i++;
