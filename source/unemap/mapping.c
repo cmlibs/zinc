@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 3 February 2004
+LAST MODIFIED : 19 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -891,18 +891,19 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 				/* 1st field contains coords, possibly more than one version */
 				component.field=position_field;
 				component.number = 0;
-				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(node,
-					position_field,0);
-				component_value_types=get_FE_node_field_component_nodal_value_types(node,
-					position_field,0);
+				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(
+					node,position_field,0);
+				component_value_types=get_FE_node_field_component_nodal_value_types(
+					node,position_field,0);
 				value=coords_comp_0;
 				for(i=0;i<coords_comp_0_num_versions;i++)
 				{
 					/*derivatives+1 as value then derivatives */
 					for(j=0;j<number_of_derivatives+1;j++)
 					{
-						return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-							component_value_types[j],/*time*/0,*value)); /*lambda,theta,x*/
+						/* lambda, theta, x */
+						return_code=(return_code&&set_FE_nodal_FE_value_value(node,
+							&component,i,component_value_types[j],/*time*/0,*value));
 						value++;
 					}
 				}
@@ -910,14 +911,16 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 				component.number = 1;
 				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,/*time*/0,coords_comp_1[i])); /*mu,r,y*/
+					/* mu, r, y */
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,
+						i,FE_NODAL_VALUE,/*time*/0,coords_comp_1[i]));
 				}
 				component.number = 2;
 				for(i=0;i<coords_comp_2_num_versions;i++)
 				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,/*time*/0,coords_comp_2[i])); /*theta,z,z */
+					/* theta, z, z */
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,
+						i,FE_NODAL_VALUE,/*time*/0,coords_comp_2[i]));
 				}
 			} break;
 			case PATCH: /* x,y */
@@ -927,14 +930,16 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 				component.number = 0;
 				for(i=0;i<coords_comp_0_num_versions;i++)
 				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,/*time*/0,coords_comp_0[i])); /*x*/
+					/* x */
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,
+						&component,i,FE_NODAL_VALUE,/*time*/0,coords_comp_0[i]));
 				}
 				component.number = 1;
 				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,/*time*/0,coords_comp_1[i])); /*y*/
+					/* y */
+					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,
+						i,FE_NODAL_VALUE,/*time*/0,coords_comp_1[i]));
 				}
 				component.number = 2;
 			} break;
@@ -944,7 +949,7 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 					"  Invalid region_type");
 				node=(struct FE_node *)NULL;
 			} break;
-		}	/* switch () */
+		}
 	}
 	else
 	{
@@ -3445,7 +3450,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 		{
 			if (delaunay_map) /* the interpolation_type, stored in the map?*/
 			{
-				/* do contour on delaunay*/
+				/* do contour on Delaunay*/
 				group=get_map_3d_package_delaunay_torso_group(map_3d_package);
 			}
 			else
@@ -3804,7 +3809,7 @@ map_electode_position field
 	ENTER(make_and_add_map_electrode_position_fields);
 	if (unemap_package&&rig_node_group&&region)
 	{
-		/* if delaunay, just use the electrode_position_field */
+		/* if Delaunay, just use the electrode_position_field */
 		if (delaunay_map)
 		{
 			map_electrode_position_field=get_Region_electrode_position_field(region);
@@ -4558,7 +4563,7 @@ static int map_is_delaunay(struct Map *map)
 LAST MODIFIED : 5 February 2002
 
 DESCRIPTION :
-Determines if a map is delaunay, baed upton projection type and if the default
+Determines if a map is Delaunay, baed upton projection type and if the default
 torso is loaded
 ==============================================================================*/
 {
@@ -5381,7 +5386,7 @@ static struct FE_element *make_delaunay_template_element(
 LAST MODIFIED : 10 May 2003
 
 DESCRIPTION :
-Makes and accesses and returns the template element for the delaunay
+Makes and accesses and returns the template element for the Delaunay
 map. <data_field> and <coordinate_field> are defined at the element.
 
 Therefore must deaccess the returned element outside this function
@@ -5428,7 +5433,7 @@ Therefore must deaccess the returned element outside this function
 				data_coordinate_system=get_FE_field_coordinate_system(data_field);
 				coordinate_system=get_FE_field_coordinate_system(coordinate_field);
 				/* check fields have correct number of components and coordinate_system */
-				/* delaunay can only be done on electrodes with RC coord sys, arranged*/
+				/* Delaunay can only be done on electrodes with RC coord sys, arranged*/
 				/* approximately in a cylinder */
 				if ((1==get_FE_field_number_of_components(data_field))&&
 					(data_coordinate_system->type==NOT_APPLICABLE)&&
@@ -5646,7 +5651,7 @@ static int make_delaunay_node_and_element_group(
 LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-Given the <source_nodes>, performs delaunay triangularisation on them,
+Given the <source_nodes>, performs Delaunay triangularisation on them,
 and produces elements in a new Cmiss/FE_region from these triangles.
 Defines the <electrode_postion_field> and a data field at the elements.
 
@@ -5707,12 +5712,12 @@ Stores group in Region <map_3d_package>
 				vertices_data.position_field=electrode_postion_field;
 				if ((return_code = FE_region_for_each_FE_node(source_nodes,
 					put_electrode_pos_into_vertices, (void *)&vertices_data)) &&
-					/*perform the delaunay triangularisation*/
+					/*perform the Delaunay triangularisation*/
 					(return_code = cylinder_delaunay(number_of_vertices,vertices,
-						&number_of_triangles,&triangles)))
+					&number_of_triangles,&triangles)))
 				{
 					return_code = 1;
-					/* create delaunay region so can do graphics */
+					/* create Delaunay region so can do graphics */
 					if (delaunay_group = Cmiss_region_get_or_create_child_FE_region(
 						root_cmiss_region, delaunay_group_name,
 						/*master_fe_region*/root_fe_region,
@@ -5850,7 +5855,7 @@ Stores group in Region <map_3d_package>
 				{
 					display_message(ERROR_MESSAGE,
 						"make_delaunay_node_and_element_group.  "
-						"Could not do delaunay triangularisation");
+						"Could not do Delaunay triangularisation");
 					return_code = 0;
 				}
 				if (template_element)
@@ -5921,7 +5926,7 @@ Assumes signal_field is a time based FE_value array field.
 ??JW This function is an interim meaure until we are able to set array fields
 at elements (or any field other than fe_vale fields at elements).
 cf map_set_electrode_colour_from_time
-===============================================================================*/
+==============================================================================*/
 {
 	enum Value_type value_type;
 	int return_code;
@@ -6045,7 +6050,7 @@ static int make_and_set_delaunay(struct Region *region,
 LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-Makes and/or sets the nodal values in the delaunay node and element groups
+Makes and/or sets the nodal values in the Delaunay node and element groups
 ==============================================================================*/
 {
 	int return_code;
@@ -6074,8 +6079,8 @@ Makes and/or sets the nodal values in the delaunay node and element groups
 						"signal field, gain field or offset field not found ");
 			return_code=0;
 		}
-		/* check if haven't made delaunay groups yet, or for newly rejected/accpted
-			 electrodes to see if remake delaunay groups */
+		/* check if haven't made Delaunay groups yet, or for newly rejected/accpted
+			 electrodes to see if remake Delaunay groups */
 		map_3d_package=get_Region_map_3d_package(region);
 		if (nodes_rejected_or_accepted||(!map_3d_package)||(map_3d_package&&
 			(!get_map_3d_package_delaunay_torso_group(map_3d_package))))
@@ -6085,7 +6090,7 @@ Makes and/or sets the nodal values in the delaunay node and element groups
 				/*this will do a deaccess*/
 				set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 			}
-			/*  make delaunay groups */
+			/*  make Delaunay groups */
 			if ((!map_3d_package) || (map_3d_package &&
 				(!get_map_3d_package_delaunay_torso_group(map_3d_package))))
 			{
@@ -6099,7 +6104,7 @@ Makes and/or sets the nodal values in the delaunay node and element groups
 				else
 				{
 					display_message(ERROR_MESSAGE,"make_and_set_delaunay"
-							" failed to make delaunay node and element groups");
+							" failed to make Delaunay node and element groups");
 				}
 			}/* if ((!map_3d_package)||(map_3d_package&& */
 		}/* (nodes_rejected_or_accepted) */
@@ -6464,16 +6469,20 @@ NULL if not successful.
 			map->contour_thickness=contour_thickness;
 			map->undecided_accepted=0;
 			map->rig_pointer=rig_pointer;
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),map,
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),map,
 				resources_1,XtNumber(resources_1),NULL);
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&membrane_smoothing_ten_thous,resources_2,XtNumber(resources_2),NULL);
 			map->membrane_smoothing=(float)membrane_smoothing_ten_thous/10000;
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&plate_bending_smoothing_ten_tho,resources_3,XtNumber(resources_3),
 				NULL);
 			map->plate_bending_smoothing=(float)plate_bending_smoothing_ten_tho/10000;
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&finite_element_interpolation,resources_4,XtNumber(resources_4),
 				NULL);
 			if (fuzzy_string_compare(finite_element_interpolation,"bicubic"))
@@ -6491,7 +6500,8 @@ NULL if not successful.
 					map->interpolation_type=NO_INTERPOLATION;
 				}
 			}
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&electrodes_marker_type,resources_5,XtNumber(resources_5),
 				NULL);
 			if (fuzzy_string_compare(electrodes_marker_type,"square"))
@@ -6509,14 +6519,16 @@ NULL if not successful.
 					map->electrodes_marker_type=PLUS_ELECTRODE_MARKER;
 				}
 			}
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&(map->electrodes_marker_size),resources_6,XtNumber(resources_6),
 				NULL);
 			if (map->electrodes_marker_size<1)
 			{
 				map->electrodes_marker_size=1;
 			}
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&fixed_automatic_range,resources_7,XtNumber(resources_7),
 				NULL);
 			if (fuzzy_string_compare(fixed_automatic_range,"automatic"))
@@ -6528,13 +6540,16 @@ NULL if not successful.
 				map->fixed_range=1;
 			}
 			map->range_changed=0;
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&(map->minimum_value),resources_8,XtNumber(resources_8),
 				NULL);
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&(map->maximum_value),resources_9,XtNumber(resources_9),
 				NULL);
-			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(user_interface),
 				&draw_on_update,resources_10,XtNumber(resources_10),NULL);
 			if (fuzzy_string_compare(draw_on_update,"true"))
 			{
@@ -6647,14 +6662,14 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 
 static int map_2d_delaunay(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 19 April 2004
 
 DESCRIPTION :
-given <map>, do a delaunay triangluarisation of map->electrodes.
+given <map>, do a Delaunay triangluarisation of map->electrodes.
 Assumes the map is of type TORSO, and hence is cylindrical, and centred about
 the z axis.
-The results are stored as map->number_of_gouraud_triangles, the number of delaunay
-triagles formed by the electrodes, and map->triangle_electrode_indices,
+The results are stored as map->number_of_gouraud_triangles, the number of
+Delaunay triangles formed by the electrodes, map->triangle_electrode_indices,
 and array of length 3*number_of_gouraud_triangles containing indices into
 map->electrodes of pointing to the triangle's electrodes.
 No cutting of the cylinder for 2d projection is done. This happens after 2d
@@ -6662,13 +6677,14 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 ==============================================================================*/
 {
 	char undecided_accepted;
+	enum Region_type region_type;
 	float *vertex,*vertices;
 	int found,i,index,j,*map_electrode_triangles,number_of_electrodes,
 		number_of_triangles,number_of_accepted_triangles,number_of_vertices,
 		return_code,*triangles,*triangle_vertex,triangle_v0_index,
 		triangle_v1_index,triangle_v2_index;
-	struct Device **accepted_triangle_electrodes,**electrode,**triangle_electrodes,
-		**triangle_electrode,*device;
+	struct Device **accepted_triangle_electrodes,**electrode,
+		**triangle_electrodes,**triangle_electrode,*device;
 	struct Device_description *description;
 
 	ENTER(map_2d_delaunay);
@@ -6695,8 +6711,8 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 		number_of_vertices=0;
 		electrode=map->electrodes;
 		number_of_electrodes=0;
-		/*count the number of vertices = number of unrejected electrodes in map */
-		while(number_of_electrodes<map->number_of_electrodes)
+		/* count the number of vertices = number of unrejected electrodes in map */
+		while (number_of_electrodes<map->number_of_electrodes)
 		{
 			/*if we've got an unrejected electrode */
 			if (((*electrode)->signal->status==ACCEPTED)||
@@ -6706,135 +6722,153 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 			}
 			electrode++;
 			number_of_electrodes++;
-		}/*while(number_of_devices<rig->number_of_devices)*/
-		/*allocate space for x,y,z vertices and the triangle_electrodes */
-		if (ALLOCATE(vertices,float,number_of_vertices*3)&&
-			ALLOCATE(triangle_electrodes,struct Device *,number_of_vertices))
+		}
+		if (0<number_of_electrodes)
 		{
-			/*for unrejected electrodes,store the vertex values & electrode/device*/
-			electrode=map->electrodes;
-			number_of_electrodes=0;
-			vertex=vertices;
-			triangle_electrode=triangle_electrodes;
-			while(number_of_electrodes<map->number_of_electrodes)
+			/* allocate space for x,y,z vertices and the triangle_electrodes */
+			if (ALLOCATE(vertices,float,number_of_vertices*3)&&
+				ALLOCATE(triangle_electrodes,struct Device *,number_of_vertices))
 			{
-				description=(*electrode)->description;
-				/*if we've got an unrejected electrode */
-				if (((*electrode)->signal->status==ACCEPTED)||
-					(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
+				/* for unrejected electrodes, store the vertex values and
+					electrode/device */
+				electrode=map->electrodes;
+				region_type=(*electrode)->description->region->type;
+				number_of_electrodes=0;
+				vertex=vertices;
+				triangle_electrode=triangle_electrodes;
+				while(number_of_electrodes<map->number_of_electrodes)
 				{
-					*vertex=(description->properties).electrode.position.x;
-					vertex++;
-					*vertex=(description->properties).electrode.position.y;
-					vertex++;
-					*vertex=(description->properties).electrode.position.z;
-					vertex++;
-					*triangle_electrode=*electrode;
-					triangle_electrode++;
-				}
-				electrode++;
-				number_of_electrodes++;
-			}/*while(number_of_devices<rig->number_of_devices)*/
-			/*perform deluaney triangularization */
-			if (return_code=cylinder_delaunay(number_of_vertices,vertices,
-				&number_of_triangles,&triangles))
-			{
-				/*accepted_triangles contains the Device's of the vertices triangles */
-				if (ALLOCATE(accepted_triangle_electrodes,struct Device *,
-					number_of_triangles*3))
-				{
-					triangle_vertex=triangles;
-					number_of_accepted_triangles=0;
-					for(i=0;i<number_of_triangles;i++)
+					description=(*electrode)->description;
+					/*if we've got an unrejected electrode */
+					if (((*electrode)->signal->status==ACCEPTED)||
+						(((*electrode)->signal->status==UNDECIDED)&&undecided_accepted))
 					{
-						triangle_v0_index=*triangle_vertex;
-						triangle_vertex++;
-						triangle_v1_index=*triangle_vertex;
-						triangle_vertex++;
-						triangle_v2_index=*triangle_vertex;
-						triangle_vertex++;
-						/*store Device's triangle electrodes*/
-						number_of_accepted_triangles++;
-						index=(number_of_accepted_triangles-1)*3;
-						/*vertex 0,1,2*/
-						accepted_triangle_electrodes[index]=
-							triangle_electrodes[triangle_v0_index];
-						accepted_triangle_electrodes[index+1]=
-							triangle_electrodes[triangle_v1_index];
-						accepted_triangle_electrodes[index+2]=
-							triangle_electrodes[triangle_v2_index];
+						*vertex=(description->properties).electrode.position.x;
+						vertex++;
+						*vertex=(description->properties).electrode.position.y;
+						vertex++;
+						if (PATCH!=region_type)
+						{
+							*vertex=(description->properties).electrode.position.z;
+							vertex++;
+						}
+						*triangle_electrode= *electrode;
+						triangle_electrode++;
 					}
-					/*map_electrode_triangles contains index in map->electrodes array of */
-					/*triangle's vertices/electrodes */
-					if (ALLOCATE(map_electrode_triangles,int,number_of_triangles*3))
+					electrode++;
+					number_of_electrodes++;
+				}
+				/* perform Delaunay triangularization */
+				if (PATCH==region_type)
+				{
+					return_code=plane_delaunay(number_of_vertices,vertices,
+						&number_of_triangles,&triangles);
+				}
+				else
+				{
+					return_code=cylinder_delaunay(number_of_vertices,vertices,
+						&number_of_triangles,&triangles);
+				}
+				if (return_code)
+				{
+					/* accepted_triangles contains the Device's of the vertices
+						triangles */
+					if (ALLOCATE(accepted_triangle_electrodes,struct Device *,
+						number_of_triangles*3))
 					{
-						return_code=1;
-						/*match device->number to position in map->electrodes array */
-						i=0;
-						while((i<number_of_accepted_triangles*3)&&(return_code))
+						triangle_vertex=triangles;
+						number_of_accepted_triangles=0;
+						for(i=0;i<number_of_triangles;i++)
 						{
-							device=accepted_triangle_electrodes[i];
-							j=0;
-							found=0;
-							electrode=map->electrodes;
-							while((j<map->number_of_electrodes)&&(!found))
+							triangle_v0_index=*triangle_vertex;
+							triangle_vertex++;
+							triangle_v1_index=*triangle_vertex;
+							triangle_vertex++;
+							triangle_v2_index=*triangle_vertex;
+							triangle_vertex++;
+							/* store Device's triangle electrodes */
+							number_of_accepted_triangles++;
+							index=(number_of_accepted_triangles-1)*3;
+							/* vertex 0,1,2 */
+							accepted_triangle_electrodes[index]=
+								triangle_electrodes[triangle_v0_index];
+							accepted_triangle_electrodes[index+1]=
+								triangle_electrodes[triangle_v1_index];
+							accepted_triangle_electrodes[index+2]=
+								triangle_electrodes[triangle_v2_index];
+						}
+						/* map_electrode_triangles contains index in map->electrodes array
+							of triangle's vertices/electrodes */
+						if (ALLOCATE(map_electrode_triangles,int,number_of_triangles*3))
+						{
+							return_code=1;
+							/*match device->number to position in map->electrodes array */
+							i=0;
+							while((i<number_of_accepted_triangles*3)&&(return_code))
 							{
-								if ((*electrode)==device)
+								device=accepted_triangle_electrodes[i];
+								j=0;
+								found=0;
+								electrode=map->electrodes;
+								while((j<map->number_of_electrodes)&&(!found))
 								{
-									map_electrode_triangles[i]=j;
-									found=1;
-								}
-								else
+									if ((*electrode)==device)
+									{
+										map_electrode_triangles[i]=j;
+										found=1;
+									}
+									else
+									{
+										j++;
+										electrode++;
+									}
+								}/* while((j<map->number_of_electrodes)&&(!found)) */
+								if (!found)
 								{
-									j++;
-									electrode++;
+									display_message(ERROR_MESSAGE,
+										"map_2d_delaunay. unmatched triangle vertex");
+									return_code=0;
 								}
-							}/* while((j<map->number_of_electrodes)&&(!found)) */
-							if (!found)
+								i++;
+							}/* while((i<number_of_accepted_triangles*3)&&(return_code)) */
+							if (return_code)
 							{
-								display_message(ERROR_MESSAGE,
-									"map_2d_delaunay. unmatched triangle vertex");
-								return_code=0;
+								map->number_of_gouraud_triangles=number_of_accepted_triangles;
+								map->triangle_electrode_indices=map_electrode_triangles;
 							}
-							i++;
-						}/* while((i<number_of_accepted_triangles*3)&&(return_code)) */
-						if (return_code)
+						}
+						else
 						{
-							map->number_of_gouraud_triangles=number_of_accepted_triangles;
-							map->triangle_electrode_indices=map_electrode_triangles;
+							display_message(ERROR_MESSAGE,
+								"map_2d_delaunay. Out of memory for map_electrode_triangles");
+							return_code=0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"map_2d_delaunay. Out of memory for map_electrode_triangles");
+							"map_2d_delaunay. Out of memory for accepted_triangles");
 						return_code=0;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"map_2d_delaunay. Out of memory for accepted_triangles");
+						"map_2d_delaunay. *_delaunay failed");
 					return_code=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"map_2d_delaunay. cylinder_delaunay failed");
+					"map_2d_delaunay. Out of memory for vertices/electrode_numbers");
 				return_code=0;
 			}
+			DEALLOCATE(vertices);
+			DEALLOCATE(triangle_electrodes);
+			DEALLOCATE(triangles);
+			DEALLOCATE(accepted_triangle_electrodes);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"map_2d_delaunay. Out of memory for vertices/electrode_numbers");
-			return_code=0;
-		}
-		DEALLOCATE(vertices);
-		DEALLOCATE(triangle_electrodes);
-		DEALLOCATE(triangles);
-		DEALLOCATE(accepted_triangle_electrodes);
 	}
 	else
 	{
@@ -7266,7 +7300,8 @@ LAST MODIFIED : 20 September  2001
 DESCRIPTION :
 Calls update_colour_map_unemap_original, the relevant function twice,
 as for BLUE_WHITE_RED_SPECTRUM need to do (something in)
-update_colour_map_unemap_original again, as  fix_minimum, fix_maximum cause problems
+update_colour_map_unemap_original again, as  fix_minimum, fix_maximum cause
+problems
 ??JW Fix this bug!
 ==============================================================================*/
 {
@@ -7290,7 +7325,8 @@ update_colour_map_unemap_original again, as  fix_minimum, fix_maximum cause prob
 	return (return_code);
 }
 #if defined (UNEMAP_USE_3D)
-int map_remove_torso_arm_labels(struct Map_drawing_information *drawing_information)/*FOR AJP*/
+int map_remove_torso_arm_labels(
+	struct Map_drawing_information *drawing_information)/*FOR AJP*/
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
@@ -7988,7 +8024,7 @@ opengl texture reasons (at least on the SGI).
 			{
 				DEALLOCATE(map->texture_image);
 			}
-			/* need to delaunay/gouraud information */
+			/* need to Delaunay/gouraud information */
 			x_offset=(texture_x_length)/2;/*-(-PI*texture_x_length/2PI)*/
 			y_offset=-((z_min*(texture_y_length))/z_range);
 			electrode_postion_field=get_Region_electrode_position_field(region);
@@ -7998,9 +8034,9 @@ opengl texture reasons (at least on the SGI).
 			if (ALLOCATE(vertices,float,/*x,y,z*/3*number_of_electrodes)&&
 				ALLOCATE(map->electrode_tex_x,int,number_of_electrodes)&&
 				ALLOCATE(map->electrode_tex_y,int,number_of_electrodes)&&
-				ALLOCATE(map->electrode_rgbs,unsigned char,/*r,g,b*/3*number_of_electrodes)&&
+				ALLOCATE(map->electrode_rgbs,unsigned char,3*number_of_electrodes)&&
 				ALLOCATE(map->texture_image,unsigned char,
-					3*texture_x_length*texture_y_length))
+				3*texture_x_length*texture_y_length))
 			{
 				map->texture_x_length=texture_x_length;
 				map->texture_y_length=texture_y_length;
@@ -8010,9 +8046,9 @@ opengl texture reasons (at least on the SGI).
 				vertices_data.position_field=electrode_postion_field;
 				if ((success = FE_region_for_each_FE_node(unrejected_node_group,
 					put_electrode_pos_into_vertices, (void *)&vertices_data)) &&
-					/*perform the delaunay triangularisation*/
+					/*perform the Delaunay triangularisation*/
 					(success=cylinder_delaunay(number_of_electrodes,vertices,
-						&map->number_of_gouraud_triangles,&map->triangle_electrode_indices)))
+					&map->number_of_gouraud_triangles,&map->triangle_electrode_indices)))
 				{
 					/* make a node_order_info, so can match nodes to vertices  */
 					if ((node_order_info=CREATE(FE_node_order_info)(0))&&
@@ -8026,15 +8062,16 @@ opengl texture reasons (at least on the SGI).
 							electrode_node=get_FE_node_order_info_node(node_order_info,i);
 							/*set up map->electrode_tex_x, map->electrode_tex_y*/
 							component.number=0;
-							get_FE_nodal_FE_value_value(electrode_node,&component,0,FE_NODAL_VALUE,
-								/*time*/0,&x);
+							get_FE_nodal_FE_value_value(electrode_node,&component,0,
+								FE_NODAL_VALUE,/*time*/0,&x);
 							component.number=1;
-							get_FE_nodal_FE_value_value(electrode_node,&component,0,FE_NODAL_VALUE,
-								/*time*/0,&y);
+							get_FE_nodal_FE_value_value(electrode_node,&component,0,
+								FE_NODAL_VALUE,/*time*/0,&y);
 							component.number=2;
-							get_FE_nodal_FE_value_value(electrode_node,&component,0,FE_NODAL_VALUE,
-								/*time*/0,&z_rc);
-							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
+							get_FE_nodal_FE_value_value(electrode_node,&component,0,
+								FE_NODAL_VALUE,/*time*/0,&z_rc);
+							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,
+								(float *)NULL);
 							map->electrode_tex_x[i]=
 								(int)(((texture_x_length-1)/(2*PI))*theta+x_offset);
 							map->electrode_tex_y[i]=
@@ -8703,7 +8740,8 @@ Removes 3d drawing for non-current region(s).
 							else
 							{
 								/* Show the map element surface */
-								if (((region->type==TORSO)&&default_torso_loaded)||direct_on_smooth_torso)
+								if (((region->type==TORSO)&&default_torso_loaded)||
+									direct_on_smooth_torso)
 								{
 									/* do smooth torso surface*/
 									group = get_map_3d_package_mapped_torso_group(map_3d_package);
@@ -8714,7 +8752,8 @@ Removes 3d drawing for non-current region(s).
 									group = get_map_3d_package_group(map_3d_package);
 								}
 							}
-							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
+							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't
+								use them!*/
 							if ((map->interpolation_type==NO_INTERPOLATION)||
 								(map->colour_option==HIDE_COLOUR))
 							{
@@ -8728,9 +8767,9 @@ Removes 3d drawing for non-current region(s).
 									get_map_drawing_information_no_interpolation_colour
 									(drawing_information),
 									get_unemap_package_potential_time_object(unemap_package),
-									get_map_drawing_information_user_interface(drawing_information),
-									delaunay_map,!(map->fixed_range),
-									(struct Texture *)NULL,(struct Computed_field *)NULL);
+									get_map_drawing_information_user_interface(
+										drawing_information),delaunay_map,!(map->fixed_range),
+										(struct Texture *)NULL,(struct Computed_field *)NULL);
 							}
 							else if (direct_on_smooth_torso)
 							{
@@ -8744,8 +8783,9 @@ Removes 3d drawing for non-current region(s).
 									get_map_drawing_information_no_interpolation_colour
 									(drawing_information),
 									get_unemap_package_potential_time_object(unemap_package),
-									get_map_drawing_information_user_interface(drawing_information),
-									1/*direct_interpolation*/,!(map->fixed_range),skin_texture,texture_coords);
+									get_map_drawing_information_user_interface(
+									drawing_information),1/*direct_interpolation*/,
+									!(map->fixed_range),skin_texture,texture_coords);
 							}
 							else
 							{
@@ -8758,13 +8798,14 @@ Removes 3d drawing for non-current region(s).
 									(drawing_information),
 									spectrum,data_field,(struct Colour*)NULL,
 									get_unemap_package_potential_time_object(unemap_package),
-									get_map_drawing_information_user_interface(drawing_information),
-									delaunay_map, !(map->fixed_range),
+									get_map_drawing_information_user_interface(
+									drawing_information),delaunay_map, !(map->fixed_range),
 									(struct Texture *)NULL,(struct Computed_field *)NULL);
 							}
 						} /*if (map->interpolation_type==NO_INTERPOLATION)*/
 						/* can't do electrodes on default_torso surface yet*/
-						/*(possibly)  make the map_electrode_position_field, add to the rig nodes*/
+						/*(possibly)  make the map_electrode_position_field, add to the rig
+							nodes*/
 						if ((region->type!=TORSO)||(!(default_torso_loaded&&
 							(!delaunay_map)&&direct_on_smooth_torso)))
 						{
@@ -8804,16 +8845,18 @@ Removes 3d drawing for non-current region(s).
 					/*signals(electrodes). Remove the electrode glyphs, so only get */
 					/*range from surface(s). Similarly for DIRECT, as the electrodes*/
 					/* include rejected signals, whcih will mess up range. */
-					/* Also remove electodes for default torso surface, as can't display these yet */
-					/* NO_INTERPOLATION-map range comes from the signals (i.e electrodes) */
+					/* Also remove electodes for default torso surface, as can't display
+						these yet */
+					/* NO_INTERPOLATION-map range comes from the signals
+						(i.e electrodes) */
 					if (map->interpolation_type==NO_INTERPOLATION)
 					{
 						map_define_scaled_offset_signal_at_time(unemap_package);
 						get_rig_node_group_signal_min_max_at_time(
 							get_Rig_all_devices_rig_node_group(rig),
-							get_unemap_package_scaled_offset_signal_value_at_time_field(unemap_package),
-							get_unemap_package_signal_status_field(unemap_package),
-							time,&minimum,&maximum);
+							get_unemap_package_scaled_offset_signal_value_at_time_field(
+							unemap_package),get_unemap_package_signal_status_field(
+							unemap_package),time,&minimum,&maximum);
 						map->minimum_value=minimum;
 						map->maximum_value=maximum;
 						map->contour_minimum=minimum;
@@ -8929,7 +8972,8 @@ drawing) and sub_map_rows, sub_map_cols, the number of sub_map rows and columns.
 		return_code=1;
 		if (*map->first_eimaging_event)
 		{
-			*number_of_sub_maps=count_Electrical_imaging_events(*map->first_eimaging_event);
+			*number_of_sub_maps=
+				count_Electrical_imaging_events(*map->first_eimaging_event);
 		}
 		else
 		{
@@ -9084,8 +9128,8 @@ draw the constant thickness contours
 	int boundary_type,end,i,j,k,map_x_offset,map_y_offset,map_width,map_height,
 		number_of_contours,return_code,start,valid_i_j,valid_i_jm1,valid_im1_j,
 		valid_im1_jm1;
-	float a,b,background_pixel_value,boundary_pixel_value,contour_step,contour_maximum,
-		contour_minimum,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,min_f,max_f;
+	float a,b,background_pixel_value,boundary_pixel_value,contour_step,
+		contour_maximum,contour_minimum,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,min_f,max_f;
 	struct Map_drawing_information *drawing_information;
 
 	ENTER(draw_2d_constant_thickness_contours);
@@ -10256,9 +10300,6 @@ Draw the fibres
 											(x_pixel+(short)fibre_x)+map_x_offset,
 											(y_pixel+(short)fibre_y)+map_y_offset);
 									}
-									/*???debug */
-									/*printf("fibre_x=%g, fibre_y=%g\n\n",fibre_x,
-										fibre_y);*/
 								}
 							}
 							x_screen += x_screen_step;
@@ -11052,7 +11093,7 @@ int draw_2d_show_delaunay_lines(struct Map *map,int sub_map_number,
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Draws lines of delaunay triangles.
+Draws lines of Delaunay triangles.
 Really a debugging function.
 Could be more efficient, as most lines are shared and will be drawn twice.
 Must call map_2d_delaunay first.
@@ -11103,7 +11144,8 @@ Must call map_2d_delaunay first.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"draw_2d_show_delaunay_lines. invalid arguments");
+		display_message(ERROR_MESSAGE,
+			"draw_2d_show_delaunay_lines.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -12770,7 +12812,7 @@ static int draw_2d_construct_2d_gouraud_image_map(struct Map *map,
 	int *minimum_x,int *minimum_y,int *maximum_x,int *maximum_y,float *max_f,
 	float *min_f,char *background_map_boundary_base)
 /*******************************************************************************
-LAST MODIFIED : 3 February 2004
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
@@ -12826,7 +12868,9 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 		{
 			map_type=NO_MAP_FIELD;
 		}
+#if defined (OLD_CODE)
 		if (map_type==POTENTIAL)
+#endif /* defined (OLD_CODE) */
 		{
 			frame=&(sub_map->frame);
 			pixel_value=frame->pixel_values;
@@ -12881,11 +12925,7 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 							maximum_y,vertex_x[i],vertex_y[i]);
 						k++;
 					}/* for(i=0;i<3;i++)*/
-#if defined (EXTEND_DIRECT_TO_PATCH)
-/*???DB.  Need Delaunay for plane (currently have sphere and cylinder) */
-#else /* defined (EXTEND_DIRECT_TO_PATCH) */
 					if (TORSO==the_region->type)
-#endif /* defined (EXTEND_DIRECT_TO_PATCH) */
 					{
 						/* wide  triangles have wrapped around the back and in cp coords,
 							crossed PI/-PI. Extend these wrapped triangles in rc x, so that
@@ -12920,12 +12960,13 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 						}
 						else
 						{
-							gradient[i]=delta_y/
-								((float)vertex_x[end_vertex_num]-(float)vertex_x[start_vertex_num]);
+							gradient[i]=delta_y/((float)vertex_x[end_vertex_num]-
+								(float)vertex_x[start_vertex_num]);
 						}
 						if (delta_y==0.0)
 						{
-							/* zero length. Put in a large number for 1/length. This is never used*/
+							/* zero length. Put in a large number for 1/length. This is never
+								used */
 							inv_edge_y_length[i]=1000000.0;
 						}
 						else

@@ -7792,8 +7792,8 @@ event.
 					/*event->time, marker always reconciled when moved, so don't need */
 					/* to clear, reconcile, draw the marker again. I think! */
 
-					/*write in the new time (&set flag),so last-selected/current event is */
-					/*labelled */
+					/* write in the new time (&set flag),so last-selected/current event is
+						labelled */
 					time=(int)((float)((times)[event->time])
 						*1000./frequency+0.5);
 					sprintf(time_string,"%d",time);
@@ -7814,7 +7814,7 @@ event.
 					if (xevent.xbutton.button==working_button)
 					{
 						display_message(ERROR_MESSAGE,
-							"move_Electrical_imaging_event_marker. Unexpected button press\n");
+							"move_Electrical_imaging_event_marker.  Unexpected button press");
 						moving=TRACE_MOVING_NONE;
 					}
 				} break;
@@ -8015,8 +8015,8 @@ Electrical_imaging_event.
 							drawing_area,drawing,signal_drawing_information,buffer);
 						/* remove from list */
 						is_current_event=event->is_current_event;
-						remove_Electrical_imaging_event_from_list(trace->first_eimaging_event,
-							event);
+						remove_Electrical_imaging_event_from_list(
+							trace->first_eimaging_event,event);
 						/*if we have a map, update it */
 						if (mapping&&mapping->map)
 						{
@@ -8219,7 +8219,8 @@ update_map_from_manual_time_update
 						}
 						/*store the current event*/
 						current_event_time=event->time;
-						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
+						create_Electrical_imaging_events_from_time(trace,current_event_time,
+							step);
 					}
 				} break;
 				case EVENT_CLEAR:
@@ -15288,9 +15289,9 @@ Responds to update callbacks from the time object.
 				if ((mapping=analysis->mapping_window)&&(map=mapping->map)&&
 					(drawing_information=map->drawing_information))
 				{
-					/* if we're in ELECTRICAL_IMAGING mode and have events, do nothing, as*/
-					/* in this mode we make maps from the eimaging_events, not the */
-					/*map_potential_time*/
+					/* if we're in ELECTRICAL_IMAGING mode and have events, do nothing, as
+						in this mode we make maps from the eimaging_events, not the
+						map_potential_time */
 					if (!((map->first_eimaging_event&&*map->first_eimaging_event)&&
 						(ELECTRICAL_IMAGING==*map->analysis_mode)))
 					{
@@ -15306,8 +15307,8 @@ Responds to update callbacks from the time object.
 										if (-1!=map->activation_front)
 										{
 											/* playing movie */
-											/* ??JW fix the range when playing the movie? IF so need */
-											/* to update map dialog as well as map->fixed_range=1 */
+											/* ??JW fix the range when playing the movie? IF so need
+												to update map dialog as well as map->fixed_range=1 */
 #if defined (UNEMAP_USE_3D)
 											/* 3d map */
 											if (map->projection_type==THREED_PROJECTION)
@@ -15390,6 +15391,9 @@ Responds to update callbacks from the time object.
 									{
 										map->start_time=map_potential_time;
 										map->end_time=map->start_time;
+										/*???DB.  Where I'm up to */
+										/*???DB.  -1!= means playing movie? */
+										/*???DB.  Check out update_map_from_manual_time_update */
 										if (map->activation_front==0)
 										{
 											update_mapping_drawing_area(mapping,2/*recalculate*/);
@@ -15435,7 +15439,8 @@ Responds to update callbacks from the time object.
 									}
 									else
 									{
-										display=User_interface_get_display(drawing_information->user_interface);
+										display=User_interface_get_display(
+											drawing_information->user_interface);
 										colour_map=drawing_information->colour_map;
 										spectrum_pixels=drawing_information->spectrum_colours;
 										/* use background drawing colour for the whole spectrum */

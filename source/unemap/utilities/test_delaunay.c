@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_delaunay.c
 
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 18 April 2004
 
 DESCRIPTION :
 Used to test the Delaunay triangularization.
@@ -125,7 +125,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 18 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -162,7 +162,8 @@ DESCRIPTION :
 #if defined (FORTRAN_STANDALONE)
 		if (!strcmp(geometry_type,"sphere"))
 #else /* defined (FORTRAN_STANDALONE) */
-		if ((!strcmp(geometry_type,"cylinder"))||(!strcmp(geometry_type,"sphere")))
+		if ((!strcmp(geometry_type,"cylinder"))||(!strcmp(geometry_type,"sphere"))||
+			(!strcmp(geometry_type,"plane")))
 #endif /* defined (FORTRAN_STANDALONE) */
 		{
 			if (locations_file=fopen(argv[2],"r"))
@@ -176,35 +177,73 @@ DESCRIPTION :
 				locations=(float *)NULL;
 #endif /* defined (FORTRAN_STANDALONE) */
 				id_array=(int *)NULL;
-				while (return_code&&
-#if defined (FORTRAN_STANDALONE)
-					(4==fscanf(locations_file," %d %lf %lf %lf",&id,&x,&y,&z))
-#else /* defined (FORTRAN_STANDALONE) */
-					(4==fscanf(locations_file," %d %f %f %f",&id,&x,&y,&z))
-#endif /* defined (FORTRAN_STANDALONE) */
-					)
+				if (strcmp(geometry_type,"plane"))
 				{
-					number_of_locations++;
-					if (
+					while (return_code&&
 #if defined (FORTRAN_STANDALONE)
-						REALLOCATE(locations_temp,locations,double,3*number_of_locations)&&
+						(4==fscanf(locations_file," %d %lf %lf %lf",&id,&x,&y,&z))
 #else /* defined (FORTRAN_STANDALONE) */
-						REALLOCATE(locations_temp,locations,float,3*number_of_locations)&&
+						(4==fscanf(locations_file," %d %f %f %f",&id,&x,&y,&z))
 #endif /* defined (FORTRAN_STANDALONE) */
-						REALLOCATE(id_array_temp,id_array,int,number_of_locations))
+						)
 					{
-						locations=locations_temp;
-						id_array=id_array_temp;
-						locations[3*number_of_locations-3]=x;
-						locations[3*number_of_locations-2]=y;
-						locations[3*number_of_locations-1]=z;
-						id_array[number_of_locations-1]=id;
+						number_of_locations++;
+						if (
+#if defined (FORTRAN_STANDALONE)
+							REALLOCATE(locations_temp,locations,double,
+							3*number_of_locations)&&
+#else /* defined (FORTRAN_STANDALONE) */
+							REALLOCATE(locations_temp,locations,float,3*number_of_locations)&&
+#endif /* defined (FORTRAN_STANDALONE) */
+							REALLOCATE(id_array_temp,id_array,int,number_of_locations))
+						{
+							locations=locations_temp;
+							id_array=id_array_temp;
+							locations[3*number_of_locations-3]=x;
+							locations[3*number_of_locations-2]=y;
+							locations[3*number_of_locations-1]=z;
+							id_array[number_of_locations-1]=id;
+						}
+						else
+						{
+							printf("Could not reallocate storage information %d\n",
+								number_of_locations);
+							return_code=0;
+						}
 					}
-					else
+				}
+				else
+				{
+					while (return_code&&
+#if defined (FORTRAN_STANDALONE)
+						(3==fscanf(locations_file," %d %lf %lf",&id,&x,&y))
+#else /* defined (FORTRAN_STANDALONE) */
+						(3==fscanf(locations_file," %d %f %f",&id,&x,&y))
+#endif /* defined (FORTRAN_STANDALONE) */
+						)
 					{
-						printf("Could not reallocate storage information %d\n",
-							number_of_locations);
-						return_code=0;
+						number_of_locations++;
+						if (
+#if defined (FORTRAN_STANDALONE)
+							REALLOCATE(locations_temp,locations,double,
+							2*number_of_locations)&&
+#else /* defined (FORTRAN_STANDALONE) */
+							REALLOCATE(locations_temp,locations,float,2*number_of_locations)&&
+#endif /* defined (FORTRAN_STANDALONE) */
+							REALLOCATE(id_array_temp,id_array,int,number_of_locations))
+						{
+							locations=locations_temp;
+							id_array=id_array_temp;
+							locations[2*number_of_locations-2]=x;
+							locations[2*number_of_locations-1]=y;
+							id_array[number_of_locations-1]=id;
+						}
+						else
+						{
+							printf("Could not reallocate storage information %d\n",
+								number_of_locations);
+							return_code=0;
+						}
 					}
 				}
 				if (return_code)
@@ -265,9 +304,14 @@ DESCRIPTION :
 						return_code=cylinder_delaunay(number_of_locations,locations,
 							&number_of_triangles,&triangles);
 					}
-					else
+					else if (!strcmp(geometry_type,"sphere"))
 					{
 						return_code=sphere_delaunay(number_of_locations,locations,
+							&number_of_triangles,&triangles);
+					}
+					else
+					{
+						return_code=plane_delaunay(number_of_locations,locations,
 							&number_of_triangles,&triangles);
 					}
 #endif /* defined (FORTRAN_STANDALONE) */
@@ -282,11 +326,22 @@ DESCRIPTION :
 						{
 							fprintf(out_file,"Group name : %s\n",argv[3]);
 							fprintf(out_file,"#Fields=1\n");
-							fprintf(out_file,
+							if (strcmp(geometry_type,"plane"))
+							{
+								fprintf(out_file,
 					"1) coordinates, coordinate, rectangular cartesian, #Components=3\n");
+							}
+							else
+							{
+								fprintf(out_file,
+					"1) coordinates, coordinate, rectangular cartesian, #Components=2\n");
+							}
 							fprintf(out_file,"  x.  Value index= 1, #Derivatives= 0\n");
 							fprintf(out_file,"  y.  Value index= 2, #Derivatives= 0\n");
-							fprintf(out_file,"  z.  Value index= 3, #Derivatives= 0\n");
+							if (strcmp(geometry_type,"plane"))
+							{
+								fprintf(out_file,"  z.  Value index= 3, #Derivatives= 0\n");
+							}
 							locations_temp=locations;
 							id_array_temp=id_array;
 							for (i=number_of_locations;i>0;i--)
@@ -297,8 +352,11 @@ DESCRIPTION :
 								locations_temp++;
 								fprintf(out_file,"  %g\n",*locations_temp);
 								locations_temp++;
-								fprintf(out_file,"  %g\n",*locations_temp);
-								locations_temp++;
+								if (strcmp(geometry_type,"plane"))
+								{
+									fprintf(out_file,"  %g\n",*locations_temp);
+									locations_temp++;
+								}
 							}
 							fclose(out_file);
 						}
@@ -323,10 +381,18 @@ DESCRIPTION :
 							fprintf(out_file,"  l.simplex(2)*l.simplex, #Scale factors=3\n");
 							fprintf(out_file,"#Nodes= 3\n");
 							fprintf(out_file,"#Fields=1\n");
+							if (strcmp(geometry_type,"plane"))
+							{
+								fprintf(out_file,
+					"1) coordinates, coordinate, rectangular cartesian, #Components=3\n");
+							}
+							else
+							{
+								fprintf(out_file,
+					"1) coordinates, coordinate, rectangular cartesian, #Components=2\n");
+							}
 							fprintf(out_file,
-						"1) coordinates, coordinate, rectangular cartesian, #Components=3\n");
-							fprintf(out_file,
-							"  x.  l.simplex(2)*l.simplex, no modify, standard node based.\n");
+						"  x.  l.simplex(2)*l.simplex, no modify, standard node based.\n");
 							fprintf(out_file,"    #Nodes= 3\n");
 							fprintf(out_file,"      1.  #Values=1\n");
 							fprintf(out_file,"        Value indices:     1\n");
@@ -338,7 +404,7 @@ DESCRIPTION :
 							fprintf(out_file,"        Value indices:     1\n");
 							fprintf(out_file,"        Scale factor indices:   3\n");
 							fprintf(out_file,
-							"  y.  l.simplex(2)*l.simplex, no modify, standard node based.\n");
+						"  y.  l.simplex(2)*l.simplex, no modify, standard node based.\n");
 							fprintf(out_file,"    #Nodes= 3\n");
 							fprintf(out_file,"      1.  #Values=1\n");
 							fprintf(out_file,"        Value indices:     1\n");
@@ -349,18 +415,21 @@ DESCRIPTION :
 							fprintf(out_file,"      3.  #Values=1\n");
 							fprintf(out_file,"        Value indices:     1\n");
 							fprintf(out_file,"        Scale factor indices:   3\n");
-							fprintf(out_file,
-							"  z.  l.simplex(2)*l.simplex, no modify, standard node based.\n");
-							fprintf(out_file,"    #Nodes= 3\n");
-							fprintf(out_file,"      1.  #Values=1\n");
-							fprintf(out_file,"        Value indices:     1\n");
-							fprintf(out_file,"        Scale factor indices:   1\n");
-							fprintf(out_file,"      2.  #Values=1\n");
-							fprintf(out_file,"        Value indices:     1\n");
-							fprintf(out_file,"        Scale factor indices:   2\n");
-							fprintf(out_file,"      3.  #Values=1\n");
-							fprintf(out_file,"        Value indices:     1\n");
-							fprintf(out_file,"        Scale factor indices:   3\n");
+							if (strcmp(geometry_type,"plane"))
+							{
+								fprintf(out_file,
+						"  z.  l.simplex(2)*l.simplex, no modify, standard node based.\n");
+								fprintf(out_file,"    #Nodes= 3\n");
+								fprintf(out_file,"      1.  #Values=1\n");
+								fprintf(out_file,"        Value indices:     1\n");
+								fprintf(out_file,"        Scale factor indices:   1\n");
+								fprintf(out_file,"      2.  #Values=1\n");
+								fprintf(out_file,"        Value indices:     1\n");
+								fprintf(out_file,"        Scale factor indices:   2\n");
+								fprintf(out_file,"      3.  #Values=1\n");
+								fprintf(out_file,"        Value indices:     1\n");
+								fprintf(out_file,"        Scale factor indices:   3\n");
+							}
 							for (i=0;i<number_of_triangles;i++)
 							{
 								fprintf(out_file,"Element: %d 0 0\n",i+1);
@@ -399,9 +468,9 @@ DESCRIPTION :
 	}
 	else
 	{
-		printf("usage: test_delaunay SPHERE|CYLINDER locations_file group_name\n");
+		printf("usage: test_delaunay CYLINDER|PLANE|SPHERE locations_file group_name\n");
 		printf(
-			"  SPHERE|CYLINDER keyword for type of geometry (case insensitive)\n");
+			"  CYLINDER|PLANE|SPHERE keyword for type of geometry (case insensitive)\n");
 		printf(
 			"  locations_file is the name of the file vertex locations (provided)\n");
 		printf(

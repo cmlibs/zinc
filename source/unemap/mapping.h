@@ -30,6 +30,8 @@ DESCRIPTION :
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
+#define EXTEND_DIRECT_TO_PATCH
+
 /*
 Global types
 ------------

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : delaunay.c
 
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 20 April 2004
 
 DESCRIPTION :
 Specialized implementations of Delaunay triangulation for a cylinder and a
@@ -38,12 +38,13 @@ Module types
 */
 struct Delaunay_triangle
 /*******************************************************************************
-LAST MODIFIED : 14 January 2002
+LAST MODIFIED : 15 April 2004
 
 DESCRIPTION :
 cylinder.  Uses normalized theta and z for the vertex and centre coordinates.
 sphere.  Uses longitude (theta) and latitude (mu) for the vertex and centre
-	coordinates
+	coordinates.
+plane.  Uses x and y for vertex and centre coordinates.
 ???DB.  Vertex order is important for sphere (see sphere_calculate_circumcentre)
 	Can order be used for cylinder?
 ==============================================================================*/
@@ -131,9 +132,10 @@ A nonzero return code indicates an error.
 
 static int cylinder_calculate_circumcentre(struct Delaunay_triangle *triangle)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 19 April 2004
 
 DESCRIPTION :
+The circumcentre is the intersection of the bisectors.
 ==============================================================================*/
 {
 	float s,temp_u,temp_v,*vertices;
@@ -159,6 +161,15 @@ DESCRIPTION :
 			triangle->radius2=temp_u*temp_u+temp_v*temp_v;
 			return_code=1;
 		}
+#if defined (OLD_CODE)
+		else
+		{
+			display_message(ERROR_MESSAGE,"cylinder_calculate_circumcentre.  "
+				"Invalid triangle.  %g %g %g %g %g %g",vertices[0],vertices[1],
+				vertices[2],vertices[3],vertices[4],vertices[5]);
+			return_code=0;
+		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -1682,3 +1693,836 @@ is the origin.
 
 	return (return_code);
 } /* sphere_delaunay */
+
+#if defined (OLD_CODE)
+/* uses sphere_delaunay way of removing and adding triangles */
+int plane_delaunay(int number_of_vertices,float *vertices,
+	int *number_of_triangles_address,int **triangles_address)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2004
+
+DESCRIPTION :
+Calculates the Delaunay triangulation of the <vertices> on a plane.
+<number_of_vertices> is the number of vertices to be triangulated
+<vertices> is an array of length 2*<number_of_vertices> containing the x,y
+	coordinates of the vertices
+<*number_of_triangles_address> is the number of triangles calculated by the
+	function
+<*triangles_address> is an array of length 3*<*number_of_triangles_address>,
+	allocated by the function, containing the vertex numbers for each triangle
+==============================================================================*/
+{
+	float *vertex,x_maximum,x_minimum,x_temp,y_maximum,y_minimum,y_temp;
+	int *adjacent_line,*adjacent_lines,edge_vertex_1,edge_vertex_2,i,j,k,l,
+		maximum_number_of_adjacent_lines,maximum_number_of_triangles,
+		number_of_adjacent_lines,number_of_returned_triangles,number_of_triangles,
+		return_code,*returned_triangles;
+	struct Delaunay_triangle **temp_triangles,*triangle,**triangles;
+
+	ENTER(plane_delaunay);
+	return_code=0;
+	/* check the arguments */
+	if ((2<number_of_vertices)&&vertices&&number_of_triangles_address&&
+		triangles_address)
+	{
+		/* find the x and y ranges */
+		i=2*number_of_vertices-1;
+		y_minimum=vertices[i];
+		y_maximum=y_minimum;
+		i--;
+		x_minimum=vertices[i];
+		x_maximum=x_minimum;
+		while (i>0)
+		{
+			i--;
+			if (vertices[i]<y_minimum)
+			{
+				y_minimum=vertices[i];
+			}
+			else
+			{
+				if (vertices[i]>y_maximum)
+				{
+					y_maximum=vertices[i];
+				}
+			}
+			i--;
+			if (vertices[i]<x_minimum)
+			{
+				x_minimum=vertices[i];
+			}
+			else
+			{
+				if (vertices[i]>x_maximum)
+				{
+					x_maximum=vertices[i];
+				}
+			}
+		}
+		/* expand range to be outside */
+		if (x_maximum==x_minimum)
+		{
+			x_maximum += 1;
+			x_minimum -= 1;
+		}
+		else
+		{
+			x_maximum += x_maximum-x_minimum;
+			x_minimum -= x_maximum-x_minimum;
+		}
+		if (y_maximum==y_minimum)
+		{
+			y_maximum += 1;
+			y_minimum -= 1;
+		}
+		else
+		{
+			y_maximum += y_maximum-y_minimum;
+			y_minimum -= y_maximum-y_minimum;
+		}
+		/* create initial triangulation */
+		number_of_triangles=2;
+		maximum_number_of_triangles=2;
+		if (ALLOCATE(triangles,struct Delaunay_triangle *,number_of_triangles))
+		{
+			i=number_of_triangles;
+			do
+			{
+				i--;
+			}
+			while ((i>=0)&&ALLOCATE(triangles[i],struct Delaunay_triangle,1));
+			if (i<0)
+			{
+				(triangles[0]->vertex_numbers)[0]= -4;
+				(triangles[0]->vertices)[0]=x_minimum;
+				(triangles[0]->vertices)[1]=y_minimum;
+				(triangles[0]->vertex_numbers)[1]= -2;
+				(triangles[0]->vertices)[2]=x_minimum;
+				(triangles[0]->vertices)[3]=y_maximum;
+				(triangles[0]->vertex_numbers)[2]= -3;
+				(triangles[0]->vertices)[4]=x_maximum;
+				(triangles[0]->vertices)[5]=y_minimum;
+				(triangles[1]->vertex_numbers)[0]= -3;
+				(triangles[1]->vertices)[0]=x_maximum;
+				(triangles[1]->vertices)[1]=y_minimum;
+				(triangles[1]->vertex_numbers)[1]= -2;
+				(triangles[1]->vertices)[2]=x_minimum;
+				(triangles[1]->vertices)[3]=y_maximum;
+				(triangles[1]->vertex_numbers)[2]= -1;
+				(triangles[1]->vertices)[4]=x_maximum;
+				(triangles[1]->vertices)[5]=y_maximum;
+				for (i=0;i<number_of_triangles;i++)
+				{
+					/* circumcentre is calculated the same */
+					cylinder_calculate_circumcentre(triangles[i]);
+				}
+				return_code=1;
+				i=0;
+				vertex=vertices;
+				adjacent_lines=(int *)NULL;
+				maximum_number_of_adjacent_lines=0;
+				while (return_code&&(i<number_of_vertices))
+				{
+					/* delete the triangles that no longer satisfy the in-circle
+						criterion and create a list of the adjacent lines */
+					number_of_adjacent_lines=0;
+					j=0;
+					while (return_code&&(j<number_of_triangles))
+					{
+						triangle=triangles[j];
+						x_temp=vertex[0]-(triangle->centre)[0];
+						y_temp=vertex[1]-(triangle->centre)[1];
+						if (x_temp*x_temp+y_temp*y_temp<=triangle->radius2)
+						{
+							/* vertex is inside the triangle's circumcircle */
+							/* add the triangle's edges to the list of adjacent lines */
+							edge_vertex_2=(triangle->vertex_numbers)[2];
+							k=0;
+							while (return_code&&(k<3))
+							{
+								edge_vertex_1=edge_vertex_2;
+								edge_vertex_2=(triangle->vertex_numbers)[k];
+								/* check for duplicates */
+								l=number_of_adjacent_lines;
+								adjacent_line=adjacent_lines;
+								while ((l>0)&&
+									!(((edge_vertex_1==adjacent_line[0])&&
+									(edge_vertex_2==adjacent_line[1]))||
+									((edge_vertex_2==adjacent_line[0])&&
+									(edge_vertex_1==adjacent_line[1]))))
+								{
+									adjacent_line += 2;
+									l--;
+								}
+								if (l>0)
+								{
+									/* duplicate line.  Cancels out.  Remove the match froms
+										list */
+									if (l>1)
+									{
+										l=2*number_of_adjacent_lines-2;
+										adjacent_line[0]=adjacent_lines[l];
+										adjacent_line[1]=adjacent_lines[l+1];
+									}
+									number_of_adjacent_lines--;
+								}
+								else
+								{
+									/* new line.  Add to list */
+									if (number_of_adjacent_lines>=
+										maximum_number_of_adjacent_lines)
+									{
+										if (REALLOCATE(adjacent_line,adjacent_lines,int,
+											2*(maximum_number_of_adjacent_lines+5)))
+										{
+											adjacent_lines=adjacent_line;
+											maximum_number_of_adjacent_lines += 5;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"plane_delaunay.  Could not REALLOCATE adjacent_lines");
+											return_code=0;
+										}
+									}
+									if (return_code)
+									{
+										l=2*number_of_adjacent_lines;
+										adjacent_lines[l]=edge_vertex_1;
+										adjacent_lines[l+1]=edge_vertex_2;
+										number_of_adjacent_lines++;
+									}
+								}
+								k++;
+							}
+							if (return_code)
+							{
+								/* delete triangle */
+								if (j<number_of_triangles-1)
+								{
+									triangles[j]=triangles[number_of_triangles-1];
+									triangles[number_of_triangles-1]=triangle;
+								}
+								number_of_triangles--;
+							}
+						}
+						else
+						{
+							j++;
+						}
+					}
+					if (return_code)
+					{
+						/* create new triangles */
+						if (number_of_triangles+number_of_adjacent_lines>
+							maximum_number_of_triangles)
+						{
+							j=maximum_number_of_triangles;
+							maximum_number_of_triangles=number_of_triangles+
+								number_of_adjacent_lines+10;
+							if (REALLOCATE(temp_triangles,triangles,
+								struct Delaunay_triangle *,maximum_number_of_triangles))
+							{
+								triangles=temp_triangles;
+								temp_triangles += j;
+								while (return_code&&(j<maximum_number_of_triangles))
+								{
+									if (ALLOCATE(*temp_triangles,struct Delaunay_triangle,1))
+									{
+										j++;
+										temp_triangles++;
+									}
+									else
+									{
+										maximum_number_of_triangles=j;
+										display_message(ERROR_MESSAGE,"plane_delaunay.  "
+											"Could not ALLOCATE triangle");
+										return_code=0;
+									}
+								}
+							}
+							else
+							{
+								maximum_number_of_triangles=j;
+								display_message(ERROR_MESSAGE,"plane_delaunay.  "
+									"Could not REALLOCATE triangles");
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							adjacent_line=adjacent_lines+(2*number_of_adjacent_lines);
+							l=number_of_adjacent_lines;
+							while (return_code&&(l>0))
+							{
+								adjacent_line -= 2;
+								triangle=triangles[number_of_triangles];
+								(triangle->vertex_numbers)[0]=i;
+								(triangle->vertices)[0]=vertex[0];
+								(triangle->vertices)[1]=vertex[1];
+								(triangle->vertex_numbers)[1]=adjacent_line[0];
+								if (0<=adjacent_line[0])
+								{
+									(triangle->vertices)[2]=vertices[2*adjacent_line[0]];
+									(triangle->vertices)[3]=vertices[2*adjacent_line[0]+1];
+								}
+								else
+								{
+									switch (adjacent_line[0])
+									{
+										case -4:
+										{
+											(triangle->vertices)[2]=x_minimum;
+											(triangle->vertices)[3]=y_minimum;
+										} break;
+										case -3:
+										{
+											(triangle->vertices)[2]=x_maximum;
+											(triangle->vertices)[3]=y_minimum;
+										} break;
+										case -2:
+										{
+											(triangle->vertices)[2]=x_minimum;
+											(triangle->vertices)[3]=y_maximum;
+										} break;
+										case -1:
+										{
+											(triangle->vertices)[2]=x_maximum;
+											(triangle->vertices)[3]=y_maximum;
+										} break;
+									}
+								}
+								(triangle->vertex_numbers)[2]=adjacent_line[1];
+								if (0<=adjacent_line[1])
+								{
+									(triangle->vertices)[4]=vertices[2*adjacent_line[1]];
+									(triangle->vertices)[5]=vertices[2*adjacent_line[1]+1];
+								}
+								else
+								{
+									switch (adjacent_line[1])
+									{
+										case -4:
+										{
+											(triangle->vertices)[4]=x_minimum;
+											(triangle->vertices)[5]=y_minimum;
+										} break;
+										case -3:
+										{
+											(triangle->vertices)[4]=x_maximum;
+											(triangle->vertices)[5]=y_minimum;
+										} break;
+										case -2:
+										{
+											(triangle->vertices)[4]=x_minimum;
+											(triangle->vertices)[5]=y_maximum;
+										} break;
+										case -1:
+										{
+											(triangle->vertices)[4]=x_maximum;
+											(triangle->vertices)[5]=y_maximum;
+										} break;
+									}
+								}
+								if (cylinder_calculate_circumcentre(triangle))
+								{
+									number_of_triangles++;
+								}
+								else
+								{
+									/*???DB.  Assume that triangle has zero area because two nodes
+										have the same coordinates.  Don't add triangle */
+#if defined (OLD_CODE)
+									display_message(ERROR_MESSAGE,
+										"plane_delaunay.  cylinder_calculate_circumcentre failed");
+									return_code=0;
+#endif /* defined (OLD_CODE) */
+								}
+								l--;
+							}
+						}
+					}
+					i++;
+					vertex += 2;
+				}
+				DEALLOCATE(adjacent_lines);
+				if (return_code)
+				{
+					/* return results */
+					number_of_returned_triangles=0;
+					for (i=0;i<number_of_triangles;i++)
+					{
+						j=2;
+						while ((j>=0)&&(((triangles[i])->vertex_numbers)[j]>=0))
+						{
+							j--;
+						}
+						if (j<0)
+						{
+							number_of_returned_triangles++;
+						}
+					}
+					if (ALLOCATE(returned_triangles,int,3*number_of_returned_triangles))
+					{
+						*triangles_address=returned_triangles;
+						*number_of_triangles_address=number_of_returned_triangles;
+						for (i=0;i<number_of_triangles;i++)
+						{
+							j=2;
+							while ((j>=0)&&(((triangles[i])->vertex_numbers)[j]>=0))
+							{
+								j--;
+							}
+							if (j<0)
+							{
+								for (j=0;j<3;j++)
+								{
+									*returned_triangles=((triangles[i])->vertex_numbers)[j];
+									returned_triangles++;
+								}
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"plane_delaunay.  Could not allocate returned_triangles");
+					}
+				}
+				/* tidy up */
+				for (i=0;i<number_of_triangles;i++)
+				{
+					DEALLOCATE(triangles[i]);
+				}
+				DEALLOCATE(triangles);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"plane_delaunay.  Could not allocate initial triangles 2");
+				i++;
+				while (i<number_of_triangles)
+				{
+					DEALLOCATE(triangles[i]);
+					i++;
+				}
+				DEALLOCATE(triangles);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"plane_delaunay.  Could not allocate initial triangles");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"plane_delaunay.  Invalid argument(s) %d %p %p %p",number_of_vertices,
+			vertices,number_of_triangles_address,triangles_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* plane_delaunay */
+#else /* defined (OLD_CODE) */
+int plane_delaunay(int number_of_vertices,float *vertices,
+	int *number_of_triangles_address,int **triangles_address)
+/*******************************************************************************
+LAST MODIFIED : 20 April 2004
+
+DESCRIPTION :
+Calculates the Delaunay triangulation of the <vertices> on a plane.
+<number_of_vertices> is the number of vertices to be triangulated
+<vertices> is an array of length 2*<number_of_vertices> containing the x,y
+	coordinates of the vertices
+<*number_of_triangles_address> is the number of triangles calculated by the
+	function
+<*triangles_address> is an array of length 3*<*number_of_triangles_address>,
+	allocated by the function, containing the vertex numbers for each triangle
+==============================================================================*/
+{
+	float *adjacent_angle,*adjacent_angles,*adjacent_xy,*adjacent_xys,angle,
+		*vertex,x_maximum,x_minimum,x_temp,y_maximum,y_minimum,y_temp;
+	int *adjacent_vertex,*adjacent_vertices,i,j,k,l,m,n,
+		maximum_number_of_triangles,number_of_adjacent_vertices,
+		number_of_returned_triangles,number_of_triangles,return_code,
+		*returned_triangles,vertex_number;
+	struct Delaunay_triangle **temp_triangles,*triangle,**triangles;
+
+	ENTER(plane_delaunay);
+	return_code=0;
+	/* check the arguments */
+	if ((2<number_of_vertices)&&vertices&&number_of_triangles_address&&
+		triangles_address)
+	{
+		/* find the x and y ranges */
+		i=2*number_of_vertices-1;
+		y_minimum=vertices[i];
+		y_maximum=y_minimum;
+		i--;
+		x_minimum=vertices[i];
+		x_maximum=x_minimum;
+		while (i>0)
+		{
+			i--;
+			if (vertices[i]<y_minimum)
+			{
+				y_minimum=vertices[i];
+			}
+			else
+			{
+				if (vertices[i]>y_maximum)
+				{
+					y_maximum=vertices[i];
+				}
+			}
+			i--;
+			if (vertices[i]<x_minimum)
+			{
+				x_minimum=vertices[i];
+			}
+			else
+			{
+				if (vertices[i]>x_maximum)
+				{
+					x_maximum=vertices[i];
+				}
+			}
+		}
+		/* expand range to be outside */
+		if (x_maximum==x_minimum)
+		{
+			x_maximum += 1;
+			x_minimum -= 1;
+		}
+		else
+		{
+			x_maximum += x_maximum-x_minimum;
+			x_minimum -= x_maximum-x_minimum;
+		}
+		if (y_maximum==y_minimum)
+		{
+			y_maximum += 1;
+			y_minimum -= 1;
+		}
+		else
+		{
+			y_maximum += y_maximum-y_minimum;
+			y_minimum -= y_maximum-y_minimum;
+		}
+		/* create initial triangulation */
+		number_of_triangles=2;
+		maximum_number_of_triangles=2;
+		if (ALLOCATE(triangles,struct Delaunay_triangle *,number_of_triangles))
+		{
+			i=number_of_triangles;
+			do
+			{
+				i--;
+			}
+			while ((i>=0)&&ALLOCATE(triangles[i],struct Delaunay_triangle,1));
+			if (i<0)
+			{
+				(triangles[0]->vertex_numbers)[0]= -4;
+				(triangles[0]->vertices)[0]=x_minimum;
+				(triangles[0]->vertices)[1]=y_minimum;
+				(triangles[0]->vertex_numbers)[1]= -2;
+				(triangles[0]->vertices)[2]=x_minimum;
+				(triangles[0]->vertices)[3]=y_maximum;
+				(triangles[0]->vertex_numbers)[2]= -3;
+				(triangles[0]->vertices)[4]=x_maximum;
+				(triangles[0]->vertices)[5]=y_minimum;
+				(triangles[1]->vertex_numbers)[0]= -3;
+				(triangles[1]->vertices)[0]=x_maximum;
+				(triangles[1]->vertices)[1]=y_minimum;
+				(triangles[1]->vertex_numbers)[1]= -2;
+				(triangles[1]->vertices)[2]=x_minimum;
+				(triangles[1]->vertices)[3]=y_maximum;
+				(triangles[1]->vertex_numbers)[2]= -1;
+				(triangles[1]->vertices)[4]=x_maximum;
+				(triangles[1]->vertices)[5]=y_maximum;
+				for (i=0;i<number_of_triangles;i++)
+				{
+					/* circumcentre is calculated the same */
+					cylinder_calculate_circumcentre(triangles[i]);
+				}
+				return_code=1;
+				i=0;
+				vertex=vertices;
+				while (return_code&&(i<number_of_vertices))
+				{
+					/* check for coincident vertices */
+					j=0;
+					while ((j<i)&&
+						!((vertices[2*j]==vertex[0])&&(vertices[2*j+1]==vertex[1])))
+					{
+						j++;
+					}
+					if (j==i)
+					{
+						/* delete the triangles that no longer satisfy the in-circle
+							criterion and create a list of the adjacent lines */
+						j=0;
+						k=0;
+						number_of_adjacent_vertices=0;
+						adjacent_vertices=(int *)NULL;
+						adjacent_angles=(float *)NULL;
+						adjacent_xys=(float *)NULL;
+						while (return_code&&(j<number_of_triangles))
+						{
+							triangle=triangles[j];
+							x_temp=vertex[0]-(triangle->centre)[0];
+							y_temp=vertex[1]-(triangle->centre)[1];
+							if (x_temp*x_temp+y_temp*y_temp<=triangle->radius2)
+							{
+								k++;
+								/* add the vertices to the list of adjacent vertices, ordering
+									the adjacent vertices so that they go anti-clockwise around
+									the new vertex */
+								REALLOCATE(adjacent_vertex,adjacent_vertices,int,
+									number_of_adjacent_vertices+4);
+								REALLOCATE(adjacent_angle,adjacent_angles,float,
+									number_of_adjacent_vertices+3);
+								REALLOCATE(adjacent_xy,adjacent_xys,float,
+									2*number_of_adjacent_vertices+8);
+								if (adjacent_vertex&&adjacent_angle&&adjacent_xy)
+								{
+									adjacent_vertices=adjacent_vertex;
+									adjacent_angles=adjacent_angle;
+									adjacent_xys=adjacent_xy;
+									for (l=0;l<3;l++)
+									{
+										m=0;
+										vertex_number=(triangles[j]->vertex_numbers)[l];
+										angle=(triangles[j]->vertices)[2*l]-vertex[0];
+										angle=
+											atan2((triangles[j]->vertices)[2*l+1]-vertex[1],angle);
+										while ((m<number_of_adjacent_vertices)&&
+											(vertex_number!=adjacent_vertices[m])&&
+											(angle<adjacent_angles[m]))
+										{
+											m++;
+										}
+										if ((m>=number_of_adjacent_vertices)||
+											(vertex_number!=adjacent_vertices[m]))
+										{
+											adjacent_vertex=adjacent_vertices+
+												number_of_adjacent_vertices;
+											adjacent_angle=adjacent_angles+
+												number_of_adjacent_vertices;
+											adjacent_xy=adjacent_xys+
+												2*number_of_adjacent_vertices;
+											for (n=number_of_adjacent_vertices;n>m;n--)
+											{
+												adjacent_vertex--;
+												adjacent_vertex[1]=adjacent_vertex[0];
+												adjacent_angle--;
+												adjacent_angle[1]=adjacent_angle[0];
+												adjacent_xy--;
+												adjacent_xy[2]=adjacent_xy[0];
+												adjacent_xy--;
+												adjacent_xy[2]=adjacent_xy[0];
+											}
+											*adjacent_vertex=vertex_number;
+											*adjacent_angle=angle;
+											*adjacent_xy=(triangles[j]->vertices)[2*l];
+											adjacent_xy++;
+											*adjacent_xy=(triangles[j]->vertices)[2*l+1];
+											number_of_adjacent_vertices++;
+#if defined (DEBUG)
+											/*???debug */
+											printf("adjacent vertices\n");
+											for (n=0;n<number_of_adjacent_vertices;n++)
+											{
+												printf("  %d.  %g %g  %g\n",adjacent_vertices[n],
+													adjacent_xys[2*n],adjacent_xys[2*n+1],
+													adjacent_angles[n]);
+											}
+#endif /* defined (DEBUG) */
+										}
+									}
+								}
+								else
+								{
+									if (adjacent_vertex)
+									{
+										adjacent_vertices=adjacent_vertex;
+									}
+									if (adjacent_angle)
+									{
+										adjacent_angles=adjacent_angle;
+									}
+									if (adjacent_xy)
+									{
+										adjacent_xys=adjacent_xy;
+									}
+									return_code=0;
+									display_message(ERROR_MESSAGE,"plane_delaunay.  "
+										"Could not reallocate adjacent vertices");
+								}
+								DEALLOCATE(triangles[j]);
+							}
+							else
+							{
+								if (k>0)
+								{
+									triangles[j-k]=triangles[j];
+								}
+							}
+							j++;
+						}
+						if (return_code&&(k>0))
+						{
+							number_of_triangles -= k;;
+							/* determine new triangles */
+							if (REALLOCATE(temp_triangles,triangles,
+								struct Delaunay_triangle *,
+								number_of_triangles+number_of_adjacent_vertices))
+							{
+								triangles=temp_triangles;
+								adjacent_vertex=adjacent_vertices;
+								adjacent_angle=adjacent_angles;
+								adjacent_xy=adjacent_xys;
+								adjacent_vertices[number_of_adjacent_vertices]=
+									adjacent_vertices[0];
+								adjacent_xys[2*number_of_adjacent_vertices]=adjacent_xys[0];
+								adjacent_xys[2*number_of_adjacent_vertices+1]=adjacent_xys[1];
+								k=0;
+								while (return_code&&(k<number_of_adjacent_vertices))
+								{
+									if (triangle=ALLOCATE(triangles[number_of_triangles],
+										struct Delaunay_triangle,1))
+									{
+										triangle->vertex_numbers[0]=i;
+										(triangle->vertices)[0]=vertex[0];
+										(triangle->vertices)[1]=vertex[1];
+										triangle->vertex_numbers[1]= *adjacent_vertex;
+										adjacent_vertex++;
+										(triangle->vertices)[2]= *adjacent_xy;
+										adjacent_xy++;
+										(triangle->vertices)[3]= *adjacent_xy;
+										adjacent_xy++;
+										triangle->vertex_numbers[2]= *adjacent_vertex;
+										(triangle->vertices)[4]=adjacent_xy[0];
+										(triangle->vertices)[5]=adjacent_xy[1];
+										k++;
+										if (cylinder_calculate_circumcentre(triangle))
+										{
+											number_of_triangles++;
+										}
+										else
+										{
+											DEALLOCATE(triangles[number_of_triangles]);
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"plane_delaunay.  Could not allocate triangle");
+										return_code=0;
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"plane_delaunay.  Could not reallocate triangles");
+							}
+						}
+						DEALLOCATE(adjacent_vertices);
+						DEALLOCATE(adjacent_angles);
+						DEALLOCATE(adjacent_xys);
+					}
+#if defined (DEBUG)
+					/*???debug */
+					else
+					{
+						printf(
+							"Vertices %d and %d are coincident.  Second vertex ignored\n",
+							j,i);
+					}
+#endif /* defined (DEBUG) */
+					i++;
+					vertex += 2;
+				}
+				if (return_code)
+				{
+					/* return results */
+					number_of_returned_triangles=0;
+					for (i=0;i<number_of_triangles;i++)
+					{
+						j=2;
+						while ((j>=0)&&(((triangles[i])->vertex_numbers)[j]>=0))
+						{
+							j--;
+						}
+						if (j<0)
+						{
+							number_of_returned_triangles++;
+						}
+					}
+					if (ALLOCATE(returned_triangles,int,3*number_of_returned_triangles))
+					{
+						*triangles_address=returned_triangles;
+						*number_of_triangles_address=number_of_returned_triangles;
+						for (i=0;i<number_of_triangles;i++)
+						{
+							j=2;
+							while ((j>=0)&&(((triangles[i])->vertex_numbers)[j]>=0))
+							{
+								j--;
+							}
+							if (j<0)
+							{
+								for (j=0;j<3;j++)
+								{
+									*returned_triangles=((triangles[i])->vertex_numbers)[j];
+									returned_triangles++;
+								}
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"plane_delaunay.  Could not allocate returned_triangles");
+					}
+				}
+				/* tidy up */
+				for (i=0;i<number_of_triangles;i++)
+				{
+					DEALLOCATE(triangles[i]);
+				}
+				DEALLOCATE(triangles);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"plane_delaunay.  Could not allocate initial triangles 2");
+				i++;
+				while (i<number_of_triangles)
+				{
+					DEALLOCATE(triangles[i]);
+					i++;
+				}
+				DEALLOCATE(triangles);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"plane_delaunay.  Could not allocate initial triangles");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"plane_delaunay.  Invalid argument(s) %d %p %p %p",number_of_vertices,
+			vertices,number_of_triangles_address,triangles_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* plane_delaunay */
+#endif /* defined (OLD_CODE) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 27 November 2003
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -126,9 +126,9 @@ Finds the id of the mapping map button.
 } /* identify_mapping_map_button */
 
 static int update_movie_frames_information(struct Mapping_window *mapping,
-	int *recalculate,char *map_settings_changed)
+	int *recalculate,int *map_settings_changed)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2002
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 For for map in <mapping>, dealing with precalculated movies, update the number
@@ -288,6 +288,7 @@ of frames, map dialog information, etc. and set <recalculate>
 		{
 			map->start_time=frame_start_time;
 			map_dialog->start_time=frame_start_time;
+			*map_settings_changed=2;
 		}
 		if (frame_end_time!=map_dialog->end_time)
 		{
@@ -306,7 +307,7 @@ of frames, map dialog information, etc. and set <recalculate>
 	LEAVE;
 	
 	return (return_code);
-}/* update_movie_frames_information */
+} /* update_movie_frames_information */
 
 int mapping_window_stop_time_keeper(struct Mapping_window *mapping)
 /*******************************************************************************
@@ -373,14 +374,14 @@ If the <mapping> has a time keeper, stop it and destroy it's editor widget.
 static void redraw_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2002
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 Updates the map settings based on the map dialog and redraws the map if
 necessary.
 ==============================================================================*/
 {
-	char map_settings_changed,*value_string,temp_string[20];
+	char *value_string,temp_string[20];
 	enum Contour_thickness contour_thickness;
 	enum Electrodes_marker_type electrodes_marker_type;
 	enum Electrodes_label_type electrodes_label_type;
@@ -388,8 +389,8 @@ necessary.
 	enum Interpolation_type interpolation_type;
 	enum Spectrum_simple_type spectrum_simple_type;
 	float maximum_range,minimum_range,value;
-	int electrodes_marker_size,number_of_mesh_columns,number_of_mesh_rows,
-		recalculate;
+	int electrodes_marker_size,map_settings_changed,number_of_mesh_columns,
+		number_of_mesh_rows,recalculate;
 	struct Map *map;
 	struct Map_dialog *map_dialog;
 	struct Map_drawing_information *drawing_information;
@@ -528,9 +529,9 @@ necessary.
 		}
 		if (map->interpolation_type!=interpolation_type)
 		{
-			/*time keeper editor may now be invalid, eg when moving from direct to*/
-			/* bicubic maps, so get rid of it ??JW may wish to decied to leave it for some */
-			/*transitions of interpolation_type and map->type*/
+			/* time keeper editor may now be invalid, eg when moving from direct to
+				bicubic maps, so get rid of it ??JW may wish to decied to leave it for
+				some transitions of interpolation_type and map->type */
 			mapping_window_kill_time_keeper_editor(mapping);
 			map->interpolation_type=interpolation_type;
 			map_settings_changed=1;
@@ -726,7 +727,8 @@ necessary.
 			map->electrodes_label_type=electrodes_label_type;
 			map_settings_changed=1;
 		}
-		if (XmToggleButtonGadgetGetState(map_dialog->electrodes.marker_colour_toggle))
+		if (XmToggleButtonGadgetGetState(
+			map_dialog->electrodes.marker_colour_toggle))
 		{
 			if (!(map->colour_electrodes_with_signal))
 			{
@@ -741,7 +743,8 @@ necessary.
 				map_settings_changed=1;
 				map->colour_electrodes_with_signal=0;
 			}
-		}		value_string=(char *)NULL;
+		}
+		value_string=(char *)NULL;
 		XtVaGetValues((map_dialog->electrodes.marker_size_text),
 			XmNvalue,&value_string,
 			NULL);
@@ -976,12 +979,18 @@ necessary.
 				map->drawing_information,1);
 #endif
 			ensure_map_projection_type_matches_region_type(map);
-			update_mapping_drawing_area(mapping,recalculate);
-			update_mapping_colour_or_auxili(mapping);
 			mapping_window_update_time_limits(mapping);
-			/*the time can have changed so update the time_keeper*/
-			time_keeper=Time_object_get_time_keeper(mapping->potential_time_object);
-			Time_keeper_request_new_time(time_keeper,map->start_time/1000.0);
+			if (2==map_settings_changed)
+			{
+				/* the time has changed so update the time_keeper */
+				time_keeper=Time_object_get_time_keeper(mapping->potential_time_object);
+				Time_keeper_request_new_time(time_keeper,map->start_time/1000.0);
+			}
+			else
+			{
+				update_mapping_drawing_area(mapping,recalculate);
+				update_mapping_colour_or_auxili(mapping);
+			}
 		}
 		if (widget==map_dialog->ok_button)
 		{
@@ -1388,7 +1397,8 @@ Draws a frame in the activation map animation.
 				}
 				else
 				{
-					display=User_interface_get_display(drawing_information->user_interface);
+					display=User_interface_get_display(
+						drawing_information->user_interface);
 					colour_map=drawing_information->colour_map;
 					spectrum_pixels=drawing_information->spectrum_colours;
 					/* use background drawing colour for the whole spectrum */
@@ -1450,8 +1460,8 @@ Draws a frame in the activation map animation.
 				{
 					Event_dispatcher_add_timeout_callback(
 						User_interface_get_event_dispatcher(mapping->user_interface),
-						/*seconds*/0, /*nanoseconds*/100000000, draw_activation_animation_frame, 
-						(void *)mapping_window);
+						/*seconds*/0,/*nanoseconds*/100000000,
+						draw_activation_animation_frame,(void *)mapping_window);
 				}
 				else
 				{
@@ -1480,8 +1490,9 @@ Draws a frame in the activation map animation.
 				if (*(map->datum)< *(map->end_search_interval))
 				{
 					Event_dispatcher_add_timeout_callback(
-						User_interface_get_event_dispatcher(mapping->user_interface), /*seconds*/0,
-						/*nanoseconds*/10000000, draw_activation_animation_frame, (void *)mapping_window);
+						User_interface_get_event_dispatcher(mapping->user_interface),
+						/*seconds*/0,/*nanoseconds*/10000000,
+						draw_activation_animation_frame,(void *)mapping_window);
 				}
 				else
 				{
@@ -1507,8 +1518,8 @@ Draws a frame in the activation map animation.
 							{
 								Event_dispatcher_add_timeout_callback(
 									User_interface_get_event_dispatcher(mapping->user_interface),
-									/*seconds*/0, /*nanoseconds*/100000000, draw_activation_animation_frame, 
-									(void *)mapping_window);
+									/*seconds*/0,/*nanoseconds*/100000000,
+									draw_activation_animation_frame,(void *)mapping_window);
 							}
 							else
 							{
@@ -1530,8 +1541,8 @@ Draws a frame in the activation map animation.
 							{
 								Event_dispatcher_add_timeout_callback(
 									User_interface_get_event_dispatcher(mapping->user_interface),
-									/*seconds*/0, /*nanoseconds*/10000000, draw_activation_animation_frame,
-									(void *)mapping_window);
+									/*seconds*/0,/*nanoseconds*/10000000,
+									draw_activation_animation_frame,(void *)mapping_window);
 							}
 							else
 							{
@@ -5452,7 +5463,8 @@ properties.  Then the mapping window is opened.
 	return (return_code);
 } /* open_mapping_window */
 
-static int update_mapping_drawing_area_2d(struct Mapping_window *mapping,int recalculate)
+static int update_mapping_drawing_area_2d(struct Mapping_window *mapping,
+	int recalculate)
 /*******************************************************************************
 LAST MODIFIED : 30 April 1999
 
@@ -5474,7 +5486,8 @@ the interpolation functions are also recalculated.
 		(drawing_information->user_interface))
 	{
 		/* clear the map drawing area */
-		XFillRectangle(User_interface_get_display(drawing_information->user_interface),
+		XFillRectangle(
+			User_interface_get_display(drawing_information->user_interface),
 			drawing->pixel_map,(drawing_information->graphics_context).
 			background_drawing_colour,0,0,drawing->width,drawing->height);
 		/* draw the map */
@@ -5895,7 +5908,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 
 int update_map_from_manual_time_update(struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 Sets recalculate and map->interpolation_type from
@@ -5904,7 +5917,9 @@ Reset map->interpolation_type to it's initial value.
 Note: 3D maps always fully recalculate on manual time updates.
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 	enum Interpolation_type interpolation;
+#endif /* defined (OLD_CODE) */
 	int recalculate,return_code;
 	struct Map *map;
 
@@ -5913,20 +5928,26 @@ Note: 3D maps always fully recalculate on manual time updates.
 	if (mapping&&(map=mapping->map))
 	{
 		return_code=1;
+#if defined (OLD_CODE)
 		interpolation=map->interpolation_type;
 		if ((map->draw_map_on_manual_time_update)||
 			(map->projection_type==THREED_PROJECTION))
 		{
+#endif /* defined (OLD_CODE) */
 			recalculate=2;
+#if defined (OLD_CODE)
 		}
 		else
 		{
 			recalculate=1;
 			map->interpolation_type=NO_INTERPOLATION;
 		}
+#endif /* defined (OLD_CODE) */
 		update_mapping_drawing_area(mapping,recalculate);
 		update_mapping_colour_or_auxili(mapping);
+#if defined (OLD_CODE)
 		map->interpolation_type=interpolation;
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
