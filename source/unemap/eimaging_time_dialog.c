@@ -26,6 +26,7 @@ DESCRIPTION :
 #include <Mrm/MrmDecls.h>
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
+#include "unemap/analysis.h"
 #include "unemap/eimaging_time_dialog.h"
 #include "unemap/eimaging_time_dialog.uidh"
 #include "user_interface/message.h"

@@ -868,4 +868,38 @@ DESCRIPTION :
 Alters the dialog's button informtion used to generate the event time markers.
 The event time markers are updated in update_eimaging_evnts_frm_dlg
 ==============================================================================*/
+
+struct Cardiac_interval *find_Cardiac_interval_in_list_given_type(
+	struct Cardiac_interval *first_list_interval, 
+	enum Cardiac_interval_type desired_type);
+/*******************************************************************************
+LAST MODIFIED : 22 June 2001
+
+DESCRIPTION : finds  and returns the first  cardiac interval in list beginning 
+with <first_list_interval> that has type <desired_type>. If none is found, 
+returns NULL.
+==============================================================================*/
+
+int create_Electrical_imaging_events_from_time(struct Trace_window *trace,
+	int current_event_time,int step);
+/*******************************************************************************
+LAST MODIFIED : 22 June 2001
+
+DESCRIPTION : create electrical imaging events at <current_event_time>
+, and up from (and down from) this, as spacing <step>, for the length of 
+<trace>'s cardiac interval device.
+If <step>==0, then just put the event at <current_event_time>, none up or down.
+==============================================================================*/
+
+int configure_eimaging_time_dialog_marker_menu(struct Trace_window *trace);
+/*******************************************************************************
+LAST MODIFIED : 22 June 2001
+
+DESCRIPTION :
+Configures <trace>'s eimaging_time_dialog's event_choice based upon
+<trace>'s inverse_wave_mode. 
+<trace>'s eimaging_time_dialog MUST have been created before this function can
+be called.
+==============================================================================*/
+
 #endif /* !defined (TRACE_WINDOW_H) */

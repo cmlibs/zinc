@@ -37,6 +37,7 @@ identifier
 	widget_spacing;
 	eimaging_time_dialog_structure;
 	trace_window_structure;
+	analysis_work_area_structure;
 	! Fonts
 	button_font;
 	heading_font;
@@ -195,7 +196,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{			
-				update_eimaging_evnts_frm_dlg(trace_window_structure);
+				update_eimaging_evnts_frm_dlg(analysis_work_area_structure);
 				};
 			};
 		};
@@ -240,7 +241,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				update_eimaging_evnts_frm_dlg(trace_window_structure);
+				update_eimaging_evnts_frm_dlg(analysis_work_area_structure);
 				};
 			};
 		};

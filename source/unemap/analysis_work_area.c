@@ -7835,6 +7835,181 @@ Electrical_imaging_event.
 	return(return_code);
 } /* move_add_remove_Electrical_imaging_event */
 
+static void update_eimaging_evnts_frm_dlg(Widget widget,
+	XtPointer analysis_work_area,	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 19 December 2001
+
+DESCRIPTION :
+Updates the electrical imaging event time settings based on the dialog and 
+redraws if necessary.
+Needs to be here in analysis_work_area as need to have access to map to do
+update_map_from_manual_time_update
+==============================================================================*/
+{	
+	int current_event_time,found,step;
+	struct Analysis_work_area *analysis;
+	struct Cardiac_interval *interval;	
+	struct Device *cardiac_interval_device;
+	struct Electrical_imaging_event  *event;
+	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
+	struct Signal_buffer *buffer;
+	struct Trace_window *trace;			
+						 										
+	ENTER(update_eimaging_evnts_frm_dlg);
+	USE_PARAMETER(call_data);
+	cardiac_interval_device=(struct Device *)NULL;
+	eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	trace=(struct Trace_window *)NULL;		
+	event=(struct Electrical_imaging_event *)NULL;
+	interval=(struct Cardiac_interval *)NULL;
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(trace=analysis->trace)&&
+		(eimaging_time_dialog=trace->area_3.eimaging_time_dialog)&&
+		(cardiac_interval_device=trace->cardiac_interval_device)&&
+		(buffer=get_Device_signal_buffer(cardiac_interval_device)))
+	{	
+		if(eimaging_time_dialog->settings_changed)
+		{			
+			step=(int)(((eimaging_time_dialog->marker_period*1000)/buffer->frequency)+0.5);		
+			switch(eimaging_time_dialog->reference_event)
+			{
+				case EVENT_P_WAVE_START: 
+				case EVENT_P_WAVE_PEAK_OR_TROUGH:
+				case EVENT_P_WAVE_END:
+				{									
+					if(interval=find_Cardiac_interval_in_list_given_type(trace->first_interval,
+						P_WAVE_INTERVAL))
+					{
+						switch(eimaging_time_dialog->reference_event) 
+						{
+							case EVENT_P_WAVE_START:
+							{
+								current_event_time=interval->start_time;
+							}break;
+							case EVENT_P_WAVE_PEAK_OR_TROUGH:
+							{
+								current_event_time=interval->peak_or_trough_time;
+							}break;					
+							case EVENT_P_WAVE_END:
+							{
+								current_event_time=interval->end_time;
+							}break;
+						}						
+						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
+					}
+				}break;	
+				case EVENT_QRS_WAVE_START: 
+				case EVENT_QRS_WAVE_PEAK_OR_TROUGH:
+				case EVENT_QRS_WAVE_END:
+				{									
+					if(interval=find_Cardiac_interval_in_list_given_type(trace->first_interval,
+						QRS_WAVE_INTERVAL))
+					{
+						switch(eimaging_time_dialog->reference_event) 
+						{
+							case EVENT_QRS_WAVE_START:
+							{
+								current_event_time=interval->start_time;
+							}break;
+							case EVENT_QRS_WAVE_PEAK_OR_TROUGH:
+							{
+								current_event_time=interval->peak_or_trough_time;
+							}break;					
+							case EVENT_QRS_WAVE_END:
+							{
+								current_event_time=interval->end_time;
+							}break;
+						}						
+						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
+					}
+				}break;
+				case EVENT_T_WAVE_START: 
+				case EVENT_T_WAVE_PEAK_OR_TROUGH:
+				case EVENT_T_WAVE_END:
+				{									
+					if(interval=find_Cardiac_interval_in_list_given_type(trace->first_interval,
+						T_WAVE_INTERVAL))
+					{
+						switch(eimaging_time_dialog->reference_event) 
+						{
+							case EVENT_T_WAVE_START:
+							{
+								current_event_time=interval->start_time;
+							}break;
+							case EVENT_T_WAVE_PEAK_OR_TROUGH:
+							{
+								current_event_time=interval->peak_or_trough_time;
+							}break;					
+							case EVENT_T_WAVE_END:
+							{
+								current_event_time=interval->end_time;
+							}break;
+						}						
+						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
+					}
+				}break;		
+				case EVENT_CURRENT:
+				{				
+					found=0;
+					if(event=*trace->first_eimaging_event)
+					{
+						/* find the current event */					
+						while(event&&(!found))
+						{
+							if(event->is_current_event)
+							{
+								found=1;
+							}
+							else
+							{
+								event=event->next;
+							}
+						}	
+						if(!found)
+						{
+							/* if no current event, make the first event the current event */
+							event=*trace->first_eimaging_event;
+							event->is_current_event=1;
+						}
+						/*store the current event*/
+						current_event_time=event->time;
+						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
+					}
+				}break;
+				case EVENT_CLEAR:
+				{		
+					/* just destroy events  */
+					destroy_Electrical_imaging_event_list(trace->first_eimaging_event);
+				}break;
+			}/* switch(eimaging_time_dialog->reference_event) */
+			/*if we have a map, update it */		
+			if((analysis->mapping_window)&&(analysis->mapping_window->map))
+			{
+				update_map_from_manual_time_update(analysis->mapping_window);						
+			}	
+		}/* if(eimaging_time_dialog->settings_changed) */
+		/* we've now dealt with any changes. */
+		eimaging_time_dialog->settings_changed=0;
+		if (widget==eimaging_time_dialog->ok_button)
+		{
+			/* close the eimaging_time_dialog  */
+			close_eimaging_time_dialog((Widget)NULL,(XtPointer)eimaging_time_dialog,
+				(XtPointer)NULL);
+			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+				(XtPointer)NULL);
+		}	
+		if (widget==eimaging_time_dialog->apply_button)
+		{
+			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+				(XtPointer)NULL);
+			configure_eimaging_time_dialog_marker_menu(trace);
+		}
+	}
+	LEAVE;
+}/* update_eimaging_evnts_frm_dlg */
+
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
@@ -17036,7 +17211,8 @@ Creates the windows associated with the analysis work area.
 		{"select_trace_3_drawing_area",(XtPointer)select_trace_3_drawing_area},
 		{"close_analysis_work_area",(XtPointer)close_analysis_work_area},
 		{"analysis_set_highlight_min",(XtPointer)analysis_set_highlight_min},
-		{"analysis_set_highlight_max",(XtPointer)analysis_set_highlight_max}};
+		{"analysis_set_highlight_max",(XtPointer)analysis_set_highlight_max},
+		{"update_eimaging_evnts_frm_dlg",(XtPointer)update_eimaging_evnts_frm_dlg}};
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"analysis_work_area_structure",(XtPointer)NULL},

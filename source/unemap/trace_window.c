@@ -354,44 +354,6 @@ This function frees the memory associated with the interval list starting at
 	return (return_code);
 } /* destroy_Cardiac_interval_list */
 
-static struct Cardiac_interval *find_Cardiac_interval_in_list_given_type(
-	struct Cardiac_interval *first_list_interval, 
-	enum Cardiac_interval_type desired_type)
-/*******************************************************************************
-LAST MODIFIED : 22 June 2001
-
-DESCRIPTION : finds  and returns the first  cardiac interval in list beginning 
-with <first_list_interval> that has type <desired_type>. If none is found, 
-returns NULL.
-==============================================================================*/
-{
-	struct Cardiac_interval *interval,*found_interval;
-
-	ENTER(find_Cardiac_interval_in_list_given_type);
-	interval=(struct Cardiac_interval *)NULL;
-	found_interval=(struct Cardiac_interval *)NULL;
-	if(interval=first_list_interval)
-	{	
-		/* find interval with matching type */
-		while(interval&&(found_interval==NULL))
-		{
-			if(interval->type==desired_type)
-			{
-				found_interval=interval;
-			}
-			interval=interval->next;
-		}			
-	}
-	else
-	{
-		
-		display_message(ERROR_MESSAGE,
-			"find_Cardiac_interval_in_list_given_type. invalid arguments");
-	}
-	LEAVE;
-	return(found_interval);
-} /* find_Cardiac_interval_in_list_given_type */
-
 static void destroy_Trace_window(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
@@ -6304,129 +6266,6 @@ Saves the id of the trace times  button.
 	LEAVE;
 } /* id_trace_times_button*/
 
-static int configure_eimaging_time_dialog_marker_menu(struct Trace_window *trace)
-/*******************************************************************************
-LAST MODIFIED : 22 June 2001
-
-DESCRIPTION :
-Configures <trace>'s eimaging_time_dialog's event_choice based upon
-<trace>'s inverse_wave_mode. 
-<trace>'s eimaging_time_dialog MUST have been created before this function can
-be called.
-==============================================================================*/
-{	
-	enum Inverse_wave_mode inverse_wave_mode;
-	char flag;
-	int i,num_children,return_code;
-	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
-	Widget *list,option_widget;
-
-	ENTER(configure_eimaging_time_dialog_marker_menu);
-	eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)NULL;
-	list=(Widget *)NULL;
-	if(trace&&(eimaging_time_dialog=trace->area_3.eimaging_time_dialog))
-	{		
-		/*dim all the menu choices */
-		XtSetSensitive(eimaging_time_dialog->current_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->clear_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->p_wave_start_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->p_wave_peak_or_trough_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->p_wave_end_button,FALSE);		
-		XtSetSensitive(eimaging_time_dialog->qrs_wave_start_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->qrs_wave_peak_or_trough_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->qrs_wave_end_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->t_wave_start_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->t_wave_peak_or_trough_button,FALSE);
-		XtSetSensitive(eimaging_time_dialog->t_wave_end_button,FALSE);
-		/*select the relevant ones.*/
-		/* "clear" is always always valid */
-		XtSetSensitive(eimaging_time_dialog->clear_button,TRUE);
-		/* if we have at least one electrical imaging event, we can use the current one*/
-		if(trace->first_eimaging_event)
-		{
-			XtSetSensitive(eimaging_time_dialog->current_button,TRUE);		
-		}
-		if(trace->first_interval)
-		{
-			inverse_wave_mode=trace->inverse_wave_mode;		
-			if((inverse_wave_mode==P_WAVE)||(inverse_wave_mode==PQRS_WAVE)||
-				(inverse_wave_mode==PT_WAVE)||(inverse_wave_mode==PQRST_WAVE))
-			{
-				if(find_Cardiac_interval_in_list_given_type(trace->first_interval,
-					P_WAVE_INTERVAL))
-				{
-					XtSetSensitive(eimaging_time_dialog->p_wave_start_button,TRUE);
-					XtSetSensitive(eimaging_time_dialog->p_wave_peak_or_trough_button,TRUE);
-					XtSetSensitive(eimaging_time_dialog->p_wave_end_button,TRUE);
-				}
-			}
-			if((inverse_wave_mode==QRS_WAVE)||(inverse_wave_mode==PQRS_WAVE)||
-				(inverse_wave_mode==QRST_WAVE)||(inverse_wave_mode==PQRST_WAVE))
-			{
-				if(find_Cardiac_interval_in_list_given_type(trace->first_interval,
-					QRS_WAVE_INTERVAL))
-				{
-					XtSetSensitive(eimaging_time_dialog->qrs_wave_start_button,TRUE);
-					XtSetSensitive(eimaging_time_dialog->qrs_wave_peak_or_trough_button,TRUE);
-					XtSetSensitive(eimaging_time_dialog->qrs_wave_end_button,TRUE);	
-				}
-			}				
-			if((inverse_wave_mode==T_WAVE)||(inverse_wave_mode==PT_WAVE)||
-				(inverse_wave_mode==QRST_WAVE)||(inverse_wave_mode==PQRST_WAVE))		
-			{
-				if(find_Cardiac_interval_in_list_given_type(trace->first_interval,
-					T_WAVE_INTERVAL))
-				{
-					XtSetSensitive(eimaging_time_dialog->t_wave_start_button,TRUE);
-					XtSetSensitive(eimaging_time_dialog->t_wave_peak_or_trough_button,TRUE);
-					XtSetSensitive(eimaging_time_dialog->t_wave_end_button,TRUE);
-				}
-			}
-			
-		}		
-		/* find current menu selection */
-		XtVaGetValues(eimaging_time_dialog->event_choice,
-			XmNmenuHistory,&option_widget,NULL);
-		/* is it valid (sensitive) ?*/
-		XtVaGetValues(option_widget,XmNsensitive,&flag,NULL);
-		/* if not, or if it's the clear button*/
-		if((flag==FALSE)||(option_widget==eimaging_time_dialog->clear_button))
-		{						
-			/* find the first valid (sensitive) entry */
-			XtVaGetValues(eimaging_time_dialog->event_pull_down,XmNchildren,
-				&list,NULL);
-			XtVaGetValues(eimaging_time_dialog->event_pull_down,XmNnumChildren,
-				&num_children,NULL);
-			i=0;
-			flag=FALSE;
-			while((i<num_children)&&(flag==FALSE))
-			{
-				XtVaGetValues(list[i],XmNsensitive,&flag,NULL);
-				if(flag==TRUE)
-				{	
-					/* make the first valid (sensitive) entry the current choice */					
-					XtVaSetValues(eimaging_time_dialog->event_choice,
-						XmNmenuHistory,list[i],NULL);					
-				}
-				i++;
-			}			
-		}	/* if(flag==FALSE)	*/
-		/* find (now possibly changed) current menu selection  */
-		XtVaGetValues(eimaging_time_dialog->event_choice,
-			XmNmenuHistory,&option_widget,NULL);
-		/* update this info */
-		alter_eimaging_button_event_info(option_widget,eimaging_time_dialog);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"configure_eimaging_time_dialog_marker_menu. invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-} /*configure_eimaging_time_dialog_marker_menu*/
-
 static void configure_eimaging_event_times(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
@@ -8172,239 +8011,6 @@ and <call_data>.
 	LEAVE;
 } /* trace_overlay_beats */
 
-static int create_Electrical_imaging_events_from_time(struct Trace_window *trace,
-	int current_event_time,int step)
-/*******************************************************************************
-LAST MODIFIED : 22 June 2001
-
-DESCRIPTION : create electrical imaging events at <current_event_time>
-, and up from (and down from) this, as spacing <step>, for the length of 
-<trace>'s cardiac interval device.
-If <step>==0, then just put the event at <current_event_time>, none up or down.
-==============================================================================*/
-{
-	int return_code,time;
-	struct Signal_buffer *buffer;
-	struct Device *cardiac_interval_device;
-	struct Electrical_imaging_event  *new_event;
-
-	ENTER(create_Electrical_imaging_events_from_time);
-	new_event=(struct Electrical_imaging_event  *)NULL;
-	cardiac_interval_device=(struct Device *)NULL;
-	buffer=(struct Signal_buffer *)NULL;
-	if(trace&&(cardiac_interval_device=trace->cardiac_interval_device)&&
-		(buffer=get_Device_signal_buffer(cardiac_interval_device)))
-	{
-		return_code=1;		
-		destroy_Electrical_imaging_event_list(trace->first_eimaging_event);			
-		time=current_event_time;
-		if(step==0)
-		{
-			new_event=create_Electrical_imaging_event(time);
-				add_Electrical_imaging_event_to_sorted_list(trace->first_eimaging_event,
-					new_event);
-			new_event->is_current_event=1;
-		}
-		else
-		{
-			while(time<=buffer->end)
-			{						
-				new_event=create_Electrical_imaging_event(time);	
-				if(time==current_event_time)
-				{
-					new_event->is_current_event=1;
-				}													
-				add_Electrical_imaging_event_to_sorted_list(trace->first_eimaging_event,
-					new_event);
-				time+=step;
-			}
-			time=current_event_time-step;
-			/* loop backward from current event, making events */
-			while(time>buffer->start)
-			{
-				new_event=create_Electrical_imaging_event(time);
-				add_Electrical_imaging_event_to_sorted_list(trace->first_eimaging_event,
-					new_event);
-				time-=step;
-			}
-		}
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,
-			"create_Electrical_imaging_events_from_time.  Missing trace_window");
-	}
-	LEAVE;
-	return(return_code);
-}/* create_Electrical_imaging_events_from_time*/
-
-static void update_eimaging_evnts_frm_dlg(Widget widget,XtPointer trace_window,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 19 June 2001
-
-DESCRIPTION :
-Updates the electrical imaging event time settings based on the dialog and 
-redraws if necessary.
-==============================================================================*/
-{	
-	int current_event_time,found,step;
-	struct Cardiac_interval *interval;	
-	struct Device *cardiac_interval_device;
-	struct Electrical_imaging_event  *event;
-	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
-	struct Signal_buffer *buffer;
-	struct Trace_window *trace;			
-						 										
-	ENTER(update_eimaging_evnts_frm_dlg);
-	USE_PARAMETER(call_data);
-	cardiac_interval_device=(struct Device *)NULL;
-	eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)NULL;
-	buffer=(struct Signal_buffer *)NULL;
-	trace=(struct Trace_window *)NULL;		
-	event=(struct Electrical_imaging_event *)NULL;
-	interval=(struct Cardiac_interval *)NULL;
-	if ((trace=(struct Trace_window *)trace_window)&&
-		(eimaging_time_dialog=trace->area_3.eimaging_time_dialog)&&
-		(cardiac_interval_device=trace->cardiac_interval_device)&&
-		(buffer=get_Device_signal_buffer(cardiac_interval_device)))
-	{	
-		if(eimaging_time_dialog->settings_changed)
-		{			
-			step=(int)(((eimaging_time_dialog->marker_period*1000)/buffer->frequency)+0.5);		
-			switch(eimaging_time_dialog->reference_event)
-			{
-				case EVENT_P_WAVE_START: 
-				case EVENT_P_WAVE_PEAK_OR_TROUGH:
-				case EVENT_P_WAVE_END:
-				{									
-					if(interval=find_Cardiac_interval_in_list_given_type(trace->first_interval,
-						P_WAVE_INTERVAL))
-					{
-						switch(eimaging_time_dialog->reference_event) 
-						{
-							case EVENT_P_WAVE_START:
-							{
-								current_event_time=interval->start_time;
-							}break;
-							case EVENT_P_WAVE_PEAK_OR_TROUGH:
-							{
-								current_event_time=interval->peak_or_trough_time;
-							}break;					
-							case EVENT_P_WAVE_END:
-							{
-								current_event_time=interval->end_time;
-							}break;
-						}						
-						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
-					}
-				}break;	
-				case EVENT_QRS_WAVE_START: 
-				case EVENT_QRS_WAVE_PEAK_OR_TROUGH:
-				case EVENT_QRS_WAVE_END:
-				{									
-					if(interval=find_Cardiac_interval_in_list_given_type(trace->first_interval,
-						QRS_WAVE_INTERVAL))
-					{
-						switch(eimaging_time_dialog->reference_event) 
-						{
-							case EVENT_QRS_WAVE_START:
-							{
-								current_event_time=interval->start_time;
-							}break;
-							case EVENT_QRS_WAVE_PEAK_OR_TROUGH:
-							{
-								current_event_time=interval->peak_or_trough_time;
-							}break;					
-							case EVENT_QRS_WAVE_END:
-							{
-								current_event_time=interval->end_time;
-							}break;
-						}						
-						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
-					}
-				}break;
-				case EVENT_T_WAVE_START: 
-				case EVENT_T_WAVE_PEAK_OR_TROUGH:
-				case EVENT_T_WAVE_END:
-				{									
-					if(interval=find_Cardiac_interval_in_list_given_type(trace->first_interval,
-						T_WAVE_INTERVAL))
-					{
-						switch(eimaging_time_dialog->reference_event) 
-						{
-							case EVENT_T_WAVE_START:
-							{
-								current_event_time=interval->start_time;
-							}break;
-							case EVENT_T_WAVE_PEAK_OR_TROUGH:
-							{
-								current_event_time=interval->peak_or_trough_time;
-							}break;					
-							case EVENT_T_WAVE_END:
-							{
-								current_event_time=interval->end_time;
-							}break;
-						}						
-						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
-					}
-				}break;		
-				case EVENT_CURRENT:
-				{				
-					found=0;
-					if(event=*trace->first_eimaging_event)
-					{
-						/* find the current event */					
-						while(event&&(!found))
-						{
-							if(event->is_current_event)
-							{
-								found=1;
-							}
-							else
-							{
-								event=event->next;
-							}
-						}	
-						if(!found)
-						{
-							/* if no current event, make the first event the current event */
-							event=*trace->first_eimaging_event;
-							event->is_current_event=1;
-						}
-						/*store the current event*/
-						current_event_time=event->time;
-						create_Electrical_imaging_events_from_time(trace,current_event_time,step);
-					}
-				}break;
-				case EVENT_CLEAR:
-				{		
-					/* just destroy events  */
-					destroy_Electrical_imaging_event_list(trace->first_eimaging_event);
-				}break;
-			}/* switch(eimaging_time_dialog->reference_event) */
-		}/* if(eimaging_time_dialog->settings_changed) */
-		/* we've now dealt with any changes. */
-		eimaging_time_dialog->settings_changed=0;
-		if (widget==eimaging_time_dialog->ok_button)
-		{
-			/* close the eimaging_time_dialog  */
-			close_eimaging_time_dialog((Widget)NULL,(XtPointer)eimaging_time_dialog,
-				(XtPointer)NULL);
-			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-				(XtPointer)NULL);
-		}	
-		if (widget==eimaging_time_dialog->apply_button)
-		{
-			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-				(XtPointer)NULL);
-			configure_eimaging_time_dialog_marker_menu(trace);
-		}
-	}
-	LEAVE;
-}/* update_eimaging_evnts_frm_dlg */
-
 static struct Trace_window *create_Trace_window(
 	struct Trace_window **address,Widget activation,Widget parent,
 	Pixel identifying_colour,enum Signal_analysis_mode *analysis_mode,
@@ -8787,12 +8393,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 	{
 		{"trace_window_structure",(XtPointer)NULL},
 		{"identifying_colour",(XtPointer)NULL}
-	};	
-	static MrmRegisterArg global_callback_list[]=
-	{
-		{"update_eimaging_evnts_frm_dlg",
-		 (XtPointer)update_eimaging_evnts_frm_dlg}	
-	};	
+	};
 	struct Channel *cardiac_interval_channel,*imaginary_channel_1,*imaginary_channel_2,
 		*processed_channel,*real_channel_1,*real_channel_2;
 	struct Device **device,*cardiac_interval_device,*imaginary_device_1,
@@ -9305,9 +8906,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				}
 				/* register the callbacks */
 				if ((MrmSUCCESS==MrmRegisterNamesInHierarchy(trace_window_hierarchy,
-					callback_list,XtNumber(callback_list)))
-					&&(MrmSUCCESS==MrmRegisterNames(global_callback_list,
-						XtNumber(global_callback_list))))
+					callback_list,XtNumber(callback_list))))
 				{
 					/* assign and register the identifiers */
 					identifier_list[0].value=(XtPointer)trace;
@@ -12118,6 +11717,234 @@ DESCRIPTION : move the entire cardiac interval box.
 	LEAVE;
 	return(return_code);
 } /* move_Cardiac_interval_box */
+
+int configure_eimaging_time_dialog_marker_menu(struct Trace_window *trace)
+/*******************************************************************************
+LAST MODIFIED : 22 June 2001
+
+DESCRIPTION :
+Configures <trace>'s eimaging_time_dialog's event_choice based upon
+<trace>'s inverse_wave_mode. 
+<trace>'s eimaging_time_dialog MUST have been created before this function can
+be called.
+==============================================================================*/
+{	
+	enum Inverse_wave_mode inverse_wave_mode;
+	char flag;
+	int i,num_children,return_code;
+	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
+	Widget *list,option_widget;
+
+	ENTER(configure_eimaging_time_dialog_marker_menu);
+	eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)NULL;
+	list=(Widget *)NULL;
+	if(trace&&(eimaging_time_dialog=trace->area_3.eimaging_time_dialog))
+	{		
+		/*dim all the menu choices */
+		XtSetSensitive(eimaging_time_dialog->current_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->clear_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->p_wave_start_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->p_wave_peak_or_trough_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->p_wave_end_button,FALSE);		
+		XtSetSensitive(eimaging_time_dialog->qrs_wave_start_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->qrs_wave_peak_or_trough_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->qrs_wave_end_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->t_wave_start_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->t_wave_peak_or_trough_button,FALSE);
+		XtSetSensitive(eimaging_time_dialog->t_wave_end_button,FALSE);
+		/*select the relevant ones.*/
+		/* "clear" is always always valid */
+		XtSetSensitive(eimaging_time_dialog->clear_button,TRUE);
+		/* if we have at least one electrical imaging event, we can use the current one*/
+		if(trace->first_eimaging_event)
+		{
+			XtSetSensitive(eimaging_time_dialog->current_button,TRUE);		
+		}
+		if(trace->first_interval)
+		{
+			inverse_wave_mode=trace->inverse_wave_mode;		
+			if((inverse_wave_mode==P_WAVE)||(inverse_wave_mode==PQRS_WAVE)||
+				(inverse_wave_mode==PT_WAVE)||(inverse_wave_mode==PQRST_WAVE))
+			{
+				if(find_Cardiac_interval_in_list_given_type(trace->first_interval,
+					P_WAVE_INTERVAL))
+				{
+					XtSetSensitive(eimaging_time_dialog->p_wave_start_button,TRUE);
+					XtSetSensitive(eimaging_time_dialog->p_wave_peak_or_trough_button,TRUE);
+					XtSetSensitive(eimaging_time_dialog->p_wave_end_button,TRUE);
+				}
+			}
+			if((inverse_wave_mode==QRS_WAVE)||(inverse_wave_mode==PQRS_WAVE)||
+				(inverse_wave_mode==QRST_WAVE)||(inverse_wave_mode==PQRST_WAVE))
+			{
+				if(find_Cardiac_interval_in_list_given_type(trace->first_interval,
+					QRS_WAVE_INTERVAL))
+				{
+					XtSetSensitive(eimaging_time_dialog->qrs_wave_start_button,TRUE);
+					XtSetSensitive(eimaging_time_dialog->qrs_wave_peak_or_trough_button,TRUE);
+					XtSetSensitive(eimaging_time_dialog->qrs_wave_end_button,TRUE);	
+				}
+			}				
+			if((inverse_wave_mode==T_WAVE)||(inverse_wave_mode==PT_WAVE)||
+				(inverse_wave_mode==QRST_WAVE)||(inverse_wave_mode==PQRST_WAVE))		
+			{
+				if(find_Cardiac_interval_in_list_given_type(trace->first_interval,
+					T_WAVE_INTERVAL))
+				{
+					XtSetSensitive(eimaging_time_dialog->t_wave_start_button,TRUE);
+					XtSetSensitive(eimaging_time_dialog->t_wave_peak_or_trough_button,TRUE);
+					XtSetSensitive(eimaging_time_dialog->t_wave_end_button,TRUE);
+				}
+			}
+			
+		}		
+		/* find current menu selection */
+		XtVaGetValues(eimaging_time_dialog->event_choice,
+			XmNmenuHistory,&option_widget,NULL);
+		/* is it valid (sensitive) ?*/
+		XtVaGetValues(option_widget,XmNsensitive,&flag,NULL);
+		/* if not, or if it's the clear button*/
+		if((flag==FALSE)||(option_widget==eimaging_time_dialog->clear_button))
+		{						
+			/* find the first valid (sensitive) entry */
+			XtVaGetValues(eimaging_time_dialog->event_pull_down,XmNchildren,
+				&list,NULL);
+			XtVaGetValues(eimaging_time_dialog->event_pull_down,XmNnumChildren,
+				&num_children,NULL);
+			i=0;
+			flag=FALSE;
+			while((i<num_children)&&(flag==FALSE))
+			{
+				XtVaGetValues(list[i],XmNsensitive,&flag,NULL);
+				if(flag==TRUE)
+				{	
+					/* make the first valid (sensitive) entry the current choice */					
+					XtVaSetValues(eimaging_time_dialog->event_choice,
+						XmNmenuHistory,list[i],NULL);					
+				}
+				i++;
+			}			
+		}	/* if(flag==FALSE)	*/
+		/* find (now possibly changed) current menu selection  */
+		XtVaGetValues(eimaging_time_dialog->event_choice,
+			XmNmenuHistory,&option_widget,NULL);
+		/* update this info */
+		alter_eimaging_button_event_info(option_widget,eimaging_time_dialog);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"configure_eimaging_time_dialog_marker_menu. invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /*configure_eimaging_time_dialog_marker_menu*/
+
+int create_Electrical_imaging_events_from_time(struct Trace_window *trace,
+	int current_event_time,int step)
+/*******************************************************************************
+LAST MODIFIED : 22 June 2001
+
+DESCRIPTION : create electrical imaging events at <current_event_time>
+, and up from (and down from) this, as spacing <step>, for the length of 
+<trace>'s cardiac interval device.
+If <step>==0, then just put the event at <current_event_time>, none up or down.
+==============================================================================*/
+{
+	int return_code,time;
+	struct Signal_buffer *buffer;
+	struct Device *cardiac_interval_device;
+	struct Electrical_imaging_event  *new_event;
+
+	ENTER(create_Electrical_imaging_events_from_time);
+	new_event=(struct Electrical_imaging_event  *)NULL;
+	cardiac_interval_device=(struct Device *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	if(trace&&(cardiac_interval_device=trace->cardiac_interval_device)&&
+		(buffer=get_Device_signal_buffer(cardiac_interval_device)))
+	{
+		return_code=1;		
+		destroy_Electrical_imaging_event_list(trace->first_eimaging_event);			
+		time=current_event_time;
+		if(step==0)
+		{
+			new_event=create_Electrical_imaging_event(time);
+				add_Electrical_imaging_event_to_sorted_list(trace->first_eimaging_event,
+					new_event);
+			new_event->is_current_event=1;
+		}
+		else
+		{
+			while(time<=buffer->end)
+			{						
+				new_event=create_Electrical_imaging_event(time);	
+				if(time==current_event_time)
+				{
+					new_event->is_current_event=1;
+				}													
+				add_Electrical_imaging_event_to_sorted_list(trace->first_eimaging_event,
+					new_event);
+				time+=step;
+			}
+			time=current_event_time-step;
+			/* loop backward from current event, making events */
+			while(time>buffer->start)
+			{
+				new_event=create_Electrical_imaging_event(time);
+				add_Electrical_imaging_event_to_sorted_list(trace->first_eimaging_event,
+					new_event);
+				time-=step;
+			}
+		}		
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"create_Electrical_imaging_events_from_time.  Missing trace_window");
+	}
+	LEAVE;
+	return(return_code);
+}/* create_Electrical_imaging_events_from_time*/
+
+struct Cardiac_interval *find_Cardiac_interval_in_list_given_type(
+	struct Cardiac_interval *first_list_interval, 
+	enum Cardiac_interval_type desired_type)
+/*******************************************************************************
+LAST MODIFIED : 22 June 2001
+
+DESCRIPTION : finds  and returns the first  cardiac interval in list beginning 
+with <first_list_interval> that has type <desired_type>. If none is found, 
+returns NULL.
+==============================================================================*/
+{
+	struct Cardiac_interval *interval,*found_interval;
+
+	ENTER(find_Cardiac_interval_in_list_given_type);
+	interval=(struct Cardiac_interval *)NULL;
+	found_interval=(struct Cardiac_interval *)NULL;
+	if(interval=first_list_interval)
+	{	
+		/* find interval with matching type */
+		while(interval&&(found_interval==NULL))
+		{
+			if(interval->type==desired_type)
+			{
+				found_interval=interval;
+			}
+			interval=interval->next;
+		}			
+	}
+	else
+	{
+		
+		display_message(ERROR_MESSAGE,
+			"find_Cardiac_interval_in_list_given_type. invalid arguments");
+	}
+	LEAVE;
+	return(found_interval);
+} /* find_Cardiac_interval_in_list_given_type */
 
 int move_Cardiac_interval(XmDrawingAreaCallbackStruct *callback,
 	struct Device *highlight_device,struct Trace_window *trace,
