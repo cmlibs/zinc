@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : make_plaque.c
 
-LAST MODIFIED : 11 Januray 2001
+LAST MODIFIED : 6 May 2001
 
 DESCRIPTION :
 Make a unemap configuration file for multiple flexible pcb plaques in a row.
@@ -15,8 +15,8 @@ int main()
 {
 	char file_name[121];
 	FILE *cnfg_file;
-	int bipolar,ecg_module,electrode_number,i,j,number_of_pcbs,number_in_row,
-		region_number,start1,start2,start3,start4;
+	int bipolar,ecg_module,electrode_number,end1,end2,end3,i,j,number_of_pcbs,
+		number_in_row,region_number,start1,start2,start3,start4;
 
 	printf("File name? (.cnfg assumed)\n");
 	scanf("%s",file_name);
@@ -43,7 +43,11 @@ int main()
 					if (('b'==file_name[0])||('B'==file_name[0]))
 					{
 						bipolar=1;
+#if defined (OLD_CODE)
+/* for 4x16 flexible pcbs */
 						number_in_row=15;
+#endif /* defined (OLD_CODE) */
+						number_in_row=16;
 					}
 					else
 					{
@@ -55,19 +59,46 @@ int main()
 					{
 						if (ecg_module==(electrode_number/64)+i+1)
 						{
+							/*???DB.  Currently only for bipolar */
+#if defined (OLD_CODE)
+/* for 4x16 flexible pcbs */
+#if defined (OLD_CODE)
+/* pre bipolar adapter ecg */
 							start1=2;
+							end1=number_in_row;
 							start2=0;
+							end2=number_in_row;
 							start3=1;
+							end3=number_in_row;
+							start4=0;
+#endif /* defined (OLD_CODE) */
+							start1=0;
+							end1=number_in_row;
+							start2=0;
+							end2=number_in_row;
+							start3=0;
+							end3=number_in_row-1;
+							start4=0;
+#endif /* defined (OLD_CODE) */
+							start1=0;
+							end1=number_in_row-1;
+							start2=0;
+							end2=number_in_row-1;
+							start3=0;
+							end3=number_in_row-1;
 							start4=0;
 						}
 						else
 						{
 							start1=0;
+							end1=number_in_row;
 							start2=0;
+							end2=number_in_row;
 							start3=0;
+							end3=number_in_row;
 							start4=0;
 						}
-						for (j=start1;j<number_in_row;j++)
+						for (j=start1;j<end1;j++)
 						{
 							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+1);
 							if (bipolar)
@@ -83,7 +114,7 @@ int main()
 							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
 								(number_of_pcbs-i-1)*4+3);
 						}
-						for (j=start2;j<number_in_row;j++)
+						for (j=start2;j<end2;j++)
 						{
 							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+17);
 							if (bipolar)
@@ -99,15 +130,17 @@ int main()
 							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
 								(number_of_pcbs-i-1)*4+2);
 						}
-						for (j=start3;j<number_in_row;j++)
+						for (j=start3;j<end3;j++)
 						{
 							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+33);
 							if (bipolar)
 							{
 								fprintf(cnfg_file,"channel : %d\n",
+#if defined (OLD_CODE)
+/* for 4x16 flexible pcbs */
 									electrode_number+i*64+61-2*j);
-									/*???DB.  For 4 by 17
-									electrode_number+i*64+63-2*j);*/
+#endif /* defined (OLD_CODE) */
+									electrode_number+i*64+63-2*j);
 							}
 							else
 							{
@@ -123,9 +156,11 @@ int main()
 							if (bipolar)
 							{
 								fprintf(cnfg_file,"channel : %d\n",
+#if defined (OLD_CODE)
+/* for 4x16 flexible pcbs */
 									electrode_number+i*64+29-2*j);
-									/*???DB.  For 4 by 17
-									electrode_number+i*64+31-2*j);*/
+#endif /* defined (OLD_CODE) */
+									electrode_number+i*64+31-2*j);
 							}
 							else
 							{
@@ -146,6 +181,8 @@ int main()
 					(ecg_module<=(electrode_number/64)+number_of_pcbs))
 				{
 					fprintf(cnfg_file,"patch : ecg\n");
+#if defined (OLD_CODE)
+/* pre bipolar adapter ecg */
 					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+30);
 					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+30);
 					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+31);
@@ -170,6 +207,31 @@ int main()
 					fprintf(cnfg_file,"auxiliary : aVF\n");
 					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
 						(ecg_module-1)*64+32,(ecg_module-1)*64+30,(ecg_module-1)*64+31);
+#endif /* defined (OLD_CODE) */
+					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+2);
+					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+2);
+					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+33);
+					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+33);
+					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+34);
+					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+34);
+					fprintf(cnfg_file,"auxiliary : I\n");
+					fprintf(cnfg_file,"sum : ecg_%d-ecg_%d\n",(ecg_module-1)*64+2,
+						(ecg_module-1)*64+33);
+					fprintf(cnfg_file,"auxiliary : II\n");
+					fprintf(cnfg_file,"sum : ecg_%d-ecg_%d\n",(ecg_module-1)*64+34,
+						(ecg_module-1)*64+33);
+					fprintf(cnfg_file,"auxiliary : III\n");
+					fprintf(cnfg_file,"sum : ecg_%d-ecg_%d\n",(ecg_module-1)*64+34,
+						(ecg_module-1)*64+2);
+					fprintf(cnfg_file,"auxiliary : aVR\n");
+					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
+						(ecg_module-1)*64+33,(ecg_module-1)*64+2,(ecg_module-1)*64+34);
+					fprintf(cnfg_file,"auxiliary : aVL\n");
+					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
+						(ecg_module-1)*64+2,(ecg_module-1)*64+33,(ecg_module-1)*64+34);
+					fprintf(cnfg_file,"auxiliary : aVF\n");
+					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
+						(ecg_module-1)*64+34,(ecg_module-1)*64+2,(ecg_module-1)*64+33);
 				}
 				electrode_number += number_of_pcbs*64;
 			}
