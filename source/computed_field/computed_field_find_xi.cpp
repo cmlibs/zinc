@@ -34,10 +34,12 @@ struct Render_element_data
 
 struct Computed_field_find_element_xi_cache
 {
+#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
 	int bit_shift;
 	int minimum_element_number;
 	int maximum_element_number;
 	struct Graphics_buffer *graphics_buffer;
+#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
 	int valid_values;
 	struct FE_element *element;
 	struct Cmiss_region *search_region;
@@ -476,6 +478,7 @@ ultimate parent finite_element field.
 	return (return_code);
 } /* Computed_field_perform_find_element_xi */
 
+#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
 static int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2000
@@ -517,6 +520,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	return (return_code);
 } /* Expand_element_range */
+#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
 
 static int Render_element_as_texture(struct FE_element *element, void *data_void)
 /*******************************************************************************
@@ -639,6 +643,7 @@ sequential element_xi lookup should now be performed.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
 #define BLOCK_SIZE (20)
 #if defined (DEBUG)
 	int dummy[1024 * 1024];
@@ -653,11 +658,26 @@ sequential element_xi lookup should now be performed.
 	struct FE_region *fe_region;
 	struct Render_element_data data;
 	int gl_list, i, nx, ny, px, py, scaled_number;
+#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
 
 	ENTER(Computed_field_find_element_xi_special);
 	USE_PARAMETER(number_of_values);
+#if !defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+	USE_PARAMETER(field);
+	USE_PARAMETER(cache_ptr);
+	USE_PARAMETER(values);
+	USE_PARAMETER(element);
+	USE_PARAMETER(element_dimension);
+	USE_PARAMETER(xi);
+	USE_PARAMETER(search_region);
+	USE_PARAMETER(user_interface);
+	USE_PARAMETER(hint_minimums);
+	USE_PARAMETER(hint_maximums);
+	USE_PARAMETER(hint_resolution);
+#endif /* !defined (DM_BUFFERS) */
 
 	return_code = 0;
+#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
 	/* If the number of elements in the group is small then there probably isn't
 		any benefit to using this method */
 	/* This method is adversely affected when displaying on a remote machine as every
@@ -988,6 +1008,7 @@ sequential element_xi lookup should now be performed.
 			return_code = 0;
 		}
 	}
+#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
 	LEAVE;
 
 	return (return_code);

@@ -17,6 +17,9 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 /* #define GTK_USE_GTKGLAREA */
 #endif /* defined (GTK_USER_INTERFACE) */
 
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#define GRAPHICS_BUFFER_OFFSCREEN_BUFFERS
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 /*
 Global types
 ------------
