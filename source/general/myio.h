@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : myio.h
 
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 23 May 2002
 
 DESCRIPTION :
 Some additions/modifications to stdio.
@@ -10,8 +10,16 @@ Some additions/modifications to stdio.
 #define MYIO_H
 
 #include <stdio.h>
-/*???DB.  Contains definition of __BYTE_ORDER for Linux */
-#include <ctype.h>
+
+#if defined (GENERIC_PC)
+#include <endian.h>
+#endif /* defined (WINDOWS) */
+#if defined (SGI)
+#include <sys/endian.h>
+#endif /* defined (SGI) */
+#if defined (AIX)
+#include <machine/endian.h>
+#endif /* defined (AIX) */
 #if defined (WINDOWS)
 #define __BYTE_ORDER 1234
 #endif /* defined (WINDOWS) */
