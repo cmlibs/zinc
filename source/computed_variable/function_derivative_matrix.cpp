@@ -1,13 +1,17 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 14 January 2005
+// LAST MODIFIED : 30 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
 
 #include <sstream>
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #include "computed_variable/function_derivative_matrix.hpp"
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_composite.hpp"
@@ -99,7 +103,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_derivative_matrix>
 class Function_variable_matrix_derivative_matrix :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 22 November 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 // <column> and <row> start from one when referencing a matrix entry.  Zero
@@ -112,7 +116,11 @@ class Function_variable_matrix_derivative_matrix :
 		Function_variable_matrix_derivative_matrix(
 			const Function_derivative_matrix_handle function_derivative_matrix,
 			const std::list<Function_variable_handle>& partial_independent_variables):
-			Function_variable_matrix<Scalar>(function_derivative_matrix,0,0),
+			Function_variable_matrix<Scalar>(function_derivative_matrix,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			0,0),
 			partial_independent_variables(partial_independent_variables)
 		{
 			if (function_derivative_matrix)
@@ -148,8 +156,11 @@ class Function_variable_matrix_derivative_matrix :
 			const Function_derivative_matrix_handle function_derivative_matrix,
 			const std::list<Function_variable_handle>& partial_independent_variables,
 			const Function_size_type row,const Function_size_type column):
-			Function_variable_matrix<Scalar>(function_derivative_matrix,row,column),
-			partial_independent_variables(partial_independent_variables)
+			Function_variable_matrix<Scalar>(function_derivative_matrix,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			row,column),partial_independent_variables(partial_independent_variables)
 		{
 			if (function_derivative_matrix)
 			{
@@ -620,7 +631,7 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 	const Function_derivative_matrix_handle& derivative_f,
 	const Function_derivative_matrix_handle& derivative_g)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 18 March 2005
 //
 // DESCRIPTION :
 // This function implements the chain rule for differentiation.
@@ -690,7 +701,8 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 	Function_size_type i;
 
 	if (derivative_f&&derivative_g&&
-		(0<(i=(derivative_f->independent_variables).size())))
+		(0<(i=(derivative_f->independent_variables).size()))&&
+		(i==(derivative_g->independent_variables).size()))
 	{
 		std::list<Function_variable_handle>::iterator independent_variable_iterator;
 		Function_variable_handle last_independent_variable;
@@ -741,6 +753,31 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 			order_g=new Function_size_type[order+1];
 			sub_order_g=new Function_size_type[order+1];
 			matrices_g=new std::list<Matrix>::iterator[order+1];
+#if defined (DEBUG)
+			//???debug
+//			if (2==order)
+			if ((2==order)&&(1==number_of_rows))
+			{
+				Function_size_type ii;
+				std::list<Matrix>::iterator matrix_iterator;
+
+				std::cout << "Function_derivative_matrix_compose" << std::endl;
+				std::cout << "derivative f" << std::endl;
+				matrix_iterator=(derivative_f->matrices).begin();
+				for (ii=3;ii>0;ii--)
+				{
+					std::cout << *matrix_iterator << std::endl;
+					matrix_iterator++;
+				}
+				std::cout << "derivative g" << std::endl;
+				matrix_iterator=(derivative_g->matrices).begin();
+				for (ii=3;ii>0;ii--)
+				{
+					std::cout << *matrix_iterator << std::endl;
+					matrix_iterator++;
+				}
+			}
+#endif // defined (DEBUG)
 			if (not_used&&column_numbers_g&&index_f&&index_g&&mapping_g&&
 				mapping_result&&numbers_of_independent_values&&product_orders&&order_g&&
 				sub_order_g&&matrices_g)
@@ -816,6 +853,33 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 									product_orders[l]=1;
 								}
 								product_orders[j]=order_result-j;
+								// initialize the variable assigment
+								// for each of the independent variables being differentiated
+								//   with respect to in the product have:
+								//   mapping_g - a reordering of the variables without
+								//     changing the orders of the partial derivatives.  It is
+								//     a location in order_g and sub_order_g
+								//   order_g - the order of the partial derivative they're in
+								//   sub_order_g - their position in the variables in partial
+								//     derivatives of the same order
+								r=0;
+								l=0;
+								while (l<=j)
+								{
+									q=0;
+									do
+									{
+										for (p=0;p<product_orders[l];p++)
+										{
+											mapping_g[r]=r;
+											order_g[r]=product_orders[l];
+											sub_order_g[r]=q;
+											r++;
+											q++;
+										}
+										l++;
+									} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
+								}
 								// loop over the possible ways of dividing the order_result
 								//   independent variables, in mapping_result, into j+1
 								//   non-empty sets, where the order of the sets and the order
@@ -828,6 +892,8 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 								//   - add the result to result
 								do
 								{
+#if defined (OLD_CODE)
+//???DB.  Shifted to before loop and when product_orders is changed
 									// initialize the variable assigment
 									// for each of the independent variables being differentiated
 									//   with respect to in the product have:
@@ -855,10 +921,12 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 											l++;
 										} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
 									}
+#endif // defined (OLD_CODE)
 									// find the column numbers of matrix g for the partial
 									//   derivatives in the product
 									// r is the number of the partial derivative within partial
 									//   derivatives of the same order
+#if defined (OLD_CODE)
 									r=0;
 									for (l=0;l<=j;l++)
 									{
@@ -925,6 +993,85 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 											r=0;
 										}
 									}
+#else // defined (OLD_CODE)
+									r=order_result-1;
+									l=j+1;
+									while (l>0)
+									{
+										l--;
+										// initialize the value position within the partial
+										//   derivative of f
+										index_f[l]=0;
+										// determine which independent variables are used in the
+										//   partial derivative of g
+										matrix_g=(derivative_g->matrices).end();
+										matrix_g--;
+										offset_g=1;
+#if defined (OLD_CODE)
+										for (p=0;p<order;p++)
+										{
+											offset_g *= 2;
+										}
+										column_numbers_g[l]=0;
+										p=order;
+										q=product_orders[l];
+										while (p>0)
+										{
+											p--;
+											offset_g /= 2;
+											if ((q>0)&&(p==mapping_result[mapping_g[r]]))
+											{
+												column_numbers_g[l]=numbers_of_independent_values[p]*
+													column_numbers_g[l]+index_g[mapping_g[r]];
+												q--;
+												r--;
+											}
+											else
+											{
+												//???DB.  matrix_g -= offset_g;
+												for (s=offset_g;s>0;s--)
+												{
+													matrix_g--;
+												}
+											}
+										}
+#else // defined (OLD_CODE)
+										q=product_orders[l];
+										column_numbers_g[l]=0;
+										for (p=0;p<order;p++)
+										{
+											offset_g *= 2;
+											if ((q>0)&&(p==mapping_result[mapping_g[r-q+1]]))
+											{
+												column_numbers_g[l]=numbers_of_independent_values[p]*
+													column_numbers_g[l]+index_g[mapping_g[r-q+1]];
+												q--;
+											}
+										}
+										p=order;
+										q=product_orders[l];
+										while (p>0)
+										{
+											p--;
+											offset_g /= 2;
+											if ((q>0)&&(p==mapping_result[mapping_g[r]]))
+											{
+												q--;
+												r--;
+											}
+											else
+											{
+												//???DB.  matrix_g -= offset_g;
+												for (s=offset_g;s>0;s--)
+												{
+													matrix_g--;
+												}
+											}
+										}
+#endif // defined (OLD_CODE)
+										matrices_g[l]=matrix_g;
+									}
+#endif // defined (OLD_CODE)
 									number_of_columns_f=matrix_f->size2();
 									// loop across the row of matrix_f and down the columns of
 									//   matrix_g
@@ -1087,6 +1234,26 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 												// have found a new choice of set sizes re-initialize
 												//   the variable assignment
 												(product_orders[l-1])++;
+												// initialize the variable assigment
+												r=0;
+												s=0;
+												while (s<=j)
+												{
+													q=0;
+													do
+													{
+														for (p=0;p<product_orders[s];p++)
+														{
+															mapping_g[r]=r;
+															order_g[r]=product_orders[s];
+															sub_order_g[r]=q;
+															r++;
+															q++;
+														}
+														s++;
+													} while ((s<=j)&&
+														(product_orders[s]==product_orders[s-1]));
+												}
 											}
 										}
 									}
@@ -1121,6 +1288,24 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 					// increment to next row
 					row_number++;
 				}
+#if defined (DEBUG)
+				//???debug
+//				if (2==order)
+				if ((2==order)&&(1==number_of_rows))
+				{
+					Function_size_type ii;
+					std::list<Matrix>::iterator matrix_iterator;
+
+					std::cout << "Function_derivative_matrix_compose" << std::endl;
+					std::cout << "result" << std::endl;
+					matrix_iterator=matrices_result.begin();
+					for (ii=3;ii>0;ii--)
+					{
+						std::cout << *matrix_iterator << std::endl;
+						matrix_iterator++;
+					}
+				}
+#endif // defined (DEBUG)
 				result=Function_derivative_matrix_handle(new Function_derivative_matrix(
 					dependent_variable,derivative_g->independent_variables,
 					matrices_result));
@@ -1144,7 +1329,7 @@ Function_derivative_matrix_handle Function_derivative_matrix_compose(
 
 Function_handle Function_derivative_matrix::inverse()
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 24 February 2005
 //
 // DESCRIPTION :
 // Compute the composition inverse from the chain rule and the relation
@@ -1383,6 +1568,35 @@ Function_handle Function_derivative_matrix::inverse()
 									product_orders[l]=1;
 								}
 								product_orders[j]=order_result-j;
+								// initialize the variable assigment
+								// for each of the independent variables being
+								//   differentiated with respect to in the product have:
+								//   mapping_g - a reordering of the variables without
+								//     changing the orders of the partial derivatives.  It
+								//     is a location in order_g and sub_order_g
+								//   order_g - the order of the partial derivative they're
+								//     in
+								//   sub_order_g - their position in the variables in
+								//     partial derivatives of the same order
+								r=0;
+								l=0;
+								while (l<=j)
+								{
+									q=0;
+									do
+									{
+										for (p=0;p<product_orders[l];p++)
+										{
+											mapping_g[r]=r;
+											order_g[r]=product_orders[l];
+											sub_order_g[r]=q;
+											r++;
+											q++;
+										}
+										l++;
+									} while ((l<=j)&&
+										(product_orders[l]==product_orders[l-1]));
+								}
 								// loop over the possible ways of dividing the order_result
 								//   independent variables into j+1 non-empty sets, where the
 								//   order of the sets and the order within the sets are not
@@ -1395,6 +1609,8 @@ Function_handle Function_derivative_matrix::inverse()
 								//   - add the result to result
 								do
 								{
+#if defined (OLD_CODE)
+//???DB.  Shifted to before loop and when product_orders is changed
 									// initialize the variable assigment
 									// for each of the independent variables being
 									//   differentiated with respect to in the product have:
@@ -1414,6 +1630,9 @@ Function_handle Function_derivative_matrix::inverse()
 										{
 											for (p=0;p<product_orders[l];p++)
 											{
+												//???DB.  Where I'm up to
+												//  Re-initializing mapping_g after increment at 1649?
+												//  Same code in compose.  Cut and paste error?
 												mapping_g[r]=r;
 												order_g[r]=product_orders[l];
 												sub_order_g[r]=q;
@@ -1424,6 +1643,7 @@ Function_handle Function_derivative_matrix::inverse()
 										} while ((l<=j)&&
 											(product_orders[l]==product_orders[l-1]));
 									}
+#endif // defined (OLD_CODE)
 									// find the column numbers of matrix g for the partial
 									//   derivatives in the product
 									// r is the number of the partial derivative within partial
@@ -1658,6 +1878,26 @@ Function_handle Function_derivative_matrix::inverse()
 												// have found a new choice of set sizes re-initialize
 												//   the variable assignment
 												(product_orders[l-1])++;
+												// initialize the variable assigment
+												r=0;
+												s=0;
+												while (s<=j)
+												{
+													q=0;
+													do
+													{
+														for (p=0;p<product_orders[s];p++)
+														{
+															mapping_g[r]=r;
+															order_g[r]=product_orders[s];
+															sub_order_g[r]=q;
+															r++;
+															q++;
+														}
+														s++;
+													} while ((s<=j)&&
+														(product_orders[s]==product_orders[s-1]));
+												}
 											}
 										}
 									}
@@ -1908,6 +2148,101 @@ Function_derivative_matrix::Function_derivative_matrix(
 	//???DB.  Check that consistent?
 }
 
+#if defined (SEPARATE_ATOMIC_AND_MATRIX_SPLITTING)
+Function_derivative_matrix::Function_derivative_matrix(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function(),dependent_variable(dependent_variable),
+	independent_variables(independent_variables),matrices()
+//******************************************************************************
+// LAST MODIFIED : 30 March 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	Function_matrix_scalar_handle function_matrix;
+	std::list<Function_variable_handle>::const_iterator
+		independent_variable_iterator,independent_variable_iterator_end;
+	std::list< std::list<Function_variable_handle> > matrix_independent_variables;
+
+	independent_variable_iterator_end=independent_variables.end();
+	for (independent_variable_iterator=independent_variables.begin();
+		independent_variable_iterator!=independent_variable_iterator_end;
+		independent_variable_iterator++)
+	{
+		Function_variable_handle independent_variable=
+			*independent_variable_iterator;
+		std::list<Function_variable_handle> independent_variables_local(0);
+		std::list< std::list<Function_variable_handle> >::iterator last,
+			matrix_independent_variables_iterator;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_derivatnew_handle derivative_function;
+		Function_variable_handle derivative_variable;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
+		// calculate the derivative of dependent variable with respect to
+		//   independent variable and add to matrix list
+		independent_variables_local.push_back(independent_variable);
+		if
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(function_matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(dependent_variable->evaluate_derivative(
+			independent_variables_local)))
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			((derivative_function=boost::dynamic_pointer_cast<Function_derivatnew,
+			Function>(dependent_variable->derivative(independent_variables_local)))&&
+			(derivative_variable=derivative_function->output())&&
+			(derivative_variable->evaluate())&&(derivative_variable=
+			derivative_function->matrix(independent_variables_local))&&
+			(function_matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(derivative_variable->get_value())))
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		{
+			matrices.push_back(function_matrix->matrix());
+			matrix_independent_variables.push_back(independent_variables_local);
+		}
+		else
+		{
+			throw Function_derivative_matrix::Construction_exception();
+		}
+		last=matrix_independent_variables.end();
+		last--;
+		for (matrix_independent_variables_iterator=
+			matrix_independent_variables.begin();
+			matrix_independent_variables_iterator!=
+			last;matrix_independent_variables_iterator++)
+		{
+			independent_variables_local= *matrix_independent_variables_iterator;
+			independent_variables_local.push_back(independent_variable);
+			if
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				(function_matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+				Function>(dependent_variable->evaluate_derivative(
+				independent_variables_local)))
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+				((derivative_function=boost::dynamic_pointer_cast<Function_derivatnew,
+				Function>(dependent_variable->derivative(
+				independent_variables_local)))&&
+				(derivative_variable=derivative_function->output())&&
+				(derivative_variable->evaluate())&&(derivative_variable=
+				derivative_function->matrix(independent_variables_local))&&
+				(function_matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+				Function>(derivative_variable->get_value())))
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			{
+				matrices.push_back(function_matrix->matrix());
+				matrix_independent_variables.push_back(independent_variables_local);
+			}
+			else
+			{
+				throw Function_derivative_matrix::Construction_exception();
+			}
+		}
+	}
+}
+#else // defined (SEPARATE_ATOMIC_AND_MATRIX_SPLITTING)
 Function_derivative_matrix::Function_derivative_matrix(
 	const Function_variable_handle& dependent_variable,
 	const std::list<Function_variable_handle>& independent_variables):
@@ -1995,7 +2330,7 @@ Function_derivative_matrix::Function_derivative_matrix(
 								new_matrix_atomic_independent_variables)))
 							{
 								//???debug
-								std::cout << "throw Function_derivative_matrix::Construction_exception" << std::endl;
+								std::cout << "throw Function_derivative_matrix::Construction_exception 1" << std::endl;
 								std::cout << row << " " << column << std::endl;
 								std::cout << *(atomic_dependent_variable->get_string_representation()) << " ";
 								if (atomic_dependent_variable->function())
@@ -2205,6 +2540,7 @@ Function_derivative_matrix::Function_derivative_matrix(
 	std::cout << "leave Function_derivative_matrix::Function_derivative_matrix.  " << std::endl;
 #endif // defined (DEBUG)
 }
+#endif // defined (SEPARATE_ATOMIC_AND_MATRIX_SPLITTING)
 
 Function_derivative_matrix::Function_derivative_matrix(
 	const Function_derivative_matrix& derivative_matrix) :
