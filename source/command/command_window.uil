@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : command_window.uil
 !
-! LAST MODIFIED : 11 May 2000
+! LAST MODIFIED : 25 May 2000
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the command window.
@@ -508,6 +508,7 @@ object
 			XmPushButton curve_editor_create_btn;
 			XmPushButton data_viewer_create_button;
 			XmPushButton element_creator_create_button;
+			XmPushButton element_point_viewer_button;
 			XmPushButton interactive_data_editor_cbutton;
 			XmPushButton g_element_editor_create_button;
 			XmPushButton material_editor_create_button;
@@ -561,6 +562,21 @@ object
 			XmNactivateCallback = procedures
 				{
 				callback_command("GFX create element_creator");
+				};
+			};
+		};
+	element_point_viewer_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Element point viewer");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("GFX create element_point_viewer");
 				};
 			};
 		};
