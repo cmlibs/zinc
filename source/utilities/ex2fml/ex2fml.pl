@@ -282,19 +282,19 @@ FIELD_HEADER_3
 		{
 		  $node_label_name++;
 		  print <<NODE_VALUES_HEADER;
-	<label_template name="$node_label_name">
+	<labels_template name="$node_label_name">
 NODE_VALUES_HEADER
         for ($i = 0 ; $i < $number_of_fields ; $i++)
 		  {
 			 $name = $field_name[$i];
 			 print <<NODE_VALUES_FIELD_1;
-		<label name="$field_name[$i]">
+		<define_labels label="$field_name[$i]">
 NODE_VALUES_FIELD_1
 
           for ($j = 0 ; $j < $field_number_components{$name} ; $j++)
 			 {
 				print <<NODE_VALUES_FIELD_2;
-			<label name="$field_components_names{$name}[$j]">
+			<define_labels label="$field_components_names{$name}[$j]">
 NODE_VALUES_FIELD_2
 
             if (defined $field_components_type_names{$name}[$j])
@@ -302,7 +302,7 @@ NODE_VALUES_FIELD_2
 				  for $value_type (split(',', $field_components_type_names{$name}[$j]))
 				  {
 					 print <<NODE_VALUES_FIELD_3;
-				<parameters name="$value_type"/>
+				<define_label label="$value_type"/>
 NODE_VALUES_FIELD_3
 				  }
 				}
@@ -311,20 +311,20 @@ NODE_VALUES_FIELD_3
 				  for ($k = 0 ; $k < $field_components_derivatives{$name}[$j]+1 ; $k++)
 				  {
 					 print <<NODE_VALUES_FIELD_4;
-				<parameters name="value_type_$k"/>
+				<define_label label="value_type_$k"/>
 NODE_VALUES_FIELD_4
 				  }
 				}
 				print <<NODE_VALUES_FIELD_5;
-			</label>
+			</define_labels>
 NODE_VALUES_FIELD_5
 			 }
 		  print <<NODE_VALUES_FIELD_6;
-		</label>
+		</define_labels>
 NODE_VALUES_FIELD_6
 		  }
 		  print <<NODE_VALUES_END;
-	</label>
+	</labels_template>
 
 NODE_VALUES_END
          $node_field_defined = 1;
@@ -332,10 +332,10 @@ NODE_VALUES_END
 
 #Write the actual node		
 		print <<NODE_1;
-	<label name="node_$node_name">
-	   <label_template_ref ref="$node_label_name">
-$values		</label_template_ref>
-	</label>
+	<assign_label label="node_$node_name">
+	   <assign_labels labels_template="$node_label_name">
+$values		</assign_labels>
+	</assign_label>
 
 NODE_1
 	 }
@@ -424,7 +424,8 @@ NODE_1
 					 die ("No scale factor set found for basis $basis\n$_");
 				  }
 				  print <<ELEMENT_LABEL_1;
-	<label name="$element_label_name">
+	<labels_template name="$element_label_name">
+      <define_labels label="node_$node_list_indices[0]"> # How do we get the correct node here?
 ELEMENT_LABEL_1
               for ($k = 0 ; $k < $field_components_number_of_parameters{$name}[$j] ; $k++)
               {
@@ -444,24 +445,20 @@ ELEMENT_LABEL_1
 					 {
 						$derivative_line = "$derivative";
 					 }
+					 if (($k > 0) && ($node_list_indices[$k] ne  $node_list_indices[$k-1]))
+					 {
+				      print <<ELEMENT_LABEL_2B;
+      </define_labels>
+      <define_labels label="node_$node_list_indices[$k]"> # How do we get the correct node here?
+ELEMENT_LABEL_2B
+					 }
 				    print <<ELEMENT_LABEL_2;
-      <label_lookup>
-         <label_concatenate>
-            <label name="node_"/>
-            <label_lookup>
-               <element_name_ref/>
-               <label name="$node_list_name"/>
-               <label name="$node_list_indices[$k]"/>
-            </label_lookup>
-         </label_concatenate>
-         <field_name_ref/>
-         <component_name_ref/>
          <label name="$derivative_line"/>
-      </label_lookup>
 ELEMENT_LABEL_2
               }
 				 print <<ELEMENT_LABEL_3;
-	</label>
+      </define_labels>
+	</labels_template>
 
 ELEMENT_LABEL_3
 				    print <<INTERPOLATION_1;
@@ -470,22 +467,16 @@ ELEMENT_LABEL_3
 					   modification="$field_components_modification{$name}[$j]">
       <coefficients>
 INTERPOLATION_1
-              for ($k = 0 ; $k < $field_components_number_of_parameters{$name}[$j] ; $k++)
-              {
-					 $index = $k+1;
+#              for ($k = 0 ; $k < $field_components_number_of_parameters{$name}[$j] ; $k++)
+#              {
+#					 $index = $k+1;
 				    print <<INTERPOLATION_2;
          <product>
-            <label_lookup>
-               <label_evaluate="element_field_values"/>
-               <label name="$index"/>
-            </label_lookup>
-            <label_lookup>
-               <label_evaluate="scale_factor_values"/>
-               <label_name="$scale_factor_list_indices[$k]"/>
-            </label_lookup>
+            <reference_labels labels_template="$element_label_name"/> #These are in coordinates.x
+            <reference_labels labels_template="$scale_factor_list_name"/> #These are in element_*
          </product>
 INTERPOLATION_2
-              }
+#              }
 				 print <<INTERPOLATION_3;
        </coefficients>
    </mapping>
@@ -495,7 +486,7 @@ INTERPOLATION_3
 			  }
 		  }
 
-#Now use these in the node fields
+#Now use these in the element fields
 		  $element_interpolation_name++;
 		  print <<ELEMENT_FIELD_1;
    <element_interpolation name="$element_interpolation_name">
@@ -505,24 +496,18 @@ ELEMENT_FIELD_1
 		  {
 			 $name = $field_name[$i];
 		  print <<ELEMENT_FIELD_2;
-      <field_ref ref="$field_name[$i]">
+      <default_label label="$field_name[$i]">
 ELEMENT_FIELD_2
           for ($j = 0 ; $j < $field_number_components{$name} ; $j++)
 			 {
 				print <<ELEMENT_FIELD_3;
-         <component_ref ref="$field_components_names{$name}[$j]">
-            <label_define name="element_field_values"
-                          value="$element_label_name">
-               <label_define name="scale_factor_values"
-                             value="$scale_factor_list_lookup{$basis}">
-                  <mapping_ref ref="$interpolation{$field_components_basis{$name}[$j]}"/>
-               </label_define>
-            </label_define>
-         </component_ref>
+         <default_label label="$field_components_names{$name}[$j]">
+            <mapping_ref ref="$interpolation{$field_components_basis{$name}[$j]}"/> # The node numbers are changing in here so the elements are in the wrong order
+         </default_label>
 ELEMENT_FIELD_3
 			 }
 		  print <<ELEMENT_FIELD_5;
-      </field_ref>
+      </default_label>
 ELEMENT_FIELD_5
 		  }
 		  print <<ELEMENT_FIELD_6;
@@ -553,6 +538,7 @@ ELEMENT_FIELD_6
  		print <<ELEMENT_HEADER;
 	<element	name="$element_name"
             shape="$shape">
+     <assign_label label="element_$element_name"> # Seems annoying to redefine the same name
 ELEMENT_HEADER
 
       $in_element_field = 0;
@@ -600,7 +586,7 @@ ELEMENT_FACES_3
 		  {
 			 print <<ELEMENT_NODES_2;
 		<element_interpolation_ref ref="$element_interpolation_name"/>
-		<label name="$node_list_name">
+		<assign_label label="$node_list_name">
 ELEMENT_NODES_2
           $_ = <>;
 			 while ((defined $_) && (! m/(Scale|Nodes)/) &&
@@ -617,7 +603,7 @@ ELEMENT_NODES_3
  		  elsif (m/Scale factors:/)
 		  {
 			 print <<ELEMENT_SCALE_2;
-		<label name="$scale_factor_list_name">
+		<assign_label name="$scale_factor_list_name">
 ELEMENT_SCALE_2
 
           $_ = <>;
@@ -629,7 +615,7 @@ ELEMENT_SCALE_2
 			 }
 
 			 print <<ELEMENT_SCALE_3;
-		</label>
+		</assign_label>
 ELEMENT_SCALE_3
 		  }
 		  else
@@ -640,6 +626,7 @@ ELEMENT_SCALE_3
 
 
  		print <<ELEMENT_END;
+     </assign_label>
 	</element>
 
 ELEMENT_END
