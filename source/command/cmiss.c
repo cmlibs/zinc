@@ -1688,7 +1688,7 @@ with tick marks and labels for showing the scale of a spectrum.
 static int gfx_create_cylinders(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
@@ -1701,12 +1701,13 @@ Executes a GFX CREATE CYLINDERS command.
 	struct Cmiss_command_data *command_data;
 	struct Element_discretization discretization;
 	struct Element_to_cylinder_data element_to_cylinder_data;
-	struct Computed_field *coordinate_field,*data_field,*radius_field;
+	struct Computed_field *coordinate_field,*data_field,*radius_field,*texture_coordinate_field;
 	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_radius_field_data;
+		set_data_field_data, set_radius_field_data,
+		set_texture_coordinate_field_data;
 	struct Spectrum *spectrum;
 
 	ENTER(gfx_create_cylinders);
@@ -1723,6 +1724,7 @@ Executes a GFX CREATE CYLINDERS command.
 			coordinate_field=(struct Computed_field *)NULL;
 			data_field=(struct Computed_field *)NULL;
 			radius_field=(struct Computed_field *)NULL;
+			texture_coordinate_field=(struct Computed_field *)NULL;
 			time=0;
 			/* must access it now, because we deaccess it later */
 			material=
@@ -1785,6 +1787,17 @@ Executes a GFX CREATE CYLINDERS command.
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
+			/* texture_coordinates */
+			set_texture_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
+			set_texture_coordinate_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_texture_coordinate_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"texture_coordinates",
+				&texture_coordinate_field,&set_texture_coordinate_field_data,
+				set_Computed_field_conditional);
 			/* time */
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* with */
@@ -1851,6 +1864,8 @@ Executes a GFX CREATE CYLINDERS command.
 					/* radius = constant_radius + scale_factor*radius_scalar */
 					element_to_cylinder_data.constant_radius=constant_radius;
 					element_to_cylinder_data.radius_field=radius_field;
+					element_to_cylinder_data.texture_coordinate_field =
+						texture_coordinate_field;
 					element_to_cylinder_data.scale_factor=scale_factor;
 					element_to_cylinder_data.graphics_object=graphics_object;
 					element_to_cylinder_data.time=time;
@@ -1909,6 +1924,10 @@ Executes a GFX CREATE CYLINDERS command.
 			if (radius_field)
 			{
 				DEACCESS(Computed_field)(&radius_field);
+			}
+			if (texture_coordinate_field)
+			{
+				DEACCESS(Computed_field)(&texture_coordinate_field);
 			}
 			if (element_group)
 			{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -4124,7 +4124,7 @@ any trivial differences are fixed up in the graphics_obejct.
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 7 May 2001
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -4857,6 +4857,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings->data_field, settings->constant_radius,
 								settings->radius_scale_factor, settings->radius_scalar_field,
 								number_in_xi[0], settings_to_object_data->circle_discretization,
+								settings->texture_coordinate_field,
 								top_level_element, settings_to_object_data->time))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
@@ -7000,7 +7001,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_cylinders(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT CYLINDERS command.
@@ -7016,7 +7017,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct G_element_command_data *g_element_command_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_radius_scalar_field_data;
+		set_data_field_data, set_radius_scalar_field_data,
+		set_texture_coordinate_field_data;
 
 	ENTER(gfx_modify_g_element_cylinders);
 	if (state)
@@ -7121,6 +7123,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
+					/* texture_coordinates */
+					set_texture_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
+					set_texture_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_texture_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"texture_coordinates",
+						&(settings->texture_coordinate_field),
+						&set_texture_coordinate_field_data,set_Computed_field_conditional);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)

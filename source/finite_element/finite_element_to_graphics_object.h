@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -38,7 +38,7 @@ USE_LINES    = CM_LINE or dimension 1
 
 struct Element_to_cylinder_data
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 Data for converting a 1-D element into a cylinder.
@@ -49,7 +49,8 @@ Data for converting a 1-D element into a cylinder.
 	/* radius = constant_radius + scale_factor*radius_field */
 	float constant_radius,scale_factor,time;
 	int number_of_segments_along,number_of_segments_around;
-	struct Computed_field *coordinate_field,*data_field,*radius_field;
+	struct Computed_field *coordinate_field, *data_field, *radius_field,
+		*texture_coordinate_field;
 	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
 	struct GT_object *graphics_object;
@@ -452,9 +453,10 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
-	struct FE_element *top_level_element, FE_value time);
+	struct Computed_field *texture_coordinate_field,
+	struct FE_element *top_level_element,FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
@@ -466,6 +468,9 @@ The optional <data_field> (currently only a scalar) is calculated as data over
 the length of the cylinder, for later colouration by a spectrum.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
+The first component of <texture_coordinate_field> is used to control the
+texture coordinates along the element. If not supplied it will match Xi. The
+texture coordinate around the cylinders is always from 0 to 1.
 Notes:
 - the coordinate field is assumed to be rectangular cartesian.
 ==============================================================================*/

@@ -4145,8 +4145,9 @@ Changes the currently chosen settings.
 							CHOOSE_OBJECT_SET_CALLBACK(Spectrum)(
 								settings_editor->spectrum_widget,&callback);
 
-							if ((GT_ELEMENT_SETTINGS_SURFACES==settings_type)
-							  || (GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type))
+							if ((GT_ELEMENT_SETTINGS_CYLINDERS == settings_type) ||
+								(GT_ELEMENT_SETTINGS_SURFACES == settings_type) ||
+							  (GT_ELEMENT_SETTINGS_ISO_SURFACES == settings_type))
 							{
 								/* set texture_coordinate field */
 								texture_coord_field = GT_element_settings_get_texture_coordinate_field

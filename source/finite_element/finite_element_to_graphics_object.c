@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 3 October 2002
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -1462,9 +1462,10 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
+	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 October 2002
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
@@ -1476,14 +1477,18 @@ The optional <data_field> (currently only a scalar) is calculated as data over
 the length of the cylinder, for later colouration by a spectrum.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
+The first component of <texture_coordinate_field> is used to control the
+texture coordinates along the element. If not supplied it will match Xi. The
+texture coordinate around the cylinders is always from 0 to 1.
 Notes:
 - the coordinate field is assumed to be rectangular cartesian.
 ==============================================================================*/
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
-		normal_3, *radius_array, radius_derivative, radius_value, sin_theta, theta,
-		theta_change, xi, x, y;
+		normal_3, *radius_array, radius_derivative, radius_value, sin_theta,
+		tex_coordinates[3], theta, theta_change, xi, x, y;
+	float texture_coordinate1;
 	GTDATA *data, *datum;
 	int facet_offset,i,j,k,n_data_components,number_of_points;
 	struct GT_surface *surface;
@@ -1491,12 +1496,14 @@ Notes:
 		*previous_normal, *texturepoints, *texture_coordinate;
 
 	ENTER(create_cylinder_from_FE_element);
-	if (element&&(element->shape)&&(1==element->shape->dimension)&&
-		(0<number_of_segments_along)&&(1<number_of_segments_around)&&
-		coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		((!radius_field)||
-			(1==Computed_field_get_number_of_components(radius_field))))
+	if (element && (element->shape) && (1 == element->shape->dimension) &&
+		(0 < number_of_segments_along) && (1 < number_of_segments_around) &&
+		coordinate_field &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+		((!radius_field) ||
+			(1 == Computed_field_get_number_of_components(radius_field))) &&
+		((!texture_coordinate_field) ||
+			(3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
 	{
 		/* clear coordinates and derivatives not set if coordinate field is not
 			 3 component */
@@ -1534,6 +1541,7 @@ Notes:
 				CM_element_information_to_graphics_name(element->identifier);
 			point=points;
 			derivative=normalpoints;
+			texture_coordinate=texturepoints;
 			/* Calculate the points and radius and data at the each point */
 			for (i=0;(i<=number_of_segments_along)&&surface;i++)
 			{
@@ -1543,9 +1551,14 @@ Notes:
 					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
 					data_field,element,&xi,time,top_level_element,data,
-					(FE_value *)NULL))&&((!radius_field)||
-					Computed_field_evaluate_in_element(radius_field,element,&xi,
-					time,top_level_element,&radius_value,&radius_derivative)))
+					(FE_value *)NULL)) &&
+					((!radius_field) ||
+						Computed_field_evaluate_in_element(radius_field,element,&xi,
+							time,top_level_element,&radius_value,&radius_derivative)) &&
+					((!texture_coordinate_field) ||
+						Computed_field_evaluate_in_element(texture_coordinate_field,
+							element, &xi, time, top_level_element, tex_coordinates,
+							/*derivatives*/(FE_value *)NULL)))
 				{
 					/* store the coordinates in the point */
 					(*point)[0]=coordinates[0];
@@ -1591,6 +1604,16 @@ Notes:
 							data+=n_data_components;
 						}
 					}
+					/* store the first texture coordinate */
+					if (texture_coordinate_field)
+					{
+						(*texture_coordinate)[0] = (float)(tex_coordinates[0]);
+					}
+					else
+					{
+						/* default is to use xi for the first texture coordinate */
+						(*texture_coordinate)[0] = (float)(xi);
+					}
 				}
 				else
 				{
@@ -1599,6 +1622,7 @@ Notes:
 				}
 				point += number_of_segments_around+1;
 				derivative += number_of_segments_around+1;
+				texture_coordinate += number_of_segments_around+1;
 			}
 
 			if (surface)
@@ -1894,17 +1918,19 @@ Notes:
 					normal++;
 				}
 				/* calculate the texture coordinates */
-				/* default texture coordinates range from 0 to 1 along the length of
-					 the cylinder and from 0 to 1 around its circumference */
+				/* the texture coordinate along the length has been set above but must
+					 be propagated to vertices around the cylinder. The second texture
+					 coordinate ranges from from 0 to 1 around the circumference */
 				texture_coordinate = texturepoints;
 				for (i = 0; i <= number_of_segments_along; i++)
 				{
+					texture_coordinate1 = (*texture_coordinate)[0];
 					for (j = 0; j <= number_of_segments_around; j++)
 					{
-						(*texture_coordinate)[0] = (float)i /
-							(float)number_of_segments_along;
+						(*texture_coordinate)[0] = texture_coordinate1;
 						(*texture_coordinate)[1] =
 							(float)j / (float)number_of_segments_around;
+						(*texture_coordinate)[2] = 0.0;
 						texture_coordinate++;
 					}
 				}
@@ -6928,7 +6954,7 @@ Also tests whether the <dimension> and/or <cm_element_type> matches.
 int element_to_cylinder(struct FE_element *element,
 	void *void_element_to_cylinder_data)
 /*******************************************************************************
-LAST MODIFIED : 20 December 1999
+LAST MODIFIED : 11 October 2002
 
 DESCRIPTION :
 Converts a finite element into a cylinder.
@@ -6955,6 +6981,7 @@ Converts a finite element into a cylinder.
 				element_to_cylinder_data->radius_field,
 				element_to_cylinder_data->number_of_segments_along,
 				element_to_cylinder_data->number_of_segments_around,
+				element_to_cylinder_data->texture_coordinate_field,
 				/*top_level_element*/(struct FE_element *)NULL,
 				element_to_cylinder_data->time))
 			{
