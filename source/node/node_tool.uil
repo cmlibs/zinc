@@ -1,10 +1,10 @@
 !*******************************************************************************
 ! FILE : node_tool.uil
 !
-! LAST MODIFIED : 18 July 2000
+! LAST MODIFIED : 20 July 2000
 !
 ! DESCRIPTION :
-! Interactive tool icons.
+! Node/data tool icons with dialog widgets for controlling settings.
 !===============================================================================
 module node_tool_module
 	version = 'v1.0'
@@ -124,8 +124,8 @@ value
 			'                                ');
 
 
-!******************************************************************************
 object
+!******************************************************************************
 	node_tool: XmForm
 	{
 		arguments
@@ -137,34 +137,13 @@ object
 			};
 		controls
 			{
-			XmRowColumn node_tool_controls;
-			};
-		};
-!*******************************************************************************
-	node_tool_controls: XmRowColumn
-		{
-		arguments
-			{
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNmarginHeight = 0;
-			XmNmarginWidth = 0;
-			XmNspacing = 0;
-			XmNorientation = XmVERTICAL;
-!			XmNnumColumns = 1;
-			XmNpacking = XmPACK_TIGHT;
-			};
-		controls
-			{
   		XmToggleButtonGadget node_tool_select_btn;
   		XmToggleButtonGadget node_tool_edit_btn;
   		XmToggleButtonGadget node_tool_motion_update_btn;
   		XmToggleButtonGadget node_tool_create_btn;
 			XmRowColumn node_tool_node_group_entry;
 			XmRowColumn node_tool_coord_field_entry;
-			XmSeparatorGadget {};
+			XmSeparatorGadget node_tool_separator1;
 			XmPushButtonGadget node_tool_destroy_selected_btn;
 			};
 		};
@@ -173,6 +152,10 @@ object
     {
     arguments
       {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
       XmNlabelString = compound_string("Select");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
@@ -190,6 +173,11 @@ object
     {
     arguments
       {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_select_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
       XmNlabelString = compound_string("Edit");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
@@ -207,6 +195,11 @@ object
     {
     arguments
       {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_edit_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
       XmNlabelString = compound_string("Motion update during edit");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
@@ -224,6 +217,11 @@ object
     {
     arguments
       {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_motion_update_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
       XmNlabelString = compound_string("Create");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
@@ -241,6 +239,11 @@ object
     {
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_create_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
 			XmNspacing = 0;
@@ -275,6 +278,11 @@ object
     {
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_node_group_entry;
+			XmNbottomAttachment = XmATTACH_NONE;
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
 			XmNspacing = 0;
@@ -305,10 +313,27 @@ object
 			};
 		};
 !*******************************************************************************
+	node_tool_separator1: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_coord_field_entry;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		};
+!*******************************************************************************
 	node_tool_destroy_selected_btn: XmPushButtonGadget
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_separator1;
+			XmNbottomAttachment = XmATTACH_NONE;
       XmNfontList = button_font;
       XmNlabelString = compound_string("Destroy selected");
       XmNalignment = XmALIGNMENT_CENTER;
