@@ -15,7 +15,6 @@ XCOMM ==========================================================================
 
 SHELL=/bin/sh
 
-BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
 #if defined (CMISS_ROOT_DEFINED)
@@ -25,6 +24,10 @@ PRODUCT_PATH=$(CMGUI_DEV_ROOT)
 #endif /* defined (CMISS_ROOT_DEFINED) */
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
+
+#if defined (linux)
+#undef linux
+#endif
 
 #if defined (IRIX) /* switch OperatingSystem */
 /* 1 IRIX */
@@ -66,10 +69,11 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #define Makefile unemap_sgi64.make
 #define DependMake unemap_sgi64.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/64
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/64
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/64
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-64-irix/unemap
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-64-irix/unemap
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-64-irix/unemap
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-64-irix/unemap
 #else /* defined (O64) */
 /* 1.2 IRIX-N32 */
 #if defined (OPTIMISED)
@@ -78,7 +82,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 /* 1.2.2.2 IRIX-N32-!OPTIMISED-USE_UNEMAP_3D */
 /* this version uses nodes just for 3D window , */
 /* USE_UNEMAP_NODES uses nodes for as much as possible   */
-#define Target unemap_3d_optimised
+#define Target unemap-3d
 #define AffineTarget unemap/affine_3d_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_3d_optimised.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_3d_optimised
@@ -111,12 +115,13 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define Makefile unemap_sgi3d_optimised.make
 #define DependMake unemap_sgi3d_optimised.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/3d_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/3d_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/unemap-3d
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/unemap-3d
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/unemap-3d
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-3d
 #else /* defined (USE_UNEMAP_3D) */
-#define Target unemap_optimised
+#define Target unemap
 #define Makefile unemap_sgioptimised.make
 #define AffineTarget unemap/affine_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_optimised.lib
@@ -149,10 +154,11 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Uid2uidhTarget uid2uidh
 #define DependMake unemap_sgioptimised.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_optnon
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_optnon
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/unemap
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/unemap
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/unemap
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap
 #endif /* defined (USE_UNEMAP_3D) */
 #else /* defined (OPTIMISED) */
 /* 1.2.2 IRIX-N32-!OPTIMISED */
@@ -160,7 +166,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* 1.2.2.1 IRIX-N32-!OPTIMISED-USE_UNEMAP_NODES */
 /* this version uses nodes for as much as possible, */
 /* USE_UNEMAP_3D uses nodes just for 3D window  */
-#define Target unemap_nodes
+#define Target unemap-nodes
 #define AffineTarget unemap/affine_nodes
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_nodes.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_nodes
@@ -193,16 +199,17 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Makefile unemap_sginodes.make
 #define DependMake unemap_sginodes.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/unemap-nodes
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/unemap-nodes
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/unemap-nodes
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-nodes
 #else /* defined (USE_UNEMAP_NODES) */
 #if defined (USE_UNEMAP_3D)
 /* 1.2.2.2 IRIX-N32-!OPTIMISED-USE_UNEMAP_3D */
 /* this version uses nodes just for 3D window , */
 /* USE_UNEMAP_NODES uses nodes for as much as possible   */
-#define Target unemap_3d
+#define Target unemap-3d-debug
 #define AffineTarget unemap/affine_3d
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_3d.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_3d
@@ -235,17 +242,18 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Makefile unemap_sgi3d.make
 #define DependMake unemap_sgi3d.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/3d
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/3d
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/unemap-3d-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/unemap-3d-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/unemap-3d-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-3d-debug
 #else /* defined (USE_UNEMAP_3D) */
 /* 1.2.2.3 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES */
 /* The normal debug and memory check versions keep the same extension as they
 	only differ in one file */
 #if !defined (MEMORY_CHECK)
 /* 1.2.2.3.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-!MEMORY_CHECK */
-#define Target unemap32
+#define Target unemap-debug
 #define AffineTarget unemap/affine32
 #define AnalysisCalculateLibTarget unemap/analysis_calculate32.lib
 #define Bmsi2sigTarget unemap/bmsi2sig32
@@ -278,13 +286,14 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Makefile unemap_sgi.make
 #define DependMake unemap_sgi.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_nonodes
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_nonodes
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/unemap-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/unemap-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/unemap-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-debug
 #else /* !defined (MEMORY_CHECK) */
 /* 1.2.2.3.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-MEMORY_CHECK */
-#define Target unemap_memorycheck
+#define Target unemap-debug-memorycheck
 #define AffineTarget unemap/affine32
 #define AnalysisCalculateLibTarget unemap/analysis_calculate32.lib
 #define Bmsi2sigTarget unemap/bmsi2sig32
@@ -317,10 +326,11 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Makefile unemap_sgi_memorycheck.make
 #define DependMake unemap_sgi_memorycheck.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_nonodes
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_nonodes
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/unemap-debug-memorycheck
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/unemap-debug-memorycheck
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/unemap-debug-memorycheck
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-debug-memorycheck
 #endif /* !defined (MEMORY_CHECK) */
 #endif /* defined (USE_UNEMAP_NODES) */
 #endif /* defined (USE_UNEMAP_3D) */
@@ -333,7 +343,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* 2.1 LINUX-USE_UNEMAP_NODES */
 /* this version uses nodes for as much as possible , */
 /* USE_UNEMAP_3D uses nodes just for 3D window    */
-#define Target unemap_linux_nodes
+#define Target unemap-nodes-debug
 #define AffineTarget unemap/affine_linux_nodes
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_nodes.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_nodes
@@ -366,18 +376,18 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Makefile unemap_linux_nodes.make
 #define DependMake unemap_linux_nodes.depend
 #define ObjSuffix o
-/* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_nodes_g
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_nodes_g
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_nodes_g
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/unemap-nodes-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/unemap-nodes-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/unemap-nodes-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-nodes-debug
 #else /* defined (USE_UNEMAP_NODES) */
 #if defined (USE_UNEMAP_3D)
 /* 2.2 LINUX-USE_UNEMAP_3D */
 /* this version uses nodes just for 3D window  */
 /* USE_UNEMAP_NODES uses nodes  for as much as possible   */
 #if !defined (OPTIMISED)
-#define Target unemap_linux_3d
+#define Target unemap-3d-debug
 #define AffineTarget unemap/affine_linux_3d
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_3d.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_3d
@@ -410,13 +420,13 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 #define Makefile unemap_linux_3d.make
 #define DependMake unemap_linux_3d.depend
 #define ObjSuffix o
-/* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_3d_g
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_3d_g
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_3d_g
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/unemap-3d-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/unemap-3d-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/unemap-3d-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-3d-debug
 #else /* !defined (OPTIMISED) */
-#define Target unemap_linux_3d_optimised
+#define Target unemap-3d
 #define AffineTarget unemap/affine_linux_3d_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_3d_optimised.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_3d_optimised
@@ -449,16 +459,16 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
 #define Makefile unemap_linux_3d_optimised.make
 #define DependMake unemap_linux_3d_optimised.depend
 #define ObjSuffix o
-/* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_3d_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_3d_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_3d_optimised
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_optimised
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/unemap-3d
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/unemap-3d
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/unemap-3d
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-3d
 #endif /* !defined (OPTIMISED) */
 #else /* defined (USE_UNEMAP_3D) */
 /* 2.3 LINUX-!USE_UNEMAP_NODES */
 #if !defined (OPTIMISED)
-#define Target unemap_linux
+#define Target unemap-debug
 #define AffineTarget unemap/affine_linux
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
@@ -491,13 +501,13 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_optimised
 #define Makefile unemap_linux.make
 #define DependMake unemap_linux.depend
 #define ObjSuffix o
-/* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_g
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_g
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_g
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/unemap-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/unemap-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/unemap-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-debug
 #else /* !defined (OPTIMISED) */
-#define Target unemap_linux_optimised
+#define Target unemap
 #define AffineTarget unemap/affine_linux_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_optimised.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_optimised
@@ -530,11 +540,11 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
 #define Makefile unemap_linux_optimised.make
 #define DependMake unemap_linux_optimised.depend
 #define ObjSuffix o
-/* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_optimised
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_optimised
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/unemap
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/unemap
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/unemap
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap
 #endif /* !defined (OPTIMISED) */
 #endif /* defined (USE_UNEMAP_3D) */
 #endif /* defined (USE_UNEMAP_NODES) */

@@ -40,7 +40,7 @@ COMMON_MAKE_RULE= \
 #have $(BIN_PATH)/unemap32 etc. but this forces them to get made (which is what 
 #we want) and shortens the name you have to type.
 #SGI debug version
-unemap32 : $(SOURCE_PATH)/unemap_sgi.make
+unemap-debug : $(SOURCE_PATH)/unemap_sgi.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi.make ]; then \
 		$(MAKE) -f unemap_sgi.make $(TARGET) ; \
@@ -53,7 +53,7 @@ $(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/comm
 	imake -DIRIX $${CMISS_ROOT_DEF} -s unemap_sgi.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI rig nodes version
-unemap_nodes : $(SOURCE_PATH)/unemap_sginodes.make
+unemap-nodes-debug : $(SOURCE_PATH)/unemap_sginodes.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sginodes.make ]; then \
 		$(MAKE) -f unemap_sginodes.make $(TARGET) ; \
@@ -66,7 +66,7 @@ $(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)
 	imake -DIRIX -DUSE_UNEMAP_NODES $${CMISS_ROOT_DEF} -s unemap_sginodes.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI rig 3d map version
-unemap_3d : $(SOURCE_PATH)/unemap_sgi3d.make
+unemap-3d-debug : $(SOURCE_PATH)/unemap_sgi3d.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi3d.make ]; then \
 		$(MAKE) -f unemap_sgi3d.make $(TARGET) ; \
@@ -79,7 +79,7 @@ $(SOURCE_PATH)/unemap_sgi3d.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/co
 	imake -DIRIX -DUSE_UNEMAP_3D $${CMISS_ROOT_DEF} -s unemap_sgi3d.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI rig 3d map optimised version
-unemap_3d_optimised : $(SOURCE_PATH)/unemap_sgi3d_optimised.make
+unemap-3d : $(SOURCE_PATH)/unemap_sgi3d_optimised.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi3d_optimised.make ]; then \
 		$(MAKE) -f unemap_sgi3d_optimised.make $(TARGET) ; \
@@ -92,7 +92,7 @@ $(SOURCE_PATH)/unemap_sgi3d_optimised.make : $(SOURCE_PATH)/unemap.imake $(SOURC
 	imake -DIRIX -DOPTIMISED -DUSE_UNEMAP_3D $${CMISS_ROOT_DEF} -s unemap_sgi3d_optimised.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI optimised version
-unemap_optimised : $(SOURCE_PATH)/unemap_sgioptimised.make
+unemap : $(SOURCE_PATH)/unemap_sgioptimised.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgioptimised.make ]; then \
 		$(MAKE) -f unemap_sgioptimised.make $(TARGET) ; \
@@ -105,7 +105,7 @@ $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_P
 	imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgioptimised.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI debug memory check version
-unemap_memorycheck : $(SOURCE_PATH)/unemap_sgi_memorycheck.make
+unemap-debug-memorycheck : $(SOURCE_PATH)/unemap_sgi_memorycheck.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi_memorycheck.make ]; then \
 		$(MAKE) -f unemap_sgi_memorycheck.make $(TARGET) ; \
@@ -118,7 +118,7 @@ $(SOURCE_PATH)/unemap_sgi_memorycheck.make : $(SOURCE_PATH)/unemap.imake $(SOURC
 	imake -DIRIX -DMEMORY_CHECK $${CMISS_ROOT_DEF} -s unemap_sgi_memorycheck.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI 64bit version
-unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
+unemap64 : force $(SOURCE_PATH)/unemap_sgi64.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi64.make ]; then \
 		$(MAKE) -f unemap_sgi64.make $(TARGET) ; \
@@ -131,7 +131,7 @@ $(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/co
 	imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgi64.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #Linux version
-unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
+unemap-linux-debug : force $(SOURCE_PATH)/unemap_linux.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_linux.make ]; then \
 		$(MAKE) -f unemap_linux.make $(TARGET) ; \
@@ -144,7 +144,7 @@ $(SOURCE_PATH)/unemap_linux.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/co
 	imake -DLINUX $${CMISS_ROOT_DEF} -s unemap_linux.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #Linux nodes version
-unemap_linux_nodes : force $(SOURCE_PATH)/unemap_linux_nodes.make
+unemap-linux-nodes-debug : force $(SOURCE_PATH)/unemap_linux_nodes.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_linux_nodes.make ]; then \
 		$(MAKE) -f unemap_linux_nodes.make $(TARGET) ; \
@@ -157,7 +157,7 @@ $(SOURCE_PATH)/unemap_linux_nodes.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PA
 	imake -DLINUX  -DUSE_UNEMAP_NODES $${CMISS_ROOT_DEF} -s unemap_linux_nodes.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #Linux 3d version
-unemap_linux_3d : force $(SOURCE_PATH)/unemap_linux_3d.make
+unemap-linux-3d-debug : force $(SOURCE_PATH)/unemap_linux_3d.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_linux_3d.make ]; then \
 		$(MAKE) -f unemap_linux_3d.make $(TARGET) ; \
@@ -170,7 +170,7 @@ $(SOURCE_PATH)/unemap_linux_3d.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)
 	imake -DLINUX  -DUSE_UNEMAP_3D $${CMISS_ROOT_DEF} -s unemap_linux_3d.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #Linux optimised version
-unemap_linux_optimised : force $(SOURCE_PATH)/unemap_linux_optimised.make
+unemap-linux : force $(SOURCE_PATH)/unemap_linux_optimised.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_linux_optimised.make ]; then \
 		$(MAKE) -f unemap_linux_optimised.make $(TARGET) ; \
@@ -183,7 +183,7 @@ $(SOURCE_PATH)/unemap_linux_optimised.make : $(SOURCE_PATH)/unemap.imake $(SOURC
 	imake -DLINUX -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_linux_optimised.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #Linux 3d optimised version
-unemap_linux_3d_optimised : force $(SOURCE_PATH)/unemap_linux_3d_optimised.make
+unemap-linux-3d : force $(SOURCE_PATH)/unemap_linux_3d_optimised.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_linux_3d_optimised.make ]; then \
 		$(MAKE) -f unemap_linux_3d_optimised.make $(TARGET) ; \
