@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 13 May 2003
+LAST MODIFIED : 6 July 2004
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -2989,16 +2989,8 @@ the devices in the device list.
 				get_unemap_package_Computed_field_manager(unemap_package);
 			if (the_region->electrode_position_field)
 			{
-				/*???debug*//*display_message(INFORMATION_MESSAGE,
-					"destroy_Region. BEFORE electrode_position_field %p %d\n",
-					the_region->electrode_position_field,
-					get_FE_field_access_count(the_region->electrode_position_field));*/
 				Computed_field_manager_destroy_FE_field(computed_field_manager,
 					the_region->electrode_position_field);
-				/*???debug*//*display_message(INFORMATION_MESSAGE,
-					"destroy_Region. AFTER electrode_position_field %p %d\n",
-					the_region->electrode_position_field,
-					get_FE_field_access_count(the_region->electrode_position_field));*/
 				DEACCESS(FE_field)(&(the_region->electrode_position_field));
 				the_region->electrode_position_field = (struct FE_field *)NULL;
 			}	
@@ -4097,7 +4089,7 @@ struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
 #endif /* defined (UNEMAP_USE_3D)*/
 	)
 /*******************************************************************************
-LAST MODIFIED : 14 October 2002
+LAST MODIFIED : 6 July 2004
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -4107,7 +4099,7 @@ then initializes the fields as specified in the <input_file>.  It returns a
 pointer to the rig if successful and NULL if unsuccessful.
 ==============================================================================*/
 {
-	char *dummy,finished,found,*name,separator,string[10];
+	char *dummy,finished,found,*name,separator,string[10],*trimmed_string;
 	int channel_number,count,device_number,i,j,
 		number_of_devices,number_of_pages,number_of_regions,region_number,
 		region_number_of_devices,string_length;
@@ -4147,6 +4139,11 @@ pointer to the rig if successful and NULL if unsuccessful.
 					fscanf(input_file,"%*[ :\n]");
 					if (read_string(input_file,"[^\n]",&(rig->name)))
 					{
+						if (trimmed_string=trim_string(rig->name))
+						{
+							DEALLOCATE(rig->name);
+							rig->name=trimmed_string;
+						}
 						fscanf(input_file," ");
 						/* read the rig type dependent properties */
 						switch (rig_type)
@@ -4183,6 +4180,12 @@ pointer to the rig if successful and NULL if unsuccessful.
 								if (read_string(input_file,"[^\n]",
 									&((*region_item_address)->region->name)))
 								{
+									if (trimmed_string=trim_string(
+										(*region_item_address)->region->name))
+									{
+										DEALLOCATE((*region_item_address)->region->name);
+										(*region_item_address)->region->name=trimmed_string;
+									}
 									fscanf(input_file," ");
 									/* read the region type dependent properties */
 									if (MIXED==rig_type)
@@ -4271,6 +4274,14 @@ pointer to the rig if successful and NULL if unsuccessful.
 														if (read_string(input_file,"s",
 															&(last_device_item->device->description->name)))
 														{
+															if (trimmed_string=trim_string(last_device_item->
+																device->description->name))
+															{
+																DEALLOCATE(last_device_item->device->
+																	description->name);
+																last_device_item->device->description->name=
+																	trimmed_string;
+															}
 															/* read device type dependent properties */
 															switch (device_type)
 															{
@@ -4784,6 +4795,11 @@ pointer to the rig if successful and NULL if unsuccessful.
 								/* read the first page name */
 								if (read_string(input_file,"s",&name))
 								{
+									if (trimmed_string=trim_string(name))
+									{
+										DEALLOCATE(name);
+										name=trimmed_string;
+									}
 									fscanf(input_file," %c",&separator);
 									while (!feof(input_file)&&rig&&(':'==separator))
 									{
@@ -4933,6 +4949,11 @@ pointer to the rig if successful and NULL if unsuccessful.
 							BINARY_FILE_READ(rig->name,sizeof(char),string_length,input_file);
 						}
 						(rig->name)[string_length]='\0';
+						if (trimmed_string=trim_string(rig->name))
+						{
+							DEALLOCATE(rig->name);
+							rig->name=trimmed_string;
+						}
 						/* read the rig type dependent properties */
 						switch (rig_type)
 						{
@@ -4982,6 +5003,12 @@ pointer to the rig if successful and NULL if unsuccessful.
 									BINARY_FILE_READ((*region_item_address)->region->name,
 										sizeof(char),string_length,input_file);
 									((*region_item_address)->region->name)[string_length]='\0';
+									if (trimmed_string=
+										trim_string((*region_item_address)->region->name))
+									{
+										DEALLOCATE((*region_item_address)->region->name);
+										(*region_item_address)->region->name=trimmed_string;
+									}
 									/* read the region type dependent properties */
 									if (MIXED==rig_type)
 									{
@@ -5109,6 +5136,14 @@ pointer to the rig if successful and NULL if unsuccessful.
 															input_file);
 														(last_device_item->device->description->name)
 															[string_length]='\0';
+														if (trimmed_string=trim_string(last_device_item->
+															device->description->name))
+														{
+															DEALLOCATE(last_device_item->device->description->
+																name);
+															last_device_item->device->description->name=
+																trimmed_string;
+														}
 #if defined (DEVICE_EXPRESSIONS)
 														if (new_auxiliary_type)
 														{
@@ -5685,6 +5720,12 @@ pointer to the rig if successful and NULL if unsuccessful.
 											BINARY_FILE_READ((*last_page_item)->page->name,
 												sizeof(char),string_length,input_file);
 											((*last_page_item)->page->name)[string_length]='\0';
+											if (trimmed_string=trim_string((*last_page_item)->page->
+												name))
+											{
+												DEALLOCATE((*last_page_item)->page->name);
+												(*last_page_item)->page->name=trimmed_string;
+											}
 											/* read the number of devices in the device list */
 											BINARY_FILE_READ((char *)&number_of_devices,sizeof(int),1,
 												input_file);

@@ -848,7 +848,7 @@ static struct FE_node *read_text_config_FE_node(FILE *input_file,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2003
+LAST MODIFIED : 6 July 2004
 
 DESCRIPTION :
 Reads a node  from a text configuration file, using the template node created in
@@ -856,7 +856,7 @@ create_config_template_node.
 cf read_FE_node() in import_finite_element.c
 ==============================================================================*/
 {	
-	char *dummy_str,*electrode_name,*name,separator,string[10];
+	char *dummy_str,*electrode_name,*name,separator,string[10],*trimmed_string;
 	FE_value coefficient,*coefficients,*coefficients_temp,sign,xpos,ypos,zpos;	
 	int channel_number,found,electrode_number,*electrode_numbers,
 		*electrode_numbers_temp,number_of_electrodes,string_length,success;
@@ -870,10 +870,13 @@ cf read_FE_node() in import_finite_element.c
 		fscanf(input_file," : ");
 		/* read in name */
 		dummy_str=(char *)NULL;
-		if (read_string(input_file,"[^\n]",&dummy_str)&&
-			(name=trim_string(dummy_str)))
+		if (read_string(input_file,"[^\n]",&name))
 		{
-			DEALLOCATE(dummy_str);						
+			if (trimmed_string=trim_string(name))
+			{
+				DEALLOCATE(name);
+				name=trimmed_string;
+			}
 			number_of_electrodes=0;
 			electrode_numbers=(int *)NULL;
 			coefficients=(FE_value *)NULL;
@@ -1696,7 +1699,7 @@ in rig.c
 static int read_text_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type region_type,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2003
+LAST MODIFIED : 6 July 2004
 
 DESCRIPTION :
 Reads a node group from a configuration file.
@@ -1706,9 +1709,9 @@ Unlike read_binary_config_FE_node_group above, don't set up a
 FE_node_order_info, as this is used to pass info when reading signal
 files, and there are no text signal files.
 ==============================================================================*/
-{	
+{
 	char *dummy,*dummy_str,input_str[6],*name,*region_name,region_num_string[10],
-		*rig_name,separator;
+		*rig_name,separator,*trimmed_string;
 	enum Config_node_type config_node_type;
 	FE_value focus;
 	int device_number,finished,is_auxiliary,is_electrode,last_node_number,
@@ -1740,11 +1743,14 @@ files, and there are no text signal files.
 		/* we've read in the rig type, now read in the rig name */
 		fscanf(input_file,"%*[ :\n]");
 		/* rig name */		 
-		if (read_string(input_file,"[^\n]",&dummy_str)&&
-			(rig_name=trim_string(dummy_str))) 
-		{	
+		if (read_string(input_file,"[^\n]",&rig_name))
+		{
+			if (trimmed_string=trim_string(rig_name))
+			{
+				DEALLOCATE(rig_name);
+				rig_name=trimmed_string;
+			}
 			fscanf(input_file," ");						
-			DEALLOCATE(dummy_str);
 			/* read in the initial rig name and type */	
 			focus=(float)0;							
 			switch (region_type)
@@ -1805,13 +1811,17 @@ files, and there are no text signal files.
 						{
 							/* get the rig name */	
 							fscanf(input_file,"%*[ :\n]");
-							if (read_string(input_file,"[^\n]",&dummy_str)&&
-								(rig_name=trim_string(dummy_str)))
-							{	
+							if (read_string(input_file,"[^\n]",&rig_name))
+							{
+								if (trimmed_string=trim_string(rig_name))
+								{
+									DEALLOCATE(rig_name);
+									rig_name=trimmed_string;
+								}
 								fscanf(input_file," ");
 								/*append the region number to the name, to ensure it's unique*/
 								sprintf(region_num_string,"%d",region_number);
-								append_string(&rig_name,region_num_string,&string_error);					
+								append_string(&rig_name,region_num_string,&string_error);
 								region_number++;
 							}	
 							else
@@ -1846,9 +1856,13 @@ files, and there are no text signal files.
 						{	
 							/* get the rig name */	
 							fscanf(input_file,"%*[ :\n]");
-							if (read_string(input_file,"[^\n]",&dummy_str)&&
-								(rig_name=trim_string(dummy_str))) 
-							{	
+							if (read_string(input_file,"[^\n]",&rig_name))
+							{
+								if (trimmed_string=trim_string(rig_name))
+								{
+									DEALLOCATE(rig_name);
+									rig_name=trimmed_string;
+								}
 								fscanf(input_file," ");		
 								/*append the region number to the name, to ensure it's unique*/
 								sprintf(region_num_string,"%d",region_number);
@@ -1889,9 +1903,13 @@ files, and there are no text signal files.
 							input_str[4]='\0';
 							/* get the rig name */
 							fscanf(input_file,"%*[ :\n]");
-							if (read_string(input_file,"[^\n]",&dummy_str)&&
-								(rig_name = trim_string(dummy_str))) 
-							{	
+							if (read_string(input_file,"[^\n]",&rig_name))
+							{
+								if (trimmed_string=trim_string(rig_name))
+								{
+									DEALLOCATE(rig_name);
+									rig_name=trimmed_string;
+								}
 								fscanf(input_file," ");				
 								/* read in focus (if any)*/						
 								if (!fscanf(input_file,"focus for Hammer projection : %f",&focus))
@@ -1936,8 +1954,15 @@ files, and there are no text signal files.
 						{
 							/* line is "region" */
 							fscanf(input_file,"n : "); 
-							read_string(input_file,"[^\n]",&dummy_str);
-							region_name=trim_string(dummy_str);	
+							region_name=(char *)NULL;
+							if (read_string(input_file,"[^\n]",&region_name))
+							{
+								if (trimmed_string=trim_string(region_name))
+								{
+									DEALLOCATE(region_name);
+									region_name=trimmed_string;
+								}
+							}
 							/*append the region number to the name, to ensure it's unique*/
 							sprintf(region_num_string,"%d",region_number);
 							append_string(&region_name,region_num_string,&string_error);

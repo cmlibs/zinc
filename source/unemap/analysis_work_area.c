@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 3 May 2004
+LAST MODIFIED : 6 July 2004
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -3047,7 +3047,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 12 April 2004
+LAST MODIFIED : 6 July 2004
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -3055,7 +3055,7 @@ signals.
 ==============================================================================*/
 {
 	char *detection_name,*device_line,*device_line_position,*device_name_end,
-		end_of_line,*signal_file_name,*temp_string,value_string[10];
+		end_of_line,*signal_file_name,*temp_string,*trimmed_string,value_string[10];
 	FILE *input_file,*signal_input_file;
 	float end_search_float,frequency,level,start_search_float,temp_float;
 	int analysis_number_of_events,average_width,bisect_left,bisect_right,datum,
@@ -3096,6 +3096,11 @@ signals.
 			fscanf(input_file,"signal file name : ");
 			if (read_string(input_file,"[^ \n]",&signal_file_name))
 			{
+				if (trimmed_string=trim_string(signal_file_name))
+				{
+					DEALLOCATE(signal_file_name);
+					signal_file_name=trimmed_string;
+				}
 				fscanf(input_file,"\n");
 				clean_Analysis_work_area_before_load(analysis);
 				/* initialize the new analysis */
