@@ -24236,9 +24236,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_image_enhancement(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
-				Computed_field_register_types_intensity_based_segment(
-					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
 				Computed_field_register_types_image_mask(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
