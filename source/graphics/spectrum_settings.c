@@ -64,7 +64,12 @@ Stores one group of settings for a single part of a spectrum rendition.
 		of the black bands */
 	int number_of_bands, black_band_proportion;
 
-	/* for accessing objects */
+#if defined (GL_EXT_texture_object)
+	/* Texture number for banded and step spectrums */
+	int texture_id;
+#endif /* defined (GL_EXT_texture_object) */
+	 
+	/* For accessing objects */
 	int access_count;
 };
 
@@ -316,6 +321,9 @@ Allocates memory and assigns fields for a struct Spectrum_settings.
 		settings->number_of_bands = 10;
 		settings->black_band_proportion = 200;
 		settings->active=1;
+#if defined (GL_EXT_texture_object)
+		settings->texture_id=0;
+#endif /* defined (GL_EXT_texture_object) */
 		settings->access_count=0;
 	}
 	else
@@ -345,7 +353,13 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 	{
 		if (settings= *settings_ptr)
 		{
-		switch (settings->settings_type)
+#if defined (GL_EXT_texture_object)
+			if (settings->texture_id)
+			{
+				glDeleteTexturesEXT(1, &(settings->texture_id));
+			}
+#endif /* defined (GL_EXT_texture_object) */
+			switch (settings->settings_type)
 			{
 				case SPECTRUM_LINEAR:
 				case SPECTRUM_LOG:
@@ -360,7 +374,7 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 						"DESTROY(Spectrum_settings).  Unknown element settings type");
 				} break;
 			}
-			/*???RC temp check access_count is zero! */
+			/*???RC check temp access_count is zero! */
 			if (0!=settings->access_count)
 			{
 				display_message(ERROR_MESSAGE,
@@ -397,7 +411,7 @@ Note: destination->access_count is not changed by COPY.
 	/* check arguments */
 	if (source&&destination)
 	{
-		destination->settings_changed = source->settings_changed;
+		destination->settings_changed = 1;
 		/* copy settings used by all settings_types */
 		destination->component_number = source->component_number;
 		destination->settings_type = source->settings_type;
@@ -1086,6 +1100,7 @@ Sets the type of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->settings_type = type;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1142,6 +1157,7 @@ Sets the component_number of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->component_number = component_number - 1;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1198,6 +1214,7 @@ Sets the reverse flag of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->reverse = reverse;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1254,6 +1271,7 @@ Sets the colour mapping of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->colour_mapping = type;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1310,6 +1328,7 @@ Sets the first type parameter of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->exaggeration = param1;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1365,6 +1384,7 @@ DESCRIPTION :
 	if (settings)
 	{
 		settings->number_of_bands = bands;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1419,6 +1439,7 @@ DESCRIPTION :
 	if (settings)
 	{
 		settings->black_band_proportion = proportion;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1480,6 +1501,7 @@ Sets the step value of the Spectrum_settings <settings>.
 		{
 			settings->step_value = 0.5 * (settings->maximum + settings->minimum );
 		}
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1539,6 +1561,7 @@ DESCRIPTION :
 		{
 			settings->step_value = 0.5 * (settings->maximum + settings->minimum );
 		}
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1598,6 +1621,7 @@ DESCRIPTION :
 		{
 			settings->step_value = 0.5 * (settings->maximum + settings->minimum );
 		}
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1654,6 +1678,7 @@ Sets the extend_above flag of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->extend_above = extend_above;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1711,6 +1736,7 @@ Sets the extend_below flag of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->extend_below = extend_below;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1769,6 +1795,7 @@ DESCRIPTION :
 		{
 			settings->max_value = value;
 		}
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1827,6 +1854,7 @@ DESCRIPTION :
 		{
 			settings->min_value = value;
 		}
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -1883,6 +1911,7 @@ Sets the type of the Spectrum_settings <settings>.
 	if (settings)
 	{
 		settings->render_type = type;
+		settings->settings_changed = 1;
 		return_code = 1;
 	}
 	else
@@ -2025,6 +2054,27 @@ DESCRIPTION :
 						}
 #endif /* defined (DEBUG) */
 #if defined (OPENGL_API)
+#if defined (GL_EXT_texture_object)
+						if (!settings->texture_id)
+						{
+							glGenTexturesEXT(1, &(settings->texture_id));
+						}
+						if (settings->settings_changed)
+						{
+							glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+							glTexImage1D(GL_TEXTURE_1D,0,3,1024,0,GL_RGB,GL_UNSIGNED_BYTE,
+								pixels);
+							glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+							glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+							glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+							glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+						}
+						else
+						{
+							glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+						}
+						glEnable(GL_TEXTURE_1D);
+#else /* defined (GL_EXT_texture_object) */				
 						glTexImage1D(GL_TEXTURE_1D,0,3,1024,0,GL_RGB,GL_UNSIGNED_BYTE,
 							pixels);
 						glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
@@ -2032,6 +2082,7 @@ DESCRIPTION :
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 						glEnable(GL_TEXTURE_1D);
+#endif /* defined (GL_EXT_texture_object) */				
 #endif /* defined (OPENGL_API) */
 #if defined (DEBUG)
 						while (error=glGetError())
@@ -2072,12 +2123,33 @@ DESCRIPTION :
 					}
 #endif /* defined (DEBUG) */
 #if defined (OPENGL_API)
+#if defined (GL_EXT_texture_object)
+					if (!settings->texture_id)
+					{
+						glGenTexturesEXT(1, &(settings->texture_id));
+					}
+					if (settings->settings_changed)
+					{
+						glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+						glTexImage1D(GL_TEXTURE_1D,0,3,2,0,GL_RGB,GL_UNSIGNED_BYTE,pixels);
+						glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+					}
+					else
+					{
+						glBindTextureEXT(GL_TEXTURE_1D, settings->texture_id);
+					}
+					glEnable(GL_TEXTURE_1D);
+#else /* defined (GL_EXT_texture_object) */				
 					glTexImage1D(GL_TEXTURE_1D,0,3,2,0,GL_RGB,GL_UNSIGNED_BYTE,pixels);
 					glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 					glEnable(GL_TEXTURE_1D);
+#endif /* defined (GL_EXT_texture_object) */				
 #endif /* defined (OPENGL_API) */
 #if defined (DEBUG)
 					while (error=glGetError())
@@ -2094,6 +2166,7 @@ DESCRIPTION :
 				} break;
 			}
 		}
+		settings->settings_changed = 0;
 	}
 	else
 	{
