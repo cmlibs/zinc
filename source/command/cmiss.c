@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -13324,7 +13324,7 @@ Executes a GFX LIST ELEMENT.
 static int gfx_list_FE_node(struct Parse_state *state,
 	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 August 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Executes a GFX LIST NODES.
@@ -13332,8 +13332,9 @@ If <used_data_flag> is set, use data_manager and data_selection, otherwise
 use node_manager and node_selection.
 ==============================================================================*/
 {
-	char all_flag,ranges_flag,selected_flag;
-	int return_code;
+	char all_flag,ranges_flag,*ranges_string,*remaining_string,
+		selected_flag,verbose_flag;
+	int length_to_print,remaining_length,return_code;
 	struct Cmiss_command_data *command_data;
 	struct FE_node_list_conditional_data list_conditional_data;
 	struct FE_node_selection *node_selection;
@@ -13358,6 +13359,7 @@ use node_manager and node_selection.
 		/* initialise defaults */
 		all_flag=0;
 		selected_flag=0;
+		verbose_flag=0;
 		node_ranges=CREATE(Multi_range)();
 
 		option_table=CREATE(Option_table)();
@@ -13365,6 +13367,9 @@ use node_manager and node_selection.
 		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
 		/* selected */
 		Option_table_add_entry(option_table,"selected",&selected_flag,
+			NULL,set_char_flag);
+		/* verbose */
+		Option_table_add_entry(option_table,"verbose",&verbose_flag,
 			NULL,set_char_flag);
 		/* default option: node number ranges */
 		Option_table_add_entry(option_table,(char *)NULL,(void *)node_ranges,
@@ -13404,13 +13409,85 @@ use node_manager and node_selection.
 				{
 					if (0<NUMBER_IN_LIST(FE_node)(node_list))
 					{
-						return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
-							(void *)1,node_list);
+						if (verbose_flag)
+						{
+							return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
+								(void *)1,node_list);
+						}
+						else
+						{
+							if (use_data)
+							{
+								display_message(INFORMATION_MESSAGE,"Data:\n");
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE,"Nodes:\n");
+							}
+							/* write comma separated list of ranges - use existing node
+								 ranges structure */
+							Multi_range_clear(node_ranges);
+							if (FOR_EACH_OBJECT_IN_LIST(FE_node)(
+								add_FE_node_number_to_Multi_range,(void *)node_ranges,
+								node_list)&&
+								(ranges_string=Multi_range_get_ranges_string(node_ranges)))
+							{
+								remaining_string = ranges_string;
+								remaining_length = strlen(remaining_string);
+								while ((0<remaining_length)&&return_code)
+								{
+									if (remaining_length < 80)
+									{
+										display_message(INFORMATION_MESSAGE,remaining_string);
+										display_message(INFORMATION_MESSAGE,"\n");
+										remaining_length=0;
+									}
+									else
+									{
+										/* go back to last comma in string */
+										length_to_print = 80;
+										while (length_to_print&&
+											(remaining_string[length_to_print] != ','))
+										{
+											length_to_print--;
+										}
+										if (0<length_to_print)
+										{
+											/* null terminate string */
+											remaining_string[length_to_print] = '\0';
+											display_message(INFORMATION_MESSAGE,remaining_string);
+											display_message(INFORMATION_MESSAGE,",\n");
+											remaining_string += (length_to_print+1);
+											remaining_length -= (length_to_print+1);
+										}
+										else
+										{
+											return_code=0;
+										}
+									}
+								}
+								DEALLOCATE(ranges_string);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_list_FE_node.  Could not get node ranges");
+								return_code=0;
+							}
+						}
 					}
 					else
 					{
-						display_message(WARNING_MESSAGE,
-							"gfx list nodes:  No nodes specified");
+						if (use_data)
+						{
+							display_message(WARNING_MESSAGE,
+								"gfx list data:  No data specified");
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"gfx list nodes:  No nodes specified");
+						}
 					}
 				}
 				else
