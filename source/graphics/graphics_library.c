@@ -1286,10 +1286,10 @@ the extensions succeed, false if not.
 			{
 				if (query_gl_version(1, 3))
 				{
-					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glActiveTexture, PFNGLACTIVETEXTUREPROC)
-						Graphics_library_get_function_ptr("glActiveTexture") &&
-						 GRAPHICS_LIBRARY_ASSIGN_HANDLE(glMultiTexCoord3fv, PFNGLMULTITEXCOORD3FVPROC)
-						Graphics_library_get_function_ptr("glMultiTexCoord3fv"))
+					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glActiveTexture, PFNGLACTIVETEXTUREPROC)
+						Graphics_library_get_function_ptr("glActiveTexture")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glMultiTexCoord3fv, PFNGLMULTITEXCOORD3FVPROC)
+						Graphics_library_get_function_ptr("glMultiTexCoord3fv")))
 					{
 						return_code = 1;
 					}
