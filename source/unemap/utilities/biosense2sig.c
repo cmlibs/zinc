@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : biosense2sig.c
 
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Converts a a Biosense location and activation time file to a signal file.
@@ -16,6 +16,8 @@ Converts a a Biosense location and activation time file to a signal file.
 #include "general/myio.h"
 #include "unemap/analysis_work_area.h"
 #include "user_interface/message.h"
+
+/*#define FIT_SPHERE*/
 
 static int analysis_write_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
@@ -215,13 +217,11 @@ DESCRIPTION :
 	char *device_name,flag;
 	enum Event_signal_status *status_array,*status_array_temp;
 	FILE *biosense_file;
-	float dfdx,dfdy,dfdz,drdx,drdy,drdz,d2fdxdy,d2fdxdz,d2fdx2,d2fdydx,d2fdydz,
-		d2fdy2,d2fdzdx,d2fdzdy,d2fdz2,f,f_prev,phi,r,ri,theta,sampling_frequency,
-		tolerance,x,*x_array,*x_array_temp,y,*y_array,*y_array_temp,z,*z_array,
-		*z_array_temp;
-	int converged,device_number,i,id,*id_array,*id_array_temp,max_steps,max_time,
-		min_time,number_of_devices,number_of_samples,return_code,step_number,time,
-		*time_array,*time_array_temp;
+	float sampling_frequency,x,*x_array,*x_array_temp,y,*y_array,*y_array_temp,z,
+		*z_array,*z_array_temp;
+	int device_number,i,id,*id_array,*id_array_temp,max_time,min_time,
+		number_of_devices,number_of_samples,return_code,time,*time_array,
+		*time_array_temp;
 	short int *value;
 	struct Analysis_work_area analysis_work_area;
 	struct Channel *channel;
@@ -231,14 +231,12 @@ DESCRIPTION :
 	struct Region_list_item *region_list;
 	struct Signal *signal;
 	struct Signal_buffer *signal_buffer;
-#if defined (OLD_CODE)
-	char *device_name;
-	float sampling_frequency=1/0.00375;
-	int column_number,columns=96,device_number,i,number_of_signals,
-		number_of_samples,return_code=0,row_number,rows=96,*time;
-	long int biosense_file_size;
-	struct Rig *rig;
-#endif /* defined (OLD_CODE) */
+#if defined (FIT_SPHERE)
+	float dfdx,dfdy,dfdz,drdx,drdy,drdz,d2fdxdy,d2fdxdz,d2fdx2,d2fdydx,d2fdydz,
+		d2fdy2,d2fdzdx,d2fdzdy,d2fdz2,f,f_prev,phi,pivmax,pivot1,pivot2,pivot3,r,ri,
+		ri2,swap,theta,tolerance,vv1,vv2,vv3;
+	int converged,inddd1,inddd2,max_steps,step_number;
+#endif /* defined (FIT_SPHERE) */
 
 	return_code=0;
 	/* check arguments */
@@ -286,6 +284,11 @@ DESCRIPTION :
 						time_array[number_of_devices-1]=time;
 						if (max_time<min_time)
 						{
+							min_time=time;
+							max_time=time;
+						}
+						else
+						{
 							if (time<min_time)
 							{
 								min_time=time;
@@ -297,11 +300,6 @@ DESCRIPTION :
 									max_time=time;
 								}
 							}
-						}
-						else
-						{
-							min_time=time;
-							max_time=time;
 						}
 						status_array[number_of_devices-1]=ACCEPTED;
 					}
@@ -340,11 +338,9 @@ DESCRIPTION :
 			}
 			if (return_code)
 			{
-				/* fit a sphere to the data locations */
-				tolerance=1e-6;
-				max_steps=10;
-				step_number=0;
-				converged=0;
+				/*???debug */
+				printf("number_of_devices=%d  min_time=%d, max_time=%d\n",
+					number_of_devices,min_time,max_time);
 				/* use the centre of mass as the initial estimate */
 				x=0;
 				y=0;
@@ -364,6 +360,12 @@ DESCRIPTION :
 				x /= (float)number_of_devices;
 				y /= (float)number_of_devices;
 				z /= (float)number_of_devices;
+#if defined (FIT_SPHERE)
+				/* fit a sphere to the data locations */
+				tolerance=1e-6;
+				max_steps=10;
+				step_number=0;
+				converged=0;
 				do
 				{
 					r=0;
@@ -400,9 +402,9 @@ DESCRIPTION :
 						f += (r-ri)*(r-ri);
 						if (0<ri)
 						{
-							dfdx += (x-(*x_array_temp))*(r-ri)/ri;
-							dfdy += (y-(*y_array_temp))*(r-ri)/ri;
-							dfdz += (z-(*z_array_temp))*(r-ri)/ri;
+							dfdx += (x-(*x_array_temp))*(ri-r)/ri;
+							dfdy += (y-(*y_array_temp))*(ri-r)/ri;
+							dfdz += (z-(*z_array_temp))*(ri-r)/ri;
 							drdx += (x-(*x_array_temp))/ri;
 							drdy += (y-(*y_array_temp))/ri;
 							drdz += (z-(*z_array_temp))/ri;
@@ -428,29 +430,30 @@ DESCRIPTION :
 					z_array_temp=z_array;
 					for (i=number_of_devices;i>0;i--)
 					{
-						ri=sqrt((x-(*x_array_temp))*(x-(*x_array_temp))+
+						ri2=(x-(*x_array_temp))*(x-(*x_array_temp))+
 							(y-(*y_array_temp))*(y-(*y_array_temp))+
-							(z-(*z_array_temp))*(z-(*z_array_temp)));
+							(z-(*z_array_temp))*(z-(*z_array_temp));
+						ri=sqrt(ri2);
 						if (0<ri)
 						{
-							d2fdx2 += (ri-ri)/ri+(x-(*x_array_temp))*
-								(r*(x-(*x_array_temp))/ri-ri*drdx)/(ri*(ri-r));
+							d2fdx2 += (ri-r)/ri+(x-(*x_array_temp))*
+								(r*(x-(*x_array_temp))/ri-ri*drdx)/ri2;
 							d2fdxdy += (x-(*x_array_temp))*
-								(r*(y-(*y_array_temp))/ri-ri*drdy)/(ri*(ri-r));
+								(r*(y-(*y_array_temp))/ri-ri*drdy)/ri2;
 							d2fdxdz += (x-(*x_array_temp))*
-								(r*(z-(*z_array_temp))/ri-ri*drdz)/(ri*(ri-r));
+								(r*(z-(*z_array_temp))/ri-ri*drdz)/ri2;
 							d2fdydx += (y-(*y_array_temp))*
-								(r*(x-(*x_array_temp))/ri-ri*drdx)/(ri*(ri-r));
-							d2fdy2 += (ri-ri)/ri+(y-(*y_array_temp))*
-								(r*(y-(*y_array_temp))/ri-ri*drdy)/(ri*(ri-r));
+								(r*(x-(*x_array_temp))/ri-ri*drdx)/ri2;
+							d2fdy2 += (ri-r)/ri+(y-(*y_array_temp))*
+								(r*(y-(*y_array_temp))/ri-ri*drdy)/ri2;
 							d2fdydz += (y-(*y_array_temp))*
-								(r*(z-(*z_array_temp))/ri-ri*drdz)/(ri*(ri-r));
+								(r*(z-(*z_array_temp))/ri-ri*drdz)/ri2;
 							d2fdzdx += (z-(*z_array_temp))*
-								(r*(x-(*x_array_temp))/ri-ri*drdx)/(ri*(ri-r));
+								(r*(x-(*x_array_temp))/ri-ri*drdx)/ri2;
 							d2fdzdy += (z-(*z_array_temp))*
-								(r*(y-(*y_array_temp))/ri-ri*drdy)/(ri*(ri-r));
-							d2fdz2 += (ri-ri)/ri+(z-(*z_array_temp))*
-								(r*(z-(*z_array_temp))/ri-ri*drdz)/(ri*(ri-r));
+								(r*(y-(*y_array_temp))/ri-ri*drdy)/ri2;
+							d2fdz2 += (ri-r)/ri+(z-(*z_array_temp))*
+								(r*(z-(*z_array_temp))/ri-ri*drdz)/ri2;
 						}
 						x_array_temp++;
 						y_array_temp++;
@@ -465,114 +468,145 @@ DESCRIPTION :
 						}
 					}
 					/*???debug */
-					printf("%d  %g %g %g %g %g\n",step_number,f,r,x,y,z);
+					printf("%d  %g  %g %g %g %g\n",step_number,f,r,x,y,z);
+#if defined (DEBUG)
+					printf("df=\n");
 					printf("  %g %g %g\n",dfdx,dfdy,dfdz);
+					printf("d2f=\n");
+					printf("  %g %g %g\n",d2fdx2,d2fdxdy,d2fdxdz);
+					printf("  %g %g %g\n",d2fdydx,d2fdy2,d2fdydz);
+					printf("  %g %g %g\n",d2fdzdx,d2fdzdy,d2fdz2);
+#endif /* defined (DEBUG) */
 					if (!converged)
 					{
-						dfdx *= 2;
-						dfdy *= 2;
-						dfdz *= 2;
-						/*???DB.  To be done */
-#if defined (NEW_CODE)
-C       Calculate the inverse of L(i,i)
-        IPVIND=IPVT-NELP1
-        DD11=B(IPVIND+NB11)
-        DD12=B(IPVIND+NB12)
-        DD13=B(IPVIND+NB13)
-        DD21=B(IPVIND+NB21)
-        DD22=B(IPVIND+NB22)
-        DD23=B(IPVIND+NB23)
-        DD31=B(IPVIND+NB31)
-        DD32=B(IPVIND+NB32)
-        DD33=B(IPVIND+NB33)
-        VV1=1.0/MAX(ABS(DD11)
-     &    ,ABS(DD12)
-     &    ,ABS(DD13)
-     &    )
-        VV2=1.0/MAX(ABS(DD21)
-     &    ,ABS(DD22)
-     &    ,ABS(DD23)
-     &    )
-        VV3=1.0/MAX(ABS(DD31)
-     &    ,ABS(DD32)
-     &    ,ABS(DD33)
-     &    )
-        PIVOT1=VV1*ABS(DD11)
-        PIVOT2=VV2*ABS(DD21)
-        PIVOT3=VV3*ABS(DD31)
-        PIVMAX=MAX(PIVOT1
-     &    ,PIVOT2
-     &    ,PIVOT3
-     &    )
-        INDDD1=1
-        IF (PIVOT2.EQ.PIVMAX) THEN
-          SWAP=DD11
-          DD11=DD21
-          DD21=SWAP
-          SWAP=DD12
-          DD12=DD22
-          DD22=SWAP
-          SWAP=DD13
-          DD13=DD23
-          DD23=SWAP
-          INDDD1=2
-          VV2=VV1
-        ELSE
-          IF (PIVOT3.EQ.PIVMAX) THEN
-            SWAP=DD11
-            DD11=DD31
-            DD31=SWAP
-            SWAP=DD12
-            DD12=DD32
-            DD32=SWAP
-            SWAP=DD13
-            DD13=DD33
-            DD33=SWAP
-            INDDD1=3
-            VV3=VV1
-          ENDIF
-        ENDIF
-        DD21=DD21/DD11
-        DD31=DD31/DD11
-        DD22=DD22
-     &    -DD21*DD12
-        DD32=DD32
-     &    -DD31*DD12
-        PIVOT2=VV2*ABS(DD22)
-        PIVOT3=VV3*ABS(DD32)
-        PIVMAX=MAX(PIVOT2
-     &    ,PIVOT3
-     &    )
-        INDDD2=2
-        IF (PIVOT3.EQ.PIVMAX) THEN
-          SWAP=DD21
-          DD21=DD31
-          DD31=SWAP
-          SWAP=DD22
-          DD22=DD32
-          DD32=SWAP
-          SWAP=DD23
-          DD23=DD33
-          DD33=SWAP
-          INDDD2=3
-          VV3=VV2
-        ENDIF
-        DD32=DD32/DD22
-        DD23=DD23
-     &    -DD21*DD13
-        DD33=DD33
-     &    -DD31*DD13
-     &    -DD32*DD23
-        PIV(IM1NQ2+ 1)=DD11
-        PIV(IM1NQ2+ 2)=DD12
-        PIV(IM1NQ2+ 3)=DD13
-        PIV(IM1NQ2+ 4)=DD21
-        PIV(IM1NQ2+ 5)=DD22
-        PIV(IM1NQ2+ 6)=DD23
-        PIV(IM1NQ2+ 7)=DD31
-        PIV(IM1NQ2+ 8)=DD32
-        PIV(IM1NQ2+ 9)=DD33
-#endif /* defined (NEW_CODE) */
+						vv1=fabs(d2fdx2);
+						if (fabs(d2fdxdy)>vv1)
+						{
+							vv1=fabs(d2fdxdy);
+						}
+						if (fabs(d2fdxdz)>vv1)
+						{
+							vv1=fabs(d2fdxdz);
+						}
+						vv2=fabs(d2fdydx);
+						if (fabs(d2fdy2)>vv2)
+						{
+							vv2=fabs(d2fdy2);
+						}
+						if (fabs(d2fdydz)>vv2)
+						{
+							vv2=fabs(d2fdydz);
+						}
+						vv3=fabs(d2fdzdx);
+						if (fabs(d2fdzdy)>vv3)
+						{
+							vv3=fabs(d2fdzdy);
+						}
+						if (fabs(d2fdz2)>vv3)
+						{
+							vv3=fabs(d2fdz2);
+						}
+						pivot1=vv1*fabs(d2fdx2);
+						pivot2=vv2*fabs(d2fdydx);
+						pivot3=vv3*fabs(d2fdzdx);
+						pivmax=pivot1;
+						if (pivot2>pivmax)
+						{
+							pivmax=pivot2;
+						}
+						if (pivot3>pivmax)
+						{
+							pivmax=pivot3;
+						}
+						inddd1=1;
+						if (pivot2==pivmax)
+						{
+							swap=d2fdx2;
+							d2fdx2=d2fdydx;
+							d2fdydx=swap;
+							swap=d2fdxdy;
+							d2fdxdy=d2fdy2;
+							d2fdy2=swap;
+							swap=d2fdxdz;
+							d2fdxdz=d2fdydz;
+							d2fdydz=swap;
+							inddd1=2;
+							vv2=vv1;
+						}
+						else
+						{
+							if (pivot3==pivmax)
+							{
+								swap=d2fdx2;
+								d2fdx2=d2fdzdx;
+								d2fdzdx=swap;
+								swap=d2fdxdy;
+								d2fdxdy=d2fdzdy;
+								d2fdzdy=swap;
+								swap=d2fdxdz;
+								d2fdxdz=d2fdz2;
+								d2fdz2=swap;
+								inddd1=3;
+								vv3=vv1;
+							}
+						}
+						d2fdydx=d2fdydx/d2fdx2;
+						d2fdzdx=d2fdzdx/d2fdx2;
+						d2fdy2=d2fdy2-d2fdydx*d2fdxdy;
+						d2fdzdy=d2fdzdy-d2fdzdx*d2fdxdy;
+						pivot2=vv2*fabs(d2fdy2);
+						pivot3=vv3*fabs(d2fdzdy);
+						pivmax=pivot2;
+						if (pivot3>pivmax)
+						{
+							pivmax=pivot3;
+						}
+						inddd2=2;
+						if (pivot3==pivmax)
+						{
+							swap=d2fdydx;
+							d2fdydx=d2fdzdx;
+							d2fdzdx=swap;
+							swap=d2fdy2;
+							d2fdy2=d2fdzdy;
+							d2fdzdy=swap;
+							swap=d2fdydz;
+							d2fdydz=d2fdz2;
+							d2fdz2=swap;
+							inddd2=3;
+							vv3=vv2;
+						}
+						d2fdzdy=d2fdzdy/d2fdy2;
+						d2fdydz=d2fdydz-d2fdydx*d2fdxdz;
+						d2fdz2=d2fdz2-d2fdzdx*d2fdxdz-d2fdzdy*d2fdydz;
+						if (inddd1==2)
+						{
+							swap=dfdx;
+							dfdx=dfdy;
+							dfdy=swap;
+						}
+						else
+						{
+							if (inddd1==3)
+							{
+								swap=dfdx;
+								dfdx=dfdz;
+								dfdz=swap;
+							}
+						}
+						if (inddd2==3)
+						{
+							swap=dfdy;
+							dfdy=dfdz;
+							dfdz=swap;
+						}
+						dfdy=dfdy-d2fdydx*dfdx;
+						dfdz=dfdz-d2fdzdx*dfdx-d2fdzdy*dfdy;
+						dfdz=dfdz/d2fdz2;
+						dfdy=dfdy-d2fdydz*dfdz;
+						dfdy=dfdy/d2fdy2;
+						dfdx=dfdx-d2fdxdy*dfdy-d2fdxdz*dfdz;
+						dfdx=dfdx/d2fdx2;
 						x -= dfdx;
 						y -= dfdy;
 						z -= dfdz;
@@ -582,6 +616,9 @@ C       Calculate the inverse of L(i,i)
 				while (return_code&&!converged&&(step_number<max_steps));
 				if (return_code&&converged)
 				{
+					/*???debug */
+					printf("x=%g, y=%g, z=%g, r=%g\n",x,y,z,r);
+#endif /* defined (FIT_SPHERE) */
 					number_of_samples=max_time-min_time+1;
 					sampling_frequency=(float)1000;
 					if (signal_buffer=create_Signal_buffer(SHORT_INT_VALUE,
@@ -595,7 +632,7 @@ C       Calculate the inverse of L(i,i)
 						}
 						for (i=0;i<number_of_samples;i++)
 						{
-							(signal_buffer->times)[0]=min_time+i;
+							(signal_buffer->times)[i]=min_time+i;
 						}
 						ALLOCATE(devices,struct Device *,number_of_devices);
 						ALLOCATE(device_name,char,
@@ -617,6 +654,13 @@ C       Calculate the inverse of L(i,i)
 								status_array_temp=status_array;
 								id_array_temp=id_array;
 								time_array_temp=time_array;
+#if defined (DEBUG)
+/*???debug */
+{
+	float max_phi=0,min_phi=1,max_r=0,min_r=1,max_theta=0,
+		min_theta=1,max_x=0,min_x=1,max_y=0,min_y=1,max_z=0,min_z=1;
+
+#endif /* defined (DEBUG) */
 								while ((device_number<number_of_devices)&&return_code)
 								{
 									sprintf(device_name,"%d",*id_array_temp);
@@ -627,14 +671,164 @@ C       Calculate the inverse of L(i,i)
 										*status_array_temp,0))&&(*device=create_Device(
 										device_number,description,channel,signal)))
 									{
-										cartesian_to_spherical_polar(*x_array_temp,*y_array_temp,
-											*z_array_temp,&ri,&theta,&phi,(float *)NULL);
-										prolate_spheroidal_to_cartesian(1,phi,theta,
+#if defined (OLD_CODE)
+#if defined (DEBUG)
+										/*???debug */
+										printf("%d.  %g %g %g\n",device_number,(*x_array_temp)-x,
+											(*y_array_temp)-y,(*z_array_temp)-z);
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+	/*???debug */
+	if (max_x<min_x)
+	{
+		min_x=(*x_array_temp)-x;
+		max_x=min_x;
+	}
+	else
+	{
+		if ((*x_array_temp)-x>max_x)
+		{
+			max_x=(*x_array_temp)-x;
+		}
+		else
+		{
+			if ((*x_array_temp)-x<min_x)
+			{
+				min_x=(*x_array_temp)-x;
+			}
+		}
+	}
+	if (max_y<min_y)
+	{
+		min_y=(*y_array_temp)-y;
+		max_y=min_y;
+	}
+	else
+	{
+		if ((*y_array_temp)-y>max_y)
+		{
+			max_y=(*y_array_temp)-y;
+		}
+		else
+		{
+			if ((*y_array_temp)-y<min_y)
+			{
+				min_y=(*y_array_temp)-y;
+			}
+		}
+	}
+	if (max_z<min_z)
+	{
+		min_z=(*z_array_temp)-z;
+		max_z=min_z;
+	}
+	else
+	{
+		if ((*z_array_temp)-z>max_z)
+		{
+			max_z=(*z_array_temp)-z;
+		}
+		else
+		{
+			if ((*z_array_temp)-z<min_z)
+			{
+				min_z=(*z_array_temp)-z;
+			}
+		}
+	}
+#endif /* defined (DEBUG) */
+										cartesian_to_spherical_polar((*x_array_temp)-x,
+											(*y_array_temp)-y,(*z_array_temp)-z,&ri,&theta,&phi,
+											(float *)NULL);
+#if defined (DEBUG)
+	/*???debug */
+	if (max_r<min_r)
+	{
+		min_r=ri;
+		max_r=min_r;
+	}
+	else
+	{
+		if (ri>max_r)
+		{
+			max_r=ri;
+		}
+		else
+		{
+			if (ri<min_r)
+			{
+				min_r=ri;
+			}
+		}
+	}
+	if (max_theta<min_theta)
+	{
+		min_theta=theta;
+		max_theta=min_theta;
+	}
+	else
+	{
+		if (theta>max_theta)
+		{
+			max_theta=theta;
+		}
+		else
+		{
+			if (theta<min_theta)
+			{
+				min_theta=theta;
+			}
+		}
+	}
+	if (max_phi<min_phi)
+	{
+		min_phi=phi;
+		max_phi=min_phi;
+	}
+	else
+	{
+		if (phi>max_phi)
+		{
+			max_phi=phi;
+		}
+		else
+		{
+			if (phi<min_phi)
+			{
+				min_phi=phi;
+			}
+		}
+	}
+#endif /* defined (DEBUG) */
+										cartesian_to_spherical_polar((*x_array_temp)-x,
+											(*y_array_temp)-y,(*z_array_temp)-z,&ri,&theta,&phi,
+											(float *)NULL);
+#if defined (DEBUG)
+										/*???debug */
+										printf("  %g %g %g\n",ri,theta,phi);
+#endif /* defined (DEBUG) */
+										prolate_spheroidal_to_cartesian(1,phi-PI/2,theta,
 											(region->properties).sock.focus,
 											&(description->properties.electrode.position.x),
 											&(description->properties.electrode.position.y),
 											&(description->properties.electrode.position.z),
 											(float *)NULL);
+#if defined (DEBUG)
+										/*???debug */
+										printf("  %g %g %g\n",
+											description->properties.electrode.position.x,
+											description->properties.electrode.position.y,
+											description->properties.electrode.position.z);
+#endif /* defined (DEBUG) */
+#endif /* defined (OLD_CODE) */
+										/* rotate about y because x is the principal axis for
+											prolate (assuming z is up and down the body for biosense*/
+										description->properties.electrode.position.x=
+											z-(*z_array_temp);
+										description->properties.electrode.position.y=
+											(*y_array_temp)-y;
+										description->properties.electrode.position.z=
+											(*x_array_temp)-x;
 										if (ACCEPTED== *status_array_temp)
 										{
 											if (!((*device)->signal->first_event=create_Event(
@@ -662,6 +856,16 @@ C       Calculate the inverse of L(i,i)
 										return_code=0;
 									}
 								}
+#if defined (DEBUG)
+	/*???debug */
+	printf("x %g %g\n",min_x,max_x);
+	printf("y %g %g\n",min_y,max_y);
+	printf("z %g %g\n",min_z,max_z);
+	printf("r %g %g\n",min_r,max_r);
+	printf("theta %g %g\n",min_theta,max_theta);
+	printf("phi %g %g\n",min_phi,max_phi);
+}
+#endif /* defined (DEBUG) */
 								if (return_code)
 								{
 									/* set up the analysis work area */
@@ -669,7 +873,7 @@ C       Calculate the inverse of L(i,i)
 									analysis_work_area.potential_time=(max_time-min_time)/2;
 									analysis_work_area.start_search_interval=0;
 									analysis_work_area.end_search_interval=max_time-min_time;
-									analysis_work_area.calculate_events=0;
+									analysis_work_area.calculate_events=1;
 									analysis_work_area.detection=EDA_INTERVAL;
 									analysis_work_area.objective=ABSOLUTE_SLOPE;
 									analysis_work_area.event_number=1;
@@ -724,11 +928,13 @@ C       Calculate the inverse of L(i,i)
 						printf("  number_of_samples=%d\n",number_of_samples);
 						return_code=0;
 					}
+#if defined (FIT_SPHERE)
 				}
 				else
 				{
 					printf("ERROR.  Failed to converge\n");
 				}
+#endif /* defined (FIT_SPHERE) */
 			}
 			fclose(biosense_file);
 		}
