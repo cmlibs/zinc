@@ -30,6 +30,9 @@ DESCRIPTION :
 #include "general/postscript.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#if defined (UNEMAP_USE_NODES)
+#include "interaction/interactive_toolbar_widget.h"
+#endif /* defined (UNEMAP_USE_NODES) */
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "time/time_editor.h"
@@ -1227,6 +1230,66 @@ Finds the id of the mapping area_3d
 	LEAVE;
 } /* identify_mapping_area_3d */
 
+static void map3d_id_interactive_tool_form(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Finds the id of the interactive_tool_form
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(map3d_id_interactive_tool_form);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+#if defined (UNEMAP_USE_NODES)
+		mapping->map3d_interactive_tool_form= *widget_id;
+#else
+		USE_PARAMETER(widget_id);
+		USE_PARAMETER(mapping);	
+#endif /* defined (UNEMAP_USE_NODES) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map3d_id_interactive_tool_form.  Missing mapping_window");
+	}
+	LEAVE;
+} /* map3d_id_interactive_tool_form */
+
+static void map3d_id_viewing_form(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Finds the id of the viewing
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(map3d_id_viewing_form);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+#if defined (UNEMAP_USE_NODES)	
+		mapping->map3d_viewing_form= *widget_id;				
+#else
+		USE_PARAMETER(widget_id);
+		USE_PARAMETER(mapping);
+#endif /* defined (UNEMAP_USE_NODES) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map3d_id_viewing_form.  Missing mapping_window");
+	}
+	LEAVE;
+} /* map3d_id_viewing_form */
+
 static void identify_mapping_drawing_area_2d(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
@@ -1814,7 +1877,8 @@ the mapping_area of the <mapping_window>.
 		if (!mapping_window->scene_viewer)
 		{
 			mapping_window->scene_viewer=
-				CREATE(Scene_viewer)(mapping_window->mapping_area_3d,
+				/* map3d_viewing_form is a sub-form of mapping_area_3d */
+				CREATE(Scene_viewer)(mapping_window->map3d_viewing_form,
 					get_map_drawing_information_background_colour(drawing_information),
 					SCENE_VIEWER_DOUBLE_BUFFER,
 					get_map_drawing_information_Light_manager(drawing_information),
@@ -3284,6 +3348,11 @@ and frees the memory for the mapping window.
 		{
 			DESTROY(Scene_viewer)(&(mapping->scene_viewer));
 		}
+#if defined (NEW_CODE)	
+		/*??JW should really do this, but at the moment CMGUI doesn't destroy */
+		/* the mapping window, so deaccess never gets called. See ACCESS */
+		DEACCESS(Interactive_tool)(&(mapping->transform_tool));
+#endif /*	defined (NEW_CODE) */
 #endif /*defined (UNEMAP_USE_NODES)*/
 		if (mapping->potential_time_object)
 		{
@@ -3889,6 +3958,90 @@ the mapping_window.
 	return (return_code);
 } /* write_map_animation_tiff_file */
 
+#if defined (UNEMAP_USE_NODES)
+static int Mapping_window_set_interactive_tool(
+	struct Mapping_window *mapping_window,
+	struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Sets the <interactive_tool> in use in the <mapping_window>. Updates the
+toolbar to match the selection.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Mapping_window_set_interactive_tool);
+	if (mapping_window)
+	{
+		if (interactive_toolbar_widget_set_current_interactive_tool(
+			mapping_window->interactive_toolbar_widget,interactive_tool))
+		{
+			mapping_window->interactive_tool=interactive_tool;
+			if (interactive_tool == mapping_window->transform_tool)
+			{				
+				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
+					SCENE_VIEWER_TRANSFORM);
+				/* transform_tool is just a placeholder for transform mode so pass
+					 NULL to the scene_viewers */
+				interactive_tool=(struct Interactive_tool *)NULL;
+			}
+			else
+			{
+				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
+					SCENE_VIEWER_SELECT);			
+			}		
+			Scene_viewer_set_interactive_tool(mapping_window->scene_viewer,
+				interactive_tool);		
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Mapping_window_set_interactive_tool.  Could not update toolbar");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mapping_window_set_interactive_tool.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Mapping_window_set_interactive_tool */
+#endif /*  defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+static void Mapping_window_update_interactive_tool(Widget widget,
+	void *mapping_window_void,void *interactive_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Called when a new tool is chosen in the interactive_toolbar_widget.
+==============================================================================*/
+{
+	struct Mapping_window *mapping_window;
+
+	ENTER(Mapping_window_update_interactive_tool);
+	USE_PARAMETER(widget);
+	if (mapping_window=(struct Mapping_window *)mapping_window_void)
+	{
+		Mapping_window_set_interactive_tool(mapping_window,
+			(struct Interactive_tool *)interactive_tool_void);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mapping_window_update_interactive_tool.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Mapping_window_update_interactive_tool */
+#endif /*  defined (UNEMAP_USE_NODES) */
 
 static struct Mapping_window *create_Mapping_window(
 	struct Mapping_window **address,char *open,
@@ -3897,9 +4050,13 @@ static struct Mapping_window *create_Mapping_window(
 	int screen_height,char *configuration_file_extension,
 	char *postscript_file_extension,
 	struct Map_drawing_information *map_drawing_information,
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (UNEMAP_USE_NODES)
+	,struct MANAGER(Interactive_tool) *interactive_tool_manager 
+#endif /*  defined (UNEMAP_USE_NODES) */
+	)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 This function allocates the memory for a mapping_window and sets the fields to
@@ -3982,6 +4139,10 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"identify_mapping_area",(XtPointer)identify_mapping_area},
 			{"identify_mapping_area_2d",(XtPointer)identify_mapping_area_2d},
 			{"identify_mapping_area_3d",(XtPointer)identify_mapping_area_3d},
+			/*The following 2 are only used for unemap_nodes, but only have one uil file*/
+			/* so need these functions in all versions */
+			{"map3d_id_interactive_tool_form",(XtPointer)map3d_id_interactive_tool_form},
+			{"map3d_id_viewing_form",(XtPointer)map3d_id_viewing_form},
 			{"identify_map_drawing_area_2d",(XtPointer)identify_mapping_drawing_area_2d},
 			{"expose_map_drawing_area_2d",(XtPointer)expose_mapping_drawing_area_2d},
 			{"resize_map_drawing_area_2d",(XtPointer)resize_mapping_drawing_area_2d},
@@ -4014,17 +4175,43 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"mapping_rig",(XtPointer)NULL},
 			{"identifying_colour",(XtPointer)NULL}
 		};
+#if defined (UNEMAP_USE_NODES)		
+	struct Callback_data callback;
+	struct Interactive_tool *node_tool;
+#endif
 	struct Mapping_window *mapping;
 	Widget child_widget;
 
 	ENTER(create_Mapping_window);
-	if (map_drawing_information&&user_interface)
+#if defined (UNEMAP_USE_NODES)		
+	node_tool=(struct Interactive_tool *)NULL;
+#endif
+	if (map_drawing_information&&
+#if defined (UNEMAP_USE_NODES)
+		interactive_tool_manager&&
+#endif /* defined (UNEMAP_USE_NODES) */
+		user_interface)
 	{
 		if (mapping_window_hierarchy_open)
 		{
 			/* allocate memory */
 			if (ALLOCATE(mapping,struct Mapping_window,1))
-			{
+			{	
+#if defined (UNEMAP_USE_NODES)
+				/* set up interactive tools*/
+				mapping->interactive_tool_manager=interactive_tool_manager;
+#if defined (NEW_CODE)
+				/*??JW should really do this, but at the moment CMGUI doesn't destroy */
+				/* the mapping window, so deaccess never gets called. See DEACCESS */
+				mapping->transform_tool=ACCESS(Interactive_tool)(
+					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+						"transform_tool",mapping->interactive_tool_manager));
+#else				
+				mapping->transform_tool=FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,
+					name)("transform_tool",mapping->interactive_tool_manager);
+#endif /* defined (NEW_CODE)	*/
+				mapping->interactive_tool=mapping->transform_tool;
+#endif /* defined (UNEMAP_USE_NODES) */
 				/* assign fields */
 				mapping->user_interface=user_interface;
 				mapping->address=address;
@@ -4067,6 +4254,11 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->mapping_area=(Widget)NULL;
 				mapping->mapping_area_2d=(Widget)NULL;
 				mapping->mapping_area_3d=(Widget)NULL;
+#if defined (UNEMAP_USE_NODES)
+				mapping->map3d_interactive_tool_form=(Widget)NULL;
+				mapping->interactive_toolbar_widget=(Widget)NULL;
+				mapping->map3d_viewing_form=(Widget)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
 				mapping->map_drawing_area_2d=(Widget)NULL;
 				mapping->scene_viewer=(struct Scene_viewer *)NULL;
 				mapping->map_drawing=(struct Drawing_2d *)NULL;
@@ -4190,6 +4382,33 @@ the created mapping window.  If unsuccessful, NULL is returned.
 								XmNmarginWidth,0,
 								NULL);
 							update_mapping_window_menu(mapping);
+#if defined (UNEMAP_USE_NODES)													
+							/* create the subwidgets with default values */
+							if (mapping->interactive_toolbar_widget=
+								create_interactive_toolbar_widget(
+								mapping->map3d_interactive_tool_form,interactive_tool_manager,
+								INTERACTIVE_TOOLBAR_VERTICAL))
+							{	
+								/* add tools to toolbar*/
+								add_interactive_tool_to_interactive_toolbar_widget(
+									mapping->transform_tool,
+									(void *)mapping->interactive_toolbar_widget);
+								node_tool=FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+									"node_tool",mapping->interactive_tool_manager);
+								add_interactive_tool_to_interactive_toolbar_widget(node_tool,
+									(void *)mapping->interactive_toolbar_widget);
+
+								/* make sure the transform_tool is currently set */
+								interactive_toolbar_widget_set_current_interactive_tool(
+									mapping->interactive_toolbar_widget,
+									mapping->transform_tool);
+							}
+							/*set up callback*/
+							callback.data=mapping;
+							callback.procedure=Mapping_window_update_interactive_tool;
+							interactive_toolbar_widget_set_callback(
+								mapping->interactive_toolbar_widget,&callback);
+#endif /*  defined (UNEMAP_USE_NODES) */
 							/*??? more to do ? */
 							if (address)
 							{
@@ -4397,7 +4616,11 @@ properties.  Then the mapping window is opened.
 					user_interface,unemap_package),
 					rig_address,identifying_colour,screen_height,
 					configuration_file_extension,postscript_file_extension,
-					map_drawing_information,user_interface))
+					map_drawing_information,user_interface
+#if defined (UNEMAP_USE_NODES)
+					,get_unemap_package_interactive_tool_manager(unemap_package)
+#endif /* defined (UNEMAP_USE_NODES) */
+						))
 				{
 					mapping= *mapping_address;
 					XtAddCallback(mapping->region_pull_down_menu,
@@ -5002,11 +5225,12 @@ int highlight_electrode_or_auxiliar(struct Device *device,
 	int electrode_number,	int auxiliary_number,struct Map *map,
 	struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Highlights/dehighlights an electrode or an auxiliary device in the <mapping>
 window.
+
 ==============================================================================*/
 {
 	char electrode_drawn,*device_name,*name,value_string[11];
@@ -5032,7 +5256,7 @@ window.
 #if defined (UNEMAP_USE_NODES)
 	channel_number_field=(struct FE_field *)NULL;
 	device_name_field=(struct FE_field *)NULL;
-	highlight_field=(struct FE_field *)NULL;;
+	highlight_field=(struct FE_field *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	return_code=0;
 	if (map&&mapping&&(drawing_information=map->drawing_information)&&
@@ -5063,17 +5287,6 @@ window.
 			component.field=channel_number_field;
 			get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
 						&device_channel_number);
-			/*select/unselect  node for 3D window*/
-			if(device_highlighted)
-			{
-				FE_node_selection_select_node(get_unemap_package_FE_node_selection
-					(map->unemap_package),device_node);
-			}
-			else
-			{
-				FE_node_selection_unselect_node(get_unemap_package_FE_node_selection
-					(map->unemap_package),device_node);
-			}
 		}
 		else
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -5352,6 +5565,12 @@ window.
 				ymax-ymin+1,xmin,ymin);
 			return_code=1;
 		}
+#if defined (UNEMAP_USE_NODES)
+		if(device_name)
+		{
+			DEALLOCATE(device_name);
+		}
+#endif /* defined (UNEMAP_USE_NODES) */
 	}
 	LEAVE;
 

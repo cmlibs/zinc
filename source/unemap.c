@@ -851,7 +851,8 @@ Main program for unemap
 		transform_tool=CREATE(Transform_tool)(interactive_tool_manager);
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
-			fe_basis_manager,element_manager,computed_field_manager,node_selection);	
+			fe_basis_manager,element_manager,computed_field_manager,interactive_tool_manager,
+			node_selection);	
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 		/*???DB.  To be done */

@@ -22428,6 +22428,7 @@ Executes a UNEMAP OPEN command.
 					command_data->node_manager,command_data->data_group_manager,
 					command_data->node_group_manager,command_data->basis_manager,
 					command_data->element_manager,computed_field_manager,
+					command_data->interactive_tool_manager, 
 					command_data->node_selection);
 			}
 			if(command_data->unemap_package)

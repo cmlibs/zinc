@@ -41,6 +41,7 @@ element,nodes, fields when they are no longer required.
 	struct MANAGER(FE_basis) *fe_basis_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct FE_node_selection *node_selection;
 	/* fields of the rig_nodes, so we know what to clean up, and what to*/
 	/*construct draw package with */	
@@ -76,6 +77,7 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(FE_basis) *fe_basis_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct FE_node_selection *node_selection);
 /*******************************************************************************
 LAST MODIFIED : 31 August 2000
@@ -378,6 +380,15 @@ struct MANAGER(FE_element) *get_unemap_package_element_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
 LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+gets a manager of the unemap package.
+==============================================================================*/
+
+struct MANAGER(Interactive_tool) *get_unemap_package_interactive_tool_manager(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 gets a manager of the unemap package.

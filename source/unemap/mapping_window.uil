@@ -51,10 +51,12 @@ procedure
 	close_mapping_work_area;
 	identify_mapping_area;
 	identify_mapping_area_2d;
-	identify_mapping_area_3d;
 	identify_map_drawing_area_2d;
 	expose_map_drawing_area_2d;
 	resize_map_drawing_area_2d;
+	identify_mapping_area_3d;
+	map3d_id_interactive_tool_form;
+	map3d_id_viewing_form;
 	identify_mapping_colour_or_auxi;
 	expose_mapping_colour_or_auxili;
 	resize_mapping_colour_or_auxili;
@@ -1061,6 +1063,11 @@ object
 			XmNtopOffset = widget_spacing;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbackground = identifying_colour;
+			};		
+		controls
+			{
+			XmForm map3d_control_panel;
+			XmForm map3d_viewing_form;
 			};
 		callbacks
 			{
@@ -1068,6 +1075,61 @@ object
 				{
 				identify_mapping_area_3d(mapping_window_structure);
 				};
+			};
+		};
+	map3d_control_panel: XmForm
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmForm map3d_interactive_tool_form;
+			};
+		};
+  map3d_interactive_tool_form: XmForm
+    {
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;			
+			};
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        map3d_id_interactive_tool_form(mapping_window_structure);
+      };
+    };
+	map3d_viewing_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 1;
+			XmNleftWidget = map3d_control_panel;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 1;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 1;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 1;
+			XmNfractionBase = 2;
+			XmNhorizontalSpacing = 0;
+			XmNverticalSpacing = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure map3d_id_viewing_form(mapping_window_structure);
 			};
 		};
 	map_drawing_area_2d: XmDrawingArea 

@@ -128,7 +128,19 @@ The mapping window object.
 #if defined (MOTIF)
 	Widget time_editor_dialog;
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface;
+#if defined (UNEMAP_USE_NODES)
+#if defined (MOTIF)
+	Widget map3d_interactive_tool_form;	
+	Widget interactive_toolbar_widget;
+	Widget map3d_viewing_form;
+#endif /* defined (MOTIF) */
+	/* interaction */
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
+		 will update it if the current one is destroyed */
+	struct Interactive_tool *interactive_tool,*transform_tool;
+#endif /* defined (UNEMAP_USE_NODES) */
+	struct User_interface *user_interface;	
 }; /* struct Mapping_window */
 
 /*
@@ -151,37 +163,6 @@ extern Widget mapping_file_read_select_shel,mapping_file_read_select;
 Global functions
 ----------------
 */
-#if defined (OLD_CODE)
-struct Mapping_window *create_Mapping_window(
-	struct Mapping_window **address,Widget activation,Widget parent,
-	struct Map *map,struct Rig **rig_pointer,Pixel identifying_colour,
-	int screen_width,int screen_height,char *configuration_file_extension,
-	char *postscript_file_extension,
-	struct Map_drawing_information *map_drawing_information,
-	struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 29 December 1996
-
-DESCRIPTION :
-This function allocates the memory for a mapping_window and sets the fields to
-the specified values (<address>, <map>).  It then retrieves a mapping window
-widget with the specified parent/<shell> and assigns the widget ids to the
-appropriate fields of the structure.  If successful it returns a pointer to the
-created mapping window and, if <address> is not NULL, makes <*address> point to
-the created mapping window.  If unsuccessful, NULL is returned.
-==============================================================================*/
-
-Widget create_mapping_window_shell(Widget *address,Widget parent,
-	int screen_width,int screen_height);
-/*******************************************************************************
-LAST MODIFIED : 27 April 1999
-
-DESCRIPTION :
-Creates a popup shell widget for a mapping window.  If <address> is not NULL,
-<*address> is set to the id of the created widget and on destruction <*address>
-is set to NULL.  The id of the created widget is returned.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
 
 int open_mapping_window(struct Mapping_window **mapping_address,
 #if defined (MOTIF)
@@ -249,11 +230,12 @@ int highlight_electrode_or_auxiliar(struct Device *device,
 	int electrode_number,	int auxiliary_number,struct Map *map,
 	struct Mapping_window *mapping);
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Highlights/dehighlights an electrode or an auxiliary device in the <mapping>
 window.
+
 ==============================================================================*/
 
 int Mapping_window_set_potential_time_object(struct Mapping_window *mapping,

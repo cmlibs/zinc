@@ -124,7 +124,7 @@ int highlight_analysis_device_node(unsigned int multiple_selection,
 	struct FE_node *device_node,	int *device_number,int *electrode_number,
 	int *auxiliary_number,struct Analysis_work_area *analysis);
 /*******************************************************************************
-LAST MODIFIED : 10 August 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 If the highlight is part of a multiple selection
@@ -144,6 +144,9 @@ then
 else
   highlight it and dehighlight all other devices
   make it THE highlighted device for the analysis work area
+
+cf highlight_analysis_device
+
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES)  */
 
@@ -176,6 +179,20 @@ DESCRIPTION :
 The callback for selecting a device in the analysis work area (signals drawing
 area, mapping drawing area, colour bar or auxiliary devices drawing area).
 ==============================================================================*/
+
+#if defined (NEW_CODE)
+#if defined (UNEMAP_USE_NODES)
+void rig_node_group_node_selection_change(struct FE_node_selection *node_selection,
+	struct FE_node_selection_changes *changes,void *data);
+/*******************************************************************************
+LAST MODIFIED : 6 September 2000
+
+DESCRIPTION :
+Callback for change in the  node selection. Checks to see if nodes is are in
+of the rig_node group. If are, highlights them
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (NEW_CODE) */
 
 int create_analysis_work_area(struct Analysis_work_area *analysis,
 	Widget activation,Widget parent,int pointer_sensitivity,

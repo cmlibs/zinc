@@ -34,6 +34,7 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(FE_basis) *fe_basis_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct FE_node_selection *node_selection)
 /*******************************************************************************
 LAST MODIFIED : 31 AUGUST 2000
@@ -48,7 +49,7 @@ The fields are filed in with set_unemap_package_fields()
 	ENTER(CREATE(Unemap_package));
 	if (fe_field_manager&&element_group_manager&&node_manager&&
 		data_group_manager&&node_group_manager&&fe_basis_manager&&element_manager&&		
-		computed_field_manager&&node_selection)
+		computed_field_manager&&interactive_tool_manager&&node_selection)
 	{
 		if (ALLOCATE(package,struct Unemap_package,1))
 		{
@@ -60,6 +61,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->fe_basis_manager=fe_basis_manager;	
 			package->element_manager=element_manager;
 			package->computed_field_manager=computed_field_manager;
+			package->interactive_tool_manager=interactive_tool_manager;
 			package->node_selection=node_selection;
 			/* fields of the rig_nodes */
 			package->device_name_field=(struct FE_field *)NULL;
@@ -1081,6 +1083,32 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(element_manager);
 }/* get_unemap_package_element_manager */
+
+struct MANAGER(Interactive_tool) *get_unemap_package_interactive_tool_manager(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+gets a manager of the unemap package.
+==============================================================================*/
+{
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+
+	ENTER(get_unemap_package_interactive_tool_manager);
+	if(package)
+	{
+		interactive_tool_manager=package->interactive_tool_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_interactive_tool_manager."
+			" invalid arguments");
+		interactive_tool_manager = (struct MANAGER(Interactive_tool) *)NULL;
+	}
+	LEAVE;
+	return(interactive_tool_manager);
+}/* get_unemap_package_interactive_tool_manager */
 
 struct MANAGER(FE_basis) *get_unemap_package_basis_manager(
 	struct Unemap_package *package)
