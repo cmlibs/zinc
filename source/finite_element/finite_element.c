@@ -6472,7 +6472,7 @@ Outputs the information contained by the element field.
 					"list_FE_element_field.  Invalid CM field type");
 				return_code=0;
 			}
-			if (type_string=Coordinate_system_type_to_string(
+			if (type_string=ENUMERATOR_STRING(Coordinate_system_type)(
 				field->coordinate_system.type))
 			{
 				display_message(INFORMATION_MESSAGE,", %s",type_string);
@@ -6712,7 +6712,7 @@ Outputs the information contained by the node field.
 					"list_FE_node_field.  Invalid CM field type");
 				return_code=0;
 			}
-			if (type_string=Coordinate_system_type_to_string(
+			if (type_string=ENUMERATOR_STRING(Coordinate_system_type)(
 				field->coordinate_system.type))
 			{
 				display_message(INFORMATION_MESSAGE,", %s",type_string);
@@ -20563,6 +20563,147 @@ The calling function must not deallocate the returned string.
 	return (basis_type_string);
 } /* FE_basis_type_string */
 
+int FE_basis_get_dimension(struct FE_basis *basis,
+	int *dimension_address)
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Returns the dimension of <basis>.
+If fails, puts zero at <dimension_address>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_basis_get_dimension);
+	if (basis && basis->type && dimension_address)
+	{
+		*dimension_address = basis->type[0];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_basis_get_dimension.  Invalid argument(s)");
+		if (dimension_address)
+		{
+			*dimension_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_basis_get_dimension */
+
+int FE_basis_get_xi_basis_type(struct FE_basis *basis,
+	int xi_number, enum FE_basis_type *basis_type_address)
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Returns the basis type of <basis> on <xi_number> -- on main diagonal of
+type array. The first xi_number is 0.
+==============================================================================*/
+{
+	int i, offset, return_code;
+
+	ENTER(FE_basis_get_xi_basis_type);
+	if (basis && basis->type && (0 <= xi_number) &&
+		(xi_number < basis->type[0]) && basis_type_address)
+	{
+		/* first value in basis->type is the dimension */
+		offset = 1;
+		for (i = 0; i < xi_number; i++)
+		{
+			offset += *(basis->type) - i;
+		}
+		*basis_type_address = (enum FE_basis_type)basis->type[offset];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_basis_get_xi_basis_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_basis_get_xi_basis_type */
+
+int FE_basis_get_next_linked_xi_number(
+	struct FE_basis *basis, int xi_number,
+	int *next_xi_number_address, int *xi_link_number_address)
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Returns in <next_xi_number_address> the next xi number higher than <xi_number>
+which is linked in basis with it, plus in <xi_link_number_address> the number
+denoting how it is linked; currently used only for polygon basiss to denote the
+number of polygon sides.
+If there is no remaining linked dimension, 0 is returned in both addresses.
+<xi_number> is from 0 to one less than the basis dimension.
+Also checks that the linked xi numbers have the same basis type.
+==============================================================================*/
+{
+	enum FE_basis_type basis_type;
+	int i, limit, offset, return_code;
+
+	ENTER(FE_basis_get_next_linked_xi_number);
+	if (basis && basis->type &&
+		(0 <= xi_number) && (xi_number < *(basis->type)) &&
+		next_xi_number_address && xi_link_number_address)
+	{
+		return_code = 1;
+		offset = 1; /* The first element is the dimension */
+		for (i = 0; i < xi_number; i++)
+		{
+			offset += *(basis->type) - i;
+		}
+		basis_type = (enum FE_basis_type)basis->type[offset];
+		limit = *(basis->type) - xi_number;
+		offset++;
+		for (i = 1; (i < limit) && (0 == basis->type[offset]); i++)
+		{
+			offset++;
+		}
+		if (i < limit)
+		{
+			*next_xi_number_address = i + xi_number;
+			*xi_link_number_address = basis->type[offset];
+			/* finally check the basis type matches */
+			offset = 1; /* The first element is the dimension */
+			for (i = 0; i < *next_xi_number_address; i++)
+			{
+				offset += *(basis->type) - i;
+			}
+			if (basis->type[offset] != basis_type)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_basis_get_next_linked_xi_number.  "
+					"Basis has linked xi directions with different basis type");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			*next_xi_number_address = 0;
+			*xi_link_number_address = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_basis_get_next_linked_xi_number.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_basis_get_next_linked_xi_number */
+
 struct Linear_combination_of_global_values
 	*CREATE(Linear_combination_of_global_values)(int number_of_global_values)
 /*******************************************************************************
@@ -20816,6 +20957,262 @@ Creates and returns an exact copy of the struct Standard_node_to_element_map
 	return(map);
 }/* copy_create_Standard_node_to_element_map */
 
+static int Standard_node_to_element_map_check(
+	struct Standard_node_to_element_map *standard_node_map)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Returns true if <standard_node_map> is properly set-up -- no uninitialised
+value indices.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Standard_node_to_element_map_check)
+	if (standard_node_map && standard_node_map->nodal_value_indices)
+	{
+		return_code = 1;
+		for (i = 0; i < standard_node_map->number_of_nodal_values; i++)
+		{
+			if (0 > standard_node_map->nodal_value_indices[i])
+			{
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_check.  Invalid standard_node_map");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Standard_node_to_element_map_check */
+
+int Standard_node_to_element_map_get_node_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int *node_index_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the node index from <standard_node_map>.
+If fails, sets *<node_index_address> to zero.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Standard_node_to_element_map_get_node_index)
+	if (standard_node_map && node_index_address)
+	{
+		*node_index_address = standard_node_map->node_index;
+		return_code = 1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_get_node_index.  Invalid argument(s)");
+		if (node_index_address)
+		{
+			*node_index_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Standard_node_to_element_map_get_node_index */
+
+int Standard_node_to_element_map_get_number_of_nodal_values(
+	struct Standard_node_to_element_map *standard_node_map,
+	int *number_of_nodal_values_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of nodal values used by <standard_node_map>.
+If fails, sets *<number_of_nodal_values_address> to zero.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Standard_node_to_element_map_get_number_of_nodal_values)
+	if (standard_node_map && number_of_nodal_values_address)
+	{
+		*number_of_nodal_values_address = standard_node_map->number_of_nodal_values;
+		return_code = 1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_get_number_of_nodal_values.  "
+			"Invalid argument(s)");
+		if (number_of_nodal_values_address)
+		{
+			*number_of_nodal_values_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Standard_node_to_element_map_get_number_of_nodal_values */
+
+int Standard_node_to_element_map_get_nodal_value_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int *nodal_value_index_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
+If fails, sets *<nodal_value_index_address> to zero.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Standard_node_to_element_map_get_nodal_value_index)
+	if (standard_node_map && standard_node_map->nodal_value_indices &&
+		(0 <= nodal_value_number) &&
+		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
+		nodal_value_index_address)
+	{
+		*nodal_value_index_address =
+			standard_node_map->nodal_value_indices[nodal_value_number];
+		return_code = 1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_get_nodal_value_index.  "
+			"Invalid argument(s)");
+		if (nodal_value_index_address)
+		{
+			*nodal_value_index_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Standard_node_to_element_map_get_nodal_value_index */
+
+int Standard_node_to_element_map_set_nodal_value_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int nodal_value_index)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets nodal_value_index <nodal_value_number> of <standard_node_map> to
+<nodal_value_index>.
+The nodal_value_index must currently be unset for this <nodal_value_number>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Standard_node_to_element_map_set_nodal_value_index)
+	if (standard_node_map && standard_node_map->nodal_value_indices &&
+		(0 <= nodal_value_number) &&
+		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
+		(-1 == standard_node_map->nodal_value_indices[nodal_value_number]) &&
+		(0 <= nodal_value_index))
+	{
+		standard_node_map->nodal_value_indices[nodal_value_number] =
+			nodal_value_index;
+		return_code = 1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_set_nodal_value_index.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Standard_node_to_element_map_set_nodal_value_index */
+
+int Standard_node_to_element_map_get_scale_factor_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int *scale_factor_index_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
+If fails, sets *<scale_factor_index_address> to zero.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Standard_node_to_element_map_get_scale_factor_index)
+	if (standard_node_map && standard_node_map->scale_factor_indices &&
+		(0 <= nodal_value_number) &&
+		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
+		scale_factor_index_address)
+	{
+		*scale_factor_index_address =
+			standard_node_map->scale_factor_indices[nodal_value_number];
+		return_code = 1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_get_scale_factor_index.  "
+			"Invalid argument(s)");
+		if (scale_factor_index_address)
+		{
+			*scale_factor_index_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Standard_node_to_element_map_get_scale_factor_index */
+
+int Standard_node_to_element_map_set_scale_factor_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int scale_factor_index)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets scale_factor_index <nodal_value_number> of <standard_node_map> to
+<scale_factor_index>.
+The scale_factor_index must currently be unset for this <nodal_value_number>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Standard_node_to_element_map_set_scale_factor_index)
+	if (standard_node_map && standard_node_map->scale_factor_indices &&
+		(0 <= nodal_value_number) &&
+		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
+		(-1 == standard_node_map->scale_factor_indices[nodal_value_number]) &&
+		(0 <= scale_factor_index))
+	{
+		standard_node_map->scale_factor_indices[nodal_value_number] =
+			scale_factor_index;
+		return_code = 1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_set_scale_factor_index.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Standard_node_to_element_map_set_scale_factor_index */
+
 struct General_node_to_element_map *CREATE(General_node_to_element_map)(
 	int node_index,int number_of_nodal_values)
 /*******************************************************************************
@@ -20951,6 +21348,40 @@ Creates and returns an exact copy of the struct General_node_to_element_map
 	LEAVE;
 	return(map);
 }/* copy_create_General_node_to_element_map */
+
+int General_node_to_element_map_get_node_index(
+	struct General_node_to_element_map *general_node_map,
+	int *node_index_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the node index from <general_node_map>.
+If fails, sets *<node_index_address> to zero.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(General_node_to_element_map_get_node_index)
+	if (general_node_map && node_index_address)
+	{
+		*node_index_address = general_node_map->node_index;
+		return_code = 1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"General_node_to_element_map_get_node_index.  Invalid argument(s)");
+		if (node_index_address)
+		{
+			*node_index_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* General_node_to_element_map_get_node_index */
 
 struct FE_element_field_component *copy_create_FE_element_field_component(
 	struct FE_element_field_component *source_component)
@@ -21260,6 +21691,437 @@ Frees the memory for the component and sets <*component_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(FE_element_field_component) */
+
+int FE_element_field_component_get_basis(
+	struct FE_element_field_component *element_field_component,
+	struct FE_basis **basis_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <basis> used by <element_field_component>.
+If fails, puts NULL in *<basis_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_get_basis);
+	return_code = 0;
+	if (element_field_component && basis_address)
+	{
+		if (*basis_address = element_field_component->basis)
+		{
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_component_get_basis.  Missing basis");
+		}
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_get_basis.  Invalid argument(s)");
+	}
+	if ((!return_code) && basis_address)
+	{
+		*basis_address = (struct FE_basis *)NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_get_basis */
+
+int FE_element_field_component_get_general_node_map(
+	struct FE_element_field_component *element_field_component, int node_number,
+	struct General_node_to_element_map **general_node_map_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <general_node_map> relating global node values to those at local
+<node_number> for <element_field_component> of type
+GENERAL_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
+the number of nodes in the component.
+If fails, puts NULL in *<general_node_map_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_get_general_node_map);
+	return_code = 0;
+	if (element_field_component &&
+		(GENERAL_NODE_TO_ELEMENT_MAP == element_field_component->type) &&
+		element_field_component->map.general_node_based.node_to_element_maps &&
+		(0 <= node_number) && (node_number <
+			element_field_component->map.general_node_based.number_of_nodes) &&
+		general_node_map_address)
+	{
+		if (*general_node_map_address = element_field_component->map.
+			general_node_based.node_to_element_maps[node_number])
+		{
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_component_get_general_node_map.  "
+				"Missing general_node_to_element_map");
+		}
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_get_general_node_map.  Invalid argument(s)");
+	}
+	if ((!return_code) && general_node_map_address)
+	{
+		*general_node_map_address = (struct General_node_to_element_map *)NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_get_general_node_map */
+
+int FE_element_field_component_get_grid_map_number_in_xi(
+	struct FE_element_field_component *element_field_component,
+	int xi_number, int *number_in_xi_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <number_in_xi> = number of spaces between grid points = one less than
+the number of grid points on <xi_number> for <element_field_component> of type
+ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
+of the basis in <element_field_component>.
+If fails, puts zero in *<number_in_xi_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_get_grid_map_number_in_xi);
+	if (element_field_component &&
+		(ELEMENT_GRID_MAP == element_field_component->type) &&
+		element_field_component->map.element_grid_based.number_in_xi &&
+		(0 <= xi_number) &&
+		(xi_number < element_field_component->basis->type[0]) &&
+		number_in_xi_address)
+	{
+		*number_in_xi_address =
+			element_field_component->map.element_grid_based.number_in_xi[xi_number];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_get_grid_map_number_in_xi.  "
+			"Invalid argument(s)");
+		if (number_in_xi_address)
+		{
+			*number_in_xi_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_get_grid_map_number_in_xi */
+
+int FE_element_field_component_set_grid_map_number_in_xi(
+	struct FE_element_field_component *element_field_component,
+	int xi_number, int number_in_xi)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets the <number_in_xi> = number of spaces between grid points = one less than
+the number of grid points on <xi_number> for <element_field_component> of type
+ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
+of the basis in <element_field_component>. <number_in_xi> must be positive.
+The number_in_xi must currently be unset for this <xi_number>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_set_grid_map_number_in_xi);
+	if (element_field_component &&
+		(ELEMENT_GRID_MAP == element_field_component->type) &&
+		element_field_component->map.element_grid_based.number_in_xi &&
+		(0 <= xi_number) &&
+		(xi_number < element_field_component->basis->type[0]) &&
+		(0 < number_in_xi) && (0 ==
+			element_field_component->map.element_grid_based.number_in_xi[xi_number]))
+	{
+		element_field_component->map.element_grid_based.number_in_xi[xi_number] =
+			number_in_xi;
+		return_code = 1;
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_set_grid_map_number_in_xi.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_set_grid_map_number_in_xi */
+
+int FE_element_field_component_set_grid_map_value_index(
+	struct FE_element_field_component *element_field_component, int value_index)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets the <value_index> = starting point in the element's value_storage for the
+grid-based values for <element_field_component> of type ELEMENT_GRID_MAP.
+<value_index> must be non-negative.
+The value_index must currently be 0.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_set_grid_map_value_index);
+	if (element_field_component &&
+		(ELEMENT_GRID_MAP == element_field_component->type) &&
+		(0 == element_field_component->map.element_grid_based.value_index))
+	{
+		element_field_component->map.element_grid_based.value_index = value_index;
+		return_code = 1;
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_set_grid_map_value_index.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_set_grid_map_value_index */
+
+int FE_element_field_component_get_modify(
+	struct FE_element_field_component *element_field_component,
+	FE_element_field_component_modify *modify_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <modify> function used by <element_field_component> -- can be NULL.
+If fails, puts NULL in *<modify_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_get_modify);
+	if (element_field_component && modify_address)
+	{
+		*modify_address = element_field_component->modify;
+		return_code = 1;
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_get_modify.  Invalid argument(s)");
+		if (modify_address)
+		{
+			*modify_address = (FE_element_field_component_modify)NULL;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_get_modify */
+
+int FE_element_field_component_get_number_of_nodes(
+	struct FE_element_field_component *element_field_component,
+	int *number_of_nodes_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the number of local nodes for <element_field_component> of type
+STANDARD_NODE_TO_ELEMENT_MAP or GENERAL_NODE_TO_ELEMENT_MAP.
+If fails, puts zero in *<number_of_nodes_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_get_number_of_nodes);
+	return_code = 0;
+	if (element_field_component && number_of_nodes_address)
+	{
+		switch (element_field_component->type)
+		{
+			case STANDARD_NODE_TO_ELEMENT_MAP:
+			{
+				*number_of_nodes_address =
+					element_field_component->map.standard_node_based.number_of_nodes;
+				return_code = 1;
+			} break;
+			case GENERAL_NODE_TO_ELEMENT_MAP:
+			{
+				*number_of_nodes_address =
+					element_field_component->map.general_node_based.number_of_nodes;
+				return_code = 1;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_field_component_get_number_of_nodes.  "
+					"Invalid element field component type");
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_get_number_of_nodes.  Invalid argument(s)");
+	}
+	if ((!return_code) && number_of_nodes_address)
+	{
+		*number_of_nodes_address = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_get_number_of_nodes */
+
+int FE_element_field_component_get_standard_node_map(
+	struct FE_element_field_component *element_field_component, int node_number,
+	struct Standard_node_to_element_map **standard_node_map_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <standard_node_map> relating global node values to those at local
+<node_number> for <element_field_component> of type
+STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
+the number of nodes in the component.
+If fails, puts NULL in *<standard_node_map_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_get_standard_node_map);
+	return_code = 0;
+	if (element_field_component &&
+		(STANDARD_NODE_TO_ELEMENT_MAP == element_field_component->type) &&
+		element_field_component->map.standard_node_based.node_to_element_maps &&
+		(0 <= node_number) && (node_number <
+			element_field_component->map.standard_node_based.number_of_nodes) &&
+		standard_node_map_address)
+	{
+		if (*standard_node_map_address = element_field_component->map.
+			standard_node_based.node_to_element_maps[node_number])
+		{
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_component_get_standard_node_map.  "
+				"Missing standard_node_to_element_map");
+		}
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_get_standard_node_map.  Invalid argument(s)");
+	}
+	if ((!return_code) && standard_node_map_address)
+	{
+		*standard_node_map_address = (struct Standard_node_to_element_map *)NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_get_standard_node_map */
+
+int FE_element_field_component_set_standard_node_map(
+	struct FE_element_field_component *element_field_component,
+	int node_number, struct Standard_node_to_element_map *standard_node_map)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets the <standard_node_map> relating global node values to those at local
+<node_number> for <element_field_component> of type
+STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
+the number of nodes in the component.
+The standard_node_map must currently be unset for this <xi_number>.
+On successful return <standard_node_map> will be owned by the component.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_set_standard_node_map);
+	if (element_field_component &&
+		(STANDARD_NODE_TO_ELEMENT_MAP == element_field_component->type) &&
+		element_field_component->map.standard_node_based.node_to_element_maps &&
+		(0 <= node_number) && (node_number <
+			element_field_component->map.standard_node_based.number_of_nodes) &&
+		(!element_field_component->map.standard_node_based.node_to_element_maps[
+			node_number]))
+	{
+		/* make sure standard_node_map is complete before using */
+		if (Standard_node_to_element_map_check(standard_node_map))
+		{
+			element_field_component->map.standard_node_based.
+				node_to_element_maps[node_number] = standard_node_map;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_component_set_standard_node_map.  "
+				"Invalid standard_node_to_element_map");
+			return_code = 0;
+		}
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_set_standard_node_map.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_set_standard_node_map */
+
+int FE_element_field_component_get_type(
+	struct FE_element_field_component *element_field_component,
+	enum Global_to_element_map_type *type_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the type of mapping used by <element_field_component>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_component_get_type);
+	if (element_field_component && type_address)
+	{
+		*type_address = element_field_component->type;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_component_get_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_component_get_type */
 
 struct FE_element_field *CREATE(FE_element_field)(struct FE_field *field)
 /*******************************************************************************
@@ -28378,6 +29240,212 @@ Returns the dimension of the <element> or an error if it does not have a shape.
 	return (dimension);
 } /* get_FE_element_dimension */
 
+int get_FE_element_identifier(struct FE_element *element,
+	struct CM_element_information *identifier)
+/*******************************************************************************
+LAST MODIFIED : 29 October 2002
+
+DESCRIPTION :
+Fills in the <identifier> of <element>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_identifier);
+	if (element && identifier)
+	{
+		identifier->type = element->cm.type;
+		identifier->number = element->cm.number;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_identifier */
+
+int set_FE_element_identifier(struct FE_element *element,
+	struct CM_element_information *identifier)
+/*******************************************************************************
+LAST MODIFIED : 16 January 2003
+
+DESCRIPTION :
+Changes the identifier of <element> to <identifier>.
+Caution! Should only call for elements that are NOT in indexed lists;
+Must wrap in LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
+element is temporarily removed from all the indexed lists it is in and re-added
+afterwards. FE_region should be the only object that needs to call this.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_FE_element_identifier);
+	if (element && identifier && (0 < identifier->number))
+	{
+		element->cm.type = identifier->type;
+		element->cm.number = identifier->number;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_element_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_element_identifier */
+
+int get_FE_element_number_of_fields(struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 4 November 2002
+
+DESCRIPTION :
+Returns the number of fields defined at <element>.
+Does not include fields inherited from parent elements.
+==============================================================================*/
+{
+	int number_of_fields;
+
+	ENTER(get_FE_element_number_of_fields);
+	if (element)
+	{
+		if (element->information)
+		{
+			number_of_fields = NUMBER_IN_LIST(FE_element_field)
+				(element->information->fields->element_field_list);
+		}
+		else
+		{
+			number_of_fields = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_number_of_fields.  Missing element");
+		number_of_fields = 0;
+	}
+	LEAVE;
+
+	return (number_of_fields);
+} /* get_FE_element_number_of_fields */
+
+int get_FE_element_number_of_parents(struct FE_element *element,
+	int *number_of_parents_address)
+/*******************************************************************************
+LAST MODIFIED : 14 January 2003
+
+DESCRIPTION :
+Returns the number of parents of <element>.
+Can be used to determine if a face is in use by more than one parent elements.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_number_of_parents);
+	if (element && number_of_parents_address)
+	{
+		*number_of_parents_address =
+			NUMBER_IN_LIST(FE_element_parent)(element->parent_list);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_number_of_parents.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_number_of_parents */
+
+struct FE_element_parent_count_if_element_in_list_data
+/*******************************************************************************
+LAST MODIFIED : 14 January 2003
+
+DESCRIPTION :
+Data for passing to FE_element_parent_count_if_element_in_list(
+==============================================================================*/
+{
+	int count;
+	struct LIST(FE_element) *element_list;
+};
+
+static int FE_element_parent_count_if_element_in_list(
+	struct FE_element_parent *element_parent, void *count_data_void)
+/*******************************************************************************
+LAST MODIFIED : 14 January 2003
+
+DESCRIPTION :
+If the element in <element_parent> is in <element_list>, increments <count>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_parent_count_if_element_in_list_data *count_data;
+
+	ENTER(FE_element_parent_count_if_element_in_list);
+	if (element_parent && (count_data =
+		(struct FE_element_parent_count_if_element_in_list_data *)count_data_void))
+	{
+		if (IS_OBJECT_IN_LIST(FE_element)(element_parent->parent,
+			count_data->element_list))
+		{
+			(count_data->count)++;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_parent_element_in_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_parent_count_if_element_in_list */
+
+int get_FE_element_number_of_parents_in_list(struct FE_element *element,
+	struct LIST(FE_element) *element_list, int *number_of_parents_address)
+/*******************************************************************************
+LAST MODIFIED : 14 January 2003
+
+DESCRIPTION :
+Returns the number of parents of <element> that are in <element_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_parent_count_if_element_in_list_data count_data;
+
+	ENTER(get_FE_element_number_of_parents_in_list);
+	if (element && element_list && number_of_parents_address)
+	{
+		count_data.count = 0;
+		count_data.element_list = element_list;
+		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
+			FE_element_parent_count_if_element_in_list, (void *)&count_data,
+			element->parent_list);
+		*number_of_parents_address = count_data.count;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_number_of_parents_in_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_number_of_parents_in_list */
+
 int get_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape **shape)
 /*******************************************************************************
@@ -28405,6 +29473,39 @@ should have no shape.
 
 	return (return_code);
 } /* get_FE_element_shape */
+
+int get_FE_element_number_of_faces(struct FE_element *element,
+	int *number_of_faces_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of faces of <element>.
+If fails, puts zero at <number_of_faces_address>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_number_of_faces);
+	if (element && element->shape && number_of_faces_address)
+	{
+		*number_of_faces_address = element->shape->number_of_faces;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_number_of_faces.  Invalid element");
+		if (number_of_faces_address)
+		{
+			*number_of_faces_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_number_of_faces */
 
 int set_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape *shape)
@@ -28687,6 +29788,47 @@ Should only be called for unmanaged elements.
 	return (return_code);
 } /* set_FE_element_node_scale_field_info */
 
+int get_FE_element_number_of_nodes(struct FE_element *element,
+	int *number_of_nodes_address)
+/*******************************************************************************
+LAST MODIFIED : 19 December 2002
+
+DESCRIPTION :
+Returns the number of nodes directly referenced by <element>; does not include
+nodes used by fields inherited from parent elements.
+If fails, puts zero at <number_of_nodes_address>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_number_of_nodes);
+	if (element && number_of_nodes_address)
+	{
+		if (element->information)
+		{
+			*number_of_nodes_address = element->information->number_of_nodes;
+		}
+		else
+		{
+			*number_of_nodes_address = 0;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_number_of_nodes.  Invalid argument(s)");
+		if (number_of_nodes_address)
+		{
+			*number_of_nodes_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_number_of_nodes */
+
 int get_FE_element_node(struct FE_element *element,int node_number,
 	struct FE_node **node)
 /*******************************************************************************
@@ -28747,6 +29889,164 @@ Should only be called for unmanaged elements.
 
 	return (return_code);
 } /* set_FE_element_node */
+
+int get_FE_element_number_of_scale_factor_sets(struct FE_element *element,
+	int *number_of_scale_factor_sets_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of scale factor_sets in <element>.
+If fails, puts zero at <number_of_scale_factor_sets_address>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_number_of_scale_factor_sets);
+	if (element && number_of_scale_factor_sets_address)
+	{
+		if (element->information)
+		{
+			*number_of_scale_factor_sets_address =
+				element->information->number_of_scale_factor_sets;
+		}
+		else
+		{
+			*number_of_scale_factor_sets_address = 0;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_number_of_scale_factor_sets.  Invalid element");
+		if (number_of_scale_factor_sets_address)
+		{
+			*number_of_scale_factor_sets_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_number_of_scale_factor_sets */
+
+int get_FE_element_numbers_in_scale_factor_set(struct FE_element *element,
+	int scale_factor_set_number, int *numbers_in_scale_factor_set_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of scale factors in <scale_factor_set_number> of <element>,
+where <scale_factor_set_number> is from 0 to one less than the number of sets.
+If fails, puts zero in *<numbers_in_scale_factor_set_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_numbers_in_scale_factor_set);
+	if (element && element->information && (0 <= scale_factor_set_number) &&
+		(scale_factor_set_number <
+			element->information->number_of_scale_factor_sets) &&
+		numbers_in_scale_factor_set_address)
+	{
+		*numbers_in_scale_factor_set_address = element->information->
+			numbers_in_scale_factor_sets[scale_factor_set_number];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_numbers_in_scale_factor_set.  Invalid argument(s)");
+		if (numbers_in_scale_factor_set_address)
+		{
+			*numbers_in_scale_factor_set_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_numbers_in_scale_factor_set */
+
+int get_FE_element_scale_factor_set_identifier(struct FE_element *element,
+	int scale_factor_set_number, void **scale_factor_set_identifier_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the identifier of <scale_factor_set_number> of <element>,
+where <scale_factor_set_number> is from 0 to one less than the number of sets.
+If fails, puts NULL in *<scale_factor_set_identifier_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_scale_factor_set_identifier);
+	if (element && element->information && (0 <= scale_factor_set_number) &&
+		(scale_factor_set_number <
+			element->information->number_of_scale_factor_sets) &&
+		scale_factor_set_identifier_address)
+	{
+		*scale_factor_set_identifier_address = element->information->
+			scale_factor_set_identifiers[scale_factor_set_number];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_scale_factor_set_identifier.  Invalid argument(s)");
+		if (scale_factor_set_identifier_address)
+		{
+			*scale_factor_set_identifier_address = (void *)NULL;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_scale_factor_set_identifier */
+
+int get_FE_element_number_of_scale_factors(struct FE_element *element,
+	int *number_of_scale_factors_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of scale factors stored with <element>.
+If fails, puts zero at <number_of_scale_factors_address>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_number_of_scale_factors);
+	if (element && number_of_scale_factors_address)
+	{
+		if (element->information)
+		{
+			*number_of_scale_factors_address =
+				element->information->number_of_scale_factors;
+		}
+		else
+		{
+			*number_of_scale_factors_address = 0;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_number_of_scale_factors.  Invalid element");
+		if (number_of_scale_factors_address)
+		{
+			*number_of_scale_factors_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_number_of_scale_factors */
 
 int get_FE_element_scale_factor(struct FE_element *element,
 	int scale_factor_number,FE_value *scale_factor)
@@ -29319,13 +30619,16 @@ Returns true if any of the fields defined for element
 
 	ENTER(FE_element_has_grid_based_fields);
 	return_code=0;
-	if (element&&element->information&&element->information->fields)
+	if (element)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-			FE_element_field_has_element_grid_map,(void *)NULL,
-			element->information->fields->element_field_list))
+		if (element->information&&element->information->fields)
 		{
-			return_code=1;
+			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
+				FE_element_field_has_element_grid_map,(void *)NULL,
+				element->information->fields->element_field_list))
+			{
+				return_code=1;
+			}
 		}
 	}
 	else
@@ -33015,7 +34318,7 @@ field cannot be time dependent.
 		field->number_of_indexed_values=0;
 		field->cm_field_type=CM_GENERAL_FIELD;
 		field->external=(struct FE_field_external_information *)NULL;
-		field->number_of_components=1;
+		field->number_of_components=0;
 		/* don't allocate component names until we have custom names */
 		field->component_names=(char **)NULL;
 		field->coordinate_system.type = NOT_APPLICABLE;
@@ -33130,7 +34433,7 @@ Outputs the information contained in <field>.
 		display_message(INFORMATION_MESSAGE,"  type = %s",
 			ENUMERATOR_STRING(CM_field_type)(field->cm_field_type));
 		display_message(INFORMATION_MESSAGE,"  coordinate system = %s",
-			Coordinate_system_type_to_string(field->coordinate_system.type));
+			ENUMERATOR_STRING(Coordinate_system_type)(field->coordinate_system.type));
 		number_of_components=field->number_of_components;
 		display_message(INFORMATION_MESSAGE,", #Components = %d\n",
 			number_of_components);
@@ -39273,6 +40576,68 @@ all directions. Returns 0 without error for non grid-based fields.
 
 	return (number_of_grid_values);
 } /* get_FE_element_field_number_of_grid_values */
+
+int get_FE_element_field_component(struct FE_element *element,
+	struct FE_field *field, int component_number,
+	struct FE_element_field_component **component_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the element field component structure for <component_number> of <field>
+at <element> if defined there; otherwise reports an error.
+If fails, puts NULL in *<component_address> if supplied.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_field *element_field;
+
+	ENTER(get_FE_element_field_component);
+	return_code = 0;
+	if (element && element->information->fields && field && (0 <= component_number) &&
+		(component_number < field->number_of_components) &&
+		component_address)
+	{
+		if (element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
+			field, element->information->fields->element_field_list))
+		{
+			if (element_field->components)
+			{
+				if (*component_address = element_field->components[component_number])
+				{
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "get_FE_element_field_component.  "
+						"Missing element field component");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "get_FE_element_field_component.  "
+					"Missing element field components array");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "get_FE_element_field_component.  "
+				"Field %s not defined for element", get_FE_field_name(field));
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_field_component.  Invalid argument(s)");
+	}
+	if ((!return_code) && component_address)
+	{
+		*component_address = (struct FE_element_field_component *)NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_field_component */
 
 int get_FE_element_field_component_grid_FE_value_values(
 	struct FE_element *element,struct FE_field *field,int component_number,

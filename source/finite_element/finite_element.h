@@ -2194,6 +2194,41 @@ The calling function must not deallocate the returned string.
 #### Must ensure implemented correctly for new FE_basis_type. ####
 ==============================================================================*/
 
+int FE_basis_get_dimension(struct FE_basis *basis, int *dimension_address);
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Returns the dimension of <basis>.
+If fails, puts zero at <dimension_address>.
+==============================================================================*/
+
+int FE_basis_get_xi_basis_type(struct FE_basis *basis,
+	int xi_number, enum FE_basis_type *basis_type_address);
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Returns the basis type of <basis> on <xi_number> -- on main diagonal of
+type array. The first xi_number is 0.
+==============================================================================*/
+
+int FE_basis_get_next_linked_xi_number(
+	struct FE_basis *basis, int xi_number,
+	int *next_xi_number_address, int *xi_link_number_address);
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Returns in <next_xi_number_address> the next xi number higher than <xi_number>
+which is linked in basis with it, plus in <xi_link_number_address> the number
+denoting how it is linked; currently used only for polygon basiss to denote the
+number of polygon sides.
+If there is no remaining linked dimension, 0 is returned in both addresses.
+<xi_number> is from 0 to one less than the basis dimension.
+Also checks that the linked xi numbers have the same basis type.
+==============================================================================*/
+
 struct Linear_combination_of_global_values
 	*CREATE(Linear_combination_of_global_values)(int number_of_global_values);
 /*******************************************************************************
@@ -2233,6 +2268,74 @@ DESCRIPTION :
 Frees the memory for the map and sets <*map_address> to NULL.
 ==============================================================================*/
 
+int Standard_node_to_element_map_get_node_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int *node_index_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the node index from <standard_node_map>.
+If fails, sets *<node_index_address> to zero.
+==============================================================================*/
+
+int Standard_node_to_element_map_get_number_of_nodal_values(
+	struct Standard_node_to_element_map *standard_node_map,
+	int *number_of_nodal_values_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of nodal values used by <standard_node_map>.
+If fails, sets *<number_of_nodal_values_address> to zero.
+==============================================================================*/
+
+int Standard_node_to_element_map_get_nodal_value_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int *nodal_value_index_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
+If fails, sets *<nodal_value_index_address> to zero.
+==============================================================================*/
+
+int Standard_node_to_element_map_set_nodal_value_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int nodal_value_index);
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets nodal_value_index <nodal_value_number> of <standard_node_map> to
+<nodal_value_index>.
+The nodal_value_index must currently be unset for this <nodal_value_number>.
+==============================================================================*/
+
+int Standard_node_to_element_map_get_scale_factor_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int *scale_factor_index_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
+If fails, sets *<scale_factor_index_address> to zero.
+==============================================================================*/
+
+int Standard_node_to_element_map_set_scale_factor_index(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int scale_factor_index);
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets scale_factor_index <nodal_value_number> of <standard_node_map> to
+<scale_factor_index>.
+The scale_factor_index must currently be unset for this <nodal_value_number>.
+==============================================================================*/
+
 struct General_node_to_element_map *CREATE(General_node_to_element_map)(
 	int node_index,int number_of_nodal_values);
 /*******************************************************************************
@@ -2253,6 +2356,17 @@ DESCRIPTION :
 Frees the memory for the map and sets <*map_address> to NULL.
 ==============================================================================*/
 
+int General_node_to_element_map_get_node_index(
+	struct General_node_to_element_map *general_node_map,
+	int *node_index_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the node index from <general_node_map>.
+If fails, sets *<node_index_address> to zero.
+==============================================================================*/
+
 struct FE_element_field_component *CREATE(FE_element_field_component)(
 	enum Global_to_element_map_type type,int number_of_maps,
 	struct FE_basis *basis,FE_element_field_component_modify modify);
@@ -2271,6 +2385,133 @@ LAST MODIFIED : 23 September 1995
 
 DESCRIPTION :
 Frees the memory for the component and sets <*component_address> to NULL.
+==============================================================================*/
+
+int FE_element_field_component_get_basis(
+	struct FE_element_field_component *element_field_component,
+	struct FE_basis **basis_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <basis> used by <element_field_component>.
+If fails, puts NULL in *<basis_address> if supplied.
+==============================================================================*/
+
+int FE_element_field_component_get_general_node_map(
+	struct FE_element_field_component *element_field_component, int node_number,
+	struct General_node_to_element_map **general_node_map_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <general_node_map> relating global node values to those at local
+<node_number> for <element_field_component> of type
+GENERAL_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
+the number of nodes in the component.
+If fails, puts NULL in *<general_node_map_address> if supplied.
+==============================================================================*/
+
+int FE_element_field_component_get_grid_map_number_in_xi(
+	struct FE_element_field_component *element_field_component,
+	int xi_number, int *number_in_xi_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <number_in_xi> = number of spaces between grid points = one less than
+the number of grid points on <xi_number> for <element_field_component> of type
+ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
+of the basis in <element_field_component>.
+If fails, puts zero in *<number_in_xi_address> if supplied.
+==============================================================================*/
+
+int FE_element_field_component_set_grid_map_number_in_xi(
+	struct FE_element_field_component *element_field_component,
+	int xi_number, int number_in_xi);
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets the <number_in_xi> = number of spaces between grid points = one less than
+the number of grid points on <xi_number> for <element_field_component> of type
+ELEMENT_GRID_MAP. <xi_number> starts at 0 and must be less than the dimension
+of the basis in <element_field_component>. <number_in_xi> must be positive.
+The number_in_xi must currently be unset for this <xi_number>.
+==============================================================================*/
+
+int FE_element_field_component_set_grid_map_value_index(
+	struct FE_element_field_component *element_field_component, int value_index);
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets the <value_index> = starting point in the element's value_storage for the
+grid-based values for <element_field_component> of type ELEMENT_GRID_MAP.
+<value_index> must be non-negative.
+The value_index must currently be 0.
+==============================================================================*/
+
+int FE_element_field_component_get_modify(
+	struct FE_element_field_component *element_field_component,
+	FE_element_field_component_modify *modify_address);
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Gets the <modify> function used by <element_field_component> -- can be NULL.
+If fails, puts NULL in *<modify_address> if supplied.
+==============================================================================*/
+
+int FE_element_field_component_get_number_of_nodes(
+	struct FE_element_field_component *element_field_component,
+	int *number_of_nodes_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the number of local nodes for <element_field_component> of type
+STANDARD_NODE_TO_ELEMENT_MAP or GENERAL_NODE_TO_ELEMENT_MAP.
+If fails, puts zero in *<number_of_nodes_address> if supplied.
+==============================================================================*/
+
+int FE_element_field_component_get_standard_node_map(
+	struct FE_element_field_component *element_field_component, int node_number,
+	struct Standard_node_to_element_map **standard_node_map_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Gets the <standard_node_map> relating global node values to those at local
+<node_number> for <element_field_component> of type
+STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
+the number of nodes in the component.
+If fails, puts NULL in *<standard_node_map_address> if supplied.
+==============================================================================*/
+
+int FE_element_field_component_set_standard_node_map(
+	struct FE_element_field_component *element_field_component,
+	int node_number, struct Standard_node_to_element_map *standard_node_map);
+/*******************************************************************************
+LAST MODIFIED : 16 October 2002
+
+DESCRIPTION :
+Sets the <standard_node_map> relating global node values to those at local
+<node_number> for <element_field_component> of type
+STANDARD_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
+the number of nodes in the component.
+The standard_node_map must currently be unset for this <xi_number>.
+On successful return <standard_node_map> will be owned by the component.
+==============================================================================*/
+
+int FE_element_field_component_get_type(
+	struct FE_element_field_component *element_field_component,
+	enum Global_to_element_map_type *type_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the type of mapping used by <element_field_component>.
 ==============================================================================*/
 
 struct FE_element_field *CREATE(FE_element_field)(struct FE_field *field);
@@ -2676,6 +2917,43 @@ DESCRIPTION :
 Returns the dimension of the <element> or an error if it does not have a shape.
 ==============================================================================*/
 
+int get_FE_element_identifier(struct FE_element *element,
+	struct CM_element_information *identifier);
+/*******************************************************************************
+LAST MODIFIED : 29 October 2002
+
+DESCRIPTION :
+Fills in the <identifier> of <element>.
+==============================================================================*/
+
+int get_FE_element_number_of_fields(struct FE_element *element);
+/*******************************************************************************
+LAST MODIFIED : 4 November 2002
+
+DESCRIPTION :
+Returns the number of fields defined at <element>.
+Does not include fields inherited from parent elements.
+==============================================================================*/
+
+int get_FE_element_number_of_parents(struct FE_element *element,
+	int *number_of_parents_address);
+/*******************************************************************************
+LAST MODIFIED : 14 January 2003
+
+DESCRIPTION :
+Returns the number of parents of <element>.
+Can be used to determine if a face is in use by more than one parent elements.
+==============================================================================*/
+
+int get_FE_element_number_of_parents_in_list(struct FE_element *element,
+	struct LIST(FE_element) *element_list, int *number_of_parents_address);
+/*******************************************************************************
+LAST MODIFIED : 14 January 2003
+
+DESCRIPTION :
+Returns the number of parents of <element> that are in <element_list>.
+==============================================================================*/
+
 int get_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape **shape);
 /*******************************************************************************
@@ -2696,6 +2974,16 @@ Sets the <shape> of <element>. Note that the element must not currently have a
 shape in order for this to be set, ie. just created. Allocates and clears the
 faces array in the element, so this must be clear too.
 Should only be called for unmanaged elements.
+==============================================================================*/
+
+int get_FE_element_number_of_faces(struct FE_element *element,
+	int *number_of_faces_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of faces of <element>.
+If fails, puts zero at <number_of_faces_address>.
 ==============================================================================*/
 
 int get_FE_element_face(struct FE_element *element,int face_number,
@@ -2736,6 +3024,27 @@ just created. Must have set the shape with set_FE_element_shape first.
 Should only be called for unmanaged elements.
 ==============================================================================*/
 
+int set_FE_element_number_of_nodes(struct FE_element *element,
+	int number_of_nodes);
+/*******************************************************************************
+LAST MODIFIED : 4 November 2002
+
+DESCRIPTION :
+Establishes storage for <number_of_nodes> in <element>.
+May only be set once; should only be called for unmanaged elements.
+==============================================================================*/
+
+int get_FE_element_number_of_nodes(struct FE_element *element,
+	int *number_of_nodes_address);
+/*******************************************************************************
+LAST MODIFIED : 19 December 2002
+
+DESCRIPTION :
+Returns the number of nodes directly referenced by <element>; does not include
+nodes used by fields inherited from parent elements.
+If fails, puts zero at <number_of_nodes_address>.
+==============================================================================*/
+
 int get_FE_element_node(struct FE_element *element,int node_number,
 	struct FE_node **node);
 /*******************************************************************************
@@ -2757,15 +3066,71 @@ Sets node <node_number>, from 0 to number_of_nodes-1 of <element> to <node>.
 Should only be called for unmanaged elements.
 ==============================================================================*/
 
-int get_FE_element_scale_factor(struct FE_element *element,
-	int scale_factor_number,FE_value *scale_factor);
+int set_FE_element_number_of_scale_factor_sets(struct FE_element *element,
+	int number_of_scale_factor_sets, void **scale_factor_set_identifiers,
+	int *numbers_in_scale_factor_sets);
 /*******************************************************************************
-LAST MODIFIED : 15 November 1999
+LAST MODIFIED : 4 November 2002
+
+DESCRIPTION :
+Establishes storage for <number_of_scale_factor_sets> in <element>, each
+containing <numbers_in_scale_factor_sets> and identifier by
+<scale_factor_set_identifiers>.
+May only be set once; should only be called for unmanaged elements.
+==============================================================================*/
+
+int get_FE_element_number_of_scale_factor_sets(struct FE_element *element,
+	int *number_of_scale_factor_sets_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of scale factor_sets in <element>.
+If fails, puts zero at <number_of_scale_factor_sets_address>.
+==============================================================================*/
+
+int get_FE_element_numbers_in_scale_factor_set(struct FE_element *element,
+	int scale_factor_set_number, int *numbers_in_scale_factor_set_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of scale factors in <scale_factor_set_number> of <element>,
+where <scale_factor_set_number> is from 0 to one less than the number of sets.
+If fails, puts zero in *<numbers_in_scale_factor_set_address> if supplied.
+==============================================================================*/
+
+int get_FE_element_scale_factor_set_identifier(struct FE_element *element,
+	int scale_factor_set_number, void **scale_factor_set_identifier_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the identifier of <scale_factor_set_number> of <element>,
+where <scale_factor_set_number> is from 0 to one less than the number of sets.
+If fails, puts NULL in *<scale_factor_set_identifier_address> if supplied.
+==============================================================================*/
+
+int get_FE_element_number_of_scale_factors(struct FE_element *element,
+	int *number_of_scale_factors_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the number of scale factors stored with <element>.
+If fails, puts zero at <number_of_scale_factors_address>.
+==============================================================================*/
+
+int get_FE_element_scale_factor(struct FE_element *element,
+	int scale_factor_number, FE_value *scale_factor_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
 
 DESCRIPTION :
 Gets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
 <element> to <scale_factor>.
 <element> must already have a shape and node_scale_field_information.
+If fails, sets *<scale_factor_address> to 0.0;
 ==============================================================================*/
 
 int set_FE_element_scale_factor(struct FE_element *element,
@@ -4458,6 +4823,18 @@ DESCRIPTION :
 If <field> is grid-based in <element>, returns the total number of grid points
 at which data is stored for <field>, equal to product of <number_in_xi>+1 in
 all directions. Returns 0 without error for non grid-based fields.
+==============================================================================*/
+
+int get_FE_element_field_component(struct FE_element *element,
+	struct FE_field *field, int component_number,
+	struct FE_element_field_component **component_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the element field component structure for <component_number> of <field>
+at <element> if defined there; otherwise reports an error.
+If fails, puts NULL in *<component_address> if supplied.
 ==============================================================================*/
 
 int get_FE_element_field_component_grid_FE_value_values(
