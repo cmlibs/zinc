@@ -229,23 +229,25 @@ DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Input_module_calib_data,list_number,
 
 static int input_module_dialog_redraw_scene( struct Input_module_dialog_struct *input_module_dialog )
 /*******************************************************************************
-LAST MODIFIED : 27 July 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Redraws the current representation of the input devices position in the selected scene
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 static gtMatrix transform_matrix={
 	1,0,0,0,
 	0,1,0,0,
 	0,0,1,0,
 	0,0,0,1};
+#endif /* defined (OLD_CODE) */
 
 	char graphics_object_name[50];
 	double PI2 = 2.0 * PI,
 		surface_radius = 1.0, x, y, z;
 	FE_value point_size;
-	float scene_time,time;
+	float time;
 	gtMarkerType marker_type;
 	int i, j, npts, surface_discretise_xi1 = 6, surface_discretise_xi2 = 11,
 		return_code;
@@ -529,7 +531,6 @@ static gtMatrix transform_matrix={
 	return ( return_code );
 } /* input_module_dialog_redraw_scene */
 
-
 static void input_module_dialog_identify(Widget w, int object_num,
 	unsigned long *reason)
 /*******************************************************************************
@@ -544,6 +545,7 @@ Finds the id of the buttons on the input_module_dialog widget.
 	XmString new_string;
 
 	ENTER(input_module_dialog_identify);
+	USE_PARAMETER(reason);
 	/* find out which input_module_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&input_module_dialog,NULL);
 
@@ -628,7 +630,7 @@ Finds the id of the buttons on the input_module_dialog widget.
 static void input_module_dialog_destroy_CB(Widget w,int *tag,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1995
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Callback for the input_module_dialog dialog - tidies up all details - mem etc
@@ -637,6 +639,8 @@ Callback for the input_module_dialog dialog - tidies up all details - mem etc
 	struct Input_module_dialog_struct *input_module_dialog;
 
 	ENTER(input_module_dialog_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the input_module_dialog widget */
 	XtVaGetValues(w,XmNuserData,&input_module_dialog,NULL);
 
@@ -654,11 +658,10 @@ Callback for the input_module_dialog dialog - tidies up all details - mem etc
 	LEAVE;
 } /* input_module_dialog_destroy_CB */
 
-static void input_module_dialog_update_scene(
-	Widget widget,
+static void input_module_dialog_update_scene(Widget widget,
 	void *input_module_dialog_void,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Called when scene is changed.
@@ -667,6 +670,7 @@ Called when scene is changed.
 	struct Input_module_dialog_struct *input_module_dialog;
 
 	ENTER(input_module_dialog_update_scene);
+	USE_PARAMETER(widget);
 	if ( input_module_dialog_void && scene_void )
 	{
 		input_module_dialog =
@@ -697,8 +701,7 @@ Called when scene is changed.
 	LEAVE;
 } /* input_module_dialog_update_scene */
 
-static void input_module_dialog_update_material(
-	Widget widget,
+static void input_module_dialog_update_material(Widget widget,
 	void *input_module_dialog_void, void *material_void)
 /*******************************************************************************
 LAST MODIFIED : 26 February 1998
@@ -710,6 +713,7 @@ Called when material is changed.
 	struct Input_module_dialog_struct *input_module_dialog;
 
 	ENTER(input_module_dialog_update_material);
+	USE_PARAMETER(widget);
 	if ( input_module_dialog_void && material_void )
 	{
 		input_module_dialog =
@@ -907,17 +911,17 @@ bottom of the rowcol.
 	LEAVE;
 } /* input_module_dialog_add_forms */
 
-static int input_module_dialog_newdata_CB(void *identifier,Input_module_message message)
+static int input_module_dialog_newdata_CB(void *identifier,
+	Input_module_message message)
 /*******************************************************************************
-LAST MODIFIED : 18 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Accepts input from one of the devices.
 ==============================================================================*/
 {
 	char char_string[100];
-	double max_rotation;
-	int i,return_code,rotate_axis;
+	int return_code;
 	struct Input_module_dialog_struct *input_module_dialog;
 	XmString new_string;
 
@@ -976,31 +980,29 @@ Accepts input from one of the devices.
 	LEAVE;
 } /* input_module_dialog_newdata_CB */
 
-static void input_module_dialog_change_device(
-	Widget widget, void *input_module_dialog_void,
-	void *device_void)
+static void input_module_dialog_change_device(Widget widget,
+	struct Input_module_widget_data *device_change,void *input_module_dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 26 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 The selected device has been changed
 ==============================================================================*/
 {
-	struct  Input_module_dialog_struct *input_module_dialog;
-	struct Input_module_widget_data *device_change;
+	struct Input_module_dialog_struct *input_module_dialog;
 
 	ENTER(input_module_dialog_change_device);
-
-	if (input_module_dialog_void )
+	USE_PARAMETER(widget);
+	if (device_change&&(input_module_dialog=
+		(struct Input_module_dialog_struct *)input_module_dialog_void))
 	{
-		input_module_dialog = input_module_dialog_void;
-		device_change = device_void;
 		if (device_change->status)
 		{
 			input_module_dialog->device = device_change->device;
 			input_module_register(device_change->device, input_module_dialog,
 				input_module_dialog->widget, input_module_dialog_newdata_CB);
-			input_module_dialog_update_form(input_module_dialog, INPUT_MODULE_DIALOG_POSITION );
+			input_module_dialog_update_form(input_module_dialog,
+				INPUT_MODULE_DIALOG_POSITION);
 		}
 		else
 		{
@@ -1009,7 +1011,8 @@ The selected device has been changed
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"input_module_dialog_change_device. Invalid arguments");
+		display_message(ERROR_MESSAGE,
+			"input_module_dialog_change_device.  Invalid argument(s)");
 	}
 
 	LEAVE;
@@ -1436,7 +1439,7 @@ one data point.
 static void input_module_calib_identify_button(Widget w,int button_num,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 27 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Finds the id of the buttons on the data_grabber_calib widget.
@@ -1446,6 +1449,7 @@ Finds the id of the buttons on the data_grabber_calib widget.
 	struct Input_module_dialog_struct *input_module_dialog;
 
 	ENTER(input_module_calib_identify_button);
+	USE_PARAMETER(reason);
 	XtVaGetValues(w,XmNuserData,&input_module_dialog,NULL);
 	if (button_num==input_module_calib_control_ID)
 	{
@@ -1501,7 +1505,7 @@ Finds the id of the buttons on the data_grabber_calib widget.
 static void input_module_calib_control_CB(Widget w,int button_num,
 	XmAnyCallbackStruct *reason)
 /*******************************************************************************
-LAST MODIFIED : 27 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Performs actions depending upon the button pressed.
@@ -1515,6 +1519,7 @@ Performs actions depending upon the button pressed.
 	XmString list_item;
 
 	ENTER(input_module_calib_identify_button);
+	USE_PARAMETER(reason);
 	XtVaGetValues(w,XmNuserData,&input_module_dialog,NULL);
 	XtVaGetValues(XtParent(XtParent(w)),XmNuserData,&component,NULL);
 	switch (button_num)
@@ -1608,9 +1613,10 @@ Performs actions depending upon the button pressed.
 	LEAVE;
 } /* input_module_calib_control_CB */
 
-static void input_module_calib_destroy_CB(Widget w,int *tag,unsigned long *reason)
+static void input_module_calib_destroy_CB(Widget w,int *tag,
+	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 27 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Callback for the calib dialog - tidies up all memory allocation
@@ -1621,6 +1627,8 @@ Callback for the calib dialog - tidies up all memory allocation
 	Widget *child_list;
 
 	ENTER(input_module_calib_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the input_module dialog */
 	XtVaGetValues(w,
 		XmNuserData,&component,
@@ -1646,16 +1654,16 @@ Callback for the calib dialog - tidies up all memory allocation
 static void input_module_faro_identify(Widget w,int button_num,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 23 October 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Sets the id of widgets in the faro_calibration dialog.
 ==============================================================================*/
 {
-	int component;
 	struct Input_module_dialog_struct *input_module_dialog;
 
 	ENTER(input_module_faro_identify);
+	USE_PARAMETER(reason);
 	XtVaGetValues(w,XmNuserData,&input_module_dialog,NULL);
 	switch (button_num)
 	{
@@ -1683,7 +1691,7 @@ Sets the id of widgets in the faro_calibration dialog.
 static void input_module_faro_control_CB(Widget w,int button_num,
 	XmAnyCallbackStruct *reason)
 /*******************************************************************************
-LAST MODIFIED : 27 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Performs actions depending upon the button pressed.
@@ -1693,6 +1701,7 @@ Performs actions depending upon the button pressed.
 	XmString list_item;
 
 	ENTER(input_module_faro_identify_button);
+	USE_PARAMETER(reason);
 	XtVaGetValues(w,XmNuserData,&input_module_dialog,NULL);
 	switch (button_num)
 	{
@@ -1721,9 +1730,10 @@ Performs actions depending upon the button pressed.
 	LEAVE;
 } /* input_module_faro_control_CB */
 
-static void input_module_faro_destroy_CB(Widget w,int *tag,unsigned long *reason)
+static void input_module_faro_destroy_CB(Widget w,int *tag,
+	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 27 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Callback for the faro dialog - tidies up all memory allocation
@@ -1734,6 +1744,8 @@ Callback for the faro dialog - tidies up all memory allocation
 	Widget *child_list;
 
 	ENTER(input_module_faro_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the input_module dialog */
 	XtVaGetValues(w,
 		XmNuserData,&component,
@@ -1757,7 +1769,7 @@ Callback for the faro dialog - tidies up all memory allocation
 static void input_module_dialog_control_CB(Widget w, int user_data,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 12 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 The mode has been changed etc.
@@ -1767,6 +1779,7 @@ The mode has been changed etc.
 	struct Input_module_dialog_struct *input_module_dialog;
 
 	ENTER(input_module_dialog_control_CB);
+	USE_PARAMETER(reason);
 	/* find out which input_module_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&input_module_dialog,NULL);
 	switch (user_data)
@@ -1982,11 +1995,10 @@ Allows the user to control the input_module.
 								&(input_module_dialog->device_chooser_widget),
 								input_module_dialog->device_chooser_form ))
 							{
-								callback.procedure = input_module_dialog_change_device;
-								callback.data = (void *)input_module_dialog;
-								input_module_widget_set_data(input_module_dialog->device_chooser_widget,
-								INPUT_MODULE_DEVICE_CB,&callback);
-
+								Input_module_add_device_change_callback(
+									input_module_dialog->device_chooser_widget,
+									input_module_dialog_change_device,
+									(void *)input_module_dialog);
 								if (input_module_dialog->scene_chooser_widget =
 									CREATE_CHOOSE_OBJECT_WIDGET(Scene)(
 									input_module_dialog->scene_chooser_form,

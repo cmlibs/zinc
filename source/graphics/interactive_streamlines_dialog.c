@@ -73,7 +73,7 @@ Module functions
 static void interactive_streamline_dialog_update_selection(Widget select_widget,
 	void *user_data, void *streamline_void)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Finds which streamline is selected, and informs the editor widget.
@@ -83,6 +83,7 @@ Finds which streamline is selected, and informs the editor widget.
 	struct Interactive_streamline *streamline;
 
 	ENTER(interactive_streamline_dialog_update_selection);
+	USE_PARAMETER(select_widget);
 	if (user_data && streamline_void )
 	{
 		interactive_streamline_dialog =
@@ -112,6 +113,7 @@ Finds the id of the buttons on the interactive_streamline_dialog widget.
 	struct Interactive_streamline_dialog_struct *interactive_streamline_dialog;
 
 	ENTER(interactive_streamline_dialog_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which interactive_streamline_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&interactive_streamline_dialog,NULL);
 	switch (button_num)
@@ -140,26 +142,26 @@ Finds the id of the buttons on the interactive_streamline_dialog widget.
 static void interactive_streamline_dialog_control_CB(Widget w,int button_num,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
-Responds to uid callbacks
+Responds to uid callbacks.
+???RC does nothing!
 ==============================================================================*/
 {
-	struct Interactive_streamline *edit_streamline;
 	struct Interactive_streamline_dialog_struct *interactive_streamline_dialog;
 
 	ENTER(interactive_streamline_dialog_control_CB);
-
+	USE_PARAMETER(button_num);
+	USE_PARAMETER(reason);
 	XtVaGetValues(w,XmNuserData,&interactive_streamline_dialog,NULL);
-
 	LEAVE;
 } /* interactive_streamline_dialog_control_CB */
 
 static void interactive_streamline_dialog_destroy_CB(Widget w, int *tag,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Callback for the interactive_streamline_dialog dialog - tidies up all details - mem etc
@@ -168,6 +170,9 @@ Callback for the interactive_streamline_dialog dialog - tidies up all details - 
 	struct Interactive_streamline_dialog_struct *interactive_streamline_dialog;
 
 	ENTER(interactive_streamline_dialog_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
+
 	XtVaGetValues(w,XmNuserData,&interactive_streamline_dialog,NULL);
 
 	/* deaccess the interactive_streamline_dialog */
@@ -192,6 +197,7 @@ Called when scene is changed.
 	struct Interactive_streamline_dialog_struct *interactive_streamline_dialog;
 
 	ENTER(interactive_streamline_dialog_update_scene);
+	USE_PARAMETER(widget);
 	if ( interactive_streamline_dialog_void && scene_void )
 	{
 		interactive_streamline_dialog =
@@ -210,23 +216,20 @@ Called when scene is changed.
 	LEAVE;
 } /* interactive_streamline_dialog_update_scene */
 
-static int interactive_streamline_dialog_newdata_CB(void *identifier,Input_module_message message)
+static int interactive_streamline_dialog_newdata_CB(void *identifier,
+	Input_module_message message)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Accepts input from one of the devices.
 ==============================================================================*/
 {
-	char char_string[100];
-	double max_rotation;
-	int i,return_code,rotate_axis;
+	int return_code;
 	FE_value data[3];
 	struct Interactive_streamline_dialog_struct *interactive_streamline_dialog;
-	XmString new_string;
 
 	ENTER(interactive_streamline_dialog_newdata_CB);
-
 	if ( identifier && message )
 	{
 		interactive_streamline_dialog = identifier;
@@ -253,7 +256,8 @@ Accepts input from one of the devices.
 	else
 	{
 		return_code = 0;
-		display_message(ERROR_MESSAGE,"interactive_streamline_dialog_newdata_CB. Invalid arguments");
+		display_message(ERROR_MESSAGE,
+			"interactive_streamline_dialog_newdata_CB.  Invalid argument(s)");
 	}
 
 	return ( return_code );
@@ -262,24 +266,23 @@ Accepts input from one of the devices.
 } /* interactive_streamline_dialog_newdata_CB */
 
 static void interactive_streamline_dialog_change_device(
-	Widget widget, void *interactive_streamline_dialog_void,
-	void *device_void)
+	Widget widget,struct Input_module_widget_data *device_change,
+	void *interactive_streamline_dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 26 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 The selected device has been changed
 ==============================================================================*/
 {
 	struct Interactive_streamline_dialog_struct *interactive_streamline_dialog;
-	struct Input_module_widget_data *device_change;
 
 	ENTER(interactive_streamline_dialog_change_device);
-
-	if (interactive_streamline_dialog_void )
+	USE_PARAMETER(widget);
+	if (device_change&&(interactive_streamline_dialog=
+		(struct Interactive_streamline_dialog_struct *)
+		interactive_streamline_dialog_void))
 	{
-		interactive_streamline_dialog = interactive_streamline_dialog_void;
-		device_change = device_void;
 		if (device_change->status)
 		{
 			interactive_streamline_dialog->device = device_change->device;
@@ -311,14 +314,14 @@ static Widget create_interactive_streamline_dialog(
 	struct Interactive_streamline *init_data,
 	struct User_interface *user_interface,struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to manipulate
 the interactive streamlines.
 ==============================================================================*/
 {
-	int i,init_widgets;
+	int init_widgets;
 	MrmType interactive_streamline_dialog_dialog_class;
 	struct Callback_data callback;
 	struct Interactive_streamline_dialog_struct *interactive_streamline_dialog=NULL;
@@ -413,11 +416,10 @@ the interactive streamlines.
 									&(interactive_streamline_dialog->input_device_widget),
 									interactive_streamline_dialog->input_device_form ))
 								{
-									callback.procedure = interactive_streamline_dialog_change_device;
-									callback.data = (void *)interactive_streamline_dialog;
-									input_module_widget_set_data(interactive_streamline_dialog->input_device_widget,
-									INPUT_MODULE_DEVICE_CB, &callback);
-
+									Input_module_add_device_change_callback(
+										interactive_streamline_dialog->input_device_widget,
+										interactive_streamline_dialog_change_device,
+										(void *)interactive_streamline_dialog);
 									if (interactive_streamline_dialog->scene_widget =
 										CREATE_CHOOSE_OBJECT_WIDGET(Scene)(
 										interactive_streamline_dialog->scene_form,

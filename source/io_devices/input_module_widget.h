@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE :input_module_widget.h
 
-LAST MODIFIED : 14 May 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 This widget allows the user to accept input from certain devices.  Only valid
@@ -26,42 +26,37 @@ UIL Identifiers
 Global Types
 ------------
 */
-enum Input_module_widget_data_type
-/*******************************************************************************
-LAST MODIFIED : 01 April 1995
-
-DESCRIPTION :
-The types of data carried by the input_module widget.
-==============================================================================*/
-{
-	INPUT_MODULE_DEVICE_CB,        /* Receives struct Input_module_data *       */
-	INPUT_MODULE_POLHEMUS_CB       /* Receives int *    0 = Set                 */
-																/*                   1 = Reset               */
-}; /* Input_module_widget_data_type */
-#define INPUT_MODULE_NUM_CALLBACKS 2
 
 struct Input_module_widget_data
 /*******************************************************************************
-LAST MODIFIED : 9 April 1997
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
-Tells the clients which device has changed.
+Call data for Input_module_device_change callbacks, telling the client which
+device has changed.
 ==============================================================================*/
 {
 	enum Input_module_device device;
 	int status;
 }; /* Input_module_widget_data */
 
+DECLARE_CALLBACK_TYPES(Input_module_device_change,Widget, \
+	struct Input_module_widget_data *);
+DECLARE_CALLBACK_TYPES(Input_module_polhemus_change,Widget,int/*button_num*/);
+
 struct Input_module_widget_struct
 /*******************************************************************************
-LAST MODIFIED : 25 September 1995
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Contains all the information carried by the menu.
 ==============================================================================*/
 {
 	int input_device[INPUT_MODULE_NUM_DEVICES];
-	struct LIST(Callback_data) *callback_list[INPUT_MODULE_NUM_CALLBACKS];
+	struct LIST(CALLBACK(Input_module_device_change))
+		*device_change_callback_list;
+	struct LIST(CALLBACK(Input_module_polhemus_change))
+		*polhemus_change_callback_list;
 	Widget input[INPUT_MODULE_NUM_DEVICES];
 #if defined (POLHEMUS)
 	Widget polhemus_control[2];
@@ -69,7 +64,6 @@ Contains all the information carried by the menu.
 	Widget pulldown;
 	Widget *widget_address,widget_parent,widget;
 }; /* Input_module_widget_struct */
-
 
 /*
 Global Functions
@@ -84,12 +78,43 @@ Creates a widget that will handle the redirection of external input to
 other widgets.
 ==============================================================================*/
 
-int input_module_widget_set_data(Widget input_module_widget,
-	enum Input_module_widget_data_type data_type,void *data);
+int Input_module_add_device_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 4 January 1995
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
-Changes a data item of the input_module_widget.
+Asks for callbacks to <function> with <user_data> when device change events
+occur in the <input_module_widget>.
+==============================================================================*/
+
+int Input_module_remove_device_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Stops getting callbacks to <function> with <user_data> when device change events
+occur in the <input_module_widget>.
+==============================================================================*/
+
+int Input_module_add_polhemus_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Asks for callbacks to <function> with <user_data> when polhemus change events
+occur in the <input_module_widget>.
+==============================================================================*/
+
+int Input_module_remove_polhemus_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Stops getting callbacks to <function> with <user_data> when polhemus change
+events occur in the <input_module_widget>.
 ==============================================================================*/
 #endif

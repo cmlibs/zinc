@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module_widget.c
 
-LAST MODIFIED : 14 May 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 This widget allows the user to accept input from certain devices.  Only valid
@@ -11,7 +11,7 @@ devices are displayed on the menu.
 #include <stdio.h>
 #include <Xm/ToggleB.h>
 #include <Xm/ToggleBG.h>
-#include "general/callback.h"
+#include "general/callback_private.h"
 #include "general/debug.h"
 #include "io_devices/input_module_widget.h"
 #include "io_devices/input_module_widget.uidh"
@@ -28,14 +28,31 @@ static MrmHierarchy input_module_widget_hierarchy;
 #endif /* defined (MOTIF) */
 
 /*
+Module types
+------------
+*/
+
+FULL_DECLARE_CALLBACK_TYPES(Input_module_device_change,Widget, \
+	struct Input_module_widget_data *);
+FULL_DECLARE_CALLBACK_TYPES(Input_module_polhemus_change,Widget, \
+	int/*button_num*/);
+
+/*
 Module functions
 ----------------
 */
+DEFINE_CALLBACK_MODULE_FUNCTIONS(Input_module_device_change)
+DEFINE_CALLBACK_MODULE_FUNCTIONS(Input_module_polhemus_change)
+
+DEFINE_CALLBACK_FUNCTIONS(Input_module_device_change,Widget, \
+	struct Input_module_widget_data *)
+DEFINE_CALLBACK_FUNCTIONS(Input_module_polhemus_change,Widget,int/*button_num*/)
+
 #if defined (EXT_INPUT)
 static void input_module_identify_button(Widget w,int button_type,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 27 March 1995
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Finds the id of the buttons on the input_module widget.
@@ -45,6 +62,7 @@ Finds the id of the buttons on the input_module widget.
 	struct Input_module_widget_struct *temp_input_module;
 
 	ENTER(input_module_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which input_module widget we are in */
 	if (button_type==input_module_pulldown_ID)
 	{
@@ -92,7 +110,7 @@ Finds the id of the buttons on the input_module widget.
 static void input_module_destroy_CB(Widget w,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1995
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Callback for the input_module widget - tidies up all details - mem etc
@@ -101,17 +119,31 @@ Callback for the input_module widget - tidies up all details - mem etc
 	struct Input_module_widget_struct *temp_input_module;
 
 	ENTER(input_module_destroy_CB);
+	USE_PARAMETER(user_data);
+	USE_PARAMETER(call_data);
 	/* Get the pointer to the data for the input_module widget */
 	XtVaGetValues(w,XmNuserData,&temp_input_module,NULL);
-	*(temp_input_module->widget_address) = (Widget)NULL;
-	DEALLOCATE(temp_input_module);
+	if (temp_input_module)
+	{
+		*(temp_input_module->widget_address) = (Widget)NULL;
+		DESTROY(LIST(CALLBACK(Input_module_device_change)))(
+			&(temp_input_module->device_change_callback_list));
+		DESTROY(LIST(CALLBACK(Input_module_polhemus_change)))(
+			&(temp_input_module->polhemus_change_callback_list));
+		DEALLOCATE(temp_input_module);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"input_module_destroy_CB.  Missing input_module");
+	}
 	LEAVE;
 } /* input_module_destroy_CB */
 
 static void input_module_device_CB(Widget w,int *tag,
 	XmToggleButtonCallbackStruct *reason)
 /*******************************************************************************
-LAST MODIFIED : 9 April 1997
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Callback for the input_module widget.  Processes which device has been selected
@@ -123,6 +155,7 @@ or unselected.
 	struct Input_module_widget_data temp_data;
 
 	ENTER(input_module_device_CB);
+	USE_PARAMETER(tag);
 	/* Get the pointer to the data for the input_module widget */
 	XtVaGetValues(XtParent(w),XmNuserData,&temp_input_module,NULL);
 	XtVaGetValues(w,XmNuserData,&device_num,NULL);
@@ -131,7 +164,8 @@ or unselected.
 		temp_input_module->input_device[device_num] = reason->set;
 		temp_data.device = (enum Input_module_device)device_num;
 		temp_data.status = reason->set;
-		callback_call_list(temp_input_module->callback_list[INPUT_MODULE_DEVICE_CB],
+		CALLBACK_LIST_CALL(Input_module_device_change)(
+			temp_input_module->device_change_callback_list,
 			temp_input_module->widget,&temp_data);
 	}
 	LEAVE;
@@ -140,7 +174,7 @@ or unselected.
 static void input_module_polhemus_CB(Widget w,int *tag,
 	XmToggleButtonCallbackStruct *reason)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1995
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Callback for the input_module widget.  Processes commands specific to the
@@ -151,12 +185,15 @@ Polhemus.
 	struct Input_module_widget_struct *temp_input_module;
 
 	ENTER(input_module_polhemus_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the input_module widget */
 	XtVaGetValues(XtParent(w),XmNuserData,&temp_input_module,NULL);
 	XtVaGetValues(w,XmNuserData,&button_num,NULL);
 #if defined (POLHEMUS)
-	callback_call_list(temp_input_module->callback_list[INPUT_MODULE_DEVICE_CB],
-		temp_input_module->widget,&button_num);
+	CALLBACK_LIST_CALL(Input_module_polhemus_change)(
+		temp_input_module->polhemus_change_callback_list,
+		temp_input_module->widget,button_num);
 #endif
 	LEAVE;
 } /* input_module_polhemus_CB */
@@ -249,9 +286,10 @@ Finds out external devices that are present, then adds them to the menu.
 Global Functions
 ----------------
 */
+
 Widget create_input_module_widget(Widget *input_module_widget,Widget parent)
 /*******************************************************************************
-LAST MODIFIED : 1 March 1997
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Creates a widget that will allow the user to select what input goes to a
@@ -260,7 +298,7 @@ certain client.
 {
 	Widget return_widget;
 #if defined (EXT_INPUT)
-	int i,n;
+	int n;
 	MrmType input_module_dialog_class;
 	struct Input_module_widget_struct *temp_input_module = NULL;
 	static MrmRegisterArg callback_list[]=
@@ -305,10 +343,10 @@ certain client.
 				temp_input_module->polhemus_control[n] = (Widget)NULL;
 			};
 #endif
-			for(i=0;i<INPUT_MODULE_NUM_CALLBACKS;i++)
-			{
-				temp_input_module->callback_list[i]=CREATE_LIST(Callback_data)();
-			}
+			temp_input_module->device_change_callback_list=
+				CREATE(LIST(CALLBACK(Input_module_device_change)))();
+			temp_input_module->polhemus_change_callback_list=
+				CREATE(LIST(CALLBACK(Input_module_polhemus_change)))();
 			/* register the callbacks */
 			if (MrmSUCCESS==MrmRegisterNamesInHierarchy(input_module_widget_hierarchy,
 				callback_list,XtNumber(callback_list)))
@@ -368,57 +406,44 @@ certain client.
 	return (return_widget);
 } /* create_input_module_widget */
 
-int input_module_widget_set_data(Widget input_module_widget,
-	enum Input_module_widget_data_type data_type,void *data)
+int Input_module_add_device_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 26 February 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
-Changes a data item of the input_module widget.
+Asks for callbacks to <function> with <user_data> when device change events
+occur in the <input_module_widget>.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (EXT_INPUT)
-	struct Input_module_widget_struct *temp_input_module;
-	struct Callback_data *new_callback;
-#endif
 
-	ENTER(input_module_widget_set_data);
+	ENTER(Input_module_add_device_change_callback);
 #if defined (EXT_INPUT)
-	/* Get the pointer to the data for the input_module dialog */
-	XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
-	switch (data_type)
+	if (input_module_widget&&function)
 	{
-		case INPUT_MODULE_DEVICE_CB:
+		struct Input_module_widget_struct *temp_input_module;
+
+		/* Get the pointer to the data for the input_module dialog */
+		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
+		if (temp_input_module&&
+			CALLBACK_LIST_ADD_CALLBACK(Input_module_device_change)(
+				temp_input_module->device_change_callback_list,function,user_data))
 		{
-			return_code = 0;
-			if (ALLOCATE(new_callback,struct Callback_data,1))
-			{
-				new_callback->procedure = ((struct Callback_data *)data)->procedure;
-				new_callback->data = ((struct Callback_data *)data)->data;
-				ADD_OBJECT_TO_LIST(Callback_data)(new_callback,
-					temp_input_module->callback_list[INPUT_MODULE_DEVICE_CB]);
-				return_code = 1;
-			}
-		}; break;
-		case INPUT_MODULE_POLHEMUS_CB:
-		{
-			return_code = 0;
-			if (ALLOCATE(new_callback,struct Callback_data,1))
-			{
-				new_callback->procedure = ((struct Callback_data *)data)->procedure;
-				new_callback->data = ((struct Callback_data *)data)->data;
-				ADD_OBJECT_TO_LIST(Callback_data)(new_callback,
-					temp_input_module->callback_list[INPUT_MODULE_POLHEMUS_CB]);
-				return_code = 1;
-			}
-		}; break;
-		default:
+			return_code=1;
+		}
+		else
 		{
 			display_message(ERROR_MESSAGE,
-				"input_module_widget_set_data.  Invalid data type.");
-			return_code = 0;
-		}; break;
+				"Input_module_add_device_change_callback.  Could not add callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Input_module_add_device_change_callback.  Invalid argument(s)");
+		return_code=0;
 	}
 #else
 	return_code = 0;
@@ -426,4 +451,147 @@ Changes a data item of the input_module widget.
 	LEAVE;
 
 	return (return_code);
-} /* input_module_widget_set_data */
+} /* Input_module_add_device_change_callback */
+
+int Input_module_remove_device_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Stops getting callbacks to <function> with <user_data> when device change events
+occur in the <input_module_widget>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Input_module_remove_device_change_callback);
+#if defined (EXT_INPUT)
+	if (input_module_widget&&function)
+	{
+		struct Input_module_widget_struct *temp_input_module;
+
+		/* Get the pointer to the data for the input_module dialog */
+		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
+		if (temp_input_module&&
+			CALLBACK_LIST_REMOVE_CALLBACK(Input_module_device_change)(
+				temp_input_module->device_change_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Input_module_remove_device_change_callback.  "
+				"Could not remove callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Input_module_remove_device_change_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+#else
+	return_code = 0;
+#endif
+	LEAVE;
+
+	return (return_code);
+} /* Input_module_remove_device_change_callback */
+
+int Input_module_add_polhemus_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Asks for callbacks to <function> with <user_data> when polhemus change events
+occur in the <input_module_widget>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Input_module_add_polhemus_change_callback);
+#if defined (EXT_INPUT)
+	if (input_module_widget&&function)
+	{
+		struct Input_module_widget_struct *temp_input_module;
+
+		/* Get the pointer to the data for the input_module dialog */
+		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
+		if (temp_input_module&&
+			CALLBACK_LIST_ADD_CALLBACK(Input_module_polhemus_change)(
+				temp_input_module->polhemus_change_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Input_module_add_polhemus_change_callback.  Could not add callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Input_module_add_polhemus_change_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+#else
+	return_code = 0;
+#endif
+	LEAVE;
+
+	return (return_code);
+} /* Input_module_add_polhemus_change_callback */
+
+int Input_module_remove_polhemus_change_callback(Widget input_module_widget,
+	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Stops getting callbacks to <function> with <user_data> when polhemus change
+events occur in the <input_module_widget>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Input_module_remove_polhemus_change_callback);
+#if defined (EXT_INPUT)
+	if (input_module_widget&&function)
+	{
+		struct Input_module_widget_struct *temp_input_module;
+
+		/* Get the pointer to the data for the input_module dialog */
+		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
+		if (temp_input_module&&
+			CALLBACK_LIST_REMOVE_CALLBACK(Input_module_polhemus_change)(
+				temp_input_module->polhemus_change_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Input_module_remove_polhemus_change_callback.  "
+				"Could not remove callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Input_module_remove_polhemus_change_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+#else
+	return_code = 0;
+#endif
+	LEAVE;
+
+	return (return_code);
+} /* Input_module_remove_polhemus_change_callback */

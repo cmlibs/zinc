@@ -840,9 +840,9 @@ printf("input_module_faro_init.  Faro data: %s\n",faro_buf);
 #endif
 
 #if defined (FARO)
-int input_module_faro_calibrate()
+int input_module_faro_calibrate(void)
 /*******************************************************************************
-LAST MODIFIED : 23 October 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Sends commands to calibrate the faro arm

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module.h
 
-LAST MODIFIED : 14 May 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Contains all the code needed to handle input from any of a number of devices,
@@ -248,9 +248,9 @@ to world coordinates.
 ==============================================================================*/
 
 #if defined (FARO)
-int input_module_faro_calibrate();
+int input_module_faro_calibrate(void);
 /*******************************************************************************
-LAST MODIFIED : 23 October 1998
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Sends commands to calibrate the faro arm
