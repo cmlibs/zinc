@@ -1,5 +1,5 @@
 SHELL=/bin/sh
-VPATH=$(CMISS_ROOT)/cmgui/source
+VPATH=$(CMISS_ROOT)/cmgui
 TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
 BIN_PATH=bin
 SOURCE_PATH=source
@@ -21,7 +21,7 @@ $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 	if [ -f cmgui.imake ]; then \
 		imake -DIRIX $${CMISS_ROOT_DEF} -s cmgui_sgi.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DIRIX $${CMISS_ROOT_DEF} -s cmgui_sgi.make -T $(VPATH)/cmgui.imake -f /dev/null; \
+		imake -DIRIX $${CMISS_ROOT_DEF} -s cmgui_sgi.make -T $(VPATH)/source/cmgui.imake -f /dev/null; \
 	fi
 
 #SGI optimised version
