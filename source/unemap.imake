@@ -938,7 +938,9 @@ UNEMAP_SRCS = \
 	unemap/unemap_hardware_client.c
 #endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 USER_INTERFACE_SRCS = \
+	user_interface/call_work_procedures.c \
 	user_interface/confirmation.c \
+	user_interface/event_dispatcher.c \
 	user_interface/filedir.c \
 	user_interface/message.c \
 	user_interface/printer.c \
