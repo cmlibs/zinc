@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : grid_field_calculator.c
 
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
 An editor for setting values of grid fields in elements based on
@@ -553,7 +553,7 @@ DESCRIPTION :
 static int grid_field_calculator_set_grid_field(
 	struct Grid_field_calculator *grid_calc)
 /*******************************************************************************
-LAST MODIFIED : 3 December 1999
+LAST MODIFIED : 18 September 2001
 
 DESCRIPTION :
 Sets the dialog to look at <grid_field>. Establishes coordinate_field
@@ -563,7 +563,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 	char *curve_name,*field_name;
 	FE_value value;
 	int axis,return_code;
-	struct Computed_field *coordinate_field,*grid_field,*integration_integrand,
+	struct Computed_field *coordinate_field, *grid_field, *integration_integrand,
 		*integration_coordinate_field;
 	struct Control_curve *constant_1_curve,*curve;
 	struct FE_element *seed_element;
@@ -576,7 +576,9 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			grid_calc->computed_field_package)))
 	{
 		return_code=1;
-		if (coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+		integration_coordinate_field = (struct Computed_field *)NULL;
+		integration_integrand = (struct Computed_field *)NULL;
+		if (coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			"xi_texture_coordinates",computed_field_manager))
 		{
 			if (Computed_field_is_type_integration(coordinate_field)&&
