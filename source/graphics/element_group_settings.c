@@ -171,13 +171,13 @@ ensure the relevant parent elements are also in the group.
 	return (return_code);
 } /* GT_element_settings_uses_FE_element */
 
-struct Element_point_ranges_select_data
+struct Element_point_ranges_select_in_graphics_object_data
 {
 	struct GROUP(FE_element) *element_group;
 	struct GT_element_settings *settings;
 };
 
-static int Element_point_ranges_select(
+static int Element_point_ranges_select_in_graphics_object(
 	struct Element_point_ranges *element_point_ranges,void *select_data_void)
 /*******************************************************************************
 LAST MODIFIED : 29 February 2000
@@ -194,15 +194,16 @@ graphics_object.
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
-	struct Element_point_ranges_select_data *select_data;
+	struct Element_point_ranges_select_in_graphics_object_data *select_data;
 	struct FE_element *element,*top_level_element;
 	struct GROUP(FE_element) *element_group;
 	struct GT_element_settings *settings;
 	struct Multi_range *ranges;
 
-	ENTER(Element_point_ranges_select);
-	if (element_point_ranges&&
-		(select_data=(struct Element_point_ranges_select_data *)select_data_void)&&
+	ENTER(Element_point_ranges_select_in_graphics_object);
+	if (element_point_ranges&&(select_data=
+		(struct Element_point_ranges_select_in_graphics_object_data *)
+		select_data_void)&&
 		(element_group=select_data->element_group)&&
 		(settings=select_data->settings)&&
 		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)&&
@@ -264,7 +265,8 @@ graphics_object.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"Element_point_ranges_select.  Could not select ranges");
+										"Element_point_ranges_select_in_graphics_object.  "
+										"Could not select ranges");
 									DESTROY(Multi_range)(&ranges);
 									return_code=0;
 								}
@@ -299,20 +301,21 @@ graphics_object.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Element_point_ranges_select.  Could not get identifier");
+				"Element_point_ranges_select_in_graphics_object.  "
+				"Could not get identifier");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_point_ranges_select.  Invalid argument(s)");
+			"Element_point_ranges_select_in_graphics_object.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Element_point_ranges_select */
+} /* Element_point_ranges_select_in_graphics_object */
 
 static int FE_element_select_dimension_1(struct FE_element *element,
 	void *graphics_object_void)
@@ -4620,7 +4623,8 @@ The graphics object is stored with with the settings it was created from.
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
 	struct GT_glyph_set *glyph_set;
 	struct Multi_range *subranges;
-	struct Element_point_ranges_select_data element_point_ranges_select_data;
+	struct Element_point_ranges_select_in_graphics_object_data
+		element_point_ranges_select_data;
 
 	ENTER(GT_element_settings_to_graphics_object);
 	if (settings&&(settings_to_object_data=
@@ -5042,7 +5046,7 @@ The graphics object is stored with with the settings it was created from.
 							element_point_ranges_select_data.element_group=element_group;
 							element_point_ranges_select_data.settings=settings;
 							FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
-								Element_point_ranges_select,
+								Element_point_ranges_select_in_graphics_object,
 								(void *)&element_point_ranges_select_data,
 								settings_to_object_data->selected_element_point_ranges_list);
 						} break;
