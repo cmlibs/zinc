@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_matrix.h
 
-LAST MODIFIED : 17 March 2004
+LAST MODIFIED : 26 April 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function matrix object.
@@ -11,10 +11,6 @@ The public interface to the Cmiss_function matrix object.
 
 #include "api/cmiss_function.h"
 
-/*
-Global functions
-----------------
-*/
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

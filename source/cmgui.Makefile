@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 11 April 2004
+# LAST MODIFIED : 2 June 2004
 #
 # DESCRIPTION :
 #
@@ -535,8 +535,11 @@ ifeq ($(SYSNAME),Linux)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
       LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
+#???DB.  Need setenv LD_RUN_PATH /home/bullivan/gcc-3.3.1/lib
+#      LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
    else # $(STATIC_LINK) != true
       LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
+#      LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
    endif # $(STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
@@ -590,6 +593,7 @@ API_SRCS = \
 	api/cmiss_computed_field.c \
 	api/cmiss_core.c \
 	api/cmiss_function.cpp \
+	api/cmiss_function_finite_element.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_variable.cpp \
 	api/cmiss_function_variable_composite.cpp \
@@ -1282,8 +1286,8 @@ ifeq ($(SYSNAME:IRIX%=),)
    ALL_SO_LINK_FLAGS = -no_unresolved
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-   ALL_SO_LINK_FLAGS = -lgcc_s -Wl,--no-undefined 
-#   ALL_SO_LINK_FLAGS =
+#   ALL_SO_LINK_FLAGS = -lgcc_s -Wl,--no-undefined 
+   ALL_SO_LINK_FLAGS =
 endif # SYSNAME == Linux
 
 SO_LIB_GENERAL = cmgui_general
@@ -1368,6 +1372,7 @@ SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE_F
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS = \
 	$(filter %finite_element.c,$(COMPUTED_VARIABLE_SRCS)) \
 	$(filter %finite_element.cpp,$(COMPUTED_VARIABLE_SRCS)) \
+	api/cmiss_function_finite_element.cpp \
 	api/cmiss_value_element_xi.c \
 	api/cmiss_variable_finite_element.c \
 	api/cmiss_variable_new_finite_element.cpp

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_finite_element.h
 
-LAST MODIFIED : 1 April 2004
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_finite_elements.
@@ -15,6 +15,18 @@ Global types
 */
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+#define Cmiss_FE_region FE_region
+
+struct Cmiss_FE_region;
+/*******************************************************************************
+LAST MODIFIED : 13 August 2002
+
+DESCRIPTION :
+==============================================================================*/
+
+typedef struct Cmiss_FE_region * Cmiss_FE_region_id;
+
+/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_FE_field FE_field
 
 struct Cmiss_FE_field;
@@ -23,6 +35,8 @@ LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
+
+typedef struct Cmiss_FE_field * Cmiss_FE_field_id;
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_element FE_element
@@ -34,6 +48,8 @@ LAST MODIFIED : 13 August 2002
 DESCRIPTION :
 ==============================================================================*/
 
+typedef struct Cmiss_element * Cmiss_element_id;
+
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_node FE_node
 
@@ -43,6 +59,8 @@ LAST MODIFIED : 14 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
+
+typedef struct Cmiss_node * Cmiss_node_id;
 
 typedef int (*Cmiss_node_iterator_function)(struct Cmiss_node *node, void *user_data);
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_region.h
 
-LAST MODIFIED : 1 April 2004
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_regions.
@@ -16,12 +16,15 @@ The public interface to the Cmiss_regions.
 Global types
 ------------
 */
+
 struct Cmiss_region;
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
+
+typedef struct Cmiss_region * Cmiss_region_id;
 
 /*
 Global functions
