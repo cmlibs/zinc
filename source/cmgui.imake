@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 29 July 2000
+XCOMM LAST MODIFIED : 24 August 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -644,7 +644,7 @@ LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lm
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
-LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread
+LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread 
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
@@ -679,8 +679,8 @@ ALL_INCLUDES = $(START_ALL_INCLUDES) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB)	$(INTERPRETER_LIB) $(LIB) $(VIDEO_LIB) \
-	  $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
+ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB) $(INTERPRETER_LIB) \
+		$(LIB) $(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
 	  $(MOVIE_FILE_LIB) $(XML_LIB)
    
 
@@ -756,6 +756,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/grid_field_calculator.c \
 	finite_element/import_finite_element.c
 GENERAL_SRCS = \
+	general/any_object.c \
 	general/callback.c \
 	general/child_process.c \
 	general/compare.c \
@@ -828,7 +829,8 @@ INTERACTION_SRCS = \
 	interaction/interaction_volume.c \
 	interaction/interactive_tool.c \
 	interaction/interactive_toolbar_widget.c \
-	interaction/interactive_event.c
+	interaction/interactive_event.c \
+	interaction/select_tool.c
 IO_DEVICES_SRCS = \
 	io_devices/conversion.c \
 	io_devices/haptic_input_module.cpp \
@@ -865,6 +867,7 @@ SELECT_SRCS = \
 	select/select_private.c \
 	select/select_spectrum.c
 SELECTION_SRCS = \
+	selection/any_object_selection.c \
 	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
 	selection/node_selection.c
