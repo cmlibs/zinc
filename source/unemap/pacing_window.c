@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 3 June 2003
+LAST MODIFIED : 16 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4300,7 +4300,7 @@ Called when the restitution curve pacing ends.
 
 static int restitution_curve_pace(void *pacing_window_void)
 /*******************************************************************************
-LAST MODIFIED : 3 June 2003
+LAST MODIFIED : 16 June 2003
 
 DESCRIPTION :
 Does one stimulus train in the restitution curve creation.
@@ -4328,6 +4328,7 @@ Does one stimulus train in the restitution curve creation.
 				(pacing_window->decrement_threshold_pairs)[
 				2*(pacing_window->decrement_threshold_pair_number)+1])))
 			{
+				pacing_window->last_decrement_threshold_pairs=0;
 				number_of_sn_s1_pacing_voltages=(int)((pacing_window->sn_s1_pause)/
 					(pacing_window->control_width)+0.5);
 				number_of_pacing_voltages=number_of_sn_s1_pacing_voltages+
@@ -4412,6 +4413,35 @@ Does one stimulus train in the restitution curve creation.
 							(float)floor((pacing_window->sn_length_decrement_threshold_pairs)/
 							(pacing_window->control_width)+0.5);
 					}
+					if (pacing_window->sn_length_decrement_threshold_pairs<=
+						(pacing_window->decrement_threshold_pairs)[
+						2*(pacing_window->decrement_threshold_pair_number)+1])
+					{
+						pacing_window->sn_length_decrement_threshold_pairs=
+							(pacing_window->decrement_threshold_pairs)[
+							2*(pacing_window->decrement_threshold_pair_number)+1];
+						/* must be a multiple of the control width and at least twice
+							the control width */
+						if (pacing_window->sn_length_decrement_threshold_pairs<
+							2*(pacing_window->control_width))
+						{
+							pacing_window->sn_length_decrement_threshold_pairs=
+								2*(pacing_window->control_width);
+						}
+						else
+						{
+							pacing_window->sn_length_decrement_threshold_pairs=
+								(pacing_window->control_width)*(float)floor((pacing_window->
+								sn_length_decrement_threshold_pairs)/
+								(pacing_window->control_width)+0.5);
+						}
+						(pacing_window->decrement_threshold_pair_number)++;
+						if (pacing_window->decrement_threshold_pair_number==
+							pacing_window->number_of_decrement_threshold_pairs)
+						{
+							pacing_window->last_decrement_threshold_pairs=1;
+						}
+					}
 					if (0<number_of_pacing_voltages)
 					{
 						/* set up pacing */
@@ -4456,25 +4486,11 @@ Does one stimulus train in the restitution curve creation.
 				{
 					finished=1;
 				}
-				pacing_window->last_decrement_threshold_pairs=0;
 			}
 			else
 			{
 				finished=1;
 			}
-			if (pacing_window->decrement_threshold_pair_number<
-				pacing_window->number_of_decrement_threshold_pairs)
-			{
-				pacing_window->sn_length_decrement_threshold_pairs=
-					(pacing_window->decrement_threshold_pairs)[
-					2*(pacing_window->decrement_threshold_pair_number)+1];
-				if ((pacing_window->decrement_threshold_pair_number)+1==
-					pacing_window->number_of_decrement_threshold_pairs)
-				{
-					pacing_window->last_decrement_threshold_pairs=1;
-				}
-			}
-			(pacing_window->decrement_threshold_pair_number)++;
 		}
 		else
 		{
