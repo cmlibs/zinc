@@ -4127,9 +4127,8 @@ mapping_window.
 				DEALLOCATE(temp_file_name);
 				busy_cursor_off((Widget)NULL,drawing_information->user_interface);
 				/* write success message */
-				strcpy(success_str," Successfully written ");			
-				strcat(success_str,number_str);
-				strcat(success_str," map frames.");	
+				strcpy(success_str," Map frames ");						
+				strcat(success_str," successfully written .");	
 				confirmation_information_ok("Success!",success_str,
 #if defined (MOTIF)				
 					(Widget)(NULL),
