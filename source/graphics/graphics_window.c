@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 11 May 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -39,6 +39,7 @@ interest and set scene_viewer values directly.
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
+#include "interaction/interactive_toolbar_widget.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -65,7 +66,7 @@ Module types
 */
 struct Graphics_window
 /*******************************************************************************
-LAST MODIFIED : 18 November 1998
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 Contains information for a graphics window.
@@ -79,7 +80,8 @@ Contains information for a graphics window.
 	Widget viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
 		view_all_button,time_edit_form,time_edit_widget,perspective_button,
 		layout_option,layout_menu,orthographic_form,ortho_up_option,
-		ortho_up_menu,ortho_front_button,select_button,transform_button;
+		ortho_up_menu,ortho_front_button,
+		interactive_tool_form,interactive_tool_widget;
 	Widget window_shell,main_window;
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -102,7 +104,6 @@ Contains information for a graphics window.
 		 user should be presented with this value+1, so the first pane is 1 */
 	int current_pane;
 	enum Scene_viewer_input_mode input_mode;
-
 	/*???DB.  Do these belong here ? */
 	/* time parameters for animation */
 	/* current time for frame */
@@ -122,12 +123,11 @@ Contains information for a graphics window.
 	struct MANAGER(Light_model) *light_model_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct MANAGER(Texture) *texture_manager;
-#if defined (OLD_CODE)
-	void *light_manager_callback_id;
-	void *light_model_manager_callback_id;
-	void *scene_manager_callback_id;
-	void *texture_manager_callback_id;
-#endif /* defined (OLD_CODE) */
+	/* interaction */
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
+		 will update it if the current one is destroyed */
+	struct Interactive_tool *interactive_tool,*transform_tool;
 	/* the time_slider is attached to the default_time_keeper of the scene,
 		the reference is kept so that the callbacks can be undone */
 	struct Time_keeper *time_keeper;
@@ -192,9 +192,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
 	Graphics_window,ortho_front_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,select_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,transform_button)
+	Graphics_window,interactive_tool_form)
 
 static int axis_name_to_axis_number(char *axis_name)
 /*******************************************************************************
@@ -580,44 +578,49 @@ Keep in case a use is found for it.
 	LEAVE;
 } /* Graphics_window_destroy_CB */
 
-static void Graphics_window_input_mode_CB(Widget widget,
-	XtPointer window_void,XtPointer call_data)
+static void Graphics_window_update_interactive_tool(Widget widget,
+	void *graphics_window_void,void *interactive_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 6 October 1998
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
-Entry callback for change of input mode, SELECT/TRANSFORM.
+Callback for change of interactive tool.
 ==============================================================================*/
 {
-	struct Graphics_window *window;
-	Widget input_mode_button;
+	int pane_no;
+	struct Graphics_window *graphics_window;
+	struct Interactive_tool *interactive_tool;
 
-	ENTER(Graphics_window_input_mode_CB);
+	ENTER(Graphics_window_update_interactive_tool);
 	USE_PARAMETER(widget);
-	if ((window=(struct Graphics_window *)window_void)&&
-		(input_mode_button=((XmRowColumnCallbackStruct *)call_data)->widget))
+	if (graphics_window=(struct Graphics_window *)graphics_window_void)
 	{
-		if (window->select_button==input_mode_button)
+		interactive_tool=(struct Interactive_tool *)interactive_tool_void;
+		if (interactive_tool != graphics_window->interactive_tool)
 		{
-			Graphics_window_set_input_mode(window,SCENE_VIEWER_SELECT);
-		}
-		else if (window->transform_button==input_mode_button)
-		{
-			Graphics_window_set_input_mode(window,SCENE_VIEWER_TRANSFORM);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Graphics_window_input_mode_CB.  Unknown input_mode_button");
+			graphics_window->interactive_tool=interactive_tool;
+			for (pane_no=0;(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES);pane_no++)
+			{
+				Scene_viewer_set_interactive_tool(
+					graphics_window->scene_viewer[pane_no],interactive_tool);
+			}
+			if (interactive_tool == graphics_window->transform_tool)
+			{
+				Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_TRANSFORM);
+			}
+			else
+			{
+				Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_SELECT);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphics_window_input_mode_CB.  Invalid argument(s)");
+			"Graphics_window_update_interactive_tool.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Graphics_window_input_mode_CB */
+} /* Graphics_window_update_interactive_tool */
 
 static void Graphics_window_layout_mode_CB(Widget caller,
 	XtPointer *window_void,XmAnyCallbackStruct *call_data)
@@ -2439,6 +2442,48 @@ view angle, interest point etc.
 	return (return_code);
 } /* modify_Graphics_window_view */
 
+static Widget Graphics_window_make_transform_tool_button(
+	void *graphics_window_void,Widget parent)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+Fetches a ToggleButton with an appropriate icon for the interactive tool
+and as a child of <parent>.
+==============================================================================*/
+{
+	MrmType transform_tool_dialog_class;
+	struct Graphics_window *graphics_window;
+	Widget widget;
+
+	ENTER(Graphics_window_make_transform_tool_button);
+	widget=(Widget)NULL;
+	if ((graphics_window=(struct Graphics_window *)graphics_window_void)&&parent)
+	{
+		if (MrmSUCCESS == MrmFetchWidget(graphics_window_hierarchy,
+			"transform_tool_button",parent,&widget,&transform_tool_dialog_class))
+		{
+			XtVaSetValues(widget,
+				XmNuserData,graphics_window->transform_tool,NULL);
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"Graphics_window_make_transform_tool_button.  "
+				"Could not fetch widget");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_make_transform_tool_button.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (widget);
+} /* Graphics_window_make_transform_tool_button */
+
 /*
 Global functions
 ----------------
@@ -2453,9 +2498,10 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
 	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 18 November 1998
+LAST MODIFIED : 11 May 2000
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -2470,7 +2516,7 @@ will be printed on the windows title bar.
 	EDIT_VAR_PRECISION time_value;
 	char *window_title;
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
-	int ortho_front_axis,ortho_up_axis,pane_no,return_code;
+	int init_widgets,ortho_front_axis,ortho_up_axis,pane_no,return_code;
 	MrmType graphics_window_dialog_class;
 	static MrmRegisterArg callbacks[] =
 	{
@@ -2502,10 +2548,8 @@ will be printed on the windows title bar.
 			DIALOG_IDENTIFY(graphics_window,ortho_up_menu)},
 		{"gwin_id_ortho_front_btn",(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,ortho_front_button)},
-		{"gwin_id_select_btn",(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,select_button)},
-		{"gwin_id_transform_btn",(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,transform_button)},
+		{"gwin_id_interactive_tool_form",(XtPointer)
+			DIALOG_IDENTIFY(graphics_window,interactive_tool_form)},
 		{"gwin_destroy_CB",(XtPointer)Graphics_window_destroy_CB},
 		{"gwin_view_all_btn_CB",
 			(XtPointer)Graphics_window_view_all_button_CB},
@@ -2516,9 +2560,7 @@ will be printed on the windows title bar.
 		{"gwin_ortho_up_menu_CB",
 			(XtPointer)Graphics_window_ortho_up_menu_CB},
 		{"gwin_ortho_front_btn_CB",
-			(XtPointer)Graphics_window_ortho_front_button_CB},
-		{"gwin_input_mode_CB",
-			(XtPointer)Graphics_window_input_mode_CB}
+			(XtPointer)Graphics_window_ortho_front_button_CB}
 	};
 	static MrmRegisterArg identifiers[] =
 	{
@@ -2529,11 +2571,11 @@ will be printed on the windows title bar.
 	Widget viewing_area[4];
 
 	ENTER(create_graphics_window);
-	/* check arguments */
 	if (name&&((SCENE_VIEWER_SINGLE_BUFFER==buffer_mode)||
 		(SCENE_VIEWER_DOUBLE_BUFFER==buffer_mode))&&background_colour&&
 		light_manager&&light_model_manager&&default_light_model&&
-		scene_manager&&scene&&texture_manager&&user_interface)
+		scene_manager&&scene&&texture_manager&&interactive_tool_manager&&
+		user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(graphics_window_uidh,
 			&graphics_window_hierarchy,&graphics_window_hierarchy_open))
@@ -2557,6 +2599,14 @@ will be printed on the windows title bar.
 				graphics_window->scene=ACCESS(Scene)(scene);
 				/* I have accessed the time_keeper further down */
 				graphics_window->time_keeper = Scene_get_default_time_keeper(scene);
+				graphics_window->interactive_tool_manager=interactive_tool_manager;
+				graphics_window->transform_tool=CREATE(Interactive_tool)(
+					"transform_tool","Transform tool",
+					(Interactive_event_handler *)NULL,
+					Graphics_window_make_transform_tool_button,
+					(Interactive_tool_bring_up_dialog_function *)NULL,
+					(void *)graphics_window);
+				graphics_window->interactive_tool=graphics_window->transform_tool;
 				graphics_window->user_interface=user_interface;
 				graphics_window->default_viewing_height=400;
 				graphics_window->default_viewing_width=400;
@@ -2596,8 +2646,8 @@ will be printed on the windows title bar.
 				graphics_window->ortho_up_option=(Widget)NULL;
 				graphics_window->ortho_up_menu=(Widget)NULL;
 				graphics_window->ortho_front_button=(Widget)NULL;
-				graphics_window->select_button=(Widget)NULL;
-				graphics_window->transform_button=(Widget)NULL;
+				graphics_window->interactive_tool_form=(Widget)NULL;
+				graphics_window->interactive_tool_widget=(Widget)NULL;
 				graphics_window->ortho_up_axis=0;
 				graphics_window->ortho_front_axis=0;
 				/* create a shell for the window */
@@ -2671,9 +2721,34 @@ will be printed on the windows title bar.
 							}
 							else
 							{
+								init_widgets=1;
+								/* create the subwidgets with default values */
+								if (graphics_window->interactive_tool_widget=
+									create_interactive_toolbar_widget(
+										graphics_window->interactive_tool_form,
+										interactive_tool_manager))
+								{
+									/* add tools to toolbar, starting with transform */
+									interactive_toolbar_widget_add_interactive_tool(
+										graphics_window->interactive_tool_widget,
+										graphics_window->transform_tool);
+									FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
+										add_interactive_tool_to_interactive_toolbar_widget,
+										(void *)graphics_window->interactive_tool_widget,
+										interactive_tool_manager);
+								}
+								else
+								{
+									init_widgets=0;
+								}
 								/* create the time editing widget */
 								if (!(graphics_window->time_edit_widget=create_edit_var_widget(
 									graphics_window->time_edit_form,"Time",0.0,0.0,1.0)))
+								{
+									init_widgets=0;
+								}
+								/* create the time editing widget */
+								if (!init_widgets)
 								{
 									destroy_Shell_list_item_from_shell(
 										&(graphics_window->window_shell),
@@ -2683,14 +2758,18 @@ will be printed on the windows title bar.
 									DEALLOCATE(graphics_window->name);
 									DEALLOCATE(graphics_window);
 									display_message(ERROR_MESSAGE,
-										"CREATE(graphics_window).  Could not create time widget");
+										"CREATE(graphics_window).  Could not create subwidgets");
 								}
 								else
 								{
+									/* turn on callbacks */
 									callback.procedure=Graphics_window_time_edit_CB;
 									callback.data=graphics_window;
 									edit_var_set_callback(graphics_window->time_edit_widget,
 										&callback);
+									callback.procedure=Graphics_window_update_interactive_tool;
+									interactive_toolbar_widget_set_callback(
+										graphics_window->interactive_tool_widget,&callback);
 									/* create four Scene_viewers */
 									viewing_area[0]=graphics_window->viewing_area1;
 									viewing_area[1]=graphics_window->viewing_area2;
@@ -2710,6 +2789,9 @@ will be printed on the windows title bar.
 											scene_manager,graphics_window->scene,
 											texture_manager,graphics_window->user_interface))
 										{
+											Scene_viewer_set_interactive_tool(
+												graphics_window->scene_viewer[pane_no],
+												graphics_window->interactive_tool);
 											/* get scene_viewer transform callbacks to allow
 												 synchronising of views in multiple panes */
 											Scene_viewer_set_transform_callback(
@@ -2806,7 +2888,7 @@ will be printed on the windows title bar.
 												lookat[1]+eye_distance*front[1],
 												lookat[2]+eye_distance*front[2],
 												lookat[0],lookat[1],lookat[2],up[0],up[1],up[2]);
-								 /*Scene_viewer_redraw_now(graphics_window->scene_viewer[0]);*/
+									/*Scene_viewer_redraw_now(graphics_window->scene_viewer[0]);*/
 										}
 										/* set the initial layout */
 										Graphics_window_set_layout_mode(graphics_window,
@@ -2860,7 +2942,7 @@ will be printed on the windows title bar.
 
 int DESTROY(Graphics_window)(struct Graphics_window **graphics_window_address)
 /*******************************************************************************
-LAST MODIFIED : 18 November 1998
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION:
 Frees the contents of the Graphics_window structure and then the object itself,
@@ -2894,6 +2976,7 @@ Graphics_window_destroy_CB.
 			DEACCESS(Time_keeper)(&(graphics_window->time_keeper));
 		}
 		DEALLOCATE(graphics_window->name);
+		DESTROY(Interactive_tool)(&(graphics_window->transform_tool));
 		DEALLOCATE(*graphics_window_address);
 		return_code=1;
 	}
@@ -3245,10 +3328,6 @@ are SCENE_VIEWER_NO_INPUT, SCENE_VIEWER_SELECT and SCENE_VIEWER_TRANSFORM.
 		if (input_mode != window->input_mode)
 		{
 			window->input_mode=input_mode;
-			XtVaSetValues(window->select_button,
-				XmNset,(SCENE_VIEWER_SELECT==input_mode),NULL);
-			XtVaSetValues(window->transform_button,
-				XmNset,(SCENE_VIEWER_TRANSFORM==input_mode),NULL);
 		}
 	}
 	else

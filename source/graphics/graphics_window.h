@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.h
 
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 11 April 2000
 
 DESCRIPTION :
 Interface file for opening and closing and working a CMISS 3D display window.
@@ -19,6 +19,7 @@ interest and set scene_viewer values directly.
 #include "general/object.h"
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
+#include "interaction/interactive_tool.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -105,6 +106,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct Light_model *default_light_model,
 	struct MANAGER(Scene) *scene_manager,struct Scene *scene,
 	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 October 1997

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : graphics_window.uil
 !
-!LAST MODIFIED : 12 October 1998
+!LAST MODIFIED : 9 May 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the 3-D graphics window
@@ -26,8 +26,7 @@ procedure
 	gwin_id_ortho_up_option;
 	gwin_id_ortho_up_menu;
 	gwin_id_ortho_front_btn;
-	gwin_id_select_btn;
-	gwin_id_transform_btn;
+	gwin_id_interactive_tool_form;
 	gwin_destroy_CB;
 	gwin_selection_list_CB;
 	gwin_view_all_btn_CB;
@@ -35,12 +34,63 @@ procedure
 	gwin_layout_mode_CB;
 	gwin_ortho_up_menu_CB;
 	gwin_ortho_front_btn_CB;
-	gwin_input_mode_CB;
 
-!value
+value
 !**********Value Definitions
 !	graphics_window_viewing_height: 402;
 !	graphics_window_viewing_width: 402;
+	black  : color('black',  foreground);
+	blue   : color('blue',   foreground);
+	green  : color('green',  foreground);
+	red    : color('red',    foreground);
+	white  : color('white',  foreground);
+	yellow : color('yellow', foreground);
+	lightgray : color('lightgray', foreground);
+	darkgray  : color('darkgray', foreground);
+	interactive_tool_colour_table:
+		color_table(
+		black='o',
+		red='R',
+		yellow='Y',
+		green='G',
+		white='W',
+		lightgray='+',
+		darkgray='#',
+		foreground color='.',
+		background color=' ');
+	transform_tool_icon: icon(color_table=interactive_tool_colour_table,
+			'               .                ',
+			'              .W.               ',
+			'             .WWW.              ',
+			'            ...W...             ',
+			'         ..   .W.   ..          ',
+			'       ....   ...   ....        ',
+			'        ..           ..         ',
+			'       . .    ...    . .        ',
+			'       .    ..WWW..    .        ',
+			'    . .   ..WWWWWWW..   . .     ',
+			'   .. .   .+..WWW..#.   . ..    ',
+			'  .W..... .+++...###. .....W.   ',
+			' .WWWWWW. .++++.####. .WWWWWW.  ',
+			'  .W..... .++++.####. .....W.   ',
+			'   .. .   .++++.####.   . ..    ',
+			'    . .   ..+++.###..   . .     ',
+			'       .    ..+.#..    .        ',
+			'       . .    ...    . .        ',
+			'        ..           ..         ',
+			'       ....   ...   ....        ',
+			'         ..   .W.   ..          ',
+			'            ...W...             ',
+			'             .WWW.              ',
+			'              .W.               ',
+			'               .           .    ',
+			'   .....                  .     ',
+			'     .  . . ..  ...   .. ...    ',
+			'     .  ..    . .  . .    .     ',
+			'     .  .   ... .  .  ..  .     ',
+			'     .  .   . . .  .   .  .     ',
+			'     .  .   .. ..  . ..   . .   ',
+			'                                ');
 
 identifier
 	gwin_structure;
@@ -62,7 +112,7 @@ object
 			};
 		controls
 			{
-			XmForm gwin_control_panel;
+			XmRowColumn gwin_control_panel;
 !      XmPanedWindow gwin_work_area;
 			XmForm gwin_viewing_form;
 			};
@@ -72,27 +122,30 @@ object
 			};
 		};
 !*******************************************************************************
-	gwin_control_panel: XmForm
+	gwin_control_panel: XmRowColumn
 		{
 		arguments
 			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
 			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
 			};
 		controls
 			{
 			XmPushButtonGadget gwin_view_all_btn;
 			XmForm gwin_time_edit_form;
 			XmToggleButtonGadget gwin_perspective_btn;
+			XmSeparatorGadget {};
 			XmOptionMenu gwin_layout_option;
-			XmForm gwin_orthographic_form;
-			XmFrame gwin_input_mode_frame;
+			XmRowColumn gwin_orthographic_form;
+			XmSeparatorGadget {};
+			XmForm gwin_interactive_tool_form;
+			XmSeparatorGadget {};
 			};
 		};
 !*******************************************************************************
@@ -108,7 +161,7 @@ object
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = 1;
 !			XmNleftOffset = graphics_window_border_width;
-			XmNleftWidget = XmForm gwin_control_panel;
+			XmNleftWidget = gwin_control_panel;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNrightOffset = 1;
 			XmNbottomAttachment = XmATTACH_FORM;
@@ -232,16 +285,7 @@ object
 			{
 			XmNlabelString = compound_string("View All");
 			XmNfontList = button_font;
-!      XmNsensitive = false;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNuserData = gwin_structure;
+			XmNalignment = XmALIGNMENT_CENTER;
 			};
 		callbacks
 			{
@@ -256,15 +300,6 @@ object
 		arguments
 			{
 !      XmNsensitive = false;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = 0;
-			XmNtopWidget = XmPushButtonGadget gwin_view_all_btn;
 			XmNuserData = gwin_structure;
 			};
 		callbacks
@@ -281,15 +316,6 @@ object
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNfontList = button_font;
 !      XmNsensitive = false;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = 0;
-			XmNtopWidget = XmForm gwin_time_edit_form;
 			XmNuserData = gwin_structure;
 			};
 		callbacks
@@ -303,14 +329,6 @@ object
 !*******************************************************************************
 	gwin_layout_option: XmOptionMenu
 		{
-		arguments
-			{
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = gwin_perspective_btn;
-			};
 		controls
 			{
 			XmPulldownMenu gwin_layout_menu;
@@ -334,72 +352,69 @@ object
 			XmNentryCallback = procedure gwin_layout_mode_CB(gwin_structure);
 			};
 		};
-/*
-	gwin_orthographic_btn: XmToggleButtonGadget
+!*******************************************************************************
+	gwin_orthographic_form: XmRowColumn
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Orthographic");
-			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNfontList = button_font;
-!      XmNsensitive = false;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = XmToggleButtonGadget gwin_perspective_btn;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				gwin_id_orthographic_btn(gwin_structure);
-			XmNvalueChangedCallback = procedure
-				gwin_orthographic_btn_CB(gwin_structure);
-			};
-		};
-*/
-	gwin_orthographic_form: XmForm
-		{
-		arguments
-			{
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = 0;
-			XmNtopWidget = gwin_layout_option;
+!			XmNentryAlignment = XmALIGNMENT_END;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNborderWidth = 0;
 			};
 		controls
 			{
-			XmLabelGadget gwin_ortho_label;
-			XmOptionMenu gwin_ortho_up_option;
-			XmPushButtonGadget gwin_ortho_front_btn;
+			XmRowColumn gwin_ortho_up_entry;
+			XmRowColumn gwin_ortho_front_entry;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure gwin_id_orthographic_form(gwin_structure);
 			};
 		};
+  gwin_ortho_up_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget gwin_ortho_up_label;
+			XmOptionMenu gwin_ortho_up_option;
+      };
+    };
+  gwin_ortho_front_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget gwin_ortho_front_label;
+			XmPushButtonGadget gwin_ortho_front_btn;
+      };
+    };
 !*******************************************************************************
-	gwin_ortho_label: XmLabelGadget
+	gwin_ortho_up_label: XmLabelGadget
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Ortho. Up, Front:");
-			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNlabelString = compound_string("Up:");
+!			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 2;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNuserData = gwin_structure;
 			};
 		};
 	gwin_ortho_up_option: XmOptionMenu
@@ -407,15 +422,6 @@ object
 		arguments
 			{
 !      XmNlabelString = compound_string("Up:");
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = 0;
-			XmNtopWidget = XmLabelGadget gwin_ortho_label;
 			XmNuserData = gwin_structure;
 			};
 		controls
@@ -501,23 +507,21 @@ object
 				};
 			};
 		};
+	gwin_ortho_front_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Front:");
+!			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+			};
+		};
 	gwin_ortho_front_btn: XmPushButtonGadget
 		{
 		arguments
 			{
 			XmNlabelString = compound_string("??");
 			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = 0;
-			XmNleftWidget = XmOptionMenu gwin_ortho_up_option;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
-			XmNbottomOffset = 3;
-			XmNbottomWidget = XmOptionMenu gwin_ortho_up_option;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = 3;
-			XmNtopWidget = XmLabelGadget gwin_ortho_label;
 			XmNuserData = gwin_structure;
 			};
 		callbacks
@@ -529,78 +533,26 @@ object
 			};
 		};
 !*******************************************************************************
-	gwin_input_mode_frame: XmFrame
-		{
-		arguments
-			{
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = 0;
-			XmNtopWidget = XmForm gwin_orthographic_form;
-			};
-		controls
-			{
-			XmRowColumn gwin_input_mode_rowcol;
-			};
-!    callbacks
-!      {
-!      MrmNcreateCallback = procedure gwin_id_input_mode_frame(gwin_structure);
-!      };
-		};
-	gwin_input_mode_rowcol: XmRowColumn
-		{
-		arguments
-			{
-			XmNorientation = XmVERTICAL;
-			XmNpacking = XmPACK_COLUMN;
-			XmNradioBehavior = true;
-      XmNentryAlignment = XmALIGNMENT_CENTER;
-			XmNnumColumns = 1;
-			XmNuserData = gwin_structure;
-			};
-		controls
-			{
-			XmToggleButton gwin_select_btn;
-			XmToggleButton gwin_transform_btn;
-			};
+  gwin_interactive_tool_form: XmForm
+    {
     callbacks
       {
-			XmNentryCallback = procedure gwin_input_mode_CB(gwin_structure);
-!      MrmNcreateCallback =
-!         procedure gwin_id_input_mode_rowcol(gwin_structure);
+      MrmNcreateCallback = procedure
+        gwin_id_interactive_tool_form(gwin_structure);
       };
-		};
-	gwin_select_btn: XmToggleButton
+    };
+!*******************************************************************************
+	transform_tool_button: XmToggleButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Select");
-			XmNfontList = button_font;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = transform_tool_icon;
 			XmNindicatorOn = false;
+			XmNhighlightThickness = 0;
 			XmNset = false;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure gwin_id_select_btn(gwin_structure);
-			};
-		};
-	gwin_transform_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Transform");
-			XmNfontList = button_font;
-			XmNindicatorOn = false;
-			XmNset = true;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure gwin_id_transform_btn(gwin_structure);
+			XmNspacing = 0;
+			XmNshadowThickness = 2;
 			};
 		};
 !*******************************************************************************
