@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 20 February 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1187,6 +1187,15 @@ DESCRIPTION :
 Sets a particular element_xi_value (<version>, <type>) for the field <component> at the
 <node>.  SAB Note: It doesn't use a FE_field_component as I don't think any of them
 should.
+==============================================================================*/
+
+int add_FE_node_number_to_Multi_range(struct FE_node *node,
+	void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 20 February 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <node> to <multi_range>.
 ==============================================================================*/
 
 int ensure_FE_node_is_in_group(struct FE_node *node,void *node_group_void);

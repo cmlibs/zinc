@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -40,6 +40,7 @@ Functions for manipulating finite element structures.
 #include "general/indexed_list_private.h"
 #endif /* defined (FINITE_ELEMENT_USE_SAFE_LIST) */
 #include "general/manager_private.h"
+#include "general/multi_range.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/value.h"
@@ -9920,6 +9921,35 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 
 	return (return_code);
 } /* set_FE_nodal_element_xi_value */
+
+int add_FE_node_number_to_Multi_range(struct FE_node *node,
+	void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <node> to <multi_range>.
+==============================================================================*/
+{
+	int node_number,return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(add_FE_node_number_to_Multi_range);
+	if (node&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		node_number=get_FE_node_cm_node_identifier(node);
+		return_code=Multi_range_add_range(multi_range,node_number,node_number);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_node_number_to_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_node_number_to_Multi_range */
 
 int ensure_FE_node_is_in_group(struct FE_node *node,void *node_group_void)
 /*******************************************************************************
