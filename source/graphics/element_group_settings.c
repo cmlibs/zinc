@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 7 May 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -42,7 +42,7 @@ Module types
 
 struct GT_element_settings
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Stores one group of settings for a single line/surface/etc. part of the
@@ -86,6 +86,7 @@ finite element group rendition.
 	enum Use_element_type use_element_type;
 	/* for element_points only */
 	enum Xi_discretization_mode xi_discretization_mode;
+	struct Computed_field *xi_point_density_field;
 	struct FE_field *native_discretization_field;
 	struct Element_discretization discretization;
 	/* for volumes only */
@@ -640,6 +641,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->use_element_type=USE_ELEMENTS;
 			/* for element_points only */
 			settings->xi_discretization_mode=XI_DISCRETIZATION_CELL_CENTRES;
+			settings->xi_point_density_field = (struct Computed_field *)NULL;
 			settings->native_discretization_field=(struct FE_field *)NULL;
 			/* default to 1*1*1 discretization for fastest possible display.
 				 Important since model may have a *lot* of elements */
@@ -922,6 +924,8 @@ Note: destination->access_count is not changed by COPY.
 		destination->use_element_type=source->use_element_type;
 		/* for element_points only */
 		destination->xi_discretization_mode=source->xi_discretization_mode;
+		REACCESS(Computed_field)(&(destination->xi_point_density_field),
+			source->xi_point_density_field);
 		destination->discretization.number_in_xi1=
 			source->discretization.number_in_xi1;
 		destination->discretization.number_in_xi2=
@@ -2592,63 +2596,89 @@ For settings_type GT_ELEMENT_SETTINGS_VOLUMES only.
 	return (return_code);
 } /* GT_element_settings_set_volume_texture */
 
-enum Xi_discretization_mode GT_element_settings_get_xi_discretization_mode(
-	struct GT_element_settings *settings)
-/*******************************************************************************
-LAST MODIFIED : 2 March 1999
-
-DESCRIPTION :
-Returns the xi_discretization_mode controlling where glyphs are displayed for
-<settings> of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS.
-==============================================================================*/
-{
-	enum Xi_discretization_mode xi_discretization_mode;
-
-	ENTER(GT_element_settings_get_xi_discretization_mode);
-	if (settings&&(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
-	{
-		xi_discretization_mode=settings->xi_discretization_mode;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_get_xi_discretization_mode.  Invalid argument(s)");
-		xi_discretization_mode = XI_DISCRETIZATION_CELL_CENTRES;
-	}
-	LEAVE;
-
-	return (xi_discretization_mode);
-} /* GT_element_settings_get_xi_discretization_mode */
-
-int GT_element_settings_set_xi_discretization_mode(
+int GT_element_settings_get_xi_discretization(
 	struct GT_element_settings *settings,
-	enum Xi_discretization_mode xi_discretization_mode)
+	enum Xi_discretization_mode *xi_discretization_mode,
+	struct Computed_field **xi_point_density_field)
 /*******************************************************************************
-LAST MODIFIED : 2 March 1999
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
-Sets the xi_discretization_mode controlling where glyphs are displayed for
-<settings> of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS.
+Returns the <xi_discretization_mode> and <xi_point_density_field> controlling
+where glyphs are displayed for <settings> of type
+GT_ELEMENT_SETTINGS_ELEMENT_POINTS. <xi_point_density_field> is used only with
+XI_DISCRETIZATION_CELL_DENSITY and XI_DISCRETIZATION_CELL_POISSON modes.
+Either <xi_discretization_mode> or <xi_point_density_field> addresses may be
+omitted, if that value is not required.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(GT_element_settings_set_xi_discretization_mode);
-	if (settings&&(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
+	ENTER(GT_element_settings_get_xi_discretization);
+	if (settings &&
+		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type))
 	{
-		settings->xi_discretization_mode=xi_discretization_mode;
-		return_code=1;
+		if (xi_discretization_mode)
+		{
+			*xi_discretization_mode = settings->xi_discretization_mode;
+		}
+		if (xi_point_density_field)
+		{
+			*xi_point_density_field = settings->xi_point_density_field;
+		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_set_xi_discretization_mode.  Invalid argument(s)");
-		return_code=0;
+			"GT_element_settings_get_xi_discretization.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_settings_set_xi_discretization_mode */
+} /* GT_element_settings_get_xi_discretization */
+
+int GT_element_settings_set_xi_discretization(
+	struct GT_element_settings *settings,
+	enum Xi_discretization_mode xi_discretization_mode,
+	struct Computed_field *xi_point_density_field)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2001
+
+DESCRIPTION :
+Sets the xi_discretization_mode controlling where glyphs are displayed for
+<settings> of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS. Must supply a scalar
+<xi_point_density_field> if the new mode is XI_DISCRETIZATION_CELL_DENSITY or
+XI_DISCRETIZATION_CELL_POISSON.
+==============================================================================*/
+{
+	int need_density_field, return_code;
+
+	ENTER(GT_element_settings_set_xi_discretization);
+	need_density_field =
+		(XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
+		(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode);
+
+	if (settings && ((!need_density_field && !xi_point_density_field) ||
+		(need_density_field && xi_point_density_field &&
+			Computed_field_is_scalar(xi_point_density_field, (void *)NULL))))
+	{
+		settings->xi_discretization_mode = xi_discretization_mode;
+		REACCESS(Computed_field)(&(settings->xi_point_density_field),
+			xi_point_density_field);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_set_xi_discretization.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_set_xi_discretization */
 
 struct GT_object *GT_element_settings_get_graphics_object(
 	struct GT_element_settings *settings)
@@ -3565,6 +3595,8 @@ settings describe EXACTLY the same geometry.
 			return_code=
 				(settings->xi_discretization_mode==
 					second_settings->xi_discretization_mode)&&
+				(settings->xi_point_density_field==
+					second_settings->xi_point_density_field)&&
 				(settings->native_discretization_field==
 					second_settings->native_discretization_field)&&
 				(settings->discretization.number_in_xi1==
@@ -3769,7 +3801,7 @@ any trivial differences are fixed up in the graphics_obejct.
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 7 May 2001
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -4028,6 +4060,24 @@ if no coordinate field. Currently only write if we have a field.
 				settings->xi_discretization_mode), &error);
 			if (XI_DISCRETIZATION_EXACT_XI != settings->xi_discretization_mode)
 			{
+				if ((XI_DISCRETIZATION_CELL_DENSITY ==
+					settings->xi_discretization_mode) ||
+					(XI_DISCRETIZATION_CELL_POISSON == settings->xi_discretization_mode))
+				{
+					append_string(&settings_string, " density ", &error);
+					if (GET_NAME(Computed_field)(settings->xi_point_density_field,&name))
+					{
+						/* put quotes around name if it contains special characters */
+						make_valid_token(&name);
+						append_string(&settings_string, name, &error);
+						DEALLOCATE(name);
+					}
+					else
+					{
+						DEALLOCATE(settings_string);
+						error = 1;
+					}
+				}
 				sprintf(temp_string,
 					" discretization \"%d*%d*%d\" native_discretization ",
 					settings->discretization.number_in_xi1,
@@ -4361,7 +4411,7 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int FE_element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4369,12 +4419,13 @@ Converts a finite element into a graphics object with the supplied settings.
 {
 	FE_value base_size[3], centre[3], initial_xi[3], scale_factors[3];
 	float time;
-	int base_grid_offset,dimension,draw_element,draw_selected,edit_mode,
-		element_selected,grid_offset_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],i,
-		name_selected,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	int draw_element, draw_selected, edit_mode, element_dimension,
+		element_selected, i, name_selected,
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points,process,return_code,
-		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],use_element_dimension,
-		*use_number_in_xi;
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		*top_level_xi_point_numbers,
+		use_element_dimension, *use_number_in_xi;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *top_level_element,*use_element;
@@ -4459,7 +4510,7 @@ Converts a finite element into a graphics object with the supplied settings.
 				native_discretization_field,top_level_number_in_xi,&top_level_element,
 				number_in_xi))
 			{
-				dimension=get_FE_element_dimension(element);
+				element_dimension = get_FE_element_dimension(element);
 				/* g_element renditions use only one time=0. Must take care. */
 				time=0.0;
 				switch (settings->settings_type)
@@ -4556,7 +4607,7 @@ Converts a finite element into a graphics object with the supplied settings.
 						{
 							case g_VOLTEX:
 							{
-								if (3==get_FE_element_dimension(element))
+								if (3 == element_dimension)
 								{
 									if (edit_mode)
 									{
@@ -4589,7 +4640,7 @@ Converts a finite element into a graphics object with the supplied settings.
 							} break;
 							case g_POLYLINE:
 							{
-								if (2==get_FE_element_dimension(element))
+								if (2 == element_dimension)
 								{
 									if (edit_mode)
 									{
@@ -4628,63 +4679,31 @@ Converts a finite element into a graphics object with the supplied settings.
 						{
 							element_point_ranges_identifier.exact_xi[i]=settings->seed_xi[i];
 						}
-						if (settings->xi_discretization_mode
-						  == XI_DISCRETIZATION_CELL_RANDOM)
-						  {
-							 /* Lets seed with the element number so it is consistent */
-							 srand(element->cm.number);
-						  }
-						if (xi_points=Xi_discretization_mode_get_xi_points(
-							settings->xi_discretization_mode,dimension,number_in_xi,
-							element_point_ranges_identifier.exact_xi,&number_of_xi_points))
+						if (FE_element_get_xi_points(element,
+							settings->xi_discretization_mode, number_in_xi,
+							element_point_ranges_identifier.exact_xi,
+							settings_to_object_data->rc_coordinate_field,
+							settings->xi_point_density_field,
+							&number_of_xi_points, &xi_points))
 						{
-							FE_value element_to_top_level[9];
-							int number_in_xi1,*point_numbers;
-
-							if ((XI_DISCRETIZATION_CELL_CORNERS==
-								settings->xi_discretization_mode)&&
-								(CM_ELEMENT != element->cm.type)&&
-								((1==dimension)||(2==dimension))&&
-								(use_element=FE_element_get_top_level_element_conversion(
-									element,top_level_element,
-									settings_to_object_data->element_group,settings->face,
-									element_to_top_level))&&
-								(use_element==top_level_element)&&
-								calculate_grid_field_offsets(dimension,
-									get_FE_element_dimension(use_element),top_level_number_in_xi,
-									element_to_top_level,number_in_xi,&base_grid_offset,
-									grid_offset_in_xi)&&
-								ALLOCATE(point_numbers,int,number_of_xi_points))
+							top_level_xi_point_numbers = (int *)NULL;
+							if (XI_DISCRETIZATION_CELL_CORNERS ==
+								settings->xi_discretization_mode)
 							{
-								/* convert xi positions to be on top_level_element */
-								convert_xi_points_from_element_to_parent(number_of_xi_points,
-									xi_points,dimension,get_FE_element_dimension(use_element),
-									element_to_top_level);
-								/* convert element_point_numbers to be for top_level_element */
-								if (1==dimension)
-								{
-									for (i=0;i < number_of_xi_points;i++)
-									{
-										point_numbers[i] = base_grid_offset + grid_offset_in_xi[0]*i;
-									}
-								}
-								else
-								{
-									number_in_xi1=number_in_xi[0]+1;
-									for (i=0;i < number_of_xi_points;i++)
-									{
-										point_numbers[i] = base_grid_offset +
-											grid_offset_in_xi[0]*(i % number_in_xi1) +
-											grid_offset_in_xi[1]*(i / number_in_xi1);
-									}
-								}
-								use_number_in_xi=top_level_number_in_xi;
+								FE_element_convert_xi_points_cell_corners_to_top_level(
+									element, top_level_element, top_level_number_in_xi,
+									number_of_xi_points, xi_points, &top_level_xi_point_numbers);
+							}
+							if (top_level_xi_point_numbers)
+							{
+								/* xi_points have been converted to top-level */
+								use_element = top_level_element;
+								use_number_in_xi = top_level_number_in_xi;
 							}
 							else
 							{
-								use_element=element;
-								use_number_in_xi=number_in_xi;
-								point_numbers=(int *)NULL;
+								use_element = element;
+								use_number_in_xi = number_in_xi;
 							}
 							if (edit_mode)
 							{
@@ -4709,26 +4728,26 @@ Converts a finite element into a graphics object with the supplied settings.
 									}
 								}
 							}
-							ranges=(struct Multi_range *)NULL;
-							element_point_ranges_identifier.element=use_element;
-							element_point_ranges_identifier.top_level_element=
+							ranges = (struct Multi_range *)NULL;
+							element_point_ranges_identifier.element = use_element;
+							element_point_ranges_identifier.top_level_element= 
 								top_level_element;
-							element_point_ranges_identifier.xi_discretization_mode=
+							element_point_ranges_identifier.xi_discretization_mode =
 								settings->xi_discretization_mode;
-							use_element_dimension=get_FE_element_dimension(use_element);
-							for (i=0;i<use_element_dimension;i++)
+							use_element_dimension = get_FE_element_dimension(use_element);
+							for (i = 0; i < use_element_dimension; i++)
 							{
-								element_point_ranges_identifier.number_in_xi[i]=
+								element_point_ranges_identifier.number_in_xi[i] =
 									use_number_in_xi[i];
 							}
-							if (element_point_ranges=FIND_BY_IDENTIFIER_IN_LIST(
-								Element_point_ranges,identifier)(
+							if (element_point_ranges = FIND_BY_IDENTIFIER_IN_LIST(
+								Element_point_ranges, identifier)(
 									&element_point_ranges_identifier,
 									settings_to_object_data->selected_element_point_ranges_list))
 							{
-								ranges=Element_point_ranges_get_ranges(element_point_ranges);
+								ranges = Element_point_ranges_get_ranges(element_point_ranges);
 							}
-							element_selected=IS_OBJECT_IN_LIST(FE_element)(use_element,
+							element_selected = IS_OBJECT_IN_LIST(FE_element)(use_element,
 								settings_to_object_data->selected_element_list);
 							base_size[0] = (FE_value)(settings->glyph_size[0]);
 							base_size[1] = (FE_value)(settings->glyph_size[1]);
@@ -4740,15 +4759,16 @@ Converts a finite element into a graphics object with the supplied settings.
 							scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
 							scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
 							/* NOT an error if no glyph_set produced == empty selection */
-							if (glyph_set=create_GT_glyph_set_from_FE_element(
-								use_element,top_level_element,
-								settings_to_object_data->rc_coordinate_field,
-								number_of_xi_points,xi_points,
-								settings->glyph, base_size, centre, scale_factors,
-								settings_to_object_data->wrapper_orientation_scale_field,
-								settings->variable_scale_field, settings->data_field,
-								settings->label_field, settings->select_mode,
-								element_selected, ranges, point_numbers))
+							if ((0 < number_of_xi_points) &&
+								(glyph_set = create_GT_glyph_set_from_FE_element(
+									use_element, top_level_element,
+									settings_to_object_data->rc_coordinate_field,
+									number_of_xi_points, xi_points,
+									settings->glyph, base_size, centre, scale_factors,
+									settings_to_object_data->wrapper_orientation_scale_field,
+									settings->variable_scale_field, settings->data_field,
+									settings->label_field, settings->select_mode,
+									element_selected, ranges, top_level_xi_point_numbers)))
 							{
 								if (!GT_OBJECT_ADD(GT_glyph_set)(
 									settings->graphics_object,time,glyph_set))
@@ -4757,9 +4777,9 @@ Converts a finite element into a graphics object with the supplied settings.
 									return_code=0;
 								}
 							}
-							if (point_numbers)
+							if (top_level_xi_point_numbers)
 							{
-								DEALLOCATE(point_numbers);
+								DEALLOCATE(top_level_xi_point_numbers);
 							}
 							DEALLOCATE(xi_points);
 						}
@@ -5709,7 +5729,7 @@ is put out as a name to identify the object in OpenGL picking.
 int GT_element_settings_computed_field_change(
 	struct GT_element_settings *settings,void *change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 2 May 2001
 
 DESCRIPTION :
 Iterator function telling the <settings> that Computed_field <changed_field>
@@ -5790,6 +5810,17 @@ struct GT_element_settings_computed_field_change_data ;
 							settings->label_field, changed_field)))
 				{
 					rebuild_graphics_object=1;
+				}
+				/* for element_points with a density field only */
+				if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type) &&
+					((XI_DISCRETIZATION_CELL_DENSITY ==
+						settings->xi_discretization_mode) ||
+						(XI_DISCRETIZATION_CELL_POISSON ==
+							settings->xi_discretization_mode)) &&
+					Computed_field_depends_on_Computed_field(
+						settings->xi_point_density_field, changed_field))
+				{
+					rebuild_graphics_object = 1;
 				}
 				/* for volumes only */
 				if ((GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type)&&
@@ -7298,7 +7329,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -7313,7 +7344,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
 	int number_of_components,number_of_valid_strings,return_code;
-	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct Computed_field *orientation_scale_field, *variable_scale_field,
+		*xi_point_density_field;
 	struct GT_element_settings *settings;
 	struct GT_object *glyph;
 	struct G_element_command_data *g_element_command_data;
@@ -7321,7 +7353,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
-		set_variable_scale_field_data;
+		set_variable_scale_field_data, set_xi_point_density_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_g_element_element_points);
@@ -7358,16 +7390,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					}
 					orientation_scale_field = (struct Computed_field *)NULL;
 					variable_scale_field = (struct Computed_field *)NULL;
+					GT_element_settings_get_xi_discretization(settings,
+						&xi_discretization_mode, &xi_point_density_field);
 					number_of_components = 3;
-					invisible_flag=0;
+					invisible_flag = 0;
 
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
-					/* cell_centres/cell_corners */ 
-					xi_discretization_mode =
-						GT_element_settings_get_xi_discretization_mode(settings);
+					/* cell_centres/cell_corners/cell_density/exact_xi */ 
 					xi_discretization_mode_string =
 						ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
 					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
@@ -7400,6 +7432,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
+					/* density */
+					set_xi_point_density_field_data.computed_field_manager =
+						g_element_command_data->computed_field_manager;
+					set_xi_point_density_field_data.conditional_function =
+						Computed_field_has_up_to_3_numerical_components;
+					set_xi_point_density_field_data.conditional_function_user_data =
+						(void *)NULL;
+					Option_table_add_entry(option_table,"density",
+						&xi_point_density_field, &set_xi_point_density_field_data,
+						set_Computed_field_conditional);
 					/* discretization */
 					Option_table_add_entry(option_table,"discretization",
 						&(settings->discretization),g_element_command_data->user_interface,
@@ -7530,8 +7572,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						}
 						STRING_TO_ENUMERATOR(Xi_discretization_mode)(
 							xi_discretization_mode_string, &xi_discretization_mode);
-						GT_element_settings_set_xi_discretization_mode(settings,
-							xi_discretization_mode);
+						if (((XI_DISCRETIZATION_CELL_DENSITY != xi_discretization_mode) &&
+							(XI_DISCRETIZATION_CELL_POISSON != xi_discretization_mode)) ||
+							xi_point_density_field)
+						{
+							GT_element_settings_set_xi_discretization(settings,
+								xi_discretization_mode, xi_point_density_field);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"No density field specified for cell_density element_points");
+							return_code = 0;
+						}
 						STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
 							&use_element_type);
 						GT_element_settings_set_use_element_type(settings,
@@ -7549,7 +7602,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						}
 						else
 						{
-							display_message(WARNING_MESSAGE,
+							display_message(ERROR_MESSAGE,
 								"No glyph specified for element_points");
 							return_code=0;
 						}

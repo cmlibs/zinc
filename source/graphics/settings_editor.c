@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -47,7 +47,7 @@ static MrmHierarchy settings_editor_hierarchy;
 
 struct Settings_editor
 /*******************************************************************************
-LAST MODIFIED : 17 November 2000
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -75,9 +75,11 @@ Contains all the information carried by the graphical element editor widget.
 		radius_scale_factor_entry,radius_scale_factor_text,iso_surface_entry,
 		iso_scalar_field_form,iso_scalar_field_widget,iso_value_text,
 		label_field_entry,label_field_button,label_field_form,label_field_widget,
-		native_discretization_entry,
-		native_discretization_button,native_discretization_field_form,
-		native_discretization_field_widget,xi_discretization_mode_entry,
+		native_discretization_entry, native_discretization_button,
+		native_discretization_field_form, native_discretization_field_widget,
+		xi_point_density_field_entry, xi_point_density_field_button,
+		xi_point_density_field_form, xi_point_density_field_widget,
+		xi_discretization_mode_entry,
 		xi_discretization_mode_form,xi_discretization_mode_widget,
 		glyph_group_entry,glyph_form,glyph_widget,
 		glyph_scaling_mode_entry, glyph_scaling_mode_form,
@@ -297,6 +299,12 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,native_discretization_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,native_discretization_field_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor, xi_point_density_field_entry)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor, xi_point_density_field_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor, xi_point_density_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,xi_discretization_mode_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
@@ -1099,36 +1107,111 @@ Callback for change of native_discretization_field.
 	LEAVE;
 } /* settings_editor_update_native_discretization_field */
 
+static void settings_editor_update_xi_point_density_field(Widget widget,
+	void *settings_editor_void, void *xi_point_density_field_void)
+/*******************************************************************************
+LAST MODIFIED : 1 May 2001
+
+DESCRIPTION :
+Callback for change of scalar data field.
+==============================================================================*/
+{
+	enum Xi_discretization_mode xi_discretization_mode;
+	struct Computed_field *xi_point_density_field;
+	struct Settings_editor *settings_editor;
+
+	ENTER(settings_editor_update_xi_point_density_field);
+	USE_PARAMETER(widget);
+	if (settings_editor = (struct Settings_editor *)settings_editor_void)
+	{
+		/* skip messages from chooser if it is grayed out */
+		if (XtIsSensitive(settings_editor->xi_point_density_field_widget))
+		{
+			GT_element_settings_get_xi_discretization(
+				settings_editor->current_settings, &xi_discretization_mode,
+				&xi_point_density_field);
+			xi_point_density_field =
+				(struct Computed_field *)xi_point_density_field_void;
+			GT_element_settings_set_xi_discretization(
+				settings_editor->current_settings, xi_discretization_mode,
+				xi_point_density_field);
+			/* inform the client of the change */
+			settings_editor_update(settings_editor);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_update_xi_point_density_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_update_xi_point_density_field */
+
 static void settings_editor_update_xi_discretization_mode(Widget widget,
 	void *settings_editor_void,void *xi_discretization_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
 Callback for change of xi_discretization_mode.
 ==============================================================================*/
 {
-	enum Xi_discretization_mode xi_discretization_mode;
+	enum Xi_discretization_mode old_xi_discretization_mode,
+		xi_discretization_mode;
+	struct Computed_field *old_xi_point_density_field, *xi_point_density_field;
 	struct Settings_editor *settings_editor;
 
 	ENTER(settings_editor_update_xi_discretization_mode);
 	USE_PARAMETER(widget);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		if (STRING_TO_ENUMERATOR(Xi_discretization_mode)(
-			(char *)xi_discretization_mode_string_void, &xi_discretization_mode) &&
-			GT_element_settings_set_xi_discretization_mode(
-				settings_editor->current_settings,xi_discretization_mode))
+		if (GT_element_settings_get_xi_discretization(
+			settings_editor->current_settings, &old_xi_discretization_mode,
+			&old_xi_point_density_field) &&
+			STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+				(char *)xi_discretization_mode_string_void, &xi_discretization_mode))
 		{
-			XtSetSensitive(settings_editor->discretization_entry,
-				XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
-			XtSetSensitive(settings_editor->native_discretization_entry,
-				XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
-			XtSetSensitive(settings_editor->seed_xi_entry,
-				XI_DISCRETIZATION_EXACT_XI == xi_discretization_mode);
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
+			xi_point_density_field = old_xi_point_density_field;
+			if ((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
+				(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode))
+			{
+				if (!xi_point_density_field)
+				{
+					/* get xi_point_density_field from widget */
+					xi_point_density_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+						settings_editor->xi_point_density_field_widget);
+				}
+			}
+			else
+			{
+				xi_point_density_field = (struct Computed_field *)NULL;
+			}
+			if (GT_element_settings_set_xi_discretization(
+				settings_editor->current_settings, xi_discretization_mode,
+				xi_point_density_field))
+			{
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+			}
+			else
+			{
+				xi_discretization_mode = old_xi_discretization_mode;
+				xi_point_density_field = old_xi_point_density_field;
+				/* make sure the chooser is showing the previous mode */
+				choose_enumerator_set_string(
+					settings_editor->xi_discretization_mode_widget,
+					ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode));
+			}
 		}
+		XtSetSensitive(settings_editor->discretization_entry,
+			XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
+		XtSetSensitive(settings_editor->native_discretization_entry,
+			XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
+		XtSetSensitive(settings_editor->xi_point_density_field_entry,
+			(XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
+			(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode));
+		XtSetSensitive(settings_editor->seed_xi_entry,
+			XI_DISCRETIZATION_EXACT_XI == xi_discretization_mode);
 	}
 	else
 	{
@@ -2649,7 +2732,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2710,6 +2793,12 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,native_discretization_button)},
 		{"seted_id_native_disc_form",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,native_discretization_field_form)},
+		{"seted_id_density_field_entry",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor, xi_point_density_field_entry)},
+		{"seted_id_density_field_btn",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor, xi_point_density_field_button)},
+		{"seted_id_density_field_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor, xi_point_density_field_form)},
 		{"seted_id_xi_disc_mode_entry",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,xi_discretization_mode_entry)},
 		{"seted_id_xi_disc_mode_form",(XtPointer)
@@ -2909,6 +2998,10 @@ Creates a settings_editor widget.
 				settings_editor->native_discretization_button=(Widget)NULL;
 				settings_editor->native_discretization_field_form=(Widget)NULL;
 				settings_editor->native_discretization_field_widget=(Widget)NULL;
+				settings_editor->xi_point_density_field_entry=(Widget)NULL;
+				settings_editor->xi_point_density_field_button=(Widget)NULL;
+				settings_editor->xi_point_density_field_form=(Widget)NULL;
+				settings_editor->xi_point_density_field_widget=(Widget)NULL;
 				settings_editor->xi_discretization_mode_entry=(Widget)NULL;
 				settings_editor->xi_discretization_mode_form=(Widget)NULL;
 				settings_editor->xi_discretization_mode_widget=(Widget)NULL;
@@ -3083,6 +3176,14 @@ Creates a settings_editor widget.
 								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL)))
 							{
 								init_widgets=0;
+							}
+							if (!(settings_editor->xi_point_density_field_widget =
+								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+								settings_editor->xi_point_density_field_form,
+								(struct Computed_field *)NULL, computed_field_manager,
+								Computed_field_is_scalar, (void *)NULL)))
+							{
+								init_widgets = 0;
 							}
 							valid_strings =
 								ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
@@ -3413,7 +3514,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3432,7 +3533,7 @@ Changes the currently chosen settings.
 	struct Callback_data callback;
 	struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
 		*label_field, *radius_scalar_field, *stream_vector_field,
-		*texture_coord_field;
+		*texture_coord_field, *xi_point_density_field;
 	struct Element_discretization discretization;
 	struct FE_element *seed_element;
 	struct FE_field *native_discretization_field;
@@ -3673,8 +3774,8 @@ Changes the currently chosen settings.
 							/* element_points */
 							if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)
 							{
-								xi_discretization_mode=
-									GT_element_settings_get_xi_discretization_mode(new_settings);
+								GT_element_settings_get_xi_discretization(new_settings,
+									&xi_discretization_mode, &xi_point_density_field);
 								choose_enumerator_set_string(
 									settings_editor->xi_discretization_mode_widget,
 									ENUMERATOR_STRING(Xi_discretization_mode)(
@@ -3696,9 +3797,8 @@ Changes the currently chosen settings.
 										settings_editor->current_settings);
 								field_set=
 									((struct FE_field *)NULL != native_discretization_field);
-								XtVaSetValues(
-									settings_editor->native_discretization_button,
-									XmNset,(XtPointer)field_set,NULL);
+								XtVaSetValues(settings_editor->native_discretization_button,
+									XmNset, (XtPointer)field_set, NULL);
 								if (field_set)
 								{
 									CHOOSE_OBJECT_SET_OBJECT(FE_field)(
@@ -3711,12 +3811,29 @@ Changes the currently chosen settings.
 									XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
 								XtManageChild(settings_editor->native_discretization_entry);
 
+								field_set =
+									((struct Computed_field *)NULL != xi_point_density_field);
+								if (field_set)
+								{
+									CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+										settings_editor->xi_point_density_field_widget,
+										xi_point_density_field);
+								}
+								XtSetSensitive(settings_editor->xi_point_density_field_entry,
+									field_set);
+								XtManageChild(settings_editor->xi_point_density_field_entry);
+
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=
 									settings_editor_update_native_discretization_field;
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									settings_editor->native_discretization_field_widget,
+									&callback);
+								callback.procedure =
+									settings_editor_update_xi_point_density_field;
+								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+									settings_editor->xi_point_density_field_widget,
 									&callback);
 								callback.procedure=
 									settings_editor_update_xi_discretization_mode;
@@ -3727,6 +3844,7 @@ Changes the currently chosen settings.
 							{
 								XtUnmanageChild(settings_editor->discretization_entry);
 								XtUnmanageChild(settings_editor->native_discretization_entry);
+								XtUnmanageChild(settings_editor->xi_point_density_field_entry);
 								XtUnmanageChild(settings_editor->xi_discretization_mode_entry);
 								/* turn off callbacks */
 								callback.procedure=(Callback_procedure *)NULL;
@@ -3734,6 +3852,8 @@ Changes the currently chosen settings.
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									settings_editor->native_discretization_field_widget,
 									&callback);
+								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+									settings_editor->xi_point_density_field_widget, &callback);
 								choose_enumerator_set_callback(
 									settings_editor->xi_discretization_mode_widget,&callback);
 							}

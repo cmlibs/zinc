@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : distributed_editing_interface.c
 
-LAST MODIFIED : 01 February 2001
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 The interface routines for editing distributed cellular parameters. Only used
@@ -20,6 +20,7 @@ when building Cell with CELL_DISTRIBUTED defined.
 #include "choose/choose_computed_field.h"
 #include "choose/text_choose_fe_element.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "finite_element/finite_element_to_graphics_object.h"
 
 /*
 Module types
@@ -244,25 +245,26 @@ selection. Does nothing if no current element point.
 
 static int calculate_xi(struct Distributed_editing_interface *interface)
 /*******************************************************************************
-LAST MODIFIED : 16 January 2001
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Ensures xi is correct for the currently selected element point, if any.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_element *element;
 
 	ENTER(calculate_xi);
 	if (interface)
 	{
-		if (element = interface->element_point_identifier.element)
+		if (interface->element_point_identifier.element)
 		{
-			return_code = Xi_discretization_mode_get_element_point_xi(
+			return_code = FE_element_get_numbered_xi_point(
+				interface->element_point_identifier.element,
 				interface->element_point_identifier.xi_discretization_mode,
-				get_FE_element_dimension(element),
 				interface->element_point_identifier.number_in_xi,
 				interface->element_point_identifier.exact_xi,
+				/*coordinate_field*/(struct Computed_field *)NULL,
+				/*density_field*/(struct Computed_field *)NULL,
 				interface->element_point_number,
 				interface->xi);
 		}

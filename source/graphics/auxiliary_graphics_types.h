@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.h
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -104,7 +104,7 @@ for automatic creation of choose_enumerator widgets.
 
 enum Xi_discretization_mode
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Enumerator for controlling where discrete objects are placed in the Xi space of
@@ -113,11 +113,9 @@ each element, eg. glyphs for element_points.
 CELL_CENTRES puts one object at the centes of each cell.
 CELL_CORNERS puts an object at the corners of each cell, but not repeating any
 on neighbouring cells.
-CELL_RANDOM puts a single object at a random location in each cell, to remove
-the regularity of the above types.
-In future, may wish to add further modes for specifying random locations at
-specified densities in real x,y,z space - for more realistic point clouds, esp.
-in cases where elements are not of uniform size.
+CELL_DENSITY puts a number of randomly-located points in each cell proportional
+to the value of a density_field calculated at the centre of the cell and the
+volume of the cell determined from the coordinate_field.
 Note: the first value will be 0 by the ANSI standard, with each subsequent entry
 incremented by 1. This pattern is expected by the ENUMERATOR macros.
 Must ensure the ENUMERATOR_STRING function returns a string for each value here.
@@ -125,6 +123,16 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 {
 	XI_DISCRETIZATION_CELL_CENTRES,
 	XI_DISCRETIZATION_CELL_CORNERS,
+	/* number of points in each cell is rounded from the density*volume. Best
+		 choice for showing density when cells are near-uniform sizes and there are
+		 a reasonable number of points in most cells */
+	XI_DISCRETIZATION_CELL_DENSITY,
+	/* same as XI_DISCRETIZATION_CELL_DENSITY but actual number of points per
+		 cell is sampled from a Poisson distribution with mean density*volume.
+		 May be better than CELL_DENSITY when cells are quite different in size,
+		 but adds noise to the density field being viewed. */
+	XI_DISCRETIZATION_CELL_POISSON,
+	/* exactly one point per cell at all times */
 	XI_DISCRETIZATION_CELL_RANDOM,
 	XI_DISCRETIZATION_EXACT_XI
 }; /* enum Xi_discretization_mode */
@@ -214,49 +222,5 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_type);
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_data_type);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Xi_discretization_mode);
-
-int Xi_discretization_mode_get_number_of_xi_points(
-	enum Xi_discretization_mode xi_discretization_mode,int dimension,
-	int *number_in_xi);
-/*******************************************************************************
-LAST MODIFIED : 28 March 2000
-
-DESCRIPTION :
-Returns the number of points that should be created for <xi_discretization_mode>
-in an element of the given <dimension> with <number_in_xi> cells in each
-xi direction. Returns zero if the number_in_xi are invalid (less than 1) in any
-direction.
-==============================================================================*/
-
-Triple *Xi_discretization_mode_get_xi_points(
-	enum Xi_discretization_mode xi_discretization_mode,int dimension,
-	int *number_in_xi,Triple exact_xi,int *number_of_xi_points);
-/*******************************************************************************
-LAST MODIFIED : 7 June 2000
-
-DESCRIPTION :
-Allocates and returns the set of points for <xi_discretization_mode>
-in an element of the given <dimension> with <number_in_xi> cells in each
-xi direction. Layout of points is controlled by the <xi_discretization_mode>.
-Function also returns <number_of_xi_points> calculated. Xi positions are always
-returned as triples with remaining xi coordinates 0 for 1-D and 2-D cases.
-Note: xi changes from 0 to 1 over each element direction.
-<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - passed and
-allocated here for a consistent interface.
-==============================================================================*/
-
-int Xi_discretization_mode_get_element_point_xi(
-	enum Xi_discretization_mode xi_discretization_mode,int dimension,
-	int *number_in_xi,Triple exact_xi,int element_point_number,FE_value *xi);
-/*******************************************************************************
-LAST MODIFIED : 7 June 2000
-
-DESCRIPTION :
-Returns in <xi> the single xi location for <element_point_number> from those
-that would be returned by Xi_discretization_mode_get_xi_points.
-Fails for truly random discretization modes.
-<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - passed here
-for a consistent interface.
-==============================================================================*/
 
 #endif /* AUXILIARY_GRAPHICS_TYPES_H */

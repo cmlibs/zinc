@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_field_viewer_widget.c
 
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -17,6 +17,7 @@ Note the element_point passed to this widget should be a non-managed local copy.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
 #include "element/element_point_field_viewer_widget.h"
 #include "user_interface/message.h"
@@ -805,7 +806,7 @@ int element_point_field_viewer_widget_set_element_point_field(
 	struct Element_point_ranges_identifier *element_point_identifier,
 	int element_point_number,struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Sets the element_point/field being edited in the
@@ -859,12 +860,14 @@ pass unmanaged elements in the element_point_identifier to this widget.
 					element_point_identifier);
 				element_point_field_viewer->element_point_number=element_point_number;
 				element_point_field_viewer->current_field=field;
-				Xi_discretization_mode_get_element_point_xi(
+				FE_element_get_numbered_xi_point(
+					element_point_identifier->element,
 					element_point_identifier->xi_discretization_mode,
-					get_FE_element_dimension(element_point_identifier->element),
 					element_point_identifier->number_in_xi,
 					element_point_identifier->exact_xi,
-					element_point_number,element_point_field_viewer->xi);
+					/*coordinate_field*/(struct Computed_field *)NULL,
+					/*density_field*/(struct Computed_field *)NULL,
+					element_point_number, element_point_field_viewer->xi);
 			}
 			else
 			{
@@ -887,14 +890,14 @@ pass unmanaged elements in the element_point_identifier to this widget.
 			{
 				XtUnmanageChild(element_point_field_viewer->widget);
 			}
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"element_point_field_viewer_widget_set_element_point_field.  "
 				"Missing widget data");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
@@ -902,7 +905,7 @@ pass unmanaged elements in the element_point_identifier to this widget.
 		display_message(ERROR_MESSAGE,
 			"element_point_field_viewer_widget_set_element_point_field.  "
 			"Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

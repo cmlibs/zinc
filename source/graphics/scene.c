@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 27 March 2001
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -2436,7 +2436,7 @@ static int Scene_picked_object_get_nearest_element_point(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_point_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, the "nearest" value is
@@ -2519,8 +2519,9 @@ and destroy it once returned.
 							element_point_ranges_identifier.element=element;
 							element_point_ranges_identifier.top_level_element=
 								top_level_element;
-							element_point_ranges_identifier.xi_discretization_mode=
-								GT_element_settings_get_xi_discretization_mode(settings);
+							GT_element_settings_get_xi_discretization(settings,
+								&(element_point_ranges_identifier.xi_discretization_mode),
+								/*xi_point_density_field*/(struct Computed_field **)NULL);
 							if (XI_DISCRETIZATION_EXACT_XI==
 								element_point_ranges_identifier.xi_discretization_mode)
 							{
@@ -2608,7 +2609,7 @@ static int Scene_picked_object_get_picked_element_points(
 	struct Scene_picked_object *scene_picked_object,
 	void *picked_element_points_list_void)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 1 May 2001
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, it is converted into
@@ -2669,8 +2670,9 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 				{
 					element_point_ranges_identifier.element=element;
 					element_point_ranges_identifier.top_level_element=top_level_element;
-					element_point_ranges_identifier.xi_discretization_mode=
-						GT_element_settings_get_xi_discretization_mode(settings);
+					GT_element_settings_get_xi_discretization(settings,
+						&(element_point_ranges_identifier.xi_discretization_mode),
+						/*xi_point_density_field*/(struct Computed_field **)NULL);
 					if (XI_DISCRETIZATION_EXACT_XI==
 						element_point_ranges_identifier.xi_discretization_mode)
 					{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -740,25 +740,34 @@ DESCRIPTION :
 For settings_type GT_ELEMENT_SETTINGS_VOLUMES only.
 ==============================================================================*/
 
-enum Xi_discretization_mode GT_element_settings_get_xi_discretization_mode(
-	struct GT_element_settings *settings);
+int GT_element_settings_get_xi_discretization(
+	struct GT_element_settings *settings,
+	enum Xi_discretization_mode *xi_discretization_mode,
+	struct Computed_field **xi_point_density_field);
 /*******************************************************************************
-LAST MODIFIED : 2 March 1999
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
-Returns the xi_discretization_mode controlling where glyphs are displayed for
-<settings> of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS.
+Returns the <xi_discretization_mode> and <xi_point_density_field> controlling
+where glyphs are displayed for <settings> of type
+GT_ELEMENT_SETTINGS_ELEMENT_POINTS. <xi_point_density_field> is used only with
+XI_DISCRETIZATION_CELL_DENSITY and XI_DISCRETIZATION_CELL_POISSON modes.
+Either <xi_discretization_mode> or <xi_point_density_field> addresses may be
+omitted, if that value is not required.
 ==============================================================================*/
 
-int GT_element_settings_set_xi_discretization_mode(
+int GT_element_settings_set_xi_discretization(
 	struct GT_element_settings *settings,
-	enum Xi_discretization_mode xi_discretization_mode);
+	enum Xi_discretization_mode xi_discretization_mode,
+	struct Computed_field *xi_point_density_field);
 /*******************************************************************************
-LAST MODIFIED : 2 March 1999
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
 Sets the xi_discretization_mode controlling where glyphs are displayed for
-<settings> of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS.
+<settings> of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS. Must supply a scalar
+<xi_point_density_field> if the new mode is XI_DISCRETIZATION_CELL_DENSITY or
+XI_DISCRETIZATION_CELL_POISSON.
 ==============================================================================*/
 
 struct GT_object *GT_element_settings_get_graphics_object(

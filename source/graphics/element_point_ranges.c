@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -9,6 +9,8 @@ DESCRIPTION :
 #include <stdio.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "finite_element/finite_element.h"
+#include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "graphics/element_point_ranges.h"
@@ -296,7 +298,7 @@ Writes what is invalid about the identifier.
 int Element_point_ranges_identifier_element_point_number_is_valid(
 	struct Element_point_ranges_identifier *identifier,int element_point_number)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Returns true if <element_point_number> is in the number_in_xi range for
@@ -304,16 +306,19 @@ Returns true if <element_point_number> is in the number_in_xi range for
 Element_point_ranges_identifier_is_valid.
 ==============================================================================*/
 {
-	int return_code;
+	int number_of_xi_points, return_code;
 
 	ENTER(Element_point_ranges_identifier_element_point_number_is_valid);
 	if (identifier)
 	{
-		return_code = ((0<=element_point_number)&&(element_point_number<
-			Xi_discretization_mode_get_number_of_xi_points(
+		return_code = ((0 <= element_point_number) &&
+			FE_element_get_xi_points(identifier->element,
 				identifier->xi_discretization_mode,
-				get_FE_element_dimension(identifier->element),
-				identifier->number_in_xi)));
+				identifier->number_in_xi, identifier->exact_xi,
+				/*coordinate_field*/(struct Computed_field *)NULL,
+				/*density_field*/(struct Computed_field *)NULL,
+				&number_of_xi_points, /*xi_points_address*/(Triple **)NULL) &&
+			(element_point_number < number_of_xi_points));
 	}
 	else
 	{
@@ -367,7 +372,7 @@ purely a copy. [DE]ACCESSing must be handled by calling function if required.
 int Element_point_make_top_level(
 	struct Element_point_ranges_identifier *identifier,int *element_point_number)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 If <identifier> does not already refer to a top_level_element - ie. element
@@ -377,11 +382,11 @@ top_level. Assumes <identifier> has been validated.
 {
 	FE_value element_to_top_level[9],exact_xi,
 		face_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*source;
-	int dimension,i,j,return_code,top_level_dimension;
+	int element_dimension, i, j, return_code, top_level_element_dimension;
 	struct FE_element *top_level_element;
 
 	ENTER(Element_point_make_top_level);
-	if (identifier&&element_point_number)
+	if (identifier && element_point_number)
 	{
 		if (identifier->element != identifier->top_level_element)
 		{
@@ -390,12 +395,14 @@ top_level. Assumes <identifier> has been validated.
 				(struct GROUP(FE_element) *)NULL,/*face_number*/-1,
 				element_to_top_level))&&
 				(top_level_element==identifier->top_level_element)&&
-				(dimension=get_FE_element_dimension(identifier->element))&&
-				Xi_discretization_mode_get_element_point_xi(
-					identifier->xi_discretization_mode,dimension,
-					identifier->number_in_xi,identifier->exact_xi,*element_point_number,
-					face_xi)&&
-				(top_level_dimension=
+				(element_dimension=get_FE_element_dimension(identifier->element))&&
+				FE_element_get_numbered_xi_point(identifier->element,
+					identifier->xi_discretization_mode,
+					identifier->number_in_xi, identifier->exact_xi,
+					/*coordinate_field*/(struct Computed_field *)NULL,
+					/*density_field*/(struct Computed_field *)NULL,
+					*element_point_number, face_xi) &&
+				(top_level_element_dimension=
 					get_FE_element_dimension(identifier->top_level_element)))
 			{
 				identifier->element=top_level_element;
@@ -405,11 +412,11 @@ top_level. Assumes <identifier> has been validated.
 					identifier->number_in_xi[i]=1;
 				}
 				source=element_to_top_level;
-				for (i=0;i<top_level_dimension;i++)
+				for (i=0;i<top_level_element_dimension;i++)
 				{
 					exact_xi = *source;
 					source++;
-					for (j=0;j<dimension;j++)
+					for (j=0;j<element_dimension;j++)
 					{
 						exact_xi += (*source) * face_xi[j];
 						source++;
@@ -570,7 +577,7 @@ caller-supplied <identifier>.
 int Element_point_ranges_add_range(
 	struct Element_point_ranges *element_point_ranges,int start,int stop)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
@@ -582,10 +589,13 @@ Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 	if (element_point_ranges)
 	{
 		/* check start/stop are within allowed ranges for identifier */
-		maximum_element_point_number=Xi_discretization_mode_get_number_of_xi_points(
+		FE_element_get_xi_points(element_point_ranges->id.element,
 			element_point_ranges->id.xi_discretization_mode,
-			get_FE_element_dimension(element_point_ranges->id.element),
-			element_point_ranges->id.number_in_xi);
+			element_point_ranges->id.number_in_xi,
+			element_point_ranges->id.exact_xi,
+			/*coordinate_field*/(struct Computed_field *)NULL,
+			/*density_field*/(struct Computed_field *)NULL,
+			&maximum_element_point_number, /*xi_points_address*/(Triple **)NULL);
 		if ((0<=start)&&(start<maximum_element_point_number)&&
 			(0<=stop)&&(stop<maximum_element_point_number))
 		{
@@ -984,7 +994,7 @@ faces or lines of other elements not being destroyed.
 int set_Element_point_ranges(struct Parse_state *state,
 	void *element_point_ranges_address_void,void *element_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Modifier function to set an element_point_ranges. <element_point_ranges_address>
@@ -996,8 +1006,8 @@ returned in this location, for the calling function to use or destroy.
 	char *current_token,**valid_strings,*xi_discretization_mode_string;
 	enum Xi_discretization_mode xi_discretization_mode;
 	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int dimension,i,number_of_xi_points,number_of_valid_strings,return_code,start,
-		stop;
+	int dimension, i, number_of_xi_points, number_of_valid_strings, return_code,
+		start, stop;
 	struct CM_element_information cm;
 	struct Element_point_ranges *element_point_ranges,
 		**element_point_ranges_address;
@@ -1185,14 +1195,20 @@ returned in this location, for the calling function to use or destroy.
 								(void *)&dimension))
 							{
 								/* check number_in_xi are all > 0 */
-								if (1>(number_of_xi_points=
-									Xi_discretization_mode_get_number_of_xi_points(
-										element_point_ranges_identifier.xi_discretization_mode,
-										dimension,element_point_ranges_identifier.number_in_xi)))
+								if ((!FE_element_get_xi_points(
+									element_point_ranges_identifier.element,
+									element_point_ranges_identifier.xi_discretization_mode,
+									element_point_ranges_identifier.number_in_xi,
+									element_point_ranges_identifier.exact_xi,
+									/*coordinate_field*/(struct Computed_field *)NULL,
+									/*density_field*/(struct Computed_field *)NULL,
+									&number_of_xi_points,
+									/*xi_points_address*/(Triple **)NULL)) ||
+									(1 > number_of_xi_points))
 								{
-									display_message(WARNING_MESSAGE,"Invalid number in xi");
+									display_message(WARNING_MESSAGE, "Invalid number in xi");
 									display_parse_state_location(state);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 						} break;

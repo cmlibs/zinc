@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -23,6 +23,7 @@ selected element point, or set it if entered in this dialog.
 #include "element/element_point_viewer.h"
 #include "element/element_point_viewer.uidh"
 #include "finite_element/field_value_index_ranges.h"
+#include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
@@ -165,38 +166,39 @@ leaves the current discretization/mode intact.
 static int Element_point_viewer_calculate_xi(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 23 April 2001
 
 DESCRIPTION :
 Ensures xi is correct for the currently selected element point, if any.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_element *element;
 
 	ENTER(Element_point_viewer_calculate_xi);
 	if (element_point_viewer)
 	{
-		if (element=element_point_viewer->element_point_identifier.element)
+		if (element_point_viewer->element_point_identifier.element)
 		{
-			return_code=Xi_discretization_mode_get_element_point_xi(
+			return_code = FE_element_get_numbered_xi_point(
+				element_point_viewer->element_point_identifier.element,
 				element_point_viewer->element_point_identifier.xi_discretization_mode,
-				get_FE_element_dimension(element),
 				element_point_viewer->element_point_identifier.number_in_xi,
 				element_point_viewer->element_point_identifier.exact_xi,
+				/*coordinate_field*/(struct Computed_field *)NULL,
+				/*density_field*/(struct Computed_field *)NULL,
 				element_point_viewer->element_point_number,
 				element_point_viewer->xi);
 		}
 		else
 		{
-			return_code=1;
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Element_point_viewer_calculate_xi.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

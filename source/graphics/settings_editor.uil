@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : settings_editor.uil
 !
-! LAST MODIFIED : 24 November 2000
+! LAST MODIFIED : 1 May 2001
 !
 ! DESCRIPTION :
 ! The widgets for the settings editor widget.
@@ -40,6 +40,8 @@ procedure
 	seted_id_native_disc_form;
 	seted_id_xi_disc_mode_entry;
 	seted_id_xi_disc_mode_form;
+	seted_id_density_field_entry;
+	seted_id_density_field_form;
 
 	seted_id_glyph_group_entry;
 	seted_id_glyph_form;
@@ -249,6 +251,7 @@ object
       XmRowColumn seted_xi_disc_mode_entry;
       XmForm seted_discretization_entry;
       XmRowColumn seted_native_disc_entry;
+      XmRowColumn seted_density_field_entry;
       XmRowColumn seted_seed_xi_entry;
       XmFrame seted_glyph_group_entry;
       XmRowColumn seted_label_field_entry;
@@ -438,6 +441,28 @@ object
       {
       MrmNcreateCallback = procedure
         seted_id_native_disc_entry(seted_structure);
+      };
+    };
+  seted_density_field_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget seted_density_field_label;
+      XmForm seted_density_field_form;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        seted_id_density_field_entry(seted_structure);
       };
     };
   seted_xi_disc_mode_entry: XmRowColumn
@@ -1046,6 +1071,24 @@ object
     callbacks
       {
       MrmNcreateCallback = procedure seted_id_native_disc_form(seted_structure);
+      };
+    };
+!*******************************************************************************
+  seted_density_field_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Density field:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+  seted_density_field_form: XmForm
+    {
+    callbacks
+      {
+      MrmNcreateCallback =
+				procedure seted_id_density_field_form(seted_structure);
       };
     };
 !*******************************************************************************
