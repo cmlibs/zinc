@@ -1779,7 +1779,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 	struct Colour black = {0,0,0};
 	struct Spectrum_render_data render_data;
 
-	ENTER(spectrum_value_to_rgb);
+	ENTER(spectrum_render_value_on_material);
 	if (spectrum && material)
 	{
 		render_data.data = data;
@@ -1792,7 +1792,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 			Graphical_material_set_diffuse(material, &black);
 		}
 
-		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+		return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_settings_activate,(void *)&render_data,
 			spectrum->list_of_settings);
 	}
@@ -1832,16 +1832,16 @@ and then interpret the resulting material how you want.
 		{
 			Graphical_material_set_diffuse(material, &black);
 
-			spectrum_render_value_on_material(spectrum,
-				material, number_of_data_components, data);
-
-			Graphical_material_get_diffuse(material, &result);
-
+			if (return_code = spectrum_render_value_on_material(spectrum,
+				material, number_of_data_components, data))
+			{
+				Graphical_material_get_diffuse(material, &result);
+				
+				*red = result.red;
+				*green = result.green;
+				*blue = result.blue;
+			}
 			DESTROY(Graphical_material)(&material);
-			*red = result.red;
-			*green = result.green;
-			*blue = result.blue;
-			return_code = 1;
 		}
 		else
 		{
