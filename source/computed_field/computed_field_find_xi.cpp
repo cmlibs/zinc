@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.c
 
-LAST MODIFIED : 21 August 2002
+LAST MODIFIED : 9 January 2003
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -512,7 +512,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, struct GROUP(FE_element) *search_element_group)
 /*******************************************************************************
-LAST MODIFIED : 17 December 2002
+LAST MODIFIED : 9 January 2003
 
 DESCRIPTION :
 This function actually seacrches through the elements in the 
@@ -655,10 +655,20 @@ ultimate parent finite_element field.
 					DEALLOCATE(find_element_xi_data.found_derivatives);
 				}
 				/* Copy the results into the cache */
-				cache->element = *element;
-				for (i = 0 ; i < number_of_xi ; i++)
+				if (cache->element = *element)
 				{
-					cache->xi[i] = find_element_xi_data.xi[i];
+					for (i = 0 ; i < number_of_xi ; i++)
+					{
+						cache->xi[i] = find_element_xi_data.xi[i];
+					}
+				}
+				else
+				{
+					/* No element; clear xi to zero */
+					for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+					{
+						cache->xi[i] = 0.0;
+					}
 				}
 				cache->valid_values = 1;
 			}
