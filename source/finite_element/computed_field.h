@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -256,6 +256,15 @@ Returns true if <field> can be calculated at <node>. If the field depends on
 any other fields, this function is recursively called for them.
 ==============================================================================*/
 
+int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
+	void *node_void);
+/*******************************************************************************
+LAST MODIFIED : 18 April 2000
+
+DESCRIPTION :
+Manager conditional function version of Computed_field_is_defined_at_node.
+==============================================================================*/
+
 int Computed_field_depends_on_Computed_field(struct Computed_field *field,
 	struct Computed_field *other_field);
 /*******************************************************************************
@@ -370,9 +379,33 @@ number_of_components.
 ==============================================================================*/
 
 int Computed_field_set_values_at_node(struct Computed_field *field,
+	struct FE_node *node,FE_value *values);
+/*******************************************************************************
+LAST MODIFIED : 20 April 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <node>. Only certain computed field
+types allow their values to be set. Fields that deal directly with FE_fields eg.
+FINITE_ELEMENT and NODE_VALUE fall into this category, as do the various
+transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
+the values into what they expect from their source field, and then call the same
+function for it. If a field has more than one source field, eg. RC_VECTOR, it
+can in many cases still choose which one is actually being changed, for example,
+the 'vector' field in this case - coordinates should not change. This process
+continues until the actual FE_field values at the node are changed or a field
+is reached for which its calculation is not reversible, or is not supported yet.
+Note that you must only call this function for nodes that are not managed as it
+will change values inside them. Also, this function does not clear the cache at
+any time, so up to the calling function to do so.
+Note that the values array will not be modified by this function. Also, <node>
+should not be managed at the time it is modified by this function.
+???RC Note that some functions are not reversible in this way.
+==============================================================================*/
+
+int Computed_field_set_values_at_managed_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values,struct MANAGER(FE_node) *node_manager);
 /*******************************************************************************
-LAST MODIFIED : 22 July 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -413,10 +446,39 @@ It is up to the calling function to deallocate the returned values.
 ==============================================================================*/
 
 int Computed_field_set_values_in_element(struct Computed_field *field,
+	struct FE_element *element,int *number_in_xi,FE_value *values);
+/*******************************************************************************
+LAST MODIFIED : 20 April 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> over the <element>. Only certain
+computed field types allow their values to be set. Fields that deal directly
+with FE_fields eg. FINITE_ELEMENT fall into this category, as do the various
+transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
+the values into what they expect from their source field, and then call the
+same function for it. If a field has more than one source field, eg. RC_VECTOR,
+it can in many cases still choose which one is actually being changed, for
+example, the 'vector' field in this case - coordinates should not change. This
+process continues until the actual FE_field values in the element are changed or
+a field is reached for which its calculation is not reversible, or is not
+supported yet.
+
+<number_in_xi> has the number of grid cells in each xi direction of <element>,
+such that there is one more grid point in each direction than this number. Grid
+points are evenly spaced in xi. There are as many <values> as there are grid
+points X number_of_components, cycling fastest through number of grid points in
+xi1, number of grid points in xi2 etc. and lastly components.
+
+Note that the values array will not be modified by this function. Also,
+<element> should not be managed at the time it is modified by this function.
+???RC Note that some functions are not reversible in this way.
+==============================================================================*/
+
+int Computed_field_set_values_in_managed_element(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value *values,
 	struct MANAGER(FE_element) *element_manager);
 /*******************************************************************************
-LAST MODIFIED : 28 October 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -1537,10 +1599,12 @@ allow interfacing to the choose_object widgets.
 
 int Computed_field_can_be_destroyed(struct Computed_field *field);
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
-Returns true if the <field> is only accessed once (assumed to be by the manager).
+Returns true if the <field> is only accessed once - assumed by its manager. If
+it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
+be destroyed, assuming it is only accessed by this field and its manager.
 ==============================================================================*/
 
 int remove_computed_field_from_manager_given_FE_field(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -1634,6 +1634,25 @@ any other fields, this function is recursively called for them.
 
 	return (return_code);
 } /* Computed_field_is_defined_at_node */
+
+int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
+	void *node_void)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2000
+
+DESCRIPTION :
+Manager conditional function version of Computed_field_is_defined_at_node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_defined_at_node_conditional);
+	return_code=
+		Computed_field_is_defined_at_node(field,(struct FE_node *)node_void);
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_defined_at_node_conditional */
 
 int Computed_field_depends_on_Computed_field(struct Computed_field *field,
 	struct Computed_field *other_field)
@@ -4759,11 +4778,10 @@ number_of_components.
 	return (return_code);
 } /* Computed_field_evaluate_at_node */
 
-static int Computed_field_set_values_at_node_private(
-	struct Computed_field *field,struct FE_node *node,FE_value *values)
+int Computed_field_set_values_at_node(struct Computed_field *field,
+	struct FE_node *node,FE_value *values)
 /*******************************************************************************
-
-LAST MODIFIED : 29 October 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -4779,7 +4797,8 @@ is reached for which its calculation is not reversible, or is not supported yet.
 Note that you must only call this function for nodes that are not managed as it
 will change values inside them. Also, this function does not clear the cache at
 any time, so up to the calling function to do so.
-Note that the values array will not be modified by this function.
+Note that the values array will not be modified by this function. Also, <node>
+should not be managed at the time it is modified by this function.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
@@ -4787,7 +4806,7 @@ Note that the values array will not be modified by this function.
 	FE_value *source_values;
 	int i,j,k,return_code;
 
-	ENTER(Computed_field_set_values_at_node_private);
+	ENTER(Computed_field_set_values_at_node);
 	if (field&&node&&values)
 	{
 		return_code=1;
@@ -4809,7 +4828,7 @@ Note that the values array will not be modified by this function.
 							source_values[i] = values[i];
 						}
 					}
-					return_code=Computed_field_set_values_at_node_private(
+					return_code=Computed_field_set_values_at_node(
 						field->source_fields[0],node,source_values);
 					DEALLOCATE(source_values);
 				}
@@ -4834,7 +4853,7 @@ Note that the values array will not be modified by this function.
 							source_values[i] = values[i];
 						}
 					}
-					return_code=Computed_field_set_values_at_node_private(
+					return_code=Computed_field_set_values_at_node(
 						field->source_fields[0],node,source_values);
 					DEALLOCATE(source_values);
 				}
@@ -4854,7 +4873,7 @@ Note that the values array will not be modified by this function.
 					{
 						/* set value of the component leaving other components intact */
 						source_values[field->component_no] = values[0];
-						return_code=Computed_field_set_values_at_node_private(
+						return_code=Computed_field_set_values_at_node(
 							field->source_fields[0],node,source_values);
 					}
 					else
@@ -4873,7 +4892,7 @@ Note that the values array will not be modified by this function.
 				/* set values of individual scalar fields */
 				for (i=0;(i<field->number_of_components)&&return_code;i++)
 				{
-					return_code=Computed_field_set_values_at_node_private(
+					return_code=Computed_field_set_values_at_node(
 						field->source_fields[i],node,&(values[i]));
 				}
 			} break;
@@ -4891,13 +4910,13 @@ Note that the values array will not be modified by this function.
 						convert_Coordinate_system(&rc_coordinate_system,values,
 							&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
 							/*jacobian*/(float *)NULL)&&
-						Computed_field_set_values_at_node_private(field->source_fields[0],
+						Computed_field_set_values_at_node(field->source_fields[0],
 							node,non_rc_coordinates);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_at_node_private.  "
+						"Computed_field_set_values_at_node.  "
 						"Could not get default coordinate source_field");
 					return_code=0;
 				}
@@ -4919,7 +4938,7 @@ Note that the values array will not be modified by this function.
 								source_values[i] = values[i];
 							}
 						}
-						return_code=Computed_field_set_values_at_node_private(
+						return_code=Computed_field_set_values_at_node(
 							field->source_fields[0],node,source_values);
 					}
 					else
@@ -4980,7 +4999,7 @@ Note that the values array will not be modified by this function.
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_at_node_private.  "
+									"Computed_field_set_values_at_node.  "
 									"Could not set finite_element field %s at node",field->name);
 								return_code=0;
 							}
@@ -4990,7 +5009,7 @@ Note that the values array will not be modified by this function.
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_at_node_private.  "
+						"Computed_field_set_values_at_node.  "
 						"Could not set finite_element field %s at node",field->name);
 				}
 			} break;
@@ -5019,7 +5038,7 @@ Note that the values array will not be modified by this function.
 							{
 								source_values[i] *= magnitude;
 							}
-							return_code=Computed_field_set_values_at_node_private(
+							return_code=Computed_field_set_values_at_node(
 								field->source_fields[0],node,source_values);
 						}
 						else
@@ -5043,7 +5062,7 @@ Note that the values array will not be modified by this function.
 			} break;
 			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
 			{
-				display_message(ERROR_MESSAGE,"Computed_field_set_values_at_node_private. "
+				display_message(ERROR_MESSAGE,"Computed_field_set_values_at_node. "
 					" %s not implemented yet. Write the code!",field->name);
 				/*If we ever need to write the code for this, make it so that we set the array */
 				/*values based upon the field->time ONLY if the time correspondes EXACTLY to an*/
@@ -5095,7 +5114,7 @@ Note that the values array will not be modified by this function.
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_at_node_private.  "
+									"Computed_field_set_values_at_node.  "
 									"Could not set finite_element field %s at node",field->name);
 								return_code=0;
 							}
@@ -5105,7 +5124,7 @@ Note that the values array will not be modified by this function.
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_at_node_private.  "
+						"Computed_field_set_values_at_node.  "
 						"Could not set node_value field at node",field->name);
 					return_code=0;
 				}
@@ -5119,7 +5138,7 @@ Note that the values array will not be modified by this function.
 					{
 						source_values[i] = values[i] - field->source_values[i];
 					}
-					return_code=Computed_field_set_values_at_node_private(
+					return_code=Computed_field_set_values_at_node(
 						field->source_fields[0],node,source_values);
 					DEALLOCATE(source_values);
 				}
@@ -5139,7 +5158,7 @@ Note that the values array will not be modified by this function.
 					convert_Coordinate_system(&rc_coordinate_system,values,
 						&(field->source_fields[0]->coordinate_system),non_rc_coordinates,
 						/*jacobian*/(float *)NULL)&&
-					Computed_field_set_values_at_node_private(field->source_fields[0],
+					Computed_field_set_values_at_node(field->source_fields[0],
 						node,non_rc_coordinates);
 			} break;
 			case COMPUTED_FIELD_RC_VECTOR:
@@ -5175,7 +5194,7 @@ Note that the values array will not be modified by this function.
 								source_values[i*coordinates_per_vector+j]=sum;
 							}
 						}
-						return_code=Computed_field_set_values_at_node_private(
+						return_code=Computed_field_set_values_at_node(
 							field->source_fields[0],node,source_values);
 						DEALLOCATE(source_values);
 					}
@@ -5203,7 +5222,7 @@ Note that the values array will not be modified by this function.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_set_values_at_node_private.  "
+								"Computed_field_set_values_at_node.  "
 								"Cannot invert scale field %s with zero scale factor",
 								field->name);
 							return_code=0;
@@ -5211,7 +5230,7 @@ Note that the values array will not be modified by this function.
 					}
 					if (return_code)
 					{
-						return_code=Computed_field_set_values_at_node_private(
+						return_code=Computed_field_set_values_at_node(
 							field->source_fields[0],node,source_values);
 					}
 					DEALLOCATE(source_values);
@@ -5224,7 +5243,7 @@ Note that the values array will not be modified by this function.
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_values_at_node_private.  "
+					"Computed_field_set_values_at_node.  "
 					"Cannot set values for field %s of type %s",field->name,
 					Computed_field_type_to_string(field->type));
 				return_code=0;
@@ -5233,7 +5252,7 @@ Note that the values array will not be modified by this function.
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_at_node_private.  "
+				"Computed_field_set_values_at_node.  "
 				"Failed for field %s of type %s",field->name,
 				Computed_field_type_to_string(field->type));
 		}
@@ -5241,18 +5260,18 @@ Note that the values array will not be modified by this function.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_at_node_private.  Invalid argument(s)");
+			"Computed_field_set_values_at_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_values_at_node_private */
+} /* Computed_field_set_values_at_node */
 
-int Computed_field_set_values_at_node(struct Computed_field *field,
+int Computed_field_set_values_at_managed_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values,struct MANAGER(FE_node) *node_manager)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 20 March 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -5280,7 +5299,7 @@ Note that the values array will not be modified by this function.
 	int return_code;
 	struct FE_node *copy_node;
 
-	ENTER(Computed_field_set_values_at_node);
+	ENTER(Computed_field_set_values_at_managed_node);
 	return_code=0;
 	if (field&&node&&values&&node_manager)
 	{
@@ -5291,7 +5310,7 @@ Note that the values array will not be modified by this function.
 				by get values etc. access and deaccessess the nodes */
 			ACCESS(FE_node)(copy_node);
 			return_code=
-				Computed_field_set_values_at_node_private(field,copy_node,values);
+				Computed_field_set_values_at_node(field,copy_node,values);
 			/* must clear the cache before MANAGER_MODIFY as previously cached
 				 values may be invalid */
 			Computed_field_clear_cache(field);
@@ -5305,613 +5324,20 @@ Note that the values array will not be modified by this function.
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_at_node.  Failed");
+				"Computed_field_set_values_at_managed_node.  Failed");
 			Computed_field_clear_cache(field);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_at_node.  Invalid argument(s)");
+			"Computed_field_set_values_at_managed_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_values_at_node */
-
-static int Computed_field_set_values_in_element_private(
-	struct Computed_field *field,struct FE_element *element,int *number_in_xi,
-	FE_value *values)
-/*******************************************************************************
-LAST MODIFIED : 1 November 1999
-
-DESCRIPTION :
-Sets the <values> of the computed <field> over the <element>. Only certain
-computed field types allow their values to be set. Fields that deal directly
-with FE_fields eg. FINITE_ELEMENT fall into this category, as do the various
-transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
-the values into what they expect from their source field, and then call the
-same function for it. If a field has more than one source field, eg. RC_VECTOR,
-it can in many cases still choose which one is actually being changed, for
-example, the 'vector' field in this case - coordinates should not change. This
-process continues until the actual FE_field values in the element are changed or
-a field is reached for which its calculation is not reversible, or is not
-supported yet.
-
-<number_in_xi> has the number of grid cells in each xi direction of <element>,
-such that there is one more grid point in each direction than this number. Grid
-points are evenly spaced in xi. There are as many <values> as there are grid
-points X number_of_components, cycling fastest through number of grid points in
-xi1, number of grid points in xi2 etc. and lastly components.
-
-Note that the values array will not be modified by this function.
-#### Must ensure implemented correctly for new Computed_field_type. ####
-???RC Note that some functions are not reversible in this way.
-==============================================================================*/
-{
-	FE_value *source_values;
-	int element_dimension,i,j,k,number_of_points,return_code;
-
-	ENTER(Computed_field_set_values_in_element_private);
-	if (field&&element&&element->shape&&number_in_xi&&values)
-	{
-		return_code=1;
-		element_dimension=element->shape->dimension;
-		number_of_points=1;
-		for (i=0;(i<element_dimension)&&return_code;i++)
-		{
-			if (0<number_in_xi[i])
-			{
-				number_of_points *= (number_in_xi[i]+1);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_values_in_element_private.  "
-					"number_in_xi must be positive");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			switch (field->type)
-			{
-				case COMPUTED_FIELD_CLAMP_MAXIMUM:
-				{
-					FE_value max;
-
-					/* clamps to limits of maximums when setting values too */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
-					{
-						i=0;
-						for (k=0;k<field->number_of_components;k++)
-						{
-							max=field->source_values[k];
-							for (j=0;j<number_of_points;j++)
-							{
-								if (values[i] > max)
-								{
-									source_values[i] = max;
-								}
-								else
-								{
-									source_values[i] = values[i];
-								}
-								i++;
-							}
-						}
-						return_code=Computed_field_set_values_in_element_private(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_CLAMP_MINIMUM:
-				{
-					FE_value min;
-
-					/* clamps to limits of maximums when setting values too */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
-					{
-						i=0;
-						for (k=0;k<field->number_of_components;k++)
-						{
-							min=field->source_values[k];
-							for (j=0;j<number_of_points;j++)
-							{
-								if (values[i] < min)
-								{
-									source_values[i] = min;
-								}
-								else
-								{
-									source_values[i] = values[i];
-								}
-								i++;
-							}
-						}
-						return_code=Computed_field_set_values_in_element_private(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_COMPONENT:
-				{
-					int offset;
-
-					/* need current field values to partially set */
-					if (Computed_field_get_values_in_element(field->source_fields[0],
-						element,number_in_xi,&source_values))
-					{
-						/* insert the component values into this array */
-						offset=number_of_points*field->component_no;
-						for (j=0;j<number_of_points;j++)
-						{
-							source_values[offset+j]=values[j];
-						}
-						return_code=Computed_field_set_values_in_element_private(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_COMPOSITE:
-				{
-					/* set all the scalars separately */
-					for (k=0;(k<field->number_of_components)&&return_code;k++)
-					{
-						return_code=Computed_field_set_values_in_element_private(
-							field->source_fields[0],element,number_in_xi,
-							values+k*number_of_points);
-					}
-				} break;
-				case COMPUTED_FIELD_DEFAULT_COORDINATE:
-				{
-					FE_value non_rc_coordinates[3],rc_coordinates[3];
-					struct Coordinate_system rc_coordinate_system;
-
-					if (Computed_field_get_default_coordinate_source_field_in_element(
-						field,element))
-					{
-						rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-						/* 3 values for non-rc coordinate system */
-						if (ALLOCATE(source_values,FE_value,number_of_points*3))
-						{
-							for (j=0;(j<number_of_points)&&return_code;j++)
-							{
-								for (k=0;k<3;k++)
-								{
-									rc_coordinates[k]=values[k*number_of_points+j];
-								}
-								/* convert RC values back into source coordinate system */
-								if (convert_Coordinate_system(&rc_coordinate_system,
-									rc_coordinates,&(field->source_fields[0]->coordinate_system),
-									non_rc_coordinates,/*jacobian*/(float *)NULL))
-								{
-									for (k=0;k<3;k++)
-									{
-										source_values[k*number_of_points+j]=non_rc_coordinates[k];
-									}
-								}
-								else
-								{
-									return_code=0;
-								}
-							}
-							if (return_code)
-							{
-								return_code=Computed_field_set_values_in_element_private(
-									field->source_fields[0],element,number_in_xi,source_values);
-							}
-							DEALLOCATE(source_values);
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_values_in_element_private.  "
-							"Could not get default coordinate source_field");
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_EDIT_MASK:
-				{
-					int offset;
-
-					/* need current field values to partially set */
-					if (Computed_field_get_values_in_element(field->source_fields[0],
-						element,number_in_xi,&source_values))
-					{
-						/* insert the components with mask on into this array */
-						for (k=0;k<field->number_of_components;k++)
-						{
-							if (field->source_values[k])
-							{
-								offset=k*number_of_points;
-								for (j=0;j<number_of_points;j++)
-								{
-									source_values[offset+j] = values[offset+j];
-								}
-							}
-						}
-						return_code=Computed_field_set_values_in_element_private(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_FINITE_ELEMENT:
-				{
-					enum Value_type value_type;
-					int grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*int_values,
-						offset;
-
-					if (FE_element_field_is_grid_based(element,field->fe_field)&&
-						get_FE_element_field_grid_map_number_in_xi(element,
-							field->fe_field,grid_map_number_in_xi))
-					{
-						for (i=0;(i<element_dimension)&&return_code;i++)
-						{
-							if (number_in_xi[i] != grid_map_number_in_xi[i])
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_in_element_private.  "
-									"Finite element has different grid number_in_xi");
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							value_type=get_FE_field_value_type(field->fe_field);
-							switch (value_type)
-							{
-								case FE_VALUE_VALUE:
-								{
-									for (k=0;(k<field->number_of_components)&&return_code;k++)
-									{
-										if (!set_FE_element_field_component_grid_FE_value_values(
-											element,field->fe_field,k,values+k*number_of_points))
-										{
-											display_message(ERROR_MESSAGE,
-												"Computed_field_set_values_in_element_private.  "
-												"Unable to set finite element grid FE_value values");
-											return_code=0;
-										}
-									}
-								} break;
-								case INT_VALUE:
-								{
-									if (ALLOCATE(int_values,int,number_of_points))
-									{
-										for (k=0;(k<field->number_of_components)&&return_code;k++)
-										{
-											offset=k*number_of_points;
-											for (j=0;j<number_of_points;j++)
-											{
-												/*???RC this conversion could be a little dodgy */
-												int_values[j]=(int)(values[offset+j]);
-											}
-											if (!set_FE_element_field_component_grid_int_values(
-												element,field->fe_field,k,int_values))
-											{
-												display_message(ERROR_MESSAGE,
-													"Computed_field_set_values_in_element_private.  "
-													"Unable to set finite element grid int values");
-												return_code=0;
-											}
-										}
-										DEALLOCATE(int_values);
-									}
-									else
-									{
-										return_code=0;
-									}
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_set_values_in_element_private.  "
-										"Unsupported value_type for finite_element field");
-									return_code=0;
-								} break;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_values_in_element_private.  "
-							"Finite element field %s is not grid based in element",
-							field->name);
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_MAGNITUDE:
-				{
-					FE_value magnitude;
-					int zero_warning;
-
-					/* need current field values to "magnify" */
-					if (Computed_field_get_values_in_element(field->source_fields[0],
-						element,number_in_xi,&source_values))
-					{
-						zero_warning=0;
-						for (j=0;j<number_of_points;j++)
-						{
-							/* if the source field is not a zero vector, set its magnitude to
-								 the given value */
-							magnitude = 0.0;
-							for (k=0;k<field->number_of_components;k++)
-							{
-								magnitude += source_values[k*number_of_points+j]*
-									source_values[k*number_of_points+j];
-							}
-							if (0.0 < magnitude)
-							{
-								magnitude = values[j] / magnitude;
-								for (k=0;k<field->number_of_components;k++)
-								{
-									source_values[k*number_of_points+j] *= magnitude;
-								}
-							}
-							else
-							{
-								zero_warning=1;
-							}
-						}
-						if (zero_warning)
-						{
-							/* not an error; just a warning */
-							display_message(WARNING_MESSAGE,
-								"Magnitude field %s cannot be inverted for zero vectors",
-								field->name);
-						}
-						return_code=Computed_field_set_values_in_element_private(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_OFFSET:
-				{
-					FE_value offset_value;
-					int offset;
-
-					/* reverse the offset */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
-					{
-						for (k=0;k<field->number_of_components;k++)
-						{
-							offset=k*number_of_points;
-							offset_value=field->source_values[k];
-							for (j=0;j<number_of_points;j++)
-							{
-								source_values[offset+j] = values[offset+j] - offset_value;
-							}
-						}
-						return_code=Computed_field_set_values_in_element_private(
-							field->source_fields[0],element,number_in_xi,source_values);
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_RC_COORDINATE:
-				{
-					FE_value non_rc_coordinates[3],rc_coordinates[3];
-					struct Coordinate_system rc_coordinate_system;
-
-					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-					/* 3 values for non-rc coordinate system */
-					if (ALLOCATE(source_values,FE_value,number_of_points*3))
-					{
-						for (j=0;(j<number_of_points)&&return_code;j++)
-						{
-							for (k=0;k<3;k++)
-							{
-								rc_coordinates[k]=values[k*number_of_points+j];
-							}
-							/* convert RC values back into source coordinate system */
-							if (convert_Coordinate_system(&rc_coordinate_system,
-								rc_coordinates,&(field->source_fields[0]->coordinate_system),
-								non_rc_coordinates,/*jacobian*/(float *)NULL))
-							{
-								for (k=0;k<3;k++)
-								{
-									source_values[k*number_of_points+j]=non_rc_coordinates[k];
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							return_code=Computed_field_set_values_in_element_private(
-								field->source_fields[0],element,number_in_xi,source_values);
-						}
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_RC_VECTOR:
-				{
-					FE_value jacobian[9],non_rc_coordinates[3],
-						rc_coordinates[3],*rc_coordinate_values,sum;
-					int coordinates_per_vector,m,number_of_vectors;
-					struct Computed_field *rc_coordinate_field;
-					struct Coordinate_system rc_coordinate_system;
-
-					/* need current rc_coordinate positions for converting to
-						 coordinate system of source vector field */
-					if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
-						field->source_fields[1]))
-					{
-						if (Computed_field_get_values_in_element(rc_coordinate_field,
-							element,number_in_xi,&rc_coordinate_values))
-						{
-							rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-							/* 3 values for non-rc coordinate system */
-							if (ALLOCATE(source_values,FE_value,
-								number_of_points*field->source_fields[0]->number_of_components))
-							{
-								for (j=0;(j<number_of_points)&&return_code;j++)
-								{
-									for (k=0;k<3;k++)
-									{
-										rc_coordinates[k]=
-											rc_coordinate_values[k*number_of_points+j];
-									}
-									/* need jacobian at current coordinate position for
-										 converting to coordinate system of source vector field
-										 (=source_fields[0]) */
-									if (convert_Coordinate_system(&rc_coordinate_system,
-										rc_coordinates,&field->source_fields[0]->coordinate_system,
-										non_rc_coordinates,jacobian))
-									{
-										number_of_vectors=field->number_of_components/3;
-										coordinates_per_vector=
-											field->source_fields[0]->number_of_components/
-											number_of_vectors;
-										for (i=0;i<number_of_vectors;i++)
-										{
-											for (m=0;m<coordinates_per_vector;m++)
-											{
-												sum=0.0;
-												for (k=0;k<3;k++)
-												{
-													sum +=
-														jacobian[m*3+k]*values[(i*3+k)*number_of_points+j];
-												}
-												source_values[(i*coordinates_per_vector+m)*
-													number_of_points+j]=sum;
-											}
-										}
-									}
-									else
-									{
-										return_code=0;
-									}
-								}
-								if (return_code)
-								{
-									return_code=Computed_field_set_values_in_element_private(
-										field->source_fields[0],element,number_in_xi,source_values);
-								}
-								DEALLOCATE(source_values);
-							}
-							DEALLOCATE(rc_coordinate_values);
-						}
-						else
-						{
-							return_code=0;
-						}
-						Computed_field_end_wrap(&rc_coordinate_field);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				case COMPUTED_FIELD_SCALE:
-				{
-					FE_value scale_value;
-					int offset;
-
-					/* reverse the scaling */
-					if (ALLOCATE(source_values,FE_value,
-						number_of_points*field->number_of_components))
-					{
-						for (k=0;(k<field->number_of_components)&&return_code;k++)
-						{
-							offset=k*number_of_points;
-							scale_value=field->source_values[k];
-							if (0.0 != scale_value)
-							{
-								for (j=0;j<number_of_points;j++)
-								{
-									source_values[offset+j] = values[offset+j] / scale_value;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_set_values_in_element_private.  "
-									"Cannot invert scale field %s with zero scale factor",
-									field->name);
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							return_code=Computed_field_set_values_in_element_private(
-								field->source_fields[0],element,number_in_xi,source_values);
-						}
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_values_in_element_private.  "
-						"Cannot set values for field %s of type %s",field->name,
-						Computed_field_type_to_string(field->type));
-					return_code=0;
-				} break;
-			}
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_in_element_private.  "
-				"Failed for field %s of type %s",field->name,
-				Computed_field_type_to_string(field->type));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_in_element_private.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_values_in_element_private */
+} /* Computed_field_set_values_at_managed_node */
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value **values)
@@ -6003,10 +5429,603 @@ It is up to the calling function to deallocate the returned values.
 } /* Computed_field_get_values_in_element */
 
 int Computed_field_set_values_in_element(struct Computed_field *field,
+	struct FE_element *element,int *number_in_xi,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 20 April 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> over the <element>. Only certain
+computed field types allow their values to be set. Fields that deal directly
+with FE_fields eg. FINITE_ELEMENT fall into this category, as do the various
+transformations, RC_COORDINATE, RC_VECTOR, OFFSET, SCALE, etc. which convert
+the values into what they expect from their source field, and then call the
+same function for it. If a field has more than one source field, eg. RC_VECTOR,
+it can in many cases still choose which one is actually being changed, for
+example, the 'vector' field in this case - coordinates should not change. This
+process continues until the actual FE_field values in the element are changed or
+a field is reached for which its calculation is not reversible, or is not
+supported yet.
+
+<number_in_xi> has the number of grid cells in each xi direction of <element>,
+such that there is one more grid point in each direction than this number. Grid
+points are evenly spaced in xi. There are as many <values> as there are grid
+points X number_of_components, cycling fastest through number of grid points in
+xi1, number of grid points in xi2 etc. and lastly components.
+
+Note that the values array will not be modified by this function. Also,
+<element> should not be managed at the time it is modified by this function.
+#### Must ensure implemented correctly for new Computed_field_type. ####
+???RC Note that some functions are not reversible in this way.
+==============================================================================*/
+{
+	FE_value *source_values;
+	int element_dimension,i,j,k,number_of_points,return_code;
+
+	ENTER(Computed_field_set_values_in_element);
+	if (field&&element&&element->shape&&number_in_xi&&values)
+	{
+		return_code=1;
+		element_dimension=element->shape->dimension;
+		number_of_points=1;
+		for (i=0;(i<element_dimension)&&return_code;i++)
+		{
+			if (0<number_in_xi[i])
+			{
+				number_of_points *= (number_in_xi[i]+1);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_values_in_element.  "
+					"number_in_xi must be positive");
+				return_code=0;
+			}
+		}
+		if (return_code)
+		{
+			switch (field->type)
+			{
+				case COMPUTED_FIELD_CLAMP_MAXIMUM:
+				{
+					FE_value max;
+
+					/* clamps to limits of maximums when setting values too */
+					if (ALLOCATE(source_values,FE_value,
+						number_of_points*field->number_of_components))
+					{
+						i=0;
+						for (k=0;k<field->number_of_components;k++)
+						{
+							max=field->source_values[k];
+							for (j=0;j<number_of_points;j++)
+							{
+								if (values[i] > max)
+								{
+									source_values[i] = max;
+								}
+								else
+								{
+									source_values[i] = values[i];
+								}
+								i++;
+							}
+						}
+						return_code=Computed_field_set_values_in_element(
+							field->source_fields[0],element,number_in_xi,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_CLAMP_MINIMUM:
+				{
+					FE_value min;
+
+					/* clamps to limits of maximums when setting values too */
+					if (ALLOCATE(source_values,FE_value,
+						number_of_points*field->number_of_components))
+					{
+						i=0;
+						for (k=0;k<field->number_of_components;k++)
+						{
+							min=field->source_values[k];
+							for (j=0;j<number_of_points;j++)
+							{
+								if (values[i] < min)
+								{
+									source_values[i] = min;
+								}
+								else
+								{
+									source_values[i] = values[i];
+								}
+								i++;
+							}
+						}
+						return_code=Computed_field_set_values_in_element(
+							field->source_fields[0],element,number_in_xi,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_COMPONENT:
+				{
+					int offset;
+
+					/* need current field values to partially set */
+					if (Computed_field_get_values_in_element(field->source_fields[0],
+						element,number_in_xi,&source_values))
+					{
+						/* insert the component values into this array */
+						offset=number_of_points*field->component_no;
+						for (j=0;j<number_of_points;j++)
+						{
+							source_values[offset+j]=values[j];
+						}
+						return_code=Computed_field_set_values_in_element(
+							field->source_fields[0],element,number_in_xi,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_COMPOSITE:
+				{
+					/* set all the scalars separately */
+					for (k=0;(k<field->number_of_components)&&return_code;k++)
+					{
+						return_code=Computed_field_set_values_in_element(
+							field->source_fields[0],element,number_in_xi,
+							values+k*number_of_points);
+					}
+				} break;
+				case COMPUTED_FIELD_DEFAULT_COORDINATE:
+				{
+					FE_value non_rc_coordinates[3],rc_coordinates[3];
+					struct Coordinate_system rc_coordinate_system;
+
+					if (Computed_field_get_default_coordinate_source_field_in_element(
+						field,element))
+					{
+						rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+						/* 3 values for non-rc coordinate system */
+						if (ALLOCATE(source_values,FE_value,number_of_points*3))
+						{
+							for (j=0;(j<number_of_points)&&return_code;j++)
+							{
+								for (k=0;k<3;k++)
+								{
+									rc_coordinates[k]=values[k*number_of_points+j];
+								}
+								/* convert RC values back into source coordinate system */
+								if (convert_Coordinate_system(&rc_coordinate_system,
+									rc_coordinates,&(field->source_fields[0]->coordinate_system),
+									non_rc_coordinates,/*jacobian*/(float *)NULL))
+								{
+									for (k=0;k<3;k++)
+									{
+										source_values[k*number_of_points+j]=non_rc_coordinates[k];
+									}
+								}
+								else
+								{
+									return_code=0;
+								}
+							}
+							if (return_code)
+							{
+								return_code=Computed_field_set_values_in_element(
+									field->source_fields[0],element,number_in_xi,source_values);
+							}
+							DEALLOCATE(source_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_set_values_in_element.  "
+							"Could not get default coordinate source_field");
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_EDIT_MASK:
+				{
+					int offset;
+
+					/* need current field values to partially set */
+					if (Computed_field_get_values_in_element(field->source_fields[0],
+						element,number_in_xi,&source_values))
+					{
+						/* insert the components with mask on into this array */
+						for (k=0;k<field->number_of_components;k++)
+						{
+							if (field->source_values[k])
+							{
+								offset=k*number_of_points;
+								for (j=0;j<number_of_points;j++)
+								{
+									source_values[offset+j] = values[offset+j];
+								}
+							}
+						}
+						return_code=Computed_field_set_values_in_element(
+							field->source_fields[0],element,number_in_xi,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_FINITE_ELEMENT:
+				{
+					enum Value_type value_type;
+					int grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*int_values,
+						offset;
+
+					if (FE_element_field_is_grid_based(element,field->fe_field)&&
+						get_FE_element_field_grid_map_number_in_xi(element,
+							field->fe_field,grid_map_number_in_xi))
+					{
+						for (i=0;(i<element_dimension)&&return_code;i++)
+						{
+							if (number_in_xi[i] != grid_map_number_in_xi[i])
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_set_values_in_element.  "
+									"Finite element has different grid number_in_xi");
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							value_type=get_FE_field_value_type(field->fe_field);
+							switch (value_type)
+							{
+								case FE_VALUE_VALUE:
+								{
+									for (k=0;(k<field->number_of_components)&&return_code;k++)
+									{
+										if (!set_FE_element_field_component_grid_FE_value_values(
+											element,field->fe_field,k,values+k*number_of_points))
+										{
+											display_message(ERROR_MESSAGE,
+												"Computed_field_set_values_in_element.  "
+												"Unable to set finite element grid FE_value values");
+											return_code=0;
+										}
+									}
+								} break;
+								case INT_VALUE:
+								{
+									if (ALLOCATE(int_values,int,number_of_points))
+									{
+										for (k=0;(k<field->number_of_components)&&return_code;k++)
+										{
+											offset=k*number_of_points;
+											for (j=0;j<number_of_points;j++)
+											{
+												/*???RC this conversion could be a little dodgy */
+												int_values[j]=(int)(values[offset+j]);
+											}
+											if (!set_FE_element_field_component_grid_int_values(
+												element,field->fe_field,k,int_values))
+											{
+												display_message(ERROR_MESSAGE,
+													"Computed_field_set_values_in_element.  "
+													"Unable to set finite element grid int values");
+												return_code=0;
+											}
+										}
+										DEALLOCATE(int_values);
+									}
+									else
+									{
+										return_code=0;
+									}
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_set_values_in_element.  "
+										"Unsupported value_type for finite_element field");
+									return_code=0;
+								} break;
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_set_values_in_element.  "
+							"Finite element field %s is not grid based in element",
+							field->name);
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_MAGNITUDE:
+				{
+					FE_value magnitude;
+					int zero_warning;
+
+					/* need current field values to "magnify" */
+					if (Computed_field_get_values_in_element(field->source_fields[0],
+						element,number_in_xi,&source_values))
+					{
+						zero_warning=0;
+						for (j=0;j<number_of_points;j++)
+						{
+							/* if the source field is not a zero vector, set its magnitude to
+								 the given value */
+							magnitude = 0.0;
+							for (k=0;k<field->number_of_components;k++)
+							{
+								magnitude += source_values[k*number_of_points+j]*
+									source_values[k*number_of_points+j];
+							}
+							if (0.0 < magnitude)
+							{
+								magnitude = values[j] / magnitude;
+								for (k=0;k<field->number_of_components;k++)
+								{
+									source_values[k*number_of_points+j] *= magnitude;
+								}
+							}
+							else
+							{
+								zero_warning=1;
+							}
+						}
+						if (zero_warning)
+						{
+							/* not an error; just a warning */
+							display_message(WARNING_MESSAGE,
+								"Magnitude field %s cannot be inverted for zero vectors",
+								field->name);
+						}
+						return_code=Computed_field_set_values_in_element(
+							field->source_fields[0],element,number_in_xi,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_OFFSET:
+				{
+					FE_value offset_value;
+					int offset;
+
+					/* reverse the offset */
+					if (ALLOCATE(source_values,FE_value,
+						number_of_points*field->number_of_components))
+					{
+						for (k=0;k<field->number_of_components;k++)
+						{
+							offset=k*number_of_points;
+							offset_value=field->source_values[k];
+							for (j=0;j<number_of_points;j++)
+							{
+								source_values[offset+j] = values[offset+j] - offset_value;
+							}
+						}
+						return_code=Computed_field_set_values_in_element(
+							field->source_fields[0],element,number_in_xi,source_values);
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_RC_COORDINATE:
+				{
+					FE_value non_rc_coordinates[3],rc_coordinates[3];
+					struct Coordinate_system rc_coordinate_system;
+
+					rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+					/* 3 values for non-rc coordinate system */
+					if (ALLOCATE(source_values,FE_value,number_of_points*3))
+					{
+						for (j=0;(j<number_of_points)&&return_code;j++)
+						{
+							for (k=0;k<3;k++)
+							{
+								rc_coordinates[k]=values[k*number_of_points+j];
+							}
+							/* convert RC values back into source coordinate system */
+							if (convert_Coordinate_system(&rc_coordinate_system,
+								rc_coordinates,&(field->source_fields[0]->coordinate_system),
+								non_rc_coordinates,/*jacobian*/(float *)NULL))
+							{
+								for (k=0;k<3;k++)
+								{
+									source_values[k*number_of_points+j]=non_rc_coordinates[k];
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+						}
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_RC_VECTOR:
+				{
+					FE_value jacobian[9],non_rc_coordinates[3],
+						rc_coordinates[3],*rc_coordinate_values,sum;
+					int coordinates_per_vector,m,number_of_vectors;
+					struct Computed_field *rc_coordinate_field;
+					struct Coordinate_system rc_coordinate_system;
+
+					/* need current rc_coordinate positions for converting to
+						 coordinate system of source vector field */
+					if (rc_coordinate_field=Computed_field_begin_wrap_coordinate_field(
+						field->source_fields[1]))
+					{
+						if (Computed_field_get_values_in_element(rc_coordinate_field,
+							element,number_in_xi,&rc_coordinate_values))
+						{
+							rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+							/* 3 values for non-rc coordinate system */
+							if (ALLOCATE(source_values,FE_value,
+								number_of_points*field->source_fields[0]->number_of_components))
+							{
+								for (j=0;(j<number_of_points)&&return_code;j++)
+								{
+									for (k=0;k<3;k++)
+									{
+										rc_coordinates[k]=
+											rc_coordinate_values[k*number_of_points+j];
+									}
+									/* need jacobian at current coordinate position for
+										 converting to coordinate system of source vector field
+										 (=source_fields[0]) */
+									if (convert_Coordinate_system(&rc_coordinate_system,
+										rc_coordinates,&field->source_fields[0]->coordinate_system,
+										non_rc_coordinates,jacobian))
+									{
+										number_of_vectors=field->number_of_components/3;
+										coordinates_per_vector=
+											field->source_fields[0]->number_of_components/
+											number_of_vectors;
+										for (i=0;i<number_of_vectors;i++)
+										{
+											for (m=0;m<coordinates_per_vector;m++)
+											{
+												sum=0.0;
+												for (k=0;k<3;k++)
+												{
+													sum +=
+														jacobian[m*3+k]*values[(i*3+k)*number_of_points+j];
+												}
+												source_values[(i*coordinates_per_vector+m)*
+													number_of_points+j]=sum;
+											}
+										}
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								if (return_code)
+								{
+									return_code=Computed_field_set_values_in_element(
+										field->source_fields[0],element,number_in_xi,source_values);
+								}
+								DEALLOCATE(source_values);
+							}
+							DEALLOCATE(rc_coordinate_values);
+						}
+						else
+						{
+							return_code=0;
+						}
+						Computed_field_end_wrap(&rc_coordinate_field);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				case COMPUTED_FIELD_SCALE:
+				{
+					FE_value scale_value;
+					int offset;
+
+					/* reverse the scaling */
+					if (ALLOCATE(source_values,FE_value,
+						number_of_points*field->number_of_components))
+					{
+						for (k=0;(k<field->number_of_components)&&return_code;k++)
+						{
+							offset=k*number_of_points;
+							scale_value=field->source_values[k];
+							if (0.0 != scale_value)
+							{
+								for (j=0;j<number_of_points;j++)
+								{
+									source_values[offset+j] = values[offset+j] / scale_value;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Computed_field_set_values_in_element.  "
+									"Cannot invert scale field %s with zero scale factor",
+									field->name);
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							return_code=Computed_field_set_values_in_element(
+								field->source_fields[0],element,number_in_xi,source_values);
+						}
+						DEALLOCATE(source_values);
+					}
+					else
+					{
+						return_code=0;
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_set_values_in_element.  "
+						"Cannot set values for field %s of type %s",field->name,
+						Computed_field_type_to_string(field->type));
+					return_code=0;
+				} break;
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_values_in_element.  "
+				"Failed for field %s of type %s",field->name,
+				Computed_field_type_to_string(field->type));
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_values_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_values_in_element */
+
+int Computed_field_set_values_in_managed_element(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value *values,
 	struct MANAGER(FE_element) *element_manager)
 /*******************************************************************************
-LAST MODIFIED : 28 October 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -6041,7 +6060,7 @@ Note that the values array will not be modified by this function.
 	int return_code;
 	struct FE_element *copy_element;
 
-	ENTER(Computed_field_set_values_in_element);
+	ENTER(Computed_field_set_values_in_managed_element);
 	return_code=0;
 	if (field&&element&&number_in_xi&&values&&element_manager)
 	{
@@ -6051,7 +6070,7 @@ Note that the values array will not be modified by this function.
 			/* The element must be accessed as the use of cache on the elements
 				by get values etc. access and deaccessess the elements */
 			ACCESS(FE_element)(copy_element);
-			if (Computed_field_set_values_in_element_private(field,copy_element,
+			if (Computed_field_set_values_in_element(field,copy_element,
 				number_in_xi,values))
 			{
 				if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
@@ -6066,19 +6085,19 @@ Note that the values array will not be modified by this function.
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_in_element.  Failed");
+				"Computed_field_set_values_in_managed_element.  Failed");
 			Computed_field_clear_cache(field);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_in_element.  Invalid argument(s)");
+			"Computed_field_set_values_in_managed_element.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_values_in_element */
+} /* Computed_field_set_values_in_managed_element */
 
 struct Computed_field_update_nodal_values_from_source_data
 /*******************************************************************************
@@ -6097,7 +6116,7 @@ DESCRIPTION :
 int Computed_field_update_nodal_values_from_source_sub(
 	struct FE_node *node, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 October 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6106,15 +6125,16 @@ DESCRIPTION :
 	struct Computed_field_update_nodal_values_from_source_data *data;
 
 	ENTER(Computed_field_update_nodal_values_from_source_sub);
-	if (node && 
-		(data=(struct Computed_field_update_nodal_values_from_source_data *)data_void))
+	if (node && (data=
+		(struct Computed_field_update_nodal_values_from_source_data *)data_void))
 	{
 		return_code = 1;
 		if (Computed_field_is_defined_at_node(data->source_field, node))
 		{
-			if(Computed_field_evaluate_at_node(data->source_field, node, data->values))
+			if (Computed_field_evaluate_at_node(data->source_field, node,
+				data->values))
 			{
-				if (Computed_field_set_values_at_node(data->destination_field,
+				if (Computed_field_set_values_at_managed_node(data->destination_field,
 					node, data->values, data->node_manager))
 				{
 					data->count++;
@@ -6238,7 +6258,7 @@ DESCRIPTION :
 int Computed_field_update_element_values_from_source_sub(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 November 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6264,8 +6284,9 @@ DESCRIPTION :
 					if (Computed_field_get_values_in_element(data->source_field,element,
 						number_in_xi,&values))
 					{
-						if (Computed_field_set_values_in_element(data->destination_field,
-							element,number_in_xi,values,data->element_manager))
+						if (Computed_field_set_values_in_managed_element(
+							data->destination_field,element,number_in_xi,
+							values,data->element_manager))
 						{
 							data->success_count++;
 						}
@@ -6373,7 +6394,7 @@ Set grid-based <destination_field> in all the elements in <element_group> or
 int Computed_field_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
-LAST MODIFIED : 28 October 1999 
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 If the <field> or its source field is grid-based in <element>, returns in
@@ -6386,7 +6407,7 @@ int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this function.
 Returns 0 with no errors if the field is not grid-based.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 In particular, make sure all the same field types are supported here and in
-Computed_field_set_values_in_element_private.
+Computed_field_set_values_in_[managed_]element.
 ==============================================================================*/
 {
 	int return_code;
@@ -10373,7 +10394,6 @@ Iterator/conditional function returning true if <field> has only one component.
 	return (return_code);
 } /* Computed_field_has_1_component */
 
-
 int Computed_field_has_at_least_1_component(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
@@ -11502,7 +11522,7 @@ and allows its contents to be modified.
 			else
 			{
 				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+					Computed_field_has_at_least_1_component,(void *)NULL,
 					computed_field_package->computed_field_manager))
 				{
 					source_fields[1] = source_fields[0];
@@ -11530,7 +11550,7 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(source_fields[0]);
 			ACCESS(Computed_field)(source_fields[1]);
 			set_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+				Computed_field_has_at_least_1_component;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			set_field_array_data.number_of_fields=2;
@@ -11600,14 +11620,14 @@ maximums as there are components in the field.
 	struct Computed_field_package *computed_field_package;
 	struct Set_Computed_field_conditional_data set_field_data;
 
-	ENTER(define_Computed_field_type_rc_coordinate);
+	ENTER(define_Computed_field_type_clamp_maximum);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_package=
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and maximums - from field if of type clamp_maximum */
@@ -11622,7 +11642,7 @@ maximums as there are components in the field.
 		{
 			/* get first available field, and set maximums for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(maximums,FE_value,source_field->number_of_components))
 			{
@@ -11780,14 +11800,14 @@ minimums as there are components in the field.
 	struct Computed_field_package *computed_field_package;
 	struct Set_Computed_field_conditional_data set_field_data;
 
-	ENTER(define_Computed_field_type_rc_coordinate);
+	ENTER(define_Computed_field_type_clamp_minimum);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_package=
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and minimums - from field if of type clamp_minimum */
@@ -11802,7 +11822,7 @@ minimums as there are components in the field.
 		{
 			/* get first available field, and set minimums for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(minimums,FE_value,source_field->number_of_components))
 			{
@@ -12001,7 +12021,7 @@ and allows its contents to be modified.
 		else
 		{
 			if (field_component.field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager))
 			{
 				field_component.component_no=0;
@@ -12067,7 +12087,7 @@ and allows its contents to be modified.
 		return_code=1;
 		set_calculate_values_field_data.computed_field_package=computed_field_package;
 		set_calculate_values_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_calculate_values_field_data.conditional_function_user_data=(void *)NULL;
 		set_find_element_xi_field_data.computed_field_package=computed_field_package;
 		set_find_element_xi_field_data.conditional_function=
@@ -12075,7 +12095,7 @@ and allows its contents to be modified.
 		set_find_element_xi_field_data.conditional_function_user_data=(void *)NULL;
 		set_texture_coordinates_field_data.computed_field_package=computed_field_package;
 		set_texture_coordinates_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_texture_coordinates_field_data.conditional_function_user_data=(void *)NULL;
 		/* get valid parameters for composite field */
 		if (COMPUTED_FIELD_COMPOSE==Computed_field_get_type(field))
@@ -12087,13 +12107,13 @@ and allows its contents to be modified.
 		else
 		{
 			calculate_values_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL ,(void *)NULL,
+				Computed_field_has_at_least_1_component ,(void *)NULL,
 				computed_field_package->computed_field_manager);
 			find_element_xi_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_is_find_element_xi_capable,(void *)NULL,
 				computed_field_package->computed_field_manager);
 			texture_coordinates_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL ,(void *)NULL,
+				Computed_field_has_at_least_1_component ,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -12535,7 +12555,7 @@ and allows its contents to be modified.
 		else
 		{
 			if (!(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -12548,7 +12568,7 @@ and allows its contents to be modified.
 			/* have ACCESS/DEACCESS because set_Computed_field does */
 			ACCESS(Computed_field)(source_field);
 			set_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+				Computed_field_has_at_least_1_component;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			(option_table[0]).to_be_modified= &source_field;
@@ -12925,7 +12945,7 @@ and allows its contents to be modified.
 			else
 			{
 				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+					Computed_field_has_at_least_1_component,(void *)NULL,
 					computed_field_package->computed_field_manager))
 				{
 					source_fields[1] = source_fields[0];
@@ -12950,7 +12970,7 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(source_fields[0]);
 			ACCESS(Computed_field)(source_fields[1]);
 			set_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+				Computed_field_has_at_least_1_component;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			set_field_array_data.number_of_fields=2;
@@ -13015,14 +13035,14 @@ edit_mask flags as there are components in the field.
 	struct Computed_field_package *computed_field_package;
 	struct Set_Computed_field_conditional_data set_field_data;
 
-	ENTER(define_Computed_field_type_rc_coordinate);
+	ENTER(define_Computed_field_type_edit_mask);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_package=
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and edit_mask - from field if of type edit_mask */
@@ -13037,7 +13057,7 @@ edit_mask flags as there are components in the field.
 		{
 			/* get first available field, and set edit_mask for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(edit_mask,FE_value,source_field->number_of_components))
 			{
@@ -13199,7 +13219,7 @@ and allows its contents to be modified.
 				FE_field_has_value_type,(void *)ELEMENT_XI_VALUE,
 				computed_field_package->fe_field_manager);
 			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -13215,7 +13235,7 @@ and allows its contents to be modified.
 			(option_table[0]).to_be_modified= &fe_field;
 			(option_table[0]).user_data= computed_field_package->fe_field_manager;
 			set_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+				Computed_field_has_at_least_1_component;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			(option_table[1]).to_be_modified= &source_field;
@@ -13308,7 +13328,7 @@ and allows its contents to be modified.
 		return_code=1;
 		set_source_field_data.computed_field_package=computed_field_package;
 		set_source_field_data.conditional_function =
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_source_field_data.conditional_function_user_data=(void *)NULL;
 		/* get valid parameters for external field */
 		source_fields=(struct Computed_field **)NULL;
@@ -13326,7 +13346,7 @@ and allows its contents to be modified.
 		{
 			/* ALLOCATE and fill array of source fields */
 			temp_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager);
 			number_of_fields=1;
 			if (ALLOCATE(source_fields,struct Computed_field *,number_of_fields))
@@ -13678,22 +13698,26 @@ already) and allows its contents to be modified.
 static int define_Computed_field_type_finite_element(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 8 February 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_FINITE_ELEMENT (if it is not already)
-and allows its contents to be modified.
+Creates FE_fields with the given name, coordinate_system, value_type,
+cm_field_type, number_of_components and component_names.
+The actual finite_element wrapper is not made here but in response to the
+FE_field being made and/or modified.
 ==============================================================================*/
 {
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"fe_field",NULL,NULL,set_FE_field},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *field;
+	char *cm_field_type_string,**component_names,*current_token,
+		**temp_component_names,**valid_strings,*value_type_string;
+	enum CM_field_type cm_field_type;
+	enum Value_type value_type;
+	int i,number_of_components,number_of_valid_strings,
+		original_number_of_components,return_code;
+	struct Computed_field *existing_field,*field;
 	struct Computed_field_package *computed_field_package;
-	struct FE_field *fe_field;
+	struct Coordinate_system *coordinate_system;
+	struct FE_field *existing_fe_field,*fe_field,*temp_fe_field;
+	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -13701,42 +13725,254 @@ and allows its contents to be modified.
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
-		fe_field=(struct FE_field *)NULL;
+		existing_fe_field=(struct FE_field *)NULL;
 		if (COMPUTED_FIELD_FINITE_ELEMENT==Computed_field_get_type(field))
 		{
-			return_code=Computed_field_get_type_finite_element(field,&fe_field);
-		}
-		else
-		{
-			fe_field=FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
-				computed_field_package->fe_field_manager);
+			return_code=
+				Computed_field_get_type_finite_element(field,&existing_fe_field);
 		}
 		if (return_code)
 		{
-			/* have ACCESS/DEACCESS because set_FE_field does */
-			if (fe_field)
+			if (existing_fe_field)
 			{
-				ACCESS(FE_field)(fe_field);
-			}
-			(option_table[0]).to_be_modified= &fe_field;
-			(option_table[0]).user_data= computed_field_package->fe_field_manager;
-			if (return_code=process_multiple_options(state,option_table))
-			{
-				if (fe_field)
+				value_type=get_FE_field_value_type(existing_fe_field);
+				if (existing_fe_field)
 				{
-					return_code=Computed_field_set_type_finite_element(field,fe_field);
+					number_of_components=
+						get_FE_field_number_of_components(existing_fe_field);
+					cm_field_type=get_FE_field_CM_field_type(existing_fe_field);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_finite_element.  No FE_field selected");
+						"define_Computed_field_type_finite_element.  "
+						"Missing existing_fe_field");
 					return_code=0;
 				}
 			}
-			if (fe_field)
+			else
 			{
-				DEACCESS(FE_field)(&fe_field);
+				/* default to real, 3-component coordinate field */
+				value_type=FE_VALUE_VALUE;
+				number_of_components=3;
+				cm_field_type=CM_COORDINATE_FIELD;
+			}
+			if (return_code)
+			{
+				cm_field_type_string=CM_field_type_string(cm_field_type);
+				value_type_string=Value_type_string(value_type);
+			}
+			if (ALLOCATE(component_names,char *,number_of_components))
+			{
+				for (i=0;i<number_of_components;i++)
+				{
+					component_names[i]=(char *)NULL;
+					if (existing_fe_field)
+					{
+						component_names[i]=get_FE_field_component_name(existing_fe_field,i);
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_finite_element.  Not enough memory");
+				return_code=0;
+			}
+			original_number_of_components=number_of_components;
+			/* try to handle help first */
+			if (return_code&&(current_token=state->current_token))
+			{
+				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
+				{
+					option_table=CREATE(Option_table)();
+					/* cm_field_type */
+					valid_strings=
+						CM_field_type_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&cm_field_type_string);
+					DEALLOCATE(valid_strings);
+					/* component_names */
+					Option_table_add_entry(option_table,"component_names",component_names,
+						&original_number_of_components,set_names);
+					/* value_type */
+					valid_strings=Value_type_get_valid_strings_simple(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&value_type_string);
+					DEALLOCATE(valid_strings);
+					/* number_of_components */
+					Option_table_add_entry(option_table,"number_of_components",
+						&number_of_components,NULL,set_int_positive);
+					return_code=Option_table_multi_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+				}
+			}
+			/* parse the number_of_components */
+			if (return_code&&(current_token=state->current_token))
+			{
+				/* ... only if the "number_of_components" token is next */
+				if (fuzzy_string_compare(current_token,"number_of_components"))
+				{
+					option_table=CREATE(Option_table)();
+					Option_table_add_entry(option_table,"number_of_components",
+						&number_of_components,NULL,set_int_positive);
+					if (return_code=Option_table_parse(option_table,state))
+					{
+						if (number_of_components != original_number_of_components)
+						{
+							/* deallocate any names that will no longer be with the field */
+							for (i=number_of_components;i<original_number_of_components;i++)
+							{
+								if (component_names[i])
+								{
+									DEALLOCATE(component_names[i]);
+								}
+							}
+							if (REALLOCATE(temp_component_names,component_names,char *,
+								number_of_components))
+							{
+								component_names=temp_component_names;
+								/* clear any new names */
+								for (i=original_number_of_components;i<number_of_components;i++)
+								{
+									component_names[i]=(char *)NULL;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"define_Computed_field_type_finite_element.  "
+									"Not enough memory");
+								number_of_components=original_number_of_components;
+								return_code=0;
+							}
+						}
+					}
+					DESTROY(Option_table)(&option_table);
+				}
+			}
+			/* parse the remainder */
+			if (return_code&&state->current_token)
+			{
+				option_table=CREATE(Option_table)();
+				/* cm_field_type */
+				valid_strings=
+					CM_field_type_get_valid_strings(&number_of_valid_strings);
+				Option_table_add_enumerator(option_table,number_of_valid_strings,
+					valid_strings,&cm_field_type_string);
+				DEALLOCATE(valid_strings);
+				/* component_names */
+				Option_table_add_entry(option_table,"component_names",component_names,
+					&number_of_components,set_names);
+				/* value_type */
+				valid_strings=Value_type_get_valid_strings_simple(
+					&number_of_valid_strings);
+				Option_table_add_enumerator(option_table,number_of_valid_strings,
+					valid_strings,&value_type_string);
+				DEALLOCATE(valid_strings);
+				return_code=Option_table_multi_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
+			}
+			if (return_code)
+			{
+				value_type=Value_type_from_string(value_type_string);
+				cm_field_type=CM_field_type_from_string(cm_field_type_string);
+				/* now make an FE_field to match the options entered */
+				if (fe_field=CREATE(FE_field)())
+				{
+					/* get the name from the computed field */
+					return_code=set_FE_field_name(fe_field,field->name);
+					ACCESS(FE_field)(fe_field);
+					if (return_code&&existing_fe_field)
+					{
+						/* copy existing field to get as much in common with it as
+							 possible */
+						return_code=MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name)(fe_field,
+							existing_fe_field);
+					}
+					if (return_code&&set_FE_field_value_type(fe_field,value_type)&&
+						set_FE_field_number_of_components(fe_field,number_of_components)&&
+						set_FE_field_CM_field_type(fe_field,cm_field_type)&&
+						(coordinate_system=Computed_field_get_coordinate_system(field))&&
+						set_FE_field_coordinate_system(fe_field,coordinate_system))
+					{
+						for (i=0;i<number_of_components;i++)
+						{
+							if (component_names[i])
+							{
+								set_FE_field_component_name(fe_field,i,component_names[i]);
+							}
+						}
+						if (existing_fe_field)
+						{
+							if ((existing_field=
+								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+									field->name,computed_field_package->computed_field_manager))&&
+								(!Computed_field_is_in_use(existing_field)))
+							{
+								/* since cannot modify contents of FE_field while it is in use,
+									 deaccess temp_copy of it for duration of modify. Actually,
+									 it is accessed twice, once by the wrapper field in the
+									 manager, and once by "field", hence: */
+								temp_fe_field=existing_fe_field;
+								DEACCESS(FE_field)(&temp_fe_field);
+								temp_fe_field=existing_fe_field;
+								DEACCESS(FE_field)(&temp_fe_field);
+								return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name)(
+									existing_fe_field,fe_field,
+									computed_field_package->fe_field_manager);
+								ACCESS(FE_field)(existing_fe_field);
+								ACCESS(FE_field)(existing_fe_field);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Cannot redefine finite_element field while it is in use");
+								display_parse_state_location(state);
+								return_code=0;
+							}
+						}
+						else
+						{
+							return_code=ADD_OBJECT_TO_MANAGER(FE_field)(fe_field,
+								computed_field_package->fe_field_manager);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_finite_element.  "
+							"Could not set up fe_field");
+						return_code=0;
+					}
+					if (return_code)
+					{
+						/* must make sure the computed field is set to type
+							 FINITE_ELEMENT for correct handling in define_Computed_field */
+						return_code=Computed_field_set_type_finite_element(field,fe_field);
+					}
+					DEACCESS(FE_field)(&fe_field);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_finite_element.  "
+						"Could not create fe_field");
+					return_code=0;
+				}
+			}
+			/* clean up the component_names array */
+			if (component_names)
+			{
+				for (i=0;i<number_of_components;i++)
+				{
+					if (component_names[i])
+					{
+						DEALLOCATE(component_names[i]);
+					}
+				}
 			}
 		}
 	}
@@ -13880,7 +14116,7 @@ and allows its contents to be modified.
 		else
 		{
 			if (!(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -13893,7 +14129,7 @@ and allows its contents to be modified.
 			/* have ACCESS/DEACCESS because set_Computed_field does */
 			ACCESS(Computed_field)(source_field);
 			set_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+				Computed_field_has_at_least_1_component;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			(option_table[0]).to_be_modified= &source_field;
@@ -14345,14 +14581,14 @@ offsets as there are components in the field.
 	struct Computed_field_package *computed_field_package;
 	struct Set_Computed_field_conditional_data set_field_data;
 
-	ENTER(define_Computed_field_type_rc_coordinate);
+	ENTER(define_Computed_field_type_offset);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_package=
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and offsets - from field if of type offset */
@@ -14367,7 +14603,7 @@ offsets as there are components in the field.
 		{
 			/* get first available field, and set offsets for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(offsets,FE_value,source_field->number_of_components))
 			{
@@ -14704,7 +14940,7 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(source_field);
 			texture = (struct Texture *)NULL;
 			set_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+				Computed_field_has_at_least_1_component;
 			set_field_data.conditional_function_user_data=
 				(void *)Computed_field_has_1_to_3_components;
 			set_field_data.computed_field_package=computed_field_package;
@@ -14765,14 +15001,14 @@ scale_factors as there are components in the field.
 	struct Computed_field_package *computed_field_package;
 	struct Set_Computed_field_conditional_data set_field_data;
 
-	ENTER(define_Computed_field_type_rc_coordinate);
+	ENTER(define_Computed_field_type_scale);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_package=
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and scale_factors - from field if of type scale */
@@ -14787,7 +15023,7 @@ scale_factors as there are components in the field.
 		{
 			/* get first available field, and set scale_factors for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(scale_factors,FE_value,source_field->number_of_components))
 			{
@@ -14945,14 +15181,14 @@ there are components in field.
 	struct Computed_field_package *computed_field_package;
 	struct Set_Computed_field_conditional_data set_field_data;
 
-	ENTER(define_Computed_field_type_rc_coordinate);
+	ENTER(define_Computed_field_type_sum_components);
 	if (state&&(field=(struct Computed_field *)field_void)&&
 		(computed_field_package=
 			(struct Computed_field_package *)computed_field_package_void))
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			Computed_field_has_at_least_1_component;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and weights - from field if of type sum_components */
@@ -14967,7 +15203,7 @@ there are components in field.
 		{
 			/* get first available field, and set weights for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,(void *)NULL,
+				Computed_field_has_at_least_1_component,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(weights,FE_value,source_field->number_of_components))
 			{
@@ -15328,7 +15564,8 @@ and its parameter fields and values.
 	return (return_code);
 } /* define_Computed_field_type */
 
-int define_Computed_field_coordinate_system(struct Parse_state *state,
+int
+define_Computed_field_coordinate_system(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1999
@@ -15538,7 +15775,7 @@ and should not itself be managed.
 		};
 	char *current_token;
 	int return_code;
-	struct Computed_field *field_to_be_defined,*field_to_be_defined_copy;
+	struct Computed_field *existing_field,*temp_field;
 	struct Computed_field_package *computed_field_package;
 
 	ENTER(define_Computed_field);
@@ -15554,77 +15791,81 @@ and should not itself be managed.
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					if (field_to_be_defined=
+					existing_field=
 						FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(current_token,
-							computed_field_package->computed_field_manager))
+							computed_field_package->computed_field_manager);
+					/* create temp_field with the supplied name for working on */
+					if (temp_field=CREATE(Computed_field)(current_token))
 					{
-						if (field_to_be_defined_copy=CREATE(Computed_field)("copy"))
+						ACCESS(Computed_field)(temp_field);
+						if (existing_field)
 						{
-							MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
-								field_to_be_defined_copy,field_to_be_defined);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"define_Computed_field.  Could not create field copy");
-							return_code=0;
+							if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
+								temp_field,existing_field))
+							{
+								display_message(ERROR_MESSAGE,
+									"define_Computed_field.  Could not copy existing field");
+								return_code=0;
+							}
 						}
 					}
 					else
 					{
-						/* create a new field with the supplied name */
-						if (!(field_to_be_defined_copy=
-							CREATE(Computed_field)(current_token)))
-						{
-							display_message(ERROR_MESSAGE,
-								"define_Computed_field.  Could not create copy of field");
-							return_code=0;
-						}
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field.  Could not build temporary field");
+						return_code=0;
 					}
 					shift_Parse_state(state,1);
-					ACCESS(Computed_field)(field_to_be_defined_copy);
 					if (return_code&&define_Computed_field_coordinate_system(state,
-						field_to_be_defined_copy,computed_field_package_void))
+						temp_field,computed_field_package_void))
 					{
-						if (field_to_be_defined)
+						/* FINITE_ELEMENT computed field wrappers are not defined here -
+							 done automatically in response to FE_field manager messages */
+						if (COMPUTED_FIELD_FINITE_ELEMENT != temp_field->type)
 						{
-							if (Computed_field_is_read_only(field_to_be_defined))
+							if (existing_field)
 							{
-								display_message(ERROR_MESSAGE,
-									"Not allowed to modify read-only field");
-								return_code=0;
+								if (Computed_field_is_read_only(existing_field))
+								{
+									display_message(ERROR_MESSAGE,
+										"Not allowed to modify read-only field");
+									return_code=0;
+								}
+								else
+								{
+									/* copy modifications to existing_field */
+									return_code=
+										MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
+										existing_field,temp_field,
+										computed_field_package->computed_field_manager);
+								}
 							}
 							else
 							{
-								/* copy modifications to field_to_be_defined */
-								return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-									field_to_be_defined,field_to_be_defined_copy,
-									computed_field_package->computed_field_manager);
-							}
-						}
-						else
-						{
-							/* add the new field to the manager */
-							if (!ADD_OBJECT_TO_MANAGER(Computed_field)(
-								field_to_be_defined_copy,
-								computed_field_package->computed_field_manager))
-							{
-								display_message(ERROR_MESSAGE,
-									"define_Computed_field.  Unable to add field to manager");
+								/* add the new field to the manager */
+								if (!ADD_OBJECT_TO_MANAGER(Computed_field)(
+									temp_field,
+									computed_field_package->computed_field_manager))
+								{
+									display_message(ERROR_MESSAGE,
+										"define_Computed_field.  Unable to add field to manager");
+								}
 							}
 						}
 					}
-					DEACCESS(Computed_field)(&field_to_be_defined_copy);
+					if (temp_field)
+					{
+						DEACCESS(Computed_field)(&temp_field);
+					}
 				}
 				else
 				{
-					if (field_to_be_defined_copy=CREATE(Computed_field)("dummy"))
+					if (temp_field=CREATE(Computed_field)("dummy"))
 					{
-						(help_option_table[0]).to_be_modified=
-							(void *)field_to_be_defined_copy;
+						(help_option_table[0]).to_be_modified=(void *)temp_field;
 						(help_option_table[0]).user_data=computed_field_package_void;
 						return_code=process_option(state,help_option_table);
-						DESTROY(Computed_field)(&field_to_be_defined_copy);
+						DESTROY(Computed_field)(&temp_field);
 					}
 					else
 					{
@@ -15906,6 +16147,10 @@ Writes the properties of the <field> to the command window.
 					display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 					DEALLOCATE(field_name);
 				}
+				display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
+					CM_field_type_string(get_FE_field_CM_field_type(field->fe_field)));
+				display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
+					Value_type_string(get_FE_field_value_type(field->fe_field)));
 			} break;
 			case COMPUTED_FIELD_GRADIENT:
 			{
@@ -16497,7 +16742,7 @@ static int Computed_field_update_fe_field_in_manager(
 	struct Computed_field *computed_field, struct FE_field *fe_field,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 29 April 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 Searches the Computed_field_manager for a Computed_field which has the exact
@@ -16508,35 +16753,45 @@ the manager.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field;
+	struct Computed_field *matching_field,*same_name_field;
 
 	ENTER(Computed_field_update_fe_field_in_manager);
 	if (computed_field&&fe_field&&computed_field_manager)
 	{
 		/* find any existing wrapper for fe_field */
-		if (field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-			Computed_field_contents_match,(void *)computed_field,
-			computed_field_manager))
+		same_name_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			computed_field->name,computed_field_manager);
+		if (((matching_field=same_name_field)&&
+			(!Computed_field_is_in_use(matching_field)))||
+			(matching_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_contents_match,(void *)computed_field,
+				computed_field_manager)))
 		{
 			/* has the field name changed? */
-			if (strcmp(field->name,computed_field->name))
+			if (strcmp(matching_field->name,computed_field->name))
 			{
 				return_code=MANAGER_MODIFY(Computed_field)(
-					field,computed_field,computed_field_manager);
+					matching_field,computed_field,computed_field_manager);
 			}
 			else
 			{
 				return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-					field,computed_field,computed_field_manager);
+					matching_field,computed_field,computed_field_manager);
 			}
-			DESTROY(Computed_field)(&computed_field);
 		}
 		else
 		{
-			if (!(return_code=ADD_OBJECT_TO_MANAGER(Computed_field)(
-				computed_field,computed_field_manager)))
+			if (same_name_field)
 			{
-				DESTROY(Computed_field)(&computed_field);
+				display_message(ERROR_MESSAGE,
+					"Computed_field_update_fe_field_in_manager.  "
+					"Cannot modify computed field wrapper %s",same_name_field->name);
+				return_code=0;
+			}
+			else
+			{
+				return_code=ADD_OBJECT_TO_MANAGER(Computed_field)(
+					computed_field,computed_field_manager);
 			}
 		}
 	}
@@ -16554,7 +16809,7 @@ the manager.
 static int FE_field_update_wrapper_Computed_field(struct FE_field *fe_field,
 	void *computed_field_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 3 February 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 FE_field iterator function that performs the following:
@@ -16579,14 +16834,22 @@ MANAGER_MODIFY_NOT_IDENTIFIER is performed.
 		if (GET_NAME(FE_field)(fe_field,&field_name))
 		{
 			/* establish up-to-date wrapper for the fe_field */
-			if ((temp_field=CREATE(Computed_field)(field_name))&&
-				Computed_field_set_coordinate_system(temp_field,
-				get_FE_field_coordinate_system(fe_field))&&
-				Computed_field_set_type_finite_element(temp_field,fe_field)&&
-				Computed_field_set_read_only(temp_field))
+			if (temp_field=CREATE(Computed_field)(field_name))
 			{
-				return_code = Computed_field_update_fe_field_in_manager(temp_field,
-					fe_field, computed_field_manager);
+				ACCESS(Computed_field)(temp_field);
+				if (Computed_field_set_coordinate_system(temp_field,
+					get_FE_field_coordinate_system(fe_field))&&
+					Computed_field_set_type_finite_element(temp_field,fe_field)&&
+					Computed_field_set_read_only(temp_field))
+				{
+					return_code = Computed_field_update_fe_field_in_manager(temp_field,
+						fe_field, computed_field_manager);
+				}
+				else
+				{
+					return_code=0;
+				}
+				DEACCESS(Computed_field)(&temp_field);
 			}
 			else
 			{
@@ -16605,34 +16868,35 @@ MANAGER_MODIFY_NOT_IDENTIFIER is performed.
 						/* establish up-to-date wrapper for the fe_field */
 						if (temp_field=CREATE(Computed_field)(extra_field_name))
 						{
-							if (!(default_coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-								"default_coordinate",computed_field_manager)))
+							ACCESS(Computed_field)(temp_field);
+							if ((default_coordinate_field=
+								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+									"default_coordinate",computed_field_manager))||
+								(default_coordinate_field=
+									FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+										Computed_field_has_1_to_3_components,(void *)NULL,
+										computed_field_manager)))
 							{
-								default_coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-									Computed_field_has_1_to_3_components,(void *)NULL,
-									computed_field_manager);
-							}
-							if(default_coordinate_field)
-							{
-								if(Computed_field_set_coordinate_system(temp_field,
-									Computed_field_get_coordinate_system(default_coordinate_field))&&
+								if (Computed_field_set_coordinate_system(temp_field,
+									Computed_field_get_coordinate_system(
+										default_coordinate_field))&&
 									Computed_field_set_type_embedded(temp_field,fe_field,
-							  		default_coordinate_field)&&Computed_field_set_read_only(temp_field))
+							  		default_coordinate_field)&&
+									Computed_field_set_read_only(temp_field))
 								{
-									return_code = Computed_field_update_fe_field_in_manager(temp_field,
-										fe_field, computed_field_manager);
+									return_code = Computed_field_update_fe_field_in_manager(
+										temp_field, fe_field, computed_field_manager);
 								}
 								else
 								{
-									DESTROY(Computed_field)(&temp_field);
 									return_code=0;
 								}
 							}
 							else
 							{
-								DESTROY(Computed_field)(&temp_field);
 								return_code=0;
 							}
+							DEACCESS(Computed_field)(&temp_field);
 						}
 						else
 						{
@@ -17074,18 +17338,34 @@ allow interfacing to the choose_object widgets.
 
 int Computed_field_can_be_destroyed(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
-Returns true if the <field> is only accessed once (assumed to be by the manager).
+Returns true if the <field> is only accessed once - assumed by its manager. If
+it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
+be destroyed, assuming it is only accessed by this field and its manager.
 ==============================================================================*/
 {
 	int return_code;
+	struct FE_field *temp_fe_field;
 
 	ENTER(Computed_field_can_be_destroyed);
 	if (field)
 	{
-		return_code=(1==field->access_count);
+		if (return_code=!Computed_field_is_in_use(field))
+		{
+			switch (field->type)
+			{
+				case COMPUTED_FIELD_FINITE_ELEMENT:
+				{
+					/* check the fe_field can be destroyed */
+					temp_fe_field=field->fe_field;
+					DEACCESS(FE_field)(&temp_fe_field);
+					return_code=FE_field_can_be_destroyed(field->fe_field);
+					ACCESS(FE_field)(field->fe_field);
+				} break;
+			}
+		}
 	}
 	else
 	{
