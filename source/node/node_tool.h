@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 14 May 2001
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -217,6 +217,25 @@ LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Sets flag controlling whether existing nodes can be selected.
+==============================================================================*/
+
+int Node_tool_get_streaming_create_enabled(struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 14 May 2001
+
+DESCRIPTION :
+Returns flag controlling, if create_enabled, whether a stream of nodes is
+created as the user drags the mouse around.
+==============================================================================*/
+
+int Node_tool_set_streaming_create_enabled(struct Node_tool *node_tool,
+	int streaming_create_enabled);
+/*******************************************************************************
+LAST MODIFIED : 14 May 2001
+
+DESCRIPTION :
+Sets flag controlling, if create_enabled, whether a stream of nodes is
+created as the user drags the mouse around.
 ==============================================================================*/
 
 int destroy_listed_nodes(struct LIST(FE_node) *node_list,

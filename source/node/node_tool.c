@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 5 December 2000
+LAST MODIFIED : 14 May 2001
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -49,7 +49,7 @@ Module types
 
 struct Node_tool
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 14 May 2001
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -79,6 +79,9 @@ changes in node position and derivatives etc.
 	int define_enabled;
 	/* indicates whether new nodes will can be created */
 	int create_enabled;
+	/* if create_enabled, controls if create will be streaming, ie. creating
+		 a stream of nodes where the user swipes, rather than just 1 */
+	int streaming_create_enabled;
 	enum Node_tool_edit_mode edit_mode;
 	struct GROUP(FE_node) *node_group;
 	struct Computed_field *coordinate_field;
@@ -95,7 +98,7 @@ changes in node position and derivatives etc.
 
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
 		define_button,edit_button,motion_update_button,node_group_form,
-		node_group_widget,select_button;
+		node_group_widget,select_button,streaming_create_button;
 	Widget widget,window_shell;
 }; /* struct Node_tool */
 
@@ -150,6 +153,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,edit_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,node_group_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
 
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
 	struct FE_node *node)
@@ -1267,6 +1271,33 @@ response to interactive events.
 	LEAVE;
 } /* Node_tool_select_button_CB */
 
+static void Node_tool_streaming_create_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 14 May 2001
+
+DESCRIPTION :
+Callback from toggle button controlling whether nodes are created continuously,
+ie. streaming in response to interactive events = user drags.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_streaming_create_button_CB);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		Node_tool_set_streaming_create_enabled(node_tool,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_streaming_create_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_streaming_create_button_CB */
+
 static void Node_tool_update_node_group(Widget widget,
 	void *node_tool_void,void *node_group_void)
 /*******************************************************************************
@@ -1538,7 +1569,20 @@ release.
 						}
 						if (node_tool->last_picked_node)
 						{
-							if ((node_tool->edit_enabled)&&node_tool->motion_detected &&
+							if (node_tool->create_enabled &&
+								node_tool->streaming_create_enabled &&
+								(INTERACTIVE_EVENT_MOTION_NOTIFY == event_type))
+							{
+								if (picked_node = Node_tool_create_node_at_interaction_volume(
+									node_tool, scene, interaction_volume))
+								{
+									FE_node_selection_select_node(node_tool->node_selection,
+										picked_node);
+									REACCESS(FE_node)(&(node_tool->last_picked_node),
+										picked_node);
+								}
+							}
+							else if ((node_tool->edit_enabled)&&node_tool->motion_detected &&
 								(((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)&&
 									node_tool->motion_update_enabled)||
 									((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
@@ -1902,6 +1946,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			DIALOG_IDENTIFY(node_tool,define_button)},
 		{"node_tool_id_create_btn",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,create_button)},
+		{"node_tool_id_streaming_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,streaming_create_button)},
 		{"node_tool_id_node_group_form",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,node_group_form)},
 		{"node_tool_id_coord_field_form",(XtPointer)
@@ -1916,6 +1962,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		 (XtPointer)Node_tool_define_button_CB},
 		{"node_tool_create_btn_CB",
 		 (XtPointer)Node_tool_create_button_CB},
+		{"node_tool_streaming_btn_CB",
+		 (XtPointer)Node_tool_streaming_create_button_CB},
 		{"node_tool_destroy_selected_CB",
 		 (XtPointer)Node_tool_destroy_selected_CB},
 		{"node_tool_undefine_selected_CB",
@@ -1958,6 +2006,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->motion_update_enabled=1;
 				node_tool->define_enabled=0;
 				node_tool->create_enabled=0;
+				node_tool->streaming_create_enabled=0;
 				node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
 				node_tool->node_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
 					(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
@@ -2010,6 +2059,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->node_group_form=(Widget)NULL;
 				node_tool->node_group_widget=(Widget)NULL;
 				node_tool->select_button=(Widget)NULL;
+				node_tool->streaming_create_button=(Widget)NULL;
 				node_tool->widget=(Widget)NULL;
 				node_tool->window_shell=(Widget)NULL;
 
@@ -2092,6 +2142,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 										/*state*/node_tool->motion_update_enabled,/*notify*/False);
 									XmToggleButtonGadgetSetState(node_tool->select_button,
 										/*state*/node_tool->select_enabled,/*notify*/False);
+									XmToggleButtonGadgetSetState(node_tool->streaming_create_button,
+										/*state*/node_tool->streaming_create_enabled,/*notify*/False);
 									XtManageChild(node_tool->widget);
 									XtRealizeWidget(node_tool->window_shell);
 								}
@@ -2801,6 +2853,84 @@ Sets flag controlling whether existing nodes can be selected.
 
 	return (return_code);
 } /* Node_tool_set_select_enabled */
+
+int Node_tool_get_streaming_create_enabled(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 14 May 2001
+
+DESCRIPTION :
+Returns flag controlling, if create_enabled, whether a stream of nodes is
+created as the user drags the mouse around.
+==============================================================================*/
+{
+	int streaming_create_enabled;
+
+	ENTER(Node_tool_get_streaming_create_enabled);
+	if (node_tool)
+	{
+		streaming_create_enabled = node_tool->streaming_create_enabled;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_streaming_create_enabled.  Invalid argument(s)");
+		streaming_create_enabled = 0;
+	}
+	LEAVE;
+
+	return (streaming_create_enabled);
+} /* Node_tool_get_streaming_create_enabled */
+
+int Node_tool_set_streaming_create_enabled(struct Node_tool *node_tool,
+	int streaming_create_enabled)
+/*******************************************************************************
+LAST MODIFIED : 14 May 2001
+
+DESCRIPTION :
+Sets flag controlling, if create_enabled, whether a stream of nodes is
+created as the user drags the mouse around.
+==============================================================================*/
+{
+	int button_state, return_code;
+
+	ENTER(Node_tool_set_streaming_create_enabled);
+	if (node_tool)
+	{
+		if (streaming_create_enabled)
+		{
+			/* make sure value of flag is exactly 1 */
+			streaming_create_enabled = 1;
+		}
+		if (streaming_create_enabled != node_tool->streaming_create_enabled)
+		{
+			node_tool->streaming_create_enabled = streaming_create_enabled;
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(node_tool->streaming_create_button))
+			{
+				button_state = 1;
+			}
+			else
+			{
+				button_state = 0;
+			}
+			if (button_state != node_tool->streaming_create_enabled)
+			{
+				XmToggleButtonGadgetSetState(node_tool->streaming_create_button,
+					/*state*/node_tool->streaming_create_enabled, /*notify*/False);
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_streaming_create_enabled.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_streaming_create_enabled */
 
 int destroy_listed_nodes(struct LIST(FE_node) *node_list,
 	struct MANAGER(FE_node) *node_manager,
