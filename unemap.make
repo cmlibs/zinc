@@ -2,7 +2,7 @@ SHELL=/bin/sh
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
-BIN_PATH=devbin
+BIN_PATH=bin
 SOURCE_PATH=source
 
 VPATH=$(PRODUCT_PATH)

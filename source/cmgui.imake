@@ -32,7 +32,7 @@ XCOMM ==========================================================================
 
 SHELL=/bin/sh
 
-BIN_PATH=$(CMGUI_DEV_ROOT)/devbin
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 #if defined (CMISS_ROOT_DEFINED)
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui

@@ -17,7 +17,7 @@ XCOMM ==========================================================================
 
 SHELL=/bin/sh
 
-BIN_PATH=$(CMGUI_DEV_ROOT)/devbin
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
@@ -199,6 +199,12 @@ VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_O
 VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 #endif /* defined (CMISS_ROOT_DEFINED) */
 #elif defined (LINUX) /* switch OperatingSystem */
+#if defined (CMISS_ROOT_DEFINED)
+VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
+#else /* defined (CMISS_ROOT_DEFINED) */
+VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
+#endif /* defined (CMISS_ROOT_DEFINED) */
+#if defined (OLD_CODE)
 XCOMM LINUX treats VPATH slightly differently and does not notice
 XCOMM	that a local *.c file has changed if a valid *.olinux file
 XCOMM	is found in the PRODUCT_PATH directories so use vpath and
@@ -209,6 +215,7 @@ vpath %.f $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PAT
 vpath %.h $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
 vpath %.cpp $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
 vpath %.uil $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
+#endif
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)
