@@ -47,13 +47,20 @@ typedef struct USTMSCpair
 #include "three_d_drawing/dm_interface.h"
 #include "user_interface/message.h"
 
-/* These calls should be available in every system with GLX 1.3 or greater.
+#if defined (NEW_CODE)
+/* SAB 20 March 2002
+	These calls should be available in every system with GLX 1.3 or greater
+	but on the SGI the original code seems to work better with movies and
+	with grabbing frames off the screen.  Hopefully this will settle down at
+	some point.
 	The code should still run on an older GLX even if it is compiled on a GLX 1.3.
-   This macro is set for esp56 but not implemented.  Should be OK when we update Mesa */
-#if defined (GLX_VERSION_1_3) && !(GENERIC_PC)
+   This macro is set for esp56 but not implemented and so needs to be disabled
+	there too at the moment.  Should be OK when we update Mesa */
+#if defined (GLX_VERSION_1_3)
 #define GLX_pbuffer 1
 #define GLX_fbconfig 1
 #endif /* defined (GLX_VERSION_1_3) */
+#endif /* defined (NEW_CODE) */
 
 struct Dm_buffer
 {
