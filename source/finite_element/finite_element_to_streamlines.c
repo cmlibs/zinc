@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
@@ -15,10 +15,7 @@ Functions for calculating streamlines in finite elements.
 #include "finite_element/finite_element_to_streamlines.h"
 #include "general/debug.h"
 #include "general/geometry.h"
-#include "general/list_private.h"
-#include "general/manager_private.h"
 #include "general/matrix_vector.h"
-#include "general/object.h"
 #include "general/random.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_window.h"
@@ -29,6 +26,8 @@ Functions for calculating streamlines in finite elements.
 Module types
 ------------
 */
+
+#if defined (OLD_CODE)
 struct Interactive_streamline
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
@@ -71,6 +70,7 @@ Interactive_streamline type is private.
 FULL_DECLARE_LIST_TYPE(Interactive_streamline);
 
 FULL_DECLARE_MANAGER_TYPE(Interactive_streamline);
+#endif /* defined (OLD_CODE) */
 
 struct Streampoint
 {
@@ -100,7 +100,10 @@ struct Streampoint
 Module functions
 ----------------
 */
+
+#if defined (OLD_CODE)
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Interactive_streamline)
+#endif /* defined (OLD_CODE) */
 
 static int parent_not_equal_to_element(struct FE_element_parent *object,
 	void *user_data)
@@ -1072,6 +1075,7 @@ accurate if small), also ensuring that the element is updated.
 	return(return_code);
 } /* update_interactive_streampoint */
 
+#if defined (OLD_CODE)
 struct Streamline_event
 {
 	struct MANAGER(Interactive_streamline) *streamline_manager;
@@ -1261,6 +1265,8 @@ display_message(WARNING_MESSAGE,
 	return(return_code);
 } /* handle_interactive_streamline_event */
 #endif /* #if defined(NEW_CODE) */
+#endif /* defined (OLD_CODE) */
+
 static int track_streamline_from_FE_element(struct FE_element **element,
 	FE_value *xi,struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
@@ -1825,6 +1831,7 @@ following way:
 Global functions
 ----------------
 */
+#if defined (OLD_CODE)
 DECLARE_OBJECT_FUNCTIONS(Interactive_streamline)
 
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Interactive_streamline)
@@ -2041,7 +2048,7 @@ int update_interactive_streamline(struct Interactive_streamline *streamline,
 	FE_value *new_point,
 	struct MANAGER(Interactive_streamline) *streamline_manager )
 /*******************************************************************************
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Moves a streampoint to the new_point position.  This function works by an
@@ -2119,10 +2126,12 @@ xi coordinates.  To be accurate the change in position must be small.
 					return_code=0;
 				}
 			}
-			MANAGER_NOTE_CHANGE(Interactive_streamline)(
+			/*???RC Review Manager Messages Here */
+			MANAGER_BEGIN_CHANGE(Interactive_streamline)(streamline_manager,
 				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Interactive_streamline),
-				streamline,streamline_manager);
-			return_code=1;
+				streamline);
+			MANAGER_END_CHANGE(Interactive_streamline)(streamline_manager);
+			return_code = 1;
 		}
 		else
 		{
@@ -2318,6 +2327,7 @@ Returns the GT_object which represents the streamline.
 	LEAVE;
 	return ( return_code );
 } /* get_streamline_gt_object */
+#endif /* defined (OLD_CODE) */
 
 struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
@@ -3270,4 +3280,3 @@ Converts a 3-D element into an array of particles.
 
 	return (return_code);
 } /* element_to_particle */
-

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.h
 
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
@@ -20,6 +20,7 @@ Global types
 ----------------
 */
 
+#if defined (OLD_CODE)
 struct Interactive_streamline;
 /*******************************************************************************
 LAST MODIFIED : 18 October 1997
@@ -28,6 +29,11 @@ DESCRIPTION :
 Interactive_streamline type is private.
 ==============================================================================*/
 
+DECLARE_LIST_TYPES(Interactive_streamline);
+
+DECLARE_MANAGER_TYPES(Interactive_streamline);
+#endif /* defined (OLD_CODE) */
+
 struct Streampoint;
 /*******************************************************************************
 LAST MODIFIED : 11 November 1997
@@ -35,10 +41,6 @@ LAST MODIFIED : 11 November 1997
 DESCRIPTION :
 Streampoint type is private.
 ==============================================================================*/
-
-DECLARE_LIST_TYPES(Interactive_streamline);
-
-DECLARE_MANAGER_TYPES(Interactive_streamline);
 
 struct Element_to_streamline_data
 /*******************************************************************************
@@ -105,6 +107,8 @@ Data for converting a 3-D element into an array of particles.
 Global functions
 ----------------
 */
+
+#if defined (OLD_CODE)
 PROTOTYPE_OBJECT_FUNCTIONS(Interactive_streamline);
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Interactive_streamline);
@@ -173,6 +177,7 @@ LAST MODIFIED : 28 October 1997
 DESCRIPTION :
 Returns the GT_object which represents the streamline.
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
@@ -215,6 +220,7 @@ DESCRIPTION :
 Creates a <GT_pointset> streampoint which can be manipulated with the mouse.
 ==============================================================================*/
 
+#if defined (OLD_CODE)
 int update_interactive_streamline(struct Interactive_streamline *streamline,
 	FE_value *new_point,
 	struct MANAGER(Interactive_streamline) *streamline_manager);
@@ -226,6 +232,7 @@ Moves a streampoint to the new_point position.  This function works by an
 incremental step change to allow it to calculate the correct element and the
 xi coordinates.  To be accurate the change in position must be small.
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,
@@ -276,4 +283,5 @@ LAST MODIFIED : 6 January 1998
 DESCRIPTION :
 Converts a 3-D element into an array of particles.
 ==============================================================================*/
+
 #endif /* !defined (FINITE_ELEMENT_TO_STREAMLINES_H) */
