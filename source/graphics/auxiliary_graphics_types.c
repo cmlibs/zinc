@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.c
 
-LAST MODIFIED : 14 September 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -21,270 +21,141 @@ represent curvesin three xi-directions;
 Global functions
 ----------------
 */
-char *Glyph_edit_mode_string(enum Glyph_edit_mode glyph_edit_mode)
+char *Graphics_select_mode_string(enum Graphics_select_mode select_mode)
 /*******************************************************************************
-LAST MODIFIED : 14 September 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Returns a pointer to a static string describing the glyph_edit_mode, eg.
-GLYPH_EDIT_POSITION == "position". This string should match the command used
-to create the edit object. The returned string must not be DEALLOCATEd!
+Returns a pointer to a static string describing the select_mode, eg.
+GRAPHICS_NO_SELECT="no_select".This string should match the command
+used to enact the mode. The returned string must not be DEALLOCATEd!
 ==============================================================================*/
 {
 	char *return_string;
 
-	ENTER(Glyph_edit_mode_string);
-	switch (glyph_edit_mode)
+	ENTER(Graphics_select_mode_string);
+	switch (select_mode)
 	{
-		case GLYPH_EDIT_OFF:
+		case GRAPHICS_SELECT_ON:
 		{
-			return_string="edit_off";
+			return_string="select_on";
 		} break;
-		case GLYPH_EDIT_POSITION:
+		case GRAPHICS_NO_SELECT:
 		{
-			return_string="edit_position";
+			return_string="no_select";
 		} break;
-		case GLYPH_EDIT_SELECT:
+		case GRAPHICS_DRAW_SELECTED:
 		{
-			return_string="edit_select";
+			return_string="draw_selected";
 		} break;
-		case GLYPH_EDIT_VECTOR:
+		case GRAPHICS_DRAW_UNSELECTED:
 		{
-			return_string="edit_vector";
+			return_string="draw_unselected";
 		} break;
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Glyph_edit_mode_string.  Unknown glyph_edit_mode");
+				"Graphics_select_mode_string.  Unknown select_mode");
 			return_string=(char *)NULL;
 		} break;
 	}
 	LEAVE;
 
 	return (return_string);
-} /* Glyph_edit_mode_string */
+} /* Graphics_select_mode_string */
 
-char **Glyph_edit_mode_get_valid_strings(int *number_of_valid_strings)
+char **Graphics_select_mode_get_valid_strings(int *number_of_valid_strings)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Returns and allocated array of pointers to all static strings for valid
-Glyph_edit_modes - obtained from function Glyph_edit_mode_string.
+Graphics_select_modes - obtained from function Graphics_select_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
 	char **valid_strings;
-	enum Glyph_edit_mode glyph_edit_mode;
+	enum Graphics_select_mode select_mode;
 	int i;
 
-	ENTER(Glyph_edit_mode_get_valid_strings);
+	ENTER(Graphics_select_mode_get_valid_strings);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=0;
-		glyph_edit_mode=GLYPH_EDIT_MODE_BEFORE_FIRST;
-		glyph_edit_mode++;
-		while (glyph_edit_mode<GLYPH_EDIT_MODE_AFTER_LAST)
+		select_mode=GRAPHICS_SELECT_MODE_BEFORE_FIRST;
+		select_mode++;
+		while (select_mode<GRAPHICS_SELECT_MODE_AFTER_LAST)
 		{
 			(*number_of_valid_strings)++;
-			glyph_edit_mode++;
+			select_mode++;
 		}
 		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
 		{
-			glyph_edit_mode=GLYPH_EDIT_MODE_BEFORE_FIRST;
-			glyph_edit_mode++;
+			select_mode=GRAPHICS_SELECT_MODE_BEFORE_FIRST;
+			select_mode++;
 			i=0;
-			while (glyph_edit_mode<GLYPH_EDIT_MODE_AFTER_LAST)
+			while (select_mode<GRAPHICS_SELECT_MODE_AFTER_LAST)
 			{
-				valid_strings[i]=Glyph_edit_mode_string(glyph_edit_mode);
+				valid_strings[i]=Graphics_select_mode_string(select_mode);
 				i++;
-				glyph_edit_mode++;
+				select_mode++;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Glyph_edit_mode_get_valid_strings.  Not enough memory");
+				"Graphics_select_mode_get_valid_strings.  Not enough memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Glyph_edit_mode_get_valid_strings.  Invalid argument");
+			"Graphics_select_mode_get_valid_strings.  Invalid argument");
 		valid_strings=(char **)NULL;
 	}
 	LEAVE;
 
 	return (valid_strings);
-} /* Glyph_edit_mode_get_valid_strings */
+} /* Graphics_select_mode_get_valid_strings */
 
-enum Glyph_edit_mode Glyph_edit_mode_from_string(char *glyph_edit_mode_string)
+enum Graphics_select_mode Graphics_select_mode_from_string(
+	char *select_mode_string)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Returns the <Glyph_edit_mode> described by <glyph_edit_mode_string>, or NULL if
-not recognized.
+Returns the <Graphics_select_mode> described by <select_mode_string>,
+or NULL if not recognized.
 ==============================================================================*/
 {
-	enum Glyph_edit_mode glyph_edit_mode;
+	enum Graphics_select_mode select_mode;
 
-	ENTER(Glyph_edit_mode_from_string);
-	if (glyph_edit_mode_string)
+	ENTER(Graphics_select_mode_from_string);
+	if (select_mode_string)
 	{
-		glyph_edit_mode=GLYPH_EDIT_MODE_BEFORE_FIRST;
-		glyph_edit_mode++;
-		while ((glyph_edit_mode<GLYPH_EDIT_MODE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(glyph_edit_mode_string,
-				Glyph_edit_mode_string(glyph_edit_mode))))
+		select_mode=GRAPHICS_SELECT_MODE_BEFORE_FIRST;
+		select_mode++;
+		while ((select_mode<GRAPHICS_SELECT_MODE_AFTER_LAST)&&
+			(!fuzzy_string_compare_same_length(select_mode_string,
+				Graphics_select_mode_string(select_mode))))
 		{
-			glyph_edit_mode++;
+			select_mode++;
 		}
-		if (GLYPH_EDIT_MODE_AFTER_LAST==glyph_edit_mode)
+		if (GRAPHICS_SELECT_MODE_AFTER_LAST==select_mode)
 		{
-			glyph_edit_mode=GLYPH_EDIT_MODE_INVALID;
+			select_mode=GRAPHICS_SELECT_MODE_INVALID;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Glyph_edit_mode_from_string.  Invalid argument");
-		glyph_edit_mode=GLYPH_EDIT_MODE_INVALID;
+			"Graphics_select_mode_from_string.  Invalid argument");
+		select_mode=GRAPHICS_SELECT_MODE_INVALID;
 	}
 	LEAVE;
 
-	return (glyph_edit_mode);
-} /* Glyph_edit_mode_from_string */
-
-#if defined (OLD_CODE)
-char *GT_fibre_style_string(enum GT_fibre_style fibre_style)
-/*******************************************************************************
-LAST MODIFIED : 25 June 1998
-
-DESCRIPTION :
-Returns a pointer to a static string describing the fibre_style, eg.
-GT_FIBRE_STYLE_LINE == "lines". The returned string must not be DEALLOCATEd!
-==============================================================================*/
-{
-	char *return_string;
-
-	ENTER(GT_fibre_style_string);
-	switch (fibre_style)
-	{
-		case GT_FIBRE_STYLE_CYLINDERS:
-		{
-			return_string="cylinders";
-		} break;
-		case GT_FIBRE_STYLE_DIAMONDS:
-		{
-			return_string="diamonds";
-		} break;
-		case GT_FIBRE_STYLE_LINES:
-		{
-			return_string="lines";
-		} break;
-		case GT_FIBRE_STYLE_RECTANGLES:
-		{
-			return_string="rectangles";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_fibre_style_string.  Unknown fibre_style");
-			return_string=(char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (return_string);
-} /* GT_fibre_style_string */
-
-int set_GT_fibre_style(struct Parse_state *state,
-	void *fibre_style_address_void,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 25 June 1998
-
-DESCRIPTION :
-A modifier function for setting number of segments used to draw circles.
-==============================================================================*/
-{
-	char *current_token,*style_string;
-	int return_code,style_found;
-	enum GT_fibre_style *fibre_style_address,fibre_style;
-	struct User_interface *user_interface;
-
-	ENTER(set_GT_fibre_style);
-	if (state&&(fibre_style_address=
-		(enum GT_fibre_style *)fibre_style_address_void))
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				return_code=1;
-				*fibre_style_address=GT_FIBRE_STYLE_INVALID;
-				fibre_style=GT_FIBRE_STYLE_BEFORE_FIRST;
-				for (fibre_style++;(GT_FIBRE_STYLE_INVALID == *fibre_style_address)&&
-					(fibre_style<GT_FIBRE_STYLE_AFTER_LAST);fibre_style++)
-				{
-					if (style_string=GT_fibre_style_string(fibre_style))
-					{
-						if (fuzzy_string_compare(current_token,style_string))
-						{
-							*fibre_style_address = fibre_style;
-						}
-					}
-				}
-				if (GT_FIBRE_STYLE_INVALID == *fibre_style_address)
-				{
-					display_message(ERROR_MESSAGE,"Invalid fibre style");
-					display_parse_state_location(state);
-					return_code=0;
-				}
-				else
-				{
-					return_code=shift_Parse_state(state,1);
-				}
-			}
-			else
-			{
-				/* print out available fibre styles for help */
-				fibre_style=GT_FIBRE_STYLE_BEFORE_FIRST;
-				fibre_style++;
-				display_message(INFORMATION_MESSAGE," %s",
-					GT_fibre_style_string(fibre_style));
-				for (fibre_style++;fibre_style<GT_FIBRE_STYLE_AFTER_LAST;fibre_style++)
-				{
-					if (style_string=GT_fibre_style_string(fibre_style))
-					{
-						display_message(INFORMATION_MESSAGE,"|%s",style_string);
-					}
-				}
-				if (style_string=GT_fibre_style_string(*fibre_style_address))
-				{
-					display_message(INFORMATION_MESSAGE,"[%s]",style_string);
-				}
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing fibre style");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_GT_fibre_style.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_GT_fibre_style */
-#endif /* defined (OLD_CODE) */
+	return (select_mode);
+} /* Graphics_select_mode_from_string */
 
 int set_exterior(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)

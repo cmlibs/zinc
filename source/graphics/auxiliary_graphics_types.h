@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.h
 
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -29,24 +29,25 @@ DESCRIPTION :
 	int number_in_xi1,number_in_xi2,number_in_xi3;
 }; /* struct Element_discretization */
 
-enum Glyph_edit_mode
+enum Graphics_select_mode
 /*******************************************************************************
-LAST MODIFIED : 14 September 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Enumerator for specifying which parts of a glyph are active for editing, if any.
-Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
-for automatic creation of choose_enumerator widgets.
+Enumerator for specifying which parts of a graphic are named for selecting, if
+any, and how they should be rendered depending on their selection status.
+Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the
+list for automatic creation of choose_enumerator widgets.
 ==============================================================================*/
 {
-	GLYPH_EDIT_MODE_INVALID,
-	GLYPH_EDIT_MODE_BEFORE_FIRST,
-	GLYPH_EDIT_OFF,
-	GLYPH_EDIT_POSITION,
-	GLYPH_EDIT_SELECT,
-	GLYPH_EDIT_VECTOR,
-	GLYPH_EDIT_MODE_AFTER_LAST
-}; /* enum Glyph_edit_mode */
+	GRAPHICS_SELECT_MODE_INVALID,
+	GRAPHICS_SELECT_MODE_BEFORE_FIRST,
+	GRAPHICS_SELECT_ON,
+	GRAPHICS_NO_SELECT,
+	GRAPHICS_DRAW_SELECTED,
+	GRAPHICS_DRAW_UNSELECTED,
+	GRAPHICS_SELECT_MODE_AFTER_LAST
+}; /* enum Graphics_select_mode */
 
 enum Streamline_type
 /*******************************************************************************
@@ -91,31 +92,6 @@ for automatic creation of choose_enumerator widgets.
 
 typedef float Triple[3];
 
-#if defined (OLD_CODE)
-enum GT_fibre_style
-/*******************************************************************************
-LAST MODIFIED : 25 June 1998
-
-DESCRIPTION :
-Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
-without knowing which order the types are in. Can then easily create option
-menus by combining GT_fibre_style_string() with this feature.
-???RC May be even better if all such enumerated types were integers using
-appropriately named constants; that way a common function could be used to
-build option menus for selecting them. A common modifier function text input
-is equally feasible.
-==============================================================================*/
-{
-	GT_FIBRE_STYLE_INVALID,
-	GT_FIBRE_STYLE_BEFORE_FIRST,
-	GT_FIBRE_STYLE_LINES,
-	GT_FIBRE_STYLE_RECTANGLES,
-	GT_FIBRE_STYLE_DIAMONDS,
-	GT_FIBRE_STYLE_CYLINDERS,
-	GT_FIBRE_STYLE_AFTER_LAST
-}; /* enum GT_fibre_style */
-#endif /* defined (OLD_CODE) */
-
 enum Xi_discretization_mode
 /*******************************************************************************
 LAST MODIFIED : 22 March 1999
@@ -152,33 +128,34 @@ Make sure Xi_discretization_mode_string handles any enumerated values you add.
 Global functions
 ----------------
 */
-char *Glyph_edit_mode_string(enum Glyph_edit_mode glyph_edit_mode);
+char *Graphics_select_mode_string(enum Graphics_select_mode select_mode);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Returns a pointer to a static string describing the glyph_edit_mode, eg.
-GLYPH_EDIT_POSITION == "position". This string should match the command used
-to create the edit object. The returned string must not be DEALLOCATEd!
+Returns a pointer to a static string describing the select_mode, eg.
+GRAPHICS_NO_SELECT="no_select".This string should match the command
+used to enact the mode. The returned string must not be DEALLOCATEd!
 ==============================================================================*/
 
-char **Glyph_edit_mode_get_valid_strings(int *number_of_valid_strings);
+char **Graphics_select_mode_get_valid_strings(int *number_of_valid_strings);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Returns and allocated array of pointers to all static strings for valid
-Glyph_edit_modes - obtained from function Glyph_edit_mode_string.
+Graphics_select_modes - obtained from function Graphics_select_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 
-enum Glyph_edit_mode Glyph_edit_mode_from_string(char *glyph_edit_mode_string);
+enum Graphics_select_mode Graphics_select_mode_from_string(
+	char *select_mode_string);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Returns the <Glyph_edit_mode> described by <glyph_edit_mode_string>, or NULL if
-not recognized.
+Returns the <Graphics_select_mode> described by <select_mode_string>,
+or NULL if not recognized.
 ==============================================================================*/
 
 int set_exterior(struct Parse_state *state,void *value_address_void,
