@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 28 January 2001
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -31908,7 +31908,7 @@ Returns true if the element referred to by <element_parent> is in the given
 int FE_element_parent_face_of_element_in_group(
 	struct FE_element_parent *element_parent,void *face_in_group_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 Returns true if the <element_parent> refers to the given <face_number> of the
@@ -31916,6 +31916,7 @@ parent element AND the parent element is also in the <element_group>.
 Conditional function for determining if a 1-D or 2-D element is on a particular
 face of a 3-D element in the given element_group. Recursive to handle 1-D case.
 If the element group is omitted, no check is made on membership in it.
+Now also handles case of 2-D top-level elements.
 ==============================================================================*/
 {
 	int return_code;
@@ -31927,26 +31928,30 @@ If the element group is omitted, no check is made on membership in it.
 		(face_in_group_data=(struct FE_element_parent_face_of_element_in_group_data
 			*)face_in_group_data_void))
 	{
-		if (2==parent->shape->dimension)
+		if ((2 == parent->shape->dimension) &&
+			((struct FE_element_parent *)NULL !=
+				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+					(LIST_CONDITIONAL_FUNCTION(FE_element_parent) *)NULL, (void *)NULL,
+					parent->parent_list)))
 		{
 			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
 				FE_element_parent_face_of_element_in_group,
 				face_in_group_data_void,parent->parent_list))
 			{
-				return_code=1;
+				return_code = 1;
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		else
 		{
-			return_code=
-				(element_parent->face_number==face_in_group_data->face_number)&&
-				(!(face_in_group_data->element_group)||
+			return_code =
+				(element_parent->face_number == face_in_group_data->face_number) &&
+				(!(face_in_group_data->element_group) ||
 					FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-						parent->identifier,face_in_group_data->element_group));
+						parent->identifier, face_in_group_data->element_group));
 		}
 	}
 	else
