@@ -1534,9 +1534,9 @@ exactly the same as for materials. Note environment map materials are used in
 preference to normal materials.
 ==============================================================================*/
 {
-	int i, ii, return_code;
+	int first, i, ii, return_code;
 	struct Environment_map *environment_map;
-	struct Graphical_material *last_material,*next_material;
+	struct Graphical_material *last_material, *next_material;
 	struct Spectrum_render_data *render_data;
 
 	ENTER(draw_voltexGL);
@@ -1551,18 +1551,26 @@ preference to normal materials.
 		(0 < n_rep) && (0 < n_iso_polys))
 	{
 #if defined (OPENGL_API)
-		if (iso_poly_material_index && iso_poly_material_index[0])
+		last_material = (struct Graphical_material *)NULL;
+		if (iso_poly_environment_map_index &&
+			iso_poly_environment_map_index[0])
+		{
+			if (environment_map = per_vertex_environment_maps[
+				iso_poly_environment_map_index[0] - 1])
+			{
+				last_material =
+					environment_map->face_material[texturemap_index[0]];
+			}
+		}
+		else if (iso_poly_material_index && iso_poly_material_index[0])
 		{
 			last_material = per_vertex_materials[iso_poly_material_index[0] - 1];
 		}
-		else
+		if (!last_material)
 		{
 			last_material = default_material;
 		}
-		if (last_material)
-		{
-			execute_Graphical_material(last_material);
-		}
+		first = 1;
 		if ((!data)||(render_data=spectrum_start_renderGL(spectrum,last_material,
 				number_of_data_components)))
 		{
@@ -1594,10 +1602,19 @@ preference to normal materials.
 					{
 						next_material = default_material;
 					}
-					if (next_material != last_material)
+					if (first || (next_material != last_material))
 					{
+						if (last_material &&
+							Graphical_material_get_texture(last_material) &&
+							next_material &&
+							(!Graphical_material_get_texture(next_material)))
+						{
+							/* turn off last texture */
+							execute_Texture((struct Texture *)NULL);
+						}
 						execute_Graphical_material(next_material);
 						last_material = next_material;
+						first = 0;
 					}
 
 					glBegin(GL_TRIANGLES);
@@ -1638,7 +1655,9 @@ preference to normal materials.
 					{
 						next_material = default_material;
 					}
-					if (next_material != last_material)
+					/* Note cannot change material per vertex if it has a texture */
+					if ((next_material != last_material) && next_material && 
+						(!Graphical_material_get_texture(next_material)))
 					{
 						execute_Graphical_material(next_material);
 						last_material=next_material;
@@ -1681,10 +1700,12 @@ preference to normal materials.
 					{
 						next_material = default_material;
 					}
-					if (next_material != last_material)
+					/* Note cannot change material per vertex if it has a texture */
+					if ((next_material != last_material) && next_material && 
+						(!Graphical_material_get_texture(next_material)))
 					{
 						execute_Graphical_material(next_material);
-						last_material = next_material;
+						last_material=next_material;
 					}
 
 					if (texturemap_coord)
@@ -1700,6 +1721,7 @@ preference to normal materials.
 						&(vertex_list[triangle_list[i*3+1]+n_vertices*ii].normal[0]));
 					glVertex3fv(
 						&(vertex_list[triangle_list[i*3+1]+n_vertices*ii].coord[0]));
+
 					glEnd();
 				}
 			}
