@@ -23,14 +23,19 @@ my $j;
 my $k;
 my $l;
 my $values;
+my $versions;
 my $read_already;
-my $node_field_values_name;
-my $node_parameter_list_name;
-my $element_field_values_name;
+my $node_template_name;
+my $element_interpolation_name;
 my $scale_factor_list_name;
 my %scale_factor_list_lookup;
 my $node_list_name;
-my $element_parameter_list_name;
+my $element_template;
+my $element_template_name;
+my %element_template_lookup;
+my $element_nodal_values;
+my $element_nodal_values_name;
+my %element_nodal_values_lookup;
 my $mapping_name;
 my $value_type;
 my $node_name;
@@ -41,7 +46,8 @@ my $face_name;
 my $node_list_number;
 my %scale_factor_list_numbers;
 my $number_of_scale_factor_sets;
-my %mapping;
+my $mapping;
+my %mapping_lookup;
 my $name;
 my $new_field;
 my $node_index;
@@ -53,11 +59,14 @@ my @list;
 my @node_list_indices;
 my @derivative_types;
 my @scale_factor_list_indices;
+my @value_types;
 my $derivative;
 my $count;
 my $derivative_line;
 my $basis;
 my $index;
+my $version;
+my $indent;
 
 my $line_name_offset = 100000;
 my $face_name_offset = 200000;
@@ -75,12 +84,12 @@ $node_field_defined = 0;
 $element_field_declared = 0;
 $element_field_defined = 0;
 
-$node_field_values_name = "NodeFieldValuerZ";
-$node_parameter_list_name = "NodeParameterLissZ";
-$element_field_values_name = "ElementFieldValuerZ";
-$scale_factor_list_name = "ScaleFactorSesZ";
-$node_list_name = "NodeSesZ";
-$element_parameter_list_name = "ElementParameterLissZ";
+$node_template_name = "NodeTemplatdZ";
+$element_interpolation_name = "ElementInterpolatiomZ";
+$scale_factor_list_name = "ScaleFactorLissZ";
+$node_list_name = "ElementNodeLissZ";
+$element_template_name = "ElementTemplatdZ";
+$element_nodal_values_name = "ElementNodalValuerZ";
 $mapping_name = "MappinfZ";
 
 my $time_var = localtime(time());
@@ -137,12 +146,24 @@ while (defined $_)
 			 for ($j = 0 ; $j < $field_number_components{$name} ; $j++)
 			 {
 				$_ = <>;
-				if (m"([^\.\s]+)\.\s+Value index=\s*\d+,\s+#Derivatives=\s*(\d+)\s*\(?([\w/,]*)\)?(?:,\s*#Versions\s*(\d+))?")
+				if (m"([^\.\s]+)\.\s+Value index=\s*\d+,\s+#Derivatives=\s*(\d+)\s*(?:\(([\w/,]*)\))?(?:,\s*#Versions=\s*(\d+))?")
 				{
 				  define_field_parameter(\$field_components_names{$name}[$j],
 					 "component names", $1, $name, $_);
 				  $field_components_derivatives{$name}[$j] = $2;
-				  $field_components_type_names{$name}[$j] = "value,$3";
+				  if (defined $3)
+				  {
+					 define_field_parameter(\$field_components_type_names{$name}[$j],
+					   "type_names", "value,$3", $name, $_);
+				  }
+				  else
+				  {
+					 $field_components_type_names{$name}[$j] = "value";
+					 for ($k = 1 ; $k <= $field_components_derivatives{$name}[$j] ; $k++)
+					 {
+						$field_components_type_names{$name}[$j] .= ",value_$k";
+					 }
+				  }
 				  $field_components_versions{$name}[$j] = $4;
 				}
 				elsif (m"([^\.\s]+)\.\s+([^,]+),\s+([^,]+),\s+([^\.]+)\.")
@@ -177,9 +198,24 @@ while (defined $_)
 						if (m"Value indices:\s+(\d+(\s+\d+)*)")
 						{
 						  $count = scalar (@list = split(/\s+/, $1));
+						  @value_types = split(',', $field_components_type_names{$name}[$j]);
+						  #Do not use $field_components_versions{$name}[$j] here
+						  #as that is just for the last node.  If there are more values
+						  #used than value types, assume that is a version.
 						  for ($l = 0 ; $l < $count ; $l++)
 						  {
-							 $node_indices .= "$node_index ";
+							 $version = int(($list[$l]-1) / scalar (@value_types));
+							 if ($version)
+							 {
+								$index = ($list[$l]-1) - $version * scalar (@value_types);
+								#Write out the version index starting at 1
+								$version++;
+								$node_indices .= "$node_index.$version.$value_types[$index] ";
+							 }
+							 else
+							 {
+								$node_indices .= "$node_index.$value_types[$l] ";
+							 }
 						  }
 						}
 						else
@@ -274,59 +310,68 @@ GROUP_HEADER
 #Write the node field if the field is new or different
 		if (! $node_field_defined)
 		{
-		  $node_field_values_name++;
-		  $node_parameter_list_name++;
+		  $node_template_name++;
 		  $expected_number_of_nodal_values = 0;
-		  print <<NODE_VALUES_HEADER;
-		<node_field_values name="$node_field_values_name"
-NODE_VALUES_HEADER
+		  print <<NODE_VALUES_FIELD_1A;
+	  <labels_template name="$node_template_name">
+NODE_VALUES_FIELD_1A
         for ($i = 0 ; $i < $number_of_fields ; $i++)
 		  {
 			 $name = $field_name[$i];
-			 print <<NODE_VALUES_FIELD_1;
-			<parameter_list name="$node_parameter_list_name">
-			   <node_field ref="$field_name[$i]">
-NODE_VALUES_FIELD_1
+			 print <<NODE_VALUES_FIELD_1B;
+		 <field_ref ref="$name">
+NODE_VALUES_FIELD_1B
 
           for ($j = 0 ; $j < $field_number_components{$name} ; $j++)
 			 {
 				print <<NODE_VALUES_FIELD_2;
-				   <node_field_component ref="$field_components_names{$name}[$j]">
+			<component_ref ref="$field_components_names{$name}[$j]">
 NODE_VALUES_FIELD_2
 
-            if (defined $field_components_type_names{$name}[$j])
+				if (defined $field_components_versions{$name}[$j])
+				  {
+					 $versions = $field_components_versions{$name}[$j];
+				  }
+				else
+				  {
+					 $versions = 1;
+				  }
+				for ($l = 1 ; $l <= $versions ; $l++)
 				{
+				  $indent = "";
+				  if ($versions > 1)
+				  {
+					 print <<NODE_VALUES_FIELD_3A;
+           <label name="version_$l">
+NODE_VALUES_FIELD_3A
+                $indent = "  ";
+				  }
 				  for $value_type (split(',', $field_components_type_names{$name}[$j]))
 				  {
 					 print <<NODE_VALUES_FIELD_3;
-				      <parameter name="$value_type"/>
+$indent           <label name="$value_type"/>
 NODE_VALUES_FIELD_3
-                $expected_number_of_nodal_values++;
+					 $expected_number_of_nodal_values++;
 				  }
-				}
-				elsif ($field_components_derivatives{$name}[$j] > 0)
-				{
-				  for ($k = 0 ; $k < $field_components_derivatives{$name}[$j] ; $k++)
+				  if ($versions > 1)
 				  {
-					 print <<NODE_VALUES_FIELD_4;
-				      <parameter name="value_type_$k"/>
-NODE_VALUES_FIELD_4
-                $expected_number_of_nodal_values++;
+					 print <<NODE_VALUES_FIELD_3B;
+			  </label>
+NODE_VALUES_FIELD_3B
 				  }
 				}
 				print <<NODE_VALUES_FIELD_5;
-			      </node_field_component>
+			</component_ref>
 NODE_VALUES_FIELD_5
 			 }
 		  print <<NODE_VALUES_FIELD_6;
-		      </node_field>
-		   </parameter_list>
+	    </field_ref>
 NODE_VALUES_FIELD_6
 		  }
-		  print <<NODE_VALUES_END;
-		</node_field_values>
+		  print <<NODE_VALUES_FIELD_7;
+	  </labels_template>
 
-NODE_VALUES_END
+NODE_VALUES_FIELD_7
          $node_field_defined = 1;
 		}
 		
@@ -346,12 +391,11 @@ NODE_VALUES_END
 
 #Write the actual node		
 		print <<NODE_1;
-		<node name="$node_name">
-		  <node_field_values ref="$node_field_values_name">
-			 <parameter_list name="$node_parameter_list_name">
-$values			 </parameter_list>
-		  </node_field_values>
-		</node>
+	  <node name="$node_name">
+		 <assign_labels template_name="$node_template_name">
+$values
+		 </assign_labels>
+	  </node>
 
 NODE_1
 	 }
@@ -385,7 +429,7 @@ NODE_1
 	 {
 		$node_list_number = $1;
 		$node_list_name++;
-      %mapping = ();
+      %mapping_lookup = ();
 	 }
 
 	 elsif (m"#Scale factor sets=\s*(\d+)")
@@ -412,7 +456,7 @@ NODE_1
 				die ("Could not parse number of scale factors\n$_");
 			 }
 		}
-		%mapping = ();
+		%mapping_lookup = ();
 	 }
 
 	 elsif (m/Element:\s+(\d+)\s+(\d+)\s+(\d+)/)
@@ -426,107 +470,155 @@ NODE_1
           for ($j = 0 ; $j < $field_number_components{$name} ; $j++)
 			 {
 				$basis = $field_components_basis{$name}[$j];
-				if (! $mapping{$field_components_basis{$name}[$j]})
+				if (! $mapping_lookup{$basis})
 				{
-				  $element_parameter_list_name++;
 				  $mapping_name++;
-				  $mapping{$field_components_basis{$name}[$j]} = $mapping_name;
-              @node_list_indices = split(/\s+/, $field_components_node_indices{$name}[$j]);
-				  @derivative_types = split(/[,\s]+/, $field_components_type_names{$name}[$j]);
-              @scale_factor_list_indices = split(/\s+/, $field_components_scale_factor_indices{$name}[$j]);
+				  $mapping_lookup{$basis} = $mapping_name;
+				  $element_nodal_values_name++;
+				  $element_nodal_values_lookup{$basis} = $element_nodal_values_name;
 				  if (! defined $scale_factor_list_lookup{$basis})
 				  {
 					 die ("No scale factor set found for basis $basis\n$_");
 				  }
- 				  print <<ELEMENT_PARAMETER_LIST_1;
-		<parameter_list name="$element_parameter_list_name">
-ELEMENT_PARAMETER_LIST_1
-
-              for ($k = 0 ; $k < $field_components_number_of_parameters{$name}[$j] ; $k++)
-              {
-                if (($k > 0) && ($node_list_indices[$k] eq $node_list_indices[$k-1]))
-                {
-						 $derivative++;
-					 }
-					 else
-					 {
-						 $derivative = 1;
-					 }
-					 if (defined $derivative_types[$derivative-1])
-					 {
-						$derivative_line = "indices=\"$derivative_types[$derivative-1]\"";
-					 }
-					 else
-					 {
-						$derivative_line = "indices=\"$derivative\"";
-					 }
-#Cannot name the parameter list here as this should be valid for any
-#nodal list that has the correct field, component, index name
-				    print <<ELEMENT_PARAMETER_LIST_2;
-        <nodal_parameter $derivative_line\>
-            <node><parameter parameter_list="$node_list_name"
-                             indices="$node_list_indices[$k]"/></node>
-        </nodal_parameter>
-ELEMENT_PARAMETER_LIST_2
-              }
-				 print <<ELEMENT_PARAMETER_LIST_3;
-		</parameter_list>
-
-ELEMENT_PARAMETER_LIST_3
-
+#           What if we don't want to start with the first scale factor
+#				@scale_factor_list_indices = split(/\s+/, $field_components_scale_factor_indices{$name}[$j]);
  				  print <<MAPPING_1;
 		<mapping name="$mapping_name"
 					      basis="$basis"
 					      modification="$field_components_modification{$name}[$j]">
         <coefficients>
-MAPPING_1
-              for ($k = 0 ; $k < $field_components_number_of_parameters{$name}[$j] ; $k++)
-              {
-					 $index = $k+1;
-				    print <<MAPPING_2;
-           <coefficient>
-              <parameter parameter_list="$element_parameter_list_name"
-                         indices="$index"/>
-              <parameter parameter_list="$scale_factor_list_name"
-                         indices="$scale_factor_list_indices[$k]"/>
-           </coefficient>
-MAPPING_2
-              }
-				 print <<MAPPING_3;
+           <product>
+              <element_lookup>
+                <field_lookup>
+                  <component_lookup>
+                    <label name="$element_nodal_values_name"/>
+                  </component_lookup>
+                </field_lookup>
+              </element_lookup>
+              <element_lookup>
+                <label name="$scale_factor_list_lookup{$basis}"/> #Need offset/split lists
+              </element_lookup>
+           </product>
         </coefficients>
 		</mapping>
 
-MAPPING_3
+MAPPING_1
+				}
+			 }
+		  }
+
+        for ($i = 0 ; $i < $number_of_fields ; $i++)
+		  {
+			 $name = $field_name[$i];
+          for ($j = 0 ; $j < $field_number_components{$name} ; $j++)
+			 {
+				@node_list_indices = split(/\s+/, $field_components_node_indices{$name}[$j]);
+				#Split and rejoin the values so that they have identical formatting
+				$index = "@node_list_indices";
+				if (! defined $element_template_lookup{$index})
+				{
+				  $element_template_name++;
+				  $element_template_lookup{$index} = $element_template_name;
+ 				  print <<ELEMENT_TEMPLATE_1;
+		<labels_template name="$element_template_name">
+ELEMENT_TEMPLATE_1
+
+              for ($k = 0 ; $k < $field_components_number_of_parameters{$name}[$j] ; $k++)
+              {
+					 if ($node_list_indices[$k] =~ m/([^.\s]+)\.([^.\s]+)\.([^.\s]+)/)
+					 {
+						$node_index = $1;
+						$version = "version_$2";
+						$value_type = $3;
+				    print <<ELEMENT_TEMPLATE_2A;
+        <node_lookup>
+          <node>
+            <element_lookup>
+              <label indices="$node_list_name">
+                <label indices="$node_index"/>
+              </label>
+            </element_lookup>
+          </node>
+          <field_lookup>
+            <component_lookup>
+              <label indices="$version">
+                <label indices="$value_type">
+              </label>
+            </component_lookup>
+          </field_lookup>
+        </node_lookup>
+ELEMENT_TEMPLATE_2A
+					 }
+					 elsif ($node_list_indices[$k] =~ m/([^.\s]+)\.([^.\s]+)/)
+					 {
+						$node_index = $1;
+						$value_type = $2;
+				    print <<ELEMENT_TEMPLATE_2B;
+        <node_lookup>
+          <node>
+            <element_lookup>
+              <label indices="$node_list_name">
+                <label indices="$node_index"/>
+              </label>
+            </element_lookup>
+          </node>
+          <field_lookup>
+            <component_lookup>
+              <label indices="$value_type"/>
+            </component_lookup>
+          </field_lookup>
+        </node_lookup>
+ELEMENT_TEMPLATE_2B
+                }
+                else
+                {
+                  die ("Unable to parse node_list_indices $node_list_indices[$k]");
+                }
+              }
+				 print <<ELEMENT_TEMPLATE_3;
+		</labels_template>
+
+ELEMENT_TEMPLATE_3
+
              }
 			  }
 		  }
 
-#Now use these in the node fields
-		  $element_field_values_name++;
+#Now use these in the element interpolation
+		  $element_interpolation_name++;
 		  print <<ELEMENT_FIELD_1;
-		<element_field_values name="$element_field_values_name">
+		<element_interpolation name="$element_interpolation_name">
 ELEMENT_FIELD_1
 
         for ($i = 0 ; $i < $number_of_fields ; $i++)
 		  {
 			 $name = $field_name[$i];
 		  print <<ELEMENT_FIELD_2;
-		  <element_field ref="$field_name[$i]">
+		  <field_ref ref="$field_name[$i]">
 ELEMENT_FIELD_2
           for ($j = 0 ; $j < $field_number_components{$name} ; $j++)
 			 {
+				@node_list_indices = split(/\s+/, $field_components_node_indices{$name}[$j]);
+				#Split and rejoin the values so that they have identical formatting
+				$index = "@node_list_indices";
+				$element_template = $element_template_lookup{$index};
+				$basis = $field_components_basis{$name}[$j];
+				$element_nodal_values = $element_nodal_values_lookup{$basis};
 				print <<ELEMENT_FIELD_3;
-				<element_field_component ref="$field_components_names{$name}[$j]">
-				  <mapping ref="$mapping{$field_components_basis{$name}[$j]}"/>
-				</element_field_component>
+			 <component_ref ref="$field_components_names{$name}[$j]">
+				<mapping_ref ref="$mapping_lookup{$basis}"/>
+            <label name="$element_nodal_values">
+              <reference_labels template="$element_template"/>
+            </label>
+			 </component_ref>
 ELEMENT_FIELD_3
 			 }
 		  print <<ELEMENT_FIELD_5;
-		  </element_field>
+		  </field_ref>
 ELEMENT_FIELD_5
 		  }
 		  print <<ELEMENT_FIELD_6;
-		</element_field_values>
+		</element_interpolation>
 
 ELEMENT_FIELD_6
 
@@ -598,16 +690,10 @@ ELEMENT_FACES_3
 		  }
  		  elsif (m/Nodes:/)
 		  {
-			 if (!$in_element_field)
-			 {
 			 print <<ELEMENT_NODES_1;
-		  <element_field_values ref="$element_field_values_name">
+		  <element_interpolation_ref ref="$element_interpolation_name"/>
+		  <label name="$node_list_name">
 ELEMENT_NODES_1
-            $in_element_field = 1;
-			 }
-			 print <<ELEMENT_NODES_2;
-			 <parameter_list ref="$node_list_name">
-ELEMENT_NODES_2
           $_ = <>;
 			 while ((defined $_) && (! m/(Scale|Nodes)/) &&
 				 (! m/$end_match/))
@@ -617,20 +703,13 @@ ELEMENT_NODES_2
 			 }
 
 			 print <<ELEMENT_NODES_3;
-			 </parameter_list>
+		  </label>
 ELEMENT_NODES_3
 		  }
  		  elsif (m/Scale factors:/)
 		  {
-			 if (!$in_element_field)
-			 {
-			 print <<ELEMENT_SCALE_1;
-		  <element_field_values ref="element_field_values_name">
-ELEMENT_SCALE_1
-            $in_element_field = 1;
-          }
 			 print <<ELEMENT_SCALE_2;
-			 <parameter_list ref="$scale_factor_list_name">
+		  <label name="$scale_factor_list_name">
 ELEMENT_SCALE_2
 
           $_ = <>;
@@ -642,20 +721,13 @@ ELEMENT_SCALE_2
 			 }
 
 			 print <<ELEMENT_SCALE_3;
-			 </parameter_list>
+		  </label>
 ELEMENT_SCALE_3
 		  }
 		  else
 		  {
 			 $_ = <>;
 		  }
-		}
-
-		if ($in_element_field)
-		{
-			 print <<ELEMENT_FIELD_6;
-		  </element_field_values>
-ELEMENT_FIELD_6
 		}
 
  		print <<ELEMENT_END;
