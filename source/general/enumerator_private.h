@@ -52,6 +52,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 	int i; \
 \
 	ENTER(ENUMERATOR_GET_VALID_STRINGS(enumerator_type)); \
+	valid_strings = (char **)NULL; \
 	if (number_of_valid_strings) \
 	{ \
 		*number_of_valid_strings = 0; \
@@ -69,16 +70,17 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		if ((0 == *number_of_valid_strings) || \
 			ALLOCATE(valid_strings, char *, *number_of_valid_strings)) \
 		{ \
-			enumerator_value = (enum enumerator_type)0; \
-			for (i = 0; enumerator_string = \
-				ENUMERATOR_STRING(enumerator_type)(enumerator_value); i++) \
+			i = 0; \
+			for (enumerator_value = (enum enumerator_type)0; enumerator_string = \
+				ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
+				enumerator_value++) \
 			{ \
 				if ((!conditional_function) || \
 					conditional_function(enumerator_value, user_data)) \
 				{ \
 					valid_strings[i] = enumerator_string; \
+					i++; \
 				} \
-				enumerator_value++; \
 			} \
 		} \
 		else \
@@ -93,7 +95,6 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		display_message(ERROR_MESSAGE, \
 			"ENUMERATOR_GET_VALID_STRINGS(" #enumerator_type \
 			").  Invalid argument(s)"); \
-		valid_strings = (char **)NULL; \
 	} \
 	LEAVE; \
 \

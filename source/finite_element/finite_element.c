@@ -28508,6 +28508,7 @@ This version assumes all valid enumerator values are sequential from 1.
 	int i;
 
 	ENTER(ENUMERATOR_GET_VALID_STRINGS(CM_field_type));
+	valid_strings = (char **)NULL;
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings = 0;
@@ -28524,16 +28525,16 @@ This version assumes all valid enumerator values are sequential from 1.
 		if ((0 == *number_of_valid_strings) ||
 			ALLOCATE(valid_strings, char *, *number_of_valid_strings))
 		{
-			enumerator_value = (enum CM_field_type)1;
-			for (i = 0; enumerator_string =
-				ENUMERATOR_STRING(CM_field_type)(enumerator_value); i++)
+			i = 0;
+			for (enumerator_value = (enum CM_field_type)1; enumerator_string =
+				ENUMERATOR_STRING(CM_field_type)(enumerator_value); enumerator_value++)
 			{
 				if ((!conditional_function) ||
 					conditional_function(enumerator_value, user_data))
 				{
 					valid_strings[i] = enumerator_string;
+					i++;
 				}
-				enumerator_value++;
 			}
 		}
 		else
@@ -28546,7 +28547,6 @@ This version assumes all valid enumerator values are sequential from 1.
 	{
 		display_message(ERROR_MESSAGE,
 			"ENUMERATOR_GET_VALID_STRINGS(CM_field_type).  Invalid argument(s)");
-		valid_strings = (char **)NULL;
 	}
 	LEAVE;
 
