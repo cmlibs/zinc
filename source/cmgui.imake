@@ -315,6 +315,19 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_g
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
 #elif defined (WIN32) /* switch OperatingSystem */
+#if defined (CONSOLE)
+#define Target cmgui_win32_console
+#define SpacesToTabsTarget spaces_to_tabs_win32
+#define TabsToSpacesTarget tabs_to_spaces_win32
+#define Uid2uidhTarget uid2uidh_win32
+#define Makefile cmgui_win32_console.make
+#define DependMake cmgui_win32_console.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_console
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_console
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_console
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_console
+#else /* defined (CONSOLE) */
 #if defined (OPTIMISED)
 #define Target cmgui_win32_optimised
 #define SpacesToTabsTarget spaces_to_tabs_win32
@@ -351,6 +364,7 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/res/cmgui/win32_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/res/cmgui/win32_g
 #endif /* defined (OPTIMISED) */
+#endif /* defined (CONSOLE) */
 #endif /* switch OperatingSystem */
 
 #if defined (CMISS_ROOT_DEFINED)

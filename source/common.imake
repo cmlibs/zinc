@@ -148,7 +148,11 @@ UIL = uil
 CC = gcc -c
 CPP = gcc -c
 FORTRAN = f77 -c
+#if defined (CONSOLE)
+LINK = gcc -mno-cygwin
+#else /* defined (CONSOLE) */
 LINK = gcc -mwindows -mno-cygwin
+#endif /* defined (CONSOLE) */
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O2
 #else /* defined (OPTIMISED) */

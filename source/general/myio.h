@@ -20,9 +20,14 @@ Some additions/modifications to stdio.
 #if defined (AIX)
 #include <sys/machine.h>
 #endif /* defined (AIX) */
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #define BYTE_ORDER 1234
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
+
+#if defined (WIN32_SYSTEM)
+#define fileno _fileno
+#endif /* defined (WIN32_SYSTEM) */
+
 
 /*
 Global macros

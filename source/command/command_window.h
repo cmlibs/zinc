@@ -86,7 +86,7 @@ responce to a single mouse click on it.
 Does not override the command prompt.
 ==============================================================================*/
 
-#if !defined (WINDOWS)
+#if defined (MOTIF)
 Widget Command_window_get_message_pane(struct Command_window *command_window);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2002
@@ -94,7 +94,7 @@ LAST MODIFIED : 28 February 2002
 DESCRIPTION :
 Returns the message pane widget.
 ==============================================================================*/
-#endif /* !defined (WINDOWS) */
+#endif /* defined (MOTIF) */
 
 int write_command_window(char *message,struct Command_window *command_window);
 /*******************************************************************************

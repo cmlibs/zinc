@@ -27317,10 +27317,12 @@ Execute a <command_string>. If there is a command
 			{
 				/* add command to command history */
 				/*???RC put out processed tokens instead? */
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 				if (command_data->command_window)
 				{
 					add_to_command_list(command_string,command_data->command_window);
 				}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 				/* check for a "<" as one of the of the tokens */
 					/*???DB.  Include for backward compatability.  Remove ? */
 				token=state->tokens;
@@ -27332,7 +27334,7 @@ Execute a <command_string>. If there is a command
 				if (i>0)
 				{
 					/* return to tree root */
-					return_code=set_command_prompt("",command_data->command_window);
+					return_code=set_command_prompt("", command_data);
 				}
 				else
 				{
@@ -27342,9 +27344,11 @@ Execute a <command_string>. If there is a command
 					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
 						execute_command_cell);
 #endif /* defined (CELL) */
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 					/* command_window */
 					Option_table_add_entry(option_table, "command_window", NULL, command_data->command_window,
 						modify_Command_window);
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 					/* create */
 					Option_table_add_entry(option_table, "create", NULL, command_data_void,
 						execute_command_create);
@@ -27390,10 +27394,12 @@ Execute a <command_string>. If there is a command
 					DESTROY(Option_table)(&option_table);
 				}
 			}
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 			if (command_data->command_window)
 			{
 				reset_command_box(command_data->command_window);
 			}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 			destroy_Parse_state(&state);
 		}
 		else

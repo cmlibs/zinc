@@ -10,7 +10,9 @@ Management routines for the main command window.
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
+#if defined (UNIX)
 #include <sgtty.h>
+#endif /* defined (UNIX) */
 #include "general/debug.h"
 #include "general/object.h"
 #include "command/console.h"
@@ -69,11 +71,15 @@ This function is called to process stdin from a console.
 			if (console->command_prompt)
 			{
 				prompt_length = strlen(console->command_prompt);
+#if defined (UNIX)
 				for (i = 0 ; i < prompt_length ; i++)
 				{
 					/* Put the prompt out to the terminal as if it had been typed in */
 					ioctl(file_descriptor, TIOCSTI, console->command_prompt + i);
 				}
+#else
+				printf("%s", console->command_prompt);
+#endif
 			}
 		}
 		return_code = 1;

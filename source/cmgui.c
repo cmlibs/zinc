@@ -64,6 +64,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "general/error_handler.h"
 #include "general/image_utilities.h"
+#include "general/myio.h"
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
 #if defined (MOTIF)
@@ -345,11 +346,7 @@ Main program for the CMISS Graphical User Interface
 		*example_id,*examples_directory,*execute_string,*version_command_id,
 		version_id_string[100],*version_ptr,version_temp[20];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
-	int
-#if defined (WIN32_USER_INTERFACE)
-		WINAPI
-#endif /* defined (WIN32_USER_INTERFACE) */
-		return_code;
+	int return_code;
 	int batch_mode, console_mode, command_list,no_display,non_random,start_cm,start_mycm;
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 	int status;
@@ -1613,8 +1610,9 @@ Main program for the CMISS Graphical User Interface
 						if (console_mode)
 						{
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
-							if (!(command_data.command_console = CREATE(Console)(command_data.execute_command,
-								command_data.event_dispatcher, fileno(stdin))))
+							if (!(command_data.command_console = CREATE(Console)(
+								command_data.execute_command,
+								command_data.event_dispatcher, /*stdin*/0)))
 							{
 								display_message(ERROR_MESSAGE,"main.  "
 									"Unable to create console.");

@@ -1,4 +1,5 @@
-SHELL=/bin/sh
+#SHELL=/bin/sh
+SHELL=bash.exe
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
@@ -32,7 +33,7 @@ COMMON_IMAKE_RULE= \
 	fi ;
 
 COMMON_MAKE_RULE= \
-	CMGUI_DEV_ROOT=$(PWD) ; \
+	CMGUI_DEV_ROOT=/cygdrive/c/dev/cmgui ; \
 	export CMGUI_DEV_ROOT ; \
 	cd $(SOURCE_PATH);	
 
@@ -243,6 +244,19 @@ cmgui_win32 : force $(SOURCE_PATH)/cmgui_win32.make
 $(SOURCE_PATH)/cmgui_win32.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DWIN32 $${CMISS_ROOT_DEF} -s cmgui_win32.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+#Win32 console version
+cmgui_win32_console : force $(SOURCE_PATH)/cmgui_win32_console.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_win32_console.make ]; then \
+		$(MAKE) -f cmgui_win32_console.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_win32_console.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_win32_console.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DWIN32 -DCONSOLE $${CMISS_ROOT_DEF} -s cmgui_win32_console.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 update_sources :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
