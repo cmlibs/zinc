@@ -462,7 +462,14 @@ Perform a automatic thresholding operation on the image cache.
 					        Lstd += (kernel[j] - Lmean) * (kernel[j] - Lmean);
 					}
 					Lstd /= (FE_value)kernel_size;
-					result_index[k] = 1.0/(1.0 + exp((Gstd[k]/(Lstd + 0.0001)) * (Lmean - *(data_index + k))));
+					if (Lstd == 0.0)
+					{
+					        result_index[k] = 1.0/(1.0 + exp(20.0 * (Lmean - *(data_index + k))));
+					}
+					else
+					{
+						result_index[k] = 1.0/(1.0 + exp((Gstd[k]/Lstd) * (Lmean - *(data_index + k))));
+					}
 				}
 				data_index += image->depth;
 				result_index += image->depth;
