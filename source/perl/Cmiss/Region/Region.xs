@@ -8,6 +8,8 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/import_finite_element.h"
+#include "finite_element/read_fieldml.h"
+#include "general/io_stream.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Region		PACKAGE = Cmiss::Region		PREFIX = Cmiss_region_
@@ -68,18 +70,44 @@ DESTROY(Cmiss::Region region)
 int
 region_read_file(Cmiss::Region region,char *file_name);
 	PREINIT:
-		struct Cmiss_region *temp_region;
 		struct LIST(FE_element_shape) *element_shape_list;
 		struct MANAGER(FE_basis) *basis_manager;
 	CODE:
 		RETVAL=0;
 		if (region&&file_name&&(basis_manager=FE_region_get_basis_manager(
-			Cmiss_region_get_FE_region(region)))&&
-			(element_shape_list=FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(
-			region))))
+			Cmiss_region_get_FE_region(region)))&&(element_shape_list=
+			FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(region))))
 		{
-			if (temp_region=read_exregion_file_of_name(file_name,basis_manager,
-				element_shape_list,(struct FE_import_time_index *)NULL))
+			char *fieldml;
+			struct Cmiss_region *temp_region;
+
+			temp_region=(struct Cmiss_region *)NULL;
+			if (fieldml=strrchr(file_name,'.'))
+			{
+				fieldml++;
+				if (0!=strcmp(fieldml,"fml"))
+				{
+					fieldml=(char *)NULL;
+				}
+			}
+			if (fieldml)
+			{
+				temp_region=parse_fieldml_file(file_name,basis_manager,
+					element_shape_list);
+			}
+			else
+			{
+				struct IO_stream_package *io_stream_package;
+
+				if (io_stream_package=CREATE(IO_stream_package)())
+				{
+					temp_region=read_exregion_file_of_name(file_name,io_stream_package,
+						basis_manager,element_shape_list,
+						(struct FE_import_time_index *)NULL);
+					DESTROY(IO_stream_package)(&io_stream_package);
+				}
+			}
+			if (temp_region)
 			{
 				ACCESS(Cmiss_region)(temp_region);
 				if (Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
@@ -135,28 +163,6 @@ region_get_element(Cmiss::Region region,char *path,char *name,char *type)
 					RETVAL=FE_region_get_FE_element_from_identifier(fe_region,
 						&identifier);
 				}
-			}
-		}
-		if (!RETVAL)
-		{
-			XSRETURN_UNDEF;
-		}
-	OUTPUT:
-		RETVAL
-
-Cmiss::FE_field
-region_get_field(Cmiss::Region region,char *path,char *name)
-	CODE:
-		RETVAL=0;
-		if (region&&path&&name)
-		{
-			struct Cmiss_region *sub_region;
-			struct FE_region *fe_region;
-
-			if (Cmiss_region_get_region_from_path(region,path,&sub_region)&&
-				sub_region&&(fe_region=Cmiss_region_get_FE_region(sub_region)))
-			{
-				RETVAL=FE_region_get_FE_field_from_name(fe_region,name);
 			}
 		}
 		if (!RETVAL)
