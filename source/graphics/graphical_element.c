@@ -2671,13 +2671,14 @@ Builds any graphics objects for settings without them in <gt_element_group>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "build_GT_element_group. Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"build_GT_element_group.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /*build_GT_element_group  */
+} /* build_GT_element_group  */
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
 	float time)

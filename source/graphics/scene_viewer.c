@@ -832,7 +832,10 @@ access this function.
 						}
 					}
 #endif /* defined GL_EXT_polygon_offset */
-					/*???debug*//*printf("Scene_viewer: build scene and redraw\n");*/
+#if defined (DEBUG)
+					/*???debug*/
+					printf("Scene_viewer: build scene and redraw\n");
+#endif /* defined (DEBUG) */
 					build_Scene(scene_viewer->scene);
 					compile_Scene(scene_viewer->scene);
 					if (scene_viewer->overlay_scene)
