@@ -1,18 +1,22 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 24 September 2002
+LAST MODIFIED : 6 June 2003
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
 
 SERVICE_VERSION :
-13 January 2002.  Added so that can maintain compatability between clients and
-	servers
+	13 January 2002.  Added so that can maintain compatability between clients and
+		servers
 1 Added the ability to specify the number_of_samples for
-	unemap_get_samples_acquired and related functions
+		unemap_get_samples_acquired and related functions
 2 Change unemap_get_sample_range to include the channel_number for systems with
-	mixed 12 and 16 bit cards
+		mixed 12 and 16 bit cards
+3 27 May 2003.  Added stimulation_socket so that can do stimulation end
+		callbacks
+	2 June 2003.  Replaced with SOFTWARE_VERSION/unemap_get_software_version in
+		unemap/unemap_hardware
 
 NOTES :
 1 Started out as :
@@ -91,7 +95,7 @@ Module constants
 */
 #if defined (USE_UNEMAP_HARDWARE)
 /* Used so that the client can deal with old versions */
-#define SERVICE_VERSION 2
+#define NUMBER_OF_CHANNELS_ON_NI_CARD 64
 #if defined (USE_SOCKETS)
 #define BUFFER_SIZE 128
 #define DEFAULT_PORT 5001
@@ -115,12 +119,14 @@ char error_string[501];
 HANDLE hServerStopEvent=NULL;
 #if defined (USE_UNEMAP_HARDWARE)
 #if defined (USE_SOCKETS)
-HANDLE acquired_socket_mutex=NULL;
+HANDLE acquired_socket_mutex=NULL,stimulation_socket_mutex=NULL;
 HANDLE command_socket_read_event=NULL;
 SOCKET acquired_socket=INVALID_SOCKET,calibration_socket=INVALID_SOCKET,
-	command_socket=INVALID_SOCKET,scrolling_socket=INVALID_SOCKET;
+	command_socket=INVALID_SOCKET,scrolling_socket=INVALID_SOCKET,
+	stimulation_socket=INVALID_SOCKET;
 #endif /* defined (USE_SOCKETS) */
-unsigned char acquired_big_endian,calibration_big_endian,scrolling_big_endian;
+unsigned char acquired_big_endian,calibration_big_endian,scrolling_big_endian,
+	stimulation_big_endian;
 #endif /* defined (USE_UNEMAP_HARDWARE) */
 
 /*
@@ -363,7 +369,7 @@ DESCRIPTION :
 #if defined (USE_UNEMAP_HARDWARE)
 static int close_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Closes the sockets connecting the service with the client.
@@ -372,14 +378,31 @@ Closes the sockets connecting the service with the client.
 	int return_code;
 
 	return_code=1;
-	closesocket(command_socket);
-	command_socket=INVALID_SOCKET;
-	closesocket(scrolling_socket);
-	scrolling_socket=INVALID_SOCKET;
-	closesocket(calibration_socket);
-	calibration_socket=INVALID_SOCKET;
-	closesocket(acquired_socket);
-	acquired_socket=INVALID_SOCKET;
+	if (INVALID_SOCKET!=command_socket)
+	{
+		closesocket(command_socket);
+		command_socket=INVALID_SOCKET;
+	}
+	if (INVALID_SOCKET!=scrolling_socket)
+	{
+		closesocket(scrolling_socket);
+		scrolling_socket=INVALID_SOCKET;
+	}
+	if (INVALID_SOCKET!=calibration_socket)
+	{
+		closesocket(calibration_socket);
+		calibration_socket=INVALID_SOCKET;
+	}
+	if (INVALID_SOCKET!=acquired_socket)
+	{
+		closesocket(acquired_socket);
+		acquired_socket=INVALID_SOCKET;
+	}
+	if (INVALID_SOCKET!=stimulation_socket)
+	{
+		closesocket(stimulation_socket);
+		stimulation_socket=INVALID_SOCKET;
+	}
 
 	return (return_code);
 } /* close_connection */
@@ -995,6 +1018,70 @@ back.
 FILE *acquired_file;
 #endif /* defined (NO_ACQUIRED_THREAD) */
 
+int stimulation_end_callback(void *stimulation_callback_id_address_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2003
+
+DESCRIPTION :
+???DB.
+- use in unemap_load_voltage_stimulating and unemap_load_current_stimulating
+==============================================================================*/
+{
+	int retval,return_code,stimulation_callback_id,
+		*stimulation_callback_id_address;
+	long message_size,out_buffer_size;
+	unsigned char *out_buffer;
+
+	ENTER(stimulation_end_callback);
+	return_code=0;
+	if (stimulation_callback_id_address=
+		(int *)stimulation_callback_id_address_void)
+	{
+		stimulation_callback_id= *stimulation_callback_id_address;
+		DEALLOCATE(stimulation_callback_id_address);
+		if (0<stimulation_callback_id)
+		{
+			if (stimulation_socket_mutex)
+			{
+				if (WAIT_FAILED==WaitForSingleObject(stimulation_socket_mutex,INFINITE))
+				{
+					sprintf(error_string,"stimulation_end_callback.  "
+						"WaitForSingleObject failed.  Error code %d",WSAGetLastError());
+					display_message(ERROR_MESSAGE,error_string);
+				}
+			}
+			if (INVALID_SOCKET!=stimulation_socket)
+			{
+				/* send message down stimulation socket */
+				message_size=sizeof(stimulation_callback_id);
+				out_buffer_size=2+sizeof(long)+message_size;
+				if (ALLOCATE(out_buffer,unsigned char,out_buffer_size))
+				{
+					out_buffer[0]=(unsigned char)0x01;
+					out_buffer[1]=stimulation_big_endian;
+					copy_byte_swapped(out_buffer+2,sizeof(long),(char *)&message_size,
+						stimulation_big_endian);
+					out_buffer_size=2+sizeof(long);
+					copy_byte_swapped(out_buffer+out_buffer_size,
+						sizeof(stimulation_callback_id),(char *)&stimulation_callback_id,
+						stimulation_big_endian);
+					out_buffer_size += sizeof(stimulation_callback_id);
+					retval=socket_send(stimulation_socket,out_buffer,out_buffer_size,0);
+					DEALLOCATE(out_buffer);
+					return_code=1;
+				}
+			}
+			if (stimulation_socket_mutex)
+			{
+				ReleaseMutex(stimulation_socket_mutex);
+			}
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* stimulation_end_callback */
+
 #if defined (USE_SOCKETS)
 static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
@@ -1050,7 +1137,6 @@ DESCRIPTION :
 						buffer_position += sizeof(stimulator_number);
 						copy_byte_swapped((unsigned char *)&channel_number,
 							sizeof(channel_number),buffer+buffer_position,big_endian);
-						scrolling_big_endian=big_endian;
 						return_code=unemap_channel_valid_for_stimulator(stimulator_number,
 							channel_number);
 					}
@@ -1080,13 +1166,17 @@ DESCRIPTION :
 			} break;
 			case UNEMAP_CONFIGURE_CODE:
 			{
-				float sampling_frequency,scrolling_refresh_frequency;
+				float sampling_frequency,scrolling_callback_frequency,
+					scrolling_frequency;
 				int buffer_position,number_of_samples_in_buffer,synchronization_card;
 
 				return_code=0;
 				size=sizeof(sampling_frequency)+sizeof(number_of_samples_in_buffer)+
-					sizeof(scrolling_refresh_frequency)+sizeof(synchronization_card);
-				if (size==message_size)
+					sizeof(scrolling_frequency)+sizeof(scrolling_callback_frequency)+
+					sizeof(synchronization_card);
+				/* two sizes for backward compatability */
+				if ((size==message_size)||
+					(size-(long)sizeof(scrolling_frequency)==message_size))
 				{
 					retval=socket_recv(command_socket,command_socket_read_event,buffer,
 						message_size,0);
@@ -1101,23 +1191,35 @@ DESCRIPTION :
 							sizeof(number_of_samples_in_buffer),buffer+buffer_position,
 							big_endian);
 						buffer_position += sizeof(number_of_samples_in_buffer);
-						copy_byte_swapped((unsigned char *)&scrolling_refresh_frequency,
-							sizeof(scrolling_refresh_frequency),buffer+buffer_position,
+						if (size==message_size)
+						{
+							copy_byte_swapped((unsigned char *)&scrolling_frequency,
+								sizeof(scrolling_frequency),buffer+buffer_position,
+								big_endian);
+							buffer_position += sizeof(scrolling_frequency);
+						}
+						copy_byte_swapped((unsigned char *)&scrolling_callback_frequency,
+							sizeof(scrolling_callback_frequency),buffer+buffer_position,
 							big_endian);
-						buffer_position += sizeof(scrolling_refresh_frequency);
+						buffer_position += sizeof(scrolling_callback_frequency);
+						if (size!=message_size)
+						{
+							scrolling_frequency=(float)4*scrolling_callback_frequency;
+						}
 						copy_byte_swapped((unsigned char *)&synchronization_card,
 							sizeof(synchronization_card),buffer+buffer_position,big_endian);
 						scrolling_big_endian=big_endian;
+						stimulation_big_endian=big_endian;
 						return_code=unemap_configure(sampling_frequency,
 							number_of_samples_in_buffer,(HWND)NULL,(UINT)0,scrolling_callback,
-							(void *)NULL,scrolling_refresh_frequency,synchronization_card);
+							(void *)NULL,scrolling_frequency,scrolling_callback_frequency,synchronization_card);
 					}
 				}
 				else
 				{
 					sprintf(error_string,
-						"unemap_configure.  Incorrect message size %d %d",message_size,
-						size);
+						"unemap_configure.  Incorrect message size %d %d %d",message_size,
+						size-(long)sizeof(scrolling_frequency),size);
 					display_message(ERROR_MESSAGE,error_string);
 				}
 			} break;
@@ -2053,22 +2155,93 @@ DESCRIPTION :
 					display_message(ERROR_MESSAGE,error_string);
 				}
 			} break;
-			case UNEMAP_GET_SERVICE_VERSION_CODE:
+			case UNEMAP_GET_SCROLLING_CALLBACK_FREQUENCY_CODE:
+			{
+				float frequency;
+
+				return_code=0;
+				if (0==message_size)
+				{
+					return_code=unemap_get_scrolling_callback_frequency(&frequency);
+					if (return_code)
+					{
+						size=sizeof(frequency);
+						if (ALLOCATE(out_buffer,unsigned char,size))
+						{
+							copy_byte_swapped(out_buffer,sizeof(frequency),
+								(char *)&frequency,big_endian);
+							*out_buffer_address=out_buffer;
+							*out_buffer_size_address=size;
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,"unemap_get_scrolling_callback_frequency.  "
+						"Incorrect message size %d 0",message_size);
+					display_message(ERROR_MESSAGE,error_string);
+				}
+			} break;
+			case UNEMAP_GET_SCROLLING_FREQUENCY_CODE:
+			{
+				float frequency;
+
+				return_code=0;
+				if (0==message_size)
+				{
+					return_code=unemap_get_scrolling_frequency(&frequency);
+					if (return_code)
+					{
+						size=sizeof(frequency);
+						if (ALLOCATE(out_buffer,unsigned char,size))
+						{
+							copy_byte_swapped(out_buffer,sizeof(frequency),
+								(char *)&frequency,big_endian);
+							*out_buffer_address=out_buffer;
+							*out_buffer_size_address=size;
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_get_scrolling_frequency.  Incorrect message size %d 0",
+						message_size);
+					display_message(ERROR_MESSAGE,error_string);
+				}
+			} break;
+			case UNEMAP_GET_SOFTWARE_VERSION_CODE:
 			{
 				int service_version;
 
 				return_code=0;
 				if (0==message_size)
 				{
-					service_version=(int)SERVICE_VERSION;
-					size=sizeof(service_version);
-					if (ALLOCATE(out_buffer,unsigned char,size))
+					if (unemap_get_software_version(&service_version))
 					{
-						copy_byte_swapped(out_buffer,sizeof(service_version),
-							(char *)&service_version,big_endian);
-						*out_buffer_address=out_buffer;
-						*out_buffer_size_address=size;
-						return_code=1;
+						size=sizeof(service_version);
+						if (ALLOCATE(out_buffer,unsigned char,size))
+						{
+							copy_byte_swapped(out_buffer,sizeof(service_version),
+								(char *)&service_version,big_endian);
+							*out_buffer_address=out_buffer;
+							*out_buffer_size_address=size;
+							return_code=1;
+						}
+					}
+					else
+					{
+						sprintf(error_string,
+							"unemap_get_service_version.  Could not get software version");
+						display_message(ERROR_MESSAGE,error_string);
 					}
 				}
 				else
@@ -2127,8 +2300,9 @@ DESCRIPTION :
 			case UNEMAP_LOAD_CURRENT_STIMULATING_CODE:
 			{
 				float *current,*currents,currents_per_second;
-				int *channel_number,*channel_numbers,i,number_of_currents,
-					number_of_channels;
+				int *channel_number,*channel_numbers,i,j,k,number_of_currents,
+					number_of_channels,stimulation_end_callback_id,
+					*stimulation_end_callback_id_address;
 				unsigned int number_of_cycles;
 
 				return_code=0;
@@ -2188,8 +2362,8 @@ DESCRIPTION :
 								}
 								else
 								{
-									sprintf(error_string,
-			"unemap_load_current_stimulating.  Could not allocate channel numbers %d",
+									sprintf(error_string,"unemap_load_current_stimulating.  "
+										"Could not allocate channel numbers %d",
 										number_of_channels);
 									display_message(ERROR_MESSAGE,error_string);
 									return_code=0;
@@ -2228,8 +2402,8 @@ DESCRIPTION :
 								}
 								else
 								{
-									sprintf(error_string,
-						"unemap_load_current_stimulating.  Could not allocate currents %d",
+									sprintf(error_string,"unemap_load_current_stimulating.  "
+										"Could not allocate currents %d",
 										number_of_currents);
 									display_message(ERROR_MESSAGE,error_string);
 									return_code=0;
@@ -2241,25 +2415,52 @@ DESCRIPTION :
 							}
 							if (return_code)
 							{
-								if (return_code=unemap_load_current_stimulating(
-									number_of_channels,channel_numbers,number_of_currents,
-									currents_per_second,currents,number_of_cycles,
-									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
+								if (ALLOCATE(stimulation_end_callback_id_address,int,1))
 								{
-									if (out_buffer)
+									stimulation_end_callback_id=0;
+									channel_number=channel_numbers;
+									for (i=number_of_channels;i>0;i--)
 									{
-										current=(float *)out_buffer;
-										for (i=number_of_currents;i>0;i--)
+										k=1;
+										for (j=((*channel_number)-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
+											j>0;j--)
 										{
-											copy_byte_swapped((unsigned char *)current,sizeof(float),
-												(unsigned char *)(current+1),big_endian);
-											current++;
+											k *= 2;
 										}
-										*out_buffer_address=out_buffer;
-										*out_buffer_size_address=size;
+										stimulation_end_callback_id |= k;
+									}
+									*stimulation_end_callback_id_address=
+										stimulation_end_callback_id;
+									if (return_code=unemap_load_current_stimulating(
+										number_of_channels,channel_numbers,number_of_currents,
+										currents_per_second,currents,number_of_cycles,
+										stimulation_end_callback,
+										(void *)stimulation_end_callback_id_address))
+									{
+										if (out_buffer)
+										{
+											current=(float *)out_buffer;
+											for (i=number_of_currents;i>0;i--)
+											{
+												copy_byte_swapped((unsigned char *)current,
+													sizeof(float),
+													(unsigned char *)(current+1),big_endian);
+												current++;
+											}
+											*out_buffer_address=out_buffer;
+											*out_buffer_size_address=size;
+										}
+									}
+									else
+									{
+										DEALLOCATE(stimulation_end_callback_id_address);
 									}
 								}
 								else
+								{
+									return_code=0;
+								}
+								if (!return_code)
 								{
 									if (out_buffer)
 									{
@@ -2294,8 +2495,9 @@ DESCRIPTION :
 			case UNEMAP_LOAD_VOLTAGE_STIMULATING_CODE:
 			{
 				float *voltage,*voltages,voltages_per_second;
-				int *channel_number,*channel_numbers,i,number_of_voltages,
-					number_of_channels;
+				int *channel_number,*channel_numbers,i,j,k,number_of_voltages,
+					number_of_channels,stimulation_end_callback_id,
+					*stimulation_end_callback_id_address;
 				unsigned int number_of_cycles;
 
 				return_code=0;
@@ -2408,25 +2610,52 @@ DESCRIPTION :
 							}
 							if (return_code)
 							{
-								if (return_code=unemap_load_voltage_stimulating(
-									number_of_channels,channel_numbers,number_of_voltages,
-									voltages_per_second,voltages,number_of_cycles,
-									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
+								if (ALLOCATE(stimulation_end_callback_id_address,int,1))
 								{
-									if (out_buffer)
+									stimulation_end_callback_id=0;
+									channel_number=channel_numbers;
+									for (i=number_of_channels;i>0;i--)
 									{
-										voltage=(float *)out_buffer;
-										for (i=number_of_voltages;i>0;i--)
+										k=1;
+										for (j=((*channel_number)-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
+											j>0;j--)
 										{
-											copy_byte_swapped((unsigned char *)voltage,sizeof(float),
-												(unsigned char *)(voltage+1),big_endian);
-											voltage++;
+											k *= 2;
 										}
-										*out_buffer_address=out_buffer;
-										*out_buffer_size_address=size;
+										stimulation_end_callback_id |= k;
+									}
+									*stimulation_end_callback_id_address=
+										stimulation_end_callback_id;
+									if (return_code=unemap_load_voltage_stimulating(
+										number_of_channels,channel_numbers,number_of_voltages,
+										voltages_per_second,voltages,number_of_cycles,
+										stimulation_end_callback,
+										(void *)stimulation_end_callback_id_address))
+									{
+										if (out_buffer)
+										{
+											voltage=(float *)out_buffer;
+											for (i=number_of_voltages;i>0;i--)
+											{
+												copy_byte_swapped((unsigned char *)voltage,
+													sizeof(float),
+													(unsigned char *)(voltage+1),big_endian);
+												voltage++;
+											}
+											*out_buffer_address=out_buffer;
+											*out_buffer_size_address=size;
+										}
+									}
+									else
+									{
+										DEALLOCATE(stimulation_end_callback_id_address);
 									}
 								}
 								else
+								{
+									return_code=0;
+								}
+								if (!return_code)
 								{
 									if (out_buffer)
 									{
@@ -2997,7 +3226,7 @@ Global functions
 */
 VOID ServiceStart(DWORD dwArgc,LPTSTR *lpszArgv)
 /*******************************************************************************
-LAST MODIFIED : 24 September 2002
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Actual code of the service that does the work.
@@ -3017,8 +3246,9 @@ Actual code of the service that does the work.
 	int fromlen,last_error,return_code,retval,socket_type=SOCK_STREAM;
 	long message_size,out_buffer_size;
 	SOCKET acquired_socket_listen,calibration_socket_listen,command_socket_listen,
-		reject_socket,scrolling_socket_listen;
+		reject_socket,scrolling_socket_listen,stimulation_socket_listen;
 	struct sockaddr_in from,local;
+	u_long ioctlsocket_arg;
 	unsigned char big_endian,buffer[BUFFER_SIZE],operation_code,*out_buffer;
 	unsigned short port=DEFAULT_PORT;
 	WORD wVersionRequested;
@@ -3090,11 +3320,25 @@ Actual code of the service that does the work.
 							acquired_socket_listen=socket(AF_INET,socket_type,0);
 							acquired_socket_mutex=CreateMutex(/*no security attributes*/NULL,
 								/*do not initially own*/FALSE,/*no name*/(LPCTSTR)NULL);
+							stimulation_socket_listen=socket(AF_INET,socket_type,0);
+							/* set non-blocking */
+/*							fcntl(stimulation_socket_listen,F_SETFL,O_NONBLOCK);*/
+							ioctlsocket_arg=1;
+#if defined (DEBUG)
+							/*???debug */
+							display_message(INFORMATION_MESSAGE,"ioctlsocket=%d (%d %d)\n",
+								ioctlsocket(stimulation_socket_listen,FIONBIO,&ioctlsocket_arg),
+								SOCKET_ERROR,stimulation_socket_listen);
+							display_message(INFORMATION_MESSAGE,"WSAGetLastError=%d (%d %d %d %d %d %d)\n",
+								WSAGetLastError(),WSAEINVAL,WSANOTINITIALISED,WSAENETDOWN,WSAEINPROGRESS,WSAENOTSOCK,WSAEFAULT);
+#endif /* defined (DEBUG) */
+							ioctlsocket(stimulation_socket_listen,FIONBIO,&ioctlsocket_arg);
 							if ((INVALID_SOCKET!=acquired_socket_listen)&&
 								(INVALID_SOCKET!=calibration_socket_listen)&&
 								(INVALID_SOCKET!=command_socket_listen)&&
 								(INVALID_SOCKET!=scrolling_socket_listen)&&
-								acquired_socket_mutex)
+								acquired_socket_mutex&&
+								(INVALID_SOCKET!=stimulation_socket_listen))
 							{
 								/* can't have different event objects for different network
 									events */
@@ -3127,95 +3371,131 @@ Actual code of the service that does the work.
 												if (SOCKET_ERROR!=bind(acquired_socket_listen,
 													(struct sockaddr *)&local,sizeof(local)))
 												{
-													if ((SOCKET_ERROR!=listen(command_socket_listen,5))&&
-														(SOCKET_ERROR!=listen(scrolling_socket_listen,5))&&
-														(SOCKET_ERROR!=listen(calibration_socket_listen,
-														5))&&
-														(SOCKET_ERROR!=listen(acquired_socket_listen,5)))
+													port=DEFAULT_PORT+4;
+													local.sin_port=htons(port);
+													if (SOCKET_ERROR!=bind(stimulation_socket_listen,
+														(struct sockaddr *)&local,sizeof(local)))
 													{
-#endif /* defined (USE_UNEMAP_HARDWARE) */
-														/* report the status to the service control
-															manager */
-														if (ReportStatusToSCMgr(
-															/*service state*/SERVICE_RUNNING,
-															/*exit code*/NO_ERROR,/*wait hint*/0))
+														if ((SOCKET_ERROR!=listen(command_socket_listen,
+															5))&&
+															(SOCKET_ERROR!=listen(scrolling_socket_listen,
+															5))&&
+															(SOCKET_ERROR!=listen(calibration_socket_listen,
+															5))&&
+															(SOCKET_ERROR!=listen(acquired_socket_listen,5))&&
+															(SOCKET_ERROR!=listen(stimulation_socket_listen,
+															5)))
 														{
-															running=1;
-#if defined (USE_UNEMAP_HARDWARE)
-															command_socket=INVALID_SOCKET;
 #endif /* defined (USE_UNEMAP_HARDWARE) */
-															timeout.tv_sec=0;
-															timeout.tv_usec=0;
-															while (1==running)
+															/* report the status to the service control
+																manager */
+															if (ReportStatusToSCMgr(
+																/*service state*/SERVICE_RUNNING,
+																/*exit code*/NO_ERROR,/*wait hint*/0))
 															{
-																dwWait=WaitForMultipleObjects(2,hEvents,FALSE,
-																	INFINITE);
-																if (WAIT_OBJECT_0+1==dwWait)
-																{
+																running=1;
 #if defined (USE_UNEMAP_HARDWARE)
-																	WSAEnumNetworkEvents(command_socket_listen,
-																		NULL,&network_events);
-																	if (network_events.lNetworkEvents&FD_ACCEPT)
+																command_socket=INVALID_SOCKET;
+#endif /* defined (USE_UNEMAP_HARDWARE) */
+																timeout.tv_sec=0;
+																timeout.tv_usec=0;
+																while (1==running)
+																{
+																	dwWait=WaitForMultipleObjects(2,hEvents,FALSE,
+																		INFINITE);
+																	if (WAIT_OBJECT_0+1==dwWait)
 																	{
-																		if (INVALID_SOCKET==command_socket)
+#if defined (USE_UNEMAP_HARDWARE)
+																		WSAEnumNetworkEvents(command_socket_listen,
+																			NULL,&network_events);
+																		if (network_events.lNetworkEvents&FD_ACCEPT)
 																		{
-																			/* make connection */
-																			fromlen=sizeof(from);
-																			do
+																			if (INVALID_SOCKET==command_socket)
 																			{
-																				command_socket=accept(
-																					command_socket_listen,
-																					(struct sockaddr *)&from,&fromlen);
-																			} while ((
-																				INVALID_SOCKET==command_socket)&&
-																				(WSAEWOULDBLOCK==
-																				(last_error=WSAGetLastError())));
-																			if (INVALID_SOCKET!=command_socket)
-																			{
+																				/* make connection */
 																				fromlen=sizeof(from);
 																				do
 																				{
-																					scrolling_socket=accept(
-																						scrolling_socket_listen,
+																					command_socket=accept(
+																						command_socket_listen,
 																						(struct sockaddr *)&from,&fromlen);
-																				} while ((INVALID_SOCKET==
-																					scrolling_socket)&&(WSAEWOULDBLOCK==
+																				} while ((
+																					INVALID_SOCKET==command_socket)&&
+																					(WSAEWOULDBLOCK==
 																					(last_error=WSAGetLastError())));
-																				if (INVALID_SOCKET!=scrolling_socket)
+																				if (INVALID_SOCKET!=command_socket)
 																				{
 																					fromlen=sizeof(from);
 																					do
 																					{
-																						calibration_socket=accept(
-																							calibration_socket_listen,
+																						scrolling_socket=accept(
+																							scrolling_socket_listen,
 																							(struct sockaddr *)&from,
 																							&fromlen);
 																					} while ((INVALID_SOCKET==
-																						calibration_socket)&&
-																						(WSAEWOULDBLOCK==
+																						scrolling_socket)&&(WSAEWOULDBLOCK==
 																						(last_error=WSAGetLastError())));
-																					if (INVALID_SOCKET!=
-																						calibration_socket)
+																					if (INVALID_SOCKET!=scrolling_socket)
 																					{
 																						fromlen=sizeof(from);
 																						do
 																						{
-																							acquired_socket=accept(
-																								acquired_socket_listen,
+																							calibration_socket=accept(
+																								calibration_socket_listen,
 																								(struct sockaddr *)&from,
 																								&fromlen);
 																						} while ((INVALID_SOCKET==
-																							acquired_socket)&&
+																							calibration_socket)&&
 																							(WSAEWOULDBLOCK==
 																							(last_error=WSAGetLastError())));
-																						if (INVALID_SOCKET==acquired_socket)
+																						if (INVALID_SOCKET!=
+																							calibration_socket)
+																						{																							fromlen=sizeof(from);
+																							do
+																							{
+																								acquired_socket=accept(
+																									acquired_socket_listen,
+																									(struct sockaddr *)&from,
+																									&fromlen);
+																							} while ((INVALID_SOCKET==
+																								acquired_socket)&&
+																								(WSAEWOULDBLOCK==(last_error=
+																								WSAGetLastError())));
+																							if (INVALID_SOCKET!=
+																								acquired_socket)
+																							{
+																								/* there may not be a
+																									stimulation socket if dealing
+																									with an old
+																									unemap_hardware_client */
+																								/* set non-blocking */
+																								fromlen=sizeof(from);
+																								stimulation_socket=accept(
+																									stimulation_socket_listen,
+																									(struct sockaddr *)&from,
+																									&fromlen);
+																							}
+																							else
+																							{
+																								sprintf(error_string,
+																					"Making acquired connection failed");
+																								display_message(ERROR_MESSAGE,
+																									error_string);
+																								closesocket(calibration_socket);
+																								calibration_socket=
+																									INVALID_SOCKET;
+																								closesocket(scrolling_socket);
+																								scrolling_socket=INVALID_SOCKET;
+																								closesocket(command_socket);
+																								command_socket=INVALID_SOCKET;
+																							}
+																						}
+																						else
 																						{
 																							sprintf(error_string,
-																					"Making acquired connection failed");
+																				"Making calibration connection failed");
 																							display_message(ERROR_MESSAGE,
 																								error_string);
-																							closesocket(calibration_socket);
-																							calibration_socket=INVALID_SOCKET;
 																							closesocket(scrolling_socket);
 																							scrolling_socket=INVALID_SOCKET;
 																							closesocket(command_socket);
@@ -3225,11 +3505,9 @@ Actual code of the service that does the work.
 																					else
 																					{
 																						sprintf(error_string,
-																				"Making calibration connection failed");
+																					"Making scrolling connection failed");
 																						display_message(ERROR_MESSAGE,
 																							error_string);
-																						closesocket(scrolling_socket);
-																						scrolling_socket=INVALID_SOCKET;
 																						closesocket(command_socket);
 																						command_socket=INVALID_SOCKET;
 																					}
@@ -3237,124 +3515,125 @@ Actual code of the service that does the work.
 																				else
 																				{
 																					sprintf(error_string,
-																					"Making scrolling connection failed");
+																						"Making command connection failed");
 																					display_message(ERROR_MESSAGE,
 																						error_string);
-																					closesocket(command_socket);
-																					command_socket=INVALID_SOCKET;
 																				}
 																			}
 																			else
 																			{
-																				sprintf(error_string,
-																					"Making command connection failed");
-																				display_message(ERROR_MESSAGE,
-																					error_string);
-																			}
-																		}
-																		else
-																		{
-																			/* reject connection */
-																			fromlen=sizeof(from);
-																			do
-																			{
-																				reject_socket=accept(
-																					command_socket_listen,
-																					(struct sockaddr *)&from,&fromlen);
-																			} while ((
-																				INVALID_SOCKET==reject_socket)&&
-																				(WSAEWOULDBLOCK==
-																				(last_error=WSAGetLastError())));
-																			if (INVALID_SOCKET!=reject_socket)
-																			{
-																				closesocket(reject_socket);
-																			}
-																		}
-																	}
-																	if (INVALID_SOCKET!=command_socket)
-																	{
-																		WSAEnumNetworkEvents(command_socket,
-																			NULL,&network_events);
-																		if (network_events.lNetworkEvents&FD_READ)
-																		{
-																			retval=socket_recv(command_socket,
-																				command_socket_read_event,buffer,
-																				MESSAGE_HEADER_SIZE,0);
-																			if (SOCKET_ERROR!=retval)
-																			{
-																				/* decode message header */
-																				operation_code=buffer[0];
-																				big_endian=buffer[1];
-																				copy_byte_swapped((char *)&message_size,
-																					sizeof(long),buffer+2,big_endian);
-																				out_buffer=(unsigned char *)NULL;
-																				out_buffer_size=0;
-																				return_code=process_message(
-																					operation_code,message_size,
-																					big_endian,&out_buffer,
-																					&out_buffer_size);
-																				ResetEvent(hEvents[1]);
-																				if (return_code)
+																				/* reject connection */
+																				fromlen=sizeof(from);
+																				do
 																				{
-																					buffer[0]=(unsigned char)0x1;
+																					reject_socket=accept(
+																						command_socket_listen,
+																						(struct sockaddr *)&from,&fromlen);
+																				} while ((
+																					INVALID_SOCKET==reject_socket)&&
+																					(WSAEWOULDBLOCK==
+																					(last_error=WSAGetLastError())));
+																				if (INVALID_SOCKET!=reject_socket)
+																				{
+																					closesocket(reject_socket);
+																				}
+																			}
+																		}
+																		if (INVALID_SOCKET!=command_socket)
+																		{
+																			WSAEnumNetworkEvents(command_socket,
+																				NULL,&network_events);
+																			if (network_events.lNetworkEvents&FD_READ)
+																			{
+																				retval=socket_recv(command_socket,
+																					command_socket_read_event,buffer,
+																					MESSAGE_HEADER_SIZE,0);
+																				if (SOCKET_ERROR!=retval)
+																				{
+																					/* decode message header */
+																					operation_code=buffer[0];
+																					big_endian=buffer[1];
+																					copy_byte_swapped(
+																						(char *)&message_size,
+																						sizeof(long),buffer+2,big_endian);
+																					out_buffer=(unsigned char *)NULL;
+																					out_buffer_size=0;
+																					return_code=process_message(
+																						operation_code,message_size,
+																						big_endian,&out_buffer,
+																						&out_buffer_size);
+																					ResetEvent(hEvents[1]);
+																					if (return_code)
+																					{
+																						buffer[0]=(unsigned char)0x1;
+																					}
+																					else
+																					{
+																						buffer[0]=(unsigned char)0x0;
+																					}
+																					buffer[1]=(unsigned char)0x0;
+																					copy_byte_swapped(buffer+2,sizeof(long),
+																						(char *)&out_buffer_size,big_endian);
+																					retval=socket_send(command_socket,
+																						buffer,MESSAGE_HEADER_SIZE,0);
+																					if (0<out_buffer_size)
+																					{
+																						retval=socket_send(command_socket,
+																							out_buffer,out_buffer_size,0);
+																						DEALLOCATE(out_buffer);
+																						out_buffer=(unsigned char *)NULL;
+																					}
+#if defined (NO_ACQUIRED_THREAD)
+																					if (return_code&&
+																						(UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE==
+																						operation_code))
+																					{
+																						acquired_thread_function(
+																							(LPVOID)acquired_file);
+																					}
+#endif /* defined (NO_ACQUIRED_THREAD) */
 																				}
 																				else
 																				{
-																					buffer[0]=(unsigned char)0x0;
+																					ResetEvent(hEvents[1]);
 																				}
-																				buffer[1]=(unsigned char)0x0;
-																				copy_byte_swapped(buffer+2,sizeof(long),
-																					(char *)&out_buffer_size,big_endian);
-																				retval=socket_send(command_socket,
-																					buffer,MESSAGE_HEADER_SIZE,0);
-																				if (0<out_buffer_size)
-																				{
-																					retval=socket_send(command_socket,
-																						out_buffer,out_buffer_size,0);
-																					DEALLOCATE(out_buffer);
-																					out_buffer=(unsigned char *)NULL;
-																				}
-#if defined (NO_ACQUIRED_THREAD)
-																				if (return_code&&(UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE==operation_code))
-																				{
-																					acquired_thread_function(
-																						(LPVOID)acquired_file);
-																				}
-#endif /* defined (NO_ACQUIRED_THREAD) */
 																			}
 																			else
 																			{
+																				if (network_events.lNetworkEvents&
+																					FD_CLOSE)
+																				{
+																					close_connection();
+																				}
 																				ResetEvent(hEvents[1]);
 																			}
 																		}
 																		else
 																		{
-																			if (network_events.lNetworkEvents&
-																				FD_CLOSE)
-																			{
-																				close_connection();
-																			}
 																			ResetEvent(hEvents[1]);
 																		}
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 																	}
 																	else
 																	{
-																		ResetEvent(hEvents[1]);
+																		running=0;
 																	}
-#endif /* defined (USE_UNEMAP_HARDWARE) */
-																}
-																else
-																{
-																	running=0;
 																}
 															}
-														}
 #if defined (USE_UNEMAP_HARDWARE)
+														}
+														else
+														{
+															sprintf(error_string,
+																"listen() failed with error %d",
+																WSAGetLastError());
+															display_message(ERROR_MESSAGE,error_string);
+														}
 													}
 													else
 													{
 														sprintf(error_string,
-															"listen() failed with error %d",
+										"bind() for stimulation_socket_listen failed with error %d",
 															WSAGetLastError());
 														display_message(ERROR_MESSAGE,error_string);
 													}
@@ -3403,6 +3682,10 @@ Actual code of the service that does the work.
 								sprintf(error_string,"Error creating listening sockets.  %d",
 									WSAGetLastError());
 								display_message(ERROR_MESSAGE,error_string);
+							}
+							if (stimulation_socket_mutex)
+							{
+								CloseHandle(stimulation_socket_mutex);
 							}
 							if (acquired_socket_mutex)
 							{
