@@ -366,7 +366,7 @@ Perform a automatic thresholding operation on the image cache.
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
-		radius = 1;
+		radius = 2;
 		filter_size = 2 * radius + 1;
 
 		/* We only need the one kernel as it is just a reordering for the other dimensions */
@@ -474,13 +474,13 @@ Perform a automatic thresholding operation on the image cache.
 					if (Lstd == 0.0)
 					{
 					        rate = 20.0;
-					        
+						result_index[k] = 0.0;        
 					}
 					else
 					{
 					        rate = Gstd[k] / Lstd;
+						result_index[k] = 1.0/(1.0 + exp(rate * (Lmean - *(data_index + k))));
 					}
-					result_index[k] = 1.0/(1.0 + exp(rate * (Lmean - *(data_index + k))));
 				}
 				data_index += image->depth;
 				result_index += image->depth;
