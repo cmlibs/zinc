@@ -377,7 +377,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
 #define CombineSignalsTarget unemap/combine_signals_linux
 #define DifferenceSignalsTarget unemap/difference_signals_linux
 #define ExtractSignalTarget unemap/extract_signal_linux
-#define FixEcgTarget unemap/fix_ecg_linux_linux
+#define FixEcgTarget unemap/fix_ecg_linux
 #define Img2sigTarget unemap/img2sig_linux
 #define MakePlaqueTarget unemap/make_plaque_linux
 #define OpticalSignalsTarget unemap/optical_signals_linux
