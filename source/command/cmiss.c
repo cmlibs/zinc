@@ -7651,6 +7651,10 @@ Modifies the properties of a texture.
 #endif
 #endif /* defined (MS_22AUG96) */
 					}
+					if (image_data.image_file_name)
+					{
+						DEALLOCATE(image_data.image_file_name);
+					}
 					DESTROY(Option_table)(&option_table);
 #if defined (SGI_MOVIE_FILE)
 					if (movie)
