@@ -539,18 +539,20 @@ be shared by multiple materials using the same program.
 						if (!material_program->vertex_program)
 						{
 							glGenProgramsARB(1, &material_program->vertex_program);
-							glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
-							glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-								strlen(vertex_program_string), vertex_program_string);
 						}
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+							strlen(vertex_program_string), vertex_program_string);
+						DEALLOCATE(vertex_program_string);
 
 						if (!material_program->fragment_program)
 						{
 							glGenProgramsARB(1, &material_program->fragment_program);
-							glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
-							glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-								strlen(fragment_program_string), fragment_program_string);
 						}
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+							strlen(fragment_program_string), fragment_program_string);
+						DEALLOCATE(fragment_program_string);
 
 #else /* ! defined (TESTING_PROGRAM_STRINGS) */
 #define MAX_PROGRAM (20000)
@@ -2039,14 +2041,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		{
 			destination->package = (struct Material_package *)NULL;
 		}
-		if (source->program)
-		{
-			destination->program = ACCESS(Material_program)(source->program);
-		}
-		else
-		{
-			destination->program = (struct Material_program *)NULL;
-		}
+		REACCESS(Material_program)(&destination->program, source->program);
 		REACCESS(Texture)(&(destination->texture), source->texture);
 		REACCESS(Texture)(&(destination->bump_texture), source->bump_texture);
 		/* flag destination display list as no longer current */
@@ -2988,18 +2983,31 @@ DESCRIPTION :
 									type = MATERIAL_PROGRAM_PER_PIXEL_LIGHTING;
 								}
 							}
-							if (!(material_to_be_modified_copy->program = 
-								FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
-								type, material_package->material_program_list)))
+							if (!material_to_be_modified_copy->program ||
+								(material_to_be_modified_copy->program->type != type))
 							{
-								if (material_to_be_modified_copy->program = CREATE(Material_program)(type))
+								if (material_to_be_modified_copy->program)
 								{
-									ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified_copy->program,
-										material_package->material_program_list);
+									DEACCESS(Material_program)(&material_to_be_modified_copy->program);
+								}
+								if (material_to_be_modified_copy->program = 
+									FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
+									type, material_package->material_program_list))
+								{
+									ACCESS(Material_program)(material_to_be_modified_copy->program);
 								}
 								else
 								{
-									return_code = 0;
+									if (material_to_be_modified_copy->program = ACCESS(Material_program)(
+										CREATE(Material_program)(type)))
+									{
+										ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified_copy->program,
+											material_package->material_program_list);
+									}
+									else
+									{
+										return_code = 0;
+									}
 								}
 							}
 						}
