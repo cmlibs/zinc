@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 27 March 2001
+LAST MODIFIED : 1 June 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -240,7 +240,7 @@ PROTOTYPE_LIST_FUNCTIONS(Computed_field_type_data);
 
 struct Computed_field_package
 /*******************************************************************************
-LAST MODIFIED : 5 November 1999
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Contains all information for editing and maintaining Computed_fields, including
@@ -253,9 +253,7 @@ wrappers need to be automatically created for each FE_field.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_element) *fe_element_manager;
-	struct MANAGER(Control_curve) *control_curve_manager;
 	void *fe_field_manager_callback_id;
-	void *control_curve_manager_callback_id;
 	struct LIST(Computed_field_type_data) *computed_field_type_list;
 }; /* struct Computed_field_package */
 
@@ -566,12 +564,6 @@ Calls Computed_field_clear_cache before clearing the type.
 		}
 		field->timeout = 0;
 
-		/* for COMPUTED_FIELD_CURVE_LOOKUP only */
-		if (field->curve)
-		{
-			DEACCESS(Control_curve)(&(field->curve));
-		}
-
 		/* for COMPUTED_FIELD_NEW_TYPES */
 		if (field->type_specific_data)
 		{
@@ -793,9 +785,6 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 			field->child_filename = (char *)NULL;
 			field->child_process = (struct Child_process *)NULL;
 			field->timeout = 0;
-
-			/* for COMPUTED_FIELD_CURVE_LOOKUP only */
-			field->curve=(struct Control_curve *)NULL;
 
 			/* for COMPUTED_FIELD_NEW_TYPES */
 			/* Soon this will be the only way it is done. */
@@ -1087,12 +1076,6 @@ functions to check if read_only flag is set.
 								ACCESS(Child_process)(source->child_process);
 						}
 
-						/* for COMPUTED_FIELD_CURVE_LOOKUP only */
-						if (source->curve)
-						{
-							destination->curve=ACCESS(Control_curve)(source->curve);
-						}
-
 						/* for COMPUTED_FIELD_NEW_TYPES */
 						destination->computed_field_clear_type_specific_function = 
 							source->computed_field_clear_type_specific_function;
@@ -1281,7 +1264,7 @@ DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,char *)
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Notifies the <computed_field_manager> that the <field> has changed.
@@ -1292,16 +1275,17 @@ Notifies the <computed_field_manager> that the <field> has changed.
 	ENTER(Computed_field_changed);
 	if (field && computed_field_manager)
 	{
-		MANAGER_NOTE_CHANGE(Computed_field)(
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field),
-			field, computed_field_manager);
+		/*???RC Review Manager Messages Here */
+		MANAGER_BEGIN_CHANGE(Computed_field)(computed_field_manager,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field), field);
+		MANAGER_END_CHANGE(Computed_field)(computed_field_manager);
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_changed.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1530,7 +1514,6 @@ any other fields, this function is recursively called for them.
 				case COMPUTED_FIELD_COMPONENT:
 				case COMPUTED_FIELD_CONSTANT:
 				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
-				case COMPUTED_FIELD_CURVE_LOOKUP:
 				case COMPUTED_FIELD_EDIT_MASK:
 				case COMPUTED_FIELD_EXTERNAL:
 				case COMPUTED_FIELD_RC_COORDINATE:
@@ -1688,6 +1671,62 @@ determine if the field in use needs updating.
 
 	return (return_code);
 } /* Computed_field_depends_on_Computed_field */
+
+static int Computed_field_is_source_field_conditional(
+	struct Computed_field *field, void *other_field_void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2001
+
+DESCRIPTION :
+List conditional function returning true if <field> is a source field of
+<other_field>, ie. <other_field> depends on <field>.
+???RC Review Manager Messages Here
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_source_field_conditional);
+	return_code = Computed_field_depends_on_Computed_field(
+		(struct Computed_field *)other_field_void, field);
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_source_field_conditional */
+
+int Computed_field_depends_on_Computed_field_in_list(
+	struct Computed_field *field, struct LIST(Computed_field) *field_list)
+/*******************************************************************************
+LAST MODIFIED : 1 June 2001
+
+DESCRIPTION :
+Returns true if <field> depends on any field in <field_list>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_depends_on_Computed_field_in_list);
+	if (field && field_list)
+	{
+		if (FIRST_OBJECT_IN_LIST_THAT(Computed_field)(
+			Computed_field_is_source_field_conditional, (void *)field, field_list))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_depends_on_Computed_field_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_depends_on_Computed_field_in_list */
 
 static int Computed_field_evaluate_rc_vector(struct Computed_field *field)
 /*******************************************************************************
@@ -1992,43 +2031,6 @@ is avoided.
 									temp++;
 								}
 								field->derivatives_valid = 0;
-							} break;
-							case COMPUTED_FIELD_CURVE_LOOKUP:
-							{
-								FE_value dx_dt,*jacobian;
-
-								if (calculate_derivatives)
-								{
-									jacobian=field->derivatives;
-								}
-								else
-								{
-									jacobian=(FE_value *)NULL;
-								}
-								/* only slightly dodgy - stores derivatives of curve in start
-									of derivatives space - must be at least big enough */
-								if (Control_curve_get_values_at_parameter(field->curve,
-									field->source_fields[0]->values[0],field->values,jacobian))
-								{
-									if (jacobian)
-									{
-										/* use product rule to get derivatives */
-										temp=field->source_fields[0]->derivatives;
-										/* count down in following loop because of slightly dodgy bit */
-										for (j=field->number_of_components-1;0<=j;j--)
-										{
-											dx_dt = jacobian[j];
-											for (i=0;i<element_dimension;i++)
-											{
-												jacobian[j*element_dimension+i] = dx_dt*temp[i];
-											}
-										}
-									}
-								}
-								else
-								{
-									return_code=0;
-								}
 							} break;
 							case COMPUTED_FIELD_RC_COORDINATE:
 							{
@@ -2341,7 +2343,7 @@ char *Computed_field_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
@@ -2395,7 +2397,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 					{
 						if (0<i)
 						{
-							sprintf(tmp_string,",%g",field->values[i]);
+							sprintf(tmp_string,", %g",field->values[i]);
 						}
 						else
 						{
@@ -2434,7 +2436,7 @@ char *Computed_field_default_evaluate_as_string_in_element(
 	struct Computed_field *field,int component_number,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
@@ -2467,7 +2469,7 @@ Computed_field_evaluate_cache_in_element.
 				{
 					if (0<i)
 					{
-						sprintf(tmp_string,",%g",field->values[i]);
+						sprintf(tmp_string,", %g",field->values[i]);
 					}
 					else
 					{
@@ -2583,7 +2585,7 @@ number_of_components
 static int Computed_field_evaluate_cache_at_node(
 	struct Computed_field *field,struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Calculates the values of <field> at <node>, if it is defined over the element.
@@ -2740,12 +2742,6 @@ fields with the name 'coordinates' are quite pervasive.
 									field->values[i] = *temp / field->values[number_of_components - 1];
 									temp++;
 								}
-							} break;
-							case COMPUTED_FIELD_CURVE_LOOKUP:
-							{
-								return_code=Control_curve_get_values_at_parameter(field->curve,
-									field->source_fields[0]->values[0],field->values,
-									/*derivatives*/(FE_value *)NULL);
 							} break;
 							case COMPUTED_FIELD_RC_COORDINATE:
 							{
@@ -2908,7 +2904,7 @@ cache.
 char *Computed_field_evaluate_as_string_at_node(struct Computed_field *field,
 	int component_number, struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. If the
@@ -2958,7 +2954,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 					{
 						if (0<i)
 						{
-							sprintf(tmp_string,",%g",field->values[i]);
+							sprintf(tmp_string,", %g",field->values[i]);
 						}
 						else
 						{
@@ -3002,7 +2998,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 char *Computed_field_default_evaluate_as_string_at_node(
 	struct Computed_field *field, int component_number, struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. A string 
@@ -3033,7 +3029,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 				{
 					if (0<i)
 					{
-						sprintf(tmp_string,",%g",field->values[i]);
+						sprintf(tmp_string,", %g",field->values[i]);
 					}
 					else
 					{
@@ -4443,10 +4439,6 @@ The calling function must not deallocate the returned string.
 		{
 			field_type_string="cubic_texture_coordinates";
 		} break;
-		case COMPUTED_FIELD_CURVE_LOOKUP:
-		{
-			field_type_string="curve_lookup";
-		} break;
 		case COMPUTED_FIELD_EDIT_MASK:
 		{
 			field_type_string="edit_mask";
@@ -5214,90 +5206,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_cubic_texture_coordinates */
-
-int Computed_field_get_type_curve_lookup(struct Computed_field *field,
-	struct Control_curve **curve,struct Computed_field **source_field)
-/*******************************************************************************
-LAST MODIFIED : 4 November 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CURVE_LOOKUP, the curve and
-source_field used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_curve_lookup);
-	if (field&&(COMPUTED_FIELD_CURVE_LOOKUP==field->type)&&curve&&
-		source_field)
-	{
-		*curve=field->curve;
-		*source_field=field->source_fields[0];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_curve_lookup.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_curve_lookup */
-
-int Computed_field_set_type_curve_lookup(struct Computed_field *field,
-	struct Control_curve *curve,struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 17 November 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CURVE_LOOKUP, returning the value of
-<curve> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <curve>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_curve_lookup);
-	if (field&&curve&&source_field&&(1==source_field->number_of_components))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_CURVE_LOOKUP;
-			field->number_of_components=Control_curve_get_number_of_components(curve);
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->curve=ACCESS(Control_curve)(curve);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_curve_lookup.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_curve_lookup.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_curve_lookup */
 
 int Computed_field_get_type_edit_mask(struct Computed_field *field,
 	struct Computed_field **source_field,FE_value **edit_mask)
@@ -7109,90 +7017,6 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_cubic_texture_coordinates */
 
-static int define_Computed_field_type_curve_lookup(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 4 November 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_CURVE_LOOKUP (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"source",NULL,NULL,set_Computed_field_conditional},
-		{"curve",NULL,NULL,set_Control_curve},
-		{NULL,NULL,NULL,NULL},
-	};
-	struct Computed_field *field,*source_field;
-	struct Computed_field_package *computed_field_package;
-	struct Control_curve *curve;
-	struct Set_Computed_field_conditional_data set_source_field_data;
-
-	ENTER(define_Computed_field_type_curve_lookup);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		if (COMPUTED_FIELD_CURVE_LOOKUP==Computed_field_get_type(field))
-		{
-			return_code=
-				Computed_field_get_type_curve_lookup(field,&curve,&source_field);
-		}
-		else
-		{
-			curve=FIRST_OBJECT_IN_MANAGER_THAT(Control_curve)(
-				(MANAGER_CONDITIONAL_FUNCTION(Control_curve) *)NULL,(void *)NULL,
-				computed_field_package->control_curve_manager);
-			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_scalar,(void *)NULL,
-				computed_field_package->computed_field_manager);
-		}
-		if (return_code)
-		{
-			if (source_field)
-			{
-				ACCESS(Computed_field)(source_field);
-			}
-			if (curve)
-			{
-				ACCESS(Control_curve)(curve);
-			}
-			set_source_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_source_field_data.conditional_function=Computed_field_is_scalar;
-			set_source_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[0]).to_be_modified= &source_field;
-			(option_table[0]).user_data= &set_source_field_data;
-			(option_table[1]).to_be_modified= &curve;
-			(option_table[1]).user_data=
-				computed_field_package->control_curve_manager;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_curve_lookup(field,curve,source_field);
-			if (source_field)
-			{
-				DEACCESS(Computed_field)(&source_field);
-			}
-			if (curve)
-			{
-				DEACCESS(Control_curve)(&curve);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_curve_lookup.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_curve_lookup */
-
 int define_Computed_field_type_edit_mask(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -8039,9 +7863,6 @@ and its parameter fields and values.
 			Option_table_add_entry(option_table,"cubic_texture_coordinates",
 				field_void,computed_field_package_void,
 				define_Computed_field_type_cubic_texture_coordinates);
-			/* curve_lookup */
-			Option_table_add_entry(option_table,"curve_lookup",field_void,
-				computed_field_package_void,define_Computed_field_type_curve_lookup);
 			/* edit_mask */
 			Option_table_add_entry(option_table,"edit_mask",field_void,
 				computed_field_package_void,define_Computed_field_type_edit_mask);
@@ -8398,14 +8219,14 @@ Returns true if all fields are defined in the same way at the two nodes.
 
 int list_Computed_field(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Writes the properties of the <field> to the command window.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *component_name,*temp_string, *curve_name;
+	char *component_name,*temp_string;
 	int i,return_code;
 
 	ENTER(list_Computed_field);
@@ -8489,17 +8310,6 @@ Writes the properties of the <field> to the command window.
 						"    coordinate field : %s\n",field->source_fields[1]->name);
 					display_message(INFORMATION_MESSAGE,
 						"    vector field : %s\n",field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_CURVE_LOOKUP:
-				{
-					if (return_code=GET_NAME(Control_curve)(field->curve,&curve_name))
-					{
-						display_message(INFORMATION_MESSAGE,"    curve : %s\n",
-							curve_name);
-						display_message(INFORMATION_MESSAGE,"    source field : %s\n",
-							field->source_fields[0]->name);
-						DEALLOCATE(curve_name);
-					}
 				} break;
 				case COMPUTED_FIELD_EDIT_MASK:
 				{
@@ -8609,7 +8419,7 @@ Writes the properties of the <field> to the command window.
 int list_Computed_field_commands(struct Computed_field *field,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Writes the commands needed to reproduce <field> to the command window. Note that
@@ -8618,7 +8428,7 @@ are created automatically by the program.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *command_prefix,*component_name,*temp_string, *curve_name;
+	char *command_prefix,*component_name,*temp_string;
 	int i,return_code;
 
 	ENTER(list_Computed_field_commands);
@@ -8693,16 +8503,6 @@ are created automatically by the program.
 						display_message(INFORMATION_MESSAGE,
 							" coordinate %s vector %s",field->source_fields[1]->name,
 							field->source_fields[0]->name);
-					} break;
-					case COMPUTED_FIELD_CURVE_LOOKUP:
-					{
-						if (return_code=
-							GET_NAME(Control_curve)(field->curve,&curve_name))
-						{
-							display_message(INFORMATION_MESSAGE," curve %s source %s",
-								curve_name,field->source_fields[0]->name);
-							DEALLOCATE(curve_name);
-						}
 					} break;
 					case COMPUTED_FIELD_EDIT_MASK:
 					{
@@ -8936,160 +8736,11 @@ its name matches the contents of the <other_computed_field_void>.
 	return (return_code);
 } /* Computed_field_contents_match */
 
-static int Computed_field_uses_Control_curve(struct Computed_field *field,
-	void *curve_void)
-/*******************************************************************************
-LAST MODIFIED : 5 November 1999
-
-DESCRIPTION :
-Returns true if the <field> is of type COMPUTED_FIELD_CURVE_LOOKUP. If
-<curve> is not NULL further checks it has a reference to <curve>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_uses_Control_curve);
-	return_code=0;
-	if (field)
-	{
-		if (COMPUTED_FIELD_CURVE_LOOKUP==field->type)
-		{
-			return_code=((!curve_void)||
-				((struct Control_curve *)curve_void == field->curve));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_uses_Control_curve.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_uses_Control_curve */
-
-struct Other_Computed_field_uses_Control_curve_data
-{
-	struct Computed_field *field;
-	struct Control_curve *curve;
-};
-
-static int other_Computed_field_uses_Control_curve(struct Computed_field *field,
-	void *curve_data_void)
-/*******************************************************************************
-LAST MODIFIED : 5 November 1999
-
-DESCRIPTION :
-Returns true if the <field> is of type COMPUTED_FIELD_CURVE_LOOKUP and is not
-the same as the field in the <curve_data>. If <curve> is not NULL further
-checks it has a reference to <curve>.
-==============================================================================*/
-{
-	int return_code;
-	struct Other_Computed_field_uses_Control_curve_data *curve_data;
-
-	ENTER(Computed_field_uses_Control_curve);
-	return_code=0;
-	if (field&&(curve_data=
-		(struct Other_Computed_field_uses_Control_curve_data *)curve_data_void))
-	{
-		if ((COMPUTED_FIELD_CURVE_LOOKUP==field->type)&&
-			(field != curve_data->field))
-		{
-			return_code=((!curve_data->curve)||
-				(curve_data->curve == field->curve));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_uses_Control_curve.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_uses_Control_curve */
-
-static void Computed_field_Control_curve_change(
-	struct MANAGER_MESSAGE(Control_curve) *message,
-	void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 22 June 2000
-
-DESCRIPTION :
-Something has changed globally in the Control_curve manager. Passes on messages
-about changes as stemming from computed_field_manager for fields of type
-COMPUTED_FIELD_CURVE_LOOKUP.
-==============================================================================*/
-{
-	struct Computed_field *field;
-	struct Computed_field_package *computed_field_package;
-	struct Other_Computed_field_uses_Control_curve_data curve_data;
-
-	ENTER(Computed_field_Control_curve_change);
-	if (message&&(computed_field_package=
-		(struct Computed_field_package *)computed_field_package_void))
-	{
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_ALL(Control_curve):
-			case MANAGER_CHANGE_OBJECT(Control_curve):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Control_curve):
-			{
-				/* get first field, if any that references changed curve/s */
-				if (field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_uses_Control_curve,(void *)(message->object_changed),
-					computed_field_package->computed_field_manager))
-				{
-					/* use internal MANAGER messaging calls to send messages */
-					curve_data.field=field;
-					curve_data.curve=message->object_changed;
-					/* do more than one field use the modified curve(s)? */
-					if (FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						other_Computed_field_uses_Control_curve,(void *)&curve_data,
-						computed_field_package->computed_field_manager))
-					{
-						/* send CHANGE_ALL message */
-						MANAGER_NOTE_CHANGE(Computed_field)(
-							MANAGER_CHANGE_ALL(Computed_field),(struct Computed_field *)NULL,
-							computed_field_package->computed_field_manager);
-					}
-					else
-					{
-						/* send CHANGE_OBJECT_NOT_IDENTIFIER message */
-						MANAGER_NOTE_CHANGE(Computed_field)(
-							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field),field,
-							computed_field_package->computed_field_manager);
-					}
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Control_curve):
-			case MANAGER_CHANGE_DELETE(Control_curve):
-			case MANAGER_CHANGE_IDENTIFIER(Control_curve):
-			{
-				/* do nothing */
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_Control_curve_change.  Unknown manager message");
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_Control_curve_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_Control_curve_change */
-
 struct Computed_field_package *CREATE(Computed_field_package)(
 	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_element) *fe_element_manager,
-	struct MANAGER(Control_curve) *control_curve_manager)
+	struct MANAGER(FE_element) *fe_element_manager)
 /*******************************************************************************
-LAST MODIFIED : 5 November 1999
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Creates a Computed_field_package which is used by the rest of the program to
@@ -9103,8 +8754,7 @@ FE_fields.
 	struct Computed_field_package *computed_field_package;
 
 	ENTER(CREATE(Computed_field_package));
-	if (fe_field_manager&&fe_element_manager&&
-		control_curve_manager)
+	if (fe_field_manager && fe_element_manager)
 	{
 		if (ALLOCATE(computed_field_package,struct Computed_field_package,1)&&
 			(computed_field_package->computed_field_manager=
@@ -9112,10 +8762,6 @@ FE_fields.
 		{
 			computed_field_package->fe_field_manager=fe_field_manager;
 			computed_field_package->fe_element_manager=fe_element_manager;
-			computed_field_package->control_curve_manager=control_curve_manager;
-			computed_field_package->control_curve_manager_callback_id=
-				MANAGER_REGISTER(Control_curve)(Computed_field_Control_curve_change,
-					(void *)computed_field_package,control_curve_manager);
 			computed_field_package->computed_field_type_list =
 			  CREATE(LIST(Computed_field_type_data))();
 		}
@@ -9140,7 +8786,7 @@ FE_fields.
 int DESTROY(Computed_field_package)(
 	struct Computed_field_package **package_address)
 /*******************************************************************************
-LAST MODIFIED : 5 November 1999
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Frees memory/deaccess objects in computed_field_package at <*package_address>.
@@ -9154,9 +8800,6 @@ Cancels any further messages from managers.
 	if (package_address&&(computed_field_package= *package_address))
 	{
 		DESTROY(MANAGER(Computed_field))(&computed_field_package->computed_field_manager);
-		MANAGER_DEREGISTER(Control_curve)(
-			computed_field_package->control_curve_manager_callback_id,
-			computed_field_package->control_curve_manager);
 		DESTROY(LIST(Computed_field_type_data))(
 			&computed_field_package->computed_field_type_list);
 		DEALLOCATE(*package_address);
@@ -9279,5 +8922,3 @@ be destroyed, assuming it is only accessed by this field and its manager.
 
 	return (return_code);
 } /* Computed_field_can_be_destroyed */
-
-

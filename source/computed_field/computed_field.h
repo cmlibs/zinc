@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -38,7 +38,6 @@ if a value is already known.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "curve/control_curve.h"
 #include "user_interface/message.h"
 
 /*
@@ -58,7 +57,6 @@ DESCRIPTION :
 	COMPUTED_FIELD_COMPOSE,            /* compose three Computed_fields in sequence */
 	COMPUTED_FIELD_CONSTANT,           /* constant N-component field */
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
-	COMPUTED_FIELD_CURVE_LOOKUP,       /* returns values from control_curve for scalar source field */
 	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
@@ -227,6 +225,15 @@ and also to prevent copying a field over itself.
 Parts of the program receiving manager messages for Computed_fields should call
 this function with the field=field in use and other_field=modified field to
 determine if the field in use needs updating.
+==============================================================================*/
+
+int Computed_field_depends_on_Computed_field_in_list(
+	struct Computed_field *field, struct LIST(Computed_field) *field_list);
+/*******************************************************************************
+LAST MODIFIED : 28 May 2001
+
+DESCRIPTION :
+Returns true if <field> depends on any field in <field_list>.
 ==============================================================================*/
 
 char *Computed_field_evaluate_as_string_in_element(
@@ -730,30 +737,6 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 
-int Computed_field_get_type_curve_lookup(struct Computed_field *field,
-	struct Control_curve **curve,struct Computed_field **source_field);
-/*******************************************************************************
-LAST MODIFIED : 4 November 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CURVE_LOOKUP, the curve and
-source_field used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_curve_lookup(struct Computed_field *field,
-	struct Control_curve *curve,struct Computed_field *source_field);
-/*******************************************************************************
-LAST MODIFIED : 4 November 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CURVE_LOOKUP, returning the value of
-<curve> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <curve>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
 int Computed_field_get_type_rc_coordinate(struct Computed_field *field,
 	struct Computed_field **coordinate_field);
 /*******************************************************************************
@@ -1049,10 +1032,9 @@ components, coordinate system and type.
 
 struct Computed_field_package *CREATE(Computed_field_package)(
 	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_element) *fe_element_manager,
-	struct MANAGER(Control_curve) *control_curve_manager);
+	struct MANAGER(FE_element) *fe_element_manager);
 /*******************************************************************************
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Creates a Computed_field_package which is used by the rest of the program to
