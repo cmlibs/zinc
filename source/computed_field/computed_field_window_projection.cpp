@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 10 October 2000
+LAST MODIFIED : 27 February 2001
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -125,10 +125,45 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_window_projection */
 
+static void Computed_field_window_projection_scene_viewer_callback(
+	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Clear the projection matrix as it is no longer valid and notify the manager
+that the computed field has changed.
+==============================================================================*/
+{
+	struct Computed_field *field;
+	struct Computed_field_window_projection_type_specific_data *data;
+
+	USE_PARAMETER(dummy_void);
+	ENTER(Computed_field_window_projection_scene_viewer_callback);
+	if (scene_viewer && (field = (struct Computed_field *)field_void) && 
+		(data = (struct Computed_field_window_projection_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->projection_matrix)
+		{
+			DEALLOCATE(data->projection_matrix);
+			data->projection_matrix = (double *)NULL;
+		}
+		Computed_field_changed(field, data->package->computed_field_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection_scene_viewer_callback.  "
+			"Invalid arguments.");
+	}
+	LEAVE;
+} /* Computed_field_window_projection_scene_viewer_callback */
+
 static int Computed_field_window_projection_calculate_matrix(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2000
+LAST MODIFIED : 27 February 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -156,6 +191,15 @@ DESCRIPTION :
 			ALLOCATE(data->projection_matrix, double, 16))
 		{
 			return_code = 1;
+			/* make sure we are getting scene viewer callbacks once the
+				 projection matrix exists */
+			if (!data->scene_viewer_callback_flag)
+			{
+				data->scene_viewer_callback_flag = 
+					Scene_viewer_transform_add_callback(data->scene_viewer, 
+						Computed_field_window_projection_scene_viewer_callback,
+						(void *)field);
+			}
 			if (Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix)&&
 				Scene_viewer_get_window_projection_matrix(scene_viewer,
 					window_projection_matrix))
@@ -481,41 +525,6 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_window_projection_calculate_matrix */
 
-static void Computed_field_window_projection_scene_viewer_callback(
-	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Clear the projection matrix as it is no longer valid and notify the manager
-that the computed field has changed.
-==============================================================================*/
-{
-	struct Computed_field *field;
-	struct Computed_field_window_projection_type_specific_data *data;
-
-	USE_PARAMETER(dummy_void);
-	ENTER(Computed_field_window_projection_scene_viewer_callback);
-	if (scene_viewer && (field = (struct Computed_field *)field_void) && 
-		(data = (struct Computed_field_window_projection_type_specific_data *)
-		field->type_specific_data))
-	{
-		if (data->projection_matrix)
-		{
-			DEALLOCATE(data->projection_matrix);
-			data->projection_matrix = (double *)NULL;
-		}
-		Computed_field_changed(field, data->package->computed_field_manager);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_window_projection_scene_viewer_callback.  "
-			"Invalid arguments.");
-	}
-	LEAVE;
-} /* Computed_field_window_projection_scene_viewer_callback */
-
 static int Computed_field_window_projection_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -726,13 +735,6 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 			Computed_field_window_projection_calculate_matrix(field))
 		{
 			return_code = 1;
-			if (!data->scene_viewer_callback_flag)
-			{
-				data->scene_viewer_callback_flag = 
-					Scene_viewer_transform_add_callback(data->scene_viewer, 
-						Computed_field_window_projection_scene_viewer_callback,
-						(void *)field);
-			}
 			projection_matrix = data->projection_matrix;
 			if (calculate_derivatives)
 			{
