@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 5 August 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -27,6 +27,9 @@ Functions for manipulating finite element structures.
 	decided to allow coordinate reordering except for polygons */
 #define SMOOTH_POLYGONS
 #endif /* defined (INHERITED_POLYGON_BLENDING) */
+
+/*???DB.  Testing */
+#define DOUBLE_FOR_DOT_PRODUCT
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -1408,7 +1411,6 @@ A debug function to print a node's value storage (to stdout)
 	return(return_code);
 } /* show_FE_nodal_field_FE_values */
 
-
 static int show_node_field(struct FE_node_field *node_field,void *count)
 /************************************************************************
 LAST MODIFIED : 19 April 1999
@@ -1674,13 +1676,15 @@ node_value_data.values_storage.
 } /* iterative_FE_node_field_copy_values_storage */
 
 static int copy_FE_node_value_storage(struct FE_node *node, 
-	Value_storage **values_storage, struct LIST(FE_node_field) *exclusion_field_list)
-/******************************************************************************
+	Value_storage **values_storage,
+	struct LIST(FE_node_field) *exclusion_field_list)
+/*******************************************************************************
 LAST MODIFIED: 4 March 1999
 
 DESCRIPTION:
 Copies the node->values_storage to values_storage. Also allocates and copies
-any arrays in node->values_storage. Assumes that values_storage has been allocated!
+any arrays in node->values_storage. Assumes that values_storage has been
+allocated!
 
 Note that values_storage contains no information about the value_type(s) or the
 number of values of the data in it. You must refer to the FE_node/FE_field to 
@@ -2660,10 +2664,8 @@ specified <field>.
 	struct FE_node_field *node_field;
 
 	ENTER(find_FE_node_field_in_info);
-
 	node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-				node_field_information->node_field_list);
-
+		node_field_information->node_field_list);
 	if (!node_field)
 	{
 		display_message(WARNING_MESSAGE,
@@ -3831,21 +3833,24 @@ Merges the <element_field> into the <list>.
 													else
 													{
 														display_message(ERROR_MESSAGE,
-															"merge_FE_element_field_into_list.  Invalid standard node to element map");
+															"merge_FE_element_field_into_list.  "
+															"Invalid standard node to element map");
 														return_code=0;
 													}
 												}
 												else
 												{
 													display_message(ERROR_MESSAGE,
-														"merge_FE_element_field_into_list.  Inconsistent scale factor sets");
+														"merge_FE_element_field_into_list.  "
+														"Inconsistent scale factor sets");
 													return_code=0;
 												}
 											}
 											else
 											{
 												display_message(ERROR_MESSAGE,
-													"merge_FE_element_field_into_list.  Inconsistent global to element map");
+													"merge_FE_element_field_into_list.  "
+													"Inconsistent global to element map");
 												return_code=0;
 											}
 										}
@@ -3853,7 +3858,8 @@ Merges the <element_field> into the <list>.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"merge_FE_element_field_into_list.  Invalid global to element map");
+											"merge_FE_element_field_into_list.  "
+											"Invalid global to element map");
 										return_code=0;
 									}
 								} break;
@@ -3952,21 +3958,24 @@ Merges the <element_field> into the <list>.
 															else
 															{
 																display_message(ERROR_MESSAGE,
-																	"merge_FE_element_field_into_list.  Invalid general node to element map");
+																	"merge_FE_element_field_into_list.  "
+																	"Invalid general node to element map");
 																return_code=0;
 															}
 														}
 														else
 														{
 															display_message(ERROR_MESSAGE,
-																"merge_FE_element_field_into_list.  Inconsistent scale factor sets");
+																"merge_FE_element_field_into_list.  "
+																"Inconsistent scale factor sets");
 															return_code=0;
 														}
 													}
 													else
 													{
 														display_message(ERROR_MESSAGE,
-															"merge_FE_element_field_into_list.  Inconsistent global to element map");
+															"merge_FE_element_field_into_list.  "
+															"Inconsistent global to element map");
 														return_code=0;
 													}
 												}
@@ -3977,7 +3986,8 @@ Merges the <element_field> into the <list>.
 											else
 											{
 												display_message(ERROR_MESSAGE,
-													"merge_FE_element_field_into_list.  Inconsistent global to element map");
+													"merge_FE_element_field_into_list.  "
+													"Inconsistent global to element map");
 												return_code=0;
 											}
 										}
@@ -3985,7 +3995,8 @@ Merges the <element_field> into the <list>.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"merge_FE_element_field_into_list.  Invalid global to element map");
+											"merge_FE_element_field_into_list.  "
+											"Invalid global to element map");
 										return_code=0;
 									}
 								} break;
@@ -4030,14 +4041,16 @@ Merges the <element_field> into the <list>.
 												else
 												{
 													display_message(ERROR_MESSAGE,
-														"merge_FE_element_field_into_list.  Invalid field to element map");
+														"merge_FE_element_field_into_list.  "
+														"Invalid field to element map");
 													return_code=0;
 												}
 											}
 											else
 											{
 												display_message(ERROR_MESSAGE,
-													"merge_FE_element_field_into_list.  Inconsistent global to element map");
+													"merge_FE_element_field_into_list.  "
+													"Inconsistent global to element map");
 												return_code=0;
 											}
 										}
@@ -4045,7 +4058,8 @@ Merges the <element_field> into the <list>.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"merge_FE_element_field_into_list.  Invalid global to element map");
+											"merge_FE_element_field_into_list.  "
+											"Invalid global to element map");
 										return_code=0;
 									}
 								} break;
@@ -4066,8 +4080,9 @@ Merges the <element_field> into the <list>.
 									}
 									if (j<=0)
 									{
-										/* copy the values_storage for the grid values, first freeing
-											 any dynamic allocations and accesses in existing storage */
+										/* copy the values_storage for the grid values, first 
+											freeing any dynamic allocations and accesses in existing
+											storage */
 										values_storage = (*(merge->values_storage_address))+
 											(((*component)->map).element_grid_based.value_index);
 										new_values_storage=(merge->new_values_storage)+
@@ -4088,7 +4103,8 @@ Merges the <element_field> into the <list>.
 								default:
 								{
 									display_message(ERROR_MESSAGE,
-										"merge_FE_element_field_into_list.  Invalid global to element map type");
+										"merge_FE_element_field_into_list.  "
+										"Invalid global to element map type");
 									return_code=0;
 								} break;
 							}
@@ -4099,7 +4115,8 @@ Merges the <element_field> into the <list>.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"merge_FE_element_field_into_list.  Inconsistent element field components");
+								"merge_FE_element_field_into_list.  "
+								"Inconsistent element field components");
 							return_code=0;
 						}
 					}
@@ -4213,7 +4230,8 @@ Merges the <element_field> into the <list>.
 															(*number_in_scale_factor_set==
 																*new_number_in_scale_factor_set)))&&
 														(*standard_node_map=
-															CREATE(Standard_node_to_element_map)(node_index,k)))
+															CREATE(Standard_node_to_element_map)(node_index,
+															k)))
 													{
 														value_index=(*standard_node_map)->
 															nodal_value_indices;
@@ -4556,7 +4574,8 @@ Merges the <element_field> into the <list>.
 											*(merge->values_storage_size_address) +=
 												new_values_storage_size;
 											new_values_storage=(merge->new_values_storage)+
-												(((*new_component)->map).element_grid_based.value_index);
+												(((*new_component)->map).element_grid_based.
+												value_index);
 											/* copy new_values_storage into values_storage */
 											copy_value_storage_array(values_storage,
 												new_element_field->field->value_type,number_of_values,
@@ -5031,7 +5050,8 @@ the pointer to the array.
 						{
 							case DOUBLE_VALUE:
 							{
-								printf("new_value = %p   value = %p   (%g)\n",new_value,value,*((double *)value));
+								printf("new_value = %p   value = %p   (%g)\n",new_value,value,
+									*((double *)value));
 								*((double *)new_value) = *((double *)value);
 							} break;
 							case ELEMENT_XI_VALUE:
@@ -5046,7 +5066,8 @@ the pointer to the array.
 								value_destination += sizeof(struct FE_element *);
 								for(k = 0 ; k < MAXIMUM_ELEMENT_XI_DIMENSIONS ; k++)
 								{
-									*((FE_value *)value_destination) = *((FE_value *)value_source);
+									*((FE_value *)value_destination) =
+										*((FE_value *)value_source);
 									value_source += sizeof(FE_value);
 									value_destination += sizeof(FE_value);
 								}
@@ -5061,8 +5082,9 @@ the pointer to the array.
 							} break;	
 							case SHORT_VALUE:
 							{
-								display_message(ERROR_MESSAGE,"place_nodal_values. SHORT_VALUE."
-									" Haven't written code yet. Beware pointer alignment problems");
+								display_message(ERROR_MESSAGE,
+									"place_nodal_values.  SHORT_VALUE.  Haven't written code "
+									"yet. Beware pointer alignment problems");
 								return_code =0;
 							} break;
 							case INT_VALUE:
@@ -6539,7 +6561,7 @@ static int global_to_element_map_values(struct FE_element *element,
 	struct FE_element_field *element_field,int component_number,
 	int *number_of_values,FE_value **values)
 /*******************************************************************************
-LAST MODIFIED : 18 November 1999
+LAST MODIFIED : 5 August 2001
 
 DESCRIPTION :
 The standard function for calculating the <element> <values> for the given
@@ -6552,7 +6574,7 @@ obtained from the node_field_component for the field at the node.
 ==============================================================================*/
 {
 	FE_value *blended_element_value,*blended_element_values,*blending_matrix,
-		*element_value,*element_values,*global_values,*scale_factors,temp_value,fe_value;
+		*element_value,*element_values,*global_values,*scale_factors,temp_value;
 	int *coefficient_index,*global_value_index,i,j,k,l,
 		number_of_blended_element_values,number_of_element_nodes,
 		number_of_element_values,number_of_global_values,number_of_map_values,
@@ -6571,6 +6593,11 @@ obtained from the node_field_component for the field at the node.
 		**linear_combination_address;
 	struct Standard_node_to_element_map *standard_node_map,
 		**standard_node_map_address;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+	double sum;
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	FE_value sum;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(global_to_element_map_values);
 /*???debug */
@@ -6610,8 +6637,9 @@ obtained from the node_field_component for the field at the node.
 							standard_node_map->number_of_nodal_values)>0)&&
 							(0<=standard_node_map->node_index)&&
 							(standard_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[standard_node_map->node_index])&&(node->values_storage)&&
-							(node->fields)&&(standard_node_map->nodal_value_indices)&&
+							(node=nodes[standard_node_map->node_index])&&
+							(node->values_storage)&&(node->fields)&&
+							(standard_node_map->nodal_value_indices)&&
 							(standard_node_map->scale_factor_indices))
 						{
 							number_of_element_values += number_of_map_values;
@@ -6620,8 +6648,8 @@ obtained from the node_field_component for the field at the node.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-				"global_to_element_map_values.  Invalid standard node to element map");
+							display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
+								"Invalid standard node to element map");
 							return_code=0;
 						}
 					}
@@ -6756,8 +6784,9 @@ obtained from the node_field_component for the field at the node.
 							general_node_map->number_of_nodal_values)>0)&&
 							(0<=general_node_map->node_index)&&
 							(general_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[general_node_map->node_index])&&(node->values_storage)&&
-							(node->fields)&&(general_node_map->element_values))
+							(node=nodes[general_node_map->node_index])&&
+							(node->values_storage)&&(node->fields)&&
+							(general_node_map->element_values))
 						{
 							number_of_element_values += number_of_map_values;
 							general_node_map_address++;
@@ -6765,8 +6794,8 @@ obtained from the node_field_component for the field at the node.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-					"global_to_element_map_values.  Invalid general node to element map");
+							display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
+								"Invalid general node to element map");
 							return_code=0;
 						}
 					}
@@ -6812,12 +6841,12 @@ obtained from the node_field_component for the field at the node.
 								{
 									/* add absolute value offset from node_field_component and
 										 cast address into FE_value type */
-									global_values=
-										(FE_value *)(node->values_storage+node_field_component->value);
+									global_values=(FE_value *)(node->values_storage+
+										node_field_component->value);
 									k=general_node_map->number_of_nodal_values;
 									while (return_code&&(k>0))
 									{
-										*element_value=0;
+										sum=0;
 										if ((linear_combination= *linear_combination_address)&&
 											((l=linear_combination->number_of_global_values)>0)&&
 											(global_value_index=
@@ -6837,13 +6866,22 @@ obtained from the node_field_component for the field at the node.
 														(scale_index<number_of_scale_factors))
 													{
 														/* ???RC Change to relative. */
-														*element_value += global_values[value_index]*
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+														sum += (double)(global_values[value_index])*
+															(double)(scale_factors[scale_index]);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+														sum += global_values[value_index]*
 															scale_factors[scale_index];
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 													}
 													else
 													{
 														/* ???RC Change to relative. */
-														*element_value += global_values[value_index];
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+														sum += (double)global_values[value_index];
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+														sum += global_values[value_index];
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 													}
 												}
 												global_value_index++;
@@ -6858,6 +6896,7 @@ obtained from the node_field_component for the field at the node.
 											DEALLOCATE(element_values);
 											return_code=0;
 										}
+										*element_value=(FE_value)sum;
 										element_value++;
 										k--;
 									}
@@ -6911,7 +6950,7 @@ obtained from the node_field_component for the field at the node.
 						return_code=1;
 						while (return_code&&(j>0))
 						{
-							*element_value=0;
+							sum=0;
 							if ((linear_combination= *linear_combination_address)&&
 								((k=linear_combination->number_of_global_values)>0)&&
 								(global_value_index=linear_combination->global_value_indices)&&
@@ -6923,17 +6962,25 @@ obtained from the node_field_component for the field at the node.
 									if ((0<=(value_index= *global_value_index))&&
 										(value_index<number_of_global_values))
 									{
-										get_FE_field_FE_value_value(field,value_index,&fe_value);
+										get_FE_field_FE_value_value(field,value_index,&temp_value);
 										/* if there is not a coefficient use 1 as the coefficient */
 										if ((0<=(scale_index= *coefficient_index))&&
 											(scale_index<number_of_scale_factors))
 										{
-											
-											*element_value += fe_value*scale_factors[scale_index];
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+											sum += (double)(temp_value)*
+												(double)(scale_factors[scale_index]);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+											sum += temp_value*scale_factors[scale_index];
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 										}
 										else
 										{
-											*element_value +=	fe_value;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+											sum += (double)temp_value;
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+											sum += temp_value;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 										}
 									}
 									global_value_index++;
@@ -6948,6 +6995,7 @@ obtained from the node_field_component for the field at the node.
 								DEALLOCATE(element_values);
 								return_code=0;
 							}
+							*element_value=(FE_value)sum;
 							element_value++;
 						}
 					}
@@ -7008,6 +7056,102 @@ printf("\n");*/
 						product of the element values and the blending matrix */
 					if (blending_matrix=basis->blending_matrix)
 					{
+						/* allocate storage for the blended element values */
+						if (ALLOCATE(blended_element_values,FE_value,
+							number_of_blended_element_values))
+						{
+							/* calculate the blended element values */
+							blended_element_value=blended_element_values;
+							for (i=0;i<number_of_blended_element_values;i++)
+							{
+								sum=0;
+								element_value=element_values;
+								blending_matrix=(basis->blending_matrix)+i;
+								for (j=number_of_element_values;j>0;j--)
+								{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+									sum += (double)(*blending_matrix)*(double)(*element_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+									sum += (*blending_matrix)*(*element_value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+									element_value++;
+									blending_matrix += number_of_blended_element_values;
+								}
+								*blended_element_value=(FE_value)sum;
+								blended_element_value++;
+							}
+							*values=blended_element_values;
+							*number_of_values=number_of_blended_element_values;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+"global_to_element_map_values.  Could not allocate memory for blended values");
+							return_code=0;
+						}
+						DEALLOCATE(element_values);
+#if defined (OLD_CODE)
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+						double *blended_element_value_double,*blended_element_values_double,
+							blending_double,element_double;
+
+						/* allocate storage for the blended element values */
+						if (ALLOCATE(blended_element_values_double,double,
+							number_of_blended_element_values))
+						{
+							/* calculate the blended element values */
+							blended_element_value_double=blended_element_values_double;
+							for (i=number_of_blended_element_values;i>0;i--)
+							{
+								*blended_element_value_double=0;
+								blended_element_value_double++;
+							}
+							element_value=element_values;
+							for (j=number_of_element_values;j>0;j--)
+							{
+								element_double=(double)(*element_value);
+								blended_element_value_double=blended_element_values_double;
+								for (i=number_of_blended_element_values;i>0;i--)
+								{
+									blending_double=(double)(*blending_matrix);
+									*blended_element_value_double +=
+										blending_double*element_double;
+									blended_element_value_double++;
+									blending_matrix++;
+								}
+								element_value++;
+							}
+							if (REALLOCATE(element_value,element_values,FE_value,
+								number_of_blended_element_values))
+							{
+								element_values=element_value;
+								blended_element_value_double=blended_element_values_double;
+								for (i=number_of_blended_element_values;i>0;i--)
+								{
+									*element_value=(float)(*blended_element_value_double);
+									element_value++;
+									blended_element_value_double++;
+								}
+								*values=element_values;
+								*number_of_values=number_of_blended_element_values;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+"global_to_element_map_values.  Could not allocate memory for blended values 2");
+								DEALLOCATE(element_values);
+								return_code=0;
+							}
+							DEALLOCATE(blended_element_values_double);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+"global_to_element_map_values.  Could not allocate memory for blended values");
+							DEALLOCATE(element_values);
+							return_code=0;
+						}
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 						/* allocate storage for the blended element values */
 						if (ALLOCATE(blended_element_values,FE_value,
 							number_of_blended_element_values))
@@ -7074,6 +7218,8 @@ printf("\n");*/
 							return_code=0;
 						}
 						DEALLOCATE(element_values);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+#endif /* defined (OLD_CODE) */
 					}
 					else
 					{
@@ -7161,8 +7307,9 @@ value for a <component>.  The storage for the nodes array
 							standard_node_map->number_of_nodal_values)>0)&&
 							(0<=standard_node_map->node_index)&&
 							(standard_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[standard_node_map->node_index])&&(node->values_storage)&&
-							(node->fields)&&(standard_node_map->nodal_value_indices)&&
+							(node=nodes[standard_node_map->node_index])&&
+							(node->values_storage)&&(node->fields)&&
+							(standard_node_map->nodal_value_indices)&&
 							(standard_node_map->scale_factor_indices))
 						{
 							number_of_element_values += number_of_map_values;
@@ -7171,8 +7318,8 @@ value for a <component>.  The storage for the nodes array
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-					"global_to_element_map_nodes.  Invalid standard node to element map");
+							display_message(ERROR_MESSAGE,"global_to_element_map_nodes.  "
+								"Invalid standard node to element map");
 							return_code=0;
 						}
 					}
@@ -7239,8 +7386,9 @@ value for a <component>.  The storage for the nodes array
 							general_node_map->number_of_nodal_values)>0)&&
 							(0<=general_node_map->node_index)&&
 							(general_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[general_node_map->node_index])&&(node->values_storage)&&
-							(node->fields)&&(general_node_map->element_values))
+							(node=nodes[general_node_map->node_index])&&
+							(node->values_storage)&&(node->fields)&&
+							(general_node_map->element_values))
 						{
 							number_of_element_values += number_of_map_values;
 							general_node_map_address++;
@@ -7248,8 +7396,8 @@ value for a <component>.  The storage for the nodes array
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-					"global_to_element_map_nodes.  Invalid general node to element map");
+							display_message(ERROR_MESSAGE,"global_to_element_map_nodes.  "
+								"Invalid general node to element map");
 							return_code=0;
 						}
 					}
@@ -7330,14 +7478,14 @@ static int calculate_standard_basis_transformation(struct FE_basis *basis,
 	Standard_basis_function **inherited_standard_basis_function_address,
 	FE_value **blending_matrix_address)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2001
+LAST MODIFIED : 5 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	FE_value *blending_matrix,*expanded_coordinate_transformation,
-		*inherited_value,*reorder_blending_matrix,scalar,sum,*sumand,
-		*transformation,*value;
+		*inherited_value,*reorder_blending_matrix,scalar,*sumand,*transformation,
+		*value;
 	int basis_dimension,*field_to_element,i,inherited_polygon_offset,
 		*inherited_standard_basis_argument,*inherited_standard_basis_arguments,j,k,
 		l,m,need_reordering,number_of_inherited_values,number_of_polygon_verticies,
@@ -7345,6 +7493,11 @@ DESCRIPTION :
 		*reorder_coordinate,*reorder_value,*reorder_values,return_code,row_size,
 		*standard_basis_argument,*standard_basis_arguments;
 	Standard_basis_function *standard_basis_function;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+	double sum;
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	FE_value sum;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(calculate_standard_basis_transformation);
 #if defined (DEBUG)
@@ -7871,14 +8024,22 @@ DESCRIPTION :
 													{
 														for (l=row_size;l>0;l--)
 														{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+															sum=(double)(*value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															sum= *value;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															sumand=value;
 															for (m=order;m>0;m--)
 															{
 																sumand += number_of_inherited_values*row_size;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+																sum += (double)(*sumand);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																sum += *sumand;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															}
-															*inherited_value=sum;
+															*inherited_value=(FE_value)sum;
 															inherited_value++;
 															value++;
 														}
@@ -12316,8 +12477,9 @@ Defines a field at a node (does not assign values)
 											{
 												case ELEMENT_XI_VALUE:
 												{											
-													*((struct FE_element **)new_value) = (struct FE_element *)NULL;
-													new_value+=sizeof(struct FE_element *);
+													*((struct FE_element **)new_value)=
+														(struct FE_element *)NULL;
+													new_value += sizeof(struct FE_element *);
 													for (j = 0 ; j < MAXIMUM_ELEMENT_XI_DIMENSIONS ; j++)
 													{
 														*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
@@ -19960,7 +20122,7 @@ int inherit_FE_element_field(struct FE_element *element,struct FE_field *field,
 	FE_value **coordinate_transformation_address,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 1 October 1999
+LAST MODIFIED : 5 August 2001
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.
@@ -19983,6 +20145,11 @@ column of the <coordinate_transformation> matrix.
 	struct FE_element_field_info *field_info;
 	struct FE_element_parent *element_parent;
 	struct Field_defined_for_parent_data field_defined_for_parent_data;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+	double sum;
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	FE_value sum;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(inherit_FE_element_field);
 #if defined (DEBUG)
@@ -20108,20 +20275,29 @@ column of the <coordinate_transformation> matrix.
 							for (i=field_element_dimension;i>0;i--)
 							{
 								/* calculate b entry for this row */
-								value= *coordinate_transformation_value;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+								sum=(double)(*coordinate_transformation_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+								sum= *coordinate_transformation_value;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 								coordinate_transformation_value++;
 								face_to_element_value=face_to_element;
 								for (k=dimension;k>0;k--)
 								{
-									value += (*coordinate_transformation_value)*
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+									sum += (double)(*coordinate_transformation_value)*
+										(double)(*face_to_element_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+									sum += (*coordinate_transformation_value)*
 										(*face_to_element_value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 									coordinate_transformation_value++;
 									face_to_element_value += dimension;
 								}
-								*new_coordinate_transformation_value=value;
+								*new_coordinate_transformation_value=(FE_value)sum;
 #if defined (DEBUG)
 								/*???debug */
-								printf(" %g",value);
+								printf(" %g",sum);
 #endif /* defined (DEBUG) */
 								new_coordinate_transformation_value++;
 								/* calculate A entries for this row */
@@ -20130,18 +20306,23 @@ column of the <coordinate_transformation> matrix.
 									face_to_element++;
 									face_to_element_value=face_to_element;
 									coordinate_transformation_value -= dimension;
-									value=0;
+									sum=0;
 									for (k=dimension;k>0;k--)
 									{
-										value += (*coordinate_transformation_value)*
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+										sum += (double)(*coordinate_transformation_value)*
+											(double)(*face_to_element_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+										sum += (*coordinate_transformation_value)*
 											(*face_to_element_value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 										coordinate_transformation_value++;
 										face_to_element_value += dimension;
 									}
-									*new_coordinate_transformation_value=value;
+									*new_coordinate_transformation_value=(FE_value)sum;
 #if defined (DEBUG)
 									/*???debug */
-									printf(" %g",value);
+									printf(" %g",sum);
 #endif /* defined (DEBUG) */
 									new_coordinate_transformation_value++;
 								}
@@ -20357,7 +20538,7 @@ int calculate_FE_element_field_values(struct FE_element *element,
 	struct FE_element_field_values *element_field_values,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2001
+LAST MODIFIED : 5 August 2001
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.  The
@@ -20369,8 +20550,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 {
 	FE_value *basis_function_values,*blending_matrix,*coordinate_transformation,
 		*derivative_value,*inherited_value,*inherited_values,scalar,
-		*second_derivative_value,sum,*sumand,*transformation,*value,
-		**values_address;
+		*second_derivative_value,*sumand,*transformation,*value,**values_address;
 	int *basis_type,component_number,*component_number_in_xi,element_dimension,
 		*element_value_offsets,field_element_dimension,*grid_offset_in_xi,i,
 		*inherited_standard_basis_argument,j,k,l,maximum_number_of_values,
@@ -20392,6 +20572,11 @@ The optional <top_level_element> forces inheritance from it as needed.
 	int calculate_standard_basis_arguments,*field_to_element,*reorder_coordinate,
 		*reorder_coordinates,*reorder_value,*reorder_values;
 #endif /* defined (INHERITED_POLYGON_BLENDING) */
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+	double sum;
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	FE_value sum;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(calculate_FE_element_field_values);
 #if defined (DEBUG)
@@ -20841,11 +21026,15 @@ The optional <top_level_element> forces inheritance from it as needed.
 														transformation=blending_matrix+j;
 														for (i=row_size;i>0;i--)
 														{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+															sum += (double)(*transformation)*(double)(*value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															sum += (*transformation)*(*value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															value++;
 															transformation += number_of_inherited_values;
 														}
-														*inherited_value=sum;
+														*inherited_value=(FE_value)sum;
 														inherited_value++;
 													}
 													DEALLOCATE(*values_address);
@@ -20899,11 +21088,15 @@ The optional <top_level_element> forces inheritance from it as needed.
 														transformation=blending_matrix+j;
 														for (i=row_size;i>0;i--)
 														{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+															sum += (double)(*transformation)*(double)(*value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															sum += (*transformation)*(*value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															value++;
 															transformation += number_of_inherited_values;
 														}
-														*inherited_value=sum;
+														*inherited_value=(FE_value)sum;
 #if defined (DEBUG)
 														/*???debug */
 														printf("inherited %d %g\n",j,sum);
@@ -21122,14 +21315,22 @@ The optional <top_level_element> forces inheritance from it as needed.
 																	{
 																		for (k=number_of_inherited_values;k>0;k--)
 																		{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+																			sum=(double)(*value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																			sum= *value;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																			sumand=value;
 																			for (l=order;l>0;l--)
 																			{
 																				sumand += number_of_inherited_values;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+																				sum += (double)(*sumand);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																				sum += *sumand;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																			}
-																			*inherited_value=sum;
+																			*inherited_value=(FE_value)sum;
 																			inherited_value++;
 																			value++;
 																		}
@@ -21918,7 +22119,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	struct FE_field *field,int *number_of_element_field_nodes_address,
 	struct FE_node ***element_field_nodes_array_address)
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 5 August 2001
 
 DESCRIPTION :
 If <field> is NULL, element nodes are calculated for the coordinate field.  The
@@ -21929,7 +22130,6 @@ fastest in xi2 and so on).
 NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 ==============================================================================*/
 {
-	double sum;
 	FE_value *blending_matrix,*combined_blending_matrix,
 		*coordinate_transformation,*row,*column,*transformation;
 	int add,component_number,element_dimension,i,*inherited_basis_arguments,j,k,
@@ -21949,6 +22149,11 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 /*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 	int *field_to_element,*reorder_coordinates,*reorder_values;
 #endif /* defined (INHERITED_POLYGON_BLENDING) */
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+	double sum;
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	FE_value sum;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(calculate_FE_element_field_nodes);
 	return_code=0;
@@ -22036,7 +22241,11 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 													column=blending_matrix+j;
 													for (k=number_of_standard_basis_functions;k>0;k--)
 													{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
 														sum += (double)(*row)*(double)(*column);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+														sum += (*row)*(*column);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 														row++;
 														column += number_of_inherited_values;
 													}
@@ -22145,7 +22354,11 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 														column=blending_matrix+j;
 														for (k=number_of_standard_basis_functions;k>0;k--)
 														{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
 															sum += (double)(*row)*(double)(*column);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+															sum += (*row)*(*column);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 															row++;
 															column += number_of_inherited_values;
 														}
@@ -22383,15 +22596,23 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 																	for (k=number_of_inherited_values;k>0;
 																			 k--)
 																	{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+																		sum=(double)(*value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																		sum= *value;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																		sumand=value;
 																		for (l=order;l>0;l--)
 																		{
 																			sumand +=
 																				number_of_inherited_values;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+																			sum += (double)(*sumand);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																			sum += *sumand;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 																		}
-																		*inherited_value=sum;
+																		*inherited_value=(FE_value)sum;
 																		inherited_value++;
 																		value++;
 																	}
@@ -22714,7 +22935,7 @@ int calculate_FE_element_field(int component_number,
 	struct FE_element_field_values *element_field_values,FE_value *xi_coordinates,
 	FE_value *values,FE_value *jacobian)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1999
+LAST MODIFIED : 5 August 2001
 
 DESCRIPTION :
 Calculates the <values> of the field specified by the <element_field_values> at
@@ -22730,13 +22951,18 @@ the derivatives will start at the first position of <jacobian>.
 		*element_value_offset,*element_value_offsets,i,j,k,l,m,*number_in_xi,
 		number_of_values,number_of_xi_coordinates,offset,return_code,size,xi_offset;
 	FE_value *basis_function_values,*basis_value,*calculated_value,
-		**component_values,*derivative,*element_value,sum,temp,xi_coordinate;
+		**component_values,*derivative,*element_value,temp,xi_coordinate;
 	Standard_basis_function *current_standard_basis_function,
 		**component_standard_basis_function;
 	struct FE_field *field;
 	void **component_standard_basis_function_arguments,
 		**current_standard_basis_function_arguments;
 	Value_storage **component_grid_values_storage,*element_values_storage;
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+	double sum;
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	FE_value sum;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(calculate_FE_element_field);
 	return_code=0;
@@ -22945,12 +23171,17 @@ the derivatives will start at the first position of <jacobian>.
 								element_value_offset=element_value_offsets;
 								for (j=number_of_values;j>0;j--)
 								{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+									sum += (double)(*basis_value)*(double)(*((FE_value *)(
+										element_values_storage+size*(*element_value_offset))));
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 									sum += (*basis_value)*(*((FE_value *)(
-										element_values_storage + size*(*element_value_offset))));
+										element_values_storage+size*(*element_value_offset))));
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 									element_value_offset++;
 									basis_value++;
 								}
-								*calculated_value=sum;
+								*calculated_value=(FE_value)sum;
 								if (jacobian)
 								{
 									for (k=number_of_xi_coordinates;k>0;k--)
@@ -22959,13 +23190,17 @@ the derivatives will start at the first position of <jacobian>.
 										element_value_offset=element_value_offsets;
 										for (j=number_of_values;j>0;j--)
 										{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+											sum += (double)(*basis_value)*(double)(*((FE_value *)(
+												element_values_storage+size*(*element_value_offset))));
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 											sum += (*basis_value)*(*((FE_value *)(
-												element_values_storage +
-												size*(*element_value_offset))));
+												element_values_storage+size*(*element_value_offset))));
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 											element_value_offset++;
 											basis_value++;
 										}
-										*derivative=sum;
+										*derivative=(FE_value)sum;
 										derivative++;
 									}
 								}
@@ -23039,25 +23274,35 @@ the derivatives will start at the first position of <jacobian>.
 							 values and the basis function values */
 						basis_value=basis_function_values;
 						element_value= *component_values;
-						*calculated_value=0;
+						sum=0;
 						for (j=number_of_values;j>0;j--)
 						{
-							*calculated_value += (*element_value)*(*basis_value);
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+							sum += (double)(*element_value)*(double)(*basis_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+							sum += (*element_value)*(*basis_value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 							basis_value++;
 							element_value++;
 						}
+						*calculated_value=(FE_value)sum;
 						if (derivative)
 						{
 							for (k=number_of_xi_coordinates;k>0;k--)
 							{
-								*derivative=0;
+								sum=0;
 								basis_value=basis_function_values;
 								for (j=number_of_values;j>0;j--)
 								{
-									*derivative += (*element_value)*(*basis_value);
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+									sum += (double)(*element_value)*(double)(*basis_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+									sum += (*element_value)*(*basis_value);
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 									basis_value++;
 									element_value++;
 								}
+								*derivative=(FE_value)sum;
 								derivative++;
 							}
 						}
