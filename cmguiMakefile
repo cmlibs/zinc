@@ -5,19 +5,16 @@ TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
 MAILFILE_PATH=mailfiles
 
 #Build defaults
-USER_INTERFACE=MOTIF_USER_INTERFACE
-DYNAMIC_GL_LINUX=false
-DEBUG=true
-ABI=32
-
-PROPOGATE_VARIABLES = USER_INTERFACE=$(USER_INTERFACE) DEBUG=$(DEBUG) DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX) ABI=$(ABI)
+USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
+DYNAMIC_GL_LINUX=DYNAMIC_GL_LINUX=false
+DEBUG=DEBUG=true
+ABI=
 
 ifdef CMISS_ROOT
    CMISS_ROOT_DEFINED = true
 else # CMISS_ROOT
    CMISS_ROOT = $(CMGUI_DEV_ROOT)
 endif # CMISS_ROOT
-
 
 MAKEFILE := cmgui.Makefile
 MAKEFILE_FOUND = $(wildcard source/$(MAKEFILE))
@@ -30,17 +27,17 @@ endif # CMISS_ROOT_DEFINED
 #Developers default
 cmgui-debug :
 
-cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
-cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=true
-cmgui cmgui-dynamicgl cmgui64 : DEBUG=false
-cmgui-debug cmgui-dynamicgl-debug : DEBUG=true
-cmgui64 cmgui64-debug : ABI=64
+cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
+cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=DYNAMIC_GL_LINUX=true
+cmgui cmgui-dynamicgl cmgui64 : DEBUG=DEBUG=false
+cmgui-debug cmgui-dynamicgl-debug cmgui64-debug : DEBUG=DEBUG=true
+cmgui64 cmgui64-debug : ABI=ABI=64
 
 utilities: TARGET=utilities
 
 cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug utilities :
 	cd source ; \
-	$(MAKE) -f $(MAKEFILE) $(TARGET) $(PROPOGATE_VARIABLES) ;
+	$(MAKE) -f $(MAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DYNAMIC_GL_LINUX) $(DEBUG) ;
 
 update_sources :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
