@@ -885,48 +885,6 @@ Main program for the CMISS Graphical User Interface
 		/*???RC.  Eventually want graphics object manager */
 	command_data.graphics_object_list=CREATE(LIST(GT_object))();
 
-	/* computed field manager and default computed fields zero, xi,
-		 default_coordinate, etc. */
-	/*???RC should the default computed fields be established in
-		CREATE(Computed_field_package)? */
-	if ((command_data.computed_field_package=CREATE(Computed_field_package)(
-		command_data.fe_field_manager,command_data.element_manager,
-		command_data.control_curve_manager))&&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			command_data.computed_field_package)))
-	{
-		if (!((computed_field=CREATE(Computed_field)("cmiss_number"))&&
-			Computed_field_set_coordinate_system(computed_field,
-				&rect_coord_system)&&
-			Computed_field_set_type_cmiss_number(computed_field)&&
-			Computed_field_set_read_only(computed_field)&&
-			ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
-				computed_field_manager)))
-		{
-			DESTROY(Computed_field)(&computed_field);
-		}
-		if (!((computed_field=CREATE(Computed_field)("default_coordinate"))&&
-			Computed_field_set_coordinate_system(computed_field,
-				&rect_coord_system)&&
-			Computed_field_set_type_default_coordinate(computed_field,
-				computed_field_manager)&&
-			Computed_field_set_read_only(computed_field)&&
-			ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
-				computed_field_manager)))
-		{
-			DESTROY(Computed_field)(&computed_field);
-		}
-		if (!((computed_field=CREATE(Computed_field)("xi"))&&
-			Computed_field_set_coordinate_system(computed_field,
-			&rect_coord_system)&&
-			Computed_field_set_type_xi_coordinates(computed_field)&&
-			Computed_field_set_read_only(computed_field)&&
-			ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
-				computed_field_manager)))
-		{
-			DESTROY(Computed_field)(&computed_field);
-		}
-	}
 	/* create the grid_point_number field and add to FE_field_manager - 
 		 wrapper Computed_field will automatically be made for it. Created here
 		 as has special meaning for setting grid_points in Element_point_viewer */
@@ -1017,6 +975,79 @@ Main program for the CMISS Graphical User Interface
 	/* interactive_tool manager */
 	command_data.interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
 
+	/* computed field manager and default computed fields zero, xi,
+		 default_coordinate, etc. */
+	/*???RC should the default computed fields be established in
+		CREATE(Computed_field_package)? */
+	command_data.computed_field_package=CREATE(Computed_field_package)(
+		command_data.fe_field_manager,command_data.element_manager,
+		command_data.control_curve_manager);
+	computed_field_manager=Computed_field_package_get_computed_field_manager(
+		command_data.computed_field_package);
+
+	/* Add Computed_fields to the Computed_field_package */
+	computed_field_finite_element_package = 
+		(struct Computed_field_finite_element_package *)NULL;
+	if (command_data.computed_field_package)
+	{
+		Computed_field_register_types_derivatives(
+			command_data.computed_field_package);
+		Computed_field_register_types_vector_operations(
+			command_data.computed_field_package);
+		Computed_field_register_types_component_operations(
+			command_data.computed_field_package);
+		if (command_data.graphics_window_manager)
+		{
+			Computed_field_register_type_window_projection(
+				command_data.computed_field_package, 
+				command_data.graphics_window_manager);
+		}
+		if (command_data.texture_manager)
+		{
+			Computed_field_register_type_sample_texture(
+				command_data.computed_field_package, 
+				command_data.texture_manager);
+		}
+		if (command_data.fe_field_manager)
+		{
+			computed_field_finite_element_package =
+				Computed_field_register_types_finite_element(
+					command_data.computed_field_package,
+					command_data.fe_field_manager);
+			if (!((computed_field=CREATE(Computed_field)("cmiss_number"))&&
+				Computed_field_set_coordinate_system(computed_field,
+					&rect_coord_system)&&
+				Computed_field_set_type_cmiss_number(computed_field)&&
+				Computed_field_set_read_only(computed_field)&&
+				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
+					computed_field_manager)))
+			{
+				DESTROY(Computed_field)(&computed_field);
+			}
+			if (!((computed_field=CREATE(Computed_field)("default_coordinate"))&&
+				Computed_field_set_coordinate_system(computed_field,
+					&rect_coord_system)&&
+				Computed_field_set_type_default_coordinate(computed_field,
+					computed_field_manager)&&
+				Computed_field_set_read_only(computed_field)&&
+				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
+					computed_field_manager)))
+			{
+				DESTROY(Computed_field)(&computed_field);
+			}
+			if (!((computed_field=CREATE(Computed_field)("xi"))&&
+				Computed_field_set_coordinate_system(computed_field,
+					&rect_coord_system)&&
+				Computed_field_set_type_xi_coordinates(computed_field)&&
+				Computed_field_set_read_only(computed_field)&&
+				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
+					computed_field_manager)))
+			{
+				DESTROY(Computed_field)(&computed_field);
+			}
+		}
+	}
+
 	/* scene manager */
 		/*???RC.   LOTS of managers need to be created before this */
 	command_data.default_scene=(struct Scene *)NULL;
@@ -1056,38 +1087,6 @@ Main program for the CMISS Graphical User Interface
 	}
 	/* graphics window manager.  Note there is no default window. */
 	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
-
-	/* Add Computed_fields to the Computed_field_package */
-	computed_field_finite_element_package = 
-		(struct Computed_field_finite_element_package *)NULL;
-	if (command_data.computed_field_package)
-	{
-		Computed_field_register_types_derivatives(
-			command_data.computed_field_package);
-		Computed_field_register_types_vector_operations(
-			command_data.computed_field_package);
-		Computed_field_register_types_component_operations(
-			command_data.computed_field_package);
-		if (command_data.graphics_window_manager)
-		{
-			Computed_field_register_type_window_projection(
-				command_data.computed_field_package, 
-				command_data.graphics_window_manager);
-		}
-		if (command_data.texture_manager)
-		{
-			Computed_field_register_type_sample_texture(
-				command_data.computed_field_package, 
-				command_data.texture_manager);
-		}
-		if (command_data.fe_field_manager)
-		{
-			computed_field_finite_element_package =
-				Computed_field_register_types_finite_element(
-					command_data.computed_field_package,
-					command_data.fe_field_manager);
-		}
-	}
 #if defined (UNEMAP)	
 	command_data.unemap_package = CREATE(Unemap_package)(
 		command_data.fe_field_manager,command_data.element_group_manager,
