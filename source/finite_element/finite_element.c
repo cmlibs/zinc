@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -13531,8 +13531,8 @@ int get_FE_nodal_element_xi_value(struct FE_node *node,
 LAST MODIFIED : 3 September 1999
 
 DESCRIPTION :
-Gets a particular element_xi_value (<version>, <type>) for the field <component> at the
-<node>.
+Gets a particular element_xi_value (<version>, <type>) for the field <component>
+at the <node>.
 ???DB.  May need speeding up
 ==============================================================================*/
 {
@@ -13691,14 +13691,15 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		}
 		else
 		{	
-			display_message(ERROR_MESSAGE,
-					"set_FE_nodal_element_xi_value. find_FE_nodal_values_storage_dest failed");
+			display_message(ERROR_MESSAGE,"set_FE_nodal_element_xi_value.  "
+				"find_FE_nodal_values_storage_dest failed");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_FE_nodal_element_xi_value.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"set_FE_nodal_element_xi_value.  "
+			"Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -14761,8 +14762,8 @@ for the field <component>  at the <node>.
 Frees it.
 Allocates a new array, according to number_of_array_values. 
 Copies the contents of the passed array to this allocated one.
-Copies number of array values, and the pointer to the allocated array to the specified 
-place in the node->values_storage. 
+Copies number of array values, and the pointer to the allocated array to the
+specified place in the node->values_storage. 
 
 Therefore, should free the passed array, after passing it to this function.
 
@@ -14814,8 +14815,8 @@ define_FE_field_at_node.
 		}
 		else
 		{	
-			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_double_array_value. find_FE_nodal_values_storage_dest failed");
+			display_message(ERROR_MESSAGE,"set_FE_nodal_double_array_value.  "
+				"find_FE_nodal_values_storage_dest failed");
 			return_code=0;
 		}
 	}
@@ -15454,7 +15455,6 @@ DESCRIPTION :
 sets a particular short_array_value element for the array 
 (<version>, <type>) for the field <component> 
 at the <node>. 
-
 ==============================================================================*/
 {
 	int the_array_number_of_values,return_code;
@@ -16218,7 +16218,7 @@ sum of <1+num_derivatives>*num_versions for each component.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_field_FE_value_values.  Invalid argument(s)");
+			"get_FE_nodal_field_number_of_values.  Invalid argument(s)");
 		number_of_values=0;
 	}
 	LEAVE;
@@ -16368,7 +16368,7 @@ place the values.
 	else
 	{
 		display_message(ERROR_MESSAGE,"set_FE_nodal_field_FE_value_values.  "
-			"Invalid arguments");
+			"Invalid arguments.  %p %p %p",field,node,values);
 	}
 	LEAVE;
 
@@ -32975,7 +32975,7 @@ Creates a copy of the <external_information> of the <field>.
 int set_FE_field_external_information(struct FE_field *field,
 	struct FE_field_external_information *external_information)
 /*******************************************************************************
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Copies the <external_information> into the <field>.
@@ -32986,6 +32986,7 @@ Should only call this function for unmanaged fields.
 	int return_code;
 
 	ENTER(set_FE_field_external_information);
+	return_code=0;
 	if (field)
 	{
 		return_code=1;
@@ -33021,7 +33022,6 @@ Should only call this function for unmanaged fields.
 		display_message(ERROR_MESSAGE,
 			"set_FE_field_external_information.  Invalid argument");
 	}
-	return_code=0;
 	LEAVE;
 
 	return (return_code);
@@ -40995,7 +40995,7 @@ Sets the <field_order_info> field at the specified field_number
 	LEAVE;
 
 	return (return_code);
-} /* set_FE_node_field_order_field */
+} /* set_FE_field_order_info_field */
 
 struct FE_node_order_info *CREATE(FE_node_order_info)(
 	int number_of_nodes)
@@ -41248,13 +41248,13 @@ gets the <node_order_info> <current_node_number>
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_FE_node_order_info_current_node_number.  Invalid argument");		
+			"get_FE_node_order_info_current_node_number.  Invalid argument");		
 		current_node_number=-1;
 	}
 	LEAVE;
 
 	return (current_node_number);
-} /* set_FE_node_order_info_current_node_number */
+} /* get_FE_node_order_info_current_node_number */
 
 int set_FE_node_order_info_current_node_number(
 	struct FE_node_order_info *node_order_info,int current_node_number)
@@ -42479,8 +42479,8 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 	return (return_code);
 } /* FE_element_set_scale_factor_for_nodal_value */
 
-int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifier,
-	struct MANAGER(FE_node) *node_manager,
+int offset_FE_node_and_element_identifiers_in_group(char *name,
+	int last_identifier,struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager)
@@ -42488,8 +42488,8 @@ int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifi
 LAST MODIFIED :10 January 2001
 
 DESCRIPTION :
-Finds the node and element groups matching  <name>, and shifts the contained nodes 
-and elements  identifier numbers so that the groups identifiers end at 
+Finds the node and element groups matching  <name>, and shifts the contained
+nodes and elements  identifier numbers so that the groups identifiers end at 
 <last_identifier>. Eg if you wanted to shift the groups to the end of 
 the legal integer range, <last_identifier> would be INT_MAX.
 NOTE: You can't iteratively call MANAGER_MODIFY_IDENTIFIER, hence the use of
@@ -42618,18 +42618,20 @@ FE_node_order_info, FE_element_order_info
 		else
 		{
 			return_code=0;
-			display_message(ERROR_MESSAGE,"offset_FE_node_and_element_identifiers_in_group."
+			display_message(ERROR_MESSAGE,
+				"offset_FE_node_and_element_identifiers_in_group."
 				" node or element groups empty");
 		}
 	}
 	else
 	{
 		return_code=0;
-		display_message(ERROR_MESSAGE,"offset_FE_node_and_element_identifiers_in_group."
+		display_message(ERROR_MESSAGE,
+			"offset_FE_node_and_element_identifiers_in_group."
 			" invalid arguments");
 	}
 	LEAVE;
 	
 	return (return_code);
-}/* offset_FE_node_and_element_identifiers_in_group*/
+} /* offset_FE_node_and_element_identifiers_in_group*/
 

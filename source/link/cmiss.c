@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -60,6 +60,77 @@ fsm == finite state machine
 Module types
 ------------
 */
+enum CMISS_connection_data_input_state
+/*******************************************************************************
+LAST MODIFIED : 3 September 2001
+
+DESCRIPTION :
+States occupied by the data stream (on input).
+==============================================================================*/
+{
+	/* node, element etc */
+	CMISS_DATA_INPUT_STATE_TYPE,
+	/* about to receive element field info */
+	CMISS_DATA_INPUT_STATE_ELEMENT_FIELD_INFO,
+	/* about to receive element data */
+	CMISS_DATA_INPUT_STATE_ELEMENT_DATA,
+	/* about to receive deleted elements */
+	CMISS_DATA_INPUT_STATE_ELEMENT_DELETE,
+	/* about to receive element group number */
+	CMISS_DATA_INPUT_STATE_ELEMENT_GROUP,
+	/* about to receive element group data */
+	CMISS_DATA_INPUT_STATE_ELEMENT_GROUP_DATA,
+	/* about to receive deleted element groups */
+	CMISS_DATA_INPUT_STATE_ELEMENT_GROUP_DELETE,
+	/* about to receive node field info */
+	CMISS_DATA_INPUT_STATE_NODE_FIELD_INFO,
+	/* about to receive node data */
+	CMISS_DATA_INPUT_STATE_NODE_DATA,
+	/* about to receive deleted nodes */
+	CMISS_DATA_INPUT_STATE_NODE_DELETE,
+	/* about to receive node group number */
+	CMISS_DATA_INPUT_STATE_NODE_GROUP,
+	/* about to receive node group data */
+	CMISS_DATA_INPUT_STATE_NODE_GROUP_DATA,
+	/* about to receive deleted node groups */
+	CMISS_DATA_INPUT_STATE_NODE_GROUP_DELETE
+}; /* enum CMISS_connection_data_input_state */
+
+struct CMISS_connection
+/*******************************************************************************
+LAST MODIFIED : 3 September 2001
+
+DESCRIPTION :
+Private structure representing the connection between cm and cmgui.
+==============================================================================*/
+{
+	/* name of the machine this is running on */
+	char *name;
+	/* finite state information */
+	enum CMISS_connection_data_input_state data_input_state;
+	int data_type,template_node_number_of_fields;
+	struct Execute_command *execute_command;
+	struct FE_element_field_info *current_element_field_info;
+	struct FE_field **template_node_fields;
+	struct FE_node *template_node;
+	struct GROUP(FE_element) *new_element_group;
+	struct GROUP(FE_node) *new_node_group;
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct MANAGER(FE_node) *data_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct Prompt_window **prompt_window_address;
+	struct User_interface *user_interface;
+	struct Wh_input *command_input,*data_input,*prompt_input;
+	struct Wh_output *command_output,*data_output,*prompt_output;
+	void *data_manager_callback_id;
+	void *element_manager_callback_id;
+	void *node_manager_callback_id;
+}; /* struct CMISS_connection */
+
 enum CM_storage_array
 /*******************************************************************************
 LAST MODIFIED : 2 September 2001
@@ -569,7 +640,7 @@ Convert fortran-style strings to C-style printf strings.
 #define NUM_COMPONENT_DATA 3
 static int CMISS_connection_get_data(struct CMISS_connection *connection)
 /*******************************************************************************
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Receives any data from the output data wormhole.
@@ -587,7 +658,7 @@ Receives any data from the output data wormhole.
 		return_code,secondary_id;
 	struct CM_field_information cm_information;
 	struct Coordinate_system coordinate_system;
-	struct FE_field *field;
+	struct FE_field *field,**template_node_fields;
 	struct FE_field_external_information external;
 	struct FE_node *node,*old_node,*template_node;
 	struct GROUP(FE_node) *old_node_group;
@@ -697,279 +768,323 @@ Receives any data from the output data wormhole.
 				{
 					/* get the number of fields */
 					wh_output_get_int(connection->data_output,1,&number_of_fields);
-					for (field_num=0;field_num<number_of_fields;field_num++)
+					if ((0<number_of_fields)&&ALLOCATE(template_node_fields,
+						struct FE_field *,number_of_fields))
 					{
-						/* get the field name */
-						if (field_name=wh_output_get_unknown_string(
-							connection->data_output))
+						for (i=0;i<number_of_fields;i++)
 						{
-							/* get miscellaneous information */
-							wh_output_get_int(connection->data_output,
-								NUM_NODE_FIELD_INFO_DATA,node_field_info_data);
-							/* convert CM field type */
-							switch (node_field_info_data[0])
+							template_node_fields[i]=(struct FE_field *)NULL;
+						}
+						for (field_num=0;field_num<number_of_fields;field_num++)
+						{
+							/* get the field name */
+							if (field_name=wh_output_get_unknown_string(
+								connection->data_output))
 							{
-								case 1:
+								/* get miscellaneous information */
+								wh_output_get_int(connection->data_output,
+									NUM_NODE_FIELD_INFO_DATA,node_field_info_data);
+								/* convert CM field type */
+								switch (node_field_info_data[0])
 								{
-									cm_field_type=CM_ANATOMICAL_FIELD;
-								} break;
-								case 2:
-								{
-									cm_field_type=CM_COORDINATE_FIELD;
-								} break;
-								case 3:
-								{
-									cm_field_type=CM_GENERAL_FIELD;
-								} break;
-								default:
-								{
-									display_message(WARNING_MESSAGE,
-										"CMISS_connection_get_data.  %s",
-										"state: node field info.  Invalid CM field type");
-								} break;
-							}
-							/* get the coordinate system */
-							coordinate_system.type=
-								(enum Coordinate_system_type)node_field_info_data[1];
-							switch (get_coordinate_system_type(&coordinate_system))
-							{
-								case RECTANGULAR_CARTESIAN:
-								case CYLINDRICAL_POLAR:
-								case SPHERICAL_POLAR:
-								case PROLATE_SPHEROIDAL:
-								case OBLATE_SPHEROIDAL:
-								case FIBRE:
-								{
-									/* do nothing */
-								} break;
-								default:
-								{
-									display_message(WARNING_MESSAGE,
-										"CMISS_connection_get_data.  %s",
-										"state: node field info.  Invalid coordinate system");
-								} break;
-							}
-							/* get the number of field values */
-							number_of_field_values=node_field_info_data[2];
-							/* get the number of components */
-							number_of_components=node_field_info_data[3];
-							/* possibly get some field values */
-							if (number_of_field_values)
-							{
-								if (ALLOCATE(temp_field_values,double,number_of_field_values)&&
-									ALLOCATE(field_values,FE_value,number_of_field_values))
-								{
-									wh_output_get_double(connection->data_output,
-										number_of_field_values,temp_field_values);
-									/* perform type conversion */
-									for (i=0;i<number_of_field_values;i++)
+									case 1:
 									{
-										field_values[i]=temp_field_values[i];
+										cm_field_type=CM_ANATOMICAL_FIELD;
+									} break;
+									case 2:
+									{
+										cm_field_type=CM_COORDINATE_FIELD;
+									} break;
+									case 3:
+									{
+										cm_field_type=CM_GENERAL_FIELD;
+									} break;
+									default:
+									{
+										display_message(WARNING_MESSAGE,
+											"CMISS_connection_get_data.  %s",
+											"state: node field info.  Invalid CM field type");
+									} break;
+								}
+								/* get the coordinate system */
+								coordinate_system.type=
+									(enum Coordinate_system_type)node_field_info_data[1];
+								switch (get_coordinate_system_type(&coordinate_system))
+								{
+									case RECTANGULAR_CARTESIAN:
+									case CYLINDRICAL_POLAR:
+									case SPHERICAL_POLAR:
+									case PROLATE_SPHEROIDAL:
+									case OBLATE_SPHEROIDAL:
+									case FIBRE:
+									{
+										/* do nothing */
+									} break;
+									default:
+									{
+										display_message(WARNING_MESSAGE,
+											"CMISS_connection_get_data.  %s",
+											"state: node field info.  Invalid coordinate system");
+									} break;
+								}
+								/* get the number of field values */
+								number_of_field_values=node_field_info_data[2];
+								/* get the number of components */
+								number_of_components=node_field_info_data[3];
+								/* possibly get some field values */
+								if (number_of_field_values)
+								{
+									if (ALLOCATE(temp_field_values,double,
+										number_of_field_values)&&ALLOCATE(field_values,FE_value,
+										number_of_field_values))
+									{
+										wh_output_get_double(connection->data_output,
+											number_of_field_values,temp_field_values);
+										/* perform type conversion */
+										for (i=0;i<number_of_field_values;i++)
+										{
+											field_values[i]=temp_field_values[i];
+										}
+										DEALLOCATE(temp_field_values);
 									}
-									DEALLOCATE(temp_field_values);
+									else
+									{
+										field_values=(FE_value *)NULL;
+										display_message(ERROR_MESSAGE,
+											"CMISS_connection_get_data.  %s",
+											"state: node field info.  Could not allocate memory");
+									}
 								}
 								else
 								{
 									field_values=(FE_value *)NULL;
-									display_message(ERROR_MESSAGE,
-										"CMISS_connection_get_data.  %s",
-										"state: node field info.  Could not allocate memory");
 								}
-							}
-							else
-							{
-								field_values=(FE_value *)NULL;
-							}
-							/* get cm field information */
-							external.compare=compare_FE_field_cm_information;
-							external.destroy=destroy_FE_field_cm_information;
-							external.duplicate=duplicate_FE_field_cm_information;
-							external.information=(void *)&cm_information;
-							wh_output_get_int(connection->data_output,2,node_field_info_data);
-							cm_information.nr=node_field_info_data[0];
-							if (CMISS_NODE_CODE==connection->data_type)
-							{
-								/* node */
-								switch (node_field_info_data[1])
+								/* get cm field information */
+								external.compare=compare_FE_field_cm_information;
+								external.destroy=destroy_FE_field_cm_information;
+								external.duplicate=duplicate_FE_field_cm_information;
+								external.information=(void *)&cm_information;
+								wh_output_get_int(connection->data_output,2,
+									node_field_info_data);
+								cm_information.nr=node_field_info_data[0];
+								if (CMISS_NODE_CODE==connection->data_type)
 								{
-									case 1:
+									/* node */
+									switch (node_field_info_data[1])
 									{
-										cm_information.array=CM_ARRAY_XP;
-										wh_output_get_int(connection->data_output,1,
-											node_field_info_data);
-										cm_information.indices.xp.nj_typ=node_field_info_data[0];
-									} break;
-									case 2:
-									{
-										cm_information.array=CM_ARRAY_YP;
-										wh_output_get_int(connection->data_output,4,
-											node_field_info_data);
-										cm_information.indices.yp.nx=node_field_info_data[0];
-										cm_information.indices.yp.nhx_index=node_field_info_data[1];
-										cm_information.indices.yp.nc=node_field_info_data[2];
-										cm_information.indices.yp.iy=node_field_info_data[3];
-									} break;
-									case 3:
-									{
-										cm_information.array=CM_ARRAY_FIX;
-										wh_output_get_int(connection->data_output,3,
-											node_field_info_data);
-										cm_information.indices.yp.nx=node_field_info_data[0];
-										cm_information.indices.yp.nhx_index=node_field_info_data[1];
-										cm_information.indices.yp.nc=node_field_info_data[2];
-									} break;
-									default:
-									{
-										cm_information.array=CM_ARRAY_UNKNOWN;
-									} break;
-								}
-							}
-							else
-							{
-								/* data */
-								switch (node_field_info_data[1])
-								{
-									case 1:
-									{
-										cm_information.array=CM_ARRAY_ZD;
-									} break;
-									case 2:
-									{
-										cm_information.array=CM_ARRAY_WD;
-									} break;
-									case 3:
-									{
-										cm_information.array=CM_ARRAY_LD;
-									} break;
-									case 4:
-									{
-										cm_information.array=CM_ARRAY_XID;
-									} break;
-									default:
-									{
-										cm_information.array=CM_ARRAY_UNKNOWN;
-									} break;
-								}
-							}
-							/* get components */
-							ALLOCATE(component_names,char *,number_of_components);
-							ALLOCATE(components_number_of_derivatives,int,
-								number_of_components);
-							ALLOCATE(components_number_of_versions,int,number_of_components);
-							ALLOCATE(components_nodal_value_types,enum FE_nodal_value_type *,
-								number_of_components);
-							if (component_names&&components_number_of_derivatives&&
-								components_number_of_versions&&components_nodal_value_types)
-							{
-								for (i=0;i<number_of_components;i++)
-								{
-									if (component_names[i]=wh_output_get_unknown_string(
-										connection->data_output))
-									{
-										/* get miscellaneous information */
-										wh_output_get_int(connection->data_output,
-											NUM_COMPONENT_DATA,component_data);
-										/*???DB.  Ignore value index */
-										/* get the number of derivatives */
-										components_number_of_derivatives[i]=component_data[1];
-										/* get the number of versions */
-										components_number_of_versions[i]=component_data[2];
-										/* value types */
-											/*???DB.  To be done */
-										components_nodal_value_types[i]=
-											(enum FE_nodal_value_type *)NULL;
-									}
-									else
-									{
-										return_code=0;
-										display_message(ERROR_MESSAGE,
-											"CMISS_connection_get_data.  %s",
-									"state: node field info.  Could not retrieve component name");
-									}
-								}
-								/* create/find the field */
-								if (return_code)
-								{
-									if (field=get_FE_field_manager_matched_field(
-										connection->fe_field_manager,field_name,
-										GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-										/*number_of_indexed_values*/0,cm_field_type,
-										&coordinate_system,FE_VALUE_VALUE,
-										number_of_components,component_names,
-										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
-										&external))
-									{
-										if (number_of_field_values)
+										case 1:
 										{
-											for (j=0;j<number_of_field_values;j++)
+											cm_information.array=CM_ARRAY_XP;
+											wh_output_get_int(connection->data_output,1,
+												node_field_info_data);
+											cm_information.indices.xp.nj_typ=node_field_info_data[0];
+										} break;
+										case 2:
+										{
+											cm_information.array=CM_ARRAY_YP;
+											wh_output_get_int(connection->data_output,4,
+												node_field_info_data);
+											cm_information.indices.yp.nx=node_field_info_data[0];
+											cm_information.indices.yp.nhx_index=
+												node_field_info_data[1];
+											cm_information.indices.yp.nc=node_field_info_data[2];
+											cm_information.indices.yp.iy=node_field_info_data[3];
+										} break;
+										case 3:
+										{
+											cm_information.array=CM_ARRAY_FIX;
+											wh_output_get_int(connection->data_output,3,
+												node_field_info_data);
+											cm_information.indices.yp.nx=node_field_info_data[0];
+											cm_information.indices.yp.nhx_index=
+												node_field_info_data[1];
+											cm_information.indices.yp.nc=node_field_info_data[2];
+										} break;
+										default:
+										{
+											cm_information.array=CM_ARRAY_UNKNOWN;
+										} break;
+									}
+								}
+								else
+								{
+									/* data */
+									switch (node_field_info_data[1])
+									{
+										case 1:
+										{
+											cm_information.array=CM_ARRAY_ZD;
+										} break;
+										case 2:
+										{
+											cm_information.array=CM_ARRAY_WD;
+										} break;
+										case 3:
+										{
+											cm_information.array=CM_ARRAY_LD;
+										} break;
+										case 4:
+										{
+											cm_information.array=CM_ARRAY_XID;
+										} break;
+										default:
+										{
+											cm_information.array=CM_ARRAY_UNKNOWN;
+										} break;
+									}
+								}
+								/* get components */
+								ALLOCATE(component_names,char *,number_of_components);
+								ALLOCATE(components_number_of_derivatives,int,
+									number_of_components);
+								ALLOCATE(components_number_of_versions,int,
+									number_of_components);
+								ALLOCATE(components_nodal_value_types,
+									enum FE_nodal_value_type *,number_of_components);
+								if (component_names&&components_number_of_derivatives&&
+									components_number_of_versions&&components_nodal_value_types)
+								{
+									for (i=0;i<number_of_components;i++)
+									{
+										if (component_names[i]=wh_output_get_unknown_string(
+											connection->data_output))
+										{
+											/* get miscellaneous information */
+											wh_output_get_int(connection->data_output,
+												NUM_COMPONENT_DATA,component_data);
+											/*???DB.  Ignore value index */
+											/* get the number of derivatives */
+											components_number_of_derivatives[i]=component_data[1];
+											/* get the number of versions */
+											components_number_of_versions[i]=component_data[2];
+											/* value types */
+												/*???DB.  To be done */
+											components_nodal_value_types[i]=
+												(enum FE_nodal_value_type *)NULL;
+										}
+										else
+										{
+											return_code=0;
+											display_message(ERROR_MESSAGE,
+												"CMISS_connection_get_data.  "
+												"state: node field info.  "
+												"Could not retrieve component name");
+										}
+									}
+									/* create/find the field */
+									if (return_code)
+									{
+										if (field=get_FE_field_manager_matched_field(
+											connection->fe_field_manager,field_name,
+											GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+											/*number_of_indexed_values*/0,cm_field_type,
+											&coordinate_system,FE_VALUE_VALUE,
+											number_of_components,component_names,
+											/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+											&external))
+										{
+											if (number_of_field_values)
 											{
-												set_FE_field_FE_value_value(field,j,field_values[j]);
+												for (j=0;j<number_of_field_values;j++)
+												{
+													set_FE_field_FE_value_value(field,j,field_values[j]);
+												}
+											}
+											/*???DB.  Check for duplicates ? */
+											if (define_FE_field_at_node(template_node,field,
+												components_number_of_derivatives,
+												components_number_of_versions,
+												components_nodal_value_types))
+											{
+												template_node_fields[field_num]=ACCESS(FE_field)(field);
+											}
+											else
+											{
+												return_code=0;
+												display_message(ERROR_MESSAGE,
+													"CMISS_connection_get_data.  "
+													"state: node field info.  "
+													"Could not define node field");
 											}
 										}
-										/*???DB.  Check for duplicates ? */
-										if (!define_FE_field_at_node(template_node,field,
-											components_number_of_derivatives,
-											components_number_of_versions,
-											components_nodal_value_types))
+										else
 										{
 											return_code=0;
 											display_message(ERROR_MESSAGE,
 												"CMISS_connection_get_data.  %s",
-												"state: node field info.  Could not define node field");
+												"state: node field info.  Could not create field");
 										}
 									}
-									else
+									for (i=0;i<number_of_components;i++)
 									{
-										return_code=0;
-										display_message(ERROR_MESSAGE,
-											"CMISS_connection_get_data.  %s",
-											"state: node field info.  Could not create field");
+										DEALLOCATE(component_names[i]);
 									}
 								}
-								for (i=0;i<number_of_components;i++)
+								else
 								{
-									DEALLOCATE(component_names[i]);
+									return_code=0;
+									display_message(ERROR_MESSAGE,"CMISS_connection_get_data.  "
+										"state: node field info.  Could not allocate memory");
 								}
+								DEALLOCATE(component_names);
+								DEALLOCATE(components_number_of_derivatives);
+								DEALLOCATE(components_number_of_versions);
+								DEALLOCATE(components_nodal_value_types);
+								DEALLOCATE(field_values);
+								DEALLOCATE(field_name);
 							}
 							else
 							{
 								return_code=0;
 								display_message(ERROR_MESSAGE,"CMISS_connection_get_data.  %s",
-									"state: node field info.  Could not allocate memory");
+									"state: node field info.  Could not get field name");
 							}
-							DEALLOCATE(component_names);
-							DEALLOCATE(components_number_of_derivatives);
-							DEALLOCATE(components_number_of_versions);
-							DEALLOCATE(components_nodal_value_types);
-							DEALLOCATE(field_values);
-							DEALLOCATE(field_name);
+						}
+						if (return_code)
+						{
+							/* deaccess the previous */
+							if (connection->template_node)
+							{
+								for (i=0;i<connection->template_node_number_of_fields;i++)
+								{
+									DEACCESS(FE_field)(connection->template_node_fields+i);
+								}
+								DEALLOCATE(connection->template_node_fields);
+								DEACCESS(FE_node)(&(connection->template_node));
+							}
+							/* access this one */
+							connection->template_node=ACCESS(FE_node)(template_node);
+							connection->template_node_number_of_fields=number_of_fields;
+							connection->template_node_fields=template_node_fields;
 						}
 						else
 						{
-							return_code=0;
-							display_message(ERROR_MESSAGE,"CMISS_connection_get_data.  %s",
-								"state: node field info.  Could not get field name");
+							for (i=0;i<number_of_fields;i++)
+							{
+								DEACCESS(FE_field)(template_node_fields+i);
+							}
+							DEALLOCATE(template_node_fields);
 						}
-					}
-					if (return_code)
-					{
-						/* deaccess the previous */
-						if (connection->template_node)
+						if (return_code)
 						{
-							DEACCESS(FE_node)(&(connection->template_node));
+							/* now look for node information */
+							connection->data_input_state=CMISS_DATA_INPUT_STATE_NODE_DATA;
 						}
-						/* access this one */
-						connection->template_node=ACCESS(FE_node)(template_node);
-					}
-					if (return_code)
-					{
-						/* now look for node information */
-						connection->data_input_state=CMISS_DATA_INPUT_STATE_NODE_DATA;
+						else
+						{
+							wh_output_get_remainder(connection->data_output);
+							connection->data_input_state=CMISS_DATA_INPUT_STATE_TYPE;
+						}
 					}
 					else
 					{
-						wh_output_get_remainder(connection->data_output);
-						connection->data_input_state=CMISS_DATA_INPUT_STATE_TYPE;
+						if (0<number_of_fields)
+						{
+							return_code=0;
+							display_message(ERROR_MESSAGE,"CMISS_connection_get_data.  "
+								"state: node field info.  "
+								"Could not allocate template_node_fields");
+						}
 					}
 				}
 				else
@@ -1016,10 +1131,30 @@ Receives any data from the output data wormhole.
 									if (node=CREATE(FE_node)(secondary_id,
 										connection->template_node))
 									{
-										int length;
-										set_FE_nodal_field_FE_value_values(field,node,field_values,
-											&length);
+										FE_value *start;
+										int length,number_of_fields,ok;
+										struct FE_field **field_address;
 
+										/* have to assign values field by field in the order that
+											the fields were specified */
+										i=connection->template_node_number_of_fields;
+										ok=1;
+										field_address=connection->template_node_fields;
+										start=field_values;
+										while ((i>0)&&ok)
+										{
+											if (set_FE_nodal_field_FE_value_values(*field_address,
+												node,start,&length))
+											{
+												i--;
+												field_address++;
+												start += length;
+											}
+											else
+											{
+												ok=0;
+											}
+										}
 										if (old_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
 											cm_node_identifier)(secondary_id,FE_node_manager))
 										{
@@ -1475,7 +1610,7 @@ Contains local information for this routine.
 static int CMISS_connection_send_node_field(struct FE_node *node,
 	struct FE_field *field,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Send out node_field information for this node_field.
@@ -1483,7 +1618,7 @@ Send out node_field information for this node_field.
 {
 	char *name;
 	double *temp_field_values;
-	int component_number,i,int_data[5],number_of_components,number_of_values,
+	int component_number,i,int_data[4],number_of_components,number_of_values,
 		return_code;
 	struct CM_field_information *cm_information;
 	struct CMISS_connection_send_node_struct *send_node_struct;
@@ -1538,60 +1673,65 @@ Send out node_field information for this node_field.
 		}
 		/* send cm field information */
 		int_data[0]=cm_information->nr;
+		switch (cm_information->array)
+		{
+			case CM_ARRAY_FIX:
+			{
+				int_data[1]=3;
+			} break;
+			case CM_ARRAY_LD:
+			{
+				int_data[1]=3;
+			} break;
+			case CM_ARRAY_WD:
+			{
+				int_data[1]=2;
+			} break;
+			case CM_ARRAY_XID:
+			{
+				int_data[1]=3;
+			} break;
+			case CM_ARRAY_XP:
+			{
+				int_data[1]=1;
+			} break;
+			case CM_ARRAY_YP:
+			{
+				int_data[1]=2;
+			} break;
+			case CM_ARRAY_ZD:
+			{
+				int_data[1]=1;
+			} break;
+			default:
+			{
+				int_data[1]=0;
+			} break;
+		}
 		wh_input_add_int(send_node_struct->connection->data_input,2,int_data);
 		switch (cm_information->array)
 		{
 			case CM_ARRAY_FIX:
 			{
-				int_data[0]=3;
-				int_data[1]=(cm_information->indices).yp.nx;
-				int_data[2]=(cm_information->indices).yp.nhx_index;
-				int_data[3]=(cm_information->indices).yp.nc;
-				number_of_values=4;
-			} break;
-			case CM_ARRAY_LD:
-			{
-				int_data[0]=3;
-				number_of_values=1;
-			} break;
-			case CM_ARRAY_WD:
-			{
-				int_data[0]=2;
-				number_of_values=1;
-			} break;
-			case CM_ARRAY_XID:
-			{
-				int_data[0]=3;
-				number_of_values=1;
+				int_data[0]=(cm_information->indices).yp.nx;
+				int_data[1]=(cm_information->indices).yp.nhx_index;
+				int_data[2]=(cm_information->indices).yp.nc;
+				wh_input_add_int(send_node_struct->connection->data_input,3,int_data);
 			} break;
 			case CM_ARRAY_XP:
 			{
-				int_data[0]=1;
-				int_data[1]=(cm_information->indices).xp.nj_typ;
-				number_of_values=2;
+				int_data[0]=(cm_information->indices).xp.nj_typ;
+				wh_input_add_int(send_node_struct->connection->data_input,1,int_data);
 			} break;
 			case CM_ARRAY_YP:
 			{
-				int_data[0]=2;
-				int_data[1]=(cm_information->indices).yp.nx;
-				int_data[2]=(cm_information->indices).yp.nhx_index;
-				int_data[3]=(cm_information->indices).yp.nc;
-				int_data[4]=(cm_information->indices).yp.iy;
-				number_of_values=5;
-			} break;
-			case CM_ARRAY_ZD:
-			{
-				int_data[0]=1;
-				number_of_values=1;
-			} break;
-			default:
-			{
-				int_data[0]=0;
-				number_of_values=1;
+				int_data[0]=(cm_information->indices).yp.nx;
+				int_data[1]=(cm_information->indices).yp.nhx_index;
+				int_data[2]=(cm_information->indices).yp.nc;
+				int_data[3]=(cm_information->indices).yp.iy;
+				wh_input_add_int(send_node_struct->connection->data_input,4,int_data);
 			} break;
 		}
-		wh_input_add_int(send_node_struct->connection->data_input,number_of_values,
-			int_data);
 		for (component_number=0;component_number<number_of_components;
 			component_number++)
 		{
@@ -2449,7 +2589,7 @@ struct CMISS_connection *CREATE(CMISS_connection)(char *machine,
 	char *examples_directory_path,struct Execute_command *execute_command,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 29 January 1999
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Creates a connection to the machine specified in <machine>.  <attach> is not
@@ -2784,6 +2924,8 @@ sock:#### (any)
 						(struct FE_element_field_info *)NULL;
 					return_struct->new_node_group=(struct GROUP(FE_node) *)NULL;
 					return_struct->template_node=(struct FE_node *)NULL;
+					return_struct->template_node_fields=(struct FE_field **)NULL;
+					return_struct->template_node_number_of_fields=0;
 					return_struct->execute_command=execute_command;
 					/* I guess we shell out something here... */
 				}
@@ -2820,14 +2962,14 @@ sock:#### (any)
 
 int DESTROY(CMISS_connection)(struct CMISS_connection **connection_address)
 /*******************************************************************************
-LAST MODIFIED : 2 November 1998
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Frees the memory for the connection, sets <*node_address> to NULL.
 ==============================================================================*/
 {
+	int i,return_code;
 	struct CMISS_connection *connection;
-	int return_code;
 
 	ENTER(DESTROY(CMISS_connection));
 	return_code=0;
@@ -2858,6 +3000,11 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 			}
 			if (connection->template_node)
 			{
+				for (i=0;i<connection->template_node_number_of_fields;i++)
+				{
+					DEACCESS(FE_field)((connection->template_node_fields)+i);
+				}
+				DEALLOCATE(connection->template_node_fields);
 				DEACCESS(FE_node)(&(connection->template_node));
 			}
 			return_code=1;
