@@ -519,6 +519,7 @@ GRAPHICS_SRCS = \
 	graphics/spectrum_settings.c \
 	graphics/texture.c
 POSITION_SRCS =
+SELECTION_SRCS =
 TIME_SRCS = \
 	time/time.c \
 	time/time_keeper.c \
@@ -566,6 +567,7 @@ SRCS = \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
 	$(POSITION_SRCS) \
+	$(SELECTION_SRCS) \
 	$(THREE_D_DRAWING_SRCS) \
 	$(TIME_SRCS) \
 	$(UNEMAP_SRCS) \
