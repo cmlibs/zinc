@@ -1,7 +1,7 @@
 /******************************************************************************
 FILE : mystring.c
 
-LAST MODIFIED : 29 April 2003
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 Function definitions for some general purpose string functions.
@@ -598,7 +598,7 @@ Returns true if <string> ends in <suffix>.
 
 int check_suffix(char **string, char *suffix)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 Compares the file extension of the string.  If the string given has the 
@@ -611,7 +611,7 @@ added to the end of the string.
 	int return_code;
 
 	ENTER(compare_suffix);
-	if (string && suffix)
+	if (string&&(*string)&&suffix)
 	{
 		if (has_suffix(*string,suffix)||has_suffix(*string,".cmiss"))
 		{
