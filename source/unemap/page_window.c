@@ -9874,6 +9874,7 @@ the created page window.  If unsuccessful, NULL is returned.
 							((page_window->stimulators)[i]).on=0;
 							((page_window->stimulators)[i]).number_of_channels=0;
 							((page_window->stimulators)[i]).channel_numbers=(int *)NULL;
+							((page_window->stimulators)[i]).end_values=(float *)NULL;
 						}
 					}
 #if defined (OLD_CODE)
