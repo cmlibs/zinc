@@ -459,6 +459,7 @@ CURVE_SRCS = \
 FINITE_ELEMENT_SRCS = \
 	finite_element/computed_field.c \
 	finite_element/export_finite_element.c \
+	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
