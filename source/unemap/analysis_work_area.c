@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -2401,1109 +2401,6 @@ signal type file
 
 	return (return_code);
 }/* clean_Analysis_work_area_before_load()*/
-
-#if defined (OLD_CODE)
-static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
-/*******************************************************************************
-LAST MODIFIED : 8 June 2003
-
-DESCRIPTION :
-Sets up the analysis work area for analysing a set of signals.
-==============================================================================*/
-{
-	char calculate_events,*temp_string,value_string[10];
-	enum Datum_type datum_type;
-	enum Edit_order edit_order;
-	enum Event_detection_algorithm detection;
-	enum Event_signal_status event_status;
-	enum Signal_order signal_order;
-	FILE *input_file;
-	float level;
-	int average_width,buffer_end,buffer_start,datum,end_search_interval,
-		event_number,event_time,i,minimum_separation,number_of_events,
-		potential_time,return_code,start_search_interval,threshold,temp_int;
-	struct Analysis_work_area *analysis;
-	struct Device **device;
-	struct Event *event,**event_address;
-	struct Rig *rig;
-	struct Signal_buffer *buffer;
-	struct Trace_window *trace;
-	XmString new_dialog_title,old_dialog_title,value_xmstring;
-#if defined (UNEMAP_USE_NODES)
-	struct FE_field *field,*highlight_field;
-	struct FE_field_component component;
-#endif /* defined (UNEMAP_USE_NODES) */
-#if defined (UNEMAP_USE_3D)
-	struct FE_node_selection *node_selection;
-	struct FE_field *device_name_field;
-	struct FE_node *rig_node;
-	struct FE_region *rig_node_group;
-#endif /* defined (UNEMAP_USE_3D) */
-
-	ENTER(analysis_read_signal_file);
-	return_code=0;
-	input_file=(FILE *)NULL;
-#if defined (UNEMAP_USE_3D)
-	node_selection=(struct FE_node_selection *)NULL;
-	device_name_field=(struct FE_field *)NULL;
-	rig_node=(struct FE_node *)NULL;
-	rig_node_group=(struct FE_region *)NULL;
-#endif /* defined (UNEMAP_USE_3D) */
-	/* check the arguments */
-	if (analysis=(struct Analysis_work_area *)analysis_work_area)
-	{
-		clean_Analysis_work_area_before_load(analysis);
-		/* initialize the new analysis */
-		analysis->datum=0;
-		analysis->potential_time=0;
-		analysis->highlight=(struct Device **)NULL;
-		/* get the analysis window title */
-		XtVaGetValues(analysis->window->window,
-			XmNdialogTitle,&old_dialog_title,
-			NULL);
-		/* open the input file */
-		if ((input_file=fopen(file_name,"rb"))&&
-			(read_signal_file(input_file,&(analysis->rig)
-#if defined (UNEMAP_USE_3D)
-			,analysis->unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
-			))&&(rig=analysis->rig)&&
-			(rig->devices)&&(*(rig->devices))&&
-			(buffer=get_Device_signal_buffer(*(rig->devices))))
-		{
-			/* read the event detection settincgs */
-			buffer_start=buffer->start;
-			buffer_end=buffer->end;
-			if ((1==BINARY_FILE_READ((char *)&datum,sizeof(int),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&calculate_events,sizeof(char),1,
-				input_file))&&(1==BINARY_FILE_READ((char *)&detection,
-				sizeof(enum Event_detection_algorithm),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&event_number,sizeof(int),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&number_of_events,sizeof(int),1,
-				input_file))&&(1==BINARY_FILE_READ((char *)&potential_time,sizeof(int),
-				1,input_file))&&(1==BINARY_FILE_READ((char *)&minimum_separation,
-				sizeof(int),1,input_file))&&(1==BINARY_FILE_READ((char *)&threshold,
-				sizeof(int),1,input_file))&&(1==BINARY_FILE_READ((char *)&datum_type,
-				sizeof(enum Datum_type),1,input_file))&&(1==BINARY_FILE_READ(
-				(char *)&edit_order,sizeof(enum Edit_order),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&signal_order,sizeof(enum Signal_order),1,
-				input_file))&&(1==BINARY_FILE_READ((char *)&start_search_interval,
-				sizeof(int),1,input_file))&&(1==BINARY_FILE_READ(
-				(char *)&end_search_interval,sizeof(int),1,input_file)))
-			{
-				return_code=1;
-				level=analysis->level;
-				average_width=analysis->average_width;
-				if (EDA_LEVEL==detection)
-				{
-					if (!((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
-						input_file))&&(1==BINARY_FILE_READ((char *)&level,sizeof(float),1,
-						input_file))&&(1==BINARY_FILE_READ((char *)&average_width,
-						sizeof(int),1,input_file))))
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"analysis_read_signal_file.  Could not read level");
-					}
-				}
-				/* check the event detection settings */
-				if (return_code&&((EDA_INTERVAL==detection)||(EDA_LEVEL==detection)||
-					(EDA_THRESHOLD==detection))&&((AUTOMATIC_DATUM==datum_type)||
-					(FIXED_DATUM==datum_type))&&((DEVICE_ORDER==edit_order)||
-					(BEAT_ORDER==edit_order))&&((EVENT_ORDER==signal_order)||
-					(CHANNEL_ORDER==signal_order)))
-				{
-					if (datum>=buffer_start)
-					{
-						if (datum>buffer_end)
-						{
-							datum=buffer_end;
-						}
-					}
-					else
-					{
-						datum=buffer_start;
-					}
-					if (potential_time>=buffer_start)
-					{
-						if (potential_time>buffer_end)
-						{
-							potential_time=buffer_end;
-						}
-					}
-					else
-					{
-						potential_time=buffer_start;
-					}
-					if (minimum_separation<0)
-					{
-						minimum_separation=0;
-					}
-					if (level<0)
-					{
-						level=0;
-					}
-					if (average_width<1)
-					{
-						average_width=1;
-					}
-					if (number_of_events<1)
-					{
-						number_of_events=1;
-					}
-				}
-				else
-				{
-					return_code=0;
-					display_message(ERROR_MESSAGE,
-						"analysis_read_signal_file.  Invalid event detection settings");
-				}
-				if (return_code)
-				{
-					/* update the analysis work area */
-					switch (detection)
-					{
-						case EDA_INTERVAL:
-						{
-							set_detection_interval((Widget)NULL,(XtPointer)analysis,
-								(XtPointer)NULL);
-						} break;
-						case EDA_LEVEL:
-						{
-							set_detection_level((Widget)NULL,(XtPointer)analysis,
-								(XtPointer)NULL);
-						} break;
-						case EDA_THRESHOLD:
-						{
-							set_detection_threshold((Widget)NULL,(XtPointer)analysis,
-								(XtPointer)NULL);
-						} break;
-					}
-					if (trace=analysis->trace)
-					{
-						/* set the all/current choice */
-						if (calculate_events&&!(trace->area_1.enlarge.calculate_all_events))
-						{
-							XtVaSetValues(trace->area_1.enlarge.all_current_choice,
-								XmNmenuHistory,trace->area_1.enlarge.all_current.current_button,
-								NULL);
-							trace->area_1.enlarge.calculate_all_events=0;
-						}
-						else
-						{
-							if (!calculate_events&&
-								(trace->area_1.enlarge.calculate_all_events))
-							{
-								XtVaSetValues(trace->area_1.enlarge.all_current_choice,
-									XmNmenuHistory,trace->area_1.enlarge.all_current.all_button,
-									NULL);
-								trace->area_1.enlarge.calculate_all_events=1;
-							}
-						}
-						/* set the threshold */
-						if (threshold!=analysis->threshold)
-						{
-							sprintf(value_string,"%3d%%",threshold);
-							value_xmstring=XmStringCreateSimple(value_string);
-							XtVaSetValues(trace->area_1.enlarge.threshold_label,
-								XmNlabelString,value_xmstring,
-								NULL);
-							XmStringFree(value_xmstring);
-							XtVaSetValues(trace->area_1.enlarge.threshold_scroll,
-								XmNvalue,threshold,
-								NULL);
-						}
-						/* set the minimum separation */
-						if (minimum_separation!=analysis->minimum_separation)
-						{
-							sprintf(value_string,"%3d ms",minimum_separation);
-							value_xmstring=XmStringCreateSimple(value_string);
-							XtVaSetValues(trace->area_1.enlarge.minimum_separation_label,
-								XmNlabelString,value_xmstring,
-								NULL);
-							XmStringFree(value_xmstring);
-							XtVaSetValues(trace->area_1.enlarge.minimum_separation_scroll,
-								XmNvalue,minimum_separation,
-								NULL);
-						}
-						/* set the level */
-						if (level!=analysis->level)
-						{
-							sprintf(value_string,"%g",level);
-							XtVaSetValues(trace->area_1.enlarge.level_value,
-								XmNvalue,value_string,
-								NULL);
-						}
-						/* set the level width */
-						if (average_width!=analysis->average_width)
-						{
-							sprintf(value_string,"%d",average_width);
-							XtVaSetValues(trace->menu.average_width_txt,
-								XmNvalue,value_string,
-								NULL);
-						}
-						/* set the datum type */
-						if (datum_type!=analysis->datum_type)
-						{
-							switch (datum_type)
-							{
-								case AUTOMATIC_DATUM:
-								{
-									XtVaSetValues(trace->area_1.enlarge.datum_choice,
-										XmNmenuHistory,trace->area_1.enlarge.datum.automatic_button,
-										NULL);
-								} break;
-								case FIXED_DATUM:
-								{
-									XtVaSetValues(trace->area_1.enlarge.datum_choice,
-										XmNmenuHistory,trace->area_1.enlarge.datum.fixed_button,
-										NULL);
-								} break;
-							}
-						}
-						/* set the edit order */
-						if (edit_order!=analysis->edit_order)
-						{
-							switch (edit_order)
-							{
-								case DEVICE_ORDER:
-								{
-									XtVaSetValues(trace->area_3.edit.order_choice,
-										XmNmenuHistory,trace->area_3.edit.order.device_button,
-										NULL);
-								} break;
-								case BEAT_ORDER:
-								{
-									XtVaSetValues(trace->area_3.edit.order_choice,
-										XmNmenuHistory,trace->area_3.edit.order.beat_button,
-										NULL);
-								} break;
-							}
-						}
-						/* set the number of events */
-						if (number_of_events!=analysis->number_of_events)
-						{
-							sprintf(value_string,"%1d",number_of_events);
-							value_xmstring=XmStringCreateSimple(value_string);
-							XtVaSetValues(trace->area_1.enlarge.number_of_events.label,
-								XmNlabelString,value_xmstring,
-								NULL);
-							XtVaSetValues(trace->area_1.beat_averaging.number_of_beats.label,
-								XmNlabelString,value_xmstring,
-								NULL);
-							XmStringFree(value_xmstring);
-							if (1==number_of_events)
-							{
-								XtUnmanageChild(
-									trace->area_1.enlarge.number_of_events.down_arrow);
-								XtUnmanageChild(
-									trace->area_1.beat_averaging.number_of_beats.down_arrow);
-							}
-							else
-							{
-								XtManageChild(
-									trace->area_1.enlarge.number_of_events.down_arrow);
-								XtManageChild(
-									trace->area_1.beat_averaging.number_of_beats.down_arrow);
-							}
-							if (MAX_EVENTS==number_of_events)
-							{
-								XtUnmanageChild(
-									trace->area_1.enlarge.number_of_events.up_arrow);
-								XtUnmanageChild(
-									trace->area_1.beat_averaging.number_of_beats.up_arrow);
-							}
-							else
-							{
-								XtManageChild(
-									trace->area_1.enlarge.number_of_events.up_arrow);
-								XtManageChild(
-									trace->area_1.beat_averaging.number_of_beats.up_arrow);
-							}
-						}
-					}
-					analysis->threshold=threshold;
-					analysis->minimum_separation=minimum_separation;
-					analysis->level=level;
-					analysis->average_width=average_width;
-					analysis->datum_type=datum_type;
-					analysis->edit_order=edit_order;
-					analysis->number_of_events=number_of_events;
-					if (analysis->window)
-					{
-						/* set whether or not the activation map can be drawn */
-						if (calculate_events)
-						{
-							XtSetSensitive(
-								analysis->window->map_menu.single_activation_button,True);
-							XtSetSensitive(
-								analysis->window->map_menu.multiple_activation_button,True);
-							XtSetSensitive(
-								analysis->window->map_menu.activation_potential_button,True);
-							XtSetSensitive(analysis->window->file_menu.save_times_button,
-								True);
-						}
-						else
-						{
-							XtSetSensitive(
-								analysis->window->map_menu.single_activation_button,False);
-							XtSetSensitive(
-								analysis->window->map_menu.multiple_activation_button,False);
-							XtSetSensitive(
-								analysis->window->map_menu.activation_potential_button,False);
-							XtSetSensitive(analysis->window->file_menu.save_times_button,
-								False);
-						}
-						/* set the signal order */
-						if (signal_order!=analysis->signal_order)
-						{
-							switch (signal_order)
-							{
-								case EVENT_ORDER:
-								{
-									XtVaSetValues(analysis->window->order_choice,
-										XmNmenuHistory,analysis->window->order.event_button,
-										NULL);
-								} break;
-								case CHANNEL_ORDER:
-								{
-									XtVaSetValues(analysis->window->order_choice,
-										XmNmenuHistory,analysis->window->order.channel_button,
-										NULL);
-								} break;
-							}
-						}
-					}
-					analysis->calculate_events=calculate_events;
-					analysis->signal_order=signal_order;
-					analysis->datum=datum;
-					analysis->event_number=event_number;
-					analysis->potential_time=potential_time;
-					analysis->start_search_interval=start_search_interval;
-					analysis->end_search_interval=end_search_interval;
-					DEALLOCATE(analysis->search_interval_divisions);
-					/* set the edit interval */
-					if (trace)
-					{
-						switch (detection)
-						{
-							case EDA_INTERVAL:
-							{
-								trace_update_edit_interval(analysis->trace);
-							} break;
-							case EDA_LEVEL:
-							case EDA_THRESHOLD:
-							{
-								trace->area_3.edit.first_data=start_search_interval;
-								trace->area_3.edit.last_data=end_search_interval;
-							} break;
-						}
-					}
-					/* for each signal read the status, range and events */
-					if ((device=rig->devices)&&((i=rig->number_of_devices)>0))
-					{
-						while (return_code&&(i>0))
-						{
-							if (((*device)->channel)&&((*device)->signal))
-							{
-								/* read the status and range */
-								/* if no signal status, a linear comb auxiliary device.  Do
-									nothing */
-								if ((1==BINARY_FILE_READ((char *)&event_status,
-									sizeof(enum Event_signal_status),1,input_file))&&
-									(1==BINARY_FILE_READ((char *)&((*device)->signal_display_minimum),
-									sizeof(float),1,input_file))&&(1==BINARY_FILE_READ(
-									(char *)&((*device)->signal_display_maximum),sizeof(float),1,
-									input_file)))
-								{
-									if ((ACCEPTED==event_status)||(REJECTED==event_status)||
-										(UNDECIDED==event_status))
-									{
-										(*device)->signal->status=event_status;
-										if ((*device)->signal_display_minimum<=(*device)->signal_display_maximum)
-										{
-											/*???DB.  Originally the unscaled maximum and minimum were
-												stored.  This has to be maintained for backward
-												compatability */
-											(*device)->signal_display_minimum=(((*device)->channel)->gain)*
-												(((*device)->signal_display_minimum)-
-												(((*device)->channel)->offset));
-											(*device)->signal_display_maximum=(((*device)->channel)->gain)*
-												(((*device)->signal_display_maximum)-
-												(((*device)->channel)->offset));
-										}
-										/* read the events */
-										if (1==BINARY_FILE_READ((char *)&number_of_events,
-											sizeof(int),1,input_file))
-										{
-											event_address= &((*device)->signal->first_event);
-											event=(struct Event *)NULL;
-											while (return_code&&(number_of_events>0))
-											{
-												if ((1==BINARY_FILE_READ((char *)&(event_time),
-													sizeof(int),1,input_file))&&
-													(1==BINARY_FILE_READ((char *)&(event_number),
-													sizeof(int),1,input_file))&&
-													(1==BINARY_FILE_READ((char *)&(event_status),
-													sizeof(enum Event_signal_status),1,input_file))&&
-													((ACCEPTED==event_status)||(REJECTED==event_status)||
-													(UNDECIDED==event_status)))
-												{
-													if (event=create_Event(event_time,event_number,
-														event_status,event,(struct Event *)NULL))
-													{
-														*event_address=event;
-														event_address= &(event->next);
-														number_of_events--;
-													}
-													else
-													{
-														return_code=0;
-														display_message(ERROR_MESSAGE,
-														"analysis_read_signal_file.  Error creating event");
-													}
-												}
-												else
-												{
-													return_code=0;
-													display_message(ERROR_MESSAGE,
-														"analysis_read_signal_file.  Error reading event");
-												}
-											}
-										}
-										else
-										{
-											return_code=0;
-											display_message(ERROR_MESSAGE,
-									"analysis_read_signal_file.  Error reading number of events");
-										}
-									}
-									else
-									{
-										return_code=0;
-										display_message(ERROR_MESSAGE,
-											"analysis_read_signal_file.  Invalid signal status");
-									}
-								}
-							}
-							device++;
-							i--;
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-			}
-			else
-			{
-				return_code=1;
-				if (analysis->window)
-				{
-					XtSetSensitive(analysis->window->map_menu.single_activation_button,
-						False);
-					XtSetSensitive(
-						analysis->window->map_menu.multiple_activation_button,False);
-					XtSetSensitive(
-						analysis->window->map_menu.activation_potential_button,False);
-					XtSetSensitive(analysis->window->file_menu.save_times_button,False);
-				}
-				/* initialize the search interval */
-				analysis->start_search_interval=buffer_start;
-				analysis->end_search_interval=buffer_end;
-				DEALLOCATE(analysis->search_interval_divisions);
-				/* initialize the potential time */
-				analysis->potential_time=(buffer_end-buffer_start)/3;
-				/* initialize the datum */
-				analysis->datum=2*(analysis->potential_time);
-			}
-			fclose(input_file);
-		}
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,
-				"analysis_read_signal_file.  Invalid file: %s",file_name);
-			if (input_file)
-			{
-				fclose(input_file);
-			}
-		}
-#if defined (UNEMAP_USE_3D)
-		/* convert the loaded rig to nodes/elements/fields */
-		if (convert_rig_to_nodes(analysis->rig))
-		{
-#if defined (OLD_CODE)
-/*???DB.  No matching DEACCESS */
-			/* same as rig->unemap_package */
-			ACCESS(Unemap_package)(analysis->unemap_package);
-#endif /* defined (OLD_CODE) */
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,
-				"analysis_read_signal_file. convert_rig_to_nodes failed ");
-		}
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_NODES)
-		if (return_code)
-		{
-			/* create the signal_drawing_package, store it, set it up */
-			if (!analysis->signal_drawing_package)
-			{
-				analysis->signal_drawing_package=CREATE(Signal_drawing_package)();
-				ACCESS(Signal_drawing_package)(analysis->signal_drawing_package);
-			}
-			field=get_unemap_package_device_name_field(analysis->unemap_package);
-			set_Signal_drawing_package_device_name_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_device_type_field(analysis->unemap_package);
-			set_Signal_drawing_package_device_type_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_channel_number_field(analysis->unemap_package);
-			set_Signal_drawing_package_channel_number_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_display_start_time_field(
-				analysis->unemap_package);
-			set_Signal_drawing_package_display_start_time_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_display_end_time_field(analysis->unemap_package);
-			set_Signal_drawing_package_display_end_time_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_read_order_field(analysis->unemap_package);
-			set_Signal_drawing_package_read_order_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_highlight_field(analysis->unemap_package);
-			set_Signal_drawing_package_highlight_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_signal_field(analysis->unemap_package);
-			set_Signal_drawing_package_signal_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_channel_offset_field(analysis->unemap_package);
-			set_Signal_drawing_package_channel_offset_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_channel_gain_field(analysis->unemap_package);
-			set_Signal_drawing_package_channel_gain_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_signal_minimum_field(analysis->unemap_package);
-			set_Signal_drawing_package_signal_minimum_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_signal_maximum_field(analysis->unemap_package);
-			set_Signal_drawing_package_signal_maximum_field(
-				analysis->signal_drawing_package,field);
-			field=get_unemap_package_signal_status_field(analysis->unemap_package);
-			set_Signal_drawing_package_signal_status_field(
-				analysis->signal_drawing_package,field);
-			/* for the moment assuming only one signal per node, ie only one
-				signal_field */
-			/* highlight the first rig_node */
-			highlight_field=(struct FE_field *)NULL;
-			rig_node=(struct FE_node *)NULL;
-			rig_node_group=(struct FE_region *)NULL;
-			if ((rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig))&&
-				(rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group))&&
-				(highlight_field=get_Signal_drawing_package_highlight_field(
-					analysis->signal_drawing_package)))
-			{
-				analysis->highlight_rig_node=rig_node;
-				component.number=0;
-				component.field=highlight_field;
-				/*??JW should be copying out of and into node with MANAGER_MODIFY */
-				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
-					/*time*/0,1/*highlight*/);
-			}
-		} /* if (return_code) */
-#endif /* defined (UNEMAP_USE_NODES) */
-		if (return_code)
-		{
-			/*highlight the first device*/
-			if (analysis->highlight=analysis->rig->devices)
-			{
-				(*(analysis->highlight))->highlight=1;
-			}
-			/* assign the signal file name */
-			if (ALLOCATE(analysis->rig->signal_file_name,char,strlen(file_name)+1))
-			{
-				strcpy(analysis->rig->signal_file_name,file_name);
-				/* unghost the write interval button */
-				XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
-				/* unghost the overlay signals button */
-				XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"analysis_read_signal_file.  Could not allocate memory for signal file name");
-			}
-			/* set the analysis window title */
-			if (ALLOCATE(temp_string,char,strlen(file_name)+12))
-			{
-				strcpy(temp_string,"Analysing: ");
-				strcat(temp_string,file_name);
-				new_dialog_title=XmStringCreateSimple(temp_string);
-				DEALLOCATE(temp_string);
-			}
-			else
-			{
-				new_dialog_title=XmStringCreateSimple("Analysis");
-				display_message(ERROR_MESSAGE,
-			"analysis_read_signal_file.  Could not allocate memory for window title");
-			}
-			XtVaSetValues(analysis->window->window,
-				XmNdialogTitle,new_dialog_title,
-				NULL);
-			if (analysis->mapping_window)
-			{
-				/* unghost the mapping window file button */
-				XtSetSensitive(analysis->mapping_window->file_button,True);
-			}
-			/* unghost the write interval buttons */
-			XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
-			XtSetSensitive(analysis->window->file_menu.save_interval_as_button,True);
-			/* unghost the overlay signals button */
-			XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
-			/* ghost the reset button */
-			XtSetSensitive(analysis->window->interval.reset_button,False);
-			/* unghost the set baseline button */
-			XtSetSensitive(analysis->window->interval.baseline_button,True);
-			/* unghost the set range button */
-			XtSetSensitive(analysis->window->interval.range_button,True);
-			/* unghost the signal_range */
-			XtSetSensitive(analysis->window->interval.signal_range,True);
-			/* unghost the display integral map button */
-			XtSetSensitive(analysis->window->map_menu.integral_button,True);
-			/* unghost the display potential map button */
-			XtSetSensitive(analysis->window->map_menu.potential_button,True);
-			/* unghost the print selected signals button */
-			XtSetSensitive(analysis->window->print_menu.selected_button,True);
-			/* unghost the print all signals button */
-			XtSetSensitive(analysis->window->print_menu.all_button,True);
-			trace_change_rig(analysis->trace);
-			/* open the trace window */
-			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
-				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),
-#if defined (UNEMAP_USE_NODES)
-				&(analysis->highlight_rig_node),
-#endif /* defined (UNEMAP_USE_NODES) */
-				&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
-				&(analysis->potential_time),&(analysis->event_number),
-				&(analysis->number_of_events),&(analysis->threshold),
-				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->average_width),&(analysis->start_search_interval),
-				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
-				User_interface_get_screen_width(analysis->user_interface),
-				User_interface_get_screen_height(analysis->user_interface),
-				analysis->signal_drawing_information,analysis->user_interface,
-				&(analysis->first_eimaging_event)))
-			{
-				display_message(ERROR_MESSAGE,
-					"analysis_read_signal_file.  Could not open trace window");
-			}
-		}
-		else
-		{
-			if (analysis->rig)
-			{
-				if ((*(analysis->rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->rig));
-			}
-			if (analysis->mapping_window)
-			{
-				/* ghost the mapping window file button */
-				XtSetSensitive(analysis->mapping_window->file_button,False);
-			}
-			/* set the analysis window title */
-			new_dialog_title=XmStringCreateSimple("Analysis");
-			XtVaSetValues(analysis->window->window,
-				XmNdialogTitle,new_dialog_title,
-				NULL);
-			/* ghost the write interval buttons */
-			XtSetSensitive(analysis->window->file_menu.save_interval_button,False);
-			XtSetSensitive(analysis->window->file_menu.save_interval_as_button,False);
-			/* ghost the overlay signals button */
-			XtSetSensitive(analysis->window->file_menu.overlay_signals_button,False);
-			/* ghost the write event times button */
-			XtSetSensitive(analysis->window->file_menu.save_times_button,False);
-			/* ghost the reset button */
-			XtSetSensitive(analysis->window->interval.reset_button,False);
-			/* ghost the set baseline button */
-			XtSetSensitive(analysis->window->interval.baseline_button,False);
-			/* ghost the set range button */
-			XtSetSensitive(analysis->window->interval.range_button,False);
-			/* ghost the signal_range */
-			XtSetSensitive(analysis->window->interval.signal_range,False);
-			/* ghost the display potential map button */
-			XtSetSensitive(analysis->window->map_menu.potential_button,False);
-			/* ghost the display single activation map button */
-			XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
-			/* ghost the display multiple activation map button */
-			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
-				False);
-			/* ghost the display activation potential map button */
-			XtSetSensitive(analysis->window->map_menu.activation_potential_button,
-				False);
-			/* ghost the print selected signals button */
-			XtSetSensitive(analysis->window->print_menu.selected_button,False);
-			/* ghost the print all signals button */
-			XtSetSensitive(analysis->window->print_menu.all_button,False);
-			/* close the trace window */
-			if (analysis->trace)
-			{
-				XtPopdown(analysis->trace->shell);
-				analysis->trace->open=0;
-			}
-		}
-		update_analysis_window_menu(analysis->window);
-		update_mapping_window_menu(analysis->mapping_window);
-		/* ensure projection_type matches region type */
-		ensure_projection_type_matches_region_type(analysis);
-		/* update the drawing areas */
-		update_signals_drawing_area(analysis->window);
-		update_interval_drawing_area(analysis->window);
-		/*set the time keeper to the new current time. Important to keep any */
-		/*movie player in sync */
-		set_up_time_keeper_after_read(analysis);
-		update_mapping_drawing_area(analysis->mapping_window,2);
-		update_mapping_colour_or_auxili(analysis->mapping_window);
-		/* free the old analysis window title */
-		XmStringFree(old_dialog_title);
-#if defined (UNEMAP_USE_3D)
-		/* highlight the  node (and everything else) */
-		if ((analysis->highlight)&&(*(analysis->highlight)))
-		{
-			/*get the rig_node corresponding to the device */
-			node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
-			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-			rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
-			rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
-				device_name_field);
-			/*trigger the selction callback*/
-			FE_node_selection_select_node(node_selection,rig_node);
-		}
-#endif /* defined (UNEMAP_USE_3D) */
-		mapping_window_set_animation_buttons(analysis->mapping_window);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"analysis_read_signal_file.  Missing analysis_work_area");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* analysis_read_signal_file */
-
-static int analysis_read_signal_file(FILE *input_file,struct Rig **rig_address,
-	int *analysis_information,int *datum_address,char *calculate_events_address,
-	enum Event_detection_algorithm *detection_address,int *event_number_address,
-	int *number_of_events_address,int *potential_time_address,
-	int *minimum_separation_address,int *threshold_address,
-	enum Datum_type *datum_type_address,enum Edit_order *edit_order_address,
-	enum Signal_order *signal_order_address,int *start_search_interval_address,
-	int *end_search_interval_address,float *level_address,
-	int *average_width_address
-#if defined (UNEMAP_USE_3D)
-	,struct Unemap_package *unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
-	)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Reads a signal file and the analysis information.  If there is analysis
-information then <*analysis_information> set non-zero and the information is
-set.
-==============================================================================*/
-{
-	char calculate_events;
-	enum Datum_type datum_type;
-	struct Device **device;
-	enum Edit_order edit_order;
-	struct Event *event,**event_address;
-	enum Event_detection_algorithm detection;
-	enum Event_signal_status event_status;
-	enum Signal_order signal_order;
-	float level;
-	int average_width,buffer_end,buffer_start,datum,end_search_interval,
-		event_number,event_time,i,minimum_separation,number_of_events,
-		potential_time,return_code,start_search_interval,threshold,temp_int;
-	struct Rig *rig;
-	struct Signal_buffer *buffer;
-
-	ENTER(analysis_read_signal_file);
-	return_code=0;
-	/* check arguments */
-	if (input_file&&rig_address&&analysis_information&&datum_address&&
-		calculate_events_address&&detection_address&&event_number_address&&
-		number_of_events_address&&potential_time_address&&
-		minimum_separation_address&&threshold_address&&datum_type_address&&
-		edit_order_address&&signal_order_address&&start_search_interval_address&&
-		end_search_interval_address&&level_address&&average_width_address)
-	{
-		/* open the input file */
-		rig=(struct Rig *)NULL;
-		if ((read_signal_file(input_file,&rig
-#if defined (UNEMAP_USE_3D)
-			,unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
-			))&&rig&&(rig->devices)&&(*(rig->devices))&&
-			(buffer=get_Device_signal_buffer(*(rig->devices))))
-		{
-			*rig_address=rig;
-			/* read the event detection settings */
-			buffer_start=buffer->start;
-			buffer_end=buffer->end;
-			if ((1==BINARY_FILE_READ((char *)&datum,sizeof(int),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&calculate_events,sizeof(char),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&detection,
-				sizeof(enum Event_detection_algorithm),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&event_number,sizeof(int),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&number_of_events,sizeof(int),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&potential_time,sizeof(int),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&minimum_separation,sizeof(int),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&threshold,sizeof(int),1,input_file))&&
-				(1==BINARY_FILE_READ((char *)&datum_type,sizeof(enum Datum_type),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&edit_order,sizeof(enum Edit_order),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&signal_order,sizeof(enum Signal_order),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&start_search_interval,sizeof(int),1,
-				input_file))&&
-				(1==BINARY_FILE_READ((char *)&end_search_interval,sizeof(int),1,
-				input_file)))
-			{
-				return_code=1;
-				if (EDA_LEVEL==detection)
-				{
-					if (!((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
-						input_file))&&
-						(1==BINARY_FILE_READ((char *)&level,sizeof(float),1,input_file))&&
-						(1==BINARY_FILE_READ((char *)&average_width,sizeof(int),1,
-						input_file))))
-					{
-						*level_address=level;
-						*average_width_address=average_width;
-					}
-					else
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"analysis_read_signal_file.  Could not read level/average_width");
-					}
-				}
-				/* check the event detection settings */
-				if (return_code&&((EDA_INTERVAL==detection)||(EDA_LEVEL==detection)||
-					(EDA_THRESHOLD==detection))&&((AUTOMATIC_DATUM==datum_type)||
-					(FIXED_DATUM==datum_type))&&((DEVICE_ORDER==edit_order)||
-					(BEAT_ORDER==edit_order))&&((EVENT_ORDER==signal_order)||
-					(CHANNEL_ORDER==signal_order)))
-				{
-					if (datum>=buffer_start)
-					{
-						if (datum>buffer_end)
-						{
-							datum=buffer_end;
-						}
-					}
-					else
-					{
-						datum=buffer_start;
-					}
-					if (potential_time>=buffer_start)
-					{
-						if (potential_time>buffer_end)
-						{
-							potential_time=buffer_end;
-						}
-					}
-					else
-					{
-						potential_time=buffer_start;
-					}
-					if (minimum_separation<0)
-					{
-						minimum_separation=0;
-					}
-					if (level<0)
-					{
-						level=0;
-					}
-					if (average_width<1)
-					{
-						average_width=1;
-					}
-					if (number_of_events<1)
-					{
-						number_of_events=1;
-					}
-				}
-				else
-				{
-					return_code=0;
-					display_message(ERROR_MESSAGE,
-						"analysis_read_signal_file.  Invalid event detection settings");
-				}
-				if (return_code)
-				{
-					*threshold_address=threshold;
-					*minimum_separation_address=minimum_separation;
-					*datum_type_address=datum_type;
-					*detection_address=detection;
-					*edit_order_address=edit_order;
-					*number_of_events_address=number_of_events;
-					*calculate_events_address=calculate_events;
-					*signal_order_address=signal_order;
-					*datum_address=datum;
-					*event_number_address=event_number;
-					*potential_time_address=potential_time;
-					*start_search_interval_address=start_search_interval;
-					*end_search_interval_address=end_search_interval;
-					/* for each signal read the status, range and events */
-					if ((device=rig->devices)&&((i=rig->number_of_devices)>0))
-					{
-						while (return_code&&(i>0))
-						{
-							if (((*device)->channel)&&((*device)->signal))
-							{
-								/* read the status and range */
-								/* if no signal status, a linear comb auxiliary device.  Do
-									nothing */
-								if ((1==BINARY_FILE_READ((char *)&event_status,
-									sizeof(enum Event_signal_status),1,input_file))&&
-									(1==BINARY_FILE_READ((char *)&((*device)->
-									signal_display_minimum),sizeof(float),1,input_file))&&
-									(1==BINARY_FILE_READ((char *)&((*device)->
-									signal_display_maximum),sizeof(float),1,input_file)))
-								{
-									if ((ACCEPTED==event_status)||(REJECTED==event_status)||
-										(UNDECIDED==event_status))
-									{
-										(*device)->signal->status=event_status;
-										if ((*device)->signal_display_minimum<=
-											(*device)->signal_display_maximum)
-										{
-											/*???DB.  Originally the unscaled maximum and minimum were
-												stored.  This has to be maintained for backward
-												compatability */
-											(*device)->signal_display_minimum=
-												(((*device)->channel)->gain)*
-												(((*device)->signal_display_minimum)-
-												(((*device)->channel)->offset));
-											(*device)->signal_display_maximum=
-												(((*device)->channel)->gain)*
-												(((*device)->signal_display_maximum)-
-												(((*device)->channel)->offset));
-										}
-										/* read the events */
-										if (1==BINARY_FILE_READ((char *)&number_of_events,
-											sizeof(int),1,input_file))
-										{
-											event_address= &((*device)->signal->first_event);
-											event=(struct Event *)NULL;
-											while (return_code&&(number_of_events>0))
-											{
-												if ((1==BINARY_FILE_READ((char *)&(event_time),
-													sizeof(int),1,input_file))&&
-													(1==BINARY_FILE_READ((char *)&(event_number),
-													sizeof(int),1,input_file))&&
-													(1==BINARY_FILE_READ((char *)&(event_status),
-													sizeof(enum Event_signal_status),1,input_file))&&
-													((ACCEPTED==event_status)||(REJECTED==event_status)||
-													(UNDECIDED==event_status)))
-												{
-													if (event=create_Event(event_time,event_number,
-														event_status,event,(struct Event *)NULL))
-													{
-														*event_address=event;
-														event_address= &(event->next);
-														number_of_events--;
-													}
-													else
-													{
-														return_code=0;
-														display_message(ERROR_MESSAGE,
-															"analysis_read_signal_file.  "
-															"Error creating event");
-													}
-												}
-												else
-												{
-													return_code=0;
-													display_message(ERROR_MESSAGE,
-														"analysis_read_signal_file.  Error reading event");
-												}
-											}
-										}
-										else
-										{
-											return_code=0;
-											display_message(ERROR_MESSAGE,
-									"analysis_read_signal_file.  Error reading number of events");
-										}
-									}
-									else
-									{
-										return_code=0;
-										display_message(ERROR_MESSAGE,
-											"analysis_read_signal_file.  Invalid signal status");
-									}
-								}
-							}
-							device++;
-							i--;
-						}
-						if (return_code)
-						{
-							*analysis_information=1;
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-			}
-			else
-			{
-				return_code=1;
-				*analysis_information=0;
-			}
-		}
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,
-				"analysis_read_signal_file.  Error reading signal file");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"analysis_read_signal_file.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* analysis_read_signal_file */
-#endif /* defined (OLD_CODE) */
 
 static int analysis_work_area_read_signal_file(char *file_name,
 	void *analysis_work_area)
@@ -7146,7 +6043,7 @@ Adds the hot key handler to the widget.
 static void calculate_all_event_markers(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 24 November 2003
 
 DESCRIPTION :
 Calculate the positions of all event markers, recalculate the datum if this is
@@ -10880,16 +9777,16 @@ should be done as a callback from the trace_window.
 														{
 															sprintf(number_string2,"%.3g",
 																((float)(buffer->signals.short_int_values)
-																	[potential_time*(buffer->number_of_signals)+
-																		(signal->index)]-(channel->offset))*
+																[potential_time*(buffer->number_of_signals)+
+																(signal->index)]-(channel->offset))*
 																(channel->gain));
 														} break;
 														case FLOAT_VALUE:
 														{
 															sprintf(number_string2,"%.3g",
 																((buffer->signals.float_values)
-																	[potential_time*(buffer->number_of_signals)+
-																		(signal->index)]-(channel->offset))*
+																[potential_time*(buffer->number_of_signals)+
+																(signal->index)]-(channel->offset))*
 																(channel->gain));
 														} break;
 													}
@@ -11150,18 +10047,18 @@ should be done as a callback from the trace_window.
 																				{
 																					sprintf(number_string2,"%.3g",
 																						((float)(buffer->signals.
-																							short_int_values)[potential_time*
-																								(buffer->number_of_signals)+
-																								(signal->index)]-(channel->offset))*
+																						short_int_values)[potential_time*
+																						(buffer->number_of_signals)+
+																						(signal->index)]-(channel->offset))*
 																						(channel->gain));
 																				} break;
 																				case FLOAT_VALUE:
 																				{
 																					sprintf(number_string2,"%.3g",
 																						((buffer->signals.float_values)
-																							[potential_time*
-																								(buffer->number_of_signals)+
-																								(signal->index)]-(channel->offset))*
+																						[potential_time*
+																						(buffer->number_of_signals)+
+																						(signal->index)]-(channel->offset))*
 																						(channel->gain));
 																				} break;
 																			}
@@ -12786,7 +11683,7 @@ c.f. analysis_set_range_frm_win.
 static void analysis_unrange_highlighted(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 2000
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 Unrange all the highlighted device signal, i.e range to it's own min/max.
@@ -12815,19 +11712,28 @@ c.f. analysis_set_range_frm_win.
 				(current_region==highlight->description->region)))
 			{
 				/* set the signal minimum and maximum */
-				if ((highlight->channel)&&(highlight->signal)&&
-					(0<(channel_gain=highlight->channel->gain)))
+				if ((highlight->channel)&&(highlight->signal))
 				{
 					Signal_get_min_max(highlight->signal,&minimum,&maximum,
 						1/*time_range*/);
 					channel_offset=highlight->channel->offset;
-					highlight->signal_display_minimum=
-						channel_gain*((float)(minimum)-channel_offset);
-					highlight->signal_display_maximum=
-						channel_gain*((float)(maximum)-channel_offset);
+					channel_gain=highlight->channel->gain;
+					if (0<channel_gain)
+					{
+						highlight->signal_display_minimum=
+							channel_gain*((float)(minimum)-channel_offset);
+						highlight->signal_display_maximum=
+							channel_gain*((float)(maximum)-channel_offset);
+					}
+					else
+					{
+						highlight->signal_display_minimum=
+							channel_gain*((float)(maximum)-channel_offset);
+						highlight->signal_display_maximum=
+							channel_gain*((float)(minimum)-channel_offset);
+					}
 				}
 			}
-
 			/* update the display */
 			update_signals_drawing_area(analysis->window);
 			update_interval_drawing_area(analysis->window);
@@ -12934,7 +11840,7 @@ own min/max
 static void analysis_unrange_all(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 2000
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 For every electrode signal in the current region, the range is changed to it's
@@ -12968,15 +11874,23 @@ own min/max
 					((*device)->channel)&&((*device)->signal))
 				{
 					/* set the signal minimum and maximum */
-					if (0<(channel_gain=(*device)->channel->gain))
+					Signal_get_min_max((*device)->signal,&minimum,&maximum,
+						1/*time_range*/);
+					channel_offset=(*device)->channel->offset;
+					channel_gain=(*device)->channel->gain;
+					if (0<channel_gain)
 					{
-						Signal_get_min_max((*device)->signal,&minimum,&maximum,
-							1/*time_range*/);
-						channel_offset=(*device)->channel->offset;
 						(*device)->signal_display_minimum=
 							channel_gain*((float)(minimum)-channel_offset);
 						(*device)->signal_display_maximum=
 							channel_gain*((float)(maximum)-channel_offset);
+					}
+					else
+					{
+						(*device)->signal_display_minimum=
+							channel_gain*((float)(maximum)-channel_offset);
+						(*device)->signal_display_maximum=
+							channel_gain*((float)(minimum)-channel_offset);
 					}
 				}
 				device++;
@@ -13104,7 +12018,7 @@ then sets all signals to this range.
 static void anal_set_range_all_accep_undec(Widget widget,
 	XtPointer analysis_work_area,	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 2000
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 Finds the range (min/max) of all ACCEPTED/UNDECIDED signals,
@@ -13145,8 +12059,16 @@ then sets all signals to this range.
 						1/*time_range*/);
 					channel_gain=(*device)->channel->gain;
 					channel_offset=(*device)->channel->offset;
-					minimum=channel_gain*((float)(minimum)-channel_offset);
-					maximum=channel_gain*((float)(maximum)-channel_offset);
+					if (0<channel_gain)
+					{
+						minimum=channel_gain*((float)(minimum)-channel_offset);
+						maximum=channel_gain*((float)(maximum)-channel_offset);
+					}
+					else
+					{
+						minimum=channel_gain*((float)(maximum)-channel_offset);
+						maximum=channel_gain*((float)(minimum)-channel_offset);
+					}
 					if (!started)
 					{
 						/*initialise the all_signals_min,all_signals_max*/
@@ -13177,12 +12099,8 @@ then sets all signals to this range.
 				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
 					(current_region==(*device)->description->region)))
 				{
-					if (0<(channel_gain=(*device)->channel->gain))
-					{
-						channel_offset=(*device)->channel->offset;
-						(*device)->signal_display_minimum=all_signals_min;
-						(*device)->signal_display_maximum=all_signals_max;
-					}
+					(*device)->signal_display_minimum=all_signals_min;
+					(*device)->signal_display_maximum=all_signals_max;
 				}
 				device++;
 			}
@@ -13202,8 +12120,8 @@ then sets all signals to this range.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static void analysis_set_range_frm_win(Widget widget,XtPointer analysis_work_area,
-	XtPointer call_data)
+static void analysis_set_range_frm_win(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 7 August 2000
 
@@ -13293,8 +12211,8 @@ same as the range for the current signal.
 	LEAVE;
 } /* analysis_set_range_frm_win */
 #else
-static void analysis_set_range_frm_win(Widget widget,XtPointer analysis_work_area,
-	XtPointer call_data)
+static void analysis_set_range_frm_win(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 23 February 2001
 
@@ -13356,10 +12274,10 @@ See also analysis_set_range_frm_sig
 } /* analysis_set_range_frm_win */
 #endif /* defined (UNEMAP_USE_NODES)*/
 
-static void analysis_set_range_frm_sig(Widget widget,XtPointer analysis_work_area,
-	XtPointer call_data)
+static void analysis_set_range_frm_sig(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 2000
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 For every electrode signal in the current region, the range is changed to be the
@@ -13387,8 +12305,16 @@ same as the min,max for the current signal. See also analysis_set_range_frm_win.
 			channel_gain=highlight->channel->gain;
 			channel_offset=highlight->channel->offset;
 			Signal_get_min_max(highlight->signal,&minimum,&maximum,1/*time_range*/);
-			minimum=channel_gain*((float)(minimum)-channel_offset);
-			maximum=channel_gain*((float)(maximum)-channel_offset);
+			if (0<channel_gain)
+			{
+				minimum=channel_gain*((float)(minimum)-channel_offset);
+				maximum=channel_gain*((float)(maximum)-channel_offset);
+			}
+			else
+			{
+				minimum=channel_gain*((float)(maximum)-channel_offset);
+				maximum=channel_gain*((float)(minimum)-channel_offset);
+			}
 			/* run through all the signals */
 			current_region=get_Rig_current_region(rig);
 			for (i=rig->number_of_devices;i>0;i--)
