@@ -167,7 +167,7 @@ release.
 									Element_point_ranges_selection_begin_cache(
 										element_point_tool->element_point_ranges_selection);
 									FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
-										Element_point_ranges_select_in_Element_point_ranges_selection,
+										Element_point_ranges_select,
 										(void *)element_point_tool->element_point_ranges_selection,
 										element_point_ranges_list);
 									Element_point_ranges_selection_end_cache(
