@@ -20391,7 +20391,7 @@ Executes a GFX READ command.
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2002
+LAST MODIFIED : 7 December 2002
 
 DESCRIPTION :
 Executes a GFX SELECT command.
@@ -20553,6 +20553,7 @@ Executes a GFX SELECT command.
 									"execute_command_gfx_select.  Problem selecting nodes.");
 							}
 							FE_node_selection_end_cache(command_data->data_selection);
+							DESTROY(LIST(FE_node))(&node_list);
 						}
 					}
 				}
@@ -20578,7 +20579,7 @@ Executes a GFX SELECT command.
 						{
 							display_message(INFORMATION_MESSAGE,
 								"Selected %d elements.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+								NUMBER_IN_LIST(FE_element)(element_list));
 						}
 						else
 						{
@@ -20586,6 +20587,7 @@ Executes a GFX SELECT command.
 								"execute_command_gfx_select.  Problem selecting nodes.");
 						}
 						FE_element_selection_end_cache(command_data->element_selection);
+						DESTROY(LIST(FE_element))(&element_list);
 					}
 				}
 				/* faces */
@@ -20604,7 +20606,7 @@ Executes a GFX SELECT command.
 						{
 							display_message(INFORMATION_MESSAGE,
 								"Selected %d faces.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+								NUMBER_IN_LIST(FE_element)(element_list));
 						}
 						else
 						{
@@ -20612,6 +20614,7 @@ Executes a GFX SELECT command.
 								"execute_command_gfx_select.  Problem selecting nodes.");
 						}
 						FE_element_selection_end_cache(command_data->element_selection);
+						DESTROY(LIST(FE_element))(&element_list);
 					}
 				}
 				/* grid_points */
@@ -20674,7 +20677,7 @@ Executes a GFX SELECT command.
 						{
 							display_message(INFORMATION_MESSAGE,
 								"Selected %d lines.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+								NUMBER_IN_LIST(FE_element)(element_list));
 						}
 						else
 						{
@@ -20682,6 +20685,7 @@ Executes a GFX SELECT command.
 								"execute_command_gfx_select.  Problem selecting nodes.");
 						}
 						FE_element_selection_end_cache(command_data->element_selection);
+						DESTROY(LIST(FE_element))(&element_list);
 					}
 				}
 				/* nodes */
@@ -20733,6 +20737,7 @@ Executes a GFX SELECT command.
 									"execute_command_gfx_select.  Problem selecting nodes.");
 							}
 							FE_node_selection_end_cache(command_data->node_selection);
+							DESTROY(LIST(FE_node))(&node_list);
 						}
 					}
 				}
@@ -20772,7 +20777,7 @@ Executes a GFX SELECT command.
 static int execute_command_gfx_unselect(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2002
+LAST MODIFIED : 7 December 2002
 
 DESCRIPTION :
 Executes a GFX UNSELECT command.
@@ -20876,7 +20881,7 @@ Executes a GFX UNSELECT command.
 				if ((data_flag + elements_flag + faces_flag + grid_points_flag
 					+ lines_flag + nodes_flag) != 1)
 				{
-					display_message(ERROR_MESSAGE,"gfx select:  "
+					display_message(ERROR_MESSAGE,"gfx unselect:  "
 						"You must specify one and only one of "
 						"data/elements/faces/lines/grid_points/nodes.");
 					return_code = 0;
@@ -20930,9 +20935,10 @@ Executes a GFX UNSELECT command.
 							else
 							{
 								display_message(ERROR_MESSAGE, 
-									"execute_command_gfx_unselect.  Problem selecting nodes.");
+									"execute_command_gfx_unselect.  Problem unselecting nodes.");
 							}
 							FE_node_selection_end_cache(command_data->data_selection);
+							DESTROY(LIST(FE_node))(&node_list);
 						}
 					}
 				}
@@ -20958,14 +20964,15 @@ Executes a GFX UNSELECT command.
 						{
 							display_message(INFORMATION_MESSAGE,
 								"Unselected %d elements.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+								NUMBER_IN_LIST(FE_element)(element_list));
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem selecting nodes.");
+								"execute_command_gfx_unselect.  Problem unselecting elements.");
 						}
 						FE_element_selection_end_cache(command_data->element_selection);
+						DESTROY(LIST(FE_element))(&element_list);
 					}
 				}
 				/* faces */
@@ -20984,14 +20991,15 @@ Executes a GFX UNSELECT command.
 						{
 							display_message(INFORMATION_MESSAGE,
 								"Unselected %d faces.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+								NUMBER_IN_LIST(FE_element)(element_list));
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem selecting nodes.");
+								"execute_command_gfx_unselect.  Problem unselecting faces.");
 						}
 						FE_element_selection_end_cache(command_data->element_selection);
+						DESTROY(LIST(FE_element))(&element_list);
 					}
 				}
 				/* grid_points */
@@ -21054,14 +21062,15 @@ Executes a GFX UNSELECT command.
 						{
 							display_message(INFORMATION_MESSAGE,
 								"Unselected %d lines.\n",
-								NUMBER_IN_LIST(FE_node)(node_list));
+								NUMBER_IN_LIST(FE_element)(element_list));
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE, 
-								"execute_command_gfx_unselect.  Problem selecting nodes.");
+								"execute_command_gfx_unselect.  Problem unselecting lines.");
 						}
 						FE_element_selection_end_cache(command_data->element_selection);
+						DESTROY(LIST(FE_element))(&element_list);
 					}
 				}
 				/* nodes */
@@ -21110,9 +21119,10 @@ Executes a GFX UNSELECT command.
 							else
 							{
 								display_message(ERROR_MESSAGE, 
-									"execute_command_gfx_unselect.  Problem selecting nodes.");
+									"execute_command_gfx_unselect.  Problem unselecting nodes.");
 							}
 							FE_node_selection_end_cache(command_data->node_selection);
+							DESTROY(LIST(FE_node))(&node_list);
 						}
 					}
 				}
@@ -21134,7 +21144,7 @@ Executes a GFX UNSELECT command.
 		}
 		else
 		{
-			set_command_prompt("gfx select",command_data);
+			set_command_prompt("gfx unselect",command_data);
 			return_code=1;
 		}
 	}
