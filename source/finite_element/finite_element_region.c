@@ -4097,35 +4097,49 @@ Ends face definition in <fe_region>. Cleans up internal cache.
 	return (return_code);
 } /* FE_region_end_define_faces */
 
-static int FE_region_merge_FE_element_nodes_iterator(struct FE_element *element,
-	void *fe_region_void)
+static int FE_region_merge_FE_element_nodes(struct FE_region *fe_region,
+	struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 14 May 2003
+LAST MODIFIED : 19 May 2003
 
 DESCRIPTION :
-Merges the nodes directly listed in <element> into <fe_region>.
+Merges the nodes used by fields of <element> into <fe_region>.
 Currently only used by FE_region_merge_FE_element_and_faces_and_nodes.
 Expects call to be wrapped in calls to FE_region_begin/end_changes.
+If <element> has any parents, the nodes referenced by the default
+coordinate field inherited from any single ultimate parent are merged.
+???RC This "single ancestor field inheritance" is not sufficient in general;
+one would have to inherit all fields from all top_level ancestor elements which
+is quite expensive; deal with this once faces are actually passed to this
+function -- they currently are not.
+If the element has no parent, merges nodes directly referenced by <element>.
 ==============================================================================*/
 {
-	int i, number_of_nodes, return_code;
-	struct FE_node *node;
-	struct FE_region *fe_region;
+	int i, number_of_parents, number_of_element_field_nodes, number_of_nodes,
+		return_code;
+	struct FE_node **element_field_nodes_array, *node;
 
-	ENTER(FE_region_merge_FE_element_nodes_iterator);
-	if (element && (fe_region = (struct FE_region *)fe_region_void) &&
-		get_FE_element_number_of_nodes(element, &number_of_nodes))
+	ENTER(FE_region_merge_FE_element_nodes);
+	if (fe_region && element &&
+		get_FE_element_number_of_nodes(element, &number_of_nodes) &&
+		get_FE_element_number_of_parents(element, &number_of_parents))
 	{
 		return_code = 1;
-		for (i = 0; (i < number_of_nodes) && return_code; i++)
+		if (0 < number_of_parents)
 		{
-			if (get_FE_element_node(element, i, &node))
+			if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
+				&number_of_element_field_nodes, &element_field_nodes_array,
+				/*top_level_element*/(struct FE_element *)NULL))
 			{
-				if (node)
+				for (i = 0; i < number_of_element_field_nodes; i++)
 				{
-					if (!FE_region_merge_FE_node(fe_region, node))
+					if (node = element_field_nodes_array[i])
 					{
-						return_code = 0;
+						if (!FE_region_merge_FE_node(fe_region, node))
+						{
+							return_code = 0;
+						}
+						DEACCESS(FE_node)(&(element_field_nodes_array[i]));
 					}
 				}
 			}
@@ -4134,17 +4148,42 @@ Expects call to be wrapped in calls to FE_region_begin/end_changes.
 				return_code = 0;
 			}
 		}
+		else
+		{
+			for (i = 0; (i < number_of_nodes) && return_code; i++)
+			{
+				if (get_FE_element_node(element, i, &node))
+				{
+					if (node)
+					{
+						if (!FE_region_merge_FE_node(fe_region, node))
+						{
+							return_code = 0;
+						}
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_region_merge_FE_element_nodes.  Failed");
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_merge_FE_element_nodes_iterator.  Invalid argument(s)");
+			"FE_region_merge_FE_element_nodes.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_region_merge_FE_element_nodes_iterator */
+} /* FE_region_merge_FE_element_nodes */
 
 static int FE_region_merge_FE_element_and_faces_private(
 	struct FE_region *fe_region, struct FE_element *element)
@@ -4377,8 +4416,7 @@ against.
 	{
 		return_code = 1;
 		FE_region_begin_change(fe_region);
-		if (FE_element_for_each_element_and_parent(element,
-			FE_region_merge_FE_element_nodes_iterator, (void *)fe_region))
+		if (FE_region_merge_FE_element_nodes(fe_region, element))
 		{
 			if (!FE_region_merge_FE_element_and_faces_private(
 				fe_region, element))
