@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendergl.h
 
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Header file for rendergl.c, GL rendering calls (API specific)
@@ -17,18 +17,21 @@ Global functions
 ----------------
 */
 
-int draw_glyphsetGL(int number_of_points,Triple *point_list,Triple *axis1_list,
-	Triple *axis2_list,Triple *axis3_list,struct GT_object *glyph,char **labels,
-	int number_of_data_components,GTDATA *data,int *names,
-	struct Graphical_material *material,struct Spectrum *spectrum,
-	int draw_selected,int some_selected,struct Multi_range *selected_name_ranges);
+int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
+	Triple *axis2_list, Triple *axis3_list, Triple *scale_list,
+	struct GT_object *glyph, char **labels,
+	int number_of_data_components, GTDATA *data, int *names,
+	struct Graphical_material *material, struct Spectrum *spectrum,
+	int draw_selected, int some_selected,
+	struct Multi_range *selected_name_ranges);
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Draws graphics object <glyph> at <number_of_points> points given by the
 positions in <point_list> and oriented and scaled by <axis1_list>, <axis2_list>
-and <axis3_list>. If the glyph is part of a linked list through its nextobject
+and <axis3_list>, each axis additionally scaled by its value in <scale_list>.
+If the glyph is part of a linked list through its nextobject
 member, these attached glyphs are also executed.
 Writes the <labels> array strings, if supplied, beside each glyph point.
 If <names> are supplied these identify each point/glyph for OpenGL picking.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 6 September 2000
+LAST MODIFIED : 11 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1415,7 +1415,7 @@ static int Mirage_movie_graphics_show_points(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct GT_object *glyph,float point_size,struct Computed_field *label_field)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 11 November 2000
 
 DESCRIPTION :
 Adds points in the given <material>, possibly with node numbers on to the
@@ -1423,8 +1423,9 @@ graphical finite element for <element_group> on <scene>.
 Regenerates the GFE but does not update the scene.
 ==============================================================================*/
 {
+	enum Glyph_axis_mode glyph_axis_mode;
 	int return_code;
-	struct Computed_field *orientation_scale_field;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	Triple glyph_centre,glyph_size,glyph_scale_factors;
@@ -1436,22 +1437,25 @@ Regenerates the GFE but does not update the scene.
 		{
 			if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))
 			{
-				GT_element_settings_set_material(settings,material);
+				GT_element_settings_set_material(settings, material);
 				/*???RC temporary */
-				GT_element_settings_set_selected_material(settings,material);
-				GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);
-				glyph_centre[0]=0.0;
-				glyph_centre[1]=0.0;
-				glyph_centre[2]=0.0;
-				glyph_size[0]=point_size;
-				glyph_size[1]=point_size;
-				glyph_size[2]=point_size;
-				orientation_scale_field=(struct Computed_field *)NULL;
-				glyph_scale_factors[0]=1.0;
-				glyph_scale_factors[1]=1.0;
-				glyph_scale_factors[2]=1.0;
-				GT_element_settings_set_glyph_parameters(settings,glyph,
-					glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);
+				GT_element_settings_set_selected_material(settings, material);
+				GT_element_settings_set_select_mode(settings, GRAPHICS_SELECT_ON);
+				glyph_axis_mode = GLYPH_AXIS_1_POSITIVE;
+				glyph_centre[0] = 0.0;
+				glyph_centre[1] = 0.0;
+				glyph_centre[2] = 0.0;
+				glyph_size[0] = point_size;
+				glyph_size[1] = point_size;
+				glyph_size[2] = point_size;
+				orientation_scale_field = (struct Computed_field *)NULL;
+				glyph_scale_factors[0] = 1.0;
+				glyph_scale_factors[1] = 1.0;
+				glyph_scale_factors[2] = 1.0;
+				variable_scale_field = (struct Computed_field *)NULL;
+				GT_element_settings_set_glyph_parameters(settings, glyph,
+					glyph_axis_mode, glyph_centre, glyph_size, orientation_scale_field,
+					glyph_scale_factors, variable_scale_field);
 				GT_element_settings_set_label_field(settings,label_field);
 				if (GT_element_group_add_settings(gt_element_group,settings,1))
 				{
