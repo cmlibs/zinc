@@ -2826,6 +2826,42 @@ The returned shape is ACCESSed here, and should be DEACCESSed when no longer
 needed.
 ==============================================================================*/
 
+int get_FE_element_shape_dimension(struct FE_element_shape *element_shape,
+	int *dimension_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the dimension of <element_shape>.
+If fails, puts zero at <dimension_address>.
+==============================================================================*/
+
+int get_FE_element_shape_xi_shape_type(struct FE_element_shape *element_shape,
+	int xi_number, enum FE_element_shape_type *shape_type_address);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the shape type of <element_shape> on <xi_number> -- on main diagonal of
+type array. The first xi_number is 0.
+==============================================================================*/
+
+int get_FE_element_shape_next_linked_xi_number(
+	struct FE_element_shape *element_shape, int xi_number,
+	int *next_xi_number_address, int *xi_link_number_address);
+/*******************************************************************************
+LAST MODIFIED : 6 November 2002
+
+DESCRIPTION :
+Returns in <next_xi_number_address> the next xi number higher than <xi_number>
+which is linked in shape with it, plus in <xi_link_number_address> the number
+denoting how it is linked; currently used only for polygon shapes to denote the
+number of polygon sides.
+If there is no remaining linked dimension, 0 is returned in both addresses.
+<xi_number> is from 0 to one less than the shape dimension.
+Also checks that the linked xi numbers have the same shape type.
+==============================================================================*/
+
 struct FE_element_parent *CREATE(FE_element_parent)(struct FE_element *parent,
 	int face_number);
 /*******************************************************************************

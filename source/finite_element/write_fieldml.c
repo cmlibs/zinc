@@ -152,6 +152,7 @@ Module functions
 Module functions
 ----------------
 */
+#if ! defined (CMGUI_REGIONS)
 /* Temporary delarations so that the code compiles before regions exist.
    Till end */
 struct Cmiss_region *ACCESS(Cmiss_region)(struct Cmiss_region *region)
@@ -183,11 +184,13 @@ int Cmiss_region_get_region_from_path(struct Cmiss_region *root_region,
 	*region = root_region;
 	return(1);
 }
-#define for_each_FE_field_in_FE_region(fe_region, function, user_data) FOR_EACH_OBJECT_IN_MANAGER(FE_field)(function, user_data, fe_region->fe_field_manager)
-#define for_each_FE_node_in_FE_region(fe_region, function, user_data) FOR_EACH_OBJECT_IN_GROUP(FE_node)(function, user_data, fe_region->node_group)
-#define for_each_FE_element_in_FE_region(fe_region, function, user_data) FOR_EACH_OBJECT_IN_GROUP(FE_element)(function, user_data, fe_region->element_group)
+#define FE_region_for_each_FE_field(fe_region, function, user_data) FOR_EACH_OBJECT_IN_MANAGER(FE_field)(function, user_data, fe_region->fe_field_manager)
+#define FE_region_for_each_FE_node(fe_region, function, user_data) FOR_EACH_OBJECT_IN_GROUP(FE_node)(function, user_data, fe_region->node_group)
+#define FE_region_for_each_FE_element(fe_region, function, user_data) FOR_EACH_OBJECT_IN_GROUP(FE_element)(function, user_data, fe_region->element_group)
 #define Cmiss_region_get_FE_region(region) region->fe_region
+#define get_FE_node_identifier get_FE_node_cm_node_identifier
 /* end Temporary delarations so that the code compiles before regions exist. */
+#endif /* ! defined (CMGUI_REGIONS) */
 
 static int indent_fprintf(FILE *file, int indent, char *format, ... )
 /*******************************************************************************
@@ -1090,7 +1093,7 @@ written.
 	if (output_file && node)
 	{
 		indent_fprintf(output_file, indent, "<node name=\"%d\">\n", 
-			get_FE_node_cm_node_identifier(node));
+			get_FE_node_identifier(node));
 		indent += EXPORT_INDENT_SPACES;
 		indent_fprintf(output_file, indent, "<assign_labels template_name=\"%s\">\n",
 			template_name);
@@ -1126,7 +1129,7 @@ written.
 		indent_fprintf(output_file, indent, "</assign_labels>\n");
 		indent -= EXPORT_INDENT_SPACES;
 		indent_fprintf(output_file, indent, "</node>\n\n", 
-			get_FE_node_cm_node_identifier(node));
+			get_FE_node_identifier(node));
 		return_code = 1;
 	}
 	else
@@ -1386,127 +1389,134 @@ output contains no characters before or after the printed numbers.
 static int write_FE_element_shape(FILE *output_file,
 	struct FE_element_shape *element_shape)
 /*******************************************************************************
-LAST MODIFIED : 1 April 1999
+LAST MODIFIED : 6 November 2002
 
 DESCRIPTION :
 Writes out the <element_shape> to <output_file>.
+???RC Currently limited to handling one polygon or one simplex. Will have to
+be rewritten for 4-D and above elements.
 ==============================================================================*/
 {
-	int dimension,linked_dimensions,number_of_polygon_vertices,return_code,
-		second_xi_number,*temp_entry,*type_entry,xi_number;
+	enum FE_element_shape_type shape_type;
+	int dimension, linked_dimensions, next_xi_number, number_of_polygon_vertices,
+		return_code, xi_number;
 
 	ENTER(write_FE_element_shape);
-	if (output_file&&element_shape&&element_shape->type&&
-		(0<(dimension=element_shape->dimension)))
+	if (output_file && element_shape &&
+		get_FE_element_shape_dimension(element_shape, &dimension))
 	{
-		return_code=1;
-		xi_number=0;
-		type_entry=element_shape->type;
-		linked_dimensions=0;
-		while (return_code&&(xi_number<dimension))
+		return_code = 1;
+		linked_dimensions = 0;
+		for (xi_number = 0; (xi_number < dimension) && return_code; xi_number++)
 		{
-			switch (*type_entry)
+			if (get_FE_element_shape_xi_shape_type(element_shape, xi_number,
+				&shape_type))
 			{
-				case LINE_SHAPE:
+				switch (shape_type)
 				{
-					fprintf(output_file,"line");
-				} break;
-				case POLYGON_SHAPE:
-				{
-					fprintf(output_file,"polygon");
-					if (0==linked_dimensions)
+					case LINE_SHAPE:
 					{
-						/* for first linked polygon dimension write (N;M) where N is the
-							 number_of_polygon_vertices, and M is the linked dimension -
-							 a number from 2..dimension */
-						second_xi_number=xi_number;
-						temp_entry=type_entry;
-						do
+						fprintf(output_file, "line");
+					} break;
+					case POLYGON_SHAPE:
+					{
+						/* logic currently limited to one polygon in shape - ok up to 3D */
+						fprintf(output_file, "polygon");
+						if (0 == linked_dimensions)
 						{
-							/*???RC note: pointer arithmetic relies on second_xi_number
-								being incremented after following line: */
-							temp_entry += (dimension-second_xi_number);
-							second_xi_number++;
-						} while ((second_xi_number<dimension)&&
-							(POLYGON_SHAPE != *temp_entry));
-						if ((second_xi_number<dimension)&&(POLYGON_SHAPE==(*temp_entry)))
-						{
-							if (3<=(number_of_polygon_vertices=
-								*(type_entry+(second_xi_number-xi_number))))
+							if (get_FE_element_shape_next_linked_xi_number(element_shape,
+								xi_number, &next_xi_number, &number_of_polygon_vertices) &&
+								(0 < next_xi_number))
 							{
-								fprintf(output_file,"(%d;%d)",number_of_polygon_vertices,
-									second_xi_number+1);
+								if (number_of_polygon_vertices >= 3)
+								{
+									fprintf(output_file, "(%d;%d)", number_of_polygon_vertices,
+										next_xi_number + 1);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+										"Invalid number of vertices in polygon: %d",
+										number_of_polygon_vertices);
+									return_code = 0;
+								}
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
-									"Invalid number of vertices in polygon");
-								return_code=0;
+								display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+									"No second linked dimensions in polygon");
+								return_code = 0;
 							}
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
-								"No second linked dimensions in polygon");
-							return_code=0;
-						}
-					}
-					linked_dimensions++;
-					if (2<linked_dimensions)
-					{
-						display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
-							"Too many linked dimensions in polygon");
-						return_code=0;
-					}
-				} break;
-				case SIMPLEX_SHAPE:
-				{
-					fprintf(output_file,"simplex");
-					if (0==linked_dimensions)
-					{
 						linked_dimensions++;
-						/* for first linked simplex dimension write (N1[;N2]) where N1 is
-							 first linked dimension, N2 is the second - for tetrahedra */
-						fprintf(output_file,"(");
-						temp_entry=type_entry;
-						second_xi_number=xi_number;
-						do
+						if (2 < linked_dimensions)
 						{
-							/*???RC note: pointer arithmetic relies on second_xi_number
-								being incremented after following line: */
-							temp_entry += (dimension-second_xi_number);
-							second_xi_number++;
-							if (SIMPLEX_SHAPE == *temp_entry)
-							{
-								linked_dimensions++;
-								if (2<linked_dimensions)
-								{
-									fprintf(output_file,";");
-								}
-								fprintf(output_file,"%d",second_xi_number+1);
-							}
-						} while (second_xi_number<dimension);
-						fprintf(output_file,")");
-						if (1==linked_dimensions)
-						{
-							display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
-								"Too few linked dimensions in simplex shape");
-							return_code=0;
+							display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+								"Too many linked dimensions in polygon");
+							return_code = 0;
 						}
-					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"write_FE_element_shape.  Unknown shape type");
-					return_code=0;
-				} break;
+					} break;
+					case SIMPLEX_SHAPE:
+					{
+						/* logic currently limited to one simplex in shape - ok up to 3D */
+						fprintf(output_file, "simplex");
+						if (0 == linked_dimensions)
+						{
+							linked_dimensions++;
+							/* for first linked simplex dimension write (N1[;N2]) where N1 is
+								 first linked dimension, N2 is the second - for tetrahedra */
+							fprintf(output_file,"(");
+							next_xi_number = xi_number;
+							while (return_code && (next_xi_number < dimension))
+							{
+								if (get_FE_element_shape_next_linked_xi_number(element_shape,
+									next_xi_number, &next_xi_number, &number_of_polygon_vertices))
+								{
+									if (0 < next_xi_number)
+									{
+										linked_dimensions++;
+										if (2 < linked_dimensions)
+										{
+											fprintf(output_file, ";");
+										}
+										fprintf(output_file, "%d", next_xi_number + 1);
+									}
+									else
+									{
+										next_xi_number = dimension;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE, "write_FE_element_shape.  "
+										"Could not get next linked xi number for simplex");
+									return_code = 0;
+								}
+							}
+							fprintf(output_file,")");
+							if (1 == linked_dimensions)
+							{
+								display_message(ERROR_MESSAGE,"write_FE_element_shape.  "
+									"Too few linked dimensions in simplex");
+								return_code = 0;
+							}
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"write_FE_element_shape.  Unknown shape type");
+						return_code = 0;
+					} break;
+				}
 			}
-			/*???RC note: pointer arithmetic relies on xi_number being
-				incremented after following line: */
-			type_entry += (dimension-xi_number);
-			xi_number++;
-			if (xi_number<dimension)
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"write_FE_element_shape.  Could not get shape type");
+				return_code = 0;
+			}
+			if (xi_number < (dimension - 1))
 			{
 				fprintf(output_file,"*");
 			}
@@ -3134,7 +3144,7 @@ DESCRIPTION :
 						{
 							if (get_FE_element_node(element, i, &node))
 							{
-								fprintf(output_file, " %d", get_FE_node_cm_node_identifier(node));
+								fprintf(output_file, " %d", get_FE_node_identifier(node));
 							}
 							else
 							{
@@ -3376,7 +3386,7 @@ If <field_order_info> contains fields, they are written in that order.
 		{
 			write_fields_data.output_file = output_file;
 			write_fields_data.indent = indent;
-			return_code = for_each_FE_field_in_FE_region(fe_region,
+			return_code = FE_region_for_each_FE_field(fe_region,
 				write_FE_region_field_sub, &write_fields_data);
 		}
 		if (write_nodes)
@@ -3386,7 +3396,7 @@ If <field_order_info> contains fields, they are written in that order.
 			write_nodes_data.field_order_info = field_order_info;
 			write_nodes_data.number_of_node_templates = 0;
 			write_nodes_data.node_templates = (struct Node_template *)NULL;
-			return_code = for_each_FE_node_in_FE_region(fe_region,
+			return_code = FE_region_for_each_FE_node(fe_region,
 				write_FE_region_node, &write_nodes_data);
 			if (write_nodes_data.node_templates)
 			{
@@ -3415,7 +3425,7 @@ If <field_order_info> contains fields, they are written in that order.
 			for (dimension = 1; dimension <= 3; dimension++)
 			{
 				write_elements_data.dimension = dimension;
-				if (!for_each_FE_element_in_FE_region(fe_region,
+				if (!FE_region_for_each_FE_element(fe_region,
 					write_FE_region_element, &write_elements_data))
 				{
 					return_code = 0;
@@ -3493,7 +3503,7 @@ Notes:
 {
 	int return_code;
 	struct Cmiss_region *write_path_region;
-	struct FE_region *fe_region, *master_fe_region;
+	struct FE_region *fe_region;
 
 	ENTER(write_Cmiss_region);
 	USE_PARAMETER(force_no_master_region);
@@ -3523,9 +3533,7 @@ Notes:
 		}
 		if (return_code)
 		{
-			if ((fe_region = Cmiss_region_get_FE_region(region)) &&
-				(return_code = FE_region_get_master_FE_region(fe_region,
-					&master_fe_region)))
+			if (fe_region = Cmiss_region_get_FE_region(region))
 			{
 				return_code = write_FE_region(output_file, indent, fe_region,
 					write_elements, write_nodes, field_order_info);

@@ -17,7 +17,11 @@ The function for importing finite element data into CMISS.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
+#if defined (CMGUI_REGIONS)
+#include "finite_element/finite_element_region.h"
+#else /* defined (CMGUI_REGIONS) */
 #include "finite_element/write_fieldml.h" /* SAB For temporary regions stuff */
+#endif /* defined (CMGUI_REGIONS) */
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -182,6 +186,7 @@ Module functions
 ----------------
 */
 
+#if !defined (CMGUI_REGIONS)
 /* Temporary delarations so that the code compiles before regions exist.
    Till end */
 static struct Cmiss_region *CREATE(Cmiss_region)(void)
@@ -280,8 +285,8 @@ static struct FE_field *FE_region_get_FE_field_from_name(struct FE_region *fe_re
 		name)(field_name,fe_region->fe_field_manager);
 	return(field);
 }
-static struct FE_node *FE_region_create_FE_node(struct FE_region *fe_region,
-	int cm_node_identifier, struct FE_node *template_node)
+static struct FE_node *CREATE_FE_node_2(int cm_node_identifier,
+	struct FE_region *fe_region, struct FE_node *template_node)
 {
 	struct FE_node *node;
 	USE_PARAMETER(fe_region);
@@ -348,9 +353,9 @@ static struct FE_node *FE_region_get_FE_node_from_identifier(
 		cm_node_identifier)(cm_node_identifier,fe_region->node_manager);
 	return(node);
 }
-static struct FE_element *FE_region_create_FE_element(struct FE_region *fe_region,
-	struct CM_element_information *cm, struct FE_element_shape *element_shape,
-	struct FE_element *template_element)
+struct FE_element *CREATE_FE_element_2(struct CM_element_information *cm,
+	struct FE_element_shape *element_shape,
+	struct FE_region *fe_region, struct FE_element *template_element)
 {
 	struct FE_element *element;
 	USE_PARAMETER(fe_region);
@@ -428,7 +433,23 @@ struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	basis = make_FE_basis(basis_type, fe_region->basis_manager);
 	return(basis);
 }
+int Cmiss_regions_FE_regions_can_be_merged(struct Cmiss_region *global_region,
+	struct Cmiss_region *region)
+{
+	USE_PARAMETER(global_region);
+	USE_PARAMETER(region);
+	return(1);
+}
+int Cmiss_regions_merge_FE_regions(struct Cmiss_region *global_region,
+	struct Cmiss_region **region_address)
+{
+	USE_PARAMETER(global_region);
+	USE_PARAMETER(region_address);
+	return(1);
+}
+#define FE_import_time_index Node_time_index
 /* end Temporary delarations so that the code compiles before regions exist. */
+#endif /* !defined (CMGUI_REGIONS) */
 
 PROTOTYPE_LIST_FUNCTIONS(Fieldml_label_name);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Fieldml_label_name,name, \
@@ -631,7 +652,7 @@ DESCRIPTION :
 	struct FE_field *field;
 	struct FE_node *node;
 	struct Fieldml_sax_data *fieldml_data;
-	struct Node_time_index *node_time_index;
+	struct FE_import_time_index *time_index;
 
 	ENTER(Fieldml_label_name_process_label);
 
@@ -847,7 +868,7 @@ DESCRIPTION :
 				node = fieldml_data->current_node;
 				node_number = get_FE_node_cm_node_identifier(node);
 				field = fieldml_data->current_field_ref;
-				node_time_index = (struct Node_time_index *)NULL;
+				time_index = (struct FE_import_time_index *)NULL;
 				number_of_values = 0;
 				for (j = 0 ; j < number_of_components ; j++)
 				{
@@ -911,10 +932,10 @@ DESCRIPTION :
 								}
 								if (return_code)
 								{
-									if (node_time_index)
+									if (time_index)
 									{
 										if (return_code=set_FE_nodal_field_FE_values_at_time(
-												 field,node,values,&length,node_time_index->time))
+												 field,node,values,&length,time_index->time))
 										{
 											if (length != number_of_values)
 											{
@@ -3410,8 +3431,8 @@ DESCRIPTION :
 		}
 		if (node_number)
 		{
-			fieldml_data->current_node = FE_region_create_FE_node(
-			 	fieldml_data->root_fe_region, node_number, (struct FE_node *)NULL);
+			fieldml_data->current_node = CREATE_FE_node_2(
+			 	node_number, fieldml_data->root_fe_region, (struct FE_node *)NULL);
 		}
 		else
 		{
@@ -3814,9 +3835,9 @@ DESCRIPTION :
 		{
 			element_template = (struct FE_element *)NULL;
 		}
-		fieldml_data->current_element = FE_region_create_FE_element(
-			fieldml_data->root_fe_region, &cm,
-			fieldml_data->current_element_shape, element_template);
+		fieldml_data->current_element = CREATE_FE_element_2(
+			&cm, fieldml_data->current_element_shape, 
+			fieldml_data->root_fe_region, element_template);
 		if (fieldml_data->face_numbers)
 		{
 			face_identifier.type = CM_ELEMENT;
@@ -5694,6 +5715,14 @@ DESCRIPTION :
 	return ret;
 } /* specialXmlSAXParseFile */
 
+#if defined (CMGUI_REGIONS)
+int parse_fieldml_file(char *filename, struct Cmiss_region *root_region)
+/*******************************************************************************
+LAST MODIFIED : 4 March 2003
+
+DESCRIPTION :
+==============================================================================*/
+#else /* defined (CMGUI_REGIONS) */
 int parse_fieldml_file(char *filename, struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_node) *node_manager, struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(FE_field) *fe_field_manager)
@@ -5702,6 +5731,7 @@ LAST MODIFIED : 10 February 2003
 
 DESCRIPTION :
 ==============================================================================*/
+#endif /* defined (CMGUI_REGIONS) */
 {
 	int return_code;
 	static xmlSAXHandler fieldml_handler;
@@ -5714,8 +5744,12 @@ DESCRIPTION :
 	fieldml_data.fieldml_version = -1; /* Not in fieldml yet */
 	fieldml_data.fieldml_subversion = -1; /* Not in fieldml yet */
 	fieldml_data.root_region = CREATE(Cmiss_region)();
+#if defined (CMGUI_REGIONS)
+	fieldml_data.root_fe_region = ((struct FE_region *)NULL, basis_manager);
+#else /* defined (CMGUI_REGIONS) */
 	fieldml_data.root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
 		basis_manager, node_manager, element_manager, fe_field_manager);
+#endif /* defined (CMGUI_REGIONS) */
 	Cmiss_region_attach_FE_region(fieldml_data.root_region,
 		fieldml_data.root_fe_region);
 	fieldml_data.label_templates = CREATE(LIST(Fieldml_label_name))();
@@ -5797,7 +5831,14 @@ DESCRIPTION :
 	}
 
 	/* Regions can be merged */
-	/* Merge regions */
+#if defined (CMGUI_REGIONS)
+	if (Cmiss_regions_FE_regions_can_be_merged(root_region, fieldml_data.root_region)
+	{
+		Cmiss_regions_merge_FE_regions(root_region, &fieldml_data.root_region);
+	}
+#else /* defined (CMGUI_REGIONS) */
+	DESTROY(FE_region)(&fieldml_data.root_fe_region);
+#endif /* defined (CMGUI_REGIONS) */
 
 	/* Clean up */
 	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_templates);
@@ -5805,7 +5846,6 @@ DESCRIPTION :
 	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.basis_mappings);
 	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.element_interpolations);
 
-	DESTROY(FE_region)(&fieldml_data.root_fe_region);
 	DESTROY(Cmiss_region)(&fieldml_data.root_region);
 
 	LEAVE;

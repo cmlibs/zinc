@@ -11,9 +11,12 @@ Functions for exporting finite element data to a fieldml file.
 
 #include <stdio.h>
 #include "finite_element/finite_element.h"
-/*#include "finite_element/finite_element_region.h"*/
+#if defined (CMGUI_REGIONS)
+#include "finite_element/finite_element_region.h"
+#endif /* defined (CMGUI_REGIONS) */
 #include "general/enumerator.h"
 
+#if ! defined (CMGUI_REGIONS)
 /* Temporary declarations until this is merged into the real Cmiss_region code
    till end */
 struct FE_region
@@ -39,6 +42,7 @@ struct Cmiss_region
 	struct FE_region *fe_region;
 };
 /* end Temporary declarations until this is merged into the real Cmiss_region code */
+#endif /* ! defined (CMGUI_REGIONS) */
 
 /*
 Global/Public functions

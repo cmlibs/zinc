@@ -28413,6 +28413,147 @@ needed.
 	return (face_shape);
 } /* get_FE_element_shape_of_face */
 
+int get_FE_element_shape_dimension(struct FE_element_shape *element_shape,
+	int *dimension_address)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+Returns the dimension of <element_shape>.
+If fails, puts zero at <dimension_address>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_FE_element_shape_dimension);
+	if (element_shape && dimension_address)
+	{
+		*dimension_address = element_shape->dimension;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_shape_dimension.  Invalid argument(s)");
+		if (dimension_address)
+		{
+			*dimension_address = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_shape_dimension */
+
+int get_FE_element_shape_xi_shape_type(struct FE_element_shape *element_shape,
+	int xi_number, enum FE_element_shape_type *shape_type_address)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2003
+
+DESCRIPTION :
+Returns the shape type of <element_shape> on <xi_number> -- on main diagonal of
+type array. The first xi_number is 0.
+==============================================================================*/
+{
+	int i, offset, return_code;
+
+	ENTER(get_FE_element_shape_xi_shape_type);
+	if (element_shape && element_shape->type && (0 <= xi_number) &&
+		(xi_number < element_shape->dimension) && shape_type_address)
+	{
+		offset = 0;
+		for (i = 0; i < xi_number; i++)
+		{
+			offset += element_shape->dimension - i;
+		}
+		*shape_type_address =
+			(enum FE_element_shape_type)(element_shape->type[offset]);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_shape_xi_shape_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_shape_xi_shape_type */
+
+int get_FE_element_shape_next_linked_xi_number(
+	struct FE_element_shape *element_shape, int xi_number,
+	int *next_xi_number_address, int *xi_link_number_address)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2003
+
+DESCRIPTION :
+Returns in <next_xi_number_address> the next xi number higher than <xi_number>
+which is linked in shape with it, plus in <xi_link_number_address> the number
+denoting how it is linked; currently used only for polygon shapes to denote the
+number of polygon sides.
+If there is no remaining linked dimension, 0 is returned in both addresses.
+<xi_number> is from 0 to one less than the shape dimension.
+Also checks that the linked xi numbers have the same shape type.
+==============================================================================*/
+{
+	enum FE_element_shape_type shape_type;
+	int i, limit, offset, return_code;
+
+	ENTER(get_FE_element_shape_next_linked_xi_number);
+	if (element_shape && element_shape->type &&
+		(0 <= xi_number) && (xi_number < element_shape->dimension) &&
+		next_xi_number_address && xi_link_number_address)
+	{
+		return_code = 1;
+		offset = 0;
+		for (i = 0; i < xi_number; i++)
+		{
+			offset += element_shape->dimension - i;
+		}
+		shape_type = (enum FE_element_shape_type)(element_shape->type[offset]);
+		limit = element_shape->dimension - xi_number;
+		offset++;
+		for (i = 1; (i < limit) && (0 == element_shape->type[offset]); i++)
+		{
+			offset++;
+		}
+		if (i < limit)
+		{
+			*next_xi_number_address = i + xi_number;
+			*xi_link_number_address = element_shape->type[offset];
+			/* finally check the shape type matches */
+			offset = 0;
+			for (i = 0; i < *next_xi_number_address; i++)
+			{
+				offset += element_shape->dimension - i;
+			}
+			if ((enum FE_element_shape_type)element_shape->type[offset] != shape_type)
+			{
+				display_message(ERROR_MESSAGE,
+					"get_FE_element_shape_next_linked_xi_number.  "
+					"Shape has linked xi directions with different shape type");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			*next_xi_number_address = 0;
+			*xi_link_number_address = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_shape_next_linked_xi_number.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_shape_next_linked_xi_number */
+
 struct FE_element_parent *CREATE(FE_element_parent)(struct FE_element *parent,
 	int face_number)
 /*******************************************************************************
