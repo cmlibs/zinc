@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : export_finite_element.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 The function for exporting finite element data, to a file or to CMISS (via a
@@ -12,6 +12,7 @@ socket).
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -24,17 +25,19 @@ Module types
 struct Write_FE_element_group_sub
 {
 	FILE *output_file;
-	int dimension,output_number_of_nodes,*output_node_indices,
-		output_number_of_scale_factors,*output_scale_factor_indices;
+	int dimension, output_number_of_nodes, *output_node_indices,
+		output_number_of_scale_factors, *output_scale_factor_indices;
+	enum FE_write_criterion write_criterion;
+	struct FE_field_order_info *field_order_info;
 	struct FE_element *last_element;
-	struct FE_field *field;
 	struct GROUP(FE_element) *element_group;
 }; /* Write_FE_element_group_sub */
 
 struct File_write_FE_element_group_sub
 {
 	FILE *output_file;
-	struct FE_field *field;
+	enum FE_write_criterion write_criterion;
+	struct FE_field_order_info *field_order_info;
 }; /* struct File_write_FE_element_group_sub */
 
 struct Write_FE_node_field_values
@@ -56,14 +59,16 @@ struct Write_FE_node_field_info_sub
 struct Write_FE_node_group_sub
 {
 	FILE *output_file;
-	struct FE_field *field;
-	struct FE_node *last_field_node;
+	enum FE_write_criterion write_criterion;
+	struct FE_field_order_info *field_order_info;
+	struct FE_node *last_node;
 }; /* Write_FE_node_group_sub */
 
 struct File_write_FE_node_group_sub
 {
 	FILE *output_file;
-	struct FE_field *field;
+	enum FE_write_criterion write_criterion;
+	struct FE_field_order_info *field_order_info;
 }; /* struct File_write_FE_node_group_sub */
 
 /*
@@ -1009,17 +1014,18 @@ Writes information describing how <field> is defined at <element>.
 } /* write_FE_element_field_sub */
 
 static int write_FE_element_field_info(FILE *output_file,
-	struct FE_element *element,struct FE_field *field,
+	struct FE_element *element,
+	struct FE_field_order_info *field_order_info,
 	int *output_number_of_nodes,int **output_node_indices,
 	int *output_number_of_scale_factors,int **output_scale_factor_indices)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1999
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
-Writes the element field information header for <element>. If a <field> is
-supplied the header is restricted to include only components/fields/bases for
-it. To handle the non-NULL field case in the same manner as the all-field case,
-the function builds up and returns the following:
+Writes the element field information header for <element>. If the
+<field_order_info> is supplied the header is restricted to include only
+components/fields/bases for it. To handle both this and the all-field case, the
+function builds up and returns the following:
 - output_number_of_nodes and output_node_indices for reducing the number of
   nodes output if not all nodes in element are used for the field. In the array
   of indices, -1 indicates that the node is not used, otherwise the new index
@@ -1033,342 +1039,361 @@ are passed to this function.
 ==============================================================================*/
 {
 	enum FE_field_type fe_field_type;
-	int i,j,node_index,number_of_components,number_of_nodes_in_component,
-		output_number_of_scale_factor_sets,output_scale_factor_index,return_code,
-		scale_factor_index,*scale_factor_set_in_use,*temp_indices;
+	int field_no, i, j, node_index,number_of_components, number_of_fields,
+		number_of_fields_in_header, number_of_nodes_in_component,
+		output_number_of_scale_factor_sets, output_scale_factor_index, return_code,
+		scale_factor_index, *scale_factor_set_in_use, *temp_indices,
+		write_field_values;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *component;
 	struct FE_element_node_scale_field_info *element_info;
+	struct FE_field *field;
 	struct General_node_to_element_map **general_maps;
 	struct Standard_node_to_element_map **standard_maps;
 	struct Write_FE_element_field_sub write_element_field_data;
 
 	ENTER(write_FE_element_field_info);
-	if (output_file&&element&&element->shape&&
-		output_number_of_nodes&&output_node_indices&&
-		output_number_of_scale_factors&&output_scale_factor_indices)
+	if (output_file && element && element->shape &&
+		output_number_of_nodes && output_node_indices &&
+		output_number_of_scale_factors && output_scale_factor_indices)
 	{
-		return_code=1;
-		if ((element_info=element->information)&&element_info->fields)
+		return_code = 1;
+		if ((element_info = element->information) && element_info->fields)
 		{
 			/* reallocate/clear output parameters */
-			*output_number_of_nodes=0;
-			if (0<element_info->number_of_nodes)
+			*output_number_of_nodes = 0;
+			if (0 < element_info->number_of_nodes)
 			{
-				if (REALLOCATE(temp_indices,*output_node_indices,int,
+				if (REALLOCATE(temp_indices, *output_node_indices, int,
 					element_info->number_of_nodes))
 				{
-					*output_node_indices=temp_indices;
-					for (i=0;i<element_info->number_of_nodes;i++)
+					*output_node_indices = temp_indices;
+					for (i = 0; i < element_info->number_of_nodes; i++)
 					{
-						temp_indices[i]=-1;
+						temp_indices[i] = -1;
 					}
 				}
 				else
 				{
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			else
 			{
-				*output_node_indices=(int *)NULL;
+				*output_node_indices = (int *)NULL;
 			}
-			*output_number_of_scale_factors=0;
-			if (0<element_info->number_of_scale_factors)
+			*output_number_of_scale_factors = 0;
+			if (0 < element_info->number_of_scale_factors)
 			{
-				if (REALLOCATE(temp_indices,*output_scale_factor_indices,int,
+				if (REALLOCATE(temp_indices, *output_scale_factor_indices, int,
 					element_info->number_of_scale_factors))
 				{
-					*output_scale_factor_indices=temp_indices;
-					for (i=0;i<element_info->number_of_scale_factors;i++)
+					*output_scale_factor_indices = temp_indices;
+					for (i = 0; i < element_info->number_of_scale_factors; i++)
 					{
-						temp_indices[i]=-1;
+						temp_indices[i] = -1;
 					}
 				}
 				else
 				{
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			else
 			{
-				*output_scale_factor_indices=(int *)NULL;
+				*output_scale_factor_indices = (int *)NULL;
 			}
+			number_of_fields_in_header = 0;
+			write_field_values = 0;
 			if (return_code)
 			{
-				scale_factor_set_in_use=(int *)NULL;
-				if ((0==element_info->number_of_scale_factor_sets)||
-					ALLOCATE(scale_factor_set_in_use,int,
+				scale_factor_set_in_use = (int *)NULL;
+				if ((0 == element_info->number_of_scale_factor_sets) ||
+					ALLOCATE(scale_factor_set_in_use, int,
 						element_info->number_of_scale_factor_sets))
 				{
-					if (field)
+					if (field_order_info)
 					{
-						fe_field_type=get_FE_field_FE_field_type(field);
-						/* output only scale factor sets used by field */
-						for (j=0;j<element_info->number_of_scale_factor_sets;j++)
+						/* output only scale factor sets used by field(s) */
+						for (j = 0; j < element_info->number_of_scale_factor_sets; j++)
 						{
-							scale_factor_set_in_use[j]=0;
+							scale_factor_set_in_use[j] = 0;
 						}
-						if (element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,
-							field)(field,element_info->fields->element_field_list))
+						number_of_fields =
+							get_FE_field_order_info_number_of_fields(field_order_info);
+						for (field_no = 0; field_no < number_of_fields; field_no++)
 						{
-							/* no components and no scale factors for non-general fields */
-							if (GENERAL_FE_FIELD==fe_field_type)
+							if ((field =
+								get_FE_field_order_info_field(field_order_info, field_no)) &&
+								(element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,
+									field)(field, element_info->fields->element_field_list)))
 							{
-								if (element_field->components&&(0<(number_of_components=
-									get_FE_field_number_of_components(field))))
+								number_of_fields_in_header++;
+								if (0 < get_FE_field_number_of_values(field))
 								{
-									for (i=0;(i<number_of_components)&&return_code;i++)
-									{
-										if (component=element_field->components[i])
-										{
-											/* determine which scale_factor_sets are in use. From this
-												 can determine scale_factor renumbering. Note that grid-
-												 based components DO NOT use scale factors */
-											if (ELEMENT_GRID_MAP != component->type)
-											{
-												for (j=0;j<element_info->number_of_scale_factor_sets;
-													j++)
-												{
-													if (component->basis==(struct FE_basis *)
-														element_info->scale_factor_set_identifiers[j])
-													{
-														scale_factor_set_in_use[j]=1;
-													}
-												}
-											}
-											if (STANDARD_NODE_TO_ELEMENT_MAP==component->type)
-											{
-												/* work out which nodes to output */
-												if ((0<(number_of_nodes_in_component=component->map.
-													standard_node_based.number_of_nodes))&&
-													(standard_maps=component->map.
-														standard_node_based.node_to_element_maps))
-												{
-													for (j=0;j<number_of_nodes_in_component;j++)
-													{
-														if (standard_maps[j])
-														{
-															node_index=standard_maps[j]->node_index;
-															if ((0<=node_index)&&
-																(node_index<element_info->number_of_nodes))
-															{
-																(*output_node_indices)[node_index]=1;
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"write_FE_element_field_info.  "
-																	"Invalid node_index for "
-																	"standard node to element map");
-																return_code=0;
-															}
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"write_FE_element_field_info.  "
-																"Missing standard node to element map");
-															return_code=0;
-														}
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,"write_FE_element.  "
-														"Invalid standard node to element component");
-													return_code=0;
-												}
-											}
-											else if (GENERAL_NODE_TO_ELEMENT_MAP==component->type)
-											{
-												/* work out which nodes to output */
-												if ((0<(number_of_nodes_in_component=component->map.
-													general_node_based.number_of_nodes))&&
-													(general_maps=component->map.
-														general_node_based.node_to_element_maps))
-												{
-													for (j=0;j<number_of_nodes_in_component;j++)
-													{
-														if (general_maps[j])
-														{
-															node_index=general_maps[j]->node_index;
-															if ((0<=node_index)&&
-																(node_index<element_info->number_of_nodes))
-															{
-																(*output_node_indices)[node_index]=1;
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"write_FE_element_field_info.  "
-																	"Invalid node_index for "
-																	"general node to element map");
-																return_code=0;
-															}
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"write_FE_element_field_info.  "
-																"Missing general node to element map");
-															return_code=0;
-														}
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"write_FE_element_field_info.  "
-														"Invalid general node to element component");
-													return_code=0;
-												}
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"write_FE_element_field_info.  "
-												"Missing element_field_component");
-											return_code=0;
-										}
-									}
-									/* work out correct output_node_indices - currently the nodes in
-										 use are marked with a 1, otherwise they are -1. Change the 1s
-										 to the new index to be output */
-									*output_number_of_nodes=0;
-									for (i=0;i<element_info->number_of_nodes;i++)
-									{
-										if (0 < (*output_node_indices)[i])
-										{
-											(*output_node_indices)[i]= *output_number_of_nodes;
-											(*output_number_of_nodes)++;
-										}
-									}
+									write_field_values = 1;
 								}
-								else
+								fe_field_type = get_FE_field_FE_field_type(field);
+								/* no components and no scale factors for non-general fields */
+								if (GENERAL_FE_FIELD == fe_field_type)
 								{
-									display_message(ERROR_MESSAGE,
-										"write_FE_element_field_info.  Invalid components");
-									return_code=0;
+									if (element_field->components&&(0<(number_of_components=
+										get_FE_field_number_of_components(field))))
+									{
+										for (i = 0; i < number_of_components; i++)
+										{
+											if (component=element_field->components[i])
+											{
+												/* determine which scale_factor_sets are in use. From
+													 this can determine scale_factor renumbering. Note
+													 that grid-based comp'ts DO NOT use scale factors */
+												if (ELEMENT_GRID_MAP != component->type)
+												{
+													for (j=0;j<element_info->number_of_scale_factor_sets;
+															 j++)
+													{
+														if (component->basis==(struct FE_basis *)
+															element_info->scale_factor_set_identifiers[j])
+														{
+															scale_factor_set_in_use[j]=1;
+														}
+													}
+												}
+												if (STANDARD_NODE_TO_ELEMENT_MAP==component->type)
+												{
+													/* work out which nodes to output */
+													if ((0<(number_of_nodes_in_component=component->map.
+														standard_node_based.number_of_nodes))&&
+														(standard_maps=component->map.
+															standard_node_based.node_to_element_maps))
+													{
+														for (j=0;j<number_of_nodes_in_component;j++)
+														{
+															if (standard_maps[j])
+															{
+																node_index=standard_maps[j]->node_index;
+																if ((0<=node_index)&&
+																	(node_index<element_info->number_of_nodes))
+																{
+																	(*output_node_indices)[node_index]=1;
+																}
+																else
+																{
+																	display_message(ERROR_MESSAGE,
+																		"write_FE_element_field_info.  "
+																		"Invalid node_index for "
+																		"standard node to element map");
+																	return_code=0;
+																}
+															}
+															else
+															{
+																display_message(ERROR_MESSAGE,
+																	"write_FE_element_field_info.  "
+																	"Missing standard node to element map");
+																return_code=0;
+															}
+														}
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,"write_FE_element.  "
+															"Invalid standard node to element component");
+														return_code=0;
+													}
+												}
+												else if (GENERAL_NODE_TO_ELEMENT_MAP==component->type)
+												{
+													/* work out which nodes to output */
+													if ((0<(number_of_nodes_in_component=component->map.
+														general_node_based.number_of_nodes))&&
+														(general_maps=component->map.
+															general_node_based.node_to_element_maps))
+													{
+														for (j=0;j<number_of_nodes_in_component;j++)
+														{
+															if (general_maps[j])
+															{
+																node_index=general_maps[j]->node_index;
+																if ((0<=node_index)&&
+																	(node_index<element_info->number_of_nodes))
+																{
+																	(*output_node_indices)[node_index]=1;
+																}
+																else
+																{
+																	display_message(ERROR_MESSAGE,
+																		"write_FE_element_field_info.  "
+																		"Invalid node_index for "
+																		"general node to element map");
+																	return_code=0;
+																}
+															}
+															else
+															{
+																display_message(ERROR_MESSAGE,
+																	"write_FE_element_field_info.  "
+																	"Missing general node to element map");
+																return_code=0;
+															}
+														}
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+															"write_FE_element_field_info.  "
+															"Invalid general node to element component");
+														return_code=0;
+													}
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"write_FE_element_field_info.  "
+													"Missing element_field_component");
+												return_code=0;
+											}
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"write_FE_element_field_info.  Invalid components");
+										return_code=0;
+									}
 								}
 							}
 						}
-						else
+						/* work out correct output_node_indices - currently the nodes in
+							 use are marked with a 1, otherwise they are -1. Change the 1s
+							 to the new index to be output */
+						*output_number_of_nodes = 0;
+						for (i = 0; i < element_info->number_of_nodes; i++)
 						{
-							display_message(ERROR_MESSAGE,
-								"write_FE_element_field_info.  Field not defined at element");
-							return_code=0;
+							if (0 < (*output_node_indices)[i])
+							{
+								(*output_node_indices)[i]= *output_number_of_nodes;
+								(*output_number_of_nodes)++;
+							}
 						}
 					}
 					else
 					{
+						number_of_fields_in_header = NUMBER_IN_LIST(
+							FE_element_field)(element_info->fields->element_field_list);
+						write_field_values = FE_element_has_FE_field_values(element);
 						/* output all scale factor sets */
-						for (j=0;j<element_info->number_of_scale_factor_sets;j++)
+						for (j = 0; j < element_info->number_of_scale_factor_sets; j++)
 						{
-							scale_factor_set_in_use[j]=1;
+							scale_factor_set_in_use[j] = 1;
 						}
 						/* output all nodes */
-						*output_number_of_nodes=element_info->number_of_nodes;
-						for (i=0;i<element_info->number_of_nodes;i++)
+						*output_number_of_nodes = element_info->number_of_nodes;
+						for (i = 0; i < element_info->number_of_nodes; i++)
 						{
-							(*output_node_indices)[i]=i;
+							(*output_node_indices)[i] = i;
 						}
 					}
-					if (return_code)
+
+					/* work out the number of scale factor sets to output */
+					output_number_of_scale_factor_sets = 0;
+					for (j = 0; j < element_info->number_of_scale_factor_sets; j++)
 					{
-						/* work out the number of scale factor sets to output */
-						output_number_of_scale_factor_sets=0;
-						for (j=0;j<element_info->number_of_scale_factor_sets;j++)
+						if (scale_factor_set_in_use[j])
 						{
-							if (scale_factor_set_in_use[j])
+							output_number_of_scale_factor_sets++;
+						}
+					}
+					/* output scale factor sets and work out scale_factor renumbering
+						 information */
+					fprintf(output_file, " #Scale factor sets=%d\n",
+						output_number_of_scale_factor_sets);
+					*output_number_of_scale_factors = 0;
+					output_scale_factor_index=scale_factor_index = 0;
+					for (j = 0; j < element_info->number_of_scale_factor_sets; j++)
+					{
+						if (scale_factor_set_in_use[j])
+						{
+							fprintf(output_file," ");
+							write_FE_basis(output_file, (struct FE_basis *)
+								element_info->scale_factor_set_identifiers[j]);
+							fprintf(output_file,", #Scale factors=%d\n",
+								element_info->numbers_in_scale_factor_sets[j]);
+							/* set output scale factor indices */
+							for (i=element_info->numbers_in_scale_factor_sets[j];0<i;i--)
 							{
-								output_number_of_scale_factor_sets++;
+								(*output_scale_factor_indices)[scale_factor_index]=
+									output_scale_factor_index;
+								scale_factor_index++;
+								output_scale_factor_index++;
+							}
+							*output_number_of_scale_factors +=
+								element_info->numbers_in_scale_factor_sets[j];
+						}
+						else
+						{
+							scale_factor_index+=
+								element_info->numbers_in_scale_factor_sets[j];
+						}
+					}
+					/* output number of nodes */
+					fprintf(output_file," #Nodes=%d\n",*output_number_of_nodes);
+					/* output fields / components */
+					write_element_field_data.output_file=output_file;
+					write_element_field_data.field_number=1;
+					write_element_field_data.output_number_of_nodes=
+						*output_number_of_nodes;
+					write_element_field_data.output_node_indices=
+						*output_node_indices;
+					write_element_field_data.output_number_of_scale_factors=
+						*output_number_of_scale_factors;
+					write_element_field_data.output_scale_factor_indices=
+						*output_scale_factor_indices;
+					
+					fprintf(output_file, " #Fields=%d\n", number_of_fields_in_header);
+					if (field_order_info)
+					{
+						for (field_no = 0; field_no < number_of_fields; field_no++)
+						{
+							if ((field =
+								get_FE_field_order_info_field(field_order_info, field_no)) &&
+								FE_field_is_defined_in_element(field, element))
+							{
+								for_FE_field_at_element(field, write_FE_element_field_sub,
+									(void *)&write_element_field_data, element);
 							}
 						}
-						/* output scale factor sets and work out scale_factor renumbering
-							 information */
-						fprintf(output_file," #Scale factor sets=%d\n",
-							output_number_of_scale_factor_sets);
-						*output_number_of_scale_factors=0;
-						output_scale_factor_index=scale_factor_index=0;
-						for (j=0;j<element_info->number_of_scale_factor_sets;j++)
+					}
+					else
+					{
+						for_each_FE_field_at_element_indexer_first(
+							write_FE_element_field_sub,(void *)&write_element_field_data,
+							element);
+					}
+
+					if (write_field_values)
+					{
+						fprintf(output_file," Values :\n");
+						if (field_order_info)
 						{
-							if (scale_factor_set_in_use[j])
+							for (field_no = 0; field_no < number_of_fields; field_no++)
 							{
-								fprintf(output_file," ");
-								if (!write_FE_basis(output_file,(struct FE_basis *)
-									element_info->scale_factor_set_identifiers[j]))
+								if ((field =
+									get_FE_field_order_info_field(field_order_info, field_no))
+									&& FE_field_is_defined_in_element(field, element))
 								{
-									return_code=0;
+									for_FE_field_at_element(field,
+										write_FE_element_field_FE_field_values,
+										(void *)output_file, element);
 								}
-								fprintf(output_file,", #Scale factors=%d\n",
-									element_info->numbers_in_scale_factor_sets[j]);
-								/* set output scale factor indices */
-								for (i=element_info->numbers_in_scale_factor_sets[j];0<i;i--)
-								{
-									(*output_scale_factor_indices)[scale_factor_index]=
-										output_scale_factor_index;
-									scale_factor_index++;
-									output_scale_factor_index++;
-								}
-								*output_number_of_scale_factors +=
-									element_info->numbers_in_scale_factor_sets[j];
-							}
-							else
-							{
-								scale_factor_index+=
-									element_info->numbers_in_scale_factor_sets[j];
-							}
-						}
-						/* output number of nodes */
-						fprintf(output_file," #Nodes=%d\n",*output_number_of_nodes);
-						/* output fields / components */
-						write_element_field_data.output_file=output_file;
-						write_element_field_data.field_number=1;
-						write_element_field_data.output_number_of_nodes=
-							*output_number_of_nodes;
-						write_element_field_data.output_node_indices=
-							*output_node_indices;
-						write_element_field_data.output_number_of_scale_factors=
-							*output_number_of_scale_factors;
-						write_element_field_data.output_scale_factor_indices=
-							*output_scale_factor_indices;
-						if (field)
-						{
-							fprintf(output_file," #Fields=1\n");
-							return_code=for_FE_field_at_element(field,
-								write_FE_element_field_sub,(void *)&write_element_field_data,
-								element);
-							if (0<get_FE_field_number_of_values(field))
-							{
-								/* write values for constant and indexed fields */
-								fprintf(output_file," Values :\n");
-								for_FE_field_at_element(field,
-									write_FE_element_field_FE_field_values,
-									(void *)output_file,element);
 							}
 						}
 						else
 						{
-							fprintf(output_file," #Fields=%d\n",NUMBER_IN_LIST(
-								FE_element_field)(element_info->fields->element_field_list));
-							return_code=for_each_FE_field_at_element_indexer_first(
-								write_FE_element_field_sub,(void *)&write_element_field_data,
-								element);
-							if (FE_element_has_FE_field_values(element))
-							{
-								/* write values for constant and indexed fields */
-								fprintf(output_file," Values :\n");
-								for_each_FE_field_at_element_indexer_first(
-									write_FE_element_field_FE_field_values,
-									(void *)output_file,element);
-							}
-						}
-						if (!return_code)
-						{
-							display_message(ERROR_MESSAGE,"write_FE_element_field_info.  "
-								"Could not write element fields");
+							for_each_FE_field_at_element_indexer_first(
+								write_FE_element_field_FE_field_values,
+								(void *)output_file,element);
 						}
 					}
 					DEALLOCATE(scale_factor_set_in_use);
@@ -1388,16 +1413,16 @@ are passed to this function.
 		else
 		{
 			/* no scale factors, nodes or fields */
-			fprintf(output_file," #Scale factor sets=0\n");
-			fprintf(output_file," #Nodes=0\n");
-			fprintf(output_file," #Fields=0\n");
+			fprintf(output_file, " #Scale factor sets=0\n");
+			fprintf(output_file, " #Nodes=0\n");
+			fprintf(output_file, " #Fields=0\n");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"write_FE_element_field_info.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1538,11 +1563,11 @@ Writes grid-based values stored with the element.
 } /* write_FE_element_field_values */
 
 static int write_FE_element(FILE *output_file,struct FE_element *element,
-	struct FE_field *field,
+	struct FE_field_order_info *field_order_info,
 	int output_number_of_nodes,int *output_node_indices,
 	int output_number_of_scale_factors,int *output_scale_factor_indices)
 /*******************************************************************************
-LAST MODIFIED : 5 October 1999
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Writes out an element to <output_file> or the socket (if <output_file> is NULL).
@@ -1570,13 +1595,16 @@ Notes:
 - Values, Nodes and Scale Factors are only output for elements with
   node_scale_field_information, and for which their respective number, in the
 	function arguments is greater than 0.
-- If <field> is specified then only grid map values for that field are output.
+- If <field_order_info> is specified then only values for the listed fields
+  are output.
 - Function uses output_* parameters set up by write_FE_element_field_info.
 ==============================================================================*/
 {
 	FE_value *scale_factor;
-	int i,number_of_scale_factors,return_code;
+	int field_no, first_grid_field, i, number_of_fields, number_of_scale_factors,
+		return_code;
 	struct FE_element_node_scale_field_info *element_info;
+	struct FE_field *field;
 	struct FE_node **node;
 
 	ENTER(write_FE_element);
@@ -1609,15 +1637,27 @@ Notes:
 				fprintf(output_file,"\n");
 			}
 		}
-		if (element_info=element->information)
+		if (element_info = element->information)
 		{
-			if (field)
+			if (field_order_info)
 			{
-				if (FE_element_field_is_grid_based(element,field))
+				number_of_fields =
+					get_FE_field_order_info_number_of_fields(field_order_info);
+				for (field_no = 0; field_no < number_of_fields; field_no++)
 				{
-					fprintf(output_file," Values :\n");
-					for_FE_field_at_element(field,write_FE_element_field_values,
-						(void *)output_file,element);
+					first_grid_field = 1;
+					if ((field =
+						get_FE_field_order_info_field(field_order_info, field_no)) &&
+						FE_element_field_is_grid_based(element,field))
+					{
+						if (first_grid_field)
+						{
+							fprintf(output_file, " Values :\n");
+							first_grid_field = 0;
+						}
+						for_FE_field_at_element(field, write_FE_element_field_values,
+							(void *)output_file, element);
+					}
 				}
 			}
 			else
@@ -1629,7 +1669,7 @@ Notes:
 						write_FE_element_field_values,(void *)output_file,element);
 				}
 			}
-			if (0<output_number_of_nodes)
+			if (0 < output_number_of_nodes)
 			{
 				/* write the nodes */
 				if (node=element->information->nodes)
@@ -1710,10 +1750,140 @@ Notes:
 	return (return_code);
 } /* write_FE_element */
 
+static int FE_element_passes_write_criterion(struct FE_element *element,
+	struct GROUP(FE_element) *element_group,
+	enum FE_write_criterion write_criterion,
+	struct FE_field_order_info *field_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Returns true if the <write_criterion> -- some options of which require the
+<field_order_info> -- indicates the <element> is to be written.
+==============================================================================*/
+{
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
+
+	ENTER(FE_element_passes_write_criterion);
+	switch (write_criterion)
+	{
+		case FE_WRITE_COMPLETE_GROUP:
+		{
+			return_code = 1;
+		} break;
+		case FE_WRITE_WITH_ALL_LISTED_FIELDS:
+		{
+			if (element && element_group && field_order_info &&
+				(0 < (number_of_fields =
+					get_FE_field_order_info_number_of_fields(field_order_info))))
+			{
+				return_code = 1;
+				for (i = 0; (i < number_of_fields) && return_code; i++)
+				{
+					if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
+						FE_element_or_parent_has_field(element, field, element_group)))
+					{
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_passes_write_criterion.  Invalid argument(s)");
+				return_code = 0;
+			}
+		} break;
+		case FE_WRITE_WITH_ANY_LISTED_FIELDS:
+		{
+			if (element && element_group && field_order_info &&
+				(0 < (number_of_fields =
+					get_FE_field_order_info_number_of_fields(field_order_info))))
+			{
+				return_code = 0;
+				for (i = 0; (i < number_of_fields) && (!return_code); i++)
+				{
+					if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
+						FE_element_or_parent_has_field(element, field, element_group))
+					{
+						return_code = 1;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_passes_write_criterion.  Invalid argument(s)");
+				return_code = 0;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_passes_write_criterion.  Unknown write_criterion");
+			return_code = 0;
+		} break;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_passes_write_criterion */
+
+static int FE_elements_have_same_header(
+	struct FE_element *element_1, struct FE_element *element_2,
+	struct FE_field_order_info *field_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Returns true if <element_1> and <element_2> can be written to file with the
+same field header. If <field_order_info> is supplied only those fields
+listed in it are compared.
+==============================================================================*/
+{
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
+
+	ENTER(FE_elements_have_same_header);
+	if (element_1 && element_2)
+	{
+		if (field_order_info)
+		{
+			return_code = 1;
+			number_of_fields =
+				get_FE_field_order_info_number_of_fields(field_order_info);
+			for (i = 0; (i < number_of_fields) && return_code; i++)
+			{
+				if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
+					equivalent_FE_field_in_elements(field, element_1, element_2)))
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			return_code = ((!element_1->information) && (!element_2->information)) ||
+				(element_1->information && element_2->information &&
+					(element_1->information->fields == element_2->information->fields));
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_elements_have_same_header.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_elements_have_same_header */
+
 static int write_FE_element_group_sub(struct FE_element *element,
 	void *write_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 April 1999
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Writes the <element> to the given file. If the fields defined at the element are
@@ -1723,63 +1893,60 @@ in the header.
 ==============================================================================*/
 {
 	FILE *output_file;
-	int return_code;
+	int new_field_header, new_shape, return_code;
 	struct Write_FE_element_group_sub *write_data;
 
 	ENTER(write_FE_element_group_sub);
-	if (element&&element->shape&&
-		(write_data=(struct Write_FE_element_group_sub *)write_data_void)&&
-			(output_file=write_data->output_file))
+	if (element && element->shape &&
+		(write_data = (struct Write_FE_element_group_sub *)write_data_void) &&
+			(output_file = write_data->output_file))
 	{
-		return_code=1;
-		/* only output the element if it has the specified dimension and it has the
-			 <field> defined over it or any parent element also in group */
-		if ((write_data->dimension==element->shape->dimension)&&
-			((!write_data->field)||FE_element_or_parent_has_field(element,
-				write_data->field,write_data->element_group)))
+		return_code = 1;
+		/* only output the element if it has the specified dimension and fields
+			 appropriate to the write_criterion */
+		if ((write_data->dimension == element->shape->dimension) &&
+			FE_element_passes_write_criterion(element, write_data->element_group,
+				write_data->write_criterion, write_data->field_order_info))
 		{
-			/* write the shape if different from that of last_element */
-			if ((!write_data->last_element)||
-				(element->shape != write_data->last_element->shape))
+			/* work out if shape or field header have changed from last element */
+			if (write_data->last_element)
 			{
-				return_code=write_FE_element_shape(output_file,element->shape);
+				new_shape = (element->shape != write_data->last_element->shape);
+				new_field_header = !FE_elements_have_same_header(element,
+					write_data->last_element, write_data->field_order_info);
 			}
-			/* write the field header if different from that of last_element */
-			if (return_code&&((!write_data->last_element)||
-				(element->information&&(!write_data->last_element->information))||
-				((!element->information)&&write_data->last_element->information)||
-				(element->information&&write_data->last_element->information&&
-					(element->information->fields !=
-						write_data->last_element->information->fields))))
+			else
 			{
-				return_code=write_FE_element_field_info(output_file,
-					element,write_data->field,
+				new_shape = 1;
+				new_field_header = 1;
+			}
+			if (new_shape)
+			{
+				write_FE_element_shape(output_file, element->shape);
+			}
+			if (new_field_header)
+			{
+				write_FE_element_field_info(output_file, element,
+					write_data->field_order_info,
 					&(write_data->output_number_of_nodes),
 					&(write_data->output_node_indices),
 					&(write_data->output_number_of_scale_factors),
 					&(write_data->output_scale_factor_indices));
 			}
-			if (return_code)
-			{
-				return_code=write_FE_element(output_file,
-					element,write_data->field,
-					write_data->output_number_of_nodes,
-					write_data->output_node_indices,
-					write_data->output_number_of_scale_factors,
-					write_data->output_scale_factor_indices);
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,"write_FE_element_group_sub.  Failed");
-			}
-			write_data->last_element=element;
+			write_FE_element(output_file, element,
+				write_data->field_order_info,
+				write_data->output_number_of_nodes,
+				write_data->output_node_indices,
+				write_data->output_number_of_scale_factors,
+				write_data->output_scale_factor_indices);
+			write_data->last_element = element;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"write_FE_element_group_sub.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1787,9 +1954,9 @@ in the header.
 } /* write_FE_element_group_sub */
 
 static int file_write_FE_element_group_sub(
-	struct GROUP(FE_element) *element_group,void *data_void)
+	struct GROUP(FE_element) *element_group, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Writes an element group to a file.
@@ -1799,9 +1966,9 @@ Writes an element group to a file.
 	struct File_write_FE_element_group_sub *data;
 
 	ENTER(file_write_FE_element_group_sub);
-	data=(struct File_write_FE_element_group_sub *)data_void;
-	return_code=
-		write_FE_element_group(data->output_file,element_group,data->field);
+	data = (struct File_write_FE_element_group_sub *)data_void;
+	return_code = write_FE_element_group(data->output_file, element_group,
+		data->write_criterion, data->field_order_info);
 	LEAVE;
 
 	return (return_code);
@@ -2114,143 +2281,302 @@ Writes out the nodal values. Each component or version starts on a new line.
 } /* write_FE_node_field_values */
 
 static int write_FE_node(FILE *output_file,struct FE_node *node,
-	struct FE_field *field)
+	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 6 September 2001
 
 DESCRIPTION :
-Writes out a node to an <output_file> or the socket (if <output_file> is NULL).
+Writes out a node to an <output_file>. Unless <field_order_info> is non-NULL and
+contains the fields to be written if defined, all fields defined at the node are
+written.
 ==============================================================================*/
 {
-	int return_code;
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
 	struct Write_FE_node_field_values values_data;
 
 	ENTER(write_FE_node);
-	if (node)
+	if (output_file && node)
 	{
-		if (output_file)
+		fprintf(output_file, " Node: %d\n", get_FE_node_cm_node_identifier(node));
+		values_data.output_file = output_file;
+		values_data.number_of_values = 0;
+		if (field_order_info)
 		{
-			/* file input */
-			return_code=1;
-			fprintf(output_file," Node: %d\n",get_FE_node_cm_node_identifier(node));
-			values_data.output_file=output_file;
-			values_data.number_of_values=0;
-			if (field)
+			number_of_fields =
+				get_FE_field_order_info_number_of_fields(field_order_info);
+			for (i = 0; i < number_of_fields; i++)
 			{
-				for_FE_field_at_node(field,write_FE_node_field_values,
-					(void *)&values_data,node);
+				if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
+					FE_field_is_defined_at_node(field, node))
+				{
+					for_FE_field_at_node(field, write_FE_node_field_values,
+						(void *)&values_data, node);
+				}
 			}
-			else
-			{
-				for_each_FE_field_at_node_indexer_first(write_FE_node_field_values,
-					(void *)&values_data,node);
-			}
-			/* add extra carriage return for not multiple of
-				 FE_VALUE_MAX_OUTPUT_COLUMNS values */
-			if ((0<values_data.number_of_values)&&((0>=FE_VALUE_MAX_OUTPUT_COLUMNS)||
-				(0 != (values_data.number_of_values % FE_VALUE_MAX_OUTPUT_COLUMNS))))
-			{
-				fprintf(output_file,"\n");
-			}
-			return_code=1;
 		}
 		else
 		{
-			/* socket input */
-			display_message(ERROR_MESSAGE,"write_FE_node.  Sockets not implemented");
-			return_code=0;
+			for_each_FE_field_at_node_indexer_first(write_FE_node_field_values,
+				(void *)&values_data,node);
 		}
+		/* add extra carriage return for not multiple of
+			 FE_VALUE_MAX_OUTPUT_COLUMNS values */
+		if ((0 < values_data.number_of_values) &&
+			((0 >= FE_VALUE_MAX_OUTPUT_COLUMNS) ||
+				(0 != (values_data.number_of_values % FE_VALUE_MAX_OUTPUT_COLUMNS))))
+		{
+			fprintf(output_file, "\n");
+		}
+		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"write_FE_node.  Invalid node");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "write_FE_node.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* write_FE_node */
 
-static int write_FE_node_group_sub(struct FE_node *node,void *user_data)
+static int FE_node_passes_write_criterion(struct FE_node *node,
+	enum FE_write_criterion write_criterion,
+	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 6 September 2001
 
 DESCRIPTION :
-Writes a node to the given file.  If the fields defined at the node are
-different from the last node then the header is written out.
+Returns true if the <write_criterion> -- some options of which require the
+<field_order_info> -- indicates the <node> is to be written.
 ==============================================================================*/
 {
-	FILE *output_file;
-	int return_code;
+	int i, number_of_fields, return_code;
 	struct FE_field *field;
-	struct Write_FE_node_group_sub *group_data;
-	struct Write_FE_node_field_info_sub field_data;
 
-	ENTER(write_FE_node_group_sub);
-	if (node&&(group_data=(struct Write_FE_node_group_sub *)user_data)&&
-		(output_file=group_data->output_file))
+	ENTER(FE_node_passes_write_criterion);
+	switch (write_criterion)
 	{
-		if (field=group_data->field)
+		case FE_WRITE_COMPLETE_GROUP:
 		{
-			if ((!group_data->last_field_node)||
-				(!equivalent_FE_field_at_nodes(field,node,group_data->last_field_node)))
+			return_code = 1;
+		} break;
+		case FE_WRITE_WITH_ALL_LISTED_FIELDS:
+		{
+			if (node && field_order_info && (0 < (number_of_fields =
+				get_FE_field_order_info_number_of_fields(field_order_info))))
 			{
-				/* remember the node field info */
-				group_data->last_field_node=node;
-				if (FE_field_is_defined_at_node(field,node))
+				return_code = 1;
+				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
-					/* write out the single, specified field */
-					fprintf(output_file," #Fields=1\n");
-					field_data.field_number=1;
-					field_data.value_index=1;
-					field_data.output_file=output_file;
-					for_FE_field_at_node(field,write_FE_node_field_info_sub,&field_data,
-						node);
-					if (0<get_FE_field_number_of_values(field))
+					if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
+						FE_field_is_defined_at_node(field, node)))
 					{
-						/* write values for constant and indexed fields */
-						fprintf(output_file," Values :\n");
-						for_FE_field_at_node(field,write_FE_node_field_FE_field_values,
-							(void *)output_file,node);
+						return_code = 0;
 					}
 				}
-				else
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_passes_write_criterion.  Invalid argument(s)");
+				return_code = 0;
+			}
+		} break;
+		case FE_WRITE_WITH_ANY_LISTED_FIELDS:
+		{
+			if (node && field_order_info && (0 < (number_of_fields =
+				get_FE_field_order_info_number_of_fields(field_order_info))))
+			{
+				return_code = 0;
+				for (i = 0; (i < number_of_fields) && (!return_code); i++)
 				{
-					/* no fields */
-					fprintf(output_file," #Fields=0\n");
+					if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
+						FE_field_is_defined_at_node(field, node))
+					{
+						return_code = 1;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_passes_write_criterion.  Invalid argument(s)");
+				return_code = 0;
+			}
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_passes_write_criterion.  Unknown write_criterion");
+			return_code = 0;
+		} break;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_passes_write_criterion */
+
+static int FE_nodes_have_same_header(struct FE_node *node_1,
+	struct FE_node *node_2, struct FE_field_order_info *field_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Returns true if <node_1> and <node_2> can be written to file with the
+same fields header. If <field_order_info> is supplied only those fields
+listed in it are compared.
+==============================================================================*/
+{
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
+
+	ENTER(FE_nodes_have_same_header);
+	if (node_1 && node_2)
+	{
+		if (field_order_info)
+		{
+			return_code = 1;
+			number_of_fields =
+				get_FE_field_order_info_number_of_fields(field_order_info);
+			for (i = 0; (i < number_of_fields) && return_code; i++)
+			{
+				if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
+					equivalent_FE_field_at_nodes(field, node_1, node_2)))
+				{
+					return_code = 0;
 				}
 			}
 		}
 		else
 		{
-			if ((!group_data->last_field_node)||
-				(!equivalent_FE_fields_at_nodes(node,group_data->last_field_node)))
+			return_code = equivalent_FE_fields_at_nodes(node_1, node_2);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_nodes_have_same_header.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_nodes_have_same_header */
+
+static int write_FE_node_group_sub(struct FE_node *node, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Writes a node to the given file.  If the fields defined at the node are
+different from the last node (taking into account whether a selection of fields
+has been selected for output) then the header is written out.
+==============================================================================*/
+{
+	FILE *output_file;
+	int i, number_of_fields, number_of_fields_in_header, return_code,
+		write_field_values;
+	struct FE_field *field;
+	struct FE_field_order_info *field_order_info;
+	struct Write_FE_node_group_sub *group_data;
+	struct Write_FE_node_field_info_sub field_data;
+
+	ENTER(write_FE_node_group_sub);
+	if (node && (group_data = (struct Write_FE_node_group_sub *)user_data) &&
+		(output_file = group_data->output_file))
+	{
+		return_code = 1;
+		field_order_info = group_data->field_order_info;
+		/* write this node? */
+		if (FE_node_passes_write_criterion(node, group_data->write_criterion,
+			field_order_info))
+		{
+			/* need to write new header? */
+			if (((struct FE_node *)NULL == group_data->last_node) ||
+				(!FE_nodes_have_same_header(node, group_data->last_node,
+					field_order_info)))
 			{
-				/* remember the node field info */
-				group_data->last_field_node=node;
-				/* write out all the fields */
-				fprintf(output_file," #Fields=%d\n",get_FE_node_number_of_fields(node));
-				field_data.field_number=1;
-				field_data.value_index=1;
-				field_data.output_file=output_file;
-				for_each_FE_field_at_node_indexer_first(write_FE_node_field_info_sub,
-					&field_data,node);
-				if (FE_node_has_FE_field_values(node))
+				/* get number of fields in header */
+				if (field_order_info)
+				{
+					number_of_fields_in_header = 0;
+					write_field_values = 0;
+					number_of_fields = get_FE_field_order_info_number_of_fields(
+						field_order_info);
+					for (i = 0; i < number_of_fields; i++)
+					{
+						if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
+							FE_field_is_defined_at_node(field, node))
+						{
+							number_of_fields_in_header++;
+							if (0 < get_FE_field_number_of_values(field))
+							{
+								write_field_values = 1;
+							}
+						}
+					}
+				}
+				else
+				{
+					number_of_fields_in_header = get_FE_node_number_of_fields(node);
+					write_field_values = FE_node_has_FE_field_values(node);
+				}
+				fprintf(output_file, " #Fields=%d\n", number_of_fields_in_header);
+				field_data.field_number = 1;
+				field_data.value_index = 1;
+				field_data.output_file = output_file;
+				if (field_order_info)
+				{
+					for (i = 0; i < number_of_fields; i++)
+					{
+						if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
+							FE_field_is_defined_at_node(field, node))
+						{
+							for_FE_field_at_node(field, write_FE_node_field_info_sub,
+								&field_data, node);
+						}
+					}
+				}
+				else
+				{
+					for_each_FE_field_at_node_indexer_first(write_FE_node_field_info_sub,
+						&field_data, node);
+				}
+				if (write_field_values)
 				{
 					/* write values for constant and indexed fields */
-					fprintf(output_file," Values :\n");
-					for_each_FE_field_at_node_indexer_first(
-						write_FE_node_field_FE_field_values,(void *)output_file,node);
+					fprintf(output_file, " Values :\n");
+					if (field_order_info)
+					{
+						for (i = 0; i < number_of_fields; i++)
+						{
+							if ((field = get_FE_field_order_info_field(field_order_info, i))
+								&& FE_field_is_defined_at_node(field, node) &&
+								(0 < get_FE_field_number_of_values(field)))
+							{
+								for_FE_field_at_node(field, write_FE_node_field_FE_field_values,
+									(void *)output_file, node);
+							}
+						}
+					}
+					else
+					{
+						for_each_FE_field_at_node_indexer_first(
+							write_FE_node_field_FE_field_values, (void *)output_file, node);
+					}
 				}
 			}
+			write_FE_node(output_file, node, field_order_info);
+			/* remember the last node to check if header needs to be re-output */
+			group_data->last_node = node;
 		}
-		return_code=write_FE_node(output_file,node,field);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"write_FE_node_group_sub.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2260,18 +2586,19 @@ different from the last node then the header is written out.
 static int file_write_FE_node_group_sub(struct GROUP(FE_node) *node_group,
 	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 6 September 2001
 
 DESCRIPTION :
-Writes a node group to a file.  Do not write the active group from the iterator.
+Writes a node group to a file.
 ==============================================================================*/
 {
 	int return_code;
 	struct File_write_FE_node_group_sub *data;
 
 	ENTER(file_write_FE_node_group_sub);
-	data=(struct File_write_FE_node_group_sub *)data_void;
-	return_code=write_FE_node_group(data->output_file,node_group,data->field);
+	data = (struct File_write_FE_node_group_sub *)data_void;
+	return_code = write_FE_node_group(data->output_file, node_group,
+		data->write_criterion, data->field_order_info);
 	LEAVE;
 
 	return (return_code);
@@ -2281,41 +2608,87 @@ Writes a node group to a file.  Do not write the active group from the iterator.
 Global functions
 ----------------
 */
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_criterion)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(FE_write_criterion));
+	switch (enumerator_value)
+	{
+		case FE_WRITE_COMPLETE_GROUP:
+		{
+			enumerator_string = "complete_group";
+		} break;
+		case FE_WRITE_WITH_ALL_LISTED_FIELDS:
+		{
+			enumerator_string = "with_all_listed_fields";
+		} break;
+		case FE_WRITE_WITH_ANY_LISTED_FIELDS:
+		{
+			enumerator_string = "with_any_listed_fields";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(FE_write_criterion) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_criterion)
+
 int write_FE_element_group(FILE *output_file,
-	struct GROUP(FE_element) *element_group,struct FE_field *field)
+	struct GROUP(FE_element) *element_group,
+	enum FE_write_criterion write_criterion,
+	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 1 April 1999
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
-Writes an element group to <output_file>.
+Writes an element group to an <output_file> or the socket (if <output_file> is
+NULL).
+If <field_order_info> is NULL, all element fields are written in the default,
+alphabetical order.
+If <field_order_info> is empty, only element identifiers are output.
+If <field_order_info> contains fields, they are written in that order.
+Additionally, the <write_criterion> controls output as follows:
+FE_WRITE_COMPLETE_GROUP = write all elements in the group (the default);
+FE_WRITE_WITH_ALL_LISTED_FIELDS =
+  write only elements with all listed fields defined;
+FE_WRITE_WITH_ANY_LISTED_FIELDS =
+  write only elements with any listed fields defined.
 ==============================================================================*/
 {
 	char *group_name;
-	int dimension,return_code;
+	int dimension, return_code;
 	struct Write_FE_element_group_sub write_data;
 
 	ENTER(write_FE_element_group);
-	if (output_file&&element_group)
+	if (output_file && element_group)
 	{
-		if (return_code=GET_NAME(GROUP(FE_element))(element_group,&group_name))
+		if (return_code = GET_NAME(GROUP(FE_element))(element_group, &group_name))
 		{
-			fprintf(output_file," Group name: %s\n",group_name);
-			write_data.output_file=output_file;
-			write_data.output_number_of_nodes=0;
-			write_data.output_node_indices=(int *)NULL;
-			write_data.output_number_of_scale_factors=0;
-			write_data.output_scale_factor_indices=(int *)NULL;
-			write_data.last_element=(struct FE_element *)NULL;
-			write_data.field=field;
-			write_data.element_group=element_group;
+			fprintf(output_file, " Group name: %s\n", group_name);
+			write_data.output_file = output_file;
+			write_data.output_number_of_nodes = 0;
+			write_data.output_node_indices = (int *)NULL;
+			write_data.output_number_of_scale_factors = 0;
+			write_data.output_scale_factor_indices = (int *)NULL;
+			write_data.write_criterion = write_criterion;
+			write_data.field_order_info = field_order_info;
+			write_data.element_group = element_group;
+			write_data.last_element = (struct FE_element *)NULL;
 			/* write 1-D, 2-D then 3-D so lines and faces precede elements */
-			for (dimension=1;dimension<=3;dimension++)
+			for (dimension = 1; dimension <= 3; dimension++)
 			{
-				write_data.dimension=dimension;
+				write_data.dimension = dimension;
 				if (!FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-					write_FE_element_group_sub,&write_data,element_group))
+					write_FE_element_group_sub, &write_data, element_group))
 				{
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			DEALLOCATE(write_data.output_node_indices);
@@ -2324,27 +2697,28 @@ Writes an element group to <output_file>.
 		}
 		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE,"write_FE_element_group.  Failed");
-			return_code=0;
+			display_message(ERROR_MESSAGE, "write_FE_element_group.  Failed");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"write_FE_element_group.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* write_FE_element_group */
 
-int file_write_FE_element_group(char *file_name,void *data_void)
+int file_write_FE_element_group(char *file_name, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 March 1999
+LAST MODIFIED : 7 September 2001
 
 DESCRIPTION :
 Writes an element group to a file.
+<data_void> should point to a struct Fwrite_FE_element_group_data.
 ==============================================================================*/
 {
 	FILE *output_file;
@@ -2353,27 +2727,28 @@ Writes an element group to a file.
 	struct GROUP(FE_element) *element_group;
 
 	ENTER(file_write_FE_element_group);
-	if (file_name&&(data=(struct Fwrite_FE_element_group_data *)data_void)&&
-		(element_group=data->element_group))
+	if (file_name && (data = (struct Fwrite_FE_element_group_data *)data_void) &&
+		(element_group = data->element_group))
 	{
 		/* open the input file */
-		if (output_file=fopen(file_name,"w"))
+		if (output_file = fopen(file_name,"w"))
 		{
-			return_code=write_FE_element_group(output_file,element_group,data->field);
+			return_code = write_FE_element_group(output_file, element_group,
+				data->write_criterion, data->field_order_info);
 			fclose(output_file);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Could not create element group file: %s",file_name);
-			return_code=0;
+				"Could not create element group file: %s", file_name);
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"file_write_FE_element_group.  Invalid arguments");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2382,10 +2757,11 @@ Writes an element group to a file.
 
 int file_write_all_FE_element_groups(char *file_name,void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 October 2000
+LAST MODIFIED : 7 September 2001
 
 DESCRIPTION :
 Writes all existing element groups to a file.
+<data_void> should point to a struct Fwrite_all_FE_element_groups_data.
 ==============================================================================*/
 {
 	FILE *output_file;
@@ -2395,45 +2771,57 @@ Writes all existing element groups to a file.
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 
 	ENTER(file_write_all_FE_element_groups);
-	if (file_name&&(data=(struct Fwrite_all_FE_element_groups_data *)data_void)&&
-		(element_group_manager=data->element_group_manager))
+	if (file_name && (data =
+		(struct Fwrite_all_FE_element_groups_data *)data_void) &&
+		(element_group_manager = data->element_group_manager))
 	{
 		/* open the input file */
-		if (output_file=fopen(file_name,"w"))
+		if (output_file = fopen(file_name,"w"))
 		{
-			data_sub.output_file=output_file;
-			data_sub.field=data->field;
-			return_code=FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
+			data_sub.output_file = output_file;
+			data_sub.write_criterion = data->write_criterion;
+			data_sub.field_order_info = data->field_order_info;
+			return_code = FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
 				file_write_FE_element_group_sub,
-				(void *)&data_sub,element_group_manager);
+				(void *)&data_sub, element_group_manager);
 			fclose(output_file);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Could not open element group file: %s",file_name);
-			return_code=0;
+				"Could not open element group file: %s", file_name);
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"file_write_all_FE_element_groups.  Invalid arguments");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* file_write_all_FE_element_groups */
 
-int write_FE_node_group(FILE *output_file,struct GROUP(FE_node) *node_group,
-	struct FE_field *field)
+int write_FE_node_group(FILE *output_file, struct GROUP(FE_node) *node_group,
+	enum FE_write_criterion write_criterion,
+	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 6 September 2001
 
 DESCRIPTION :
-Writes a node group to an <output_file> or the socket (if <output_file> is
-NULL).
+Writes a node group to an <output_file>.
+If <field_order_info> is NULL, all node fields are written in the default,
+alphabetical order.
+If <field_order_info> is empty, only node identifiers are output.
+If <field_order_info> contains fields, they are written in that order.
+Additionally, the <write_criterion> controls output as follows:
+FE_WRITE_COMPLETE_GROUP = write all nodes in the group (the default);
+FE_WRITE_WITH_ALL_LISTED_FIELDS =
+  write only nodes with all listed fields defined;
+FE_WRITE_WITH_ANY_LISTED_FIELDS =
+  write only nodes with any listed fields defined.
 ==============================================================================*/
 {
 	char *group_name;
@@ -2441,47 +2829,38 @@ NULL).
 	struct Write_FE_node_group_sub temp_data;
 
 	ENTER(write_FE_node_group);
-	if (node_group)
+	if (output_file && node_group)
 	{
-		if (return_code=GET_NAME(GROUP(FE_node))(node_group,&group_name))
+		if (return_code = GET_NAME(GROUP(FE_node))(node_group, &group_name))
 		{
-			if (output_file)
-			{
-				/* file output */
-				fprintf(output_file," Group name: %s\n",group_name);
-				temp_data.output_file=output_file;
-				temp_data.field=field;
-				temp_data.last_field_node=(struct FE_node *)NULL;
-				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(write_FE_node_group_sub,
-					&temp_data,node_group);
-			}
-			else
-			{
-				/* socket output */
-				display_message(WARNING_MESSAGE,
-					"write_FE_node_group.  Sockets not implemented");
-				return_code=0;
-			}
+			/* file output */
+			fprintf(output_file, " Group name: %s\n", group_name);
+			temp_data.output_file = output_file;
+			temp_data.write_criterion = write_criterion;
+			temp_data.field_order_info = field_order_info;
+			temp_data.last_node = (struct FE_node *)NULL;
+			return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(write_FE_node_group_sub,
+				&temp_data, node_group);
 			DEALLOCATE(group_name);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"write_FE_node_group.  Invalid node group");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "write_FE_node_group.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* write_FE_node_group */
 
-int file_write_FE_node_group(char *file_name,void *data_void)
+int file_write_FE_node_group(char *file_name, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 March 1999
+LAST MODIFIED : 6 September 2001
 
 DESCRIPTION :
 Writes a node group to a file.
+<data_void> should point to a struct Fwrite_FE_node_group_data.
 ==============================================================================*/
 {
 	FILE *output_file;
@@ -2490,39 +2869,41 @@ Writes a node group to a file.
 	struct GROUP(FE_node) *node_group;
 
 	ENTER(file_write_FE_node_group);
-	if (file_name&&(data=(struct Fwrite_FE_node_group_data *)data_void)&&
-		(node_group=data->node_group))
+	if (file_name && (data = (struct Fwrite_FE_node_group_data *)data_void) &&
+		(node_group = data->node_group))
 	{
 		/* open the input file */
-		if (output_file=fopen(file_name,"w"))
+		if (output_file = fopen(file_name,"w"))
 		{
-			return_code=write_FE_node_group(output_file,node_group,data->field);
+			return_code = write_FE_node_group(output_file, node_group,
+				data->write_criterion, data->field_order_info);
 			fclose(output_file);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Could not create node group file: %s",file_name);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"file_write_FE_node_group.  Invalid arguments");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* file_write_FE_node_group */
 
-int file_write_all_FE_node_groups(char *file_name,void *data_void)
+int file_write_all_FE_node_groups(char *file_name, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 October 2000
+LAST MODIFIED : 7 September 2001
 
 DESCRIPTION :
 Writes all existing node groups to a file.
+<data_void> should point to a struct Fwrite_all_FE_node_groups_data.
 ==============================================================================*/
 {
 	FILE *output_file;
@@ -2532,23 +2913,24 @@ Writes all existing node groups to a file.
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 
 	ENTER(file_write_all_FE_node_groups);
-	if (file_name&&(data=(struct Fwrite_all_FE_node_groups_data *)data_void)&&
-		(node_group_manager=data->node_group_manager))
+	if (file_name && (data = (struct Fwrite_all_FE_node_groups_data *)data_void)
+		&& (node_group_manager = data->node_group_manager))
 	{
 		/* open the input file */
-		if (output_file=fopen(file_name,"w"))
+		if (output_file = fopen(file_name,"w"))
 		{
-			data_sub.output_file=output_file;
-			data_sub.field=data->field;
-			return_code=FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(
-				file_write_FE_node_group_sub,(void *)&data_sub,node_group_manager);
+			data_sub.output_file = output_file;
+			data_sub.write_criterion = data->write_criterion;
+			data_sub.field_order_info = data->field_order_info;
+			return_code = FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(
+				file_write_FE_node_group_sub, (void *)&data_sub, node_group_manager);
 			fclose(output_file);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Could not open node group file: %s",file_name);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else

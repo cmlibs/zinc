@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 7 September 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3148,7 +3148,7 @@ already confirmed.
 
 int Mirage_movie_write_frame_nodes(struct Mirage_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 6 September 2001
 
 DESCRIPTION :
 Writes the nodes in memory to the file for the exnode_frame_no of <movie>.
@@ -3165,7 +3165,8 @@ Writes the nodes in memory to the file for the exnode_frame_no of <movie>.
 		if (node_file_name = make_Mirage_file_name(movie->node_file_name_template,
 			movie->exnode_frame_no))
 		{
-			data.field = (struct FE_field *)NULL;
+			data.write_criterion = FE_WRITE_COMPLETE_GROUP;
+			data.field_order_info = (struct FE_field_order_info *)NULL;
 			data.node_group = movie->all_node_group;
 			return_code = file_write_FE_node_group(node_file_name,&data);
 			DEALLOCATE(node_file_name);
@@ -3587,7 +3588,7 @@ groups to be rebuilt.
 int add_elements_with_node_to_group(struct FE_element *element,
 	void *add_data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 7 September 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3595,7 +3596,6 @@ DESCRIPTION :
 	int i,number_of_nodes,return_code;
 	struct Add_elements_with_node_data *add_data;
 	struct FE_node **nodes_in_element;
-	struct LIST(FE_node) *node_list;
 
 	ENTER(add_elements_with_node_to_group);
 	if (element&&(element->shape)&&

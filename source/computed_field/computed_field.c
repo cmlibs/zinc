@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 1 June 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -8168,7 +8168,7 @@ and should not itself be managed.
 int equivalent_computed_fields_at_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Returns true if all fields are defined in the same way at the two elements.
@@ -8180,7 +8180,7 @@ Returns true if all fields are defined in the same way at the two elements.
 	return_code=0;
 	if (element_1&&element_2)
 	{
-		return_code=equivalent_FE_fields_at_elements(element_1,element_2);
+		return_code=equivalent_FE_fields_in_elements(element_1,element_2);
 	}
 	else
 	{

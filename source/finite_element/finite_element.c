@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -26812,10 +26812,56 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_element,identifier)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier) */
 
-int equivalent_FE_fields_at_elements(struct FE_element *element_1,
+int equivalent_FE_field_in_elements(struct FE_field *field,
+	struct FE_element *element_1, struct FE_element *element_2)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Returns true if <field> is equivalently listed in the field information for
+<element_1> and <element_2>. If neither element has field information or if they
+do but the field is not defined in either, this is also equivalent.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_field *element_field_1, *element_field_2;
+
+	ENTER(equivalent_FE_field_in_elements);
+	if (field && element_1 && element_2)
+	{
+		if (element_1->information && element_1->information->fields)
+		{
+			element_field_1 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
+				field, element_1->information->fields->element_field_list);
+		}
+		else
+		{
+			element_field_1 = (struct FE_element_field *)NULL;
+		}
+		if (element_2->information && element_2->information->fields)
+		{
+			element_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
+				field, element_2->information->fields->element_field_list);
+		}
+		else
+		{
+			element_field_2 = (struct FE_element_field *)NULL;
+		}
+		return_code = (element_field_1 == element_field_2);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* equivalent_FE_field_in_elements */
+
+int equivalent_FE_fields_in_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Returns true if all fields are defined in the same way at the two elements.
@@ -26823,8 +26869,7 @@ Returns true if all fields are defined in the same way at the two elements.
 {
 	int return_code;
 
-	ENTER(equivalent_FE_fields_at_elements);
-	return_code=0;
+	ENTER(equivalent_FE_fields_in_elements);
 	if (element_1&&(element_1->information)&&element_2&&(element_2->information)&&
 		(element_1->information->fields==element_2->information->fields))
 	{
@@ -26837,7 +26882,7 @@ Returns true if all fields are defined in the same way at the two elements.
 	LEAVE;
 
 	return (return_code);
-} /* equivalent_FE_fields_at_elements */
+} /* equivalent_FE_fields_in_elements */
 
 int get_FE_element_dimension(struct FE_element *element)
 /*******************************************************************************

@@ -22055,120 +22055,10 @@ of the curve, eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	return (return_code);
 } /* gfx_write_Control_curve */
 
-static int gfx_write_data(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-If a data file is not specified a file selection box is presented to the user,
-otherwise the data file is written.
-Can now specify individual node groups to write with the <group> option.
-???DB.  Almost identical to gfx_write_nodes.  Could set up struct
-	Write_nodes_data to combine, but will probably be adding ipdata format
-==============================================================================*/
-{
-	char *file_name;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct FE_field *field;
-	struct Fwrite_all_FE_node_groups_data fwrite_all_FE_node_groups_data;
-	struct Fwrite_FE_node_group_data fwrite_FE_node_group_data;
-	struct GROUP(FE_node) *node_group;
-	static struct Modifier_entry option_table[]=
-	{
-		{"field",NULL,NULL,set_FE_field},
-		{"group",NULL,NULL,set_FE_node_group},
-		{NULL,NULL,NULL,set_name}
-	};
-
-	ENTER(gfx_write_data);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			return_code=1;
-			node_group=(struct GROUP(FE_node) *)NULL;
-			field=(struct FE_field *)NULL;
-			file_name=(char *)NULL;
-			if (state->current_token)
-			{
-				(option_table[0]).to_be_modified= &field;
-				(option_table[0]).user_data=command_data->fe_field_manager;
-				(option_table[1]).to_be_modified= &node_group;
-				(option_table[1]).user_data=command_data->data_group_manager;
-				(option_table[2]).to_be_modified= &file_name;
-				return_code=process_multiple_options(state,option_table);
-			}
-			if (return_code)
-			{
-				if (!file_name)
-				{
-					if (!(file_name = confirmation_get_write_filename(".exdata",
-						command_data->user_interface)))
-					{
-						return_code = 0;
-					}
-				}
-				if (return_code)
-				{
-					/* open the file */
-					if (return_code=check_suffix(&file_name,".exdata"))
-					{
-						if (node_group)
-						{
-							fwrite_FE_node_group_data.node_group=node_group;
-							fwrite_FE_node_group_data.field=field;
-							return_code=file_write_FE_node_group(file_name,
-								(void *)&fwrite_FE_node_group_data);
-						}
-						else
-						{
-							fwrite_all_FE_node_groups_data.node_group_manager=
-								command_data->data_group_manager;
-							fwrite_all_FE_node_groups_data.field=field;
-							return_code=file_write_all_FE_node_groups(file_name,
-								(void *)&fwrite_all_FE_node_groups_data);
-						}
-					}
-				}
-			}
-			if (field)
-			{
-				DEACCESS(FE_field)(&field);
-			}
-			if (node_group)
-			{
-				DEACCESS(GROUP(FE_node))(&node_group);
-			}
-			if (file_name)
-			{
-				DEALLOCATE(file_name);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_write_data.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_write_data.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_write_data */
-
 static int gfx_write_elements(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 March 1999
+LAST MODIFIED : 7 September 2001
 
 DESCRIPTION :
 If an element file is not specified a file selection box is presented to the
@@ -22176,96 +22066,113 @@ user, otherwise the element file is written.
 Can also write individual element groups with the <group> option.
 ==============================================================================*/
 {
-	char *file_name;
-	int return_code;
+	char *file_ext = ".exelem";
+	char *file_name, **valid_strings, *write_criterion_string;
+	enum FE_write_criterion write_criterion;
+	int number_of_valid_strings, return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_field *field;
+	struct FE_field_order_info *field_order_info;
 	struct Fwrite_all_FE_element_groups_data fwrite_all_FE_element_groups_data;
 	struct Fwrite_FE_element_group_data fwrite_FE_element_group_data;
 	struct GROUP(FE_element) *element_group;
-	static struct Modifier_entry option_table[]=
-	{
-		{"field",NULL,NULL,set_FE_field},
-		{"group",NULL,NULL,set_FE_element_group},
-		{NULL,NULL,NULL,set_name}
-	};
+	struct Option_table *option_table;
 
 	ENTER(gfx_write_elements);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		return_code = 1;
+		element_group = (struct GROUP(FE_element) *)NULL;
+		field_order_info = (struct FE_field_order_info *)NULL;
+		file_name = (char *)NULL;
+		write_criterion = FE_WRITE_COMPLETE_GROUP;
+
+		option_table = CREATE(Option_table)();
+		/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
+		write_criterion_string =
+			ENUMERATOR_STRING(FE_write_criterion)(write_criterion);
+		valid_strings = ENUMERATOR_GET_VALID_STRINGS(FE_write_criterion)(
+			&number_of_valid_strings,
+			(ENUMERATOR_CONDITIONAL_FUNCTION(FE_write_criterion) *)NULL,
+			(void *)NULL);
+		Option_table_add_enumerator(option_table, number_of_valid_strings,
+			valid_strings, &write_criterion_string);
+		DEALLOCATE(valid_strings);
+		/* fields */
+		Option_table_add_entry(option_table, "fields", &field_order_info,
+			command_data->fe_field_manager, set_FE_fields);
+		/* group */
+		Option_table_add_entry(option_table, "group", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
+		/* default option: file name */
+		Option_table_add_entry(option_table, (char *)NULL, &file_name,
+			NULL, set_name);
+
+		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			return_code=1;
-			element_group=(struct GROUP(FE_element) *)NULL;
-			field=(struct FE_field *)NULL;
-			file_name=(char *)NULL;
-			if (state->current_token)
+			STRING_TO_ENUMERATOR(FE_write_criterion)(write_criterion_string,
+				&write_criterion);
+			if ((!field_order_info ||
+				(0 == get_FE_field_order_info_number_of_fields(field_order_info))) &&
+				(FE_WRITE_COMPLETE_GROUP != write_criterion))
 			{
-				(option_table[0]).to_be_modified= &field;
-				(option_table[0]).user_data=command_data->fe_field_manager;
-				(option_table[1]).to_be_modified= &element_group;
-				(option_table[1]).user_data=command_data->element_group_manager;
-				(option_table[2]).to_be_modified= &file_name;
-				return_code=process_multiple_options(state,option_table);
+				display_message(WARNING_MESSAGE,
+					"gfx_write_nodes.  Must specify fields to use %s",
+					write_criterion_string);
+				return_code = 0;
+				
+			}
+			if (!file_name)
+			{
+				if (!(file_name = confirmation_get_write_filename(file_ext,
+					command_data->user_interface)))
+				{
+					return_code = 0;
+				}
 			}
 			if (return_code)
 			{
-				if (!file_name)
+				/* open the file */
+				if (return_code = check_suffix(&file_name,".exelem"))
 				{
-					if (!(file_name = confirmation_get_write_filename(".exelem",
-						command_data->user_interface)))
+					if (element_group)
 					{
-						return_code = 0;
+						fwrite_FE_element_group_data.write_criterion = write_criterion;
+						fwrite_FE_element_group_data.field_order_info = field_order_info;
+						fwrite_FE_element_group_data.element_group = element_group;
+						return_code = file_write_FE_element_group(file_name,
+							(void *)&fwrite_FE_element_group_data);
+					}
+					else
+					{
+						fwrite_all_FE_element_groups_data.write_criterion = write_criterion;
+						fwrite_all_FE_element_groups_data.field_order_info =
+							field_order_info;
+						fwrite_all_FE_element_groups_data.element_group_manager=
+							command_data->element_group_manager;
+						return_code = file_write_all_FE_element_groups(file_name,
+							(void *)&fwrite_all_FE_element_groups_data);
 					}
 				}
-				if (return_code)
-				{
-					/* open the file */
-					if (return_code=check_suffix(&file_name,".exelem"))
-					{
-						if (element_group)
-						{
-							fwrite_FE_element_group_data.element_group=element_group;
-							fwrite_FE_element_group_data.field=field;
-							return_code=file_write_FE_element_group(file_name,
-								(void *)&fwrite_FE_element_group_data);
-						}
-						else
-						{
-							fwrite_all_FE_element_groups_data.element_group_manager=
-								command_data->element_group_manager;
-							fwrite_all_FE_element_groups_data.field=field;
-							return_code=file_write_all_FE_element_groups(file_name,
-								(void *)&fwrite_all_FE_element_groups_data);
-						}
-					}
-				}
-			}
-			if (field)
-			{
-				DEACCESS(FE_field)(&field);
-			}
-			if (element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&element_group);
-			}
-			if (file_name)
-			{
-				DEALLOCATE(file_name);
 			}
 		}
-		else
+		if (field_order_info)
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_write_elements.  Missing command_data");
-			return_code=0;
+			DESTROY(FE_field_order_info)(&field_order_info);
+		}
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+		if (file_name)
+		{
+			DEALLOCATE(file_name);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_write_elements.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "gfx_write_elements.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -22273,107 +22180,135 @@ Can also write individual element groups with the <group> option.
 } /* gfx_write_elements */
 
 static int gfx_write_nodes(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *use_data, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 6 September 2001
 
 DESCRIPTION :
 If a nodes file is not specified a file selection box is presented to the user,
 otherwise the nodes file is written.
 Can now specify individual node groups to write with the <group> option.
+If <use_data> is set, writing data, otherwise writing nodes.
 ==============================================================================*/
 {
-	char *file_name;
-	int return_code;
+	static char *data_file_ext = ".exdata";
+	static char *node_file_ext = ".exnode";
+	char *file_ext, *file_name, **valid_strings, *write_criterion_string;
+	enum FE_write_criterion write_criterion;
+	int number_of_valid_strings, return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_field *field;
+	struct FE_field_order_info *field_order_info;
 	struct Fwrite_all_FE_node_groups_data fwrite_all_FE_node_groups_data;
 	struct Fwrite_FE_node_group_data fwrite_FE_node_group_data;
 	struct GROUP(FE_node) *node_group;
-	static struct Modifier_entry option_table[]=
-	{
-		{"field",NULL,NULL,set_FE_field},
-		{"group",NULL,NULL,set_FE_node_group},
-		{NULL,NULL,NULL,set_name}
-	};
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct Option_table *option_table;
 
 	ENTER(gfx_write_nodes);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		return_code = 1;
+		if (use_data)
 		{
-			return_code=1;
-			node_group=(struct GROUP(FE_node) *)NULL;
-			field=(struct FE_field *)NULL;
-			file_name=(char *)NULL;
-			if (state->current_token)
-			{
-				(option_table[0]).to_be_modified= &field;
-				(option_table[0]).user_data=command_data->fe_field_manager;
-				(option_table[1]).to_be_modified= &node_group;
-				(option_table[1]).user_data=command_data->node_group_manager;
-				(option_table[2]).to_be_modified= &file_name;
-				return_code=process_multiple_options(state,option_table);
-			}
-			if (return_code)
-			{
-				if (!file_name)
-				{
-					if (!(file_name = confirmation_get_write_filename(".exnode",
-						command_data->user_interface)))
-					{
-						return_code = 0;
-					}
-				}
-				if (return_code)
-				{
-					/* open the file */
-					if (return_code=check_suffix(&file_name,".exnode"))
-					{
-						if (node_group)
-						{
-							fwrite_FE_node_group_data.node_group=node_group;
-							fwrite_FE_node_group_data.field=field;
-							return_code=file_write_FE_node_group(file_name,
-								(void *)&fwrite_FE_node_group_data);
-						}
-						else
-						{
-							fwrite_all_FE_node_groups_data.node_group_manager=
-								command_data->node_group_manager;
-							fwrite_all_FE_node_groups_data.field=field;
-							return_code=file_write_all_FE_node_groups(file_name,
-								(void *)&fwrite_all_FE_node_groups_data);
-						}
-					}
-				}
-			}
-			if (field)
-			{
-				DEACCESS(FE_field)(&field);
-			}
-			if (node_group)
-			{
-				DEACCESS(GROUP(FE_node))(&node_group);
-			}
-			if (file_name)
-			{
-				DEALLOCATE(file_name);
-			}
+			node_group_manager = command_data->data_group_manager;
+			file_ext = data_file_ext;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_write_nodes.  Missing command_data");
-			return_code=0;
+			node_group_manager = command_data->node_group_manager;
+			file_ext = node_file_ext;
+		}
+		node_group = (struct GROUP(FE_node) *)NULL;
+		field_order_info = (struct FE_field_order_info *)NULL;
+		file_name = (char *)NULL;
+		write_criterion = FE_WRITE_COMPLETE_GROUP;
+
+		option_table = CREATE(Option_table)();
+		/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
+		write_criterion_string =
+			ENUMERATOR_STRING(FE_write_criterion)(write_criterion);
+		valid_strings = ENUMERATOR_GET_VALID_STRINGS(FE_write_criterion)(
+			&number_of_valid_strings,
+			(ENUMERATOR_CONDITIONAL_FUNCTION(FE_write_criterion) *)NULL,
+			(void *)NULL);
+		Option_table_add_enumerator(option_table, number_of_valid_strings,
+			valid_strings, &write_criterion_string);
+		DEALLOCATE(valid_strings);
+		/* fields */
+		Option_table_add_entry(option_table, "fields", &field_order_info,
+			command_data->fe_field_manager, set_FE_fields);
+		/* group */
+		Option_table_add_entry(option_table, "group", &node_group,
+			node_group_manager, set_FE_node_group);
+		/* default option: file name */
+		Option_table_add_entry(option_table, (char *)NULL, &file_name,
+			NULL, set_name);
+
+		if (return_code = Option_table_multi_parse(option_table, state))
+		{
+			STRING_TO_ENUMERATOR(FE_write_criterion)(write_criterion_string,
+				&write_criterion);
+			if ((!field_order_info ||
+				(0 == get_FE_field_order_info_number_of_fields(field_order_info))) &&
+				(FE_WRITE_COMPLETE_GROUP != write_criterion))
+			{
+				display_message(WARNING_MESSAGE,
+					"gfx_write_nodes.  Must specify fields to use %s",
+					write_criterion_string);
+				return_code = 0;
+				
+			}
+			if (!file_name)
+			{
+				if (!(file_name = confirmation_get_write_filename(file_ext,
+					command_data->user_interface)))
+				{
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				/* open the file */
+				if (return_code = check_suffix(&file_name, file_ext))
+				{
+					if (node_group)
+					{
+						fwrite_FE_node_group_data.write_criterion = write_criterion;
+						fwrite_FE_node_group_data.field_order_info = field_order_info;
+						fwrite_FE_node_group_data.node_group = node_group;
+						return_code = file_write_FE_node_group(file_name,
+							(void *)&fwrite_FE_node_group_data);
+					}
+					else
+					{
+						fwrite_all_FE_node_groups_data.write_criterion = write_criterion;
+						fwrite_all_FE_node_groups_data.field_order_info = field_order_info;
+						fwrite_all_FE_node_groups_data.node_group_manager =
+							node_group_manager;
+						return_code = file_write_all_FE_node_groups(file_name,
+							(void *)&fwrite_all_FE_node_groups_data);
+					}
+				}
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (field_order_info)
+		{
+			DESTROY(FE_field_order_info)(&field_order_info);
+		}
+		if (node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&node_group);
+		}
+		if (file_name)
+		{
+			DEALLOCATE(file_name);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_write_nodes.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "gfx_write_nodes.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -22828,11 +22763,10 @@ Executes a GFX WRITE TEXTURE command.
 } /* gfx_write_texture */
 #endif /* defined (IMAGEMAGICK) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_write(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 5 September 2001
 
 DESCRIPTION :
 Executes a GFX WRITE command.
@@ -22840,48 +22774,46 @@ Executes a GFX WRITE command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"curve",NULL,NULL,gfx_write_Control_curve},
-		{"data",NULL,NULL,gfx_write_data},
-		{"element_layout",NULL,NULL,gfx_write_element_layout},
-		{"elements",NULL,NULL,gfx_write_elements},
-		{"nodes",NULL,NULL,gfx_write_nodes},
-		{"texture",NULL,NULL,gfx_write_texture},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_write);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		if (state->current_token)
 		{
-			(option_table[0]).user_data=command_data_void;
-			(option_table[1]).user_data=command_data_void;
-			(option_table[2]).user_data=command_data_void;
-			(option_table[3]).user_data=command_data_void;
-			(option_table[4]).user_data=command_data_void;
-			(option_table[5]).user_data=command_data_void;
-			return_code=process_option(state,option_table);
+			option_table = CREATE(Option_table)();
+			Option_table_add_entry(option_table, "curve", NULL,
+				command_data_void, gfx_write_Control_curve);
+			Option_table_add_entry(option_table, "data", /*use_data*/(void *)1,
+				command_data_void, gfx_write_nodes);
+			Option_table_add_entry(option_table, "element_layout", NULL,
+				command_data_void, gfx_write_element_layout);
+			Option_table_add_entry(option_table, "elements", NULL,
+				command_data_void, gfx_write_elements);
+			Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0,
+				command_data_void, gfx_write_nodes);
+			Option_table_add_entry(option_table, "texture", NULL,
+				command_data_void, gfx_write_texture);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			set_command_prompt("gfx write",command_data->command_window);
-			return_code=1;
+			set_command_prompt("gfx write", command_data->command_window);
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"execute_command_gfx_write.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_write */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx(struct Parse_state *state,

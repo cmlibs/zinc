@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -5121,7 +5121,7 @@ Adds <node> to <node_group>.
 
 int write_Control_curve(struct Control_curve *curve,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Writes <curve> to filename(s) stemming from the name of the curve,
@@ -5175,7 +5175,8 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 				FOR_EACH_OBJECT_IN_MANAGER(FE_node)(add_FE_node_to_group,
 					(void *)node_group,curve->node_manager);
 				sprintf(file_name,"%s.curve.exnode",curve->name);
-				write_nodes_data.field=(struct FE_field *)NULL;
+				write_nodes_data.write_criterion = FE_WRITE_COMPLETE_GROUP;
+				write_nodes_data.field_order_info = (struct FE_field_order_info *)NULL;
 				write_nodes_data.node_group=node_group;
 				if (!file_write_FE_node_group(file_name,
 					(void *)&write_nodes_data))
@@ -5193,7 +5194,9 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 				FOR_EACH_OBJECT_IN_MANAGER(FE_element)(add_FE_element_to_group,
 					(void *)element_group,curve->element_manager);
 				sprintf(file_name,"%s.curve.exelem",curve->name);
-				write_elements_data.field=(struct FE_field *)NULL;
+				write_elements_data.write_criterion = FE_WRITE_COMPLETE_GROUP;
+				write_elements_data.field_order_info =
+					(struct FE_field_order_info *)NULL;
 				write_elements_data.element_group=element_group;
 				if (!file_write_FE_element_group(file_name,
 					(void *)&write_elements_data))

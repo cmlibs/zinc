@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 4 September 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -2592,10 +2592,21 @@ Frees the memory for the element, sets <*element_address> to NULL.
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
-int equivalent_FE_fields_at_elements(struct FE_element *element_1,
+int equivalent_FE_field_in_elements(struct FE_field *field,
+	struct FE_element *element_1, struct FE_element *element_2);
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Returns true if <field> is equivalently listed in the field information for
+<element_1> and <element_2>. If neither element has field information or if they
+do but the field is not defined in either, this is also equivalent.
+==============================================================================*/
+
+int equivalent_FE_fields_in_elements(struct FE_element *element_1,
 	struct FE_element *element_2);
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Returns true if all fields are defined in the same way at the two elements.

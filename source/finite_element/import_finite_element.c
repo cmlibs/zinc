@@ -3328,11 +3328,11 @@ in a grid field.
 								}
 							}
 						}
-						if (return_code)
+						if ((0 < (number_of_nodes = element->information->number_of_nodes))
+							&& return_code)
 						{
 							/* read the nodes */
 							fscanf(input_file," Nodes:");
-							number_of_nodes=element->information->number_of_nodes;
 							for (i=0;(i<number_of_nodes)&&return_code;i++)
 							{
 								if (1==fscanf(input_file,"%d",&node_number))
@@ -3364,13 +3364,13 @@ in a grid field.
 								}
 							}
 						}
-						if (return_code)
+						if ((0 < (number_of_scale_factors =
+							element->information->number_of_scale_factors)) &&
+							return_code)
 						{
 							/*???RC scale_factors array in element_info should be private */
 							/* read the scale factors */
 							fscanf(input_file," Scale factors:");
-							number_of_scale_factors=
-								element->information->number_of_scale_factors;
 							scale_factor=element->information->scale_factors;
 							for (i=0;(i<number_of_scale_factors)&&return_code;i++)
 							{
