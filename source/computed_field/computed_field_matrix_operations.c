@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_matrix_operations.c
 
-LAST MODIFIED : 5 April 2002
+LAST MODIFIED : 26 June 2002
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -3401,7 +3401,7 @@ Use function Computed_field_get_type to determine the field type.
 static int define_Computed_field_type_projection(struct Parse_state *state,
 	void *field_void,void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 26 June 2002
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_PROJECTION (if it is not already)
@@ -3484,25 +3484,24 @@ and allows its contents to be modified.
 			/* keep the number_of_projection_values to maintain any current ones */
 			temp_number_of_projection_values = number_of_projection_values;
 			/* parse the field... */
-			if (return_code && (current_token = state->current_token))
+			if (return_code)
 			{
-				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token, "field"))
+				/* ... only if the "field" token is next or no source_field */
+				if ((current_token = state->current_token) &&
+					fuzzy_string_compare(current_token, "field"))
 				{
 					option_table = CREATE(Option_table)();
 					/* field */
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
-					if (return_code = Option_table_parse(option_table, state))
-					{
-						if (!source_field)
-						{
-							display_message(ERROR_MESSAGE,
-								"define_Computed_field_type_projection.  No field");
-							return_code=0;
-						}
-					}
+					return_code = Option_table_parse(option_table, state);
 					DESTROY(Option_table)(&option_table);
+				}
+				if (return_code && (!source_field))
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_projection.  Must specify field first");
+					return_code = 0;
 				}
 			}
 
@@ -3560,18 +3559,16 @@ and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_projection(field, source_field,
-					number_of_components, projection_matrix);
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token) ||
-					(strcmp(PARSER_HELP_STRING, state->current_token) &&
-					strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
+				if (Computed_field_set_type_projection(field, source_field,
+					number_of_components, projection_matrix))
 				{
-					/* error */
+					return_code = 1;
+				}
+				else
+				{
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_projection.  Failed");
+					return_code = 0;
 				}
 			}
 			/* clean up the projection_matrix array */
