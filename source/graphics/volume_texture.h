@@ -185,6 +185,9 @@ DESCRIPTION :
 {
 	float coord[3];
 	float normal[3];
+	/* Just kept here so we can store this value and then poke it into the
+		texture coordinates array if it depends on a field */
+	float texture_coordinates[3];
 	int n_ptrs;
 	int ptrs[MAXPTRS];
 	int vt_class;

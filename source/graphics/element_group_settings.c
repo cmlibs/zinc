@@ -4700,6 +4700,7 @@ Converts a finite element into a graphics object with the supplied settings.
 											settings->data_field, settings->iso_scalar_field,
 											/*surface_data_density_field*/(struct Computed_field *)NULL,
 											/*surface_data_coordinate_field*/(struct Computed_field *)NULL,
+											settings->texture_coordinate_field,
 											number_in_xi,
 											settings->graphics_object, settings->render_type,
 											(struct GROUP(FE_node) *)NULL,
@@ -4872,7 +4873,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings->volume_texture, settings->render_type,
 								settings->displacement_map_field,
 								settings->displacement_map_xi_direction,
-								settings->blur_field))
+								settings->blur_field,settings->texture_coordinate_field))
 							{
 								if (!GT_OBJECT_ADD(GT_voltex)(
 									settings->graphics_object,time,voltex))
@@ -7159,7 +7160,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_iso_scalar_field_data;
+		set_data_field_data,set_iso_scalar_field_data,
+		set_texture_coordinate_field_data;
 
 	ENTER(gfx_modify_g_element_iso_surfaces);
 	if (state)
@@ -7277,6 +7279,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
+					/* texture_coordinates */
+					set_texture_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
+					set_texture_coordinate_field_data.conditional_function=
+						Computed_field_has_numerical_components;
+					set_texture_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"texture_coordinates",
+						&(settings->texture_coordinate_field),
+						&set_texture_coordinate_field_data,set_Computed_field_conditional);
 					/* use_elements/use_faces/use_lines */
 					use_element_type = settings->use_element_type;
 					use_element_type_string =

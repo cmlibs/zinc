@@ -4059,9 +4059,10 @@ Changes the currently chosen settings.
 							CHOOSE_OBJECT_SET_CALLBACK(Spectrum)(
 								settings_editor->spectrum_widget,&callback);
 
-							if (GT_ELEMENT_SETTINGS_SURFACES==settings_type)
+							if ((GT_ELEMENT_SETTINGS_SURFACES==settings_type)
+							  || (GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type))
 							{
-								/* set texture_coordinate field & spectrum */
+								/* set texture_coordinate field */
 								texture_coord_field = GT_element_settings_get_texture_coordinate_field
 									(new_settings);
 								field_set=((struct Computed_field *)NULL != texture_coord_field);
@@ -4073,8 +4074,6 @@ Changes the currently chosen settings.
 										settings_editor->texture_coord_field_widget,texture_coord_field);
 								}
 								XtSetSensitive(settings_editor->texture_coord_field_widget,field_set);
-								/* ungray data_field_button */
-								XtSetSensitive(settings_editor->data_field_button,1);
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=settings_editor_update_texture_coord_field;

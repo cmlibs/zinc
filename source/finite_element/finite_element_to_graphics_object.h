@@ -159,6 +159,7 @@ Data for converting a 3-D element into a volume.
 	struct Computed_field *data_field;
 	struct Computed_field *surface_data_density_field;
 	struct Computed_field *surface_data_coordinate_field;
+	struct Computed_field *texture_coordinate_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Computed_field *displacement_map_field;
 	int displacement_map_xi_direction;
@@ -187,6 +188,7 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 	struct Clipping *clipping;
 	struct Computed_field *coordinate_field, *data_field, *scalar_field;
 	struct Computed_field *surface_data_coordinate_field;
+	struct Computed_field *texture_coordinate_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Computed_field *surface_data_density_field;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -529,9 +531,9 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *vtexture, enum Render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field);
+	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field);
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 5 November 2001
 
 DESCRIPTION :
 Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
@@ -611,9 +613,9 @@ struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Computed_field *coordinate_field,struct Computed_field *field_scalar,
 	struct VT_volume_texture *texture, enum Render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field);
+	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field);
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 5 November 2001
 
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
@@ -743,6 +745,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,
 	struct Computed_field *surface_data_coordinate_field,
+	struct Computed_field *texture_coordinate_field,
 	int *number_in_xi,
 	struct GT_object *graphics_object,enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,

@@ -3325,7 +3325,7 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *vtexture, enum Render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field)
+	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 2 July 1999
 
@@ -3361,7 +3361,7 @@ faces.
 
 	double *iso_poly_cop;
 	float *texturemap_coord;
-	int *texturemap_index;
+	int *texturemap_index, texturemap_counter, texturemap_index_counter;
 	int tex_x_i,tex_y_i,tex_width_texels,tex_height_texels,
 		tex_number_of_components;
 	double intensity1,intensity2,intensity3;
@@ -3776,6 +3776,8 @@ faces.
 									vertex_list[i].blur=0;
 								}
 								data_index = 0;
+								texturemap_counter = 0;
+								texturemap_index_counter = 0;
 								/*???Mark.  THIS CODE NEEDS TO BE DOCTORED.  end */
 								/* calculate the points in the specified coordinate system */
 								v_count=0;
@@ -3994,6 +3996,29 @@ faces.
 														USE_PARAMETER(intensity2);
 														USE_PARAMETER(intensity3);
 													}
+													/* texture coordinates */
+													if (texture_coordinate_field)
+													{
+														tex_number_of_components=
+															Computed_field_get_number_of_components(
+																texture_coordinate_field);
+														Computed_field_evaluate_in_element(
+															texture_coordinate_field,
+															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
+															xi,(struct FE_element *)NULL,
+															vertex_list[i+n_vertices*v_count].texture_coordinates,
+															(FE_value *)NULL);
+														if (tex_number_of_components < 3)
+														{
+															vertex_list[i+n_vertices*v_count].texture_coordinates[2]
+																= 0;
+															if (tex_number_of_components < 2)
+															{
+																vertex_list[i+n_vertices*v_count].texture_coordinates[1]
+																	= 0;
+															}
+														}
+													}
 													if (blur_field)
 													{
 														if ((xi[0]+a==0)||(xi[0]+a==n_xi[0])||
@@ -4144,8 +4169,30 @@ faces.
 									/*???DB.  Can the normals be transformed ? */
 									/* ii repeats over fixed triangle vertex list, pointing to
 										current vertex_list+n_vertices for repeating textures */
+									acc_triangle_index = 0;
 									for (ii=0;ii< n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2];ii++)
 									{
+										if (texture_coordinate_field)
+										{
+											for (i=0;i<n_iso_polys;i++)
+											{
+												for (j=0;j<3;j++)
+												{
+													texturemap_index[3*acc_triangle_index+j]=0;
+													texturemap_coord[3*(3*acc_triangle_index+j)+0]=
+														vertex_list[triangle_list[i*3+j]+
+															n_vertices*ii].texture_coordinates[0];
+													texturemap_coord[3*(3*acc_triangle_index+j)+1]=
+														vertex_list[triangle_list[i*3+j]+
+															n_vertices*ii].texture_coordinates[1];
+													texturemap_coord[3*(3*acc_triangle_index+j)+2]=
+														vertex_list[triangle_list[i*3+j]+
+															n_vertices*ii].texture_coordinates[2];
+												}
+												acc_triangle_index++;
+											}
+										}
+
 										/* Blurring values */
 										if (displacement_field) 
 										{
@@ -4352,6 +4399,10 @@ faces.
 								if(blur_field)
 								{
 									Computed_field_clear_cache(blur_field);
+								}
+								if(texture_coordinate_field)
+								{
+									Computed_field_clear_cache(texture_coordinate_field);
 								}
 								if(displacement_field)
 								{
@@ -6409,9 +6460,9 @@ struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	struct VT_volume_texture *texture, enum Render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
-	struct Computed_field *blur_field)
+	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 3 May 2000
+LAST MODIFIED : 5 November 2001
 
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
@@ -6663,7 +6714,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 							voltex=create_GT_voltex_from_FE_element(element,
 								coordinate_field,data_field,texture,render_type,
 								displacement_map_field, displacement_map_xi_direction,
-								blur_field);
+								blur_field, texture_coordinate_field);
 						}
 						else
 						{
@@ -6689,7 +6740,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 					voltex=create_GT_voltex_from_FE_element(element,coordinate_field,
 						data_field, texture, render_type,
 						displacement_map_field, displacement_map_xi_direction,
-						blur_field);
+						blur_field, texture_coordinate_field);
 #if defined (DEBUG)
 					/*???debug */
 					printf("After create GT Voltex (2)\n");
@@ -6713,7 +6764,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 			voltex=create_GT_voltex_from_FE_element(element,
 				coordinate_field, data_field, texture, render_type,
 				displacement_map_field, displacement_map_xi_direction,
-				blur_field);
+				blur_field, texture_coordinate_field);
 		}
 	}
 	else
@@ -7512,7 +7563,8 @@ Converts a 3-D element into a volume.
 				element_to_volume_data->render_type,
 				element_to_volume_data->displacement_map_field,
 				element_to_volume_data->displacement_map_xi_direction,
-				element_to_volume_data->blur_field))
+				element_to_volume_data->blur_field,
+				element_to_volume_data->texture_coordinate_field))
 			{
 				if (return_code=GT_OBJECT_ADD(GT_voltex)(
 					element_to_volume_data->graphics_object,
@@ -7631,6 +7683,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								element_to_iso_scalar_data->scalar_field,
 								element_to_iso_scalar_data->surface_data_density_field,
 								element_to_iso_scalar_data->surface_data_coordinate_field,
+								element_to_iso_scalar_data->texture_coordinate_field,
 								number_in_xi,
 								element_to_iso_scalar_data->graphics_object,
 								element_to_iso_scalar_data->render_type,
@@ -7697,6 +7750,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,
 	struct Computed_field *surface_data_coordinate_field,
+	struct Computed_field *texture_coordinate_field,
 	int *number_in_xi,
 	struct GT_object *graphics_object,enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
@@ -7941,7 +7995,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						volume_texture->disable_volume_functions=0;
 						if (iso_surface_voltex=generate_clipped_GT_voltex_from_FE_element(
 							clipping,element,coordinate_field,data_field,
-							volume_texture,render_type,NULL,0,NULL))
+							volume_texture,render_type,NULL,0,NULL,texture_coordinate_field))
 						{
 							if (return_code=GT_OBJECT_ADD(GT_voltex)(
 								graphics_object,

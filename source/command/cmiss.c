@@ -4219,6 +4219,8 @@ Executes a GFX CREATE ISO_SURFACES command.
 					element_to_iso_scalar_data.clipping=clipping;
 					element_to_iso_scalar_data.surface_data_coordinate_field = 
 						surface_data_coordinate_field;
+					element_to_iso_scalar_data.texture_coordinate_field = 
+					   (struct Computed_field *)NULL;
 					element_to_iso_scalar_data.computed_field_manager =
 						Computed_field_package_get_computed_field_manager(
 							command_data->computed_field_package);
@@ -9395,6 +9397,8 @@ Executes a GFX CREATE VOLUMES command.
 					STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
 					element_to_volume_data.render_type = render_type;
 					element_to_volume_data.volume_texture=volume_texture;
+					element_to_volume_data.texture_coordinate_field=
+						(struct Computed_field *)NULL;
 					element_to_volume_data.displacement_map_field =
 						displacement_map_field;
 					element_to_volume_data.displacement_map_xi_direction =
