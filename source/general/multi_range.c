@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.c
 
-LAST MODIFIED : 21 April 1999
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -12,6 +12,7 @@ At present, limited to int type, but could be converted to other number types.
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/object.h"
+#include "general/multi_range.h"
 #include "user_interface/message.h"
 
 /*
@@ -414,6 +415,86 @@ If <start> is greater than <stop>, the two are swapped and the range removed.
 	return (return_code);
 } /* Multi_range_remove_range */
 
+int Multi_range_toggle_range(struct Multi_range *multi_range,int start,
+	int stop)
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Toggles the status of all values in <multi_range> from start to stop.
+If <start> is greater than <stop>, the two are swapped and the range toggled.
+==============================================================================*/
+{
+	int currently_in,i,return_code,toggle_start,toggle_stop;
+
+	ENTER(Multi_range_toggle_range);
+	if (multi_range)
+	{
+		if (start>stop)
+		{
+			i=start;
+			start=stop;
+			stop=i;
+		}
+		toggle_start=start;
+		toggle_stop=start-1;
+		currently_in=Multi_range_is_value_in_range(multi_range,start);
+		return_code=1;
+		while ((toggle_stop<stop)&&return_code)
+		{
+			if (currently_in)
+			{
+				if (Multi_range_get_next_stop_value(multi_range,toggle_start-1,
+					&toggle_stop))
+				{
+					if (toggle_stop>stop)
+					{
+						toggle_stop=stop;
+					}
+					return_code=
+						Multi_range_remove_range(multi_range,toggle_start,toggle_stop);
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				if (Multi_range_get_next_start_value(multi_range,toggle_start,
+					&toggle_stop))
+				{
+					toggle_stop--;
+					if (toggle_stop>stop)
+					{
+						toggle_stop=stop;
+					}
+				}
+				else
+				{
+					toggle_stop=stop;
+				}
+				return_code=Multi_range_add_range(multi_range,toggle_start,toggle_stop);
+			}
+			toggle_start=toggle_stop+1;
+			currently_in = !currently_in;
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,"Multi_range_toggle_range.  Failed");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Multi_range_toggle_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Multi_range_toggle_range */
+
 int Multi_range_is_value_in_range(struct Multi_range *multi_range,int value)
 /*******************************************************************************
 LAST MODIFIED : 12 March 1998
@@ -741,7 +822,7 @@ Temporary.
 ==============================================================================*/
 {
 	char cmd;
-	int return_code,i,v1,v2,r;
+	int return_code,v1,v2,r;
 	struct Multi_range *multi_range;
 
 	ENTER(Multi_range_test);
@@ -833,6 +914,7 @@ Ranges may overlap and be increasing or decreasing. Typical inputs are:
 	struct Multi_range *multi_range;
 
 	ENTER(set_Multi_range);
+	USE_PARAMETER(dummy_user_data);
 	if (state&&(multi_range=(struct Multi_range *)multi_range_void))
 	{
 		if (current_token=state->current_token)

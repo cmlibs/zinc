@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.h
 
-LAST MODIFIED : 21 April 1999
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -74,6 +74,16 @@ LAST MODIFIED : 15 April 1999
 DESCRIPTION :
 Makes sure <multi_range> does not have any entries from start to stop.
 If <start> is greater than <stop>, the two are swapped and the range added.
+==============================================================================*/
+
+int Multi_range_toggle_range(struct Multi_range *multi_range,int start,
+	int stop);
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Toggles the status of all values in <multi_range> from start to stop.
+If <start> is greater than <stop>, the two are swapped and the range toggled.
 ==============================================================================*/
 
 int Multi_range_is_value_in_range(struct Multi_range *multi_range,int value);
