@@ -1,4 +1,0 @@
-Cmiss::FE_element T_PTROBJ
-Cmiss::FE_element * T_PTROBJ
-Cmiss::FE_node T_PTROBJ
-Cmiss::FE_node * T_PTROBJ
