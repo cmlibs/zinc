@@ -1253,13 +1253,29 @@ Adds the given entry to the option table, enlarging the table as needed.
 If fails, marks the option_table as invalid.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 	struct Modifier_entry *temp_entry;
 
 	ENTER(Option_table_add_entry_private);
 	if (option_table)
 	{
 		return_code=1;
+		if (token)
+		{
+			i=0;
+			while (return_code && (i<option_table->number_of_entries))
+			{
+				if (option_table->entry[i].option
+					&& (!strcmp(token, option_table->entry[i].option)))
+				{
+					display_message(ERROR_MESSAGE,
+						"Option_table_add_entry_private.  Token '%s' already in option table",
+						token);
+					return_code=0;				
+				}
+				i++;
+			}
+		}
 		if (option_table->number_of_entries == option_table->allocated_entries)
 		{
 			if (REALLOCATE(temp_entry,option_table->entry,struct Modifier_entry,
@@ -1310,7 +1326,7 @@ If fails, marks the option_table as invalid.
 	int return_code;
 
 	ENTER(Option_table_add_entry);
-	if (option_table&&((token&&to_be_modified&&modifier)||user_data))
+	if (option_table&&((to_be_modified&&modifier)||user_data))
 	{
 		if (!(return_code=Option_table_add_entry_private(option_table,token,
 			to_be_modified,user_data,modifier)))
