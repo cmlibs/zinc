@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 14 February 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -17,6 +17,7 @@ December 1997. Created MANAGER(Scene).
 #define SCENE_H
 
 #include "general/callback.h"
+#include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "general/list.h"
@@ -467,15 +468,6 @@ Iterator function for writing the transformation in effect for <scene_object>
 as a command, using the given <command_prefix>.
 ==============================================================================*/
 
-int Scene_object_clear_picked(struct Scene_object *scene_object,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Clears the picked flag of the <scene_object>, and unselects any picked
-objects it contains.
-==============================================================================*/
-
 int Scene_object_clear_selected(struct Scene_object *scene_object,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 10 February 2000
@@ -486,30 +478,12 @@ objects it contains.
 ???RC Later only allow change if current input_client passed to authorise it.
 ==============================================================================*/
 
-int Scene_object_is_picked(struct Scene_object *scene_object,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Returns true if the picked flag of the <scene_object> is set.
-==============================================================================*/
-
 int Scene_object_is_selected(struct Scene_object *scene_object,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 10 February 2000
 
 DESCRIPTION :
 Returns true if the selected flag of the <scene_object> is set.
-==============================================================================*/
-
-int Scene_object_set_picked(struct Scene_object *scene_object,
-	int number_of_subobject_names,int *subobject_names);
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Sets the <picked> flag of the <scene_object>. If there are an <subobject_names>,
-the object wrapped by the <scene_object> is asked to pick them.
 ==============================================================================*/
 
 int Scene_object_set_selected(struct Scene_object *scene_object);
@@ -539,15 +513,6 @@ LAST MODIFIED : 19 November 1997
 DESCRIPTION :
 ==============================================================================*/
 
-int Scene_clear_picked(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2000
-
-DESCRIPTION :
-Unpicks all objects in <scene>.
-???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-
 int Scene_clear_selected(struct Scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 11 February 2000
@@ -555,17 +520,6 @@ LAST MODIFIED : 11 February 2000
 DESCRIPTION :
 Unselects all objects in <scene>.
 ???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-
-int Scene_pick_subobject(struct Scene *scene,
-	int number_of_subobject_names,int *subobject_names);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2000
-
-DESCRIPTION :
-Sets the <picked> flag of the scene_object with the position/identifier given
-in the first position in the <subobject_names> in <scene>, passing on any
-remaining subobject_names to be picked by the scene_object.
 ==============================================================================*/
 
 int Scene_enable_graphics(struct Scene *scene,
@@ -881,6 +835,22 @@ coordinates [x y z h(=1)] to give [x' y' z' h'], with xm = x'/h', etc. as in:
 However, if none of the scene objects have transformations, the flag
 <transformation_required> will be set to 0 and the <transformation_matrix> will
 be set to the identity.
+==============================================================================*/
+
+struct FE_node *Scene_picked_object_list_get_nearest_node(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct MANAGER(FE_node) *node_manager,struct GROUP(FE_node) *node_group,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct GT_element_group **gt_element_group_address,
+	struct GT_element_settings **gt_element_settings_address);
+/*******************************************************************************
+LAST MODIFIED : 22 February 2000
+
+DESCRIPTION :
+Returns the nearest picked node in <scene_picked_object_list> that is in
+<node_group> (or any group if NULL). If any of the remaining address arguments
+are not NULL, they are filled with the appropriate information pertaining to
+the nearest node.
 ==============================================================================*/
 
 int Scene_get_input_callback(struct Scene *scene,

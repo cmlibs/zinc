@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -65,7 +65,7 @@ Module types
 
 struct Scene_object
 /*******************************************************************************
-LAST MODIFIED : 10 February 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Scenes store a list of these wrappers to GT_objects so that the same
@@ -89,9 +89,8 @@ graphics object may have different visibility on different scenes.
 	struct MANAGER(Scene) *scene_manager;
 	/* this is the scene to which the scene_object belongs */
 	struct Scene *scene;
-	/* flags indicating if this scene_object was picked in the current input phase
-		 or if it is selected */
-	int picked,selected;
+	/* flag indicating if this scene_object is selected */
+	int selected;
 	int access_count;
 }; /* struct Scene_object */
 
@@ -674,7 +673,6 @@ and is visible.
 			scene_object->scene = ACCESS(Scene)(scene);
 			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
 			scene_object->scene_manager_callback_id = NULL;
-			scene_object->picked=0;
 			scene_object->selected=0;
 			scene_object->access_count=0;
 		}
@@ -990,7 +988,6 @@ Copies the scene_object and adds it to the list.
 		{
 			scene_object_copy->type = scene_object->type;
 			scene_object_copy->visibility=scene_object->visibility;
-			scene_object_copy->picked=scene_object->picked;
 			scene_object_copy->selected=scene_object->selected;
 			if(scene_object->transformation)
 			{
@@ -1075,7 +1072,7 @@ to the "axes" glyph used for displaying axes with the scene.
 			(*axis3_list)[2]=1.0;
 			if (!(glyph_set=CREATE(GT_glyph_set)(1,point_list,axis1_list,axis2_list,
 				axis3_list,glyph,(char **)NULL,g_NO_DATA,(GTDATA *)NULL,
-				/*object_name*/0,GLYPH_EDIT_OFF,/*names*/(int *)NULL)))
+				/*object_name*/0,/*names*/(int *)NULL)))
 			{
 				DEALLOCATE(point_list);
 				DEALLOCATE(axis1_list);
@@ -1274,7 +1271,7 @@ scene_object.
 static int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings.
@@ -1366,6 +1363,10 @@ Adds a graphical <element_group> to the <scene> with some default settings.
 										{
 											GT_element_settings_set_material(settings,
 												scene->default_material);
+											GT_element_settings_set_selected_material(settings,
+												FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+													"default_selected",
+													scene->graphical_material_manager));
 											if (GT_element_group_add_settings(gt_element_group,
 												settings,0))
 											{
@@ -1380,6 +1381,10 @@ Adds a graphical <element_group> to the <scene> with some default settings.
 													{
 														GT_element_settings_set_material(settings,
 															scene->default_material);
+														GT_element_settings_set_selected_material(settings,
+															FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
+																name)("default_selected",
+																	scene->graphical_material_manager));
 														/* set the glyph to "point" */
 														GT_element_settings_get_glyph_parameters(settings,
 															&glyph,glyph_centre,glyph_size,
@@ -2848,6 +2853,102 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_object_update_time_behaviour */
 
+struct Scene_picked_object_get_nearest_node_data
+{
+	/* "nearest" value from Scene_picked_object for picked_node */
+	unsigned int nearest;
+	struct FE_node *nearest_node;
+	struct MANAGER(FE_node) *node_manager;
+	/* group that the node must be in, or any group if NULL */
+	struct GROUP(FE_node) *node_group;
+	/* information about the nearest node */
+	struct Scene_picked_object *scene_picked_object;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *gt_element_settings;
+};
+
+static int Scene_picked_object_get_nearest_node(
+	struct Scene_picked_object *scene_picked_object,void *nearest_node_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 February 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to a node, the "nearest" value is compared
+with that for the currently picked_node in the <nearest_node_data>. I there was
+no currently picked_node or the new node is nearer, it becomes the picked node
+and its "nearest" value is stored in the nearest_node_data.
+==============================================================================*/
+{
+	int node_number,return_code;
+	struct FE_node *nearest_node;
+	struct Scene_object *scene_object;
+	struct Scene_picked_object_get_nearest_node_data *nearest_node_data;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *gt_element_settings;
+
+	ENTER(Scene_picked_object_get_nearest_node);
+	if (scene_picked_object&&(nearest_node_data=
+		(struct Scene_picked_object_get_nearest_node_data	*)nearest_node_data_void))
+	{
+		return_code=1;
+		/* proceed only if there is no picked_node or object is nearer */
+		if (((struct FE_node *)NULL==nearest_node_data->nearest_node)||
+			(Scene_picked_object_get_nearest(scene_picked_object) <
+				nearest_node_data->nearest))
+		{
+			/* is the last scene_object a Graphical_element wrapper, and does the
+				 settings for the graphic refer to node_glyphs? */
+			if ((scene_object=Scene_picked_object_get_Scene_object(
+				scene_picked_object,
+				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
+				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
+					Scene_object_get_type(scene_object))&&(gt_element_group=
+						Scene_object_get_graphical_element_group(scene_object))&&
+				(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+				(gt_element_settings=get_settings_at_position_in_GT_element_group(
+					gt_element_group,
+					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
+				(GT_ELEMENT_SETTINGS_NODE_POINTS==
+					GT_element_settings_get_settings_type(gt_element_settings)))
+			{
+				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
+				if (nearest_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
+					cm_node_identifier)(node_number,nearest_node_data->node_manager))
+				{
+					/* is the node in the node_group, if supplied */
+					if ((!nearest_node_data->node_group)||
+						(nearest_node==FIND_BY_IDENTIFIER_IN_GROUP(FE_node,
+							cm_node_identifier)(node_number,nearest_node_data->node_group)))
+					{
+						nearest_node_data->nearest_node=nearest_node;
+						nearest_node_data->scene_picked_object=scene_picked_object;
+						nearest_node_data->gt_element_group=gt_element_group;
+						nearest_node_data->gt_element_settings=gt_element_settings;
+						nearest_node_data->nearest=
+							Scene_picked_object_get_nearest(scene_picked_object);
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,
+						"Scene_picked_object_get_nearest_node.  "
+						"Node number %d not in manager",node_number);
+					/*return_code=0;*/
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_nearest_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_nearest_node */
+
 /*
 Global functions
 ----------------
@@ -4061,57 +4162,6 @@ as a command, using the given <command_prefix>.
 	return (return_code);
 } /* list_Scene_object_transformation_commands */
 
-int Scene_object_clear_picked(struct Scene_object *scene_object,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Clears the picked flag of the <scene_object>, and unselects any picked
-objects it contains.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_clear_picked);
-	USE_PARAMETER(dummy);
-	if (scene_object)
-	{
-		scene_object->picked=0;
-		switch(scene_object->type)
-		{
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-			{
-				return_code=
-					GT_element_group_clear_picked(scene_object->gt_element_group);
-			} break;
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				/* nothing to do */
-				return_code=1;
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				return_code=Scene_clear_picked(scene_object->child_scene);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_object_clear_picked.  Unknown scene object type");
-				return_code=0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_clear_picked.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_clear_picked */
-
 int Scene_object_clear_selected(struct Scene_object *scene_object,void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2000
@@ -4164,33 +4214,6 @@ objects it contains.
 	return (return_code);
 } /* Scene_object_clear_selected */
 
-int Scene_object_is_picked(struct Scene_object *scene_object,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Returns true if the picked flag of the <scene_object> is set.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_is_picked);
-	USE_PARAMETER(dummy);
-	if (scene_object)
-	{
-		return_code=scene_object->picked;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_is_picked.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_is_picked */
-
 int Scene_object_is_selected(struct Scene_object *scene_object,void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2000
@@ -4217,66 +4240,6 @@ Returns true if the selected flag of the <scene_object> is set.
 
 	return (return_code);
 } /* Scene_object_is_selected */
-
-int Scene_object_set_picked(struct Scene_object *scene_object,
-	int number_of_subobject_names,int *subobject_names)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Sets the <picked> flag of the <scene_object>. If there are an <subobject_names>,
-the object wrapped by the <scene_object> is asked to pick them.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_set_picked);
-	if (scene_object)
-	{
-		scene_object->picked=1;
-		if (0<number_of_subobject_names)
-		{
-			switch(scene_object->type)
-			{
-				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-				{
-					return_code=GT_element_group_pick_subobject(
-						scene_object->gt_element_group,
-						number_of_subobject_names,subobject_names);
-				} break;
-				case SCENE_OBJECT_GRAPHICS_OBJECT:
-				{
-					/* nothing to do */
-					return_code=1;
-				} break;
-				case SCENE_OBJECT_SCENE:
-				{
-					return_code=Scene_pick_subobject(scene_object->child_scene,
-						number_of_subobject_names,subobject_names);
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_object_clear_picked.  Unknown scene object type");
-					return_code=0;
-				} break;
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_set_picked.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_set_picked */
 
 int Scene_object_set_selected(struct Scene_object *scene_object)
 /*******************************************************************************
@@ -4460,34 +4423,6 @@ Closes the scene and disposes of the scene data structure.
 	return (return_code);
 } /* DESTROY(Scene) */
 
-int Scene_clear_picked(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 14 February 2000
-
-DESCRIPTION :
-Unpicks all objects in <scene>.
-???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_clear_picked);
-	if (scene)
-	{
-		return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(
-			Scene_object_clear_picked,(void *)NULL,scene->scene_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_clear_picked.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_clear_picked */
-
 int Scene_clear_selected(struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 14 February 2000
@@ -4515,47 +4450,6 @@ Unselects all objects in <scene>.
 
 	return (return_code);
 } /* Scene_clear_selected */
-
-int Scene_pick_subobject(struct Scene *scene,
-	int number_of_subobject_names,int *subobject_names)
-/*******************************************************************************
-LAST MODIFIED : 14 February 2000
-
-DESCRIPTION :
-Sets the <picked> flag of the scene_object with the position/identifier given
-in the first position in the <subobject_names> in <scene>, passing on any
-remaining subobject_names to be picked by the scene_object.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_pick_subobject);
-	if (scene&&(0<number_of_subobject_names)&&subobject_names)
-	{
-		if (scene_object=FIND_BY_IDENTIFIER_IN_LIST(Scene_object,position)(
-			*subobject_names,scene->scene_object_list))
-		{
-			return_code=Scene_object_set_picked(scene_object,
-				number_of_subobject_names-1,subobject_names+1);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Scene_pick_subobject.  "
-				"No scene_object found at position %d",*subobject_names);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_pick_subobject.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_pick_subobject */
 
 int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
@@ -5943,6 +5837,60 @@ be set to the identity.
 DECLARE_OBJECT_FUNCTIONS(Scene_picked_object)
 
 DECLARE_LIST_FUNCTIONS(Scene_picked_object)
+
+struct FE_node *Scene_picked_object_list_get_nearest_node(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct MANAGER(FE_node) *node_manager,struct GROUP(FE_node) *node_group,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct GT_element_group **gt_element_group_address,
+	struct GT_element_settings **gt_element_settings_address)
+/*******************************************************************************
+LAST MODIFIED : 22 February 2000
+
+DESCRIPTION :
+Returns the nearest picked node in <scene_picked_object_list> that is in
+<node_group> (or any group if NULL). If any of the remaining address arguments
+are not NULL, they are filled with the appropriate information pertaining to
+the nearest node.
+==============================================================================*/
+{
+	struct Scene_picked_object_get_nearest_node_data nearest_node_data;
+
+	ENTER(Scene_picked_object_list_get_nearest_node);
+	nearest_node_data.nearest=0;
+	nearest_node_data.nearest_node=(struct FE_node *)NULL;
+	nearest_node_data.node_manager=node_manager;
+	nearest_node_data.node_group=node_group;
+	nearest_node_data.scene_picked_object=(struct Scene_picked_object *)NULL;
+	nearest_node_data.gt_element_group=(struct GT_element_group *)NULL;
+	nearest_node_data.gt_element_settings=(struct GT_element_settings *)NULL;
+	if (scene_picked_object_list&&node_manager)
+	{
+		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+			Scene_picked_object_get_nearest_node,(void *)&nearest_node_data,
+			scene_picked_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_nearest_node.  Invalid argument(s)");
+	}
+	if (scene_picked_object_address)
+	{
+		*scene_picked_object_address=nearest_node_data.scene_picked_object;
+	}
+	if (gt_element_group_address)
+	{
+		*gt_element_group_address=nearest_node_data.gt_element_group;
+	}
+	if (gt_element_settings_address)
+	{
+		*gt_element_settings_address=nearest_node_data.gt_element_settings;
+	}
+	LEAVE;
+
+	return (nearest_node_data.nearest_node);
+} /* Scene_picked_object_list_get_nearest_node */
 
 int Scene_get_input_callback(struct Scene *scene,
 	struct Scene_input_callback *scene_input_callback)
