@@ -212,14 +212,10 @@ cronjob :
 		if [ -s $(TEST_PATH)/all.mail ]; then \
 			cat $(TEST_PATH)/all.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
-		if [ -s $(MAILFILE_PATH)/programmer.mail ]; then \
-			cat $(MAILFILE_PATH)/header.mail $(MAILFILE_PATH)/programmer.mail | sed "s/DATE/`date`/" | mail cmguiprogrammers@esu1.auckland.ac.nz ; \
-		else \
-			cat $(MAILFILE_PATH)/success.mail | sed "s/DATE/`date`/" | mail s.blackett@auckland.ac.nz ; \
-		fi; \
 	else \
 		echo "Must be cmiss"; \
 	fi
+#This mail is added into the example mail.
 
 utilities : $(SOURCE_PATH)/cmgui_sgi.make force
 	$(COMMON_MAKE_RULE) \
