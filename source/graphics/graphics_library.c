@@ -9,6 +9,7 @@ Functions for interfacing with the graphics library.
 #if defined (OPENGL_API)
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 #if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <GL/glu.h>
@@ -1047,6 +1048,48 @@ memory.
 
 	return (return_code);
 } /* query_extension */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
+int query_gl_version(int major_version, int minor_version)
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+Returns true if the OpenGL version is at least <major_version>.<minor_version>
+==============================================================================*/
+{
+	char *version;
+	static int major = 0, minor = 0;
+	int return_code;
+
+	return_code = 0;
+
+	if (!major)
+	{
+		version=(char *)glGetString(GL_VERSION);
+
+		if (!(2 == sscanf(version, "%d.%d", &major, &minor)))
+		{
+			major = -1;
+			minor = -1;
+		}
+	}
+
+	if (major > major_version)
+	{
+		return_code = 1;
+	}
+	else if (major == major_version)
+	{
+		if (minor >= minor_version)
+		{
+			return_code = 1;
+		}
+	}
+
+	return (return_code);
+} /* query_gl_version */
 #endif /* defined (OPENGL_API) */
 
 int Graphics_library_read_pixels(unsigned char *frame_data,

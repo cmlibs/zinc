@@ -30,6 +30,7 @@ Functions and structures for interfacing with the graphics library.
 	yet so we will undefine the version symbols */
 #undef GL_VERSION_1_2
 #undef GL_VERSION_1_3
+#undef GL_VERSION_1_4
 #endif /* defined (WIN32_SYSTEM) */
 #endif
 #if defined (DECPHIGS_API)
@@ -325,6 +326,16 @@ because extension names can be prefixes of other extension names. Could use
 strtok() but the constant string returned by glGetString might be in read-only
 memory.
 ???SAB.  Taken directly from the insight book on OpenGL Extensions
+==============================================================================*/
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
+int query_gl_version(int major_version, int minor_version);
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+Returns true if the OpenGL version is at least <major_version>.<minor_version>
 ==============================================================================*/
 #endif /* defined (OPENGL_API) */
 
