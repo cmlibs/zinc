@@ -130,9 +130,19 @@ Runs a job through the photoface interface.
 		printf("   Up vector %f %f %f.\n", up_vector[0], up_vector[1], up_vector[2]);
 		printf("   View angle %f.\n", view_angle);
 	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_view failed\n");
+	}
 
-	pf_fit(pf_job_id, &error);
-	printf("Completed pf_fit.\n");
+	if (0 == pf_fit(pf_job_id, &error))
+	{
+		printf("Completed pf_fit.\n");
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_view failed\n");
+	}
 
 	if (0 == pf_get_head_model(pf_job_id, &(obj.number_of_vertices), &(obj.vertex_3d_locations),
 		&(obj.number_of_texture_vertices), &(obj.texture_vertex_3d_locations),
@@ -169,6 +179,10 @@ Runs a job through the photoface interface.
 				marker_fitted_3d_positions[3 * i + 2]);
 		}
 	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_marker_fitted_positions failed\n");
+	}
 
 	if (0 == pf_get_marker_fitted_positions(pf_job_id, 2, 
 		eye_marker_names, eyeball_fitted_3d_positions))
@@ -181,6 +195,10 @@ Runs a job through the photoface interface.
 				eyeball_fitted_3d_positions[3 * i + 2]);
 		}
 	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_marker_fitted_positions failed for eyeballs\n");
+	}
 
 	if (0 == pf_get_basis(pf_job_id, &number_of_modes, &number_of_vertices,
 		&vertex_3d_locations))
@@ -190,15 +208,27 @@ Runs a job through the photoface interface.
 		printf("Basis[10][10]:  %f\n", vertex_3d_locations[10 * 
 			3 * number_of_vertices + 10]);
 	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_basis failed\n");
+	}
 
-	pf_specify_image(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array);
+	if (0 != pf_specify_image(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array))
+	{
+		fprintf(stderr, "ERROR: pf_specify_image failed\n");
+	}
 
-	if (0 == pf_get_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, texture_array))
+	if (0 == pf_get_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, PF_RGB_IMAGE, 
+			 texture_array))
 	{
 		printf ("Texture[30][30]: %d %d %d\n", texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
 			texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 1], texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 2]);
 		printf ("Texture[70][70]: %d %d %d\n", texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
 			texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 1], texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 2]);
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_texture failed\n");
 	}
 
 	/* Put something into the image array */
@@ -224,23 +254,37 @@ Runs a job through the photoface interface.
 		printf("Completed pf_get_hair_model. vertices %d, %d, triangles %d\n",
 			hair_obj.number_of_vertices, hair_obj.number_of_texture_vertices, hair_obj.number_of_triangles);
 	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_hair_model failed\n");
+	}
 
 	pf_specify_hair_mask(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array);
 	
-	if (0 == pf_get_hair_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, hair_texture_array))
+	if (0 == pf_get_hair_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, 
+			 PF_RGBA_IMAGE, hair_texture_array))
 	{
-		printf ("Hair Texture[30][30]: %d %d %d\n", hair_texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
-			hair_texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 1], hair_texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 2]);
-		printf ("Hair Texture[70][70]: %d %d %d\n", hair_texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
-			hair_texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 1], hair_texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 2]);
+		printf ("Hair Texture[30][30]: %d %d %d\n", hair_texture_array[4 * 30 * TEXTURE_WIDTH + 4 * 30],
+			hair_texture_array[4 * 30 * TEXTURE_WIDTH + 4 * 30 + 1], hair_texture_array[4 * 30 * TEXTURE_WIDTH + 4 * 30 + 2]);
+		printf ("Hair Texture[70][70]: %d %d %d\n", hair_texture_array[4 * 70 * TEXTURE_WIDTH + 4 * 70],
+			hair_texture_array[4 * 70 * TEXTURE_WIDTH + 4 * 70 + 1], hair_texture_array[4 * 70 * TEXTURE_WIDTH + 4 * 70 + 2]);
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_hair_texture failed\n");
 	}
 
-	if (0 == pf_get_distorted_background(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, distorted_background_array))
+	if (0 == pf_get_distorted_background(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, 
+			 PF_RGB_IMAGE, distorted_background_array))
 	{
 		printf ("Distorted Background[30][30]: %d %d %d\n", distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30],
 			distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30 + 1], distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30 + 2]);
 		printf ("Distorted Background[70][70]: %d %d %d\n", distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70],
 			distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70 + 1], distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70 + 2]);
+	}
+	else
+	{
+		fprintf(stderr, "ERROR: pf_get_distorted_background failed\n");
 	}
 
 	/* Write out the files */

@@ -58,7 +58,8 @@ DESCRIPTION :
 The image formats that the interface supports
 ==============================================================================*/
 {
-  PF_RGB_IMAGE
+	PF_RGB_IMAGE,
+	PF_RGBA_IMAGE
 }; /* enum PF_image_format */
 
 /*
@@ -234,9 +235,10 @@ DESCRIPTION :
 Used to specify the image to be texture mapped onto the model.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_get_texture(int pf_job_id,int width,int height,char *texture);
+CMISSDECLSPEC int pf_get_texture(int pf_job_id,int width,int height,
+	enum PF_image_format image_format,char *texture);
 /*******************************************************************************
-LAST MODIFIED : 9 May 2001
+LAST MODIFIED : 26 June 2001
 
 DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
@@ -273,15 +275,24 @@ Used to specify the image to be texture mapped onto the model.
 ==============================================================================*/
 
 CMISSDECLSPEC int pf_get_hair_texture(int pf_job_id,int width,int height,
-	char *texture);
+	enum PF_image_format image_format, char *texture);
 /*******************************************************************************
-LAST MODIFIED : 21 June 2001
+LAST MODIFIED : 26 June 2001
 
 DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
 is filled in based on the current model.
 ==============================================================================*/
 
+int pf_get_distorted_background(int pf_job_id,int width,int height,
+	enum PF_image_format image_format,char *texture);
+/*******************************************************************************
+LAST MODIFIED : 26 June 2001
+
+DESCRIPTION :
+The caller specifies the texture size and provides the storage.  The <texture>
+is filled in based on the current model.
+==============================================================================*/
 #if defined (__cplusplus)
 }
 #endif /* defined (__cplusplus) */

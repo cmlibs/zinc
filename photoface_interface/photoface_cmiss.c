@@ -3279,7 +3279,7 @@ Used to specify the image to be texture mapped onto the model.
 	char *image_ptr, filename[200];
 	float texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height;
 	FILE *image_file, *image_comfile;
-	int i, return_code;
+	int i, image_components, return_code;
 	struct Pf_job *pf_job;
 
 	ENTER(pf_specify_image);
@@ -3289,13 +3289,24 @@ Used to specify the image to be texture mapped onto the model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Create the rgb image for this image and make the image square by padding */
 		sprintf(filename, "%s/source_image.raw", pf_job->working_path);
+		switch (image_format)
+		{
+			case PF_RGB_IMAGE:
+			{
+				image_components = 3;
+			} break;
+			case PF_RGBA_IMAGE:
+			{
+				image_components = 4;
+			} break;
+		}
 		if (image_file = fopen(filename, "wb"))
 		{
 			image_ptr = image;
 			for (i = 0 ; i < width * height ; i++)
 			{
 				fwrite(image_ptr, 1, 3, image_file);
-				image_ptr += 3;
+				image_ptr += image_components;
 			}
 			fclose(image_file);
 
@@ -3351,9 +3362,10 @@ Used to specify the image to be texture mapped onto the model.
 	return (return_code);
 } /* pf_specify_image */
 
-int pf_get_texture(int pf_job_id,int width,int height,char *texture)
+int pf_get_texture(int pf_job_id,int width,int height,
+	enum PF_image_format image_format, char *texture)
 /*******************************************************************************
-LAST MODIFIED : 15 February 2001
+LAST MODIFIED : 26 June 2001
 
 DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
@@ -3361,8 +3373,7 @@ is filled in based on the current model.
 ==============================================================================*/
 {
 	char filename[200], *src_image_ptr, *dest_image_ptr;
-	FILE *texture_comfile;
-	int i, number_of_bytes_per_component, number_of_components, return_code;
+	int destination_components, i, j, number_of_bytes_per_component, number_of_components, return_code;
 	long int file_height, file_width;
 	long unsigned *image;
 	struct Pf_job *pf_job;
@@ -3374,7 +3385,7 @@ is filled in based on the current model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Use cmgui to calculate the texture based on the specified image */
 		if (linux_execute(
-				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(\"open comfile %scmiss/pf_get_texture.com exec\")'",
+				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_texture.com exec))'",
 				 photoface_remote_path, width, height, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
@@ -3384,8 +3395,18 @@ is filled in based on the current model.
 		if (read_rgb_image_file(filename, &number_of_components,
 			&number_of_bytes_per_component, &file_height, &file_width, &image))
 		{
-			if ((number_of_bytes_per_component == 1) && (number_of_components > 2)
-				&& (number_of_components < 5))
+			switch (image_format)
+			{
+				case PF_RGB_IMAGE:
+				{
+					destination_components = 3;
+				} break;
+				case PF_RGBA_IMAGE:
+				{
+					destination_components = 4;
+				} break;
+			}
+			if ((number_of_bytes_per_component == 1) && (number_of_components >= destination_components))
 			{
 				if ((file_width == width) && (file_height == height))
 				{
@@ -3393,11 +3414,12 @@ is filled in based on the current model.
 					dest_image_ptr = texture;
 					for (i = 0 ; i < width * height ; i++)
 					{
-						*dest_image_ptr = *src_image_ptr;
-						*(dest_image_ptr + 1) = *(src_image_ptr + 1);
-						*(dest_image_ptr + 2) = *(src_image_ptr + 2);
+						for (j = 0 ; j < destination_components ; j++)
+						{
+							*(dest_image_ptr + j) = *(src_image_ptr + j);
+						}
+						dest_image_ptr += destination_components;
 						src_image_ptr += number_of_components;
-						dest_image_ptr += 3;
 					}
 					return_code=PF_SUCCESS_RC;
 				}
@@ -3473,7 +3495,7 @@ Returns the current transformed generic head as
 	{
 		return_code=PF_SUCCESS_RC;
 		/* Read the fitted obj file and return all the values */
-		sprintf(filename, "%s/hairgeometry.obj", pf_job->working_path);
+		sprintf(filename, "%scmiss/hairgeometry.obj", photoface_local_path);
 		if(obj = read_obj(filename))
 		{
 			*number_of_vertices = obj->number_of_vertices;
@@ -3516,7 +3538,7 @@ Used to specify the image to be texture mapped onto the model.
 	char *image_ptr, filename[200];
 	float texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height;
 	FILE *image_file, *image_comfile;
-	int i, return_code;
+	int i, image_components, return_code;
 	struct Pf_job *pf_job;
 
 	ENTER(pf_specify_hair_mask);
@@ -3526,13 +3548,24 @@ Used to specify the image to be texture mapped onto the model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Create the rgb image for this image and make the image square by padding */
 		sprintf(filename, "%s/source_hair_mask.raw", pf_job->working_path);
+		switch (image_format)
+		{
+			case PF_RGB_IMAGE:
+			{
+				image_components = 3;
+			} break;
+			case PF_RGBA_IMAGE:
+			{
+				image_components = 4;
+			} break;
+		}
 		if (image_file = fopen(filename, "wb"))
 		{
 			image_ptr = image;
 			for (i = 0 ; i < width * height ; i++)
 			{
 				fwrite(image_ptr, 1, 3, image_file);
-				image_ptr += 3;
+				image_ptr += image_components;
 			}
 			fclose(image_file);
 
@@ -3587,9 +3620,10 @@ Used to specify the image to be texture mapped onto the model.
 	return (return_code);
 } /* pf_specify_hair_mask */
 
-int pf_get_hair_texture(int pf_job_id,int width,int height,char *texture)
+int pf_get_hair_texture(int pf_job_id,int width,int height,
+	enum PF_image_format image_format, char *texture)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2001
+LAST MODIFIED : 26 June 2001
 
 DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
@@ -3597,8 +3631,7 @@ is filled in based on the current model.
 ==============================================================================*/
 {
 	char filename[200], *src_image_ptr, *dest_image_ptr;
-	FILE *texture_comfile;
-	int i, number_of_bytes_per_component, number_of_components, return_code;
+	int destination_components, i, j, number_of_bytes_per_component, number_of_components, return_code;
 	long int file_height, file_width;
 	long unsigned *image;
 	struct Pf_job *pf_job;
@@ -3610,7 +3643,7 @@ is filled in based on the current model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Use cmgui to calculate the texture based on the specified image */
 		if (linux_execute(
-				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(\"open comfile %scmiss/pf_get_hair_texture.com exec\")'",
+				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_hair_texture.com exec))'",
 				 photoface_remote_path, width, height, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
@@ -3620,8 +3653,18 @@ is filled in based on the current model.
 		if (read_rgb_image_file(filename, &number_of_components,
 			&number_of_bytes_per_component, &file_height, &file_width, &image))
 		{
-			if ((number_of_bytes_per_component == 1) && (number_of_components > 2)
-				&& (number_of_components < 5))
+			switch (image_format)
+			{
+				case PF_RGB_IMAGE:
+				{
+					destination_components = 3;
+				} break;
+				case PF_RGBA_IMAGE:
+				{
+					destination_components = 4;
+				} break;
+			}
+			if ((number_of_bytes_per_component == 1) && (number_of_components >= destination_components))
 			{
 				if ((file_width == width) && (file_height == height))
 				{
@@ -3629,11 +3672,12 @@ is filled in based on the current model.
 					dest_image_ptr = texture;
 					for (i = 0 ; i < width * height ; i++)
 					{
-						*dest_image_ptr = *src_image_ptr;
-						*(dest_image_ptr + 1) = *(src_image_ptr + 1);
-						*(dest_image_ptr + 2) = *(src_image_ptr + 2);
+						for (j = 0 ; j < destination_components ; j++)
+						{
+							*(dest_image_ptr + j) = *(src_image_ptr + j);
+						}
+						dest_image_ptr += destination_components;
 						src_image_ptr += number_of_components;
-						dest_image_ptr += 3;
 					}
 					return_code=PF_SUCCESS_RC;
 				}
@@ -3678,9 +3722,10 @@ is filled in based on the current model.
 	return (return_code);
 } /* pf_get_hair_texture */
 
-int pf_get_distorted_background(int pf_job_id,int width,int height,char *texture)
+int pf_get_distorted_background(int pf_job_id,int width,int height,
+	enum PF_image_format image_format, char *texture)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2001
+LAST MODIFIED : 26 June 2001
 
 DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
@@ -3688,8 +3733,7 @@ is filled in based on the current model.
 ==============================================================================*/
 {
 	char filename[200], *src_image_ptr, *dest_image_ptr;
-	FILE *texture_comfile;
-	int i, number_of_bytes_per_component, number_of_components, return_code;
+	int destination_components, i, j, number_of_bytes_per_component, number_of_components, return_code;
 	long int file_height, file_width;
 	long unsigned *image;
 	struct Pf_job *pf_job;
@@ -3701,7 +3745,7 @@ is filled in based on the current model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Use image magick to distort the background image */
 		if (linux_execute(
-				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(\"open comfile %scmiss/pf_get_distorted_background.com exec\")'",
+				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_distorted_background.com exec))'",
 				 photoface_remote_path, width, height, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
@@ -3711,8 +3755,18 @@ is filled in based on the current model.
 		if (read_rgb_image_file(filename, &number_of_components,
 			&number_of_bytes_per_component, &file_height, &file_width, &image))
 		{
-			if ((number_of_bytes_per_component == 1) && (number_of_components > 2)
-				&& (number_of_components < 5))
+			switch (image_format)
+			{
+				case PF_RGB_IMAGE:
+				{
+					destination_components = 3;
+				} break;
+				case PF_RGBA_IMAGE:
+				{
+					destination_components = 4;
+				} break;
+			}
+			if ((number_of_bytes_per_component == 1) && (number_of_components >= destination_components))
 			{
 				if ((file_width == width) && (file_height == height))
 				{
@@ -3720,11 +3774,12 @@ is filled in based on the current model.
 					dest_image_ptr = texture;
 					for (i = 0 ; i < width * height ; i++)
 					{
-						*dest_image_ptr = *src_image_ptr;
-						*(dest_image_ptr + 1) = *(src_image_ptr + 1);
-						*(dest_image_ptr + 2) = *(src_image_ptr + 2);
+						for (j = 0 ; j < destination_components ; j++)
+						{
+							*(dest_image_ptr + j) = *(src_image_ptr + j);
+						}
+						dest_image_ptr += destination_components;
 						src_image_ptr += number_of_components;
-						dest_image_ptr += 3;
 					}
 					return_code=PF_SUCCESS_RC;
 				}
