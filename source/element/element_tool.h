@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.h
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -53,6 +53,22 @@ LAST MODIFIED : 5 July 2000
 DESCRIPTION :
 Frees and deaccesses objects in the <element_tool> and deallocates the
 structure itself.
+==============================================================================*/
+
+int Element_tool_pop_up_dialog(struct Element_tool *element_tool);
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Pops up a dialog for editing settings of the Element_tool.
+==============================================================================*/
+
+int Element_tool_pop_down_dialog(struct Element_tool *element_tool);
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Hides the dialog for editing settings of the Element_tool.
 ==============================================================================*/
 
 int Element_tool_get_select_elements_enabled(struct Element_tool *element_tool);

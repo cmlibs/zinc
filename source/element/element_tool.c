@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -436,22 +436,10 @@ format for passing to an Interactive_toolbar.
 ==============================================================================*/
 {
 	int return_code;
-	struct Element_tool *element_tool;
 
 	ENTER(Element_tool_bring_up_interactive_tool_dialog);
-	if (element_tool=(struct Element_tool *)element_tool_void)
-	{
-		/* bring up the dialog */
-		XtPopup(element_tool->window_shell,XtGrabNone);
-		XtVaSetValues(element_tool->window_shell,XmNiconic,False,NULL);
-		return_code=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_tool_bring_up_interactive_tool_dialog.  Invalid argument(s)");
-		return_code=0;
-	}
+	return_code =
+		Element_tool_pop_up_dialog((struct Element_tool *)element_tool_void);
 	LEAVE;
 
 	return (return_code);
@@ -731,6 +719,62 @@ structure itself.
 
 	return (return_code);
 } /* DESTROY(Element_tool) */
+
+int Element_tool_pop_up_dialog(struct Element_tool *element_tool)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Pops up a dialog for editing settings of the Element_tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_tool_pop_up_dialog);
+	if (element_tool)
+	{
+		XtPopup(element_tool->window_shell, XtGrabNone);
+		/* make sure in addition that it is not shown as an icon */
+		XtVaSetValues(element_tool->window_shell, XmNiconic, False, NULL);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_pop_up_dialog.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_tool_pop_up_dialog */
+
+int Element_tool_pop_down_dialog(struct Element_tool *element_tool)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Hides the dialog for editing settings of the Element_tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_tool_pop_down_dialog);
+	if (element_tool)
+	{
+		XtPopdown(element_tool->window_shell);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_pop_down_dialog.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_tool_pop_down_dialog */
 
 int Element_tool_get_select_elements_enabled(struct Element_tool *element_tool)
 /*******************************************************************************

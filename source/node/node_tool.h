@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -70,6 +70,22 @@ LAST MODIFIED : 11 May 2000
 DESCRIPTION :
 Frees and deaccesses objects in the <node_tool> and deallocates the
 structure itself.
+==============================================================================*/
+
+int Node_tool_pop_up_dialog(struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Pops up a dialog for editing settings of the Node_tool.
+==============================================================================*/
+
+int Node_tool_pop_down_dialog(struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Hides the dialog for editing settings of the Node_tool.
 ==============================================================================*/
 
 struct Computed_field *Node_tool_get_coordinate_field(

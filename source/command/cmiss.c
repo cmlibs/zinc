@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 15 June 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -12691,12 +12691,14 @@ Executes a GFX ELEMENT_CREATOR command.
 static int execute_command_gfx_element_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Executes a GFX ELEMENT_TOOL command.
 ==============================================================================*/
 {
+	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	char *dialog_string;
 	int select_elements_enabled,select_faces_enabled,select_lines_enabled,
 		return_code;
 	struct Cmiss_command_data *command_data;
@@ -12722,6 +12724,10 @@ Executes a GFX ELEMENT_TOOL command.
 			select_lines_enabled=1;
 		}
 		option_table=CREATE(Option_table)();
+		/* open_dialog/close_dialog */
+		dialog_string = (char *)NULL;
+		Option_table_add_enumerator(option_table, /*number_of_valid_strings*/2,
+			dialog_strings, &dialog_string);
 		/* select_elements/no_select_elements */
 		Option_table_add_switch(option_table,"select_elements","no_select_elements",
 			&select_elements_enabled);
@@ -12735,12 +12741,20 @@ Executes a GFX ELEMENT_TOOL command.
 		{
 			if (element_tool)
 			{
+				if (dialog_string == dialog_strings[1])
+				{
+					Element_tool_pop_down_dialog(element_tool);
+				}
 				Element_tool_set_select_elements_enabled(element_tool,
 					select_elements_enabled);
 				Element_tool_set_select_faces_enabled(element_tool,
 					select_faces_enabled);
 				Element_tool_set_select_lines_enabled(element_tool,
 					select_lines_enabled);
+				if (dialog_string == dialog_strings[0])
+				{
+					Element_tool_pop_up_dialog(element_tool);
+				}
 			}
 			else
 			{
@@ -17412,7 +17426,7 @@ movie is being created.
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
@@ -17420,6 +17434,8 @@ then the <data_tool> is being modified, otherwise the <node_tool>.
 Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
+	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	char *dialog_string;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
 		return_code,select_enabled, streaming_create_enabled;
 	struct Cmiss_command_data *command_data;
@@ -17499,6 +17515,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 		/* motion_update/no_motion_update */
 		Option_table_add_switch(option_table,"motion_update","no_motion_update",
 			&motion_update_enabled);
+		/* open_dialog/close_dialog */
+		dialog_string = (char *)NULL;
+		Option_table_add_enumerator(option_table, /*number_of_valid_strings*/2,
+			dialog_strings, &dialog_string);
 		/* select/no_select */
 		Option_table_add_switch(option_table,"select","no_select",&select_enabled);
 		/* streaming_create/no_streaming_create */
@@ -17508,6 +17528,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 		{
 			if (node_tool)
 			{
+				if (dialog_string == dialog_strings[1])
+				{
+					Node_tool_pop_down_dialog(node_tool);
+				}
 				Node_tool_set_select_enabled(node_tool,select_enabled);
 				Node_tool_set_edit_enabled(node_tool,edit_enabled);
 				Node_tool_set_define_enabled(node_tool,define_enabled);
@@ -17517,6 +17541,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Node_tool_set_streaming_create_enabled(node_tool,
 					streaming_create_enabled);
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
+				if (dialog_string == dialog_strings[0])
+				{
+					Node_tool_pop_up_dialog(node_tool);
+				}
 			}
 			else
 			{

@@ -1820,7 +1820,7 @@ release.
 
 static int Node_tool_bring_up_interactive_tool_dialog(void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 Brings up a dialog for editing settings of the Node_tool - in a standard format
@@ -1828,22 +1828,9 @@ for passing to an Interactive_toolbar.
 ==============================================================================*/
 {
 	int return_code;
-	struct Node_tool *node_tool;
 
 	ENTER(Node_tool_bring_up_interactive_tool_dialog);
-	if (node_tool=(struct Node_tool *)node_tool_void)
-	{
-		/* bring up the dialog */
-		XtPopup(node_tool->window_shell,XtGrabNone);
-		XtVaSetValues(node_tool->window_shell,XmNiconic,False,NULL);
-		return_code=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_bring_up_interactive_tool_dialog.  Invalid argument(s)");
-		return_code=0;
-	}
+	return_code = Node_tool_pop_up_dialog((struct Node_tool *)node_tool_void);
 	LEAVE;
 
 	return (return_code);
@@ -2258,6 +2245,62 @@ structure itself.
 
 	return (return_code);
 } /* DESTROY(Node_tool) */
+
+int Node_tool_pop_up_dialog(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Pops up a dialog for editing settings of the Node_tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Node_tool_pop_up_dialog);
+	if (node_tool)
+	{
+		XtPopup(node_tool->window_shell, XtGrabNone);
+		/* make sure in addition that it is not shown as an icon */
+		XtVaSetValues(node_tool->window_shell, XmNiconic, False, NULL);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_pop_up_dialog.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_pop_up_dialog */
+
+int Node_tool_pop_down_dialog(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2001
+
+DESCRIPTION :
+Hides the dialog for editing settings of the Node_tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Node_tool_pop_down_dialog);
+	if (node_tool)
+	{
+		XtPopdown(node_tool->window_shell);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_pop_down_dialog.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_pop_down_dialog */
 
 struct Computed_field *Node_tool_get_coordinate_field(
 	struct Node_tool *node_tool)
@@ -3051,4 +3094,3 @@ Upon return <node_list> contains all the nodes that could not be destroyed.
 
 	return (return_code);
 } /* destroy_listed_nodes */
-
