@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 4 June 2004
+LAST MODIFIED : 22 March 2005
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -843,7 +843,7 @@ currently implemented for the expensive linear filter.
 #if defined (OPENGL_API)
 static int direct_render_Texture(struct Texture *texture)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 22 March 2005
 
 DESCRIPTION :
 Directly outputs the commands setting up the <texture>.
@@ -1140,11 +1140,13 @@ Directly outputs the commands setting up the <texture>.
 			{
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP);
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP);
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP);
 			} break;
 			case TEXTURE_REPEAT_WRAP:
 			{
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_REPEAT);
 				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_REPEAT);
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_REPEAT);
 			} break;
 		}
 		switch (texture->filter_mode)
