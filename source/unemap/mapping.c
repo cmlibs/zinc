@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2545,7 +2545,7 @@ Conditional function returning true if <node>  in the z range of <data_void>.
 static int add_torso_elements_if_nodes_in_z_range(
 	struct FE_element *torso_element,void *element_torso_data_void)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2000
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Get list of nodes in <torso_element>.
@@ -2555,41 +2555,46 @@ adds the element to element_torso_data->mapped_torso_element_group.
 Also sets the fit field at the torso nodes
 ==============================================================================*/
 {	
-	int number_of_nodes,return_code;
-	struct Node_is_in_list_data node_is_in_list_data;
+	int i,number_of_nodes,return_code;
 	struct Element_torso_data *element_torso_data;
-	struct LIST(FE_node) *element_nodes;
+	struct FE_node **nodes_in_element;
 
 	ENTER(add_torso_elements_if_nodes_in_z_range);
 	return_code=1;
 	element_torso_data=(struct Element_torso_data *)NULL;
-	element_nodes=(struct LIST(FE_node) *)NULL;
 	if (torso_element&&element_torso_data_void&&(element_torso_data
 		=(struct Element_torso_data *)element_torso_data_void))
 	{	
 		/* only deal with elements, not lines */
-		if (torso_element->cm.type==CM_ELEMENT)
+		if (CM_ELEMENT==torso_element->cm.type)
 		{
-			element_nodes=CREATE_LIST(FE_node)();
-			/*get all nodes in element */
-			calculate_FE_element_field_nodes(torso_element,
-				(struct FE_field *)NULL,element_nodes);
-			number_of_nodes=NUMBER_IN_LIST(FE_node)(element_nodes);
-			/* do nothing if not 4 nodes */
-			if (number_of_nodes==4)
+			/* get all nodes in element */
+			if (calculate_FE_element_field_nodes(torso_element,
+				(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element))
 			{
-				/* determine if all element nodes in z range list */
-				node_is_in_list_data.node_list=
-					element_torso_data->torso_nodes_in_z_range;
-				if (FOR_EACH_OBJECT_IN_LIST(FE_node)(node_is_in_list,
-					(void *)&node_is_in_list_data,element_nodes))
+				/* do nothing if not 4 nodes */
+				if (4==number_of_nodes)
 				{
-					/* add torso element to group*/
-					ADD_OBJECT_TO_GROUP(FE_element)(torso_element,
-						element_torso_data->mapped_torso_element_group);			
-				}	
+					/* determine if all element nodes in z range list */
+					i=0;
+					while ((i<number_of_nodes)&&IS_OBJECT_IN_LIST(FE_node)(
+						nodes_in_element[i],element_torso_data->torso_nodes_in_z_range))
+					{
+						i++;
+					}
+					if (i>=number_of_nodes)
+					{
+						/* add torso element to group*/
+						ADD_OBJECT_TO_GROUP(FE_element)(torso_element,
+							element_torso_data->mapped_torso_element_group);			
+					}	
+				}
+				for (i=0;i<number_of_nodes;i++)
+				{
+					DEACCESS(FE_node)(nodes_in_element+i);
+				}
+				DEALLOCATE(nodes_in_element);
 			}
-			DESTROY_LIST(FE_node)(&element_nodes);
 		} 
 	}
 	else
@@ -2985,32 +2990,40 @@ already set.
 static int set_map_fit_field_at_torso_element_nodes(
 	struct FE_element *torso_element,void *map_value_torso_data_void)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2000
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Set the  nodal values of the fit field at the <torso_element> nodes
 ==============================================================================*/
 {
-	int return_code;
-	struct LIST(FE_node) *element_nodes;
+	int i,number_of_nodes,return_code;
+	struct FE_node **nodes_in_element;
 	struct Map_value_torso_data *map_value_torso_data;
 
 	ENTER(set_map_fit_field_at_torso_element_nodes);
-	element_nodes=(struct LIST(FE_node) *)NULL;
+	return_code=0;
 	map_value_torso_data=(struct Map_value_torso_data *)NULL;
-	if (torso_element&&map_value_torso_data_void&&
-		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
+	if (torso_element&&(map_value_torso_data=
+		(struct Map_value_torso_data *)map_value_torso_data_void))
 	{
-		element_nodes=CREATE_LIST(FE_node)();
-		/*get all nodes in element */
-		calculate_FE_element_field_nodes(torso_element,
-			(struct FE_field *)NULL,element_nodes);
-		/* for each node, set fit field value, if haven't done so already */
-		map_value_torso_data->torso_element=torso_element;
-		FOR_EACH_OBJECT_IN_LIST(FE_node)(set_map_fit_field_if_required,
-			(void *)map_value_torso_data,element_nodes);
-		DESTROY_LIST(FE_node)(&element_nodes);
-		return_code=1;
+		/* get all nodes in element */
+		if (calculate_FE_element_field_nodes(torso_element,
+			(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element))
+		{
+			/* for each node, set fit field value, if haven't done so already */
+			map_value_torso_data->torso_element=torso_element;
+			for (i=0;i<number_of_nodes;i++)
+			{
+				set_map_fit_field_if_required(nodes_in_element[i],
+					(void *)map_value_torso_data);
+			}
+			for (i=0;i<number_of_nodes;i++)
+			{
+				DEACCESS(FE_node)(nodes_in_element+i);
+			}
+			DEALLOCATE(nodes_in_element);
+			return_code=1;
+		}
 	}
 	else
 	{
@@ -5110,16 +5123,17 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 ===============================================================================*/
 {
 	enum FE_nodal_value_type *fit_components_value_types[1];
-	int number_of_nodes,return_code;
+	int i,number_of_nodes,return_code;
 	struct Define_FE_field_at_node_data define_FE_field_at_node_data;	
 	struct Define_fit_field_at_torso_element_nodes_data 
 		*define_fit_field_at_torso_element_nodes_data;
 	struct FE_field *fit_field;
 	struct GROUP(FE_element) *quad_element_group;
-	struct LIST(FE_node) *element_nodes;
+	struct FE_node **nodes_in_element;
 	struct MANAGER(FE_node) *node_manager;
 	
 	ENTER(define_fit_field_at_torso_element_nodes);	
+	return_code=0;
 	fit_field=(struct FE_field *)NULL;
 	quad_element_group=(struct GROUP(FE_element) *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
@@ -5133,37 +5147,48 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 			define_fit_field_at_torso_element_nodes_data->quad_element_group)&&
 		(fit_field=define_fit_field_at_torso_element_nodes_data->fit_field)
 		&&(node_manager=define_fit_field_at_torso_element_nodes_data->node_manager))
-	{	
-		element_nodes=CREATE_LIST(FE_node)();
-		/*get all nodes in element */
-		calculate_FE_element_field_nodes(torso_element,(struct FE_field *)NULL,
-			element_nodes);
+	{
 		/* only deal with elements, not lines */		
-		if (torso_element->cm.type==CM_ELEMENT)
+		if (CM_ELEMENT==torso_element->cm.type)
 		{
-			return_code=1;
-			number_of_nodes=NUMBER_IN_LIST(FE_node)(element_nodes);
-			/* do nothing if not 4 nodes */
-			if (number_of_nodes==4)
+			/* get all nodes in element */
+			if (calculate_FE_element_field_nodes(torso_element,
+				(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element))
 			{
-				fit_components_value_types[0]=fit_bicubic_component;
-				/* define the fit field at the element's nodes*/			
-				define_FE_field_at_node_data.field=fit_field;
-				define_FE_field_at_node_data.number_of_derivatives=
-					fit_components_number_of_derivatives;
-				define_FE_field_at_node_data.number_of_versions=
-					fit_components_number_of_versions;
-				define_FE_field_at_node_data.nodal_value_types=fit_components_value_types;
-				define_FE_field_at_node_data.node_manager=node_manager;
-				if (return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)
-					(iterative_define_FE_field_at_node,
-					(void *)(&define_FE_field_at_node_data),element_nodes))
+				return_code=1;
+				/* do nothing if not 4 nodes */
+				if (4==number_of_nodes)
 				{
-					/* Add the element to the group */
-					return_code=ADD_OBJECT_TO_GROUP(FE_element)(torso_element,quad_element_group);
-				}					
+					fit_components_value_types[0]=fit_bicubic_component;
+					/* define the fit field at the element's nodes*/			
+					define_FE_field_at_node_data.field=fit_field;
+					define_FE_field_at_node_data.number_of_derivatives=
+						fit_components_number_of_derivatives;
+					define_FE_field_at_node_data.number_of_versions=
+						fit_components_number_of_versions;
+					define_FE_field_at_node_data.nodal_value_types=
+						fit_components_value_types;
+					define_FE_field_at_node_data.node_manager=node_manager;
+					i=0;
+					while ((i<number_of_nodes)&&
+						(return_code=iterative_define_FE_field_at_node(nodes_in_element[i],
+						(void *)(&define_FE_field_at_node_data))))
+					{
+						i++;
+					}
+					if (i>=number_of_nodes)
+					{
+						/* Add the element to the group */
+						return_code=ADD_OBJECT_TO_GROUP(FE_element)(torso_element,
+							quad_element_group);
+					}					
+					for (i=0;i<number_of_nodes;i++)
+					{
+						DEACCESS(FE_node)(nodes_in_element+i);
+					}
+					DEALLOCATE(nodes_in_element);
+				}
 			}
-			DESTROY(LIST(FE_node))(&element_nodes);	
 		}
 	}
 	else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 15 June 2001
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -2310,14 +2310,18 @@ Frees the memory for the fields of the <element_field_values> structure.
 ==============================================================================*/
 
 int calculate_FE_element_field_nodes(struct FE_element *element,
-	struct FE_field *field,struct LIST(FE_node) *element_field_nodes);
+	struct FE_field *field,int *number_of_element_field_nodes_address,
+	struct FE_node ***element_field_nodes_array_address);
 /*******************************************************************************
-LAST MODIFIED : 7 February 1998
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 If <field> is NULL, element nodes are calculated for the coordinate field.  The
-function adds the nodes to the list <element_field_nodes>.  Components that are
-not node-based are ignored.
+function allocates an array, <*element_field_nodes_array_address> to store the
+pointers to the ACCESS'd element nodes.  Components that are not node-based are
+ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
+fastest in xi2 and so on).
+NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 ==============================================================================*/
 
 int calculate_FE_element_field(int component_number,
@@ -4915,16 +4919,6 @@ and elements  identifier numbers so that the groups identifiers end at
 the legal integer range, <last_identifier> would be INT_MAX.
 NOTE: You can't iteratively call MANAGER_MODIFY_IDENTIFIER, hence the use of
 FE_node_order_info, FE_element_order_info
-==============================================================================*/
-
-int node_is_in_list(struct FE_node *node,
-	void *node_is_in_list_data_void);
-/*******************************************************************************
-LAST MODIFIED : 16 October 2000
-
-DESCRIPTION :
-returns 1 if <node> is in <node_is_in_list_data>'s node list.
-Called iteratively.
 ==============================================================================*/
 
 #if !defined (WINDOWS_DEV_FLAG)

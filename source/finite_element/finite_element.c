@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 22 July 2001
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -2960,11 +2960,10 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_element_type_node_sequence, \
 	identifier, struct FE_element_type_node_sequence_identifier *, \
 	compare_FE_element_type_node_sequence_identifier)
 
-static
-struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
-	struct FE_element *element)
+static struct FE_element_type_node_sequence
+	*CREATE(FE_element_type_node_sequence)(struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 29 April 1999
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Structure for storing an element with its identifier being its cm_type and the
@@ -2977,22 +2976,19 @@ uses them to find faces and lines for elements without them, if they exist.
 {
 	int i,j,k,node_number,*node_numbers,number_of_nodes,placed;
 	struct FE_element_type_node_sequence *element_type_node_sequence;
-	struct FE_node *node;
-	struct LIST(FE_node) *nodes_in_element;
+	struct FE_node **nodes_in_element;
 
 	ENTER(CREATE(FE_element_type_node_sequence));
 	if (element)
 	{
 		/* get list of nodes used by default coordinate field in element */
-		nodes_in_element=CREATE(LIST(FE_node))();
 		if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
-			nodes_in_element)&&
-			(0<(number_of_nodes=NUMBER_IN_LIST(FE_node)(nodes_in_element))))
+			&number_of_nodes,&nodes_in_element)&&(0<number_of_nodes))
 		{
 			if (ALLOCATE(element_type_node_sequence,
 				struct FE_element_type_node_sequence,1)&&
 				ALLOCATE(element_type_node_sequence->identifier,
-					struct FE_element_type_node_sequence_identifier,1)&&
+				struct FE_element_type_node_sequence_identifier,1)&&
 				ALLOCATE(node_numbers,int,number_of_nodes))
 			{
 				element_type_node_sequence->identifier->cm_type=element->cm.type;
@@ -3003,37 +2999,24 @@ uses them to find faces and lines for elements without them, if they exist.
 				/* put the nodes in the identifier in ascending order */
 				for (i=0;element_type_node_sequence&&(i<number_of_nodes);i++)
 				{
-					if ((node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-						(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-						nodes_in_element))&&
-						REMOVE_OBJECT_FROM_LIST(FE_node)(node,nodes_in_element))
+					node_number=(nodes_in_element[i])->cm_node_identifier;
+					placed=0;
+					for (j=0;(!placed)&&(j<i);j++)
 					{
-						node_number=node->cm_node_identifier;
-						placed=0;
-						for (j=0;(!placed)&&(j<i);j++)
+						if (node_number<node_numbers[j])
 						{
-							if (node_number<node_numbers[j])
+							/* make space for the new number */
+							for (k=i;j<k;k--)
 							{
-								/* make space for the new number */
-								for (k=i;j<k;k--)
-								{
-									node_numbers[k]=node_numbers[k-1];
-								}
-								node_numbers[j]=node_number;
-								placed=1;
+								node_numbers[k]=node_numbers[k-1];
 							}
-						}
-						if (!placed)
-						{
-							node_numbers[i]=node_number;
+							node_numbers[j]=node_number;
+							placed=1;
 						}
 					}
-					else
+					if (!placed)
 					{
-						display_message(ERROR_MESSAGE,
-							"CREATE(FE_element_type_node_sequence).  "
-							"Node missing or not removable");
-						DESTROY(FE_element_type_node_sequence)(&element_type_node_sequence);
+						node_numbers[i]=node_number;
 					}
 				}
 #if defined (DEBUG)
@@ -3060,6 +3043,11 @@ uses them to find faces and lines for elements without them, if they exist.
 					DEALLOCATE(element_type_node_sequence);
 				}
 			}
+			for (i=0;i<number_of_nodes;i++)
+			{
+				DEACCESS(FE_node)(nodes_in_element+i);
+			}
+			DEALLOCATE(nodes_in_element);
 		}
 		else
 		{
@@ -3067,7 +3055,6 @@ uses them to find faces and lines for elements without them, if they exist.
 				"Could not get nodes in element");
 			element_type_node_sequence=(struct FE_element_type_node_sequence *)NULL;
 		}
-		DESTROY(LIST(FE_node))(&nodes_in_element);
 	}
 	else
 	{
@@ -21928,30 +21915,33 @@ Frees the memory for the fields of the <element_field_values> structure.
 } /* clear_FE_element_field_values */
 
 int calculate_FE_element_field_nodes(struct FE_element *element,
-	struct FE_field *field,struct LIST(FE_node) *element_field_nodes)
+	struct FE_field *field,int *number_of_element_field_nodes_address,
+	struct FE_node ***element_field_nodes_array_address)
 /*******************************************************************************
-LAST MODIFIED : 1 July 2001
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 If <field> is NULL, element nodes are calculated for the coordinate field.  The
-function adds the nodes to the list <element_field_nodes>.  Components that are
-not node-based are ignored.
-???DB.  I think that the field=NULL special case should be removed.
-???DB.  Based on calculate_FE_element_field_values
+function allocates an array, <*element_field_nodes_array_address> to store the
+pointers to the ACCESS'd element nodes.  Components that are not node-based are 
+ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next 
+fastest in xi2 and so on).
+NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 ==============================================================================*/
 {
 	double sum;
 	FE_value *blending_matrix,*combined_blending_matrix,
 		*coordinate_transformation,*row,*column,*transformation;
 	int add,component_number,element_dimension,i,*inherited_basis_arguments,j,k,
-		number_of_components,number_of_element_values,number_of_inherited_values,
-		number_of_standard_basis_functions,previous_number_of_element_values,
-		return_code;
+		number_of_components,number_of_element_values,number_of_element_field_nodes,
+		number_of_inherited_values,number_of_standard_basis_functions,
+		previous_number_of_element_values,return_code;
 	struct FE_basis *basis,*previous_basis;
 	struct FE_element *field_element;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *component,**component_address;
-	struct FE_node **element_value,**element_values,**previous_element_values;
+	struct FE_node **element_field_nodes_array,**element_value,**element_values,
+		**previous_element_values,**temp_element_field_nodes_array;
 #if defined (INHERITED_POLYGON_BLENDING)
 /*???DB.  Trying to do blending_matrix for polygon_basis_functions */
 	Standard_basis_function *standard_basis_function;
@@ -21961,10 +21951,10 @@ not node-based are ignored.
 #endif /* defined (INHERITED_POLYGON_BLENDING) */
 
 	ENTER(calculate_FE_element_field_nodes);
-	/*???debug */
-	/*printf("enter calculate_FE_element_field_nodes\n");*/
+	return_code=0;
 	/* check the arguments */
-	if (element&&(element->shape)&&element_field_nodes)
+	if (element&&(element->shape)&&number_of_element_field_nodes_address&&
+		element_field_nodes_array_address)
 	{
 		/* retrieve the element field from which this element inherits the field
 			and calculate the affine transformation from the element xi coordinates
@@ -21974,6 +21964,8 @@ not node-based are ignored.
 			&coordinate_transformation,(struct FE_element *)NULL)&&element_field)
 		{
 			return_code=1;
+			number_of_element_field_nodes=0;
+			element_field_nodes_array=(struct FE_node **)NULL;
 			element_dimension=element->shape->dimension;		
 			number_of_components=element_field->field->number_of_components;
 			/* for each component */
@@ -22084,11 +22076,32 @@ not node-based are ignored.
 											transformation += j;
 											if (add)
 											{
-												if (!IS_OBJECT_IN_LIST(FE_node)(*element_value,
-													element_field_nodes))
+												k=0;
+												while ((k<number_of_element_field_nodes)&&
+													(*element_value!=element_field_nodes_array[k]))
 												{
-													return_code=ADD_OBJECT_TO_LIST(FE_node)(
-														*element_value,element_field_nodes);
+													k++;
+												}
+												if (k>=number_of_element_field_nodes)
+												{
+													if (REALLOCATE(temp_element_field_nodes_array,
+														element_field_nodes_array,struct FE_node *,
+														number_of_element_field_nodes+1))
+													{
+														element_field_nodes_array=
+															temp_element_field_nodes_array;
+														element_field_nodes_array[
+															number_of_element_field_nodes]=
+															ACCESS(FE_node)(*element_value);
+														number_of_element_field_nodes++;
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+															"calculate_FE_element_field_nodes.  "
+															"Could not REALLOCATE element_field_nodes_array");
+														return_code=0;
+													}
 												}
 											}
 											element_value++;
@@ -22654,6 +22667,19 @@ not node-based are ignored.
 			DEALLOCATE(field_to_element);
 			DEALLOCATE(reorder_coordinates);
 #endif /* defined (INHERITED_POLYGON_BLENDING) */
+			if (return_code)
+			{
+				*number_of_element_field_nodes_address=number_of_element_field_nodes;
+				*element_field_nodes_array_address=element_field_nodes_array;
+			}
+			else
+			{
+				for (i=0;i<number_of_element_field_nodes;i++)
+				{
+					DEACCESS(FE_node)(element_field_nodes_array+i);
+				}
+				DEALLOCATE(element_field_nodes_array);
+			}
 		}
 		else
 		{
@@ -22679,8 +22705,6 @@ not node-based are ignored.
 			"calculate_FE_element_field_nodes.  Invalid argument(s)");
 		return_code=0;
 	}
-	/*???debug */
-	/*printf("leave calculate_FE_element_field_nodes %d\n",return_code);*/
 	LEAVE;
 
 	return (return_code);
@@ -29615,7 +29639,7 @@ Outputs the name of the element as element/face/line #.
 
 int list_FE_element(struct FE_element *element,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 26 August 1999
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Outputs the information contained at the element.
@@ -29669,20 +29693,6 @@ Outputs the information contained at the element.
 						display_message(INFORMATION_MESSAGE,line);
 						line_length=0;
 					}
-#if defined (DEBUG)
-					/*???debug*/
-					/*write the nodes in the faces */
-					display_message(INFORMATION_MESSAGE,"\n### Nodes on face %d:\n",
-						(*face)->cm.number);
-					nodes_on_face=CREATE(LIST(FE_node))();
-					if (calculate_FE_element_field_nodes(*face,
-						(struct FE_field *)NULL,nodes_on_face))
-					{
-						FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,(void *)NULL,
-							nodes_on_face);
-					}
-					DESTROY(LIST(FE_node))(&nodes_on_face);
-#endif /* defined (DEBUG) */
 					face++;
 					i--;
 				}
@@ -29765,26 +29775,22 @@ Outputs the information contained at the element.
 			{
 				display_message(INFORMATION_MESSAGE,"  No field information\n");
 			}
-/*???debug */
-{
-	struct LIST(FE_node) *node_list;
+			/*???debug */
+			{
+				int i,number_of_nodes;
+				struct FE_node **nodes_in_element;
 
-	if (node_list=CREATE_LIST(FE_node)())
-	{
-		if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
-			node_list))
-		{
-			FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,(void *)NULL,node_list);
-		}
-		REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(node_list);
-		DESTROY_LIST(FE_node)(&node_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_FE_element.  Could not create node list");
-	}
-}
+				if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
+					&number_of_nodes,&nodes_in_element))
+				{
+					for (i=0;i<number_of_nodes;i++)
+					{
+						list_FE_node(nodes_in_element[i],(void *)NULL);
+						DEACCESS(FE_node)(nodes_in_element+i);
+					}
+					DEALLOCATE(nodes_in_element);
+				}
+			}
 		}
 		else
 		{
@@ -42379,36 +42385,6 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 
 	return (return_code);
 } /* FE_element_set_scale_factor_for_nodal_value */
-
-int node_is_in_list(struct FE_node *node,
-	void *node_is_in_list_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 October 2000
-
-DESCRIPTION :
-returns 1 if <node> is in <node_is_in_list_data>'s node list.
-Called iteratively.
-==============================================================================*/
-{	
-	int return_code;
-	struct Node_is_in_list_data *node_is_in_list_data;
-	
-	ENTER(node_is_in_list);
-	return_code=1;
-	node_is_in_list_data=(struct Node_is_in_list_data *)NULL;
-	if(node&&node_is_in_list_data_void&&(node_is_in_list_data
-		=(struct Node_is_in_list_data *)node_is_in_list_data_void))
-	{
-		return_code=IS_OBJECT_IN_LIST(FE_node)(node,node_is_in_list_data->node_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"node_not_in_list. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* node_is_in_list */
 
 int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifier,
 	struct MANAGER(FE_node) *node_manager,
