@@ -2101,7 +2101,7 @@ and the field_order_info.
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
 				cm_node_identifier)(node_number,node_manager))
 			{									
-				display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node. Node already exists!");	
+				display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node. Node already exists!");
 				node=(struct FE_node *)NULL;
 			}				
 		}
@@ -4168,24 +4168,23 @@ This function draws the <map> in as a 3D CMGUI scene.
 ==============================================================================*/
 {
 	FE_value time;
-	struct FE_field *fit_field;
-	struct Computed_field *data_field;	
+	struct FE_field *fit_field=(struct FE_field *)NULL;
+	struct Computed_field *data_field=(struct Computed_field *)NULL;
 	float frame_time,minimum, maximum;
 	int number_of_regions,range_set,region_number,return_code,rig_node_group_number;
 	enum Map_type map_type;
 	char undecided_accepted;		
-	struct Rig *rig;
-	struct Region_list_item *region_item;
+	struct Rig *rig=(struct Rig *)NULL;
+	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
 	struct Region *current_region;
-	struct Interpolation_function *function;
-	struct Unemap_package *unemap_package;
-	struct Scene *scene;
-	struct Graphics_window *window;
-	struct Spectrum *spectrum;
-	struct GROUP(FE_element) *element_group;
+	struct Interpolation_function *function=(struct Interpolation_function *)NULL;
+	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
+	struct Scene *scene=(struct Scene *)NULL;
+	struct Graphics_window *window=(struct Graphics_window *)NULL;
+	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct GROUP(FE_element) *element_group=(struct GROUP(FE_element) *)NULL;
 	
-	ENTER(new_draw_map);
-	unemap_package=(struct Unemap_package *)NULL;
+	ENTER(new_draw_map);	
 	if(map)
 	{	
 		unemap_package=map->unemap_package;
@@ -4240,7 +4239,8 @@ This function draws the <map> in as a 3D CMGUI scene.
 						{
 							/* Now we have the interpolation_function struct */
 							/* make the node and element groups from it.*/
-							rig_node_group_number=region_number+1;/* 1st node_group is 'all_devices_node_group */
+							/* 1st node_group is 'all_devices_node_group */
+							rig_node_group_number=region_number+1;
 							make_fit_node_and_element_groups(function,unemap_package,rig->name,
 								FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_R,FIT_PATCH_Z,region_number,
 								rig_node_group_number);	
@@ -4384,32 +4384,52 @@ to the drawing or writes to a postscript file.
 	LEAVE;
 	return(return_code);
 #else
-	char *background_map_boundary,*background_map_boundary_base,draw_boundary,
-		draw_contours,draw_contour_value,*electrode_drawn,*first,
-		*name,*temp_char,undecided_accepted,
+	char draw_boundary,draw_contours,draw_contour_value,undecided_accepted,
 		valid_mu_and_theta,valid_u_and_v,value_string[11];
+	char *background_map_boundary=(char *)NULL;
+	char *background_map_boundary_base=(char *)NULL;
+	char *electrode_drawn=(char *)NULL;
+	char *first=(char *)NULL;
+	char *name=(char *)NULL;
+	char *temp_char=(char *)NULL;
 	double integral;
-	Display *display;
+	Display *display=(Display *)NULL;
 	enum Map_type map_type;
 	float a,b,background_pixel_value,boundary_pixel_value,c,contour_maximum,
-		contour_minimum,contour_step,cos_mu_hat,cos_theta_hat,d,det,*dfdx,dfdx_i_j,
-		dfdx_i_jm1,dfdx_im1_j,dfdx_im1_jm1,*dfdy,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,
+		contour_minimum,contour_step,cos_mu_hat,cos_theta_hat,d,det,dfdx_i_j,
+		dfdx_i_jm1,dfdx_im1_j,dfdx_im1_jm1,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,
 		dfdy_im1_jm1,
 #if defined (OLD_CODE)
 		dmudxi1,dmudxi2,dthetadxi1,dthetadxi2,
 #endif /* defined (OLD_CODE) */
-		dxdmu,dxdtheta,dydmu,dydtheta,*d2fdxdy,d2fdxdy_i_j,
-		d2fdxdy_i_jm1,d2fdxdy_im1_j,d2fdxdy_im1_jm1,*electrode_value,error_mu,
-		error_theta,*f,f_approx,fibre_angle,fibre_angle_1,fibre_angle_2,
-		fibre_angle_3,fibre_angle_4,fibre_length,fibre_x,fibre_y,f_i_j,f_i_jm1,
-		f_im1_j,f_im1_jm1,*float_value,frame_time,frame_time_freq,f_value,height,
-		h01_u,h01_v,h02_u,h02_v,h11_u,h11_v,h12_u,h12_v,lambda,*landmark_point,
-		max_f,maximum_value,*max_x,*max_y,min_f,minimum_value,
-		*min_x,*min_y,mu,mu_1,mu_2,mu_3,mu_4,pi,pi_over_2,pixel_aspect_ratio,
-		*pixel_value,proportion,r,range_f,sin_mu_hat,sin_theta_hat,*stretch_x,
-		*stretch_y,theta,theta_1,theta_2,theta_3,theta_4,two_pi,u,v,width,*x,xi_1,
-		xi_2,*x_item,*x_mesh,x_screen,x_screen_left,x_screen_step,*y,*y_item,
-		*y_mesh,y_screen,y_screen_top,y_screen_step;
+		dxdmu,dxdtheta,dydmu,dydtheta,d2fdxdy_i_j,d2fdxdy_i_jm1,d2fdxdy_im1_j,
+		d2fdxdy_im1_jm1,error_mu,error_theta,f_approx,fibre_angle,
+		fibre_angle_1,fibre_angle_2,fibre_angle_3,fibre_angle_4,fibre_length,
+		fibre_x,fibre_y,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,frame_time,frame_time_freq,
+		f_value,height,h01_u,h01_v,h02_u,h02_v,h11_u,h11_v,h12_u,h12_v,lambda,
+		max_f,maximum_value,min_f,minimum_value,mu,mu_1,mu_2,mu_3,mu_4,pi,
+		pi_over_2,pixel_aspect_ratio,proportion,r,range_f,sin_mu_hat,sin_theta_hat,
+		theta,theta_1,theta_2,theta_3,theta_4,two_pi,u,v,width,xi_1,xi_2,x_screen,
+		x_screen_left,x_screen_step,y_screen,y_screen_top,y_screen_step;
+	float *d2fdxdy=(float *)NULL;
+	float *dfdx=(float *)NULL;
+	float *dfdy=(float *)NULL;
+	float *electrode_value=(float *)NULL;
+	float *f=(float *)NULL;
+	float *float_value=(float *)NULL;
+	float *max_x=(float *)NULL;
+	float *max_y =(float *)NULL;		
+	float *landmark_point=(float *)NULL;
+	float *min_x,*min_y=(float *)NULL;
+	float *pixel_value=(float *)NULL;
+	float *stretch_y=(float *)NULL;
+	float *stretch_x=(float *)NULL;
+	float *x=(float *)NULL;
+	float *x_item=(float *)NULL;
+	float *x_mesh=(float *)NULL;
+	float *y=(float *)NULL;
+	float *y_item=(float *)NULL;
+	float *y_mesh=(float *)NULL;
 	GC graphics_context;
 	int after,ascent,before,bit_map_pad,bit_map_unit,
 		boundary_type,cell_number,cell_range,column,datum,contour_area,
@@ -4422,9 +4442,9 @@ to the drawing or writes to a postscript file.
 		number_of_electrodes,number_of_frames,number_of_mesh_columns,
 		number_of_mesh_rows,number_of_regions,number_of_rows,number_of_signals,
 		number_of_spectrum_colours,pixel_left,pixel_top,region_number,return_code,
-		row,scan_line_bytes,screen_region_height,screen_region_width,*screen_x,
-		*screen_y,start,start_search_interval,*start_x,*start_y,string_length,
-		temp_int,*times,valid_i_j,valid_i_jm1,valid_im1_j,valid_im1_jm1,x_border,
+		row,scan_line_bytes,screen_region_height,screen_region_width,
+		start,start_search_interval,string_length,
+		temp_int,valid_i_j,valid_i_jm1,valid_im1_j,valid_im1_jm1,x_border,
 		x_name_border,x_offset,x_pixel,x_separation,
 #if defined (NO_ALIGNMENT)
 		x_string,
@@ -4435,25 +4455,41 @@ to the drawing or writes to a postscript file.
 		,y_string
 #endif /* defined (NO_ALIGNMENT) */
 		;
-	Pixel background_pixel,boundary_pixel,*spectrum_pixels;
-	short int *contour_x,*contour_y,*short_int_value;
-	struct Device **device,**electrode;
-	struct Device_description *description;
-	struct Event *event;
-	struct Fibre_node *local_fibre_node_1,*local_fibre_node_2,*local_fibre_node_3,
-		*local_fibre_node_4;
-	struct Interpolation_function *function;
-	struct Map_drawing_information *drawing_information;
-	struct Map_frame *frame;
-	struct Region *current_region,*maximum_region,*minimum_region;
-	struct Region_list_item *region_item;
-	struct Rig *rig;
-	struct Signal *signal;
-	struct Signal_buffer *buffer;
-	struct Position *position;
+	int *screen_x=(int *)NULL;
+	int *screen_y=(int *)NULL;
+	int *start_x=(int *)NULL;
+	int *start_y=(int *)NULL;
+	int *times=(int *)NULL;
+	Pixel background_pixel,boundary_pixel;
+	Pixel *spectrum_pixels=(Pixel *)NULL;
+	short int *contour_x=(short int *)NULL;
+	short int	*contour_y=(short int *)NULL;
+	short int	*short_int_value=(short int *)NULL;
+	struct Device **device=(struct Device **)NULL;
+	struct Device	**electrode=(struct Device **)NULL;
+	struct Device_description *description=
+		(struct Device_description *)NULL;
+	struct Event *event=(struct Event *)NULL;
+	struct Fibre_node *local_fibre_node_1=(struct Fibre_node *)NULL;
+	struct Fibre_node *local_fibre_node_2=(struct Fibre_node *)NULL;
+	struct Fibre_node *local_fibre_node_3=(struct Fibre_node *)NULL;
+	struct Fibre_node *local_fibre_node_4=(struct Fibre_node *)NULL;
+	struct Interpolation_function *function=
+		(struct Interpolation_function *)NULL;
+	struct Map_drawing_information *drawing_information=
+		(struct Map_drawing_information *)NULL;
+	struct Map_frame *frame=(struct Map_frame *)NULL;
+	struct Region *current_region=(struct Region *)NULL;
+	struct Region	*maximum_region=(struct Region *)NULL;
+	struct Region *minimum_region=(struct Region *)NULL;
+	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
+	struct Rig *rig=(struct Rig *)NULL;
+	struct Signal *signal=(struct Signal *)NULL;
+	struct Signal_buffer *buffer=(struct Signal_buffer *)NULL;
+	struct Position *position=(struct Position *)NULL;
 	XCharStruct bounds;
-	XFontStruct *font;
-	XImage *frame_image;
+	XFontStruct *font=(XFontStruct *)NULL;
+	XImage *frame_image=(XImage *)NULL;
 
 	ENTER(draw_map);
 	return_code=1;

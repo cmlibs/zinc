@@ -259,6 +259,7 @@ to NULL.
 			}
 			else
 			{
+				/* probably not an eror, as the same field can be used by several maps*/
 				display_message(WARNING_MESSAGE,"DESTROY(Map_info). "
 					"Couldn't destroy map_electrode_position_field");
 			}	
@@ -2340,28 +2341,31 @@ Frees up any glyphs used by the nodes in the rig_node_group
 	rig_element_group=(struct GROUP(FE_element) *)NULL;
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-	if (package&&(scene=get_unemap_package_scene(package))&&
-		(rig_node_group=get_unemap_package_rig_node_group(package,
+	if (package)
+	{
+		if((scene=get_unemap_package_scene(package))&&
+			(rig_node_group=get_unemap_package_rig_node_group(package,
 			rig_node_group_number))&&(element_group_manager=
 			get_unemap_package_element_group_manager(package)))
-	{
-		GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);	 
-		rig_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-			(group_name,element_group_manager);
-		if (rig_element_group&&(gt_element_group=
-			Scene_get_graphical_element_group(scene,rig_element_group)))
 		{
-			return_code=1;
-			while (return_code&&(settings=first_settings_in_GT_element_group_that(
-				gt_element_group,GT_element_settings_type_matches,
-				(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))
+			GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);	 
+			rig_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
+				(group_name,element_group_manager);
+			if (rig_element_group&&(gt_element_group=
+				Scene_get_graphical_element_group(scene,rig_element_group)))
 			{
-				return_code=GT_element_group_remove_settings(gt_element_group,settings);
+				return_code=1;
+				while (return_code&&(settings=first_settings_in_GT_element_group_that(
+					gt_element_group,GT_element_settings_type_matches,
+					(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))
+				{
+					return_code=GT_element_group_remove_settings(gt_element_group,settings);
+				}
 			}
-		}
-		else
-		{
-			return_code=0;
+			else
+			{
+				return_code=0;
+			}
 		}
 	}
 	else
