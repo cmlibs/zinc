@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 5 April 2000
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -1590,7 +1590,7 @@ Directly outputs the graphics library commands for activating <material>.
 int compile_Graphical_material(struct Graphical_material *material,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 5 April 2000
 
 DESCRIPTION :
 Graphical_material list/manager iterator function.
@@ -1610,6 +1610,11 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 	USE_PARAMETER(dummy_void);
 	if (material)
 	{
+		/*???RC compile texture here just to be safe */
+		if (material->texture)
+		{
+			compile_Texture(material->texture,NULL);
+		}
 		if (material->display_list_current)
 		{
 			return_code=1;
@@ -1619,11 +1624,6 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 #if defined (OPENGL_API)
 			if (material->display_list||(material->display_list=glGenLists(1)))
 			{
-				/*???RC compile texture here just to be safe */
-				if (material->texture)
-				{
-					compile_Texture(material->texture,NULL);
-				}
 				glNewList(material->display_list,GL_COMPILE);
 				direct_render_Graphical_material(material);
 				glEndList();
