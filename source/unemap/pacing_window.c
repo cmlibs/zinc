@@ -1443,7 +1443,7 @@ Called when the restitution time yes button is pressed.
 		}
 		/* print information to standard out */
 		printf("Captured OK: current S2 delay change = %g ms, current S2 delay = %g ms\n",
-			pacing_window->s2_delay,pacing_window->s2_delay_change);
+			pacing_window->s2_delay_change,pacing_window->s2_delay);
 		s2_delay=(pacing_window->s2_delay)-(pacing_window->s2_delay_change);
 		pacing_window->response='y';
 		if (!stop&&(pacing_window->s2_resolution<=s2_delay)&&
@@ -1588,7 +1588,7 @@ Called when the restitution time no button is pressed.
 		}
 		/* print information to standard out */
 		printf("No capture: current S2 delay change = %g ms, current S2 delay = %g ms\n",
-			pacing_window->s2_delay,pacing_window->s2_delay_change);
+			pacing_window->s2_delay_change,pacing_window->s2_delay);
 		s2_delay=(pacing_window->s2_delay)+(pacing_window->s2_delay_change);
 		pacing_window->response='n';
 		if (!stop&&(pacing_window->s2_resolution<=s2_delay)&&
