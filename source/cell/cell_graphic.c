@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_graphic.c
 
-LAST MODIFIED : 05 May 2001
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Routines for using the Cell_graphic objects
@@ -261,7 +261,7 @@ int Cell_graphic_create_graphical_material(struct Cell_graphic *cell_graphic,
   char *specular_red,char *specular_green,char *specular_blue,
   char *alpha,char *shininess)
 /*******************************************************************************
-LAST MODIFIED : 05 May 2001
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Creates the material for the given <cell_graphic> and assigns it to the
@@ -328,19 +328,12 @@ graphic's graphical object.
         /* Set the material of the graphical object */
         return_code = set_GT_object_default_material(
           cell_graphic->graphics_object,cell_graphic->graphical_material);
-        if (return_code)
-        {
-          if (cell_graphic->graphics_object->object_type == g_VOLTEX)
-          {
-            /* need to update each triangle's material (since using a
-               voltex graphics object) */
-            update_GT_voltex_materials_to_default(
-              cell_graphic->graphics_object);
-          }
-        }
-        else
-        {
-          display_message(ERROR_MESSAGE,
+				/*???RC Note there should be no need to update materials in a voltex
+					since they now use a NULL material to denote the use of the above
+					default_material */
+        if (!return_code)
+				{
+           display_message(ERROR_MESSAGE,
             "Cell_graphic_create_graphical_material.  "
             "Unable to update the material");
         }
