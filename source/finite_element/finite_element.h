@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 23 June 2004
+LAST MODIFIED : 1 November 2004
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1548,6 +1548,23 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(FE_basis,type,int *);
 PROTOTYPE_MANAGER_FUNCTIONS(FE_basis);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(FE_basis,type,int *);
+
+int *FE_basis_string_to_type_array(const char *basis_description_string);
+/*******************************************************************************
+LAST MODIFIED : 1 November 2004
+
+DESCRIPTION :
+Creates a type array from the <basis_description_string>.  Returns the type
+array which can be used in CREATE(FE_basis) and make_FE_basis.
+
+Some examples of basis descriptions are:
+1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
+	linear variation in xi3.
+2. c.Hermite*l.simplex(3)*l.simplex  This has cubic variation in xi1 and 2-D
+	linear simplex variation for xi2 and xi3.
+3. polygon(5,3)*l.Lagrange*polygon  This has linear variation in xi2 and a 2-D
+	5-gon for xi1 and xi3.
+==============================================================================*/
 
 char *FE_basis_type_string(enum FE_basis_type basis_type);
 /*******************************************************************************

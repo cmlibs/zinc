@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 9 September 2004
+LAST MODIFIED : 3 November 2004
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -22745,6 +22745,475 @@ DECLARE_MANAGER_FUNCTIONS(FE_basis)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_basis)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_basis,type,int *)
+
+int *FE_basis_string_to_type_array(const char *basis_description_string)
+/*******************************************************************************
+LAST MODIFIED : 3 November 2004
+
+DESCRIPTION :
+Creates a type array from the <basis_description_string>.  Returns the type
+array which can be used in CREATE(FE_basis) and make_FE_basis.
+
+Some examples of basis descriptions are:
+1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
+	linear variation in xi3.
+2. c.Hermite*l.simplex(3)*l.simplex  This has cubic variation in xi1 and 2-D
+	linear simplex variation for xi2 and xi3.
+3. polygon(5,3)*l.Lagrange*polygon  This has linear variation in xi2 and a 2-D
+	5-gon for xi1 and xi3.
+==============================================================================*/
+{
+	const char *index,*start_basis_name;
+	int *basis_type,component,i,j,*first_simplex,no_error,
+		number_of_polygon_vertices,number_of_xi_coordinates,previous_component,
+		*temp_basis_type,*xi_basis_type,xi_number;
+
+	ENTER(FE_basis_string_to_type_array);
+	basis_type=(int *)NULL;
+	if (basis_description_string)
+	{
+		number_of_xi_coordinates=1;
+		index=basis_description_string;
+		while (index=strchr(index,'*'))
+		{
+			index++;
+			number_of_xi_coordinates++;
+		}
+		if (ALLOCATE(basis_type,int,
+			1+(number_of_xi_coordinates*(1+ number_of_xi_coordinates))/2))
+		{
+			/* decipher the basis description */
+			xi_number=0;
+			start_basis_name=basis_description_string;
+			/* skip leading blanks */
+			while (' '== *start_basis_name)
+			{
+				start_basis_name++;
+			}
+			xi_basis_type=basis_type;
+			*xi_basis_type=number_of_xi_coordinates;
+			xi_basis_type++;
+			no_error=1;
+			while (no_error&&(xi_number<number_of_xi_coordinates))
+			{
+				xi_number++;
+				/* determine the interpolation in the xi direction */
+				if ((0==strncmp(start_basis_name,"l.simplex",9))||
+					(0==strncmp(start_basis_name,"q.simplex",9)))
+				{
+					/*???debug */
+					/*printf("simplex\n");*/
+					if (0==strncmp(start_basis_name,"l.simplex",9))
+					{
+						*xi_basis_type=LINEAR_SIMPLEX;
+					}
+					else
+					{
+						*xi_basis_type=QUADRATIC_SIMPLEX;
+					}
+					/*???debug */
+					/*printf("%p %d %d\n",xi_basis_type,*xi_basis_type,LINEAR_SIMPLEX);*/
+					start_basis_name += 9;
+					/* skip blanks */
+					while (' '== *start_basis_name)
+					{
+						start_basis_name++;
+					}
+					/* check for links to other simplex components */
+					if ('('== *start_basis_name)
+					{
+						/*???debug */
+						/*printf("first simplex component\n");*/
+						xi_basis_type++;
+						/* assign links to other simplex components */
+						previous_component=xi_number+1;
+						if ((1==sscanf(start_basis_name,"(%d %n",&component,&i))&&
+							(previous_component<=component)&&
+							(component<=number_of_xi_coordinates))
+						{
+							do
+							{
+								start_basis_name += i;
+								while (previous_component<component)
+								{
+									*xi_basis_type=NO_RELATION;
+									xi_basis_type++;
+									previous_component++;
+								}
+								*xi_basis_type=1;
+								xi_basis_type++;
+								previous_component++;
+							} while ((')'!=start_basis_name[0])&&
+								(1==sscanf(start_basis_name,"%*[; ]%d %n",&component,&i))&&
+								(previous_component<=component)&&
+								(component<=number_of_xi_coordinates));
+							if (')'==start_basis_name[0])
+							{
+								/* fill rest of basis_type row with NO_RELATION */
+								while (previous_component <= number_of_xi_coordinates)
+								{
+									*xi_basis_type=NO_RELATION;
+									xi_basis_type++;
+									previous_component++;
+								}
+								start_basis_name ++;
+							}
+							else
+							{
+								/* have no links to succeeding xi directions */
+								display_message(ERROR_MESSAGE,
+									"Invalid simplex component of basis");
+								no_error=0;
+							}
+						}
+						else
+						{
+							/* have no links to succeeding xi directions */
+							display_message(ERROR_MESSAGE,
+								"Invalid simplex component of basis");
+							no_error=0;
+						}
+					}
+					else
+					{
+						/*???debug */
+						/*printf("not first simplex component\n");*/
+						/* check that links have been assigned */
+						temp_basis_type=xi_basis_type;
+						i=xi_number-1;
+						j=number_of_xi_coordinates-xi_number;
+						first_simplex=(int *)NULL;
+						while (no_error&&(i>0))
+						{
+							j++;
+							temp_basis_type -= j;
+							if (NO_RELATION!= *temp_basis_type)
+							{
+								/*???debug */
+								/*printf("%p %p\n",xi_basis_type,(temp_basis_type-(xi_number-i)));
+								  printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
+								if (*xi_basis_type== *(temp_basis_type-(xi_number-i)))
+								{
+									first_simplex=temp_basis_type;
+								}
+								else
+								{
+									no_error=0;
+								}
+							}
+							i--;
+						}
+						/*???debug */
+						/*printf("%d %p\n",no_error,first_simplex);*/
+						if (no_error&&first_simplex)
+						{
+							xi_basis_type++;
+							first_simplex++;
+							i=xi_number;
+							while (i<number_of_xi_coordinates)
+							{
+								*xi_basis_type= *first_simplex;
+								xi_basis_type++;
+								first_simplex++;
+								i++;
+							}
+						}
+						else
+						{
+							no_error=0;
+						}
+					}
+				}
+				else
+				{
+					if (0==strncmp(start_basis_name,"polygon",7))
+					{
+						*xi_basis_type=POLYGON;
+						start_basis_name += 7;
+						/* skip blanks */
+						while (' '== *start_basis_name)
+						{
+							start_basis_name++;
+						}
+						/* check for link to other polygon component */
+						if ('('== *start_basis_name)
+						{
+							/* assign link to other polygon component */
+							if ((2==sscanf(start_basis_name,"(%d ;%d )%n",
+									  &number_of_polygon_vertices,&component,&i))&&
+								(3<=number_of_polygon_vertices)&&
+								(xi_number<component)&&
+								(component<=number_of_xi_coordinates)&&
+								('*'== start_basis_name[i]))
+							{
+								start_basis_name += i;
+								/* assign link */
+								xi_basis_type++;
+								i=xi_number+1;
+								while (i<component)
+								{
+									*xi_basis_type=NO_RELATION;
+									xi_basis_type++;
+									i++;
+								}
+								*xi_basis_type=number_of_polygon_vertices;
+								xi_basis_type++;
+								while (i<number_of_xi_coordinates)
+								{
+									*xi_basis_type=NO_RELATION;
+									xi_basis_type++;
+									i++;
+								}
+							}
+							else
+							{
+								/* have no links to succeeding xi directions */
+								display_message(ERROR_MESSAGE,
+									"Invalid polygon component of basis");
+								no_error=0;
+							}
+						}
+						else
+						{
+							/* check that link has been assigned */
+							temp_basis_type=xi_basis_type;
+							i=xi_number-1;
+							j=number_of_xi_coordinates-xi_number;
+							number_of_polygon_vertices=0;
+							while (no_error&&(i>0))
+							{
+								j++;
+								temp_basis_type -= j;
+								if (NO_RELATION!= *temp_basis_type)
+								{
+									if (0<number_of_polygon_vertices)
+									{
+										no_error=0;
+									}
+									else
+									{
+										if ((number_of_polygon_vertices= *temp_basis_type)<3)
+										{
+											no_error=0;
+										}
+									}
+								}
+								i--;
+							}
+							if (no_error&&(3<=number_of_polygon_vertices))
+							{
+								xi_basis_type++;
+								i=xi_number;
+								while (i<number_of_xi_coordinates)
+								{
+									*xi_basis_type=NO_RELATION;
+									xi_basis_type++;
+									i++;
+								}
+							}
+							else
+							{
+								no_error=0;
+							}
+						}
+					}
+					else
+					{
+						if (0==strncmp(start_basis_name,"l.Lagrange",10))
+						{
+							*xi_basis_type=LINEAR_LAGRANGE;
+							start_basis_name += 10;
+						}
+						else
+						{
+							if (0==strncmp(start_basis_name,"q.Lagrange",10))
+							{
+								*xi_basis_type=QUADRATIC_LAGRANGE;
+								start_basis_name += 10;
+							}
+							else
+							{
+								if (0==strncmp(start_basis_name,"c.Lagrange",10))
+								{
+									*xi_basis_type=CUBIC_LAGRANGE;
+									start_basis_name += 10;
+								}
+								else
+								{
+									if (0==strncmp(start_basis_name,"c.Hermite",9))
+									{
+										*xi_basis_type=CUBIC_HERMITE;
+										start_basis_name += 9;
+									}
+									else
+									{
+										if (0==strncmp(start_basis_name,"LagrangeHermite",15))
+										{
+											*xi_basis_type=LAGRANGE_HERMITE;
+											start_basis_name += 15;
+										}
+										else
+										{
+											if (0==strncmp(start_basis_name,"HermiteLagrange",15))
+											{
+												*xi_basis_type=HERMITE_LAGRANGE;
+												start_basis_name += 15;
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"Invalid basis type");
+												no_error=0;
+											}
+										}
+									}
+								}
+							}
+						}
+						if (no_error)
+						{
+							/* skip blanks */
+							while (' '== *start_basis_name)
+							{
+								start_basis_name++;
+							}
+							/* check for simplex elements */
+							if ('('== *start_basis_name)
+							{
+								/* assign links to succeeding simplex xi directions */
+								temp_basis_type=xi_basis_type;
+								i=xi_number;
+								while (no_error&&(i<number_of_xi_coordinates)&&
+									(')'!= *start_basis_name))
+								{
+									temp_basis_type++;
+									if (';'== *start_basis_name)
+									{
+										*temp_basis_type=NO_RELATION;
+										start_basis_name++;
+									}
+									else
+									{
+										if (0==strncmp(start_basis_name,"l.Lagrange",10))
+										{
+											*temp_basis_type=LINEAR_LAGRANGE;
+											start_basis_name += 10;
+										}
+										else
+										{
+											if (0==strncmp(start_basis_name,"q.Lagrange",10))
+											{
+												*temp_basis_type=QUADRATIC_LAGRANGE;
+												start_basis_name += 10;
+											}
+											else
+											{
+												if (0==strncmp(start_basis_name,"c.Lagrange",10))
+												{
+													*temp_basis_type=CUBIC_LAGRANGE;
+													start_basis_name += 10;
+												}
+												else
+												{
+													if (0==strncmp(start_basis_name,"c.Hermite",9))
+													{
+														*temp_basis_type=CUBIC_HERMITE;
+														start_basis_name += 9;
+													}
+													else
+													{
+														if (0==strncmp(start_basis_name,
+																 "LagrangeHermite",15))
+														{
+															*temp_basis_type=LAGRANGE_HERMITE;
+															start_basis_name += 15;
+														}
+														else
+														{
+															if (0==strncmp(start_basis_name,
+																	 "HermiteLagrange",15))
+															{
+																*temp_basis_type=HERMITE_LAGRANGE;
+																start_basis_name += 15;
+															}
+															else
+															{
+																display_message(ERROR_MESSAGE,
+																	"Invalid basis type");
+																no_error=0;
+															}
+														}
+													}
+												}
+											}
+										}
+										if (';'== *start_basis_name)
+										{
+											start_basis_name++;
+										}
+									}
+									i++;
+								}
+								if (no_error)
+								{
+									while (i<number_of_xi_coordinates)
+									{
+										temp_basis_type++;
+										*temp_basis_type=NO_RELATION;
+										i++;
+									}
+								}
+							}
+							else
+							{
+								temp_basis_type=xi_basis_type;
+								for (i=xi_number;i<number_of_xi_coordinates;i++)
+								{
+									temp_basis_type++;
+									*temp_basis_type=NO_RELATION;
+								}
+							}
+							if (no_error&&(xi_number<number_of_xi_coordinates))
+							{
+								xi_basis_type += number_of_xi_coordinates-xi_number+1;
+							}
+						}
+					}
+				}
+				if ('*' == *start_basis_name)
+				{
+					start_basis_name++;
+				}
+				else
+				{
+					if ('\0' != *start_basis_name)
+					{
+						display_message(ERROR_MESSAGE,"Invalid basis type");
+						no_error=0;
+					}
+				}
+			}
+			if (!no_error)
+			{
+				display_message(ERROR_MESSAGE,"Invalid basis description");
+				DEALLOCATE(basis_type);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "FE_basis_string_to_type_array.  "
+				"Unable to allocate basis type array.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_basis_string_to_type_array.  Invalid argument)");
+	}
+	LEAVE;
+
+	return (basis_type);
+} /* FE_basis_string_to_type_array */
 
 char *FE_basis_type_string(enum FE_basis_type basis_type)
 /*******************************************************************************
