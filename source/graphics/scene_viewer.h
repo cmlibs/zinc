@@ -1033,6 +1033,16 @@ not just at the next idle moment as Scene_viewer_redraw does.
 Forces a full redraw rather than a fast_changing update.
 ==============================================================================*/
 
+int Scene_viewer_redraw_now_with_overrides(struct Scene_viewer *scene_viewer,
+	int antialias, int transparency_layers);
+/*******************************************************************************
+LAST MODIFIED : 23 September 2002
+
+DESCRIPTION :
+Requests a full redraw immediately.  If non_zero then the supplied <antialias>
+and <transparency_layers> are used for just this render.
+==============================================================================*/
+
 int Scene_viewer_redraw_now_without_swapbuffers(
 	struct Scene_viewer *scene_viewer);
 /*******************************************************************************

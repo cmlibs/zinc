@@ -5972,6 +5972,67 @@ Requests a full redraw immediately.
 	return (return_code);
 } /* Scene_viewer_redraw_now */
 
+int Scene_viewer_redraw_now_with_overrides(struct Scene_viewer *scene_viewer,
+	int antialias, int transparency_layers)
+/*******************************************************************************
+LAST MODIFIED : 23 September 2002
+
+DESCRIPTION :
+Requests a full redraw immediately.  If non_zero then the supplied <antialias>
+and <transparency_layers> are used for just this render.
+==============================================================================*/
+{
+	int return_code;
+	struct Event_dispatcher *event_dispatcher;
+
+	ENTER(Scene_viewer_redraw_now);
+	if (scene_viewer)
+	{
+		/* remove idle update workproc if pending */
+		if (scene_viewer->idle_update_callback_id)
+		{
+			event_dispatcher = User_interface_get_event_dispatcher(
+				scene_viewer->user_interface);
+			Event_dispatcher_remove_idle_event_callback(
+				event_dispatcher, scene_viewer->idle_update_callback_id);
+			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
+			if (scene_viewer->tumble_active)
+			{
+				Scene_viewer_automatic_tumble_callback((void *)scene_viewer);
+				if(!scene_viewer->tumble_callback_id)
+				{
+					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_event_callback(
+						event_dispatcher, Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
+						EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);
+				}
+			}
+			else
+			{
+				scene_viewer->tumble_angle = 0.0;
+			}
+		}
+		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		/* always do a full redraw */
+		scene_viewer->fast_changing=0;
+		return_code=Scene_viewer_render_scene_in_viewport_with_overrides(
+			scene_viewer, /*left*/0, /*bottom*/0, /*right*/0, /*top*/0,
+			antialias, transparency_layers);
+		if (scene_viewer->swap_buffers)
+		{
+			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_redraw_now.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_redraw_now */
+
 int Scene_viewer_redraw_now_without_swapbuffers(
 	struct Scene_viewer *scene_viewer)
 /*******************************************************************************

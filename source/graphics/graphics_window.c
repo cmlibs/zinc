@@ -4558,9 +4558,8 @@ graphics window on screen.
 #endif /* defined (MOTIF) */
 			/* Always use the window size if grabbing from screen */
 			Graphics_window_get_viewing_area_size(window, width, height);
-			Scene_viewer_render_scene_in_viewport_with_overrides(
+			Scene_viewer_redraw_now_with_overrides(
 				Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
-				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
 				preferred_antialias, preferred_transparency_layers);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
