@@ -3293,25 +3293,40 @@ Sets the transformation of <scene_object>.
 				DEALLOCATE(scene_object->transformation);
 			}
 		}
-		else if (scene_object->transformation ||
-			ALLOCATE(scene_object->transformation, gtMatrix, 1))
+		else
 		{
-			if (!gtMatrix_match(transformation, scene_object->transformation))
+			if (scene_object->transformation)
 			{
-				for (i = 0; i < 4; i++)
+				if (!gtMatrix_match(transformation, scene_object->transformation))
 				{
-					for (j = 0; j < 4; j++)
+					for (i = 0; i < 4; i++)
 					{
-						(*scene_object->transformation)[i][j] = (*transformation)[i][j];
+						for (j = 0; j < 4; j++)
+						{
+							(*scene_object->transformation)[i][j] = (*transformation)[i][j];
+						}
 					}
 				}
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Scene_object_set_transformation.  "
-				"Unable to allocate transformation");
-			return_code = 0;				
+			else
+			{
+				if (ALLOCATE(scene_object->transformation, gtMatrix, 1))
+				{
+					for (i = 0; i < 4; i++)
+					{
+						for (j = 0; j < 4; j++)
+						{
+							(*scene_object->transformation)[i][j] = (*transformation)[i][j];
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Scene_object_set_transformation.  "
+						"Unable to allocate transformation");
+					return_code = 0;				
+				}
+			}
 		}
 		CMISS_CALLBACK_LIST_CALL(Scene_object_transformation)(
 			scene_object->transformation_callback_list, scene_object,
