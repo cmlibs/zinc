@@ -845,6 +845,7 @@ a single point in 3-D space with an axes glyph.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		graphics_object_name = duplicate_string("axes");
+		glyph = (struct GT_object *)NULL;
 		glyph_name = duplicate_string("axes_xyz");
 		material =
 			ACCESS(Graphical_material)(Material_package_get_default_material(command_data->material_package));
@@ -989,7 +990,10 @@ a single point in 3-D space with an axes glyph.
 		DESTROY(Option_table)(&option_table);
 		DEACCESS(Graphical_material)(&material);
 		DEALLOCATE(graphics_object_name);
-		DEACCESS(GT_object)(&glyph);
+		if (glyph)
+		{
+			DEACCESS(GT_object)(&glyph);
+		}
 		DEALLOCATE(glyph_name);
 	}
 	else
