@@ -1287,7 +1287,7 @@ UTILITIES_SRCS = \
 	$(BIOSENSE2VRML_SRCS) \
 	$(BIOSENSE2SIG_SRCS) \
 	$(BMSI2SIG_SRCS) \
-	$(AFFINE_SRCS) \
+	$(AFFINE_SRCS)
 
 depend :
 	echo -n > DependMake
