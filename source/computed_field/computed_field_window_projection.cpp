@@ -1208,6 +1208,7 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Graphics_window)(&graphics_window);
 			}
+			DESTROY(Option_table)(&option_table);
 		}
 	}
 	else

@@ -714,6 +714,7 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Texture)(&texture);
 			}
+			DESTROY(Option_table)(&option_table);
 		}
 	}
 	else
