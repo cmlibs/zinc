@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -4321,7 +4321,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 static int gfx_create_element_point_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
@@ -4363,6 +4363,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 					if (command_data->element_point_viewer=CREATE(Element_point_viewer)(
 						&(command_data->element_point_viewer),
 						command_data->element_manager,
+						command_data->node_manager,
 						command_data->element_point_ranges_selection,
 						command_data->computed_field_package,
 						command_data->fe_field_manager,
