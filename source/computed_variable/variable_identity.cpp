@@ -254,4 +254,4 @@ string_handle Variable_identity::get_string_representation_local()
 	}
 
 	return (return_string);
-};
+}
