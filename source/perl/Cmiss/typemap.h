@@ -3,6 +3,6 @@
 
 typedef struct Cmiss_element * Cmiss__element;
 typedef struct Cmiss_node * Cmiss__node;
-typedef struct Cmiss_FE_field * Cmiss__FE_field;
+typedef struct Cmiss_region * Cmiss__Region;
 
 #endif /* ! defined (PERL_CMISS_TYPEMAP_H) */

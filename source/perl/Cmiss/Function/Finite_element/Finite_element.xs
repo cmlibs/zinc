@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include "api/cmiss_function_finite_element.h"
+#include "api/cmiss_region.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Function::Finite_element  PACKAGE = Cmiss::Function::Finite_element  PREFIX = Cmiss_function_finite_element_
@@ -11,9 +12,21 @@ MODULE = Cmiss::Function::Finite_element  PACKAGE = Cmiss::Function::Finite_elem
 PROTOTYPES: DISABLE
 
 Cmiss::Function
-new_xs(Cmiss::FE_field fe_field)
+new_xs(Cmiss::Region region,char *path,char *name)
 	CODE:
-		RETVAL=Cmiss_function_finite_element_create(fe_field);
+		{
+			struct Cmiss_region *sub_region;
+
+			if (path)
+			{
+				sub_region=Cmiss_region_get_sub_region(region,path);
+			}
+			else
+			{
+				sub_region=region;
+			}
+			RETVAL=Cmiss_function_finite_element_create(sub_region,name);
+		}
 		if (!RETVAL)
 		{
 			XSRETURN_UNDEF;
