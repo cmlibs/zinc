@@ -12,6 +12,7 @@ Functions for interfacing with the graphics library.
 #if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <GL/glu.h>
+#include <GL/glut.h>
 #include <GL/glx.h>
 #endif /* defined (MOTIF) */
 #endif /* defined (OPENGL_API) */
@@ -895,15 +896,28 @@ memory.
 ???SAB.  Taken directly from the insight book on OpenGL Extensions
 ==============================================================================*/
 {
-	char *end,*p;
-	int extNameLen, n;
-	int return_code;
+	char *end, *p;
+#if defined (DEBUG)
+	char *glu, *vendor, *version;
+#endif /* defined (DEBUG) */
+	int extNameLen, n, return_code;
 
 	/* check arguments */
 	if (extName)
 	{
 		extNameLen=strlen(extName);
+
 		p=(char *)glGetString(GL_EXTENSIONS);
+#if defined (DEBUG)
+		/* For debugging */
+		vendor=(char *)glGetString(GL_VENDOR);
+		version=(char *)glGetString(GL_VERSION);
+		glu=(char *)gluGetString(GLU_EXTENSIONS);
+		printf("Vendor %s\n", vendor);
+		printf("Version %s\n", version);
+		printf("OpenGL %s\n", p);
+		printf("GLU %s\n", glu);
+#endif /* defined (DEBUG) */
 		if (NULL==p)
 		{
 			return_code=0;

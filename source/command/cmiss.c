@@ -8296,12 +8296,13 @@ DESCRIPTION :
 Modifies the properties of a texture.
 ==============================================================================*/
 {
-	char *combine_mode_string, *current_token, *file_number_pattern,
-		*filter_mode_string, *raw_image_storage_string, *resize_filter_mode_string,
-		**valid_strings, *wrap_mode_string;
+	char *combine_mode_string, *compression_mode_string, *current_token, 
+		*file_number_pattern, *filter_mode_string, *raw_image_storage_string,
+		*resize_filter_mode_string, **valid_strings, *wrap_mode_string;
 	double texture_distortion[3];
 	enum Raw_image_storage raw_image_storage;
 	enum Texture_combine_mode combine_mode;
+	enum Texture_compression_mode compression_mode;
 	enum Texture_filter_mode filter_mode;
 	enum Texture_resize_filter_mode resize_filter_mode;
 	enum Texture_wrap_mode wrap_mode;
@@ -8467,6 +8468,16 @@ Modifies the properties of a texture.
 					/* colour */
 					Option_table_add_entry(option_table, "colour", &colour,
 					  NULL,set_Colour);
+					/* compressed_unspecified/uncompressed */
+					compression_mode_string = ENUMERATOR_STRING(Texture_compression_mode)(
+						Texture_get_compression_mode(texture));
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Texture_compression_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Texture_compression_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &compression_mode_string);
+					DEALLOCATE(valid_strings);
 					/* depth */
 					Option_table_add_entry(option_table, "depth", &depth,
 					  NULL, set_float_non_negative);
@@ -8570,6 +8581,10 @@ Modifies the properties of a texture.
 						STRING_TO_ENUMERATOR(Texture_combine_mode)(
 							combine_mode_string, &combine_mode);
 						Texture_set_combine_mode(texture, combine_mode);
+
+						STRING_TO_ENUMERATOR(Texture_compression_mode)(
+							compression_mode_string, &compression_mode);
+						Texture_set_compression_mode(texture, compression_mode);
 
 						STRING_TO_ENUMERATOR(Texture_filter_mode)(
 							filter_mode_string, &filter_mode);

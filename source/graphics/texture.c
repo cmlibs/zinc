@@ -101,6 +101,7 @@ The properties of a graphical texture.
 	int crop_bottom_margin,crop_height,crop_left_margin,crop_width;
 	/* texture display options */
 	enum Texture_combine_mode combine_mode;
+	enum Texture_compression_mode compression_mode;
 	enum Texture_filter_mode filter_mode;
 	enum Texture_wrap_mode wrap_mode;
 	struct Colour combine_colour;
@@ -272,6 +273,71 @@ DESCRIPTION :
 	return (return_code);
 } /* Texture_get_type_and_format_from_storage_type */
 #endif /* defined (OPENGL_API) */
+	
+#if defined (OPENGL_API)
+static int Texture_get_hardware_storage_format(
+	enum Texture_compression_mode compression_mode, int number_of_components)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_get_hardware_storage_format);
+	return_code=1;
+	switch (compression_mode)
+	{
+		case TEXTURE_UNCOMPRESSED:
+		{
+			return_code = number_of_components;
+		} break;
+		case TEXTURE_COMPRESSED_UNSPECIFIED:
+		{
+#if defined (GL_ARB_texture_compression)
+			if (query_gl_extension("GL_ARB_texture_compression"))
+			{
+				switch (number_of_components)
+				{
+					case 3:
+					{
+						return_code = GL_COMPRESSED_RGB_ARB;
+					} break;
+					case 4:
+					{
+						return_code = GL_COMPRESSED_RGBA_ARB;
+					} break;
+					default:
+					{
+						display_message(WARNING_MESSAGE, "Texture_get_hardware_storage_format.  "
+							"Texture compression not supported for this number of components.");
+						return_code = number_of_components;
+					} break;
+				}
+			}
+			else
+			{
+#endif /* defined (GL_ARB_texture_compression) */
+				display_message(WARNING_MESSAGE, "Texture_get_hardware_storage_format.  "
+					"Texture compression not supported on this hardware.");
+				return_code = number_of_components;
+#if defined (GL_ARB_texture_compression)
+			}
+#endif /* defined (GL_ARB_texture_compression) */
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE, "Texture_get_hardware_storage_format.  "
+				"Invalid texture compression, using uncompressed.");
+			return_code = number_of_components;
+		} break;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_get_hardware_storage_format */
+#endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
 static int direct_render_Texture_environment(struct Texture *texture)
@@ -431,7 +497,7 @@ The reduction factor applies equally in all texture dimensions.
 #if defined (OPENGL_API)
 	int return_code;
 	GLenum format, type;
-	GLint number_of_components, test_width;
+	GLint number_of_components, test_width, hardware_texture_format;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(Texture_get_hardware_reduction);
@@ -442,6 +508,8 @@ The reduction factor applies equally in all texture dimensions.
 			Texture_storage_type_get_number_of_components(texture->storage);
 		Texture_get_type_and_format_from_storage_type(texture->storage,
 			texture->number_of_bytes_per_component, &type, &format);
+		hardware_texture_format = Texture_get_hardware_storage_format(
+			texture->compression_mode, number_of_components);
 		reduction = 1;
 		switch (texture->dimension)
 		{
@@ -449,7 +517,7 @@ The reduction factor applies equally in all texture dimensions.
 			{
 				do
 				{
-					glTexImage1D(GL_PROXY_TEXTURE_1D, (GLint)0, number_of_components,
+					glTexImage1D(GL_PROXY_TEXTURE_1D, (GLint)0, hardware_texture_format,
 						(GLint)(texture->width_texels/reduction), (GLint)0,
 						format, type, (GLvoid *)(texture->image));
 					glGetTexLevelParameteriv(GL_PROXY_TEXTURE_1D, (GLint)0,
@@ -466,7 +534,7 @@ The reduction factor applies equally in all texture dimensions.
 			{
 				do
 				{
-					glTexImage2D(GL_PROXY_TEXTURE_2D, (GLint)0, number_of_components,
+					glTexImage2D(GL_PROXY_TEXTURE_2D, (GLint)0, hardware_texture_format,
 						(GLint)(texture->width_texels/reduction),
 						(GLint)(texture->height_texels/reduction), (GLint)0,
 						format, type, (GLvoid *)(texture->image));
@@ -486,7 +554,7 @@ The reduction factor applies equally in all texture dimensions.
 #if defined (GL_VERSION_1_2)
 				do
 				{
-					glTexImage3D(GL_PROXY_TEXTURE_3D, (GLint)0, number_of_components,
+					glTexImage3D(GL_PROXY_TEXTURE_3D, (GLint)0, hardware_texture_format,
 						(GLint)(texture->width_texels/reduction),
 						(GLint)(texture->height_texels/reduction),
 						(GLint)(texture->depth_texels/reduction), (GLint)0,
@@ -774,8 +842,8 @@ Directly outputs the commands setting up the <texture>.
 {
 	int  return_code;
 #if defined (OPENGL_API)
-	int number_of_components,reduced_depth_texels, reduced_height_texels,
-		reduced_width_texels,reduction;
+	int hardware_storage_format, number_of_components,reduced_depth_texels,
+		reduced_height_texels,reduced_width_texels,reduction;
 	GLenum format, texture_target, type;
 	GLfloat values[4];
 	unsigned char *reduced_image;
@@ -893,6 +961,8 @@ Directly outputs the commands setting up the <texture>.
 					texture->number_of_bytes_per_component, &type, &format);
 				number_of_components =
 					Texture_storage_type_get_number_of_components(texture->storage);
+				hardware_storage_format = Texture_get_hardware_storage_format
+					(texture->compression_mode, number_of_components);
 				if (0 < (reduction = Texture_get_hardware_reduction(texture)))
 				{
 					reduced_image = (unsigned char *)NULL;
@@ -965,14 +1035,14 @@ Directly outputs the commands setting up the <texture>.
 								if (reduced_image)
 								{
 									glTexImage1D(GL_TEXTURE_1D, (GLint)0,
-										(GLint)number_of_components,
+										(GLint)hardware_storage_format,
 										(GLint)reduced_width_texels, (GLint)0,
 										format, type, (GLvoid *)reduced_image);
 								}
 								else
 								{
 									glTexImage1D(GL_TEXTURE_1D, (GLint)0,
-										(GLint)number_of_components,
+										(GLint)hardware_storage_format,
 										(GLint)(texture->width_texels), (GLint)0,
 										format, type, (GLvoid *)(texture->image));
 								}
@@ -982,7 +1052,7 @@ Directly outputs the commands setting up the <texture>.
 								if (reduced_image)
 								{
 									glTexImage2D(GL_TEXTURE_2D, (GLint)0,
-										(GLint)number_of_components,
+										(GLint)hardware_storage_format,
 										(GLint)reduced_width_texels,
 										(GLint)reduced_height_texels, (GLint)0,
 										format, type, (GLvoid *)reduced_image);
@@ -990,7 +1060,7 @@ Directly outputs the commands setting up the <texture>.
 								else
 								{
 									glTexImage2D(GL_TEXTURE_2D, (GLint)0,
-										(GLint)number_of_components,
+										(GLint)hardware_storage_format,
 										(GLint)(texture->width_texels),
 										(GLint)(texture->height_texels), (GLint)0,
 										format, type, (GLvoid *)(texture->image));
@@ -1002,7 +1072,7 @@ Directly outputs the commands setting up the <texture>.
 								if (reduced_image)
 								{
 									glTexImage3D(GL_TEXTURE_3D, (GLint)0,
-										(GLint)number_of_components,
+										(GLint)hardware_storage_format,
 										(GLint)reduced_width_texels,
 										(GLint)reduced_height_texels,
 										(GLint)reduced_depth_texels, (GLint)0,
@@ -1010,8 +1080,8 @@ Directly outputs the commands setting up the <texture>.
 								}
 								else
 								{
-									glTexImage3D(GL_TEXTURE_3D, (GLint)0,
-										(GLint)number_of_components,
+									glTexImage3D(GL_TEXTURE_3D, (GLint)0,	
+										(GLint)hardware_storage_format,
 										(GLint)(texture->width_texels),
 										(GLint)(texture->height_texels),
 										(GLint)(texture->depth_texels), (GLint)0,
@@ -1345,6 +1415,33 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_combine_mode)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Texture_combine_mode)
 
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_compression_mode)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Texture_compression_mode));
+	switch (enumerator_value)
+	{
+		case TEXTURE_UNCOMPRESSED:
+		{
+			enumerator_string = "uncompressed";
+		} break;
+		case TEXTURE_COMPRESSED_UNSPECIFIED:
+		{
+			enumerator_string = "compressed_unspecified";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Texture_compression_mode) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Texture_compression_mode)
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_filter_mode)
 {
 	char *enumerator_string;
@@ -1566,6 +1663,7 @@ of all textures.
 			(texture->image)[2]=0xFF;
 			(texture->image)[3]=0xFF;
 			texture->combine_mode=TEXTURE_DECAL;
+			texture->compression_mode=TEXTURE_UNCOMPRESSED;
 			texture->filter_mode=TEXTURE_NEAREST_FILTER;
 			texture->resize_filter_mode=TEXTURE_RESIZE_NEAREST_FILTER;
 			texture->wrap_mode=TEXTURE_REPEAT_WRAP;
@@ -1864,6 +1962,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 			destination->height_texels=source->height_texels;
 			destination->width_texels=source->width_texels;
 			destination->combine_mode=source->combine_mode;
+			destination->compression_mode=source->compression_mode;
 			destination->filter_mode=source->filter_mode;
 			destination->wrap_mode=source->wrap_mode;
 			(destination->combine_colour).red=(source->combine_colour).red;
@@ -2120,6 +2219,65 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 
 	return (return_code);
 } /* Texture_set_combine_mode */
+
+enum Texture_compression_mode Texture_get_compression_mode(struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+Returns how the texture is compressed.
+==============================================================================*/
+{
+	enum Texture_compression_mode compression_mode;
+
+	ENTER(Texture_get_compression_mode);
+	if (texture)
+	{
+		compression_mode = texture->compression_mode;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_get_compression_mode.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (compression_mode);
+} /* Texture_get_compression_mode */
+
+int Texture_set_compression_mode(struct Texture *texture,
+	enum Texture_compression_mode compression_mode)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+Sets how the texture is compressed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_set_compression_mode);
+	if (texture&&((TEXTURE_UNCOMPRESSED==compression_mode)||
+		(TEXTURE_COMPRESSED_UNSPECIFIED==compression_mode)))
+	{
+		if (compression_mode != texture->compression_mode)
+		{
+			texture->compression_mode = compression_mode;
+			/* display list needs to be compiled again */
+			texture->display_list_current=0;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_set_compression_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_set_compression_mode */
 
 enum Texture_filter_mode Texture_get_filter_mode(struct Texture *texture)
 /*******************************************************************************
@@ -3923,6 +4081,9 @@ Writes the properties of the <texture> to the command window.
 		/* write the combine type */
 		display_message(INFORMATION_MESSAGE,"  combine type : %s\n",
 			ENUMERATOR_STRING(Texture_combine_mode)(texture->combine_mode));
+		/* write the compression type */
+		display_message(INFORMATION_MESSAGE,"  compression type : %s\n",
+			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
 			"  colour : red = %.3g, green = %.3g, blue = %.3g\n",
@@ -4004,6 +4165,9 @@ The command is started with the string pointed to by <command_prefix>.
 		/* write the combine type */
 		display_message(INFORMATION_MESSAGE," %s",
 			ENUMERATOR_STRING(Texture_combine_mode)(texture->combine_mode));
+		/* write the compression type */
+		display_message(INFORMATION_MESSAGE," %s",
+			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
 		/* write the type of magnification/minification filter */
 		display_message(INFORMATION_MESSAGE," %s",
 			ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));

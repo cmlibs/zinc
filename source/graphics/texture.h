@@ -36,6 +36,19 @@ How the texture is combined with the material.
 	TEXTURE_MODULATE
 }; /* enum Texture_combine_mode */
 
+enum Texture_compression_mode
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+Whether the texture is compressed.  Could add specific compression formats that
+are explictly requested from the hardware.
+==============================================================================*/
+{
+	TEXTURE_UNCOMPRESSED,
+	TEXTURE_COMPRESSED_UNSPECIFIED /* Allow the hardware to choose the compression */
+}; /* enum Texture_compression_mode */
+
 enum Texture_filter_mode
 /*******************************************************************************
 LAST MODIFIED : 28 February 2002
@@ -118,6 +131,8 @@ Global functions
 */
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_combine_mode);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_compression_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_filter_mode);
 
@@ -225,6 +240,23 @@ LAST MODIFIED : 13 February 1998
 
 DESCRIPTION :
 Sets how the texture is combined with the material: blend, decal or modulate.
+==============================================================================*/
+
+enum Texture_compression_mode Texture_get_compression_mode(struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+Returns how the texture is compressed.
+==============================================================================*/
+
+int Texture_set_compression_mode(struct Texture *texture,
+	enum Texture_compression_mode compression_mode);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+Sets how the texture is compressed.
 ==============================================================================*/
 
 enum Texture_filter_mode Texture_get_filter_mode(struct Texture *texture);
