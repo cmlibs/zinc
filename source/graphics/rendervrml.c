@@ -308,7 +308,7 @@ LAST MODIFIED : 9 May 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *material_name;
+	char *dot_pointer, *material_name;
 	int return_code;
 	struct VRML_prototype *vrml_prototype;
 
@@ -323,6 +323,11 @@ DESCRIPTION :
 		{
 			if (GET_NAME(Graphical_material)(material,&material_name))
 			{
+				/* Can't have . in a name */
+				while (dot_pointer = strchr(material_name, '.'))
+				{
+					*dot_pointer = '_';
+				}
 				vrml_prototype=CREATE(VRML_prototype)(material_name,(struct Texture *)NULL,
 					material,(struct GT_object *)NULL,/*time*/0);
 				if (FIRST_OBJECT_IN_LIST_THAT(VRML_prototype)(VRML_prototype_is_identical,
@@ -2207,7 +2212,7 @@ LAST MODIFIED : 9 May 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *prototype_name, *material_name;
+	char *dot_pointer, *prototype_name, *material_name;
 	int group, in_def, return_code;
 	struct GT_object *temp_gt_object;
 	struct VRML_prototype *vrml_prototype;
@@ -2228,6 +2233,11 @@ DESCRIPTION :
 			else
 			{
 				sprintf(prototype_name,"object_%s_%s",gt_object->name, material_name);
+			}
+			/* Can't have . in a name */
+			while (dot_pointer = strchr(prototype_name, '.'))
+			{
+				*dot_pointer = '_';
 			}
 			temp_gt_object=gt_object;
 			if (vrml_prototype_list)
