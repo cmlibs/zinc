@@ -34,9 +34,15 @@ SHELL=/bin/sh
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/devbin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
+#if defined (CMISS_ROOT_DEFINED)
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities
+#else /* defined (CMISS_ROOT_DEFINED) */
+PRODUCT_PATH=$(CMGUI_DEV_ROOT)
+PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
+UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
+#endif /* defined (CMISS_ROOT_DEFINED) */
 #if defined (OLD_CODE)
 PRODUCT_PATH=/usr/people/bullivan/cmgui/uni_source
 UTILITIES_PATH=/usr/people/bullivan/cmgui/cvs_unemap/utilities
@@ -1293,9 +1299,7 @@ filt/exnodecmgui.ObjSuffix: filt/exnodecmgui.c force
 	   echo "Must have filt source and set FILT_ROOT environment variable to make this library"; \
 	   exit 1; \
 	fi
-	@if [ -d filt ]; then \
-		: ; \
-	else \
+	@if [ ! -d filt ]; then \
 		mkdir -p filt; \
 	fi
 	@if [ -f filt/exnodecmgui.c ]; then \
@@ -1319,10 +1323,7 @@ force :
 	  /* This allows us to make a memory checking version without creating a new
 		  extension */
 general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
-	if [ -d $(OBJECT_PATH)/general ]; \
-	then \
-		: ; \
-	else \
+	if [ ! -d $(OBJECT_PATH)/general ]; \
 		mkdir -p $(OBJECT_PATH)/general; \
 	fi
 	if [ -f general/debug.c ]; \
@@ -1338,41 +1339,24 @@ utilities : SpacesToTabsTarget TabsToSpacesTarget Uid2uidhTarget
 SPACES_TO_TABS_SRCS = \
 	utilities/spaces_to_tabs.c
 
-SPACES_TO_TABS_OBJSA = $(SPACES_TO_TABS_SRCS:.c=.ObjSuffix)
-SPACES_TO_TABS_OBJSB = $(SPACES_TO_TABS_OBJSA:.cpp=.ObjSuffix)
-SPACES_TO_TABS_OBJS = $(SPACES_TO_TABS_OBJSB:.f=.ObjSuffix)
-
-SpacesToTabsTarget: $(SPACES_TO_TABS_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(SPACES_TO_TABS_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(SPACES_TO_TABS_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) -o SpacesToTabsTarget `cat object.list` $(LIB)
+SpacesToTabsTarget: $(SPACES_TO_TABS_SRCS)
+	@if [ ! -d $(UTILITIES_PATH) ]; then \
+		mkdir -p $(UTILITIES_PATH); \
+	fi
+	$(LINK) -o SpacesToTabsTarget $(SPACES_TO_TABS_SRCS)
 
 TABS_TO_SPACES_SRCS = \
 	utilities/tabs_to_spaces.c
 
-TABS_TO_SPACES_OBJSA = $(TABS_TO_SPACES_SRCS:.c=.ObjSuffix)
-TABS_TO_SPACES_OBJSB = $(TABS_TO_SPACES_OBJSA:.cpp=.ObjSuffix)
-TABS_TO_SPACES_OBJS = $(TABS_TO_SPACES_OBJSB:.f=.ObjSuffix)
+TabsToSpacesTarget: $(TABS_TO_SPACES_SRCS)
+	@if [ ! -d $(UTILITIES_PATH) ]; then \
+		mkdir -p $(UTILITIES_PATH); \
+	fi
+	$(LINK) -o TabsToSpacesTarget $(TABS_TO_SPACES_SRCS)
 
-TabsToSpacesTarget: $(TABS_TO_SPACES_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(TABS_TO_SPACES_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(TABS_TO_SPACES_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) -o TabsToSpacesTarget `cat object.list` $(LIB)
 
 UID2UIDH_SRCS = \
-	uid2uidh.c
-
-UID2UIDH_OBJSA = $(UID2UIDH_SRCS:.c=.ObjSuffix)
-UID2UIDH_OBJSB = $(UID2UIDH_OBJSA:.cpp=.ObjSuffix)
-UID2UIDH_OBJS = $(UID2UIDH_OBJSB:.f=.ObjSuffix)
+	utilities/uid2uidh.c
 
 #if defined (IRIX) /* switch OperatingSystem */
 UID2UIDH_LIB = -lgen
@@ -1380,8 +1364,10 @@ UID2UIDH_LIB = -lgen
 UID2UIDH_LIB =
 #endif /* switch OperatingSystem */
 
-Uid2uidhTarget: $(UTILITIES_PATH)/$(UID2UIDH_SRCS)
-	cd $(UTILITIES_PATH) ; \
+Uid2uidhTarget: $(UID2UIDH_SRCS)
+	@if [ ! -d $(UTILITIES_PATH) ]; then \
+		mkdir -p $(UTILITIES_PATH); \
+	fi
 	$(LINK) -o Uid2uidhTarget $(UID2UIDH_SRCS) $(UID2UIDH_LIB)
 
 /* sinclude used so that the makefile can be run when the dependency file doesn't exist,
