@@ -364,9 +364,10 @@ graphics window on screen.
 ==============================================================================*/
 
 struct Cmgui_image *Graphics_window_get_image(struct Graphics_window *window,
-	int force_onscreen, int preferred_width, int preferred_height);
+	int force_onscreen, int preferred_width, int preferred_height,
+	enum Texture_storage_type storage);
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 23 April 2002
 
 DESCRIPTION :
 Creates and returns a Cmgui_image from the image in <window>, usually for

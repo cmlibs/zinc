@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 23 April 2002
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -885,7 +885,7 @@ ranges and sets the view parameters so that everything can be seen.
 static void Graphics_window_print_button_CB(Widget caller,
 	XtPointer *graphics_window_void, XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 23 April 2002
 
 DESCRIPTION :
 Callback for when the print_button is pressed.
@@ -895,6 +895,7 @@ wholly from the file name extension
 ==============================================================================*/
 {
 	char *file_name;
+	enum Texture_storage_type storage;
 	int force_onscreen, height, width;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
@@ -908,11 +909,12 @@ wholly from the file name extension
 		if (file_name = confirmation_get_write_filename((char *)NULL,
 			graphics_window->user_interface))
 		{
+			storage = TEXTURE_RGBA;
 			force_onscreen = 0;
 			width = 0;
 			height = 0;
 			if (cmgui_image = Graphics_window_get_image(graphics_window,
-				force_onscreen, width, height))
+				force_onscreen, width, height, storage))
 			{
 				cmgui_image_information = CREATE(Cmgui_image_information)();
 				Cmgui_image_information_add_file_name(cmgui_image_information,
@@ -4114,7 +4116,7 @@ the pixels out of the backbuffer before the frames are swapped.
 static int Graphics_window_read_pixels(unsigned char *frame_data,
 	int width, int height, enum Texture_storage_type storage)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 23 April 2002
 
 DESCRIPTION :
 Read pixels into <frame_data> of size <width> and <height> according to the 
@@ -4138,15 +4140,33 @@ storage type.
 		glReadBuffer(GL_FRONT);
 		switch(storage)
 		{
-			case TEXTURE_ABGR:
+			case TEXTURE_LUMINANCE:
 			{
-				glReadPixels(0, 0, width, height, GL_ABGR_EXT,
+				glReadPixels(0, 0, width, height, GL_LUMINANCE,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+			case TEXTURE_LUMINANCE_ALPHA:
+			{
+				glReadPixels(0, 0, width, height, GL_LUMINANCE_ALPHA,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+			case TEXTURE_RGB:
+			{
+				glReadPixels(0, 0, width, height, GL_RGB,
 					GL_UNSIGNED_BYTE,frame_data);
 				return_code=1;
 			} break;
 			case TEXTURE_RGBA:
 			{
 				glReadPixels(0, 0, width, height, GL_RGBA,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+			case TEXTURE_ABGR:
+			{
+				glReadPixels(0, 0, width, height, GL_ABGR_EXT,
 					GL_UNSIGNED_BYTE,frame_data);
 				return_code=1;
 			} break;
@@ -4359,9 +4379,10 @@ graphics window on screen.
 } /* Graphics_window_get_frame_pixels */
 
 struct Cmgui_image *Graphics_window_get_image(struct Graphics_window *window,
-	int force_onscreen, int preferred_width, int preferred_height)
+	int force_onscreen, int preferred_width, int preferred_height,
+	enum Texture_storage_type storage)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 23 April 2002
 
 DESCRIPTION :
 Creates and returns a Cmgui_image from the image in <window>, usually for
@@ -4373,7 +4394,6 @@ Currently limited to 1 byte per component -- may want to improve for HPC.
 ==============================================================================*/
 {
 	unsigned char *frame_data;
-	enum Texture_storage_type storage;
 	int bytes_per_pixel, height, number_of_bytes_per_component,
 		number_of_components, width;
 	struct Cmgui_image *cmgui_image;
@@ -4382,7 +4402,6 @@ Currently limited to 1 byte per component -- may want to improve for HPC.
 	cmgui_image = (struct Cmgui_image *)NULL;
 	if (window)
 	{
-		storage = TEXTURE_RGBA;
 		number_of_components =
 			Texture_storage_type_get_number_of_components(storage);
 		number_of_bytes_per_component = 1;
