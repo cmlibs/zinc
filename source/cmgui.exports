@@ -1,3 +1,4 @@
+#if defined (PERL_INTERPRETER)
 PL_last_lop_op
 Perl_is_uni_alnum_lc
 Perl_scan_oct
@@ -1466,6 +1467,7 @@ PL_vtbl_defelem
 Perl_magicname
 Perl_pp_eservent
 Perl_save_svref
+#endif /* defined (PERL_INTERPRETER) */
 #if defined (CELL)
 euler_
 improved_euler_
