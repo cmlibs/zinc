@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 14 April 2004
+LAST MODIFIED : 7 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1837,31 +1837,6 @@ Finds the id of the analysis file read times button.
 	}
 	LEAVE;
 } /* identify_analysis_file_read_tim */
-
-static void identify_analysis_file_save_pot(Widget *widget_id,
-	XtPointer analysis_window,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 22 December 1996
-
-DESCRIPTION :
-Finds the id of the analysis file save potentials button.
-==============================================================================*/
-{
-	struct Analysis_window *analysis;
-
-	ENTER(identify_analysis_file_save_pot);
-	USE_PARAMETER(call_data);
-	if (analysis=(struct Analysis_window *)analysis_window)
-	{
-		analysis->file_menu.save_potentials_button= *widget_id;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"identify_analysis_file_save_pot.  Missing analysis_window");
-	}
-	LEAVE;
-} /* identify_analysis_file_save_pot */
 
 static void identify_analysis_file_read_bar(Widget *widget_id,
 	XtPointer analysis_window,XtPointer call_data)
@@ -4438,7 +4413,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface,enum Signal_order *signal_order)
 /*******************************************************************************
-LAST MODIFIED :  14 April 2004
+LAST MODIFIED : 7 May 2004
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -4540,8 +4515,6 @@ returned.
 			(XtPointer)identify_analysis_file_save_tim},
 		{"identify_analysis_file_read_tim",
 			(XtPointer)identify_analysis_file_read_tim},
-		{"identify_analysis_file_save_pot",
-			(XtPointer)identify_analysis_file_save_pot},
 		{"identify_analysis_file_read_bar",
 			(XtPointer)identify_analysis_file_read_bar},
 		{"identify_analysis_file_read_bee",
@@ -4710,7 +4683,6 @@ returned.
 				analysis->file_menu.save_times_button=(Widget)NULL;
 				analysis->write_event_times_warning_box=(Widget)NULL;
 				analysis->write_event_times_warning_box_s=(Widget)NULL;
-				analysis->file_menu.save_potentials_button=(Widget)NULL;
 				analysis->file_menu.read_bard_data_button=(Widget)NULL;
 				analysis->file_menu.read_beekeeper_data_button=(Widget)NULL;
 				analysis->file_menu.read_cardiomapp_data_button=(Widget)NULL;

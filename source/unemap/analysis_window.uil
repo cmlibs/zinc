@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : analysis_window.uil
 !
-! LAST MODIFIED : 14 April 2004
+! LAST MODIFIED : 7 May 2004
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the analysis window in the analysis work area.
@@ -85,7 +85,6 @@ procedure
 	identify_analysis_file_save_tim;
 	write_event_times_file;
 	identify_analysis_file_read_tim;
-	identify_analysis_file_save_pot;
 	identify_analysis_file_read_bar;
 	identify_analysis_file_read_bee;
 	identify_analysis_file_read_car;
@@ -1610,7 +1609,6 @@ object
 			XmPushButton analysis_file_save_interval_as_;
 			XmPushButton analysis_file_save_times_button;
 			XmPushButton analysis_file_read_times_button;
-			XmPushButton analysis_file_save_potentials_b;
 			XmPushButton analysis_file_read_bard_button;
 			XmPushButton analysis_file_read_beekeeper_bu;
 			XmPushButton analysis_file_read_cardiomapp_b;
@@ -1780,26 +1778,6 @@ object
 			XmNactivateCallback = procedures
 				{
 				open_file_and_read(read_event_times_file_data);
-				};
-			};
-		};
-	analysis_file_save_potentials_b: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Save potentials");
-			XmNfontList = button_font;
-			XmNsensitive = false;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_analysis_file_save_pot(analysis_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
 				};
 			};
 		};

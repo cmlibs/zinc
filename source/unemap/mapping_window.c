@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 3 May 2004
+LAST MODIFIED : 7 May 2004
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -2526,7 +2526,7 @@ Finds the id of the mapping file save electrode values button.
 
 static int write_electrode_values_file(char *file_name,void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 7 May 2004
 
 DESCRIPTION :
 Write the electrode values for the current map to a file.
@@ -2570,7 +2570,17 @@ Write the electrode values for the current map to a file.
 					} break;
 					case POTENTIAL:
 					{
-						fprintf(output_file,",(Potential Time,)*number of maps\n");
+						if (1<map->number_of_sub_maps)
+						{
+							for (j=1;j<=map->number_of_sub_maps;j++)
+							{
+								fprintf(output_file,",Potential_%d\n",j);
+							}
+						}
+						else
+						{
+							fprintf(output_file,",Potential\n");
+						}
 					} break;
 					case ACTIVATION_POTENTIAL:
 					{
@@ -2581,39 +2591,37 @@ Write the electrode values for the current map to a file.
 						fprintf(output_file,",Unknown\n");
 					} break;
 				}
-				if (*(map->type)==POTENTIAL)
+				/* write the values */
+				switch (*(map->type))
 				{
-					for (i=0;i<number_of_electrodes;i++)
+					case POTENTIAL:
 					{
-						/* write the electrode name*/
-						fprintf(output_file,"%s,",(*electrode)->description->name);
-						/*for all the sub maps*/
-						for (j=0;j<map->number_of_sub_maps;j++)
+						for (i=0;i<number_of_electrodes;i++)
 						{
-							sub_map=map->sub_map[j];
-							/* write value */
-							fprintf(output_file,"%g ",sub_map->electrode_value[i]);
-							/* write time  */
-							fprintf(output_file,"%g",sub_map->frame_time);
-							if (j<(map->number_of_sub_maps-1))
+							/* write the electrode name */
+							fprintf(output_file,"%s",(*electrode)->description->name);
+							/* for each the sub map */
+							for (j=0;j<map->number_of_sub_maps;j++)
 							{
-								fprintf(output_file,",");
+								sub_map=map->sub_map[j];
+								/* write value */
+								fprintf(output_file,",%g",sub_map->electrode_value[i]);
 							}
+							fprintf(output_file,"\n");
+							electrode++;
 						}
-						fprintf(output_file,"\n");
-						electrode++;
-					}
-				}
-				else
-				{
-					/* write the electrode names and values */
-					for (i=number_of_electrodes;i>0;i--)
+					} break;
+					default:
 					{
-						fprintf(output_file,"%s,%g\n",
-							(*electrode)->description->name,*value);
-						electrode++;
-						value++;
-					}
+						/* write the electrode names and values */
+						for (i=number_of_electrodes;i>0;i--)
+						{
+							fprintf(output_file,"%s,%g\n",
+								(*electrode)->description->name,*value);
+							electrode++;
+							value++;
+						}
+					} break;
 				}
 				fclose(output_file);
 				return_code=1;

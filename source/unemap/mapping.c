@@ -11358,7 +11358,7 @@ Actually draw the map from the calculated data.
 		for (;number_of_electrodes>0;number_of_electrodes--)
 		{
 			set_electrode_2d_name_and_colour(map,drawing,&graphics_context,
-			*electrode,name,*electrode_value,electrode_drawn,range_f);
+				*electrode,name,*electrode_value,electrode_drawn,range_f);
 			if (*electrode_drawn)
 			{
 				draw_2d_electrode(map,sub_map,drawing,*screen_x,*screen_y,
