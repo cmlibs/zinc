@@ -122,9 +122,11 @@ Module constants
 #endif /* defined (UNIX) */
 
 #if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
+>>>big endian
 #define BIG_ENDIAN_CODE (unsigned char)0x01
 #else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 #define BIG_ENDIAN_CODE (unsigned char)0x00
+>>>little endian
 #endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 
 /*???DB.  Temporary ? */
