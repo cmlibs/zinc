@@ -1,0 +1,163 @@
+!*******************************************************************************
+! FILE : node_viewer.uil
+!
+! LAST MODIFIED : 11 May 2000
+!
+! DESCRIPTION :
+! Dialog for selecting a node, viewing and editing its fields and applying
+! changes.
+!===============================================================================
+module node_viewer_module
+	version = 'v1.0'
+
+procedure
+	node_viewer_id_select_form;
+	node_viewer_id_viewer_form;
+	node_viewer_ok_CB;
+	node_viewer_apply_CB;
+	node_viewer_revert_CB;
+	node_viewer_cancel_CB;
+
+identifier
+	!Pointer to data specific to this instance of the node_viewer widget
+	node_viewer_structure;
+	!The gap between widgets
+	widget_spacing;
+	!fonts here
+	normal_font;
+	button_font;
+	list_font;
+	heading_font;
+
+!******************************************************************************
+object
+	node_viewer: XmForm
+	{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmForm node_viewer_select_form;
+			XmFrame node_viewer_viewer_frame;
+			XmRowColumn node_viewer_control;
+			};
+		};
+!*******************************************************************************
+	node_viewer_select_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_viewer_id_select_form(node_viewer_structure);
+			};
+		};
+!*******************************************************************************
+	node_viewer_viewer_frame: XmFrame
+    {
+    arguments
+      {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_viewer_select_form;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = node_viewer_control;
+      };
+    controls
+      {
+      XmForm node_viewer_viewer_form;
+      };
+    };
+	node_viewer_viewer_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_viewer_id_viewer_form(node_viewer_structure);
+			};
+		};
+!*******************************************************************************
+	node_viewer_control: XmRowColumn
+		{
+		arguments
+			{
+			XmNpacking = XmPACK_COLUMN;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmPushButtonGadget node_viewer_control_ok;
+			XmPushButtonGadget node_viewer_control_apply;
+			XmPushButtonGadget node_viewer_control_revert;
+			XmPushButtonGadget node_viewer_control_cancel;
+			};
+		};
+	node_viewer_control_ok: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("OK");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure node_viewer_ok_CB(node_viewer_structure);
+			};
+		};
+	node_viewer_control_apply: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Apply");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+				procedure node_viewer_apply_CB(node_viewer_structure);
+			};
+		};
+	node_viewer_control_revert: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Revert");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+				procedure node_viewer_revert_CB(node_viewer_structure);
+			};
+		};
+	node_viewer_control_cancel: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Cancel");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+				procedure node_viewer_cancel_CB(node_viewer_structure);
+			};
+		};
+!*******************************************************************************
+end module;
