@@ -37,5 +37,6 @@ bool Function_variable_value_scalar::set(Scalar& value,
 }
 #endif // defined (OLD_CODE)
 
+template<>
 const std::string
 	Function_variable_value_specific<Scalar>::type_string("Scalar");

@@ -40,5 +40,6 @@ bool Function_variable_value_function_size_type::set(Function_size_type& value,
 }
 #endif // defined (OLD_CODE)
 
+template<>
 const std::string Function_variable_value_specific<Function_size_type>::
 	type_string("Function_size_type");

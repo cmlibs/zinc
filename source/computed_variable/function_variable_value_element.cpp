@@ -37,5 +37,6 @@ bool Function_variable_value_element::set(struct FE_element*& value,
 }
 #endif // defined (OLD_CODE)
 
+template<>
 const std::string
 	Function_variable_value_specific<Element>::type_string("Element");
