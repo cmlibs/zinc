@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_dot_product.cpp
 //
-// LAST MODIFIED : 14 January 2005
+// LAST MODIFIED : 22 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -21,7 +21,7 @@ Function_handle
 	Function_variable_matrix_dot_product<Scalar>::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 14 January 2005
+// LAST MODIFIED : 22 February 2005
 //
 // DESCRIPTION :
 // ???DB.  To be done
