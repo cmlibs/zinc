@@ -1449,6 +1449,7 @@ a single point in 3-D space with an axes glyph.
 		DESTROY(Option_table)(&option_table);
 		DEACCESS(Graphical_material)(&material);
 		DEALLOCATE(graphics_object_name);
+		DEACCESS(GT_object)(&glyph);
 	}
 	else
 	{
