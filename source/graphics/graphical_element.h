@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -9,7 +9,10 @@ Graphical element group data structure.
 #if !defined (GRAPHICAL_ELEMENT_H)
 #define GRAPHICAL_ELEMENT_H
 
+#include "finite_element/finite_element.h"
 #include "graphics/element_group_settings.h"
+#include "selection/element_selection.h"
+#include "selection/node_selection.h"
 
 /*
 Global types
@@ -51,9 +54,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(GT_element_group);
 
 struct GT_element_group *CREATE(GT_element_group)(
 	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group,
-	struct GROUP(FE_node) *data_group);
+	struct GROUP(FE_node) *data_group,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection);
 /*******************************************************************************
-LAST MODIFIED : 22 April 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -63,8 +68,20 @@ it contains at least the nodes referenced by the elements in the element group.
 Likewise, the <data_group> is expected to be supplied and of the same name.
 The GT_element_group does not access the element group, but it does access the
 node and data groups. It must therefore be destroyed in response to element
-group manager delete messages (currently handled by a Scene), which must
+group manager delete messages - currently handled by a Scene - which must
 precede removing the node and data groups from their respective managers.
+Callbacks from the selections ensure objects in this group are automatically
+highlighted in the graphics.
+==============================================================================*/
+
+struct GT_element_group *copy_create_GT_element_group(
+	struct GT_element_group *existing_gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 21 March 2000
+
+DESCRIPTION :
+Creates a GT_element_group that is a copy of <existing_gt_element_group> -
+WITHOUT copying graphics objects.
 ==============================================================================*/
 
 int DESTROY(GT_element_group)(struct GT_element_group **gt_element_group);
@@ -74,6 +91,8 @@ LAST MODIFIED : 24 October 1997
 DESCRIPTION :
 Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 ==============================================================================*/
+
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_element_group);
 
 int GT_element_group_add_callback(struct GT_element_group *GT_element_group, 
 	GT_element_group_callback callback, void *user_data);
@@ -92,15 +111,6 @@ LAST MODIFIED : 6 July 1999
 
 DESCRIPTION :
 Removes a callback which was added previously
-==============================================================================*/
-
-int GET_NAME(GT_element_group)(struct GT_element_group *gt_element_group,
-	char **name_ptr);
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Returns the name of the <gt_element_group>.
 ==============================================================================*/
 
 int GT_element_group_add_settings(struct GT_element_group *gt_element_group,
@@ -240,16 +250,15 @@ a graphics object or affected by <changed_element> or <changed_node>.
 int GT_element_group_copy(struct GT_element_group *destination,
 	struct GT_element_group *source);
 /*******************************************************************************
-LAST MODIFIED : 11 June 1998
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Copies the GT_element_group contents from source to destination.
 Pointers to graphics_objects are cleared in the destination list of settings.
-???RC Not a full COPY object function: copies only general and specific
-settings while element_group, node_group and other members are not copied.
-Otherwise need to work out how to handle node_groups that are maintained by the
-GT_element_group. Current routine is sufficient for the graphical element
-attribute editor.
+NOTES:
+- not a full copy; does not copy groups, selection etc. Use copy_create for
+this task so that callbacks can be set up for these.
+- does not copy graphics objects to settings in destination.
 ==============================================================================*/
 
 int GT_element_group_modify(struct GT_element_group *destination,
@@ -404,115 +413,5 @@ int execute_GT_element_group(struct GT_element_group *gt_element_group,
 LAST MODIFIED : 5 July 1999
 
 DESCRIPTION :
-==============================================================================*/
-
-int GT_element_group_clear_selected(struct GT_element_group *gt_element_group);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2000
-
-DESCRIPTION :
-Clears all the selected objects in the <gt_element_group>.
-Only parent scene is authorised to do this.
-Should only be called by Scene_object_clear_selected, otherwise need callback to
-inform it of change.
-==============================================================================*/
-
-int GT_element_group_is_element_point_ranges_selected(
-	struct GT_element_group *gt_element_group,
-	struct Element_point_ranges *element_point_ranges);
-/*******************************************************************************
-LAST MODIFIED : 29 February 2000
-
-DESCRIPTION :
-Returns true if <element_point_ranges> overlaps any of the
-selected_element_point_ranges list of <gt_element_group>.
-==============================================================================*/
-
-int GT_element_group_get_selected_element_point_ranges_list(
-	struct GT_element_group *gt_element_group,
-	struct LIST(Element_point_ranges) *element_point_ranges_list);
-/*******************************************************************************
-LAST MODIFIED : 29 February 2000
-
-DESCRIPTION :
-Ensures all the selected elements in <gt_element_group> are in
-<element_point_ranges_list>. Does not clear <element_point_ranges_list> first.
-==============================================================================*/
-
-int GT_element_group_modify_selected_element_point_ranges_list(
-	struct GT_element_group *gt_element_group,
-	enum GT_element_group_select_modify_mode modify_mode,
-	struct LIST(Element_point_ranges) *element_point_ranges_list);
-/*******************************************************************************
-LAST MODIFIED : 29 February 2000
-
-DESCRIPTION :
-Modifies the list of selected elements in <gt_element_group> with
-<element_point_ranges_list> according to the <modify_mode>: add, remove,
-replace, toggle etc.
-==============================================================================*/
-
-int GT_element_group_is_element_selected(
-	struct GT_element_group *gt_element_group,struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Returns true if <element> is in the selected elements list of
-<gt_element_group>.
-==============================================================================*/
-
-int GT_element_group_get_selected_element_list(
-	struct GT_element_group *gt_element_group,
-	struct LIST(FE_element) *element_list);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Ensures all the selected elements in <gt_element_group> are in <element_list>.
-Does not clear <element_list> first.
-==============================================================================*/
-
-int GT_element_group_modify_selected_element_list(
-	struct GT_element_group *gt_element_group,
-	enum GT_element_group_select_modify_mode modify_mode,
-	struct LIST(FE_element) *element_list);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Modifies the list of selected elements in <gt_element_group> with <element_list>
-according to the <modify_mode>: add, remove, replace, toggle etc.
-==============================================================================*/
-
-int GT_element_group_is_node_selected(
-	struct GT_element_group *gt_element_group,struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 21 February 2000
-
-DESCRIPTION :
-Returns true if <node> is in the selected nodes list of <gt_element_group>.
-==============================================================================*/
-
-int GT_element_group_get_selected_node_list(
-	struct GT_element_group *gt_element_group,struct LIST(FE_node) *node_list);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Ensures all the selected nodes in <gt_element_group> are in <node_list>. Does
-not clear <node_list> first.
-==============================================================================*/
-
-int GT_element_group_modify_selected_node_list(
-	struct GT_element_group *gt_element_group,
-	enum GT_element_group_select_modify_mode modify_mode,
-	struct LIST(FE_node) *node_list);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Modifies the list of selected nodes in <gt_element_group> with <node_list>
-according to the <modify_mode>: add, remove, replace, toggle etc.
 ==============================================================================*/
 #endif /* !defined (GRAPHICAL_ELEMENT_H) */

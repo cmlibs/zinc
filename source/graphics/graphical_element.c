@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -37,7 +37,7 @@ struct GT_element_group_callback_data
 
 struct GT_element_group
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Structure for maintaining a graphical rendition of an element group.
@@ -52,8 +52,6 @@ Structure for maintaining a graphical rendition of an element group.
 	struct GROUP(FE_node) *data_group;
 	/* selected object lists */
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
-	struct LIST(FE_element) *selected_element_list;
-	struct LIST(FE_node) *selected_node_list;
 	/* settings shared by whole rendition */
 	/* curve approximation with line segments over elements */
 	struct Element_discretization element_discretization;
@@ -67,6 +65,9 @@ Structure for maintaining a graphical rendition of an element group.
 	struct LIST(GT_element_settings) *list_of_settings;
 	/* list of objects interested in changes to the GT_element_group */
 	struct GT_element_group_callback_data *update_callback_list;
+	/* global stores of selected objects for automatic highlighting */
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
 	/* flag storing whether the GT_element_group has changed since last cleared */
 	int changed;
 	/* for accessing objects */
@@ -77,13 +78,99 @@ Structure for maintaining a graphical rendition of an element group.
 Global functions
 ----------------
 */
+
+static void GT_element_group_element_selection_change(
+	struct FE_element_selection *element_selection,
+	struct FE_element_selection_changes *changes,void *gt_element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Callback for change in the global element selection.
+==============================================================================*/
+{
+	struct GT_element_group *gt_element_group;
+
+	ENTER(GT_element_group_element_selection_change);
+	if (element_selection&&changes&&
+		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	{
+		/* find out if any of the changes affect elements in this group */
+		if (FIRST_OBJECT_IN_LIST_THAT(FE_element)(FE_element_is_in_group,
+			(void *)gt_element_group->element_group,
+			changes->newly_selected_element_list)||
+			FIRST_OBJECT_IN_LIST_THAT(FE_element)(FE_element_is_in_group,
+				(void *)gt_element_group->element_group,
+				changes->newly_unselected_element_list))
+		{
+			/* update the graphics to match */
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_selected_elements_change,(void *)NULL,
+				gt_element_group->list_of_settings);
+			GT_element_group_build_graphics_objects(gt_element_group,
+				(struct FE_element *)NULL,(struct FE_node *)NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_element_selection_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* GT_element_group_element_selection_change */
+
+static void GT_element_group_node_selection_change(
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection_changes *changes,void *gt_element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Callback for change in the global node selection.
+==============================================================================*/
+{
+	struct GT_element_group *gt_element_group;
+
+	ENTER(GT_element_group_node_selection_change);
+	if (node_selection&&changes&&
+		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	{
+		/* find out if any of the changes affect nodes in this group */
+		if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
+			(void *)gt_element_group->node_group,changes->newly_selected_node_list)||
+			FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
+				(void *)gt_element_group->node_group,
+				changes->newly_unselected_node_list))
+		{
+			/* update the graphics to match */
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_selected_nodes_change,(void *)NULL,
+				gt_element_group->list_of_settings);
+			GT_element_group_build_graphics_objects(gt_element_group,
+				(struct FE_element *)NULL,(struct FE_node *)NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_node_selection_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* GT_element_group_node_selection_change */
+
+/*
+Global functions
+----------------
+*/
 DECLARE_OBJECT_FUNCTIONS(GT_element_group)
 
 struct GT_element_group *CREATE(GT_element_group)(
 	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group,
-	struct GROUP(FE_node) *data_group)
+	struct GROUP(FE_node) *data_group,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -93,14 +180,16 @@ it contains at least the nodes referenced by the elements in the element group.
 Likewise, the <data_group> is expected to be supplied and of the same name.
 The GT_element_group does not access the element group, but it does access the
 node and data groups. It must therefore be destroyed in response to element
-group manager delete messages (currently handled by a Scene), which must
+group manager delete messages - currently handled by a Scene - which must
 precede removing the node and data groups from their respective managers.
+Callbacks from the selections ensure objects in this group are automatically
+highlighted in the graphics.
 ==============================================================================*/
 {
 	struct GT_element_group *gt_element_group;
 
 	ENTER(CREATE(GT_element_group));
-	if (element_group&&node_group&&data_group)
+	if (element_group&&node_group&&data_group&&element_selection&&node_selection)
 	{
 		if (ALLOCATE(gt_element_group,struct GT_element_group,1))
 		{
@@ -108,14 +197,10 @@ precede removing the node and data groups from their respective managers.
 				(struct LIST(GT_element_settings) *)NULL;
 			gt_element_group->selected_element_point_ranges_list=
 				(struct LIST(Element_point_ranges) *)NULL;
-			gt_element_group->selected_element_list=(struct LIST(FE_element) *)NULL;
-			gt_element_group->selected_node_list=(struct LIST(FE_node) *)NULL;
 			if ((gt_element_group->list_of_settings=
 				CREATE(LIST(GT_element_settings))())&&
 				(gt_element_group->selected_element_point_ranges_list=
-					CREATE(LIST(Element_point_ranges))())&&
-				(gt_element_group->selected_element_list=CREATE(LIST(FE_element))())&&
-				(gt_element_group->selected_node_list=CREATE(LIST(FE_node))()))
+					CREATE(LIST(Element_point_ranges))()))
 			{
 				gt_element_group->element_group=element_group;
 #if defined (OLD_CODE)
@@ -136,8 +221,15 @@ precede removing the node and data groups from their respective managers.
 				gt_element_group->native_discretization_field=(struct FE_field *)NULL;
 				gt_element_group->update_callback_list=
 					(struct GT_element_group_callback_data *)NULL;
+				gt_element_group->element_selection=element_selection;
+				gt_element_group->node_selection=node_selection;
 				gt_element_group->changed=1;
 				gt_element_group->access_count=0;
+				/* request callbacks from the global selections */
+				FE_element_selection_add_callback(element_selection,
+					GT_element_group_element_selection_change,(void *)gt_element_group);
+				FE_node_selection_add_callback(node_selection,
+					GT_element_group_node_selection_change,(void *)gt_element_group);
 			}
 			else
 			{
@@ -145,8 +237,6 @@ precede removing the node and data groups from their respective managers.
 					&(gt_element_group->list_of_settings));
 				DESTROY(LIST(Element_point_ranges))(
 					&(gt_element_group->selected_element_point_ranges_list));
-				DESTROY(LIST(FE_element))(&(gt_element_group->selected_element_list));
-				DESTROY(LIST(FE_node))(&(gt_element_group->selected_node_list));
 				DEALLOCATE(gt_element_group);
 			}
 		}
@@ -167,10 +257,49 @@ precede removing the node and data groups from their respective managers.
 	return (gt_element_group);
 } /* CREATE(GT_element_group) */
 
+struct GT_element_group *copy_create_GT_element_group(
+	struct GT_element_group *existing_gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Creates a GT_element_group that is a copy of <existing_gt_element_group> -
+WITHOUT copying graphics objects.
+==============================================================================*/
+{
+	struct GT_element_group *gt_element_group;
+
+	ENTER(copy_create_GT_element_group);
+	if (existing_gt_element_group)
+	{
+		/* make an empty GT_element_group for the same groups */
+		if (gt_element_group=CREATE(GT_element_group)(
+			existing_gt_element_group->element_group,
+			existing_gt_element_group->node_group,
+			existing_gt_element_group->data_group,
+			existing_gt_element_group->element_selection,
+			existing_gt_element_group->node_selection))
+		{
+			/* copy settings WITHOUT graphics objects; do not cause whole function
+				 to fail if copy fails */
+			GT_element_group_copy(gt_element_group,existing_gt_element_group);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"copy_create_GT_element_group.  Invalid argument(s)");
+		gt_element_group=(struct GT_element_group *)NULL;
+	}
+	LEAVE;
+
+	return (gt_element_group);
+} /* copy_create_GT_element_group */
+
 int DESTROY(GT_element_group)(
 	struct GT_element_group **gt_element_group_address)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
@@ -195,12 +324,16 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 			}
 			else
 			{
+				/* remove callbacks from the global selections */
+				FE_element_selection_remove_callback(
+					gt_element_group->element_selection,
+					GT_element_group_element_selection_change,(void *)gt_element_group);
+				FE_node_selection_remove_callback(gt_element_group->node_selection,
+					GT_element_group_node_selection_change,(void *)gt_element_group);
 				DESTROY(LIST(GT_element_settings))(
 					&(gt_element_group->list_of_settings));
 				DESTROY(LIST(Element_point_ranges))(
 					&(gt_element_group->selected_element_point_ranges_list));
-				DESTROY(LIST(FE_element))(&(gt_element_group->selected_element_list));
-				DESTROY(LIST(FE_node))(&(gt_element_group->selected_node_list));
 #if defined (OLD_CODE)
 				/*???DB.  element_group can recover if group is destroyed because will
 					be told.  So does not need to ACCESS */
@@ -239,6 +372,34 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 
 	return (return_code);
 } /* DESTROY(GT_element_group) */
+
+int GET_NAME(GT_element_group)(struct GT_element_group *gt_element_group,
+	char **name_ptr)
+/*******************************************************************************
+LAST MODIFIED : 6 July 1999
+
+DESCRIPTION :
+Returns the name of the <gt_element_group>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GET_NAME(GT_element_group));
+	if (gt_element_group)
+	{
+		return_code = GET_NAME(GROUP(FE_element))(gt_element_group->element_group,
+			name_ptr);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GET_NAME(GT_element_group).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GET_NAME(GT_element_group) */
 
 int GT_element_group_changed(struct GT_element_group *gt_element_group)
 /*******************************************************************************
@@ -754,34 +915,6 @@ Returns the default coordinate field of the <gt_element_group>.
 	return (native_discretization_field);
 } /* GT_element_group_get_native_discretization_field */
 
-int GET_NAME(GT_element_group)(struct GT_element_group *gt_element_group,
-	char **name_ptr)
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-Returns the name of the <gt_element_group>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GET_NAME(GT_element_group));
-	if (gt_element_group)
-	{
-		return_code = GET_NAME(GROUP(FE_element))(gt_element_group->element_group,
-			name_ptr);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GET_NAME(GT_element_group).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GET_NAME(GT_element_group) */
-
 int GT_element_group_set_native_discretization_field(
 	struct GT_element_group *gt_element_group,
 	struct FE_field *native_discretization_field)
@@ -833,7 +966,7 @@ int GT_element_group_build_graphics_objects(
 	struct GT_element_group *gt_element_group,struct FE_element *changed_element,
 	struct FE_node *changed_node)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Adds or edits a graphics object for each settings in <gt_element_group> without
@@ -873,9 +1006,10 @@ a graphics object or affected by <changed_element> or <changed_node>.
 			settings_to_object_data.selected_element_point_ranges_list=
 				gt_element_group->selected_element_point_ranges_list;
 			settings_to_object_data.selected_element_list=
-				gt_element_group->selected_element_list;
+				FE_element_selection_get_element_list(
+					gt_element_group->element_selection);
 			settings_to_object_data.selected_node_list=
-				gt_element_group->selected_node_list;
+				FE_node_selection_get_node_list(gt_element_group->node_selection);
 			return_code=FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 				GT_element_settings_to_graphics_object,(void *)&settings_to_object_data,
 				gt_element_group->list_of_settings);
@@ -904,16 +1038,15 @@ a graphics object or affected by <changed_element> or <changed_node>.
 int GT_element_group_copy(struct GT_element_group *destination,
 	struct GT_element_group *source)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Copies the GT_element_group contents from source to destination.
 Pointers to graphics_objects are cleared in the destination list of settings.
-???RC Not a full COPY object function: copies only general and specific
-settings while element_group, node_group and other members are not copied.
-Otherwise need to work out how to handle node_groups that are maintained by the
-GT_element_group. Current routine is sufficient for the graphical element
-attribute editor.
+NOTES:
+- not a full copy; does not copy groups, selection etc. Use copy_create for
+this task so that callbacks can be set up for these.
+- does not copy graphics objects to settings in destination.
 ==============================================================================*/
 {
 	int return_code;
@@ -1629,24 +1762,6 @@ inform it of change.
 				GT_element_settings_selected_element_points_change,(void *)NULL,
 				gt_element_group->list_of_settings);
 		}
-		if (0<NUMBER_IN_LIST(FE_element)(
-			gt_element_group->selected_element_list))
-		{
-			REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(
-				gt_element_group->selected_element_list);
-			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_elements_change,(void *)NULL,
-				gt_element_group->list_of_settings);
-		}
-		if (0<NUMBER_IN_LIST(FE_node)(
-			gt_element_group->selected_node_list))
-		{
-			REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(
-				gt_element_group->selected_node_list);
-			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_nodes_change,(void *)NULL,
-				gt_element_group->list_of_settings);
-		}
 		GT_element_group_build_graphics_objects(gt_element_group,
 			(struct FE_element *)NULL,(struct FE_node *)NULL);
 		return_code=1;
@@ -1816,302 +1931,4 @@ replace, toggle etc.
 
 	return (return_code);
 } /* GT_element_group_modify_selected_element_point_ranges_list */
-
-int GT_element_group_is_element_selected(
-	struct GT_element_group *gt_element_group,struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Returns true if <element> is in the selected elements list of
-<gt_element_group>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_group_is_element_selected);
-	if (gt_element_group&&element)
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			element->identifier,gt_element_group->selected_element_list))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_is_element_selected.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_is_element_selected */
-
-int GT_element_group_get_selected_element_list(
-	struct GT_element_group *gt_element_group,
-	struct LIST(FE_element) *element_list)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Ensures all the selected elements in <gt_element_group> are in <element_list>.
-Does not clear <element_list> first.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_group_get_selected_element_list);
-	if (gt_element_group&&element_list)
-	{
-		return_code=FOR_EACH_OBJECT_IN_LIST(FE_element)(
-			ensure_FE_element_is_in_list,(void *)element_list,
-			gt_element_group->selected_element_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_get_selected_element_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_get_selected_element_list */
-
-int GT_element_group_modify_selected_element_list(
-	struct GT_element_group *gt_element_group,
-	enum GT_element_group_select_modify_mode modify_mode,
-	struct LIST(FE_element) *element_list)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Modifies the list of selected elements in <gt_element_group> with <element_list>
-according to the <modify_mode>: add, remove, replace, toggle etc.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_group_modify_selected_element_list);
-	if (gt_element_group&&element_list)
-	{
-		switch (modify_mode)
-		{
-			case GT_ELEMENT_GROUP_SELECT_ADD:
-			{
-				return_code=FOR_EACH_OBJECT_IN_LIST(FE_element)(
-					ensure_FE_element_is_in_list,
-					(void *)gt_element_group->selected_element_list,element_list);
-			} break;
-			case GT_ELEMENT_GROUP_SELECT_REMOVE:
-			{
-				return_code=FOR_EACH_OBJECT_IN_LIST(FE_element)(
-					ensure_FE_element_is_not_in_list,
-					(void *)gt_element_group->selected_element_list,element_list);
-			} break;
-			case GT_ELEMENT_GROUP_SELECT_REPLACE:
-			{
-				return_code=
-					REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(
-						gt_element_group->selected_element_list)&&
-					FOR_EACH_OBJECT_IN_LIST(FE_element)(ensure_FE_element_is_in_list,
-						(void *)gt_element_group->selected_element_list,element_list);
-			} break;
-			case GT_ELEMENT_GROUP_SELECT_TOGGLE:
-			{
-				return_code=FOR_EACH_OBJECT_IN_LIST(FE_element)(
-					toggle_FE_element_in_list,
-					(void *)gt_element_group->selected_element_list,element_list);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_element_group_modify_selected_element_list.  "
-					"Unknown modify_mode");
-				return_code=0;
-			}
-		}
-		/* update the graphics to match */
-		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-			GT_element_settings_selected_elements_change,(void *)NULL,
-			gt_element_group->list_of_settings);
-		GT_element_group_build_graphics_objects(gt_element_group,
-			(struct FE_element *)NULL,(struct FE_node *)NULL);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_modify_selected_element_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_modify_selected_element_list */
-
-int GT_element_group_is_node_selected(
-	struct GT_element_group *gt_element_group,struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 21 February 2000
-
-DESCRIPTION :
-Returns true if <node> is in the selected nodes list of <gt_element_group>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_group_is_node_selected);
-	if (gt_element_group&&node)
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),
-			gt_element_group->selected_node_list))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_is_node_selected.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_is_node_selected */
-
-int GT_element_group_get_selected_node_list(
-	struct GT_element_group *gt_element_group,struct LIST(FE_node) *node_list)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Ensures all the selected nodes in <gt_element_group> are in <node_list>. Does
-not clear <node_list> first.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_group_get_selected_node_list);
-	if (gt_element_group&&node_list)
-	{
-		return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
-			(void *)node_list,gt_element_group->selected_node_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_get_selected_node_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_get_selected_node_list */
-
-int GT_element_group_modify_selected_node_list(
-	struct GT_element_group *gt_element_group,
-	enum GT_element_group_select_modify_mode modify_mode,
-	struct LIST(FE_node) *node_list)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Modifies the list of selected nodes in <gt_element_group> with <node_list>
-according to the <modify_mode>: add, remove, replace, toggle etc.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_group_modify_selected_node_list);
-	if (gt_element_group&&node_list)
-	{
-		switch (modify_mode)
-		{
-			case GT_ELEMENT_GROUP_SELECT_ADD:
-			{
-				return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
-					(void *)gt_element_group->selected_node_list,node_list);
-			} break;
-			case GT_ELEMENT_GROUP_SELECT_REMOVE:
-			{
-				return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(
-					ensure_FE_node_is_not_in_list,
-					(void *)gt_element_group->selected_node_list,node_list);
-			} break;
-			case GT_ELEMENT_GROUP_SELECT_REPLACE:
-			{
-				return_code=
-					REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(
-						gt_element_group->selected_node_list)&&
-					FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
-						(void *)gt_element_group->selected_node_list,node_list);
-			} break;
-			case GT_ELEMENT_GROUP_SELECT_TOGGLE:
-			{
-				return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(toggle_FE_node_in_list,
-					(void *)gt_element_group->selected_node_list,node_list);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_element_group_modify_selected_node_list.  Unknown modify_mode");
-				return_code=0;
-			}
-		}
-#if defined (TEST_CODE)
-		/*???RC temporary */
-		{
-			struct Element_point_ranges *element_point_ranges;
-			struct Element_point_ranges_identifier element_point_ranges_identifier;
-			
-			element_point_ranges_identifier.element=
-				FIRST_OBJECT_IN_GROUP_THAT(FE_element)(FE_element_is_dimension_3,
-					(void *)NULL,gt_element_group->element_group);
-			element_point_ranges_identifier.xi_discretization_mode=
-				XI_DISCRETIZATION_CELL_CORNERS;
-			element_point_ranges_identifier.number_in_xi[0]=4;
-			element_point_ranges_identifier.number_in_xi[1]=4;
-			element_point_ranges_identifier.number_in_xi[2]=4;
-			element_point_ranges=CREATE(Element_point_ranges)(
-				&element_point_ranges_identifier);
-			Element_point_ranges_add_range(element_point_ranges,3,15);
-			Element_point_ranges_toggle_in_list(element_point_ranges,
-				(void *)gt_element_group->selected_element_point_ranges_list);
-			DESTROY(Element_point_ranges)(&element_point_ranges);
-			/* update the graphics to match */
-			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_element_points_change,(void *)NULL,
-				gt_element_group->list_of_settings);
-		}
-#endif /* defined (TEST_CODE) */
-
-		/* update the graphics to match */
-		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-			GT_element_settings_selected_nodes_change,(void *)NULL,
-			gt_element_group->list_of_settings);
-		GT_element_group_build_graphics_objects(gt_element_group,
-			(struct FE_element *)NULL,(struct FE_node *)NULL);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_modify_selected_node_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_modify_selected_node_list */
 
