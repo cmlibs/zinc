@@ -6,11 +6,13 @@
 // DESCRIPTION :
 //==============================================================================
 
+#if !defined (AIX)
 #if defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_matrix_implementation.cpp"
 #else // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_matrix.hpp"
 #endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
+#endif // !defined (AIX)
 
 template<>
 bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
