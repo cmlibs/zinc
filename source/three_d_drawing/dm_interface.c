@@ -69,6 +69,7 @@ typedef struct USTMSCpair
 
 struct Dm_buffer
 {
+	int double_buffered;
 	struct User_interface *user_interface;
 #if defined (MOTIF)
 #if defined (GLX_SGIX_dm_pbuffer)
@@ -248,6 +249,7 @@ supported on displays other than SGI will do.
 		}
 		if (ALLOCATE(buffer, struct Dm_buffer, 1))
 		{
+			buffer->double_buffered = /*unknown*/-1;
 			buffer->user_interface = user_interface;
 #if defined (GLX_SGIX_dm_pbuffer)
 			buffer->dmbuffer = (DMbuffer)NULL;
@@ -749,34 +751,56 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
+#if defined (OPENGL_API)
+	GLboolean double_buffer;
+#endif /* defined (OPENGL_API) */
 
 	ENTER(Dm_buffer_swap_buffers);
 #if defined (MOTIF)
 	if (buffer && buffer->context)
 	{
-#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
-		if (buffer->pbuffer)
+		if (-1 == buffer->double_buffered)
 		{
-			glXSwapBuffers(User_interface_get_display(buffer->user_interface),
-				buffer->pbuffer);
-		}
-		else
-		{
-#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer) */
-			if (buffer->glx_pixmap)
+#if defined (OPENGL_API)
+			Dm_buffer_glx_make_current(buffer);
+			glGetBooleanv(GL_DOUBLEBUFFER,&double_buffer);
+			if (double_buffer)
 			{
-				glXSwapBuffers(User_interface_get_display(buffer->user_interface),
-					buffer->glx_pixmap);
+				buffer->double_buffered = 1;
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Dm_buffer_swap_buffers.  No drawable in buffer.");
-				return_code=0;
+				buffer->double_buffered = 0;
 			}
-#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
+#endif /* defined (OPENGL_API) */
 		}
+		if (1 == buffer->double_buffered)
+		{
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
+			if (buffer->pbuffer)
+			{
+				glXSwapBuffers(User_interface_get_display(buffer->user_interface),
+					buffer->pbuffer);
+			}
+			else
+			{
 #endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer) */
+				if (buffer->glx_pixmap)
+				{
+					glXSwapBuffers(User_interface_get_display(buffer->user_interface),
+						buffer->glx_pixmap);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Dm_buffer_swap_buffers.  No drawable in buffer.");
+					return_code=0;
+				}
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
+			}
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer) */
+		}
+		return_code = 1;
 	}
 	else
 	{
