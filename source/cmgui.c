@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -51,6 +51,7 @@ DESCRIPTION :
 #if !defined (WINDOWS_DEV_FLAG)
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
+#include "graphics/graphical_element_editor_dialog.h"
 #include "graphics/graphics_window.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
@@ -670,8 +671,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.transformation_editor_dialog=(Widget)NULL;
 	command_data.prompt_window=(struct Prompt_window *)NULL;
 	command_data.projection_window=(struct Projection_window *)NULL;
-	command_data.element_group_editor_dialog=(Widget)NULL;
-		/*???RC.  Temporary - should allow more than one */
+	command_data.graphical_element_editor_dialog=(struct Graphical_element_editor_dialog *)NULL;
+	/*???RC.  Temporary - should allow more than one */
 	command_data.spectrum_editor_dialog=(Widget)NULL;
 	command_data.time_editor_dialog=(Widget)NULL;
 		/*???RC.  Temporary - should allow more than one */
@@ -1979,6 +1980,11 @@ Main program for the CMISS Graphical User Interface
 				if (command_data.element_point_viewer)
 				{
 					DESTROY(Element_point_viewer)(&(command_data.element_point_viewer));
+				}
+				if (command_data.graphical_element_editor_dialog)
+				{
+					DESTROY(Graphical_element_editor_dialog)(
+						&(command_data.graphical_element_editor_dialog));
 				}
 
 				DESTROY(MANAGER(Graphics_window))(

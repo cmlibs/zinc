@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -2487,7 +2487,7 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 static int gfx_create_g_element_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 31 August 1999
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 Executes a GFX CREATE G_ELEMENT_EDITOR command.
@@ -2497,12 +2497,7 @@ Invokes the graphical element group editor.
 	int return_code;
 	struct GROUP(FE_element) *element_group;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"from",NULL,NULL,set_FE_element_group},
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Scene *scene;
 
 	ENTER(gfx_create_g_element_editor);
@@ -2511,42 +2506,77 @@ Invokes the graphical element group editor.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			/* initialize defaults - try to get existing ones or at least not the
-				 active group if possible */
-			element_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
-				(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,(void *)NULL,
-				command_data->element_group_manager);
-			scene=ACCESS(Scene)(command_data->default_scene);
-			if (command_data->element_group_editor_dialog)
+			/* initialize defaults */
+			element_group = (struct GROUP(FE_element) *)NULL;
+			scene = (struct Scene *)NULL;
+			if (command_data->graphical_element_editor_dialog)
 			{
-				graphical_element_editor_dialog_get_element_group_and_scene(
-					command_data->element_group_editor_dialog,
-					&element_group,&scene);
+				Graphical_element_editor_dialog_get_element_group_and_scene(
+					command_data->graphical_element_editor_dialog,&element_group,&scene);
+			}
+			if (!element_group)
+			{
+				element_group = FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
+					(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL, (void *)NULL,
+					command_data->element_group_manager);
+			}
+			if (!scene)
+			{
+				scene = command_data->default_scene;
 			}
 			if (element_group)
 			{
 				ACCESS(GROUP(FE_element))(element_group);
 			}
-			(option_table[0]).to_be_modified= &element_group;
-			(option_table[0]).user_data=command_data->element_group_manager;
-			(option_table[1]).to_be_modified= &scene;
-			(option_table[1]).user_data=command_data->scene_manager;
-			if (return_code=process_multiple_options(state,option_table))
+			if (scene)
 			{
-				return_code=bring_up_graphical_element_editor_dialog(
-					&(command_data->element_group_editor_dialog),
-					command_data->user_interface->application_shell,
-					command_data->computed_field_package,
-					command_data->element_manager,
-					command_data->element_group_manager,element_group,
-					command_data->fe_field_manager,
-					command_data->graphical_material_manager,
-					command_data->default_graphical_material,command_data->glyph_list,
-					command_data->scene_manager,scene,command_data->spectrum_manager,
-					command_data->default_spectrum,command_data->volume_texture_manager,
-					command_data->user_interface);
+				ACCESS(Scene)(scene);
+			}
+
+			option_table = CREATE(Option_table)();
+			Option_table_add_entry(option_table,"from",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
+			Option_table_add_entry(option_table,"scene",&scene,
+				command_data->scene_manager,set_Scene);
+			if (return_code=Option_table_multi_parse(option_table,state))
+			{
+				if (command_data->graphical_element_editor_dialog)
+				{
+					Graphical_element_editor_dialog_set_element_group_and_scene(
+						command_data->graphical_element_editor_dialog,element_group,scene);
+					Graphical_element_editor_dialog_bring_to_front(
+						command_data->graphical_element_editor_dialog);
+				}
+				else
+				{
+					if (!CREATE(Graphical_element_editor_dialog)(
+						&(command_data->graphical_element_editor_dialog),
+						command_data->user_interface->application_shell,
+						command_data->computed_field_package,
+						command_data->element_manager,
+						command_data->element_group_manager,element_group,
+						command_data->fe_field_manager,
+						command_data->graphical_material_manager,
+						command_data->default_graphical_material,command_data->glyph_list,
+						command_data->scene_manager,scene,command_data->spectrum_manager,
+						command_data->default_spectrum,command_data->volume_texture_manager,
+						command_data->user_interface))
+					{
+						display_message(ERROR_MESSAGE,"gfx_create_g_element_editor.  "
+							"Could not create graphical element editor");
+						return_code=0;
+					}
+				}
 			} /* parse error, help */
-			DEACCESS(Scene)(&scene);
+			DESTROY(Option_table)(&option_table);
+			if (element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&element_group);
+			}
+			if (scene)
+			{
+				DEACCESS(Scene)(&scene);
+			}
 		}
 		else
 		{

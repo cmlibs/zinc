@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -114,8 +114,7 @@ DESCRIPTION :
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
-/*???RC temporary - should allow more than one??? */
-	Widget element_group_editor_dialog;
+	struct Graphical_element_editor_dialog *graphical_element_editor_dialog;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Unemap_package *unemap_package;
 	
