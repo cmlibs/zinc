@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 16 March 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -18,6 +18,7 @@ December 1997. Created MANAGER(Scene).
 
 #include "general/any_object.h"
 #include "general/callback.h"
+#include "general/enumerator.h"
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
@@ -49,23 +50,21 @@ Global types
 */
 enum Scene_graphical_element_mode
 /*******************************************************************************
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 16 March 2001
 
 DESCRIPTION :
 Controls whether graphical element groups are placed in the scene and if so,
 how they are rendered by default.
-Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
-for automatic creation of choose_enumerator widgets.
+Note: the first value will be 0 by the ANSI standard, with each subsequent entry
+incremented by 1. This pattern is expected by the ENUMERATOR macros.
+Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	GRAPHICAL_ELEMENT_MODE_INVALID,
-	GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST,
-	GRAPHICAL_ELEMENT_NONE,
-	GRAPHICAL_ELEMENT_INVISIBLE,
 	GRAPHICAL_ELEMENT_EMPTY,
+	GRAPHICAL_ELEMENT_INVISIBLE,
 	GRAPHICAL_ELEMENT_LINES,
 	GRAPHICAL_ELEMENT_MANUAL,
-	GRAPHICAL_ELEMENT_MODE_AFTER_LAST
+	GRAPHICAL_ELEMENT_NONE
 }; /* enum Scene_graphical_element_mode */
 
 enum Scene_object_type
@@ -206,35 +205,7 @@ Global functions
 ----------------
 */
 
-char *Scene_graphical_element_mode_string(enum Scene_graphical_element_mode graphical_element_mode);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the <graphical_element_mode>.
-This string should match the command used to create that type of settings.
-The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **Scene_graphical_element_mode_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Scene_graphical_element_modes - obtained from function Scene_graphical_element_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Scene_graphical_element_mode Scene_graphical_element_mode_from_string(
-	char *graphical_element_mode_string);
-/*******************************************************************************
-LAST MODIFIED : 4 February 2000
-
-DESCRIPTION :
-Returns the <Scene_graphical_element_mode> described by <graphical_element_mode_string>, or
-INVALID if not recognized.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Scene_graphical_element_mode);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Scene_object);
 PROTOTYPE_LIST_FUNCTIONS(Scene_object);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 16 March 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -33,6 +33,7 @@ November 1997. Created from Scene description part of Drawing.
 /*#include "finite_element/finite_element_to_streamlines.h"*/
 #include "general/compare.h"
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -2917,145 +2918,45 @@ Global functions
 ----------------
 */
 
-char *Scene_graphical_element_mode_string(enum Scene_graphical_element_mode graphical_element_mode)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the <graphical_element_mode>.
-This string should match the command used to create that type of settings.
-The returned string must not be DEALLOCATEd!
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_graphical_element_mode)
 {
-	char *return_string;
+	char *enumerator_string;
 
-	ENTER(Scene_graphical_element_mode_string);
-	switch (graphical_element_mode)
+	ENTER(ENUMERATOR_STRING(Scene_graphical_element_mode));
+	switch (enumerator_value)
 	{
-		case GRAPHICAL_ELEMENT_NONE:
+		case GRAPHICAL_ELEMENT_EMPTY:
 		{
-			return_string="no_g_element";
+			enumerator_string = "empty_g_element";
 		} break;
 		case GRAPHICAL_ELEMENT_INVISIBLE:
 		{
-			return_string="invisible_g_element";
-		} break;
-		case GRAPHICAL_ELEMENT_EMPTY:
-		{
-			return_string="empty_g_element";
+			enumerator_string = "invisible_g_element";
 		} break;
 		case GRAPHICAL_ELEMENT_LINES:
 		{
-			return_string="g_element_lines";
+			enumerator_string = "g_element_lines";
 		} break;
 		case GRAPHICAL_ELEMENT_MANUAL:
 		{
-			return_string="manual_g_element";
+			enumerator_string = "manual_g_element";
+		} break;
+		case GRAPHICAL_ELEMENT_NONE:
+		{
+			enumerator_string = "no_g_element";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Scene_graphical_element_mode_string.  Unknown graphical_element_mode");
-			return_string=(char *)NULL;
+			/* up to calling function to handle invalid enumerators */
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (return_string);
-} /* Scene_graphical_element_mode_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Scene_graphical_element_mode) */
 
-char **Scene_graphical_element_mode_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Scene_graphical_element_modes - obtained from function Scene_graphical_element_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Scene_graphical_element_mode graphical_element_mode;
-	int i;
-
-	ENTER(Scene_graphical_element_mode_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		graphical_element_mode=GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST;
-		graphical_element_mode++;
-		while (graphical_element_mode<GRAPHICAL_ELEMENT_MODE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			graphical_element_mode++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			graphical_element_mode=GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST;
-			graphical_element_mode++;
-			i=0;
-			while (graphical_element_mode<GRAPHICAL_ELEMENT_MODE_AFTER_LAST)
-			{
-				valid_strings[i]=Scene_graphical_element_mode_string(graphical_element_mode);
-				i++;
-				graphical_element_mode++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_graphical_element_mode_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_graphical_element_mode_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Scene_graphical_element_mode_get_valid_strings */
-
-enum Scene_graphical_element_mode Scene_graphical_element_mode_from_string(
-	char *graphical_element_mode_string)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2000
-
-DESCRIPTION :
-Returns the <Scene_graphical_element_mode> described by <graphical_element_mode_string>, or
-INVALID if not recognized.
-==============================================================================*/
-{
-	enum Scene_graphical_element_mode graphical_element_mode;
-
-	ENTER(Scene_graphical_element_mode_from_string);
-	if (graphical_element_mode_string)
-	{
-		graphical_element_mode=GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST;
-		graphical_element_mode++;
-		while ((graphical_element_mode<GRAPHICAL_ELEMENT_MODE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(graphical_element_mode_string,
-				Scene_graphical_element_mode_string(graphical_element_mode))))
-		{
-			graphical_element_mode++;
-		}
-		if (GRAPHICAL_ELEMENT_MODE_AFTER_LAST==graphical_element_mode)
-		{
-			graphical_element_mode=GRAPHICAL_ELEMENT_MODE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_graphical_element_mode_from_string.  Invalid argument");
-		graphical_element_mode=GRAPHICAL_ELEMENT_MODE_INVALID;
-	}
-	LEAVE;
-
-	return (graphical_element_mode);
-} /* Scene_graphical_element_mode_from_string */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Scene_graphical_element_mode)
 
 DECLARE_OBJECT_FUNCTIONS(Scene_object)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene_object)
@@ -4825,7 +4726,7 @@ DESCRIPTION :
 enum Scene_graphical_element_mode Scene_get_graphical_element_mode(
 	struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 16 March 2001
 
 DESCRIPTION :
 Returns the mode controlling how graphical element groups are displayed in the
@@ -4843,7 +4744,7 @@ scene.
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_get_graphical_element_mode.  Invalid argument");
-		graphical_element_mode = GRAPHICAL_ELEMENT_MODE_INVALID;
+		graphical_element_mode = GRAPHICAL_ELEMENT_NONE;
 	}
 	LEAVE;
 
@@ -7377,7 +7278,7 @@ GT_element_group and therefore have the same rendition.
 						display_message(ERROR_MESSAGE,
 							"Scene_add_graphical_element_group.  "
 							"Can not add groups again or under different names in %s mode",
-							Scene_graphical_element_mode_string(
+							ENUMERATOR_STRING(Scene_graphical_element_mode)(
 								scene->graphical_element_mode));
 						return_code = 0;
 					}
@@ -9261,10 +9162,13 @@ Parser commands for modifying scenes - lighting, etc.
 					Option_table_add_entry(option_table,"add_light",&light_to_add,
 						modify_scene_data->light_manager,set_Light);
 					/* graphical_element_mode */ 
-					graphical_element_mode_string=Scene_graphical_element_mode_string(
-						old_graphical_element_mode);
-					valid_strings=Scene_graphical_element_mode_get_valid_strings(
-						&number_of_valid_strings);
+					graphical_element_mode_string =
+						ENUMERATOR_STRING(Scene_graphical_element_mode)(
+							old_graphical_element_mode);
+					valid_strings =
+						ENUMERATOR_GET_VALID_STRINGS(Scene_graphical_element_mode)(
+							&number_of_valid_strings, (ENUMERATOR_CONDITIONAL_FUNCTION(
+								Scene_graphical_element_mode) *)NULL, (void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&graphical_element_mode_string);
 					DEALLOCATE(valid_strings);
@@ -9277,8 +9181,8 @@ Parser commands for modifying scenes - lighting, etc.
 						{
 							Scene_add_light(scene,light_to_add);
 						}
-						graphical_element_mode=Scene_graphical_element_mode_from_string(
-							graphical_element_mode_string);
+						STRING_TO_ENUMERATOR(Scene_graphical_element_mode)(
+							graphical_element_mode_string, &graphical_element_mode);
 						if (graphical_element_mode != old_graphical_element_mode)
 						{
 							Scene_set_graphical_element_mode(scene,
@@ -9380,7 +9284,8 @@ Writes the properties of the <scene> to the command window.
 		display_message(INFORMATION_MESSAGE,"scene : %s\n",scene->name);
 		display_message(INFORMATION_MESSAGE,"  graphical element mode: ");
 		display_message(INFORMATION_MESSAGE,
-			Scene_graphical_element_mode_string(scene->graphical_element_mode));
+			ENUMERATOR_STRING(Scene_graphical_element_mode)(
+				scene->graphical_element_mode));
 		display_message(INFORMATION_MESSAGE,"\n");
 		if (0<NUMBER_IN_LIST(Scene_object)(scene->scene_object_list))
 		{
