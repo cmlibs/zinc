@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 25 October 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -49,7 +49,7 @@ Global types
 
 enum Computed_field_type
 /******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 18 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -57,14 +57,11 @@ DESCRIPTION :
 	COMPUTED_FIELD_INVALID,
 	COMPUTED_FIELD_COMPONENT,          /* component of a Computed_field */
 	COMPUTED_FIELD_COMPOSE,            /* compose three Computed_fields in sequence */
-	COMPUTED_FIELD_COMPOSITE,          /* made up of #components scalar fields */
 	COMPUTED_FIELD_CONSTANT,           /* constant N-component field */
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
 	COMPUTED_FIELD_CURVE_LOOKUP,       /* returns values from control_curve for scalar source field */
 	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
-	COMPUTED_FIELD_FIBRE_AXES,         /* fibre axes: fibre, sheet, normal */
-	COMPUTED_FIELD_FIBRE_SHEET_AXES,   /* fibre axes: sheet,-fibre, normal */
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
@@ -156,47 +153,6 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,char *);
 PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Computed_field);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,char *);
-
-struct Computed_field *Computed_field_begin_wrap_coordinate_field(
-	struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Returns a RECTANGULAR_CARTESIAN coordinate field that may be the original
-<coordinate field> if it is already in this coordinate system, or a
-COMPUTED_FIELD_RC_COORDINATE wrapper for it if it is not.
-Notes:
-Used to ensure RC coordinate fields are passed to graphics functions.
-Must call Computed_field_end_wrap() to clean up the returned field after use.
-==============================================================================*/
-
-struct Computed_field *Computed_field_begin_wrap_orientation_scale_field(
-	struct Computed_field *orientation_scale_field,
-	struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Takes the <orientation_scale_field> and returns a field ready for use in the
-rest of the program. This involves making a COMPUTED_FIELD_FIBRE_AXES wrapper
-if the field has 3 or fewer components and a FIBRE coordinate system (this
-requires the coordinate_field too). If the field has 3 or fewer components and
-a non-RECTANGULAR_CARTESIAN coordinate system, a wrapper of type
-COMPUTED_FIELD_RC_ORIENTATION_SCALE will be made for it. If the field is deemed
-already usable in in its orientation_scale role, it is simply returned. Note
-that the function accesses any returned field.
-Note:
-Must call Computed_field_end_wrap() to clean up the returned field after use.
-==============================================================================*/
-
-int Computed_field_end_wrap(struct Computed_field **wrapper_field_address);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Cleans up a field accessed/created by a Computed_field_begin_wrap*() function.
-==============================================================================*/
 
 int Computed_field_clear_cache(struct Computed_field *field);
 /*******************************************************************************
@@ -759,36 +715,6 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 
-int Computed_field_get_type_composite(struct Computed_field *field,
-	int *number_of_scalars,struct Computed_field ***scalar_fields);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COMPOSITE, the function allocates and
-returns in <**scalar_fields> an array containing the <number_of_scalars> scalar
-fields making up the composite field - otherwise an error is reported.
-It is up to the calling function to DEALLOCATE the returned array. Note that the
-fields in the returned array are not ACCESSed.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_composite(struct Computed_field *field,
-	int number_of_scalars,struct Computed_field **scalar_fields);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COMPOSITE, returning a collection of
-scalar fields as one vector. Useful for constructing artificial coordinate
-fields for 2-D and 3-D plotting (eg. pressure vs. temperature vs. depth).
-<scalar_fields> must point to an array of <number_of_scalars> pointers to
-single-component Computed_fields. The resulting field will have as many
-components as <number_of_scalars>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
 int Computed_field_get_type_constant(struct Computed_field *field,
 	int *number_of_values,FE_value **values);
 /*******************************************************************************
@@ -836,73 +762,6 @@ Converts <field> to type COMPUTED_FIELD_CURVE_LOOKUP, returning the value of
 Sets number of components to same number as <curve>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_fibre_axes(struct Computed_field *field,
-	struct Computed_field **fibre_field,struct Computed_field **coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 8 February 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FIBRE_AXES, the fibre and coordinate
-fields used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_fibre_axes(struct Computed_field *field,
-	struct Computed_field *fibre_field,struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FIBRE_AXES, combining a fibre and
-coordinate field to return the 3, 3-component fibre axis vectors:
-fibre  = fibre direction,
-sheet  = fibre normal in the plane of the sheet,
-normal = normal to the fibre sheet.
-Sets the number of components to 9.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-
-Both the fibre and coordinate fields must have no more than 3 components. The
-fibre field is expected to have a FIBRE coordinate_system, although this is not
-enforced.
-???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
-the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
-while the field is in use. Not sure if we want that restriction.
-==============================================================================*/
-
-int Computed_field_get_type_fibre_sheet_axes(struct Computed_field *field,
-	struct Computed_field **fibre_field,struct Computed_field **coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 8 February 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FIBRE_SHEET_AXES, the fibre and
-coordinate fields used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_fibre_sheet_axes(struct Computed_field *field,
-	struct Computed_field *fibre_field,struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FIBRE_SHEET_AXES. This works just like
-COMPUTED_FIELD_FIBRE_AXES except that the 3 vectors are returned in the order
-sheet,fibre,normal. Useful for streamline tracking along fibre normals in the
-sheet, rather than the fibre itself.
-Sets the number of components to 9.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-
-Both the fibre and coordinate fields must have no more than 3 components. The
-fibre field is expected to have a FIBRE coordinate_system, although this is not
-enforced.
-???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
-the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
-while the field is in use. Not sure if we want that restriction.
 ==============================================================================*/
 
 int Computed_field_get_type_rc_coordinate(struct Computed_field *field,

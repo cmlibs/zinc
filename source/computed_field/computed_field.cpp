@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 5 October 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -184,6 +184,8 @@ Computed_field_clear_type;
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
+/* remove following once rc_vector is new_type */
+#include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "general/child_process.h"
 #include "general/compare.h"
@@ -1304,164 +1306,6 @@ Notifies the <computed_field_manager> that the <field> has changed.
 	return (return_code);
 } /* Computed_field_changed */
 
-struct Computed_field *Computed_field_begin_wrap_coordinate_field(
-	struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Returns a RECTANGULAR_CARTESIAN coordinate field that may be the original
-<coordinate field> if it is already in this coordinate system, or a
-COMPUTED_FIELD_RC_COORDINATE wrapper for it if it is not.
-Notes:
-Used to ensure RC coordinate fields are passed to graphics functions.
-Must call Computed_field_end_wrap to clean up the returned field after use.
-==============================================================================*/
-{
-	struct Computed_field *wrapper_field;
-
-	ENTER(Computed_field_begin_wrap_coordinate_field);
-	if (coordinate_field&&(3>=coordinate_field->number_of_components))
-	{
-		if (RECTANGULAR_CARTESIAN==
-			get_coordinate_system_type(&(coordinate_field->coordinate_system)))
-		{
-			wrapper_field=ACCESS(Computed_field)(coordinate_field);
-		}
-		else
-		{
-			/* make RC wrapper for the coordinate_field */
-			if ((wrapper_field=CREATE(Computed_field)("rc_wrapper"))&&
-				Computed_field_set_type_rc_coordinate(wrapper_field,
-					coordinate_field))
-			{
-				ACCESS(Computed_field)(wrapper_field);
-			}
-			else
-			{
-				DESTROY(Computed_field)(&wrapper_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_begin_wrap_coordinate_field.  Invalid argument(s)");
-		wrapper_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (wrapper_field);
-} /* Computed_field_begin_wrap_coordinate_field */
-
-struct Computed_field *Computed_field_begin_wrap_orientation_scale_field(
-	struct Computed_field *orientation_scale_field,
-	struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 28 June 1999
-
-DESCRIPTION :
-Takes the <orientation_scale_field> and returns a field ready for use in the
-rest of the program. This involves making a COMPUTED_FIELD_FIBRE_AXES wrapper
-if the field has 3 or fewer components and a FIBRE coordinate system (this
-requires the coordinate_field too). If the field has 3 or fewer components and
-a non-RECTANGULAR_CARTESIAN coordinate system, a wrapper of type
-COMPUTED_FIELD_RC_ORIENTATION_SCALE will be made for it. If the field is deemed
-already usable in in its orientation_scale role, it is simply returned. Note
-that the function accesses any returned field.
-Note:
-Must call Computed_field_end_wrap to clean up the returned field after use.
-==============================================================================*/
-{
-	struct Computed_field *wrapper_field;
-	enum Coordinate_system_type coordinate_system_type;
-
-	ENTER(Computed_field_begin_wrap_orientation_scale_field);
-	if (orientation_scale_field&&coordinate_field&&
-		Computed_field_is_orientation_scale_capable(orientation_scale_field,NULL)&&
-		Computed_field_has_up_to_3_numerical_components(coordinate_field,NULL))
-	{
-		coordinate_system_type=get_coordinate_system_type(
-			&(orientation_scale_field->coordinate_system));
-		if ((3>=orientation_scale_field->number_of_components)&&
-			(FIBRE==coordinate_system_type))
-		{
-			/* make FIBRE_AXES wrapper */
-			if ((wrapper_field=CREATE(Computed_field)("fibre_axes_wrapper"))&&
-				Computed_field_set_type_fibre_axes(wrapper_field,
-					orientation_scale_field,coordinate_field))
-			{
-				ACCESS(Computed_field)(wrapper_field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_begin_wrap_orientation_scale_field.  "
-					"Unable to make fibre_axes wrapper for field");
-				DESTROY(Computed_field)(&wrapper_field);
-			}
-		}
-		else if ((1==orientation_scale_field->number_of_components)||
-			(RECTANGULAR_CARTESIAN==coordinate_system_type))
-		{
-			/* scalar or RC fields are already OK */
-			wrapper_field=ACCESS(Computed_field)(orientation_scale_field);
-		}
-		else
-		{
-			/* make RC_VECTOR wrapper for the orientation_scale_field */
-			if ((wrapper_field=CREATE(Computed_field)("rc_wrapper"))&&
-				Computed_field_set_type_rc_vector(wrapper_field,
-					orientation_scale_field,coordinate_field))
-			{
-				ACCESS(Computed_field)(wrapper_field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_begin_wrap_orientation_scale_field.  "
-					"Unable to make rc_component wrapper for field");
-				DESTROY(Computed_field)(&wrapper_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_begin_wrap_orientation_scale_field.  "
-			"Invalid argument(s)");
-		wrapper_field=(struct Computed_field *)NULL;
-	}
-	LEAVE;
-
-	return (wrapper_field);
-} /* Computed_field_begin_wrap_orientation_scale_field */
-
-int Computed_field_end_wrap(struct Computed_field **wrapper_field_address)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Cleans up a field accessed/created by a Computed_field_begin_wrap*() function.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_end_wrap);
-	if (wrapper_field_address)
-	{
-		return_code=DEACCESS(Computed_field)(wrapper_field_address);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Computed_field_end_wrap.  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_end_wrap */
-
 int Computed_field_clear_cache(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1999
@@ -1682,7 +1526,6 @@ any other fields, this function is recursively called for them.
 			switch (field->type)
 			{
 				case COMPUTED_FIELD_COMPONENT:
-				case COMPUTED_FIELD_COMPOSITE:
 				case COMPUTED_FIELD_CONSTANT:
 				case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 				case COMPUTED_FIELD_CURVE_LOOKUP:
@@ -1700,11 +1543,6 @@ any other fields, this function is recursively called for them.
 							return_code=0;
 						}
 					}
-				} break;
-				case COMPUTED_FIELD_FIBRE_AXES:
-				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-				{
-					/* can not be evaluated at nodes */
 				} break;
 				default:
 				{
@@ -1849,178 +1687,6 @@ determine if the field in use needs updating.
 	return (return_code);
 } /* Computed_field_depends_on_Computed_field */
 
-static int Computed_field_evaluate_fibre_axes(struct Computed_field *field,
-	int element_dimension)
-/*******************************************************************************
-LAST MODIFIED : 2 July 1999
-
-DESCRIPTION :
-Function called by Computed_field_evaluate_cache_in_element to compute the
-3, 3-component fibre axes (fibre, sheet, normal) from the source fibre and
-coordinate fields. Function reads the coordinate field and derivatives in
-rectangular cartesian. The 1 to 3 fibre angles in the fibre_field are used as
-follows (2 values omit step 3, 1 only does step 1):
-1 = fibre_angle in xi1-xi2 plane measured from xi1;
-2 = sheet_angle, inclination of the fibres from xi1-xi2 plane after step 1.
-3 = imbrication_angle, rotation of the sheet about the fibre vec
-coordinates from the source_field values in an arbitrary
-coordinate system.
-Notes:
-<element_dimension> may be 2 or 3 only.
-Derivatives may not be computed for this type of Computed_field [yet].
-Assumes that values and derivatives arrays are already allocated in <field>, and
-that its source_fields are already computed (incl. derivatives of the coordinate
-field) for the same element, with the given <element_dimension> = number of xi
-coordinates.
-If field->type is COMPUTED_FIELD_FIBRE_AXES, the 3 vectors are returned in the
-order fibre,sheet,normal. Type COMPUTED_FIELD_FIBRE_SHEET_AXES returns them as
-sheet,-fibre,normal.
-==============================================================================*/
-{
-	FE_value a_x,a_y,a_z,axes[9],b_x,b_y,b_z,c_x,c_y,c_z,cos_alpha,cos_beta,
-		cos_gamma,dx_dxi[9],f11,f12,f13,f21,f22,f23,f31,f32,f33,*fibre_angle,length,
-		sin_alpha,sin_beta,sin_gamma,x[3];
-	int i,return_code;
-
-	ENTER(Computed_field_evaluate_fibre_axes);
-	if (field&&((2==element_dimension)||(3==element_dimension))&&
-		((COMPUTED_FIELD_FIBRE_AXES==field->type)||
-			(COMPUTED_FIELD_FIBRE_SHEET_AXES==field->type)))
-	{
-		if (return_code=Computed_field_extract_rc(field->source_fields[1],
-			element_dimension,x,dx_dxi))
-		{
-			/* get f1~ = vector in xi1 direction */
-			f11=dx_dxi[0];
-			f12=dx_dxi[3];
-			f13=dx_dxi[6];
-			/* get f2~ = vector in xi2 direction */
-			f21=dx_dxi[1];
-			f22=dx_dxi[4];
-			f23=dx_dxi[7];
-			/* get f3~ = vector normal to xi1-xi2 plane */
-			f31=f12*f23-f13*f22;
-			f32=f13*f21-f11*f23;
-			f33=f11*f22-f12*f21;
-			/* normalise vectors f1~ and f3~ */
-			if (0.0<(length=sqrt(f11*f11+f12*f12+f13*f13)))
-			{
-				f11 /= length;
-				f12 /= length;
-				f13 /= length;
-			}
-			if (0.0<(length=sqrt(f31*f31+f32*f32+f33*f33)))
-			{
-				f31 /= length;
-				f32 /= length;
-				f33 /= length;
-			}
-			/* get vector f2~ = f3~ (x) f1~ = normal to xi1 in xi1-xi2 plane */
-			f21=f32*f13-f33*f12;
-			f22=f33*f11-f31*f13;
-			f23=f31*f12-f32*f11;
-			/* get sin/cos of fibre angles alpha, beta and gamma */
-			fibre_angle=field->source_fields[0]->values;
-			sin_alpha=sin(fibre_angle[0]);
-			cos_alpha=cos(fibre_angle[0]);
-			if (1<field->source_fields[0]->number_of_components)
-			{
-				sin_beta=sin(fibre_angle[1]);
-				cos_beta=cos(fibre_angle[1]);
-			}
-			else
-			{
-				/* default beta is 0 */
-				sin_beta=0;
-				cos_beta=1;
-			}
-			/*???RC calculate_FE_field_anatomical had 1 instead of 2 in following: */
-			if (2<field->source_fields[0]->number_of_components)
-			{
-				sin_gamma=sin(fibre_angle[2]);
-				cos_gamma=cos(fibre_angle[2]);
-			}
-			else
-			{
-				/* default gamma is pi/2 */
-				sin_gamma=1;
-				cos_gamma=0;
-			}
-			/* calculate the fibre axes a=fibre, b=sheet, c=normal */
-			a_x=cos_alpha*f11+sin_alpha*f21;
-			a_y=cos_alpha*f12+sin_alpha*f22;
-			a_z=cos_alpha*f13+sin_alpha*f23;
-			b_x= -sin_alpha*f11+cos_alpha*f21;
-			b_y= -sin_alpha*f12+cos_alpha*f22;
-			b_z= -sin_alpha*f13+cos_alpha*f23;
-			f11=a_x;
-			f12=a_y;
-			f13=a_z;
-			f21=b_x;
-			f22=b_y;
-			f23=b_z;
-			a_x=cos_beta*f11+sin_beta*f31;
-			a_y=cos_beta*f12+sin_beta*f32;
-			a_z=cos_beta*f13+sin_beta*f33;
-			c_x= -sin_beta*f11+cos_beta*f31;
-			c_y= -sin_beta*f12+cos_beta*f32;
-			c_z= -sin_beta*f13+cos_beta*f33;
-			f31=c_x;
-			f32=c_y;
-			f33=c_z;
-			b_x=sin_gamma*f21-cos_gamma*f31;
-			b_y=sin_gamma*f22-cos_gamma*f32;
-			b_z=sin_gamma*f23-cos_gamma*f33;
-			c_x=cos_gamma*f21+sin_gamma*f31;
-			c_y=cos_gamma*f22+sin_gamma*f32;
-			c_z=cos_gamma*f23+sin_gamma*f33;
-			if (COMPUTED_FIELD_FIBRE_AXES==field->type)
-			{
-				/* fibre,sheet,normal */
-				axes[0]=a_x;
-				axes[1]=a_y;
-				axes[2]=a_z;
-				axes[3]=b_x;
-				axes[4]=b_y;
-				axes[5]=b_z;
-				axes[6]=c_x;
-				axes[7]=c_y;
-				axes[8]=c_z;
-			}
-			else /* COMPUTED_FIELD_FIBRE_SHEET_AXES */
-			{
-				/* sheet,-fibre,normal */
-				axes[0]=b_x;
-				axes[1]=b_y;
-				axes[2]=b_z;
-				axes[3]=-a_x;
-				axes[4]=-a_y;
-				axes[5]=-a_z;
-				axes[6]=c_x;
-				axes[7]=c_y;
-				axes[8]=c_z;
-			}
-			for (i=0;i<field->number_of_components;i++)
-			{
-				field->values[i]=axes[i];
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_fibre_axes.  Could not convert to RC");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_evaluate_fibre_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_evaluate_fibre_axes */
-
 static int Computed_field_evaluate_rc_vector(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 27 June 1999
@@ -2122,11 +1788,8 @@ is avoided.
 ==============================================================================*/
 {
 	char buffer[100], *temp_string;
-	FE_value element_to_top_level[9],sum,*temp,*temp2,
-		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int cache_is_valid,element_dimension,i,index,j,k,return_code,total_values,
-		top_level_element_dimension;
+	FE_value sum,*temp,*temp2,compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int cache_is_valid,element_dimension,i,index,j,k,return_code,total_values;
 	struct FE_element *compose_element;
 
 	ENTER(Computed_field_evaluate_cache_in_element);
@@ -2199,53 +1862,6 @@ is avoided.
 				}
 				else
 				{
-					/* 1. Get top_level_element for types that must be calculated on them */
-					switch (field->type)
-					{
-						case COMPUTED_FIELD_FIBRE_AXES:
-						case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-						{
-							if (CM_ELEMENT == element->cm.type)
-							{
-								top_level_element=element;
-								for (i=0;i<element_dimension;i++)
-								{
-									top_level_xi[i]=xi[i];
-								}
-								/* do not set element_to_top_level */
-								top_level_element_dimension=element_dimension;
-							}
-							else
-							{
-								/* check or get top_level element and xi coordinates for it */
-								if (top_level_element=FE_element_get_top_level_element_conversion(
-									element,top_level_element,(struct GROUP(FE_element) *)NULL,
-									-1,element_to_top_level))
-								{
-									/* convert xi to top_level_xi */
-									top_level_element_dimension=top_level_element->shape->dimension;
-									for (j=0;j<top_level_element_dimension;j++)
-									{
-										top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
-										for (k=0;k<element_dimension;k++)
-										{
-											top_level_xi[j] +=
-												element_to_top_level[j*(element_dimension+1)+k+1]*xi[k];
-										}
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_evaluate_cache_in_element.  "
-										"No top-level element found to evaluate field %s on",
-										field->name);
-									return_code=0;
-								}
-							}
-						} break;
-					}
-
 					/* 2. Precalculate any source fields that this field depends on.  */
 					if (return_code)
 					{
@@ -2257,28 +1873,6 @@ is avoided.
 								return_code=
 									Computed_field_evaluate_cache_in_element(
 										field->source_fields[0],element,xi,top_level_element,0);
-							} break;
-							case COMPUTED_FIELD_FIBRE_AXES:
-							case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-							{
-								if (calculate_derivatives)
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_evaluate_cache_in_element.  "
-										"Derivatives not available for fibre_axes/fibre_sheet_axes");
-									return_code=0;
-								}
-								else
-								{
-									/* coordinate field must be evaluated on the top_level_element
-										and derivatives are always required for it */
-									return_code=
-										Computed_field_evaluate_cache_in_element(
-											field->source_fields[0],element,xi,top_level_element,0)&&
-										Computed_field_evaluate_cache_in_element(
-											field->source_fields[1],top_level_element,top_level_xi,
-											top_level_element,1);
-								}
 							} break;
 							default:
 							{
@@ -2348,22 +1942,6 @@ is avoided.
 												temp++;
 												temp2++;
 											}
-										}
-									}
-								}
-							} break;
-							case COMPUTED_FIELD_COMPOSITE:
-							{
-								for (i=0;i<field->number_of_components;i++)
-								{
-									field->values[i]= *(field->source_fields[i]->values);
-									if (calculate_derivatives)
-									{
-										temp=field->derivatives + i*element_dimension;
-										temp2=field->source_fields[i]->derivatives;
-										for (j=0;j<element_dimension;j++)
-										{
-											temp[j]=temp2[j];
 										}
 									}
 								}
@@ -2561,12 +2139,6 @@ is avoided.
 									return_code = 0;
 								}
 							} break;
-							case COMPUTED_FIELD_FIBRE_AXES:
-							case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-							{
-								return_code=Computed_field_evaluate_fibre_axes(field,
-									top_level_element_dimension);
-							} break;
 							case COMPUTED_FIELD_RC_VECTOR:
 							{
 								return_code=Computed_field_evaluate_rc_vector(field);
@@ -2654,10 +2226,10 @@ is avoided.
 } /* Computed_field_evaluate_cache_in_element */
 
 int Computed_field_get_top_level_element_and_xi(struct FE_element *element, 
-	FE_value *xi, int element_dimension, struct FE_element *top_level_element,
+	FE_value *xi, int element_dimension, struct FE_element **top_level_element,
 	FE_value *top_level_xi, int *top_level_element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 30 October 2000
 
 DESCRIPTION :
 Finds the <top_level_element>, <top_level_xi> and <top_level_element_dimension>
@@ -2668,12 +2240,13 @@ is checked and the <top_level_xi> calculated.
 	FE_value element_to_top_level[9];
 	int i,j,k,return_code;
 
-	ENTER(Computed_field_get_top_level_xi);
-	if (element&&xi&&top_level_xi&&top_level_element_dimension)
+	ENTER(Computed_field_get_top_level_element_and_xi);
+	if (element&&xi&&top_level_element&&top_level_xi&&top_level_element_dimension)
 	{
+		return_code = 1;
 		if (CM_ELEMENT == element->cm.type)
 		{
-			top_level_element=element;
+			*top_level_element = element;
 			for (i=0;i<element_dimension;i++)
 			{
 				top_level_xi[i]=xi[i];
@@ -2684,12 +2257,12 @@ is checked and the <top_level_xi> calculated.
 		else
 		{
 			/* check or get top_level element and xi coordinates for it */
-			if (top_level_element=FE_element_get_top_level_element_conversion(
-				element,top_level_element,(struct GROUP(FE_element) *)NULL,
+			if (*top_level_element = FE_element_get_top_level_element_conversion(
+				element,*top_level_element,(struct GROUP(FE_element) *)NULL,
 				-1,element_to_top_level))
 			{
 				/* convert xi to top_level_xi */
-				*top_level_element_dimension=top_level_element->shape->dimension;
+				*top_level_element_dimension = (*top_level_element)->shape->dimension;
 				for (j=0;j<*top_level_element_dimension;j++)
 				{
 					top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
@@ -2703,7 +2276,7 @@ is checked and the <top_level_xi> calculated.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_get_top_level_xi.  "
+					"Computed_field_get_top_level_element_and_xi.  "
 					"No top-level element found to evaluate on");
 				return_code=0;
 			}
@@ -2712,13 +2285,13 @@ is checked and the <top_level_xi> calculated.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_top_level_xi.  Invalid argument(s)");
+			"Computed_field_get_top_level_element_and_xi.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_top_level_xi */
+} /* Computed_field_get_top_level_element_and_xi */
 
 int Computed_field_evaluate_source_fields_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
@@ -2987,7 +2560,7 @@ number_of_components
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_in_element.  Failed");
+				"Computed_field_evaluate_in_element.  Failed for %s",field->name);
 			/* clear the cache since values may be half set */
 			Computed_field_clear_cache(field);
 		}
@@ -3128,13 +2701,6 @@ fields with the name 'coordinates' are quite pervasive.
 									}
 								}
 							} break;
-							case COMPUTED_FIELD_COMPOSITE:
-							{
-								for (i=0;i<field->number_of_components;i++)
-								{
-									field->values[i]= *(field->source_fields[i]->values);
-								}
-							} break;
 							case COMPUTED_FIELD_CONSTANT:
 							{
 								/* returns constant vector values, zero derivatives (always) */
@@ -3240,14 +2806,6 @@ fields with the name 'coordinates' are quite pervasive.
 										"  Unable to allocate temporary string");
 									return_code = 0;
 								}
-							} break;
-							case COMPUTED_FIELD_FIBRE_AXES:
-							case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_at_node.  "
-									"Cannot evaluate fibre_axes/fibre_sheet_axes at nodes");
-								return_code=0;
 							} break;
 							case COMPUTED_FIELD_RC_VECTOR:
 							{
@@ -3632,15 +3190,6 @@ should not be managed at the time it is modified by this function.
 						return_code=0;
 					}
 				} break;
-				case COMPUTED_FIELD_COMPOSITE:
-				{
-					/* set values of individual scalar fields */
-					for (i=0;(i<field->number_of_components)&&return_code;i++)
-					{
-						return_code=Computed_field_set_values_at_node(
-							field->source_fields[i],node,&(values[i]));
-					}
-				} break;
 				case COMPUTED_FIELD_EDIT_MASK:
 				{
 					/* need current field values to partially set */
@@ -4019,16 +3568,6 @@ Note that the values array will not be modified by this function. Also,
 						else
 						{
 							return_code=0;
-						}
-					} break;
-					case COMPUTED_FIELD_COMPOSITE:
-					{
-						/* set all the scalars separately */
-						for (k=0;(k<field->number_of_components)&&return_code;k++)
-						{
-							return_code=Computed_field_set_values_in_element(
-								field->source_fields[0],element,number_in_xi,
-								values+k*number_of_points);
 						}
 					} break;
 					case COMPUTED_FIELD_EDIT_MASK:
@@ -4625,8 +4164,6 @@ Computed_field_set_values_in_[managed_]element.
 			switch (field->type)
 			{
 				case COMPUTED_FIELD_COMPONENT:
-				case COMPUTED_FIELD_COMPOSITE:
-					/* note: only find out if first field of composite grid based! */
 				case COMPUTED_FIELD_EDIT_MASK:
 				case COMPUTED_FIELD_RC_COORDINATE:
 				case COMPUTED_FIELD_RC_VECTOR:
@@ -4892,10 +4429,6 @@ The calling function must not deallocate the returned string.
 		{
 			field_type_string="compose";
 		} break;
-		case COMPUTED_FIELD_COMPOSITE:
-		{
-			field_type_string="composite";
-		} break;
 		case COMPUTED_FIELD_CONSTANT:
 		{
 			field_type_string="constant";
@@ -4915,14 +4448,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_EXTERNAL:
 		{
 			field_type_string="external";
-		} break;
-		case COMPUTED_FIELD_FIBRE_AXES:
-		{
-			field_type_string="fibre_axes";
-		} break;
-		case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-		{
-			field_type_string="fibre_sheet_axes";
 		} break;
 		case COMPUTED_FIELD_NEW_TYPES:
 		{
@@ -5537,124 +5062,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_compose */
-
-int Computed_field_get_type_composite(struct Computed_field *field,
-	int *number_of_scalars,struct Computed_field ***scalar_fields)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_COMPOSITE, the function allocates and
-returns in <**scalar_fields> an array containing the <number_of_scalars> scalar
-fields making up the composite field - otherwise an error is reported.
-It is up to the calling function to DEALLOCATE the returned array. Note that the
-fields in the returned array are not ACCESSed.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_get_type_composite);
-	if (field&&(COMPUTED_FIELD_COMPOSITE==field->type)&&number_of_scalars&&
-		scalar_fields)
-	{
-		*number_of_scalars=field->number_of_source_fields;
-		if (ALLOCATE(*scalar_fields,struct Computed_field *,*number_of_scalars))
-		{
-			for (i=0;i<(*number_of_scalars);i++)
-			{
-				(*scalar_fields)[i]=field->source_fields[i];
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_composite.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_composite.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_composite */
-
-int Computed_field_set_type_composite(struct Computed_field *field,
-	int number_of_scalars,struct Computed_field **scalar_fields)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COMPOSITE, returning a collection of
-scalar fields as one vector. Useful for constructing artificial coordinate
-fields for 2-D and 3-D plotting (eg. pressure vs. temperature vs. depth).
-<scalar_fields> must point to an array of <number_of_scalars> pointers to
-single-component Computed_fields. The resulting field will have as many
-components as <number_of_scalars>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int i,number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_composite);
-	if (field&&(0<number_of_scalars)&&scalar_fields)
-	{
-		return_code=1;
-		/* make sure scalar_fields are all non-NULL */
-		for (i=0;return_code&&(i<number_of_scalars);i++)
-		{
-			if (!(scalar_fields[i]&&(1==scalar_fields[i]->number_of_components)))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_composite.  Invalid scalar_fields");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields=number_of_scalars;
-			if (ALLOCATE(source_fields,struct Computed_field *,
-				number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->type=COMPUTED_FIELD_COMPOSITE;
-				field->number_of_components=number_of_scalars;
-				for (i=0;i<number_of_scalars;i++)
-				{
-					source_fields[i]=ACCESS(Computed_field)(scalar_fields[i]);
-				}
-				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_composite.  Not enough memory");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_composite.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_composite */
 
 int Computed_field_get_type_constant(struct Computed_field *field,
 	int *number_of_values,FE_value **values)
@@ -6347,199 +5754,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_external */
-
-int Computed_field_get_type_fibre_axes(struct Computed_field *field,
-	struct Computed_field **fibre_field,struct Computed_field **coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 8 February 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FIBRE_AXES, the fibre and coordinate
-fields used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_fibre_axes);
-	if (field&&(COMPUTED_FIELD_FIBRE_AXES==field->type)&&fibre_field&&
-		coordinate_field)
-	{
-		/* source_fields: 0=fibre, 1=coordinate */
-		*fibre_field=field->source_fields[0];
-		*coordinate_field=field->source_fields[1];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_fibre_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_fibre_axes */
-
-int Computed_field_set_type_fibre_axes(struct Computed_field *field,
-	struct Computed_field *fibre_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FIBRE_AXES, combining a fibre and
-coordinate field to return the 3, 3-component fibre axis vectors:
-fibre  = fibre direction,
-sheet  = fibre normal in the plane of the sheet,
-normal = normal to the fibre sheet.
-Sets the number of components to 9.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-
-Both the fibre and coordinate fields must have no more than 3 components. The
-fibre field is expected to have a FIBRE coordinate_system, although this is not
-enforced.
-???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
-the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
-while the field is in use. Not sure if we want that restriction.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_fibre_axes);
-	if (field&&fibre_field&&(3>=fibre_field->number_of_components)&&
-		coordinate_field&&(3>=coordinate_field->number_of_components))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_FIBRE_AXES;
-			field->number_of_components=9;
-			/* source_fields: 0=fibre, 1=coordinate */
-			source_fields[0]=ACCESS(Computed_field)(fibre_field);
-			source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_fibre_axes.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_fibre_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_fibre_axes */
-
-int Computed_field_get_type_fibre_sheet_axes(struct Computed_field *field,
-	struct Computed_field **fibre_field,struct Computed_field **coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 8 February 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_FIBRE_SHEET_AXES, the fibre and
-coordinate fields used by it are returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_fibre_sheet_axes);
-	if (field&&(COMPUTED_FIELD_FIBRE_SHEET_AXES==field->type)&&fibre_field&&
-		coordinate_field)
-	{
-		/* source_fields: 0=fibre, 1=coordinate */
-		*fibre_field=field->source_fields[0];
-		*coordinate_field=field->source_fields[1];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_fibre_sheet_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_fibre_sheet_axes */
-
-int Computed_field_set_type_fibre_sheet_axes(struct Computed_field *field,
-	struct Computed_field *fibre_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FIBRE_SHEET_AXES. This works just like
-COMPUTED_FIELD_FIBRE_AXES except that the 3 vectors are returned in the order
-sheet,fibre,normal. Useful for streamline tracking along fibre normals in the
-sheet, rather than the fibre itself.
-Sets the number of components to 9.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-
-Both the fibre and coordinate fields must have no more than 3 components. The
-fibre field is expected to have a FIBRE coordinate_system, although this is not
-enforced.
-???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
-the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
-while the field is in use. Not sure if we want that restriction.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_fibre_sheet_axes);
-	if (field&&fibre_field&&(3>=fibre_field->number_of_components)&&
-		coordinate_field&&(3>=coordinate_field->number_of_components))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_FIBRE_SHEET_AXES;
-			field->number_of_components=9;
-			/* source_fields: 0=fibre, 1=coordinate */
-			source_fields[0]=ACCESS(Computed_field)(fibre_field);
-			source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_fibre_sheet_axes.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_fibre_sheet_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_fibre_sheet_axes */
 
 int Computed_field_get_type_rc_coordinate(struct Computed_field *field,
 	struct Computed_field **coordinate_field)
@@ -7698,194 +6912,6 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_compose */
 
-static int define_Computed_field_type_composite(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_COMPOSITE (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	char *current_token;
-	int i,number_of_scalars,return_code,temp_number_of_scalars;
-	static struct Modifier_entry 
-		number_of_scalars_option_table[]=
-		{
-			{"number_of_scalars",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		},
-		scalars_option_table[]=
-		{
-			{"scalars",NULL,NULL,set_Computed_field_array},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"number_of_scalars",NULL,NULL,set_int_positive},
-			{"scalars",NULL,NULL,set_Computed_field_array},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field,**scalar_fields,*temp_field,**temp_scalar_fields;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_array_data set_scalar_field_array_data;
-	struct Set_Computed_field_conditional_data set_scalar_field_data;
-
-	ENTER(define_Computed_field_type_composite);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		set_scalar_field_data.computed_field_manager=
-          computed_field_package->computed_field_manager;
-		set_scalar_field_data.conditional_function=Computed_field_is_scalar;
-		set_scalar_field_data.conditional_function_user_data=(void *)NULL;
-		/* get valid parameters for composite field */
-		scalar_fields=(struct Computed_field **)NULL;
-		if (COMPUTED_FIELD_COMPOSITE==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_composite(field,
-				&number_of_scalars,&scalar_fields);
-		}
-		else
-		{
-			/* ALLOCATE and fill array of scalar fields */
-			temp_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_scalar,(void *)NULL,
-				computed_field_package->computed_field_manager);
-			number_of_scalars=1;
-			if (ALLOCATE(scalar_fields,struct Computed_field *,number_of_scalars))
-			{
-				for (i=0;i<number_of_scalars;i++)
-				{
-					scalar_fields[i]=temp_field;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_composite.  Not enough memory");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* ACCESS the scalar fields for set_Computed_field_array */
-			for (i=0;i<number_of_scalars;i++)
-			{
-				if (scalar_fields[i])
-				{
-					ACCESS(Computed_field)(scalar_fields[i]);
-				}
-			}
-			/* try to handle help first */
-			if (current_token=state->current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					(help_option_table[0]).to_be_modified= &number_of_scalars;
-					set_scalar_field_array_data.number_of_fields=number_of_scalars;
-					set_scalar_field_array_data.conditional_data= &set_scalar_field_data;
-					(help_option_table[1]).to_be_modified= scalar_fields;
-					(help_option_table[1]).user_data= &set_scalar_field_array_data;
-					return_code=process_multiple_options(state,help_option_table);
-				}
-			}
-			/* parse the number_of_scalars... */
-			if (return_code&&(current_token=state->current_token))
-			{
-				/* ... only if the "number_of_scalars" token is next */
-				if (fuzzy_string_compare(current_token,"number_of_scalars"))
-				{
-					/* keep the number_of_scalars to maintain any current ones */
-					temp_number_of_scalars=number_of_scalars;
-					(number_of_scalars_option_table[0]).to_be_modified=
-						&temp_number_of_scalars;
-					if (return_code=process_option(state,number_of_scalars_option_table))
-					{
-						if (temp_number_of_scalars != number_of_scalars)
-						{
-							if (ALLOCATE(temp_scalar_fields,struct Computed_field *,
-								temp_number_of_scalars))
-							{
-								for (i=0;i<temp_number_of_scalars;i++)
-								{
-									if (i<number_of_scalars)
-									{
-										temp_field=scalar_fields[i];
-									}
-									/* new array members access last original scalar field */
-									temp_scalar_fields[i]=ACCESS(Computed_field)(temp_field);
-								}
-								/* clean up the previous scalar_fields array */
-								for (i=0;i<number_of_scalars;i++)
-								{
-									DEACCESS(Computed_field)(&(scalar_fields[i]));
-								}
-								DEALLOCATE(scalar_fields);
-								scalar_fields=temp_scalar_fields;
-								number_of_scalars=temp_number_of_scalars;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"define_Computed_field_type_composite.  Not enough memory");
-								return_code=0;
-							}
-						}
-					}
-				}
-			}
-			/* parse the scalars */
-			if (return_code&&state->current_token)
-			{
-				set_scalar_field_array_data.number_of_fields=number_of_scalars;
-				set_scalar_field_array_data.conditional_data= &set_scalar_field_data;
-				(scalars_option_table[0]).to_be_modified= scalar_fields;
-				(scalars_option_table[0]).user_data= &set_scalar_field_array_data;
-				return_code=process_multiple_options(state,scalars_option_table);
-			}
-			if (return_code)
-			{
-				return_code=Computed_field_set_type_composite(field,
-					number_of_scalars,scalar_fields);
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_composite.  Failed");
-				}
-			}
-			/* clean up the scalar fields array */
-			for (i=0;i<number_of_scalars;i++)
-			{
-				if (scalar_fields[i])
-				{
-					DEACCESS(Computed_field)(&(scalar_fields[i]));
-				}
-			}
-			DEALLOCATE(scalar_fields);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_composite.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_composite */
-
 static int define_Computed_field_type_constant(struct Parse_state *state,
 	void *field_void,void *dummy_void)
 /*******************************************************************************
@@ -8610,193 +7636,6 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_external */
 
-static int define_Computed_field_type_fibre_axes(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 8 February 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_FIBRE_AXES (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"fibre",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *coordinate_field,*field,*fibre_field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_fibre_field_data;
-
-	ENTER(define_Computed_field_type_fibre_axes);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		coordinate_field=(struct Computed_field *)NULL;
-		fibre_field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_FIBRE_AXES==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_fibre_axes(field,
-				&fibre_field,&coordinate_field);
-		}
-		else
-		{
-			if (!(((coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-				name)("default_coordinate",
-					computed_field_package->computed_field_manager))||
-				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_package->computed_field_manager)))&&
-				((fibre_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-					name)("fibres",computed_field_package->computed_field_manager))||
-				(fibre_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_package->computed_field_manager)))))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_fibre_axes.  "
-					"No valid coordinate and/or fibre field available");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_Computed_field does */
-			ACCESS(Computed_field)(coordinate_field);
-			ACCESS(Computed_field)(fibre_field);
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[0]).to_be_modified= &coordinate_field;
-			(option_table[0]).user_data= &set_coordinate_field_data;
-			/* fibre */
-			set_fibre_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_fibre_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[1]).to_be_modified= &fibre_field;
-			(option_table[1]).user_data= &set_fibre_field_data;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_fibre_axes(field,fibre_field,coordinate_field);
-			DEACCESS(Computed_field)(&coordinate_field);
-			DEACCESS(Computed_field)(&fibre_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_fibre_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_fibre_axes */
-
-static int define_Computed_field_type_fibre_sheet_axes(
-	struct Parse_state *state,void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 8 February 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_FIBRE_SHEET_AXES (if it is not
-already) and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"fibre",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *coordinate_field,*field,*fibre_field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_fibre_field_data;
-
-	ENTER(define_Computed_field_type_fibre_sheet_axes);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		coordinate_field=(struct Computed_field *)NULL;
-		fibre_field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_FIBRE_SHEET_AXES==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_fibre_sheet_axes(field,
-				&fibre_field,&coordinate_field);
-		}
-		else
-		{
-			if (!(((coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-				name)("default_coordinate",
-					computed_field_package->computed_field_manager))||
-				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_package->computed_field_manager)))&&
-				((fibre_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-					name)("fibres",computed_field_package->computed_field_manager))||
-				(fibre_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_package->computed_field_manager)))))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_fibre_sheet_axes.  "
-					"No valid coordinate and/or fibre field available");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_Computed_field does */
-			ACCESS(Computed_field)(coordinate_field);
-			ACCESS(Computed_field)(fibre_field);
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[0]).to_be_modified= &coordinate_field;
-			(option_table[0]).user_data= &set_coordinate_field_data;
-			/* fibre */
-			set_fibre_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			set_fibre_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[1]).to_be_modified= &fibre_field;
-			(option_table[1]).user_data= &set_fibre_field_data;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_fibre_sheet_axes(field,fibre_field,
-					coordinate_field);
-			DEACCESS(Computed_field)(&coordinate_field);
-			DEACCESS(Computed_field)(&fibre_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_fibre_sheet_axes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_fibre_sheet_axes */
-
 static int define_Computed_field_type_rc_coordinate(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -9212,9 +8051,6 @@ and its parameter fields and values.
 			/* component */
 			Option_table_add_entry(option_table,"component",field_void,
 				computed_field_package_void,define_Computed_field_type_component);
-			/* composite */
-			Option_table_add_entry(option_table,"composite",field_void,
-				computed_field_package_void,define_Computed_field_type_composite);
 			/* compose */
 			Option_table_add_entry(option_table,"compose",field_void,
 				computed_field_package_void,define_Computed_field_type_compose);
@@ -9234,13 +8070,6 @@ and its parameter fields and values.
 			/* external */
 			Option_table_add_entry(option_table,"external",field_void,
 				computed_field_package_void,define_Computed_field_type_external);
-			/* fibre_axes */
-			Option_table_add_entry(option_table,"fibre_axes",field_void,
-				computed_field_package_void,define_Computed_field_type_fibre_axes);
-			/* fibre_sheet_axes */
-			Option_table_add_entry(option_table,"fibre_sheet_axes",field_void,
-				computed_field_package_void,
-				define_Computed_field_type_fibre_sheet_axes);
 			/* rc_coordinate */
 			Option_table_add_entry(option_table,"rc_coordinate",field_void,
 				computed_field_package_void,define_Computed_field_type_rc_coordinate);
@@ -9660,18 +8489,6 @@ Writes the properties of the <field> to the command window.
 					display_message(INFORMATION_MESSAGE," %s\n",
 						field->source_fields[2]->name);
 				} break;
-				case COMPUTED_FIELD_COMPOSITE:
-				{
-					display_message(INFORMATION_MESSAGE,"    number_of_scalars : %d\n",
-						field->number_of_source_fields);
-					display_message(INFORMATION_MESSAGE,"    scalars :");
-					for (i=0;i<field->number_of_source_fields;i++)
-					{
-						display_message(INFORMATION_MESSAGE," %s",
-							field->source_fields[i]->name);
-					}
-					display_message(INFORMATION_MESSAGE,"\n");
-				} break;
 				case COMPUTED_FIELD_CONSTANT:
 				{
 					display_message(INFORMATION_MESSAGE,"    number_of_values : %d\n",
@@ -9747,14 +8564,6 @@ Writes the properties of the <field> to the command window.
 					}
 					display_message(INFORMATION_MESSAGE,"    timeout %d\n",
 						field->timeout);
-				} break;
-				case COMPUTED_FIELD_FIBRE_AXES:
-				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-				{
-					display_message(INFORMATION_MESSAGE,
-						"    coordinate field : %s\n",field->source_fields[1]->name);
-					display_message(INFORMATION_MESSAGE,
-						"    fibre field : %s\n",field->source_fields[0]->name);
 				} break;
 				case COMPUTED_FIELD_RC_COORDINATE:
 				{
@@ -9887,16 +8696,6 @@ are created automatically by the program.
 							field->source_fields[0]->name, field->source_fields[1]->name,
 							field->source_fields[2]->name);
 					} break;
-					case COMPUTED_FIELD_COMPOSITE:
-					{
-						display_message(INFORMATION_MESSAGE," number_of_scalars %d scalars",
-							field->number_of_source_fields);
-						for (i=0;i<field->number_of_source_fields;i++)
-						{
-							display_message(INFORMATION_MESSAGE," %s",
-								field->source_fields[i]->name);
-						}
-					} break;
 					case COMPUTED_FIELD_CONSTANT:
 					{
 						display_message(INFORMATION_MESSAGE," number_of_values %d values",
@@ -9964,13 +8763,6 @@ are created automatically by the program.
 						}
 						display_message(INFORMATION_MESSAGE," timeout %d",
 							field->timeout);
-					} break;
-					case COMPUTED_FIELD_FIBRE_AXES:
-					case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-					{
-						display_message(INFORMATION_MESSAGE,
-							" coordinate %s fibre %s",field->source_fields[1]->name,
-							field->source_fields[0]->name);
 					} break;
 					case COMPUTED_FIELD_RC_COORDINATE:
 					{
