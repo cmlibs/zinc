@@ -359,7 +359,7 @@ Perform a automatic thresholding operation on the image cache.
 	int return_code, kernel_size, storage_size;
 	int *offsets;
 	int radius;
-	int rate;
+	FE_value rate;
 	int image_step, kernel_step;
 
 	ENTER(Image_cache_adaptive_adjust_contrast);
@@ -402,22 +402,29 @@ Perform a automatic thresholding operation on the image cache.
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
-
-			for (k = 0; k < image->depth; k++)
+			for (i = 0; i < storage_size / image->depth; i++)
 			{
-			        for (i = 0; i < storage_size / image->depth; i++)
+			        for (k = 0; k < image->depth; k++)
 				{
-				        Gmean[k] += *(data_index + i * image->depth + k);
+				        Gmean[k] += *(data_index + k);
 				}
-				Gmean[k] /= (FE_value)(storage_size / image->depth);
+				data_index += image->depth;
 			}
 			for (k = 0; k < image->depth; k++)
 			{
-			        for (i = 0; i < storage_size / image->depth; i++)
+			        Gmean[k] /= (FE_value)(storage_size / image->depth);
+			}
+                        for (i = (storage_size / image->depth) - 1; i >= 0; i--)
+			{
+			        data_index -= image->depth;
+			        for (k = 0; k < image->depth; k++)
 				{
-				        Gstd[k] += (*(data_index + i * image->depth + k) - Gmean[k]) * (*(data_index + i * image->depth + k) - Gmean[k]);
+				        Gstd[k] += (*(data_index + k) - Gmean[k]) * (*(data_index + k) - Gmean[k]);
 				}
-				Gstd[k] /= (FE_value)(storage_size / image->depth);
+			}
+			for (k = 0; k < image->depth; k++)
+			{
+			        Gstd[k] /= (FE_value)(storage_size / image->depth);
 			}
 			for (j = 0; j < kernel_size; j++)
 			{
@@ -463,15 +470,16 @@ Perform a automatic thresholding operation on the image cache.
 					        Lstd += (kernel[j] - Lmean) * (kernel[j] - Lmean);
 					}
 					Lstd /= (FE_value)kernel_size;
-					if (Lstd < 0.0001)
+					if (Lstd == 0.0)
 					{
-					        rate = 20;
-					        result_index[k] = 1.0/(1.0 + exp((FE_value)rate * (Lmean - *(data_index + k))));
+					        // rate = 20;
+					        // result_index[k] = 1.0/(1.0 + exp((FE_value)rate * (Lmean - *(data_index + k))));
+						result_index[k] = 0.0;
 					}
 					else
 					{
-					        rate = (int)(Gstd[k] / Lstd);
-						result_index[k] = 1.0/(1.0 + exp((FE_value)rate * (Lmean - *(data_index + k))));
+					        rate = Gstd[k] / Lstd;
+						result_index[k] = 1.0/(1.0 + exp(rate * (Lmean - *(data_index + k))));
 					}
 				}
 				data_index += image->depth;
