@@ -58,6 +58,9 @@ struct Dm_buffer
 #if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
 	GLXPbufferSGIX pbuffer;
 #endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+#if defined (GLX_SGIX_fbconfig)
+	GLXFBConfigSGIX config;
+#endif /* defined (GLX_SGIX_fbconfig) */
 	XVisualInfo *visual_info;
 	Pixmap pixmap;
 	GLXPixmap glx_pixmap;
@@ -93,9 +96,6 @@ supported on displays other than SGI will do.
 		(int) None
 	};
 #endif /* defined (GLX_SGIX_dm_pbuffer) */
-#if defined (GLX_SGIX_fbconfig)
-	GLXFBConfigSGIX config;
-#endif /* defined (GLX_SGIX_fbconfig) */
 #if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
 	int pbuffer_attribs [] = 
 	{
@@ -147,6 +147,9 @@ supported on displays other than SGI will do.
 #if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
 			buffer->pbuffer = (GLXPbufferSGIX)NULL;
 #endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+#if defined (GLX_SGIX_fbconfig)
+			buffer->config = (GLXFBConfigSGIX)NULL;;
+#endif /* defined (GLX_SGIX_fbconfig) */
 			buffer->visual_info = (XVisualInfo *)NULL;
 			buffer->pixmap = (Pixmap)NULL;
 			buffer->glx_pixmap = (GLXPixmap)NULL;
@@ -176,16 +179,16 @@ supported on displays other than SGI will do.
 						{
 							if((buffer->visual_info = glXChooseVisual(user_interface->display,
 								DefaultScreen(user_interface->display), visattrs))
-								&& (config = glXGetFBConfigFromVisualSGIX(
+								&& (buffer->config  = glXGetFBConfigFromVisualSGIX(
 									user_interface->display, buffer->visual_info)))
 							{
 								printf("CREATE(Dm_buffer). openGL visual id = %d\n",
 									(int)buffer->visual_info->visualid);
-								if ( buffer->pbuffer = glXCreateGLXPbufferSGIX(user_interface->display,
-									config, width, height, dm_pbuffer_attribs))
+								if (buffer->pbuffer = glXCreateGLXPbufferSGIX(user_interface->display,
+									buffer->config, width, height, dm_pbuffer_attribs))
 								{
 									if (buffer->context = glXCreateContextWithConfigSGIX(
-										user_interface->display, config, GLX_RGBA_TYPE_SGIX, 
+										user_interface->display, buffer->config, GLX_RGBA_TYPE_SGIX, 
 										ThreeDDrawing_get_shareable_context(), GL_TRUE))
 									{
 										if (glXAssociateDMPbufferSGIX(user_interface->display,
@@ -213,7 +216,6 @@ supported on displays other than SGI will do.
 									DEALLOCATE(buffer);
 									buffer = (struct Dm_buffer *)NULL;
 								}
-								XFree(config);
 							}
 							else
 							{
@@ -258,14 +260,14 @@ supported on displays other than SGI will do.
 #endif /* defined (DEBUG) */
 					if((buffer->visual_info = glXChooseVisual(user_interface->display,
 						DefaultScreen(user_interface->display), visattrs))
-						&& (config = glXGetFBConfigFromVisualSGIX(
+						&& (buffer->config = glXGetFBConfigFromVisualSGIX(
 							user_interface->display, buffer->visual_info)))
 					{
 						if ( buffer->pbuffer = glXCreateGLXPbufferSGIX(user_interface->display,
-							config, width, height, pbuffer_attribs))
+							buffer->config, width, height, pbuffer_attribs))
 						{
 							if (buffer->context = glXCreateContextWithConfigSGIX(
-								user_interface->display, config, GLX_RGBA_TYPE_SGIX, 
+								user_interface->display, buffer->config, GLX_RGBA_TYPE_SGIX, 
 								ThreeDDrawing_get_shareable_context(), GL_TRUE))
 							{
 								/* Finished I think, hooray! */
@@ -283,7 +285,6 @@ supported on displays other than SGI will do.
 							DEALLOCATE(buffer);
 							buffer = (struct Dm_buffer *)NULL;
 						}
-						XFree(config);
 					}
 					else
 					{
@@ -705,6 +706,12 @@ x==============================================================================*
 				(*buffer)->pbuffer );
 		}
 #endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+#if defined (GLX_SGIX_fbconfig)
+		if((*buffer)->config)
+		{		
+			XFree((*buffer)->config);
+		}
+#endif /* defined (GLX_SGIX_fbconfig) */
 		if((*buffer)->visual_info)
 		{
 			XFree((*buffer)->visual_info);
