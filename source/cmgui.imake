@@ -28,11 +28,11 @@ XCOMM ==========================================================================
 	for linux
 		image -DLINUX -T cmgui.imake -f /dev/null -s cmgui_linux.make */
 
-#if !defined (WIN32)
+#if !defined (WIN32_NATIVE_COMPILE)
 SHELL=/bin/sh
-#else /* !defined (WIN32) */
+#else /* !defined (WIN32_NATIVE_COMPILE) */
 SHELL=bash.exe
-#endif /* !defined (WIN32) */
+#endif /* !defined (WIN32_NATIVE_COMPILE) */
 
 #if defined (aix)
 #define aix aix
@@ -923,8 +923,12 @@ USER_INTERFACE_LIB =
 LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 #elif defined(WIN32) /* switch OperatingSystem */
 #if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
-USER_INTERFACE_INC = -L"c:\perl\5.6.1\lib\MSWin32-x86\CORE" -L"c:\dev\gcc\lib" -Ic:/dev/gtk2/include/gtk-2.0 -Ic:/dev/gtk2/include/pango-1.0 -Ic:/dev/gtk2/include/glib-2.0/ -Ic:/dev/gtk2/include/atk-1.0 -Ic:/dev/gtk2/include/gtkgl-2.0/ -Ic:/dev/gtk2/lib/glib-2.0/include -Ic:/dev/gtk2/lib/gtk-2.0/include
-USER_INTERFACE_LIB = -L"c:\dev\gtk2\lib" -lgtkgl-2.0 -lgtk-win32-2.0 -lgdk-win32-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangowin32-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0
+USER_INTERFACE_PATH = /tmp
+/* USER_INTERFACE_PATH = c: */
+USER_INTERFACE_INC = -I$(USER_INTERFACE_PATH)/dev/gtk2/include/gtk-2.0 -I$(USER_INTERFACE_PATH)/dev/gtk2/include/pango-1.0 -I$(USER_INTERFACE_PATH)/dev/gtk2/include/glib-2.0/ -I$(USER_INTERFACE_PATH)/dev/gtk2/include/atk-1.0 -I$(USER_INTERFACE_PATH)/dev/gtk2/include/gtkgl-2.0/ -I$(USER_INTERFACE_PATH)/dev/gtk2/lib/glib-2.0/include -I$(USER_INTERFACE_PATH)/dev/gtk2/lib/gtk-2.0/include
+USER_INTERFACE_LIB = $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgtkgl-2.0.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgtk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgdk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libatk-1.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgdk_pixbuf-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libpangowin32-1.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libpango-1.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgobject-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgmodule-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libglib-2.0.dll.a
+/* USER_INTERFACE_INC = -L"c:\perl\5.6.1\lib\MSWin32-x86\CORE" -L"c:\dev\gcc\lib" -Ic:/dev/gtk2/include/gtk-2.0 -Ic:/dev/gtk2/include/pango-1.0 -Ic:/dev/gtk2/include/glib-2.0/ -Ic:/dev/gtk2/include/atk-1.0 -Ic:/dev/gtk2/include/gtkgl-2.0/ -Ic:/dev/gtk2/lib/glib-2.0/include -Ic:/dev/gtk2/lib/gtk-2.0/include
+USER_INTERFACE_LIB = -L"c:\dev\gtk2\lib" -lgtkgl-2.0 -lgtk-win32-2.0 -lgdk-win32-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangowin32-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 */
 #elif 1 /* switch (USER_INTERFACE) */
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB = -lcomdlg32
@@ -1273,7 +1277,6 @@ SRCS_2 = \
 	$(VIEW_INTERFACE_SRCS)
 #elif defined (WIN32_USER_INTERFACE)  /* switch (USER_INTERFACE) */
 SRCS_2 = \
-	$(API_INTERFACE_SRCS) \
 	$(COMMAND_INTERFACE_SRCS)
 #elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
 SRCS_2 = \
