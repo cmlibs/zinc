@@ -635,10 +635,13 @@ actual object type and then the appropriate list function is called.
 				(void *)&list_memory_data, memory_block_list);
 		}
 
-		for (i = 1 ; i < maximum_count + 1 ; i++)
+		if (maximum_count > 1)
 		{
-			printf("  Allocated memory with count %3d: %12d\n", i, 
-				list_memory_data.count_total[i]);
+			for (i = 1 ; i < maximum_count + 1 ; i++)
+			{
+				printf("  Allocated memory with count %3d: %12d\n", i, 
+					list_memory_data.count_total[i]);
+			}
 		}
 		DEALLOCATE(list_memory_data.count_total);
 		printf("Total allocated memory:            %12d\n", list_memory_data.total);
