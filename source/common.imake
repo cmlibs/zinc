@@ -41,8 +41,8 @@ all : oscheck
 #define WildRc *.rc
 #define WildPx *.px
 
+UIDTOUIDH = Uid2uidhTarget
 #if defined (IRIX) /* switch OperatingSystem */
-UIDTOUIDH = uid2uidh
 #if !defined (O64)
 UIL = uil
 #else /* !defined (O64) */
@@ -75,9 +75,7 @@ TARGET_TYPE_DEFINES =
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 
-UIDTOUIDH = uid2uidh_linux
 UIL = uil
-UIL64 = uil64  /* There is a test in the rule to see if this is available */
 CC = egcs -c
 CPP = egcs -c
 FORTRAN = g77 -c

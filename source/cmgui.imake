@@ -55,7 +55,7 @@ PRODUCT_PATH=.
 #define XVG
 /* ???DB.  Temporary.  Need xml libraries for other than n32 */
 #if !defined(O64) && !defined(OPTIMISED)
-#define CELL
+/* #define CELL */
 #endif /* !defined(O64) && !defined(OPTIMISED) */
 #endif /* ! defined (LITEWEIGHT) */
 
@@ -107,9 +107,9 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (MEMORY_CHECK) */
 #else /* !defined (OPTIMISED) */
 #define Target cmgui_optimised
-#define SpacesToTabsTarget spaces_to_tabs_optimised
-#define TabsToSpacesTarget tabs_to_spaces_optimised
-#define Uid2uidhTarget uid2uidh_optimised
+#define SpacesToTabsTarget spaces_to_tabs
+#define TabsToSpacesTarget tabs_to_spaces
+#define Uid2uidhTarget uid2uidh
 #define Makefile cmgui_sgioptimised.make
 #define DependMake cmgui_sgioptimised.depend
 #define ObjSuffix o
