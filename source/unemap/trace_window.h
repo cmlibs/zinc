@@ -25,12 +25,13 @@ Global types
 */
 enum Signal_analysis_mode
 /*******************************************************************************
-LAST MODIFIED : 12 August 1997
+LAST MODIFIED : 9 February 2001
 
 DESCRIPTION :
 The type of signal analysis being performed.
 ==============================================================================*/
 {
+	ELECTRICAL_IMAGING,
 	EVENT_DETECTION,
 	FREQUENCY_DOMAIN,
 	POWER_SPECTRA,
@@ -39,6 +40,48 @@ The type of signal analysis being performed.
 	FILTERING,
 	BEAT_AVERAGING
 }; /* enum Signal_analysis_mode */
+
+enum Inverse_electrodes_mode
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+The type of electrodes used for inverse
+==============================================================================*/
+{
+	ELECTRODES_ACCEPTED,
+	ELECTRODES_UNREJECTED,
+	ELECTRODES_ALL
+}; /* enum Inverse_electrodes_mode */
+
+enum Inverse_wave_mode 
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+The type of wave used for inverse
+==============================================================================*/
+{
+	P_WAVE,
+	QRS_WAVE,
+	T_WAVE,
+	PQRS_WAVE,
+	PT_WAVE,
+	QRST_WAVE,
+	PQRST_WAVE
+}; /* enum Inverse_wave_mode */
+
+enum Inverse_potential_activation_mode
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+The type  used for potential/activation
+==============================================================================*/
+{
+	INVERSE_POTENTIAL,
+	INVERSE_ACTIVATION
+}; /* enum Inverse_potential_activation_mode */
 
 struct Enlarge_area
 /*******************************************************************************
@@ -97,6 +140,83 @@ The area of the trace window where the enlarged signal is drawn.
 	char calculate_all_events;
 }; /* struct Enlarge_area */
 
+struct Inverse_area 
+/*******************************************************************************
+LAST MODIFIED : 12 February 2001
+
+DESCRIPTION :
+The inverse area of the trace window 
+==============================================================================*/
+{
+	Widget menu;
+	Widget electrodes_choice_mode;
+	struct 
+	{
+		Widget accepted_button;
+		Widget unrejected_button;
+		Widget all_button;
+	} electrodes_choice;
+	Widget wave_choice_mode;
+	struct 
+	{
+		Widget p_button;
+		Widget qrs_button;
+		Widget t_button;
+		Widget pqrs_button;
+		Widget pt_button;
+		Widget qrst_button;
+		Widget pqrst_button;	
+	} wave_choice;
+	Widget pot_act_choice_mode;
+	struct 
+	{
+		Widget potential_button;
+		Widget activation_button;	
+	} pot_act_choice;	
+	Widget load_button;
+	Widget inverse_button;
+	Widget forward_button;
+	Widget improve_button;
+}; /* struct Inverse_area */
+
+struct Calculate_area 
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+The Calculate area of the trace window 
+==============================================================================*/
+{
+	Widget menu;
+	Widget apply_button;	
+	Widget interval_rank_cutoff_mode_choice;
+	struct 
+	{
+		Widget interval_button;
+		Widget rank_cutoff_button;	
+	} interval_rank_cutoff_choice;
+	Widget RMS_current_mode_choice;
+	struct 
+	{
+		Widget RMS_signal_button;
+		Widget current_signal_button;	
+	} RMS_current_choice;	
+	Widget calculate_button;
+	Widget cutoff_value;
+}; /* struct Calculate_area */
+
+struct Eimaging_interval_area 
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+The Interval area of the trace window 
+==============================================================================*/
+{
+	Widget menu;
+	Widget times_button;	
+}; /* struct Eimaging_interval_area */
+
 struct Edit_area
 /*******************************************************************************
 LAST MODIFIED : 21 February 2000
@@ -111,15 +231,6 @@ The area of the trace window where the event time is edited.
 	Widget accept_button;
 	Widget reject_button;
 	Widget order_choice;
-#if defined (OLD_CODE)
-	struct
-	{
-		Widget previous_button;
-		Widget next_button;
-		Widget accept_button;
-		Widget reject_button;
-	} accelerator;
-#endif
 	struct
 	{
 		Widget device_button;
@@ -330,7 +441,7 @@ The control widgets for beat averaging area 3.
 
 struct Trace_window_menu
 /*******************************************************************************
-LAST MODIFIED : 12 August 1997
+LAST MODIFIED : 9 February 2001
 
 DESCRIPTION :
 The menu in the trace window.
@@ -346,6 +457,7 @@ The menu in the trace window.
 		Widget auto_correlation_button;
 		Widget filtering_button;
 		Widget beat_averaging_button;
+		Widget eimaging_button;
 	} analysis_mode;
 	Widget apply_button;
 	Widget close_button;
@@ -359,6 +471,7 @@ DESCRIPTION :
 The drawing area 1 in the trace window.
 ==============================================================================*/
 {
+	struct Inverse_area inverse; 
 	struct Enlarge_area enlarge;
 	struct Correlation_time_domain_area correlation_time_domain;
 	struct Beat_averaging_area_1 beat_averaging;
@@ -377,6 +490,7 @@ DESCRIPTION :
 The drawing area 2 in the trace window.
 ==============================================================================*/
 {
+	struct Calculate_area calculate;
 	struct Correlation_time_domain_area correlation_time_domain;
 	Widget pane;
 	Widget drawing_area;
@@ -395,6 +509,7 @@ The drawing area 3 in the trace window.
 {
 	struct Edit_area edit;
 	struct Frequency_domain_area frequency_domain;
+	struct Eimaging_interval_area interval;
 	struct Power_spectra_area power_spectra;
 	struct Correlation_area correlation;
 	struct Filtering_area filtering;
@@ -416,7 +531,10 @@ The trace window object.
 {
 	char open;
 	struct Trace_window **address;
-	Widget activation,shell,window;
+	Widget activation,shell,window,paned_window;
+	enum Inverse_wave_mode inverse_wave_mode;
+	enum Inverse_electrodes_mode inverse_electrodes_mode;
+	enum Inverse_potential_activation_mode inverse_pot_act_mode;
 	enum Signal_analysis_mode analysis_mode;
 	struct Trace_window_menu menu;
 	struct Trace_window_area_1 area_1;

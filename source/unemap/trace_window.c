@@ -228,6 +228,11 @@ The callback for redrawing part of the drawing area in trace area 2.
 									trace_area_2->axes_height=axes_height;
 								}
 							} break;
+							case ELECTRICAL_IMAGING:
+							{
+								/*??JW do stuff here */
+
+							} break;
 							default:
 							{
 								display_message(ERROR_MESSAGE,
@@ -316,6 +321,64 @@ Saves the id of the trace event detection button in the analysis mode menu.
 	LEAVE;
 } /* identify_event_detection_button */
 
+static void reset_trace_window_after_eimaging(struct Trace_window *trace)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2001
+
+DESCRIPTION : Reset dimensions of things in the trace window after it has been 
+set to electrical imaging. This is necessary as eimaging displays
+trace->area_2.pane, but other trace->analysis_mode types don't.
+==============================================================================*/
+{
+	Dimension paned_window_height;
+
+	ENTER(reset_trace_window_after_eimaging);
+	if(trace)
+	{	
+		/* unmanage pane2 as it's not used */
+		XtUnmanageChild(trace->area_2.pane);
+		/* swap calculate.menu for correlation_time_domain */
+		XtUnmanageChild(trace->area_2.calculate.menu);
+		XtVaSetValues(trace->area_2.correlation_time_domain.menu,
+			XmNtopAttachment,XmATTACH_FORM,NULL);
+		XtVaSetValues(trace->area_2.correlation_time_domain.menu,
+			XmNbottomAttachment,XmATTACH_NONE,NULL);
+		XtVaSetValues(trace->area_2.drawing_area,
+				XmNtopAttachment,XmATTACH_WIDGET,
+				XmNtopWidget,trace->area_2.correlation_time_domain.menu,NULL);
+		XtManageChild(trace->area_2.correlation_time_domain.menu);
+		/* unmanage pane3 so it'll be resized when it's remanaged*/
+		XtUnmanageChild(trace->area_3.pane);
+		/* swap  interval menu for edit menu */	
+		XtUnmanageChild(trace->area_3.interval.menu);
+		XtVaSetValues(trace->area_3.drawing_area,
+			XmNtopWidget,trace->area_3.edit.menu,NULL);
+		XtManageChild(trace->area_3.edit.menu);
+		/*get height of whole paned window*/
+		XtVaGetValues(trace->paned_window,XmNheight,&paned_window_height,NULL);
+		/* manage and unmanage things that are/aren't used*/
+		XtUnmanageChild(trace->area_1.inverse.menu);
+		XtManageChild(trace->area_1.drawing_area);
+		XtVaSetValues(trace->area_1.drawing_area,
+			XmNtopAttachment,XmATTACH_FORM,
+			NULL);
+		/* unmanage pane1 so can adjust it's height*/	
+		XtUnmanageChild(trace->area_1.pane);
+		/* adust height to 36% of paned_window, as when created in create_Trace_window*/
+		XtVaSetValues(trace->area_1.pane,
+			XmNheight,paned_window_height*9/25,NULL);										
+		/* remanage panes*/
+		XtManageChild(trace->area_3.pane);
+		XtManageChild(trace->area_1.pane);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"reset_trace_window_after_eimaging.  Missing trace_window");
+	}
+	LEAVE;
+}/*reset_trace_window_after_eimaging */
+
 static void set_analysis_event_detection(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -338,6 +401,10 @@ Sets the analysis mode to event detection.
 			/* clear the previous mode */
 			switch (trace->analysis_mode)
 			{
+				case ELECTRICAL_IMAGING:
+				{	
+					reset_trace_window_after_eimaging(trace);				
+				} break;
 				case FREQUENCY_DOMAIN:
 				{
 					XtUnmanageChild(trace->area_3.frequency_domain.menu);
@@ -383,13 +450,6 @@ Sets the analysis mode to event detection.
 			/* go back to constant width divisions */
 			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
 			DEALLOCATE(trace->area_1.enlarge.divisions);
-#if defined (OLD_CODE)
-			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-				(XtPointer)NULL);
-			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-				(XtPointer)NULL);
-			trace_update_signal_controls(trace);
-#endif /* defined (OLD_CODE) */
 			trace_change_signal(trace);
 		}
 	}
@@ -448,6 +508,11 @@ Sets the analysis mode to frequency domain.
 			/* clear the previous mode */
 			switch (trace->analysis_mode)
 			{
+				case ELECTRICAL_IMAGING:
+				{
+					reset_trace_window_after_eimaging(trace);																		
+					XtUnmanageChild(trace->area_3.edit.menu);
+				} break;
 				case EVENT_DETECTION:
 				{
 					XtUnmanageChild(trace->area_1.enlarge.menu);
@@ -551,9 +616,15 @@ Sets the analysis mode to power spectra.
 		/* if not already in power spectra mode */
 		if (POWER_SPECTRA!=trace->analysis_mode)
 		{
-			/* clear the previous mode */
+			/* clear the previous mode */		
 			switch (trace->analysis_mode)
-			{
+			{	
+				case ELECTRICAL_IMAGING:
+				{
+					reset_trace_window_after_eimaging(trace);					
+					XtUnmanageChild(trace->area_3.edit.menu);
+					XtManageChild(trace->menu.apply_button);
+				} break;
 				case EVENT_DETECTION:
 				{
 					XtUnmanageChild(trace->area_1.enlarge.menu);
@@ -663,9 +734,23 @@ Sets the analysis mode to cross correlation.
 		/* if not already in cross correlation mode */
 		if (CROSS_CORRELATION!=trace->analysis_mode)
 		{
-			/* clear the previous mode */
+			/* clear the previous mode */		
 			switch (trace->analysis_mode)
 			{
+				case ELECTRICAL_IMAGING:
+				{
+					reset_trace_window_after_eimaging(trace);				
+					XtVaSetValues(trace->area_1.drawing_area,
+						XmNtopAttachment,XmATTACH_WIDGET,
+						XmNtopWidget,trace->area_1.correlation_time_domain.menu,
+						NULL);
+					XtManageChild(trace->area_1.correlation_time_domain.menu);
+					XtUnmanageChild(trace->area_3.edit.menu);
+					XtVaSetValues(trace->area_3.drawing_area,
+						XmNtopWidget,trace->area_3.correlation.menu,
+						NULL);
+					XtManageChild(trace->area_3.correlation.menu);
+				} break;
 				case EVENT_DETECTION:
 				{
 					XtUnmanageChild(trace->area_1.enlarge.menu);
@@ -768,6 +853,146 @@ Sets the analysis mode to cross correlation.
 	LEAVE;
 } /* set_analysis_cross_correlation */
 
+static void identify_eimaging_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2001
+
+DESCRIPTION :
+Saves the id of the trace electrical imaging button in the analysis mode menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_eimaging_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->menu.analysis_mode.eimaging_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_eimaging_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_eimaging_butt */
+
+static void set_analysis_eimaging(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2001
+
+DESCRIPTION :
+Sets the analysis mode to electrical imaging.
+==============================================================================*/
+{
+	Dimension paned_window_height;
+	struct Trace_window *trace;
+
+	ENTER(set_analysis_eimaging);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in electrical imaging mode */
+		if (ELECTRICAL_IMAGING!=trace->analysis_mode)
+		{
+			/* clear the previous mode */			
+			switch (trace->analysis_mode)
+			{					
+				case EVENT_DETECTION:
+				{							
+					XtUnmanageChild(trace->area_1.enlarge.menu);					
+				} break;			
+				case FREQUENCY_DOMAIN:
+				{
+					XtUnmanageChild(trace->area_3.frequency_domain.menu);
+				} break;
+				case POWER_SPECTRA:
+				{
+					XtUnmanageChild(trace->menu.apply_button);
+					XtUnmanageChild(trace->area_3.power_spectra.menu);
+				} break;
+				case CROSS_CORRELATION:
+				{
+					XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
+					XtUnmanageChild(trace->area_2.pane);
+					XtUnmanageChild(trace->area_3.correlation.menu);
+				} break;
+				case AUTO_CORRELATION:
+				{
+					XtUnmanageChild(trace->area_3.correlation.menu);
+				} break;
+				case FILTERING:
+				{
+					XtUnmanageChild(trace->menu.apply_button);
+					XtUnmanageChild(trace->area_3.filtering.menu);
+				} break;
+				case BEAT_AVERAGING:
+				{
+					XtUnmanageChild(trace->menu.apply_button);
+					XtUnmanageChild(trace->area_1.beat_averaging.menu);
+					XtUnmanageChild(trace->area_3.beat_averaging.menu);
+				} break;
+			}			 
+			/* set electrical imaging mode */
+			trace->analysis_mode=ELECTRICAL_IMAGING;
+			trace->valid_processing=0;			
+			/*get value to resize things from*/		
+			XtVaGetValues(trace->paned_window,XmNheight,&paned_window_height,NULL);					
+			/* unmange area_1.pane so it'll adjust in size*/
+			XtUnmanageChild(trace->area_1.pane);					
+			XtVaSetValues(trace->area_1.inverse.menu,
+						XmNtopAttachment,XmATTACH_FORM,NULL);
+			XtVaSetValues(trace->area_1.inverse.menu,
+				XmNbottomAttachment,XmATTACH_FORM,NULL);
+			/* no drawing area */
+			XtUnmanageChild(trace->area_1.drawing_area);		
+			XtManageChild(trace->area_1.inverse.menu);
+			/* swap correlation_time_domain.menu for calculate.menu*/
+			XtUnmanageChild(trace->area_2.correlation_time_domain.menu);			
+			XtVaSetValues(trace->area_2.calculate.menu,
+						XmNtopAttachment,XmATTACH_FORM,NULL);
+			XtVaSetValues(trace->area_2.calculate.menu,
+				XmNbottomAttachment,XmATTACH_NONE,NULL);			
+			XtManageChild(trace->area_2.calculate.menu);
+			XtVaSetValues(trace->area_2.drawing_area,
+				XmNtopAttachment,XmATTACH_WIDGET,
+				XmNtopWidget,trace->area_2.calculate.menu,NULL);	
+			/*set the height of this pane, the others with stretch to fit */			
+			XtVaSetValues(trace->area_2.pane,
+				XmNheight,paned_window_height*5/12,NULL);
+			/* order of re managing is important!*/
+			XtManageChild(trace->area_2.pane);
+			XtManageChild(trace->area_1.pane);
+			/* swap edit menu for interval menu */	
+			XtUnmanageChild(trace->area_3.edit.menu);
+			XtVaSetValues(trace->area_3.drawing_area,
+				XmNtopWidget,trace->area_3.interval.menu,
+				NULL);
+			XtManageChild(trace->area_3.interval.menu);			
+																												
+			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
+				(XtPointer)NULL);
+		
+			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+				(XtPointer)NULL);
+						
+			trace_update_signal_controls(trace);
+			trace_change_signal(trace);
+			
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_analysis_eimaging.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_analysis_eimaging */
+
+
 static void identify_auto_correlation_butto(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -812,9 +1037,18 @@ Sets the analysis mode to auto correlation.
 		/* if not already in cross correlation mode */
 		if (AUTO_CORRELATION!=trace->analysis_mode)
 		{
-			/* clear the previous mode */
+			/* clear the previous mode */		
 			switch (trace->analysis_mode)
-			{
+			{	
+				case ELECTRICAL_IMAGING:
+				{
+					reset_trace_window_after_eimaging(trace);					
+					XtUnmanageChild(trace->area_3.edit.menu);
+					XtVaSetValues(trace->area_3.drawing_area,
+						XmNtopWidget,trace->area_3.correlation.menu,
+						NULL);
+					XtManageChild(trace->area_3.correlation.menu);
+				} break;
 				case EVENT_DETECTION:
 				{
 					XtUnmanageChild(trace->area_1.enlarge.menu);
@@ -940,9 +1174,19 @@ Sets the analysis mode to filtering.
 		/* if not already in filtering mode */
 		if (FILTERING!=trace->analysis_mode)
 		{
-			/* clear the previous mode */
+			/* clear the previous mode */		
 			switch (trace->analysis_mode)
-			{
+			{	
+				case ELECTRICAL_IMAGING:
+				{
+					reset_trace_window_after_eimaging(trace);					
+					XtUnmanageChild(trace->area_3.edit.menu);
+					XtVaSetValues(trace->area_3.drawing_area,
+						XmNtopWidget,trace->area_3.filtering.menu,
+						NULL);
+					XtManageChild(trace->area_3.filtering.menu);
+					XtManageChild(trace->menu.apply_button);
+				} break;
 				case EVENT_DETECTION:
 				{
 					XtUnmanageChild(trace->area_1.enlarge.menu);
@@ -1072,9 +1316,24 @@ Sets the analysis mode to beat averaging.
 		/* if not already in filtering mode */
 		if (BEAT_AVERAGING!=trace->analysis_mode)
 		{
-			/* clear the previous mode */
+			/* clear the previous mode */		
 			switch (trace->analysis_mode)
 			{
+				case ELECTRICAL_IMAGING:
+				{
+					reset_trace_window_after_eimaging(trace);					
+					XtVaSetValues(trace->area_1.drawing_area,
+						XmNtopAttachment,XmATTACH_WIDGET,
+						XmNtopWidget,trace->area_1.beat_averaging.menu,
+						NULL);
+					XtManageChild(trace->area_1.beat_averaging.menu);
+					XtUnmanageChild(trace->area_3.edit.menu);
+					XtVaSetValues(trace->area_3.drawing_area,
+						XmNtopWidget,trace->area_3.beat_averaging.menu,
+						NULL);
+					XtManageChild(trace->area_3.beat_averaging.menu);
+					XtManageChild(trace->menu.apply_button);
+				} break;
 				case EVENT_DETECTION:
 				{
 					XtUnmanageChild(trace->area_1.enlarge.menu);
@@ -1172,6 +1431,946 @@ Sets the analysis mode to beat averaging.
 	}
 	LEAVE;
 } /* set_analysis_beat_averaging */
+
+static void identify_trace_electrodes_ch(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Saves the id of the electrodes choice  menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_electrodes_ch);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.electrodes_choice_mode= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_electrodes_ch.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_electrodes_ch */
+
+static void identify_trace_waves_ch(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Saves the id of the analysis mode menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_waves_ch);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice_mode= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_waves_ch.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_waves_ch */
+
+static void identify_trace_pot_act_ch(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Saves the id of the potential/activation  menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_pot_act_ch);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.pot_act_choice_mode= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_pot_act_ch.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_pot_act_ch */
+
+static void id_electrodes_accepted_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace electrodes_accepted button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_electrodes_accepted_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.electrodes_choice.accepted_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_electrodes_accepted_button. Missing trace_window");
+	}
+	LEAVE;
+} /*id_electrodes_accepted_button */
+
+static void id_electrodes_unrejected_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace electrodes_unrejected button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_electrodes_unrejected_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.electrodes_choice.unrejected_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_electrodes_unrejected_button. Missing trace_window");
+	}
+	LEAVE;
+} /* id_electrodes_unrejected_button */
+
+static void id_electrodes_all_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace electrodes_all button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_electrodes_all_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.electrodes_choice.all_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_electrodes_all_button. Missing trace_window");
+	}
+	LEAVE;
+} /* id_electrodes_all_button */
+
+static void set_inv_electrodes_accepted(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse electrodes to accepted
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inv_electrodes_accepted);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already inACCEPTED  mode */
+		if (ELECTRODES_ACCEPTED!=trace->inverse_electrodes_mode)
+		{
+			trace->inverse_electrodes_mode=ELECTRODES_ACCEPTED;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inv_electrodes_accepted.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inv_electrodes_accepted */
+
+static void set_inv_electrodes_unrejected(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse electrodes to unrejected
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inv_electrodes_unrejected);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already inACCEPTED  mode */
+		if (ELECTRODES_UNREJECTED!=trace->inverse_electrodes_mode)
+		{
+			trace->inverse_electrodes_mode=ELECTRODES_UNREJECTED;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inv_electrodes_unrejected.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inv_electrodes_unrejected */
+
+static void set_inv_electrodes_all(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse electrodes to all
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inv_electrodes_all);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already inACCEPTED  mode */
+		if (ELECTRODES_ALL!=trace->inverse_electrodes_mode)
+		{
+			trace->inverse_electrodes_mode=ELECTRODES_ALL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inv_electrodes_all.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inv_electrodes_all */
+
+static void identify_p_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace p_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_p_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.p_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_p_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_p_wave_button */
+
+static void identify_qrs_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace qrs_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_qrs_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.qrs_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_qrs_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_qrs_wave_button */
+
+static void identify_t_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace t_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_t_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.t_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_t_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_t_wave_button */
+
+static void identify_pqrs_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace pqrs_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_pqrs_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.pqrs_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_pqrs_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_pqrs_wave_button */
+
+static void identify_pt_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace pt_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_pt_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.pt_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_pt_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_pt_wave_button */
+
+static void identify_qrst_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace qrst_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_qrst_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.qrst_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_qrst_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_qrst_wave_button */
+
+static void identify_pqrst_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace pqrst_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_pqrst_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.pqrst_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_pqrst_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_pqrst_wave_button */
+
+static void set_inverse_p_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to p_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_p_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in P_WAVE  mode */
+		if (P_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=P_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_p_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_p_wave */
+
+static void set_inverse_qrs_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to qrs_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_qrs_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in QRS_WAVE  mode */
+		if (QRS_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=QRS_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_qrs_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_qrs_wave */
+
+static void set_inverse_t_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to t_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_t_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in T_WAVE  mode */
+		if (T_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=T_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_t_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_t_wave */
+
+static void set_inverse_pqrs_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to pqrs_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_pqrs_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in PQRS_WAVE  mode */
+		if (PQRS_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=PQRS_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_pqrs_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_pqrs_wave */
+
+static void set_inverse_pt_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to pt_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_pt_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in PT_WAVE  mode */
+		if (PT_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=PT_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_pt_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_pt_wave */
+
+static void set_inverse_qrst_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to qrst_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_qrst_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in QRST_WAVE  mode */
+		if (QRST_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=QRST_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_qrst_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_qrst_wave */
+
+static void set_inverse_pqrst_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to pqrst_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_pqrst_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in PQRST_WAVE  mode */
+		if (PQRST_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=PQRST_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_pqrst_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_pqrst_wave */
+
+static void identify_pot_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace pot_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_pot_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.pot_act_choice.potential_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_pot_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_pot_button */
+
+static void identify_act_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Saves the id of the trace act_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_act_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.pot_act_choice.activation_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_act_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_act_button */
+
+
+static void set_inverse_potential(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to potential
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_potential);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in INVERSE_POTENTIAL  mode */
+		if (INVERSE_POTENTIAL!=trace->inverse_pot_act_mode)
+		{
+			trace->inverse_pot_act_mode=INVERSE_POTENTIAL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_potential.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_potential */
+
+static void set_inverse_activation(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Sets the inverse wave to activation
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_activation);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in ACTIVATION  mode */
+		if (INVERSE_ACTIVATION!=trace->inverse_pot_act_mode)
+		{
+			trace->inverse_pot_act_mode=INVERSE_ACTIVATION;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_activation.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_activation */
+
+static void id_trace_inverse_load_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace inverse load button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_inverse_load_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.load_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_inverse_load_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_inverse_load_butt */
+
+static void load_inverse(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Load the inverse exnode,exelem,transfer matrix files
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(load_inverse);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to bring up a load dialog box here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"load_inverse.  Missing trace_window");
+	}
+	LEAVE;
+} /* load_inverse */
+
+static void id_trace_calculate_inverse_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace inversebutton.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_calculate_inverse_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.inverse_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_calculate_inverse_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_calculate_inverse_butt */
+
+static void calculate_inverse(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+calculates the inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_inverse);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to perform inverse here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_inverse.  Missing trace_window");
+	}
+	LEAVE;
+} /* calculate_inverse */
+
+static void id_trace_inverse_forward_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace inverse forward  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_inverse_forward_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.forward_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_inverse_forward_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_inverse_forward_butt */
+
+static void forward_inverse(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Calculate inverse forward
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(forward_inverse);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to calculate forward here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"forward_inverse.  Missing trace_window");
+	}
+	LEAVE;
+} /* forward_inverse */
+
+static void id_trace_inverse_improve_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace inverse improve  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_inverse_improve_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.improve_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_inverse_improve_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_inverse_improve_butt */
+
+static void improve_inverse(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Calculate inverse improve
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(improve_inverse);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to calculate improve here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"improve_inverse.  Missing trace_window");
+	}
+	LEAVE;
+} /* improve_inverse */
 
 static void identify_trace_analysis_mode_ch(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -1282,6 +2481,31 @@ Closes the trace window.
 	LEAVE;
 } /* close_trace_window */
 
+static void identify_trace_paned_win(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data) /*!!jw*/
+/*******************************************************************************
+LAST MODIFIED : 15 February 2001
+
+DESCRIPTION :
+Saves the id of the trace paned window
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_paned_win);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->paned_window= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_paned_win.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_paned_win */
+
 static void identify_trace_1_area(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -1306,6 +2530,31 @@ Saves the id of the trace 1 area pane.
 	}
 	LEAVE;
 } /* identify_trace_1_area */
+
+static void identify_trace_1_inverse_menu(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 12 February 2001
+
+DESCRIPTION :
+Saves the id of the trace inverse menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_1_inverse_menu);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.menu= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_1_inverse_menu.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_1_inverse_menu */
 
 static void identify_trace_enlarge_menu(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -2794,6 +4043,438 @@ Saves the id of the trace 2 area pane.
 	LEAVE;
 } /* identify_trace_2_area */
 
+static void identify_trace_2_calculate_menu(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace inverse menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_2_calculate_menu);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.menu= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_2_calculate_menu.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_2_calculate_menu */
+
+static void id_trace_calculate_apply_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace calculate apply  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_calculate_apply_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.apply_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_calculate_apply_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_calculate_apply_butt */
+
+static void calculate_apply(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Calculate apply for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_apply);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to calculate apply here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_apply.  Missing trace_window");
+	}
+	LEAVE;
+} /* calculate_apply */
+
+static void id_trace_calculate_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the calculate calculate  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_calculate_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.calculate_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_calculate_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_calculate_butt */
+
+static void calculate_calculate(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Calculate  for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_calculate);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to calculate  here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_calculate.  Missing trace_window");
+	}
+	LEAVE;
+} /* calculate_calculate */
+
+static void identify_trace_cutoff_value(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Saves the id of the cutoff value.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_cutoff_value);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.cutoff_value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_cutoff_value.  Missing trace_window");
+	}
+	LEAVE;
+} /*identify_trace_cutoff_value*/
+
+static void change_cutoff_value(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Change cutoff value  for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(change_cutoff_value);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to change cutoff value here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"change_cutoff_value.  Missing trace_window");
+	}
+	LEAVE;
+} /* change_cutoff_value */
+
+static void identify_calculate_int_rank_ch(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Saves the id of the interval rankcutoff choice  menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_calculate_int_rank_ch);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.interval_rank_cutoff_mode_choice= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_calculate_int_rank_ch.  Missing trace_window");
+	}
+	LEAVE;
+} /*identify_calculate_int_rank_ch */
+
+static void id_calculate_intervals_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the intervals button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_calculate_intervals_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.interval_rank_cutoff_choice.interval_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_calculate_intervals_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_calculate_intervals_butt */
+
+static void calculate_intervals(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Calculate intervals for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_intervals);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to calculate intervals here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_intervals.  Missing trace_window");
+	}
+	LEAVE;
+} /*calculate_intervals  */
+
+static void id_calculate_rank_cutoff_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_calculate_rank_cutoff_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.interval_rank_cutoff_choice.rank_cutoff_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_calculate_rank_cutoff_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_calculate_rank_cutoff_butt */
+
+static void calculate_rank_cutoff(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Calculate rank_cutoff for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_rank_cutoff);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to calculate rank_cutoff here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_rank_cutoff.  Missing trace_window");
+	}
+	LEAVE;
+} /* calculate_rank_cutoff */
+
+static void id_calculate_rms_current_ch(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2001
+
+DESCRIPTION :
+Saves the id of the  RMS_current_mode choice  menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_calculate_rms_current_ch);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.RMS_current_mode_choice= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_calculate_rms_current_ch.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_calculate_rms_current_ch*/
+
+static void id_calculate_rms_sig_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the rms signal  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_calculate_rms_sig_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.RMS_current_choice.RMS_signal_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_calculate_rms_sig_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_calculate_rms_sig_butt */
+
+static void calculate_rms_signal(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Calculate rms signal for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_rms_signal);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to calculate intervals here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_rms_signal.  Missing trace_window");
+	}
+	LEAVE;
+} /* calculate_rms_signal*/
+
+static void id_calculate_curr_sig_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the current_signal  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_calculate_curr_sig_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_2.calculate.RMS_current_choice.current_signal_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_calculate_curr_sig_butt.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_calculate_curr_sig_butt */
+
+static void calculate_current_signal(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+get the current signal for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_current_signal);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to get current signal here.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_current_signal.  Missing trace_window");
+	}
+	LEAVE;
+} /* calculate_current_signal */
+
 static void identify_trace_correlation_2_me(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -2973,6 +4654,82 @@ Saves the id of the trace 3 area pane.
 	}
 	LEAVE;
 } /* identify_trace_3_area */
+
+static void id_trace_3_interval_menu(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace interval menu.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_3_interval_menu);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_3.interval.menu= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_3_interval_menu.  Missing trace_window");
+	}
+	LEAVE;
+} /*id_trace_3_interval_menu  */
+
+static void id_trace_times_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the trace times  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_times_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_3.interval.times_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_times_button.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_times_button*/
+
+static void trace_times(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Do time for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(trace_times);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* will need code to bring up times dialog.*/
+		USE_PARAMETER(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"trace_times.  Missing trace_window");
+	}
+	LEAVE;
+} /*trace_times */
 
 static void identify_trace_edit_menu(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -4710,6 +6467,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_cross_correlation_butt},
 		{"set_analysis_cross_correlation",
 			(XtPointer)set_analysis_cross_correlation},
+		{"identify_eimaging_butt",
+			(XtPointer)identify_eimaging_butt},
+		{"set_analysis_eimaging",
+			(XtPointer)set_analysis_eimaging},
 		{"identify_auto_correlation_butto",
 			(XtPointer)identify_auto_correlation_butto},
 		{"set_analysis_auto_correlation",(XtPointer)set_analysis_auto_correlation},
@@ -4724,7 +6485,79 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_analysis_mode_ap},
 		{"identify_trace_close_button",(XtPointer)identify_trace_close_button},
 		{"close_trace_window",(XtPointer)close_trace_window},
-		{"identify_trace_1_area",(XtPointer)identify_trace_1_area},
+		{"identify_trace_paned_win",(XtPointer)identify_trace_paned_win},
+		{"identify_trace_1_area",(XtPointer)identify_trace_1_area},	
+		{"identify_trace_1_inverse_menu",(XtPointer)identify_trace_1_inverse_menu},	
+		{"identify_trace_electrodes_ch",
+			(XtPointer)identify_trace_electrodes_ch},
+		{"id_electrodes_accepted_button",
+			(XtPointer)id_electrodes_accepted_button},
+		{"set_inv_electrodes_accepted",
+		 (XtPointer)set_inv_electrodes_accepted},
+		{"id_electrodes_unrejected_button",
+			(XtPointer)id_electrodes_unrejected_button},
+		{"set_inv_electrodes_unrejected",
+		 (XtPointer)set_inv_electrodes_unrejected},	
+		{"id_electrodes_all_button",
+			(XtPointer)id_electrodes_all_button},
+		{"set_inv_electrodes_all",
+		 (XtPointer)set_inv_electrodes_all},
+		{"identify_trace_waves_ch",
+			(XtPointer)identify_trace_waves_ch},
+		{"identify_p_wave_button",
+			(XtPointer)identify_p_wave_button},
+		{"set_inverse_p_wave",
+			(XtPointer)set_inverse_p_wave},
+		{"identify_qrs_wave_button",
+			(XtPointer)identify_qrs_wave_button},
+		{"set_inverse_qrs_wave",
+			(XtPointer)set_inverse_qrs_wave},
+		{"identify_t_wave_button",
+			(XtPointer)identify_t_wave_button},
+		{"set_inverse_t_wave",
+			(XtPointer)set_inverse_t_wave},
+		{"identify_pqrs_wave_button",
+			(XtPointer)identify_pqrs_wave_button},
+		{"set_inverse_pqrs_wave",
+			(XtPointer)set_inverse_pqrs_wave},
+		{"identify_pt_wave_button",
+			(XtPointer)identify_pt_wave_button},
+		{"set_inverse_pt_wave",
+			(XtPointer)set_inverse_pt_wave},
+		{"identify_qrst_wave_button",
+			(XtPointer)identify_qrst_wave_button},
+		{"set_inverse_qrst_wave",
+			(XtPointer)set_inverse_qrst_wave},
+		{"identify_pqrst_wave_button",
+			(XtPointer)identify_pqrst_wave_button},
+		{"set_inverse_pqrst_wave",
+			(XtPointer)set_inverse_pqrst_wave},
+		{"identify_trace_pot_act_ch",
+			(XtPointer)identify_trace_pot_act_ch},
+		{"identify_pot_button",
+			(XtPointer)identify_pot_button},
+		{"set_inverse_potential",
+			(XtPointer)set_inverse_potential},
+		{"identify_act_button",
+			(XtPointer)identify_act_button},
+		{"set_inverse_activation",
+			(XtPointer)set_inverse_activation},
+		{"id_trace_inverse_load_butt",
+			(XtPointer)id_trace_inverse_load_butt},
+		{"load_inverse",
+			(XtPointer)load_inverse},
+		{"id_trace_calculate_inverse_butt",
+			(XtPointer)id_trace_calculate_inverse_butt},
+		{"calculate_inverse",
+			(XtPointer)calculate_inverse},
+		{"id_trace_inverse_forward_butt",
+			(XtPointer)id_trace_inverse_forward_butt},
+		{"forward_inverse",
+			(XtPointer)forward_inverse},
+		{"id_trace_inverse_improve_butt",
+			(XtPointer)id_trace_inverse_improve_butt},
+		{"improve_inverse",
+			(XtPointer)improve_inverse},
 		{"identify_trace_enlarge_menu",(XtPointer)identify_trace_enlarge_menu},
 		{"identify_trace_enlarge_detectio",
 			(XtPointer)identify_trace_enlarge_detectio},
@@ -4821,6 +6654,40 @@ the created trace window.  If unsuccessful, NULL is returned.
 		{"expose_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
 		{"resize_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
 		{"identify_trace_2_area",(XtPointer)identify_trace_2_area},
+		{"identify_trace_2_calculate_menu",
+		 (XtPointer)identify_trace_2_calculate_menu},
+		{"id_trace_calculate_apply_butt",
+		 (XtPointer)id_trace_calculate_apply_butt},
+		{"calculate_apply",
+		 (XtPointer)calculate_apply},
+		{"identify_calculate_int_rank_ch",
+		 (XtPointer)identify_calculate_int_rank_ch},
+		{"id_calculate_intervals_butt",
+		 (XtPointer)id_calculate_intervals_butt},
+		{"calculate_intervals",
+		 (XtPointer)calculate_intervals},
+		{"id_calculate_rank_cutoff_butt",
+		 (XtPointer)id_calculate_rank_cutoff_butt},
+		{"calculate_rank_cutoff",
+		 (XtPointer)calculate_rank_cutoff},
+		{"id_calculate_rms_current_ch",
+		 (XtPointer)id_calculate_rms_current_ch},
+		{"id_calculate_rms_sig_butt",
+		 (XtPointer)id_calculate_rms_sig_butt},
+		{"calculate_rms_signal",
+		 (XtPointer)calculate_rms_signal},
+		{"id_calculate_curr_sig_butt",
+		 (XtPointer)id_calculate_curr_sig_butt},
+		{"calculate_current_signal",
+		 (XtPointer)calculate_current_signal},
+		{"id_trace_calculate_butt",
+		 (XtPointer)id_trace_calculate_butt},
+		{"calculate_calculate",
+		 (XtPointer)calculate_calculate},
+		{"identify_trace_cutoff_value",
+		 (XtPointer)identify_trace_cutoff_value},
+		{"change_cutoff_value",
+		 (XtPointer)change_cutoff_value},
 		{"identify_trace_correlation_2_me",
 			(XtPointer)identify_trace_correlation_2_me},
 		{"identify_trace_correlation_2_to",
@@ -4832,31 +6699,21 @@ the created trace window.  If unsuccessful, NULL is returned.
 		{"resize_trace_2_drawing_area",(XtPointer)redraw_trace_2_drawing_area},
 		{"select_trace_2_drawing_area",(XtPointer)select_trace_2_drawing_area},
 		{"identify_trace_3_area",(XtPointer)identify_trace_3_area},
+		{"id_trace_3_interval_menu",
+		 (XtPointer)id_trace_3_interval_menu},
+		{"id_trace_times_button",
+		 (XtPointer)id_trace_times_button},
+		{"trace_times",
+		 (XtPointer)trace_times},
 		{"identify_trace_edit_menu",(XtPointer)identify_trace_edit_menu},
 		{"identify_trace_edit_previous_bu",
 			(XtPointer)identify_trace_edit_previous_bu},
-#if defined (OLD_CODE)
-		{"identify_trace_edit_previous_ac",
-			(XtPointer)identify_trace_edit_previous_ac},
-#endif
 		{"identify_trace_edit_next_button",
 			(XtPointer)identify_trace_edit_next_button},
-#if defined (OLD_CODE)
-		{"identify_trace_edit_next_accele",
-			(XtPointer)identify_trace_edit_next_accele},
-#endif
 		{"identify_trace_edit_accept_butt",
 			(XtPointer)identify_trace_edit_accept_butt},
-#if defined (OLD_CODE)
-		{"identify_trace_edit_accept_acce",
-			(XtPointer)identify_trace_edit_accept_acce},
-#endif
 		{"identify_trace_edit_reject_butt",
 			(XtPointer)identify_trace_edit_reject_butt},
-#if defined (OLD_CODE)
-		{"identify_trace_edit_reject_acce",
-			(XtPointer)identify_trace_edit_reject_acce},
-#endif
 		{"identify_trace_edit_order_choic",
 			(XtPointer)identify_trace_edit_order_choic},
 		{"identify_edit_order_device_butt",
@@ -4981,6 +6838,25 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->menu.analysis_mode.beat_averaging_button=(Widget)NULL;
 				trace->menu.apply_button=(Widget)NULL;
 				trace->menu.close_button=(Widget)NULL;
+				trace->area_1.inverse.electrodes_choice_mode=(Widget)NULL;
+				trace->area_1.inverse.electrodes_choice.accepted_button=(Widget)NULL;
+				trace->area_1.inverse.electrodes_choice.unrejected_button=(Widget)NULL;
+				trace->area_1.inverse.electrodes_choice.all_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice_mode=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.p_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.qrs_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.t_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.pqrs_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.pt_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.qrst_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.pqrst_button=(Widget)NULL;
+				trace->area_1.inverse.pot_act_choice_mode=(Widget)NULL;
+				trace->area_1.inverse.pot_act_choice.potential_button=(Widget)NULL;
+				trace->area_1.inverse.pot_act_choice.activation_button=(Widget)NULL;
+				trace->area_1.inverse.load_button=(Widget)NULL;
+				trace->area_1.inverse.inverse_button=(Widget)NULL;
+				trace->area_1.inverse.improve_button=(Widget)NULL;
+				trace->area_1.inverse.forward_button=(Widget)NULL;
 				trace->area_1.enlarge.divisions=(int *)NULL;
 				trace->area_1.enlarge.calculate_button=(Widget)NULL;
 				trace->area_1.enlarge.detection_choice=(Widget)NULL;
@@ -5024,6 +6900,20 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.axes_top=0;
 				trace->area_1.axes_width=0;
 				trace->area_1.axes_height=0;
+				trace->area_2.calculate.menu=(Widget)NULL;
+				trace->area_2.calculate.apply_button=(Widget)NULL;
+				trace->area_2.calculate.interval_rank_cutoff_mode_choice=(Widget)NULL;
+				trace->area_2.calculate.interval_rank_cutoff_choice.interval_button
+					=(Widget)NULL;
+				trace->area_2.calculate.interval_rank_cutoff_choice.rank_cutoff_button
+					=(Widget)NULL;
+				trace->area_2.calculate.RMS_current_mode_choice=(Widget)NULL;
+				trace->area_2.calculate.RMS_current_choice.RMS_signal_button
+					=(Widget)NULL;
+				trace->area_2.calculate.RMS_current_choice.current_signal_button
+					=(Widget)NULL;
+				trace->area_2.calculate.calculate_button=(Widget)NULL;
+				trace->area_2.calculate.cutoff_value=(Widget)NULL;
 				trace->area_2.correlation_time_domain.menu=(Widget)NULL;
 				trace->area_2.correlation_time_domain.toggle=(Widget)NULL;
 				trace->area_2.pane=(Widget)NULL;
@@ -5033,22 +6923,12 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_2.axes_top=0;
 				trace->area_2.axes_width=0;
 				trace->area_2.axes_height=0;
+				trace->area_3.interval.menu=(Widget)NULL;
+				trace->area_3.interval.times_button=(Widget)NULL;
 				trace->area_3.edit.previous_button=(Widget)NULL;
-#if defined (OLD_CODE)
-				trace->area_3.edit.accelerator.previous_button=(Widget)NULL;
-#endif
 				trace->area_3.edit.next_button=(Widget)NULL;
-#if defined (OLD_CODE)
-				trace->area_3.edit.accelerator.next_button=(Widget)NULL;
-#endif
 				trace->area_3.edit.accept_button=(Widget)NULL;
-#if defined (OLD_CODE)
-				trace->area_3.edit.accelerator.accept_button=(Widget)NULL;
-#endif
 				trace->area_3.edit.reject_button=(Widget)NULL;
-#if defined (OLD_CODE)
-				trace->area_3.edit.accelerator.reject_button=(Widget)NULL;
-#endif
 				trace->area_3.edit.order_choice=(Widget)NULL;
 				trace->area_3.edit.order.device_button=(Widget)NULL;
 				trace->area_3.edit.order.beat_button=(Widget)NULL;
@@ -5397,7 +7277,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 #else /* defined (SPECTRAL_TOOLS) */
 									XtUnmanageChild(trace->menu.analysis_mode_choice);
 #endif /* defined (SPECTRAL_TOOLS) */
-									XtUnmanageChild(trace->menu.apply_button);
+									XtUnmanageChild(trace->menu.apply_button);	
+									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
 									XtUnmanageChild(trace->area_2.pane);
@@ -5411,7 +7292,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 									XtVaSetValues(trace->area_1.drawing_area,
 										XmNheight,screen_height/8,
 										XmNtopWidget,trace->area_1.enlarge.menu,
-										NULL);
+										NULL);									
 									/* set the top widget for the drawing area 3 */
 									XtVaSetValues(trace->area_3.drawing_area,
 										XmNtopWidget,trace->area_3.edit.menu,
@@ -5421,6 +7302,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case FREQUENCY_DOMAIN:
 								{
 									XtUnmanageChild(trace->menu.apply_button);
+									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -5441,6 +7323,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								} break;
 								case POWER_SPECTRA:
 								{
+									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -5462,6 +7345,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case CROSS_CORRELATION:
 								{
 									XtUnmanageChild(trace->menu.apply_button);
+									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
 									XtUnmanageChild(trace->area_3.edit.menu);
@@ -5484,6 +7368,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case AUTO_CORRELATION:
 								{
 									XtUnmanageChild(trace->menu.apply_button);
+									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -5504,6 +7389,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								} break;
 								case FILTERING:
 								{
+									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -5524,6 +7410,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								} break;
 								case BEAT_AVERAGING:
 								{
+									XtUnmanageChild(trace->area_1.inverse.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_2.pane);
@@ -5535,6 +7422,25 @@ the created trace window.  If unsuccessful, NULL is returned.
 									/* set the top widget for the drawing area 3 */
 									XtVaSetValues(trace->area_1.drawing_area,
 										XmNtopWidget,trace->area_1.beat_averaging.menu,
+										NULL);
+									/* set the top widget for the drawing area 3 */
+									XtVaSetValues(trace->area_3.drawing_area,
+										XmNtopWidget,trace->area_3.beat_averaging.menu,
+										NULL);
+								} break;
+								case ELECTRICAL_IMAGING: /*!!jw*/
+								{									
+									XtUnmanageChild(trace->area_1.enlarge.menu);
+									XtUnmanageChild(trace->area_1.drawing_area);
+									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
+									XtUnmanageChild(trace->area_3.edit.menu);
+									XtUnmanageChild(trace->area_3.frequency_domain.menu);
+									XtUnmanageChild(trace->area_3.power_spectra.menu);
+									XtUnmanageChild(trace->area_3.correlation.menu);
+									XtUnmanageChild(trace->area_3.filtering.menu);
+									/* set the top widget for the drawing area 1 */
+									XtVaSetValues(trace->area_1.drawing_area,
+										XmNtopWidget,trace->area_1.inverse.menu,
 										NULL);
 									/* set the top widget for the drawing area 3 */
 									XtVaSetValues(trace->area_3.drawing_area,
@@ -5585,7 +7491,106 @@ the created trace window.  If unsuccessful, NULL is returned.
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
 								XmNmarginWidth,0,
+								NULL);	
+							/* adjust the inverse electrodes mode choice */
+							child_widget=
+								XmOptionLabelGadget(trace->area_1.inverse.electrodes_choice_mode);
+							XtVaSetValues(child_widget,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
 								NULL);
+							child_widget=
+								XmOptionButtonGadget(trace->area_1.inverse.electrodes_choice_mode);
+							XtVaSetValues(child_widget,
+								XmNshadowThickness,0,
+								XmNhighlightThickness,0,
+								XmNcascadePixmap,no_cascade_pixmap,
+								XmNalignment,XmALIGNMENT_BEGINNING,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);	
+							/* adjust the inverse wave mode choice */
+							child_widget=
+								XmOptionLabelGadget(trace->area_1.inverse.wave_choice_mode);
+							XtVaSetValues(child_widget,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);
+							child_widget=
+								XmOptionButtonGadget(trace->area_1.inverse.wave_choice_mode );
+							XtVaSetValues(child_widget,
+								XmNshadowThickness,0,
+								XmNhighlightThickness,0,
+								XmNcascadePixmap,no_cascade_pixmap,
+								XmNalignment,XmALIGNMENT_BEGINNING,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);	
+							/* adjust the inverse potential/activation mode choice */
+							child_widget=
+								XmOptionLabelGadget(trace->area_1.inverse.pot_act_choice_mode);
+							XtVaSetValues(child_widget,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,								
+								NULL);
+							child_widget=
+								XmOptionButtonGadget(trace->area_1.inverse.pot_act_choice_mode );
+							XtVaSetValues(child_widget,								
+								XmNshadowThickness,0,
+								XmNhighlightThickness,0,
+								XmNcascadePixmap,no_cascade_pixmap,
+								XmNalignment,XmALIGNMENT_BEGINNING,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);	
+							/* adjust the interval/rank cutoffmode choice */
+							child_widget=
+								XmOptionLabelGadget(
+									trace->area_2.calculate.interval_rank_cutoff_mode_choice);
+							XtVaSetValues(child_widget,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);
+							child_widget=
+								XmOptionButtonGadget(
+									trace->area_2.calculate.interval_rank_cutoff_mode_choice);
+							XtVaSetValues(child_widget,
+								XmNshadowThickness,0,
+								XmNhighlightThickness,0,
+								XmNcascadePixmap,no_cascade_pixmap,
+								XmNalignment,XmALIGNMENT_BEGINNING,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);	
+							/* adjust the RMS current signal mode choice */
+							child_widget=
+								XmOptionLabelGadget(
+									trace->area_2.calculate.RMS_current_mode_choice);
+							XtVaSetValues(child_widget,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);
+							child_widget=
+								XmOptionButtonGadget(
+									trace->area_2.calculate.RMS_current_mode_choice);
+							XtVaSetValues(child_widget,
+								XmNshadowThickness,0,
+								XmNhighlightThickness,0,
+								XmNcascadePixmap,no_cascade_pixmap,
+								XmNalignment,XmALIGNMENT_BEGINNING,
+								XmNmarginLeft,0,
+								XmNmarginRight,0,
+								XmNmarginWidth,0,
+								NULL);												
 							/* adjust the frequency domain display mode choice */
 							child_widget=XmOptionLabelGadget(
 								trace->area_3.frequency_domain.display_mode_choice);
@@ -5995,27 +8000,6 @@ the created trace window.  If unsuccessful, NULL is returned.
 								XmNlabelString,XmStringCreate(number_string,
 								XmSTRING_DEFAULT_CHARSET),
 								NULL);
-#if defined (OLD_CODE)
-							if (1== *number_of_events)
-							{
-								XtUnmanageChild(
-									trace->area_1.enlarge.number_of_events.down_arrow);
-							}
-							else
-							{
-								XtManageChild(
-									trace->area_1.enlarge.number_of_events.down_arrow);
-							}
-							if (9== *number_of_events)
-							{
-								XtUnmanageChild(
-									trace->area_1.enlarge.number_of_events.up_arrow);
-							}
-							else
-							{
-								XtManageChild(trace->area_1.enlarge.number_of_events.up_arrow);
-							}
-#endif /* defined (OLD_CODE) */
 							/* set the background colour for the accept and reject buttons */
 							XtVaSetValues(trace->area_3.edit.accept_button,
 								XmNbackground,signal_drawing_information->accepted_colour,
@@ -6029,29 +8013,13 @@ the created trace window.  If unsuccessful, NULL is returned.
 								{
 									/* unghost the accept and reject buttons */
 									XtSetSensitive(trace->area_3.edit.accept_button,True);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.accept_button,
-										True);
-#endif
 									XtSetSensitive(trace->area_3.edit.reject_button,True);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.reject_button,
-										True);
-#endif
 								}
 								else
 								{
 									/* ghost the accept and reject buttons */
 									XtSetSensitive(trace->area_3.edit.accept_button,False);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.accept_button,
-										False);
-#endif
 									XtSetSensitive(trace->area_3.edit.reject_button,False);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.reject_button,
-										False);
-#endif
 								}
 								if (current_region=(*rig)->current_region)
 								{
@@ -6077,61 +8045,29 @@ the created trace window.  If unsuccessful, NULL is returned.
 									*(trace->event_detection.number_of_events)))
 								{
 									XtSetSensitive(trace->area_3.edit.next_button,False);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.next_button,
-										False);
-#endif
 								}
 								else
 								{
 									XtSetSensitive(trace->area_3.edit.next_button,True);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.next_button,
-										True);
-#endif
 								}
 								if ((0==device_number)&&
 									(1== *(trace->event_detection.event_number)))
 								{
 									XtSetSensitive(trace->area_3.edit.previous_button,False);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.previous_button,
-										False);
-#endif
 								}
 								else
 								{
 									XtSetSensitive(trace->area_3.edit.previous_button,True);
-#if defined (OLD_CODE)
-									XtSetSensitive(trace->area_3.edit.accelerator.previous_button,
-										True);
-#endif
 								}
 							}
 							else
 							{
 								/* ghost the accept and reject buttons */
 								XtSetSensitive(trace->area_3.edit.accept_button,False);
-#if defined (OLD_CODE)
-								XtSetSensitive(trace->area_3.edit.accelerator.accept_button,
-									False);
-#endif
 								XtSetSensitive(trace->area_3.edit.reject_button,False);
-#if defined (OLD_CODE)
-								XtSetSensitive(trace->area_3.edit.accelerator.reject_button,
-									False);
-#endif
 								/* ghost the next and previous buttons */
 								XtSetSensitive(trace->area_3.edit.next_button,False);
-#if defined (OLD_CODE)
-								XtSetSensitive(trace->area_3.edit.accelerator.next_button,
-									False);
-#endif
 								XtSetSensitive(trace->area_3.edit.previous_button,False);
-#if defined (OLD_CODE)
-								XtSetSensitive(trace->area_3.edit.accelerator.previous_button,
-									False);
-#endif
 							}
 							install_accelerators(trace->window, trace->window);
 							/*??? more to do ? */
@@ -6172,7 +8108,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 			display_message(ERROR_MESSAGE,
 				"create_Trace_window.  Invalid argument(s)");
 			trace=(struct Trace_window *)NULL;
-		}
+		}	
 	}
 	else
 	{
@@ -8555,24 +10491,12 @@ Updates the selectability of the signal controls.
 					if (event&&(event->number==event_number))
 					{
 						XtSetSensitive(trace->area_3.edit.accept_button,True);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.accept_button,True);
-#endif
 						XtSetSensitive(trace->area_3.edit.reject_button,True);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.reject_button,True);
-#endif
 					}
 					else
 					{
 						XtSetSensitive(trace->area_3.edit.accept_button,False);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.accept_button,False);
-#endif
 						XtSetSensitive(trace->area_3.edit.reject_button,False);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.reject_button,False);
-#endif
 					}
 					/* ghost/unghost the next and previous buttons */
 					if (current_region=get_Rig_current_region(rig))
@@ -8598,32 +10522,20 @@ Updates the selectability of the signal controls.
 						(!event||((event->number==event_number)&&!(event->next))))
 					{
 						XtSetSensitive(trace->area_3.edit.next_button,False);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.next_button,False);
-#endif
 					}
 					else
 					{
 						XtSetSensitive(trace->area_3.edit.next_button,True);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.next_button,True);
-#endif
 					}
 					if ((0==device_number)&&(!event||((event->number>=event_number)&&
 						!(event->previous))))
 					{
 						XtSetSensitive(trace->area_3.edit.previous_button,False);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.previous_button,
-							False);
-#endif
+
 					}
 					else
 					{
 						XtSetSensitive(trace->area_3.edit.previous_button,True);
-#if defined (OLD_CODE)
-						XtSetSensitive(trace->area_3.edit.accelerator.previous_button,True);
-#endif
 					}
 				} break;
 			}

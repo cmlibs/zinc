@@ -10316,8 +10316,25 @@ value at the potential time.
 				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
 					(current_region==(*device)->description->region)))
 				{
+
 					channel_offset=(buffer->signals.float_values)[potential_time*
 						buffer_offset+(*device)->signal->index];
+#if defined (NEW_CODE) /* jw need a way to decide how many samples to average across */
+					{
+						/* offset by an average of num_to_average_across signals values around the potential_time*/
+						int count,num_to_average_across;
+
+						num_to_average_across=10;channel_offset=0;
+						potential_time-=num_to_average_across/2;
+						for(count=0;count<num_to_average_across;count++)
+						{
+							channel_offset+=(buffer->signals.float_values)[potential_time*
+								buffer_offset+(*device)->signal->index];
+							potential_time++;	
+						}
+						channel_offset/=num_to_average_across;
+					}
+#endif
 					value=(buffer->signals.float_values)+(*device)->signal->index;
 					for (j=buffer->number_of_samples;j>0;j--)
 					{
@@ -14404,7 +14421,7 @@ Change the highlight status of the node/device
 static void rig_node_group_node_selection_change(struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *changes,void *analysis_work_area_void)
 /*******************************************************************************
-LAST MODIFIED : 3 October 2000
+LAST MODIFIED : 7 February 2001
 
 DESCRIPTION :
 Callback for change in the  node selection. Checks to see if nodes  are in
