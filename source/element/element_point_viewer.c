@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 12 October 2001
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -19,10 +19,11 @@ selected element point, or set it if entered in this dialog.
 #include "choose/text_choose_fe_element.h"
 #include "choose/choose_computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_value_index_ranges.h"
 #include "element/element_point_viewer_widget.h"
 #include "element/element_point_viewer.h"
 #include "element/element_point_viewer.uidh"
-#include "finite_element/field_value_index_ranges.h"
+#include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "general/debug.h"
 #include "user_interface/gui_dialog_macros.h"
