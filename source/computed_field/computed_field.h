@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 27 September 2000
+LAST MODIFIED : 2 October 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -65,7 +65,6 @@ DESCRIPTION :
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
 	COMPUTED_FIELD_FIBRE_AXES,         /* fibre axes: fibre, sheet, normal */
 	COMPUTED_FIELD_FIBRE_SHEET_AXES,   /* fibre axes: sheet,-fibre, normal */
-	COMPUTED_FIELD_MAGNITUDE,          /* sqrt(sum of squared components) */
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
@@ -936,30 +935,6 @@ enforced.
 ???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
 the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
 while the field is in use. Not sure if we want that restriction.
-==============================================================================*/
-
-int Computed_field_get_type_magnitude(struct Computed_field *field,
-	struct Computed_field **source_field);
-/*******************************************************************************
-LAST MODIFIED : 5 February 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MAGNITUDE, the source field used
-by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_magnitude(struct Computed_field *field,
-	struct Computed_field *source_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_MAGNITUDE, which returns a scalar value
-equal to the square root of the sum of the squares of all components in the
-<source_field>. Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
 ==============================================================================*/
 
 int Computed_field_get_type_rc_coordinate(struct Computed_field *field,

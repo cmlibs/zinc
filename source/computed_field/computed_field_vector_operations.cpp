@@ -2136,10 +2136,754 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_dot_product */
 
+static char computed_field_magnitude_type_string[] = "magnitude";
+
+int Computed_field_is_type_magnitude(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_magnitude);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_magnitude_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_magnitude.  Missing field.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_magnitude */
+
+static int Computed_field_magnitude_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_magnitude_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_magnitude_clear_type_specific.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_magnitude_clear_type_specific */
+
+static void *Computed_field_magnitude_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination;
+
+	ENTER(Computed_field_magnitude_copy_type_specific);
+	if (field)
+	{
+		/* Return a TRUE value */
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_magnitude_copy_type_specific.  Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_magnitude_copy_type_specific */
+
+#define Computed_field_magnitude_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_magnitude_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_vector_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_vector_operations_type_specific_contents_match */
+
+#define Computed_field_magnitude_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_magnitude_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_magnitude_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_magnitude_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 2 October 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_magnitude_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *source_values, sum;
+	int i, return_code, source_number_of_components;
+
+	ENTER(Computed_field_magnitude_evaluate_cache_at_node);
+	if (field && node && (0 < field->number_of_source_fields))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+		{
+			/* 2. Calculate the field */
+			source_number_of_components =
+				field->source_fields[0]->number_of_components;
+			source_values = field->source_fields[0]->values;
+			sum = 0.0;
+			for (i=0;i<source_number_of_components;i++)
+			{
+				sum += source_values[i]*source_values[i];
+			}
+			field->values[0] = sqrt(sum);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_magnitude_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_magnitude_evaluate_cache_at_node */
+
+static int Computed_field_magnitude_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *source_derivatives, *source_values, sum;
+	int element_dimension, i, j, return_code, source_number_of_components;
+
+	ENTER(Computed_field_magnitude_evaluate_cache_in_element);
+	if (field && element && xi && (0 < field->number_of_source_fields))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, top_level_element, calculate_derivatives))
+		{
+			/* 2. Calculate the field */
+			source_number_of_components =
+				field->source_fields[0]->number_of_components;
+			source_values = field->source_fields[0]->values;
+			sum = 0.0;
+			for (i=0;i<source_number_of_components;i++)
+			{
+				sum += source_values[i]*source_values[i];
+			}
+			field->values[0] = sqrt(sum);
+
+			if (calculate_derivatives)
+			{
+				source_derivatives=field->source_fields[0]->derivatives;
+				element_dimension=get_FE_element_dimension(element);
+				for (j=0;j<element_dimension;j++)
+				{
+					sum = 0.0;
+					for (i=0;i<source_number_of_components;i++)
+					{
+						sum += source_values[i]*source_derivatives[i*element_dimension+j];
+					}
+					field->derivatives[j] = sum / field->values[0];
+				}
+				field->derivatives_valid = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_magnitude_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_magnitude_evaluate_cache_in_element */
+
+#define Computed_field_magnitude_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_magnitude_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+static int Computed_field_magnitude_set_values_at_node(
+	struct Computed_field *field,struct FE_node *node,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <node>.
+==============================================================================*/
+{
+	FE_value magnitude,*source_values;
+	int i,return_code,source_number_of_components;
+
+	ENTER(Computed_field_magnitude_set_values_at_node);
+	if (field && node && values)
+	{
+		/* need current vector field values "magnify" */
+		source_number_of_components=field->source_fields[0]->number_of_components;
+		if (ALLOCATE(source_values,FE_value,source_number_of_components))
+		{
+			if (Computed_field_evaluate_at_node(field->source_fields[0],node,
+				source_values))
+			{
+				return_code=1;
+				/* if the source field is not a zero vector, set its magnitude to
+					 the given value */
+				magnitude = 0.0;
+				for (i=0;i<source_number_of_components;i++)
+				{
+					magnitude += source_values[i]*source_values[i];
+				}
+				if (0.0 < magnitude)
+				{
+					magnitude = values[0] / sqrt(magnitude);
+					for (i=0;i<source_number_of_components;i++)
+					{
+						source_values[i] *= magnitude;
+					}
+					return_code=Computed_field_set_values_at_node(
+						field->source_fields[0],node,source_values);
+				}
+				else
+				{
+					/* not an error; just a warning */
+					display_message(WARNING_MESSAGE,
+						"Magnitude field %s cannot be inverted for zero vector",
+						field->name);
+				}
+			}
+			else
+			{
+				return_code=0;
+			}
+			DEALLOCATE(source_values);
+		}
+		else
+		{
+			return_code=0;
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_magnitude_set_values_at_node.  "
+				"Could not set magnitude field %s at node",field->name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_magnitude_set_values_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_magnitude_set_values_at_node */
+
+static int Computed_field_magnitude_set_values_in_element(
+	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
+	FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> over the <element>.
+==============================================================================*/
+{
+	FE_value magnitude,*source_values;
+	int element_dimension,i,j,k,number_of_points,return_code,
+		source_number_of_components,zero_warning;
+
+	ENTER(Computed_field_magnitude_set_values_in_element);
+	if (field && element && number_in_xi && values)
+	{
+		return_code=1;
+		element_dimension=get_FE_element_dimension(element);
+		number_of_points=1;
+		for (i=0;(i<element_dimension)&&return_code;i++)
+		{
+			if (0<number_in_xi[i])
+			{
+				number_of_points *= (number_in_xi[i]+1);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_magnitude_set_values_in_element.  "
+					"number_in_xi must be positive");
+				return_code=0;
+			}
+		}
+		if (return_code)
+		{
+			/* need current field values to "magnify" */
+			if (Computed_field_get_values_in_element(field->source_fields[0],
+				element,number_in_xi,&source_values))
+			{
+				source_number_of_components =
+					field->source_fields[0]->number_of_components;
+				zero_warning=0;
+				for (j=0;j<number_of_points;j++)
+				{
+					/* if the source field is not a zero vector, set its magnitude to
+						 the given value */
+					magnitude = 0.0;
+					for (k=0;k<source_number_of_components;k++)
+					{
+						magnitude += source_values[k*number_of_points+j]*
+							source_values[k*number_of_points+j];
+					}
+					if (0.0 < magnitude)
+					{
+						magnitude = values[j] / sqrt(magnitude);
+						for (k=0;k<source_number_of_components;k++)
+						{
+							source_values[k*number_of_points+j] *= magnitude;
+						}
+					}
+					else
+					{
+						zero_warning=1;
+					}
+				}
+				if (zero_warning)
+				{
+					/* not an error; just a warning */
+					display_message(WARNING_MESSAGE,
+						"Magnitude field %s cannot be inverted for zero vectors",
+						field->name);
+				}
+				return_code=Computed_field_set_values_in_element(
+					field->source_fields[0],element,number_in_xi,source_values);
+				DEALLOCATE(source_values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_magnitude_set_values_in_element.  "
+					"Could not evaluate source field for %s.",field->name);
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_magnitude_set_values_in_element.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_magnitude_set_values_in_element */
+
+#define Computed_field_magnitude_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_magnitude_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_magnitude(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_magnitude);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    source field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_magnitude.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_magnitude */
+
+static int list_Computed_field_magnitude_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_magnitude_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			" field %s",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_magnitude_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_magnitude_commands */
+
+int Computed_field_set_type_magnitude(struct Computed_field *field,
+	struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_MAGNITUDE with the supplied
+<source_field>.  Sets the number of components equal to the <source_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_magnitude);
+	if (field&&source_field)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=1;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_magnitude_type_string;
+			field->number_of_components = 1;
+			source_fields[0]=ACCESS(Computed_field)(source_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)1;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_magnitude_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_magnitude_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_magnitude_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_magnitude_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_magnitude_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_magnitude_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_magnitude_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_magnitude_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_magnitude_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_magnitude_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_magnitude_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_magnitude_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_magnitude_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_magnitude_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_magnitude_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_magnitude_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_magnitude;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_magnitude_commands;
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_magnitude.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_magnitude */
+
+int Computed_field_get_type_magnitude(struct Computed_field *field,
+	struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_MAGNITUDE, the 
+<source_field> used by it is returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_magnitude);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==computed_field_magnitude_type_string))
+	{
+		*source_field = field->source_fields[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_magnitude.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_magnitude */
+
+static int define_Computed_field_type_magnitude(struct Parse_state *state,
+	void *field_void,void *computed_field_vector_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_MAGNITUDE (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field,*source_field;
+	struct Computed_field_vector_operations_package 
+		*computed_field_vector_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_magnitude);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_vector_operations_package=
+		(struct Computed_field_vector_operations_package *)
+		computed_field_vector_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_magnitude_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_magnitude(field, &source_field);
+		}
+		else
+		{
+			if (!((source_field=
+				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_has_numerical_components,(void *)NULL,
+				computed_field_vector_operations_package->computed_field_manager))))
+			{
+				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+				{
+					/* This is only a failure if we aren't asking for help */
+					display_message(ERROR_MESSAGE,"At least one field with numerical "
+						"components must exist for a magnitude field.");
+					return_code = 0;
+				}
+			}
+		}
+		if (return_code)
+		{
+			/* must access objects for set functions */
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+
+			option_table = CREATE(Option_table)();
+			/* field */
+			set_source_field_data.computed_field_manager=
+				computed_field_vector_operations_package->computed_field_manager;
+			set_source_field_data.conditional_function=
+				Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"field",&source_field,
+				&set_source_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state);
+			/* no errors,not asking for help */
+			if (return_code)
+			{
+				return_code = Computed_field_set_type_magnitude(field, source_field);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token)||
+					(strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_magnitude.  Failed");
+				}
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_magnitude.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_magnitude */
+
 int Computed_field_register_types_vector_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 2 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2154,6 +2898,10 @@ DESCRIPTION :
 		computed_field_vector_operations_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_magnitude_type_string,
+			define_Computed_field_type_magnitude,
+			&computed_field_vector_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_normalise_type_string,
 			define_Computed_field_type_normalise,
@@ -2177,4 +2925,3 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Computed_field_register_types_vector_operations */
-

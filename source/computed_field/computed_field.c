@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 2 October 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -1841,7 +1841,6 @@ any other fields, this function is recursively called for them.
 				case COMPUTED_FIELD_EXTERNAL:
 				case COMPUTED_FIELD_RC_COORDINATE:
 				case COMPUTED_FIELD_RC_VECTOR:
-				case COMPUTED_FIELD_MAGNITUDE:
 				case COMPUTED_FIELD_SUM_COMPONENTS:
 				{
 					return_code=1;
@@ -2900,33 +2899,6 @@ is avoided.
 								return_code=Computed_field_evaluate_fibre_axes(field,
 									top_level_element_dimension);
 							} break;
-							case COMPUTED_FIELD_MAGNITUDE:
-							{
-								field->values[0]=0.0;
-								if (calculate_derivatives)
-								{
-									for (j=0;j<element_dimension;j++)
-									{
-										field->derivatives[j]=0.0;
-									}
-								}
-								temp=field->source_fields[0]->values;
-								temp2=field->source_fields[0]->derivatives;
-								for (i=field->source_fields[0]->number_of_components;0<i;i--)
-								{
-									field->values[0] += ((*temp)*(*temp));
-									if (calculate_derivatives)
-									{
-										for (j=0;j<element_dimension;j++)
-										{
-											field->derivatives[j] += 2.0*(*temp)*(*temp2);
-											temp2++;
-										}
-									}
-									temp++;
-								}
-								field->values[0]=sqrt(field->values[0]);
-							} break;
 							case COMPUTED_FIELD_RC_VECTOR:
 							{
 								return_code=Computed_field_evaluate_rc_vector(field);
@@ -3687,17 +3659,6 @@ fields with the name 'coordinates' are quite pervasive.
 									"Cannot evaluate fibre_axes/fibre_sheet_axes at nodes");
 								return_code=0;
 							} break;
-							case COMPUTED_FIELD_MAGNITUDE:
-							{
-								field->values[0]=0.0;
-								temp=field->source_fields[0]->values;
-								for (i=field->source_fields[0]->number_of_components;0<i;i--)
-								{
-									field->values[0] += ((*temp)*(*temp));
-									temp++;
-								}
-								field->values[0]=sqrt(field->values[0]);
-							} break;
 							case COMPUTED_FIELD_RC_VECTOR:
 							{
 								return_code=Computed_field_evaluate_rc_vector(field);
@@ -4128,53 +4089,6 @@ should not be managed at the time it is modified by this function.
 						return_code=0;
 					}
 				} break;
-				case COMPUTED_FIELD_MAGNITUDE:
-				{
-					FE_value magnitude;
-
-					/* need current vector field values "magnify" */
-					if (ALLOCATE(source_values,FE_value,
-						field->source_fields[0]->number_of_components))
-					{
-						if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-							source_values))
-						{
-							/* if the source field is not a zero vector, set its magnitude to
-								the given value */
-							magnitude = 0.0;
-							for (i=0;i<field->number_of_components;i++)
-							{
-								magnitude += source_values[i]*source_values[i];
-							}
-							if (0.0 < magnitude)
-							{
-								magnitude = values[0] / magnitude;
-								for (i=0;i<field->number_of_components;i++)
-								{
-									source_values[i] *= magnitude;
-								}
-								return_code=Computed_field_set_values_at_node(
-									field->source_fields[0],node,source_values);
-							}
-							else
-							{
-								/* not an error; just a warning */
-								display_message(WARNING_MESSAGE,
-									"Magnitude field %s cannot be inverted for zero vector",
-									field->name);
-							}
-						}
-						else
-						{
-							return_code=0;
-						}
-						DEALLOCATE(source_values);
-					}
-					else
-					{
-						return_code=0;
-					}
-				} break;
 				case COMPUTED_FIELD_RC_COORDINATE:
 				{
 					FE_value non_rc_coordinates[3];
@@ -4552,55 +4466,6 @@ Note that the values array will not be modified by this function. Also,
 										source_values[offset+j] = values[offset+j];
 									}
 								}
-							}
-							return_code=Computed_field_set_values_in_element(
-								field->source_fields[0],element,number_in_xi,source_values);
-							DEALLOCATE(source_values);
-						}
-						else
-						{
-							return_code=0;
-						}
-					} break;
-					case COMPUTED_FIELD_MAGNITUDE:
-					{
-						FE_value magnitude;
-						int zero_warning;
-
-						/* need current field values to "magnify" */
-						if (Computed_field_get_values_in_element(field->source_fields[0],
-							element,number_in_xi,&source_values))
-						{
-							zero_warning=0;
-							for (j=0;j<number_of_points;j++)
-							{
-								/* if the source field is not a zero vector, set its magnitude to
-									the given value */
-								magnitude = 0.0;
-								for (k=0;k<field->number_of_components;k++)
-								{
-									magnitude += source_values[k*number_of_points+j]*
-										source_values[k*number_of_points+j];
-								}
-								if (0.0 < magnitude)
-								{
-									magnitude = values[j] / magnitude;
-									for (k=0;k<field->number_of_components;k++)
-									{
-										source_values[k*number_of_points+j] *= magnitude;
-									}
-								}
-								else
-								{
-									zero_warning=1;
-								}
-							}
-							if (zero_warning)
-							{
-								/* not an error; just a warning */
-								display_message(WARNING_MESSAGE,
-									"Magnitude field %s cannot be inverted for zero vectors",
-									field->name);
 							}
 							return_code=Computed_field_set_values_in_element(
 								field->source_fields[0],element,number_in_xi,source_values);
@@ -5178,7 +5043,6 @@ Computed_field_set_values_in_[managed_]element.
 				case COMPUTED_FIELD_COMPOSITE:
 					/* note: only find out if first field of composite grid based! */
 				case COMPUTED_FIELD_EDIT_MASK:
-				case COMPUTED_FIELD_MAGNITUDE:
 				case COMPUTED_FIELD_RC_COORDINATE:
 				case COMPUTED_FIELD_RC_VECTOR:
 				{
@@ -5478,10 +5342,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_FIBRE_SHEET_AXES:
 		{
 			field_type_string="fibre_sheet_axes";
-		} break;
-		case COMPUTED_FIELD_MAGNITUDE:
-		{
-			field_type_string="magnitude";
 		} break;
 		case COMPUTED_FIELD_NEW_TYPES:
 		{
@@ -7204,87 +7064,6 @@ while the field is in use. Not sure if we want that restriction.
 
 	return (return_code);
 } /* Computed_field_set_type_fibre_sheet_axes */
-
-int Computed_field_get_type_magnitude(struct Computed_field *field,
-	struct Computed_field **source_field)
-/*******************************************************************************
-LAST MODIFIED : 5 February 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MAGNITUDE, the source field used
-by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_magnitude);
-	if (field&&(COMPUTED_FIELD_MAGNITUDE==field->type)&&source_field)
-	{
-		*source_field=field->source_fields[0];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_magnitude.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_magnitude */
-
-int Computed_field_set_type_magnitude(struct Computed_field *field,
-	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_MAGNITUDE, which returns a scalar value
-equal to the square root of the sum of the squares of all components in the
-<source_field>. Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_magnitude);
-	if (field&&source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_MAGNITUDE;
-			field->number_of_components=1;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_magnitude.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_magnitude.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_magnitude */
 
 int Computed_field_get_type_rc_coordinate(struct Computed_field *field,
 	struct Computed_field **coordinate_field)
@@ -10111,76 +9890,6 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_fibre_sheet_axes */
 
-static int define_Computed_field_type_magnitude(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 10 February 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_MAGNITUDE (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"field",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *source_field,*field;
-	struct Computed_field_package *computed_field_package;
-	struct Set_Computed_field_conditional_data set_field_data;
-
-	ENTER(define_Computed_field_type_magnitude);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		source_field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_MAGNITUDE==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_magnitude(field,
-				&source_field);
-		}
-		else
-		{
-			if (!(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_package->computed_field_manager)))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_magnitude.  No fields defined");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_Computed_field does */
-			ACCESS(Computed_field)(source_field);
-			set_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			(option_table[0]).to_be_modified= &source_field;
-			(option_table[0]).user_data= &set_field_data;
-			return_code=process_multiple_options(state,option_table)&&
-				Computed_field_set_type_magnitude(field,source_field);
-			DEACCESS(Computed_field)(&source_field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_magnitude.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_magnitude */
-
 static int define_Computed_field_type_rc_coordinate(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -10679,9 +10388,6 @@ and its parameter fields and values.
 			Option_table_add_entry(option_table,"fibre_sheet_axes",field_void,
 				computed_field_package_void,
 				define_Computed_field_type_fibre_sheet_axes);
-			/* magnitude */
-			Option_table_add_entry(option_table,"magnitude",field_void,
-				computed_field_package_void,define_Computed_field_type_magnitude);
 			/* rc_coordinate */
 			Option_table_add_entry(option_table,"rc_coordinate",field_void,
 				computed_field_package_void,define_Computed_field_type_rc_coordinate);
@@ -11214,11 +10920,6 @@ Writes the properties of the <field> to the command window.
 					display_message(INFORMATION_MESSAGE,
 						"    fibre field : %s\n",field->source_fields[0]->name);
 				} break;
-				case COMPUTED_FIELD_MAGNITUDE:
-				{
-					display_message(INFORMATION_MESSAGE,
-						"    field : %s\n",field->source_fields[0]->name);
-				} break;
 				case COMPUTED_FIELD_RC_COORDINATE:
 				{
 					display_message(INFORMATION_MESSAGE,
@@ -11446,11 +11147,6 @@ are created automatically by the program.
 						display_message(INFORMATION_MESSAGE,
 							" coordinate %s fibre %s",field->source_fields[1]->name,
 							field->source_fields[0]->name);
-					} break;
-					case COMPUTED_FIELD_MAGNITUDE:
-					{
-						display_message(INFORMATION_MESSAGE,
-							" field %s",field->source_fields[0]->name);
 					} break;
 					case COMPUTED_FIELD_RC_COORDINATE:
 					{
