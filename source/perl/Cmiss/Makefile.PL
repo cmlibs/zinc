@@ -5,11 +5,14 @@ use ExtUtils::MakeMaker;
 #???DB.  Notes:
 # setenv CMGUI_DEV_SOURCE /dosD/cmiss/cmgui/source
 # To install locally, use
+#   comment out the line 'DIR'   => which limits the directories that get released
 #   perl Makefile.PL PREFIX=/dosD/cmiss/cmgui/perl
+#     OR to build DEBUG
+#   perl Makefile.PL PREFIX=/dosD/cmiss/cmgui/perl OPTIMIZE="-g -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Wno-unused -Werror"
 #   make
 #   make install
 # To find local
-#   setenv PERLLIB /dosD/cmiss/cmgui/perl/lib/perl5/site_perl/5.8.0/i686-linux/
+#   setenv PERLLIB /dosD/cmiss/cmgui/perl/lib/5.8.0/i686-linux/
 # To rebuild cmgui libraries
 #   make -f cmgui.make TARGET=so_lib
 #   cp bin/i686-linux/libcmgui-debug.so ${HOME}/lib/libcmgui.so
@@ -41,7 +44,7 @@ WriteMakefile(
     'NAME'    => 'Cmiss',
   #          
   #Only install a subset of "released modules" at the moment
-	 'DIR'   =>  [ 'graphics_window', 'scene_viewer' ],
+	 'DIR'   =>  [ 'Graphics_window', 'Scene_viewer', 'Perl_cmiss', 'cmgui_command_data' ],
 
   #Add the perl version into the site library
     'INSTALLSITELIB'   =>  "\$(PREFIX)/lib/$Config{version}",
