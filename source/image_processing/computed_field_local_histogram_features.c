@@ -415,47 +415,47 @@ Comput image local histogram features on the image cache.
 			}
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
-				        local_mean = 0.0;
-				        for (j = 0; j < kernel_size; j++)
+				local_mean = 0.0;
+				for (j = 0; j < kernel_size; j++)
+				{
+					if ((result_index + offsets[j]) < ((FE_value *)storage))
 					{
-					        if (result_index + offsets[j] < ((FE_value *)storage))
-						{
-						        kernel[j] = *(data_index + offsets[j] + storage_size);
-						}
-						else if (result_index + offsets[j] >= ((FE_value *)storage) + storage_size)
-						{
-						        kernel[j] = *(data_index + offsets[j] - storage_size);
-						}
-						else
-						{
-						        kernel[j] = *(data_index + offsets[j]);
-						}
-						local_mean += kernel[j];
+						kernel[j] = *(data_index + offsets[j] + storage_size);
 					}
-					local_mean /= (FE_value)kernel_size;
-					local_diff = 0.0;
-                                        for(j = 0 ; j < kernel_size ; j++)
+					else if ((result_index + offsets[j]) >= ((FE_value *)storage) + storage_size)
 					{
-						local_diff += (kernel[j] - local_mean) * (kernel[j] - local_mean);
+						kernel[j] = *(data_index + offsets[j] - storage_size);
 					}
+					else
+					{
+						kernel[j] = *(data_index + offsets[j]);
+					}
+					local_mean += kernel[j];
+				}
+				local_mean /= (FE_value)kernel_size;
+				local_diff = 0.0;
+                                for(j = 0 ; j < kernel_size ; j++)
+				{
+					local_diff += (kernel[j] - local_mean) * (kernel[j] - local_mean);
+				}
 					/*local_diff = sqrt(local_diff);*/
-					local_diff /= (FE_value)kernel_size;
-					for (k = 0; k < image->depth; k++)
+				local_diff /= (FE_value)kernel_size;
+				for (k = 0; k < image->depth; k++)
+				{
+					if (k == 0)
 					{
-					        if (k == 0)
-						{
-						        result_index[k] = local_mean;
-						}
-						else if (k == 1)
-						{
-						        result_index[k] = local_diff;
-						}
-						else
-						{
-						        result_index[k] = 0.5;
-						}
-						max_diff[k] = my_Max(max_diff[k], result_index[k]);
+						result_index[k] = local_mean;
 					}
+					else if (k == 1)
+					{
+						result_index[k] = local_diff;
+					}
+					else
+					{
+						result_index[k] = 0.5;
+					}
+					max_diff[k] = my_Max(max_diff[k], result_index[k]);
+				}
 				data_index += image->depth;
 				result_index += image->depth;
 			}

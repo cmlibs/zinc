@@ -1187,7 +1187,7 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* iteration-times */
+				/* number_of_classes */
 				Option_table_add_int_positive_entry(option_table,
 					"number_of_classes", &number_of_classes);
 				/* maximums */
@@ -1244,7 +1244,7 @@ already) and allows its contents to be modified.
 				/* field */
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
-				/* iteration-times */
+				/* number_of_classes */
 				Option_table_add_int_positive_entry(option_table,
 					"number_of_classes", &number_of_classes);
 				/* maximums */
