@@ -184,7 +184,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 static void element_point_field_viewer_widget_value_CB(Widget widget,
 	void *element_point_field_viewer_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
 Called when the user has changed the data in the text widget.  Processes the
@@ -192,12 +192,15 @@ data, and then changes the correct value in the array structure.
 ==============================================================================*/
 {
 	char *value_string;
-	FE_value *xi;
-	int component_number;
+	FE_value value,*values,*xi;
+	int component_number,dimension,element_point_number,i,int_value,*int_values,
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],number_of_grid_values,
+		return_code;
 	struct Computed_field *field;
-	struct FE_element *element,*top_level_element;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
 	XmAnyCallbackStruct *any_callback;
+	struct FE_element *element,*top_level_element;
+	struct FE_field *fe_field;
 
 	ENTER(element_point_field_viewer_value_CB);
 	component_number=-1;
@@ -209,23 +212,90 @@ data, and then changes the correct value in the array structure.
 		(xi=element_point_field_viewer->xi)&&
 		(field=element_point_field_viewer->current_field)&&
 		(0<=component_number)&&
-		(component_number<=Computed_field_get_number_of_components(field))&&
+		(component_number<Computed_field_get_number_of_components(field))&&
 		(any_callback=(XmAnyCallbackStruct *)call_data))
 	{
 		if (XmCR_ACTIVATE == any_callback->reason)
 		{
+			if (value_string=XmTextFieldGetString(widget))
 			{
-				char *field_name;
-
-				GET_NAME(Computed_field)(field,&field_name);
-				value_string=XmTextFieldGetString(widget);
-				display_message(INFORMATION_MESSAGE,
-					"Set value of field %s component %d to %s\n",
-					field_name,component_number,value_string);
+				if ((XI_DISCRETIZATION_CELL_CORNERS==element_point_field_viewer->
+					element_point_identifier.xi_discretization_mode)&&
+					Computed_field_get_native_discretization_in_element(field,element,
+						number_in_xi))
+				{
+					/* get the number of values that are stored in the grid */
+					dimension=get_FE_element_dimension(element);
+					number_of_grid_values=1;
+					for (i=0;i<dimension;i++)
+					{
+						number_of_grid_values *= (number_in_xi[i]+1);
+					}
+					element_point_number=element_point_field_viewer->element_point_number;
+					/* check the element_point_number is valid */
+					if ((0<=element_point_number)&&
+						(element_point_number<number_of_grid_values))
+					{
+						return_code=0;
+						if ((COMPUTED_FIELD_FINITE_ELEMENT==
+							Computed_field_get_type(field))&&
+							Computed_field_get_type_finite_element(field,&fe_field)&&
+							(INT_VALUE==get_FE_field_value_type(fe_field)))
+						{
+							/* handle integer value_type separately to avoid inaccuracies of
+								 real->integer conversion */
+							if (1==sscanf(value_string,"%d",&int_value))
+							{
+								if (get_FE_element_field_component_grid_int_values(element,
+									fe_field,component_number,&int_values))
+								{
+									/* change the value for this component */
+									int_values[component_number*number_of_grid_values+
+										element_point_number]=int_value;
+									return_code=set_FE_element_field_component_grid_int_values(
+										element,fe_field,component_number,int_values);
+									DEALLOCATE(int_values);
+								}
+							}
+						}
+						else
+						{
+							if (1==sscanf(value_string,"%g",&value))
+							{
+								if (Computed_field_get_values_in_element(field,element,
+									number_in_xi,&values))
+								{
+									/* change the value for this component */
+									values[component_number*number_of_grid_values+
+										element_point_number]=value;
+									return_code=Computed_field_set_values_in_element(
+										field,element,number_in_xi,values);
+									DEALLOCATE(values);
+								}
+								/* note must clear cache so correct values are shown */
+								Computed_field_clear_cache(field);
+							}
+						}
+						if (return_code)
+						{
+							/* inform any clients of the changes */
+							element_point_field_viewer_widget_update(
+								element_point_field_viewer);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"element_point_field_viewer_value_CB.  "
+							"element_point_number out of range");
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"element_point_field_viewer_value_CB.  "
+						"Cannot set values for non-grid-based field");
+				}
 				XtFree(value_string);
-				DEALLOCATE(field_name);
-				/* inform any clients of the changes */
-				element_point_field_viewer_widget_update(element_point_field_viewer);
 			}
 		}
 		/* redisplay the actual value for the field component */
