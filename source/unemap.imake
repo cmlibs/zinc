@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 16 June 2000
+XCOMM LAST MODIFIED : 26 June 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -917,6 +917,7 @@ OPTICAL_SIGNALS_SRCS = \
 	general/mystring.c \
 	unemap/rig.c \
 	unemap/rig_node.c \
+	unemap/spectral_methods.c \
 	user_interface/message.c
 
 BuildNormalTarget(OpticalSignalsTarget,$(UTILITIES_PATH),OPTICAL_SIGNALS_SRCS,OPTICAL_SIGNALS_OBJSA,OPTICAL_SIGNALS_OBJSB,OPTICAL_SIGNALS_OBJS,-lm) 
