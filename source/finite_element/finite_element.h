@@ -3347,6 +3347,26 @@ FE_element_get_top_level_element_conversion.
 as remaining values up to this size are cleared to zero.
 ==============================================================================*/
 
+int get_FE_element_discretization(struct FE_element *element,
+	struct GROUP(FE_element) *element_group,int face_number,
+	struct FE_field *native_discretization_field,
+	int *top_level_number_in_xi,struct FE_element **top_level_element,
+	int *number_in_xi);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2000
+
+DESCRIPTION :
+Returns the discretization as <number_in_xi> for displaying graphics over
+<element>, given its <element_group>, <face_number> and suggested
+<*top_level_element>. If <native_discretization_field> is defined over the
+element and is grid-based, it's native discretization is used in preference
+to the <top_level_number_in_xi>.
+<*top_level_element> can be NULL; final element used will be returned.
+<top_level_number_in_xi> should be set by the caller as it will be used if there
+is no native_discretization field or it is not defined over the element; in
+either case the top_level_number_in_xi used is returned.
+==============================================================================*/
+
 int FE_element_or_parent_contains_node(struct FE_element *element,
 	void *node_void);
 /*******************************************************************************

@@ -30634,6 +30634,75 @@ as remaining values up to this size are cleared to zero.
 	return (return_code);
 } /* get_FE_element_discretization_from_top_level */
 
+int get_FE_element_discretization(struct FE_element *element,
+	struct GROUP(FE_element) *element_group,int face_number,
+	struct FE_field *native_discretization_field,
+	int *top_level_number_in_xi,struct FE_element **top_level_element,
+	int *number_in_xi)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2000
+
+DESCRIPTION :
+Returns the discretization as <number_in_xi> for displaying graphics over
+<element>, given its <element_group>, <face_number> and suggested
+<*top_level_element>. If <native_discretization_field> is defined over the
+element and is grid-based, it's native discretization is used in preference
+to the <top_level_number_in_xi>.
+<*top_level_element> can be NULL; final element used will be returned.
+<top_level_number_in_xi> should be set by the caller as it will be used if there
+is no native_discretization field or it is not defined over the element; in
+either case the top_level_number_in_xi used is returned.
+==============================================================================*/
+{
+	FE_value element_to_top_level[9];
+	int return_code;
+
+	ENTER(get_FE_element_discretization);
+	if (element&&top_level_number_in_xi&&top_level_element&&number_in_xi)
+	{
+		if (*top_level_element=FE_element_get_top_level_element_conversion(
+			element,*top_level_element,element_group,face_number,
+			element_to_top_level))
+		{
+			/* get the discretization requested for top-level element, from native
+				 discretization field if not NULL and is element based in element */
+			if (native_discretization_field&&
+				FE_element_field_is_grid_based(*top_level_element,
+					native_discretization_field))
+			{
+				get_FE_element_field_grid_map_number_in_xi(*top_level_element,
+					native_discretization_field,top_level_number_in_xi);
+			}
+			if (get_FE_element_discretization_from_top_level(element,number_in_xi,
+				*top_level_element,top_level_number_in_xi,element_to_top_level))
+			{
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"get_FE_element_discretization.  Error getting discretization");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"get_FE_element_discretization.  "
+				"Error getting top_level_element");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_discretization.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_discretization */
+
 int FE_element_or_parent_contains_node(struct FE_element *element,
 	void *node_void)
 /*******************************************************************************
