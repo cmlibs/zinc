@@ -267,7 +267,7 @@ else # ! PERL_INTERPRETER
    ifeq ($(SYSNAME),win32)
       INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter-opt.a $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libPerl_cmiss.a $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperl56.a
    else # $(SYSNAME) == win32
-      INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter-opt.a
+      INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter.a
    endif # $(SYSNAME) == win32 
 endif # ! PERL_INTERPRETER
 
@@ -450,8 +450,8 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       #Mandrake 8.2 static libs are incompatible, this works around it by
       #comparing the size of the symbols and forcing Xmu to preload its
       #version if they differ in size.  Older greps don't have -o option.
-      Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
-      Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
+      Xm_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXm.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
+      Xmu_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXmu.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
       ifneq ($(Xm_XeditRes),)
          ifneq ($(Xmu_XeditRes),)
             ifneq ($(STATIC_LINK),true)
@@ -462,7 +462,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          endif
       endif
       ifneq ($(STATIC_LINK),true)
-         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
+         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/lib/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
       else # STATIC_LINK != true
          USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       endif # STATIC_LINK != true
@@ -1090,6 +1090,7 @@ endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifneq ($(STATIC_LINK),true)
       ifneq ($(EXPORT_EVERYTHING),true)
+#         NEW_BINUTILS=true
          ifdef NEW_BINUTILS
             # In Linux this requires an ld from binutils 2.12 or later 
             #   but is much better code so hopefully what I do here will
@@ -1201,6 +1202,7 @@ SO_LIB_GENERAL = cmgui_general
 SO_LIB_GENERAL_TARGET = lib$(SO_LIB_GENERAL)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
 SO_LIB_GENERAL_SONAME = lib$(SO_LIB_GENERAL)$(SO_LIB_SUFFIX)
 LIB_GENERAL_SRCS = \
+	api/cmiss_core.c \
 	command/parser.c \
 	general/any_object.c \
 	general/compare.c \
