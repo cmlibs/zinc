@@ -817,8 +817,31 @@ NOTE: currently does not tolerate having a variable_scale_field.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_calculate_delta_vector.  Invalid argument(s)");
+		if ((0.0 != edit_info->glyph_centre[0]) ||
+			(0.0 != edit_info->glyph_size[0]) ||
+			(0.0 == (scale_factor=edit_info->glyph_scale_factors[0])))
+		{
+			if (0.0 != edit_info->glyph_centre[0])
+			{
+				display_message(ERROR_MESSAGE,
+					"To edit orientation vectors your main direction base glyph size must be zero.");
+			}
+			if (0.0 != edit_info->glyph_size[0])
+			{
+				display_message(ERROR_MESSAGE,
+					"To edit orientation vectors your main direction glyph centre must be zero.");
+			}
+			if (0.0 == (scale_factor=edit_info->glyph_scale_factors[0]))
+			{
+				display_message(ERROR_MESSAGE,
+					"To edit orientation vectors your main direction scale factor must not be zero.");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_calculate_delta_vector.  Invalid argument(s)");
+		}
 		return_code=0;
 	}
 	LEAVE;
