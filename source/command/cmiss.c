@@ -111,6 +111,7 @@ Functions for executing cmiss commands.
 #include "transformation/transformation_editor_dialog.h"
 #if defined (UNEMAP)
 #include "unemap/system_window.h"
+#include "unemap/unemap_package.h"
 #endif /* defined (UNEMAP) */
 #include "user_interface/filedir.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
@@ -22296,110 +22297,139 @@ Executes a UNEMAP OPEN command.
 		}
 	};
 	Widget shell;
+#if defined (UNEMAP)
+	struct MANAGER(Computed_field) *computed_field_manager;
+#endif /*  defined (UNEMAP) */
 
 	ENTER(execute_command_unemap_open);
+#if defined (UNEMAP)
+	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+#endif /*  defined (UNEMAP) */
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
 	if (state)
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			if (!((current_token=state->current_token)&&
-				!(strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+		{	
+#if defined (UNEMAP)
+			if(!(command_data->unemap_package))
 			{
-				if (!(system=command_data->unemap_system_window))
+				computed_field_manager=Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
+				command_data->unemap_package = CREATE(Unemap_package)(
+					command_data->fe_field_manager,command_data->element_group_manager,
+					command_data->node_manager,command_data->data_group_manager,
+					command_data->node_group_manager,command_data->basis_manager,
+					command_data->element_manager,computed_field_manager);
+			}
+			if(command_data->unemap_package)
+			{
+#endif /*  defined (UNEMAP) */
+				if (!((current_token=state->current_token)&&
+					!(strcmp(PARSER_HELP_STRING,current_token)&&
+						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 				{
-					/* create a shell */
-					if (shell=XtVaCreatePopupShell("system_window_shell",
-						topLevelShellWidgetClass,
-						command_data->user_interface->application_shell,
-						XmNallowShellResize,False,NULL))
+					if (!(system=command_data->unemap_system_window))
 					{
-						if (system=create_System_window(shell,close_emap,
-							command_data->default_time_keeper,command_data->user_interface,
-							command_data->unemap_package,	
-							command_data->element_point_ranges_selection,
-							command_data->element_selection,
-							command_data->node_selection,
-							command_data->data_selection,
-							command_data->texture_manager,
-							command_data->interactive_tool_manager,
-							command_data->scene_manager,
-							command_data->light_model_manager,
-							command_data->light_manager,
-							command_data->spectrum_manager,
-							command_data->graphical_material_manager,
-							command_data->data_manager,
-							command_data->glyph_list,						
-							command_data->default_graphical_material,
-							command_data->computed_field_package,
-							command_data->default_light,
-							command_data->default_light_model))
+						/* create a shell */
+						if (shell=XtVaCreatePopupShell("system_window_shell",
+							topLevelShellWidgetClass,
+							command_data->user_interface->application_shell,
+							XmNallowShellResize,False,NULL))
 						{
-							command_data->unemap_system_window=system;
-							create_Shell_list_item(&(system->window_shell),
-								command_data->user_interface);
-							XtAddCallback(system->window_shell,XmNdestroyCallback,
-								close_emap,(XtPointer)system);
-							/* manage the system window */
-							XtManageChild(system->window);
-							/* realize the system window shell */
-							XtRealizeWidget(system->window_shell);
-							/* determine placement */
-							XtVaGetValues(system->window_shell,
-								XmNwidth,&window_width,
-								XmNheight,&window_height,
-								NULL);
-							/* Do all this to allow backward compatibility but still allow the
-								resources to be set */
-							system_window_data.x = -1; /* These defaults match with the */
-							system_window_data.y = -1; /* default resources above */
-							XtVaGetApplicationResources(system->window_shell,
-								&system_window_data,resources,XtNumber(resources),NULL);
-							if (system_window_data.x == -1)
+							if (system=create_System_window(shell,close_emap,
+								command_data->default_time_keeper,command_data->user_interface,
+								command_data->unemap_package,	
+								command_data->element_point_ranges_selection,
+								command_data->element_selection,
+								command_data->node_selection,
+								command_data->data_selection,
+								command_data->texture_manager,
+								command_data->interactive_tool_manager,
+								command_data->scene_manager,
+								command_data->light_model_manager,
+								command_data->light_manager,
+								command_data->spectrum_manager,
+								command_data->graphical_material_manager,
+								command_data->data_manager,
+								command_data->glyph_list,						
+								command_data->default_graphical_material,
+								command_data->computed_field_package,
+								command_data->default_light,
+								command_data->default_light_model))
 							{
-								system_window_data.x = ((command_data->user_interface->
-									screen_width)-window_width)/2;
+								command_data->unemap_system_window=system;
+								create_Shell_list_item(&(system->window_shell),
+									command_data->user_interface);
+								XtAddCallback(system->window_shell,XmNdestroyCallback,
+									close_emap,(XtPointer)system);
+								/* manage the system window */
+								XtManageChild(system->window);
+								/* realize the system window shell */
+								XtRealizeWidget(system->window_shell);
+								/* determine placement */
+								XtVaGetValues(system->window_shell,
+									XmNwidth,&window_width,
+									XmNheight,&window_height,
+									NULL);
+								/* Do all this to allow backward compatibility but still allow the
+									 resources to be set */
+								system_window_data.x = -1; /* These defaults match with the */
+								system_window_data.y = -1; /* default resources above */
+								XtVaGetApplicationResources(system->window_shell,
+									&system_window_data,resources,XtNumber(resources),NULL);
+								if (system_window_data.x == -1)
+								{
+									system_window_data.x = ((command_data->user_interface->
+										screen_width)-window_width)/2;
+								}
+								if (system_window_data.y == -1)
+								{
+									system_window_data.y = ((command_data->user_interface->
+										screen_height)-window_height)/2;
+								}
+								XtVaSetValues(system->window_shell,
+									XmNx, system_window_data.x,
+									XmNy, system_window_data.y,
+									XmNmappedWhenManaged, True,
+									NULL);
 							}
-							if (system_window_data.y == -1)
+							else
 							{
-								system_window_data.y = ((command_data->user_interface->
-									screen_height)-window_height)/2;
+								display_message(ERROR_MESSAGE,
+									"execute_command_unemap_open.  Could not create unemap_system_window");
 							}
-							XtVaSetValues(system->window_shell,
-								XmNx, system_window_data.x,
-								XmNy, system_window_data.y,
-								XmNmappedWhenManaged, True,
-								NULL);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-				"execute_command_unemap_open.  Could not create unemap_system_window");
+								"execute_command_unemap_open.  Could not create unemap_system_window shell");
 						}
+					}
+					if (system)
+					{
+						/* pop up the system window shell */
+						XtPopup(system->window_shell,XtGrabNone);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-	"execute_command_unemap_open.  Could not create unemap_system_window shell");
+						return_code=0;
 					}
-				}
-				if (system)
-				{
-					/* pop up the system window shell */
-					XtPopup(system->window_shell,XtGrabNone);
 				}
 				else
 				{
-					return_code=0;
+					/* no help */
+					return_code=1;
 				}
+#if defined (UNEMAP)
 			}
 			else
 			{
-				/* no help */
-				return_code=1;
+				display_message(ERROR_MESSAGE,
+					"execute_command_unemap_open. Couldn't create unemap_package");
+				return_code=0;
 			}
+#endif /* defined (UNEMAP) */
 		}
 		else
 		{

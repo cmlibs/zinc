@@ -1151,13 +1151,6 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-#if defined (UNEMAP)	
-	command_data.unemap_package = CREATE(Unemap_package)(
-		command_data.fe_field_manager,command_data.element_group_manager,
-		command_data.node_manager,command_data.data_group_manager,
-		command_data.node_group_manager,command_data.basis_manager,
-		command_data.element_manager,computed_field_manager);
-#endif /* defined (UNEMAP) */
 #if defined (MIRAGE)
 /*	command_data.digitiser_window_manager=CREATE(MANAGER(Digitiser_window))();*/
 #endif /* defined (MIRAGE) */
@@ -1901,6 +1894,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (SGI_MOVIE_FILE) */
 
 #if defined (UNEMAP)
+				/*created in execute_command_unemap_open in command/cmiss.c */
 				DESTROY(Unemap_package)(&command_data.unemap_package); 
 #endif /* defined (UNEMAP) */
 
