@@ -995,7 +995,7 @@ ifeq ($(SYSNAME:IRIX%=),)
 			@if [ ! -d $(OBJECT_PATH) ]; then \
 				mkdir -p $(OBJECT_PATH); \
 			fi
-			rm $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+			rm $(OBJECT_PATH)/$(EXPORTS_FILE).c;
       ifdef CMISS_ROOT_DEFINED
 			if [ -f $(SRC_EXPORTS_FILE) ]; then \
 				cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
@@ -1031,7 +1031,7 @@ ifeq ($(SYSNAME),Linux)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
 					fi
-					rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
+					rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c;
             ifdef CMISS_ROOT_DEFINED
 					if [ -f $(SRC_EXPORTS_FILE) ]; then \
 						cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
@@ -1063,7 +1063,7 @@ ifeq ($(SYSNAME),Linux)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
 					fi
-					rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
+					rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c;
             ifdef CMISS_ROOT_DEFINED
 					if [ -f $(SRC_EXPORTS_FILE) ]; then \
 						cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
