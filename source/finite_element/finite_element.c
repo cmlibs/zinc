@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 29 May 2003
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -42011,6 +42011,33 @@ FE_VALUE_VALUE, has from 1 to 3 components, and has a FIBRE coordinate system.
 
 	return (return_code);
 } /* FE_field_is_anatomical_fibre_field */
+
+int FE_field_is_embedded(struct FE_field *field, void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 5 June 2003
+
+DESCRIPTION :
+Returns true if the values returned by <field> are a location in an FE_region,
+either an element_xi value, or eventually a node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_field_is_embedded);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code = (ELEMENT_XI_VALUE == field->value_type);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "FE_field_is_embedded.  Invalid argument");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_field_is_embedded */
 
 int FE_field_is_defined_at_node(struct FE_field *field, struct FE_node *node)
 /*******************************************************************************

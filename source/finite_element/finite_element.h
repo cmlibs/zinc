@@ -4144,6 +4144,15 @@ Conditional function returning true if the <field> is a anatomical field
 FE_VALUE_VALUE, has from 1 to 3 components, and has a FIBRE coordinate system.
 ==============================================================================*/
 
+int FE_field_is_embedded(struct FE_field *field, void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 5 June 2003
+
+DESCRIPTION :
+Returns true if the values returned by <field> are a location in an FE_region,
+either an element_xi value, or eventually a node.
+==============================================================================*/
+
 int FE_field_is_defined_at_node(struct FE_field *field, struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 4 May 1999

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.c
 
-LAST MODIFIED : 27 May 2003
+LAST MODIFIED : 11 June 2003
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -12,10 +12,13 @@ finite element fields defined on or interpolated over them.
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_region_private.h"
-#include "general/callback_private.h"
-#include "general/debug.h"
 #include "general/any_object_private.h"
 #include "general/any_object_definition.h"
+#include "general/callback_private.h"
+#include "general/compare.h"
+#include "general/debug.h"
+#include "general/indexed_list_private.h"
+#include "general/object.h"
 #include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
 
@@ -24,12 +27,90 @@ Module types
 ------------
 */
 
+#if defined (EMBEDDING_CODE)
+/* Notes on implementing embedding:
+
+I was unable to complete the code for passing messages about fields changing
+in FE_regions that nodes or elements in this FE_region are embedded in.
+
+The basic idea of my partially completed code, marked out with EMBEDDING_CODE
+is as follows:
+
+Each full FE_region is to maintain an embedded_fe_field_list. This list should
+be created as soon as an embedded field is merged with FE_region_merge_FE_field
+-- this is detected with function FE_field_is_embedded. To maintain efficiency,
+if the incoming field is embedded or if we already have embedded fields, then
+we have to determine if existing embedded fields are no longer so. By creating
+and destroying the embedded_fe_field_list, its pointer can be used as a flag.
+
+Once we have embedded fields, each FE_region that owns nodes, ie. all those
+above plus the data_hack region, will have to monitor fields being merged into
+its nodes and maintain the embedding_fe_region_list, which is a list indexed
+by FE_region with a count of how many instances of embedded we have. See the
+definition of this structure below. For all embedding regions EXCEPT for self,
+request change callbacks. The response to these callbacks is to propagate the
+field changes from the embedding region, and mark all nodes as related object
+changed using the CHANGE_LOG_ALL_CHANGE function -- very efficient. Clients
+of this region's callbacks should be able to respond to embedding field changes
+as if the fields were native to that region.
+
+It is possible for a region to be embedded in itself, but you should not get
+a region to call back itself! Hence, if there is self-embedding, avoid these
+callbacks and do a check for embedding changes before the message is sent out
+-- augment the change logs in the appropriate manner.
+
+Notes.
+- The data_hack uses its master's embedded_fe_field_list.
+- Only nodes have embedded element_xi fields at present.
+
+
+Note this is all quite expensive, but I cannot see any alternative. Clients
+should not know which regions they are embedded in -- this enables that. If
+there is no embedding, there is negligible overhead in this approach. However,
+a single embedded field could slow cmgui down quite a bit. The situation will
+be improved once full FE_regions are widely permitted AND they have their own
+list of FE_fields -- that way the definition of an embedded FE_field only slows
+that region.
+
+GRC 11/06/03
+
+*/
+
+struct FE_region_embedding_usage_count
+/*******************************************************************************
+LAST MODIFIED : 11 June 2003
+
+DESCRIPTION :
+Structure for storing a pointer to an FE_region and the number of times
+==============================================================================*/
+{
+	/* accessed pointer to the FE_region objects are embedded in */
+	struct FE_region *fe_region;
+	/* ???RC will also need pointer to the region receiving callbacks, to pass as
+		 user_data in the callbacks and to avoid callbacks if the region is embedded
+		 in itself. This could come about in eg. self-contact. Note that before
+		 change messages are sent for this_fe_region, will have to insert embedding
+		 ramifications, ie. CHANGE_ALL nodes etc. */
+	struct FE_region *this_fe_region;
+	/* number of instances of embedding in this FE_region */
+	/* ???RC I think the access_count can handle this for us -- overload ACCESS/DEACCESS */
+	int embedding_usage_count;
+	/* for our list macros */
+	int access_count;
+};
+
+DECLARE_LIST_TYPES(FE_region_embedding_usage_count);
+
+FULL_DECLARE_INDEXED_LIST_TYPE(FE_region_embedding_usage_count);
+
+#endif /* defined (EMBEDDING_CODE) */
+
 FULL_DECLARE_CMISS_CALLBACK_TYPES(FE_region_change, \
 	struct FE_region *, struct FE_region_changes *);
 
 struct FE_region
 /*******************************************************************************
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -87,6 +168,19 @@ DESCRIPTION :
 	/* existence of element_type_node_sequence_list can tell us whether faces
 		 are being defined */
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
+
+#if defined (EMBEDDING_CODE)
+	/* embedding information - only for full FE_regions and in a limited sense
+		 for the data_hack as it uses its master's embedded_fe_field_list */
+	/* following is NULL unless there is at least one such FE_field so it can
+		 be used as a flag */
+	struct LIST(FE_field) *embedded_fe_field_list;
+	/* following is maintained only if there are instances of embedding, and
+		 records the number of instances of embedding in each FE_region. While it
+		 is positive, change messages are requested from each FE_region -- except
+		 this FE_region, where embedding messages are propagated separately */
+	struct LIST(FE_region_embedding_usage_count) *embedding_fe_region_list;
+#endif /* defined (EMBEDDING_CODE) */
 
 	/* number of objects using this region */
 	int access_count;
@@ -281,6 +375,177 @@ if (0 < fe_region->number_of_clients) \
 Module functions
 ----------------
 */
+
+#if defined (EMBEDDING_CODE)
+CREATE(FE_region_embedding_usage_count)
+
+int DESTROY(FE_region_embedding_usage_count)(
+	struct FE_region_embedding_usage_count **fe_region_embedding_address)
+/*******************************************************************************
+LAST MODIFIED : 6 June 2003
+
+DESCRIPTION :
+Frees the memory for the FE_region_embedding_usage_count and sets
+<*fe_region_embedding_address> to NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region_embedding_usage_count *fe_region_embedding;
+
+	ENTER(DESTROY(FE_region_embedding_usage_count));
+	if (fe_region_embedding_address &&
+		(fe_region_embedding = *fe_region_embedding_address))
+	{
+		if (0 == fe_region_embedding->access_count)
+		{
+			if (fe_region_embedding->fe_region != fe_region_embedding->this_fe_region)
+			{
+				FE_region_remove_callback(fe_region_embedding->fe_region,
+					FE_region_embedding_FE_region_change,
+					(void *)fe_region_embedding->this_fe_region);
+			}
+			DEACCESS(FE_region)(&(fe_region_embedding->fe_region));
+			DEALLOCATE(*fe_region_embedding_address);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(FE_region_embedding_usage_count).  Non-zero access count");
+			return_code = 0;
+		}
+		*fe_region_embedding_address =
+			(struct FE_region_embedding_usage_count *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "DESTROY(FE_region_embedding_usage_count).  "
+			"Missing FE_region_embedding_usage_count");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(FE_region_embedding_usage_count) */
+
+DECLARE_ACCESS_OBJECT_FUNCTION(FE_region_embedding_usage_count)
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_region_embedding_usage_count)
+/*******************************************************************************
+LAST MODIFIED : 29 January 2003
+
+DESCRIPTION :
+Special version of DEACCESS which if the FE_region_embedding_usage_count access_count reaches
+1 and it has an fe_region member, calls FE_region_remove_FE_region_embedding_usage_count.
+Since the FE_region accesses the info once, this indicates no other object is
+using it so it should be flushed from the FE_region. When the owning FE_region
+deaccesses the info, it is destroyed in this function.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region_embedding_usage_count *object;
+
+	ENTER(DEACCESS(FE_region_embedding_usage_count));
+	if (object_address && (object = *object_address))
+	{
+		(object->access_count)--;
+		return_code = 1;
+		if (object->access_count <= 1)
+		{
+			if (1 == object->access_count)
+			{
+				if (object->fe_region)
+				{
+					return_code =
+						FE_region_remove_FE_region_embedding_usage_count(object->fe_region, object);
+				}
+			}
+			else
+			{
+				return_code = DESTROY(FE_region_embedding_usage_count)(object_address);
+			}
+		}
+		*object_address = (struct FE_region_embedding_usage_count *)NULL;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DEACCESS(FE_region_embedding_usage_count) */
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_region_embedding_usage_count)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2003
+
+DESCRIPTION :
+Special version of REACCESS which if the FE_region_embedding_usage_count access_count reaches
+1 and it has an fe_region member, calls FE_region_remove_FE_region_embedding_usage_count.
+Since the FE_region accesses the info once, this indicates no other object is
+using it so it should be flushed from the FE_region. When the owning FE_region
+deaccesses the info, it is destroyed in this function.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region_embedding_usage_count *current_object;
+
+	ENTER(REACCESS(FE_region_embedding_usage_count));
+	if (object_address)
+	{
+		return_code = 1;
+		if (new_object)
+		{
+			/* access the new object */
+			(new_object->access_count)++;
+		}
+		if (current_object = *object_address)
+		{
+			/* deaccess the current object */
+			(current_object->access_count)--;
+			if (current_object->access_count <= 1)
+			{
+				if (1 == current_object->access_count)
+				{
+					if (current_object->fe_region)
+					{
+						return_code = FE_region_remove_FE_region_embedding_usage_count(
+							current_object->fe_region, current_object);
+					}
+				}
+				else
+				{
+					return_code = DESTROY(FE_region_embedding_usage_count)(object_address);
+				}
+			}
+		}
+		/* point to the new object */
+		*object_address = new_object;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"REACCESS(FE_region_embedding_usage_count).  Invalid argument");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* REACCESS(FE_region_embedding_usage_count) */
+
+DECLARE_OBJECT_FUNCTIONS(FE_region_embedding_usage_count)
+
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_region_embedding_usage_count, \
+	fe_region, struct FE_region *, compare_pointer)
+
+DECLARE_INDEXED_LIST_FUNCTIONS(FE_region_embedding_usage_count)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION( \
+	FE_region_embedding_usage_count, fe_region, struct FE_region *, \
+	compare_pointer)
+
+#endif /* defined (EMBEDDING_CODE) */
 
 static int FE_region_void_detach_from_Cmiss_region(void *fe_region_void)
 /*******************************************************************************
@@ -937,7 +1202,7 @@ Global functions
 struct FE_region *CREATE(FE_region)(struct FE_region *master_fe_region,
 	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 Creates a struct FE_region.
@@ -1003,6 +1268,13 @@ elements and fields and the <basis_manager> must be supplied in this case.
 			/* information for defining faces */
 			fe_region->element_type_node_sequence_list =
 				(struct LIST(FE_element_type_node_sequence) *)NULL;
+
+#if defined (EMBEDDING_CODE)
+			/* embedding information */
+			fe_region->embedded_fe_field_list = (struct LIST(FE_field) *)NULL;
+			fe_region->embedding_fe_region_list =
+				(struct LIST(FE_region_embedding_usage_count) *)NULL;
+#endif /* defined (EMBEDDING_CODE) */
 
 			fe_region->access_count = 0;
 			if (!((master_fe_region ||
@@ -1076,7 +1348,7 @@ fe_time, fe_field_list etc. are still around.
 
 int DESTROY(FE_region)(struct FE_region **fe_region_address)
 /*******************************************************************************
-LAST MODIFIED : 13 May 2003
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
@@ -1084,6 +1356,9 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 {
 	int return_code;
 	struct FE_region *fe_region;
+#if defined (EMBEDDING_CODE)
+	struct FE_region_embedding_usage_count *embedding_fe_region;
+#endif /* defined (EMBEDDING_CODE) */
 
 	ENTER(DESTROY(FE_region));
 	if (fe_region_address && (fe_region = *fe_region_address))
@@ -1096,6 +1371,33 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 					"DESTROY(FE_region).  Non-zero change_level %d",
 					fe_region->change_level);
 			}
+
+#if defined (EMBEDDING_CODE)
+			/* clean up embedding information */
+			if (fe_region->embedded_fe_field_list)
+			{
+				DESTROY(LIST(FE_field))(&(fe_region->embedded_fe_field_list));
+			}
+			if (fe_region->embedding_fe_region_list)
+			{
+				return_code = 1;
+				while (return_code && (embedding_fe_region =
+					FIRST_OBJECT_IN_LIST_THAT(FE_region_embedding_usage_count)(
+						(LIST_CONDITIONAL_FUNCTION() *)NULL, (void *)NULL,
+						fe_region->embedding_fe_region_list)))
+				{
+					if (fe_region_embedding_usage->fe_region != fe_region)
+					{
+						/*???RC REMOVE CALLBACKS from other regions HERE */
+					}
+					return_code = REMOVE_OBJECT_FROM_LIST(FE_region_embedding_usage_count)
+						(fe_region_embedding_usage, fe_region->embedding_fe_region_list);
+				}
+				DESTROY(LIST(FE_region_embedding_usage_count))(
+					*(fe_region->embedding_fe_region_list));
+			}
+#endif /* defined (EMBEDDING_CODE) */
+
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(FE_region_change)))(
 				&(fe_region->change_callback_list));
 			DESTROY(LIST(FE_element))(&(fe_region->fe_element_list));
