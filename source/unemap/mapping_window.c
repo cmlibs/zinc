@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 7 May 2004
+LAST MODIFIED : 21 September 2004
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -4245,7 +4245,7 @@ mapping_window.
 static int write_map_file(char *file_name,
 	enum Image_file_format image_file_format,struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 21 September 2004
 
 DESCRIPTION :
 This function writes the image map associated with the <mapping> window to
@@ -4257,14 +4257,133 @@ This function writes the image map associated with the <mapping> window to
 	unsigned long *image;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
+	struct Map *map;
 
 	ENTER(write_map_file);
-	if (file_name && mapping)
+	if (file_name&&mapping&&(map=mapping->map))
 	{
-		if (image=get_Drawing_2d_image(mapping->map_drawing))
+		image=(unsigned long *)NULL;
+		width=0;
+		height=0;
+		if ((SHOW_COLOUR==map->colour_option)&&(map->print_spectrum))
 		{
+			unsigned long *colour_bar_image,*map_image;
+
+			map_image=get_Drawing_2d_image(mapping->map_drawing);
+			colour_bar_image=get_Drawing_2d_image(
+				mapping->colour_or_auxiliary_drawing);
+			if (map_image&&colour_bar_image)
+			{
+				width=mapping->map_drawing->width;
+				if (width<mapping->colour_or_auxiliary_drawing->width)
+				{
+					width=mapping->colour_or_auxiliary_drawing->width;
+				}
+				height=(mapping->map_drawing->height)+
+					(mapping->colour_or_auxiliary_drawing->height);
+				if ((0<width)&&(0<height)&&ALLOCATE(image,unsigned long,
+					((width*3)/4+1)*height))
+				{
+					int i,j,length,offset_left,offset_right;
+					unsigned char blue,green,red;
+					unsigned char *destination,*source;
+
+					destination=(unsigned char *)image;
+					source=(unsigned char *)map_image;
+					if (width==mapping->map_drawing->width)
+					{
+						length=3*width*(mapping->map_drawing->height);
+						memcpy(destination,source,length);
+						destination += length;
+					}
+					else
+					{
+						length=mapping->map_drawing->width;
+						offset_left=(width-length)/2;
+						offset_right=width-length-offset_left;
+						length *= 3;
+						red=source[0];
+						green=source[1];
+						blue=source[2];
+						for (i=mapping->map_drawing->height;i>0;i--)
+						{
+							for (j=offset_left;j>0;j--)
+							{
+								*destination=red;
+								destination++;
+								*destination=green;
+								destination++;
+								*destination=blue;
+								destination++;
+							}
+							memcpy(destination,source,length);
+							destination += length;
+							for (j=offset_right;j>0;j--)
+							{
+								*destination=red;
+								destination++;
+								*destination=green;
+								destination++;
+								*destination=blue;
+								destination++;
+							}
+							source += length;
+						}
+					}
+					source=(unsigned char *)colour_bar_image;
+					if (width==mapping->colour_or_auxiliary_drawing->width)
+					{
+						length=3*width*(mapping->colour_or_auxiliary_drawing->height);
+						memcpy(destination,source,length);
+						destination += length;
+					}
+					else
+					{
+						length=mapping->colour_or_auxiliary_drawing->width;
+						offset_left=(width-length)/2;
+						offset_right=width-length-offset_left;
+						length *= 3;
+						red=source[0];
+						green=source[1];
+						blue=source[2];
+						for (i=mapping->colour_or_auxiliary_drawing->height;i>0;i--)
+						{
+							for (j=offset_left;j>0;j--)
+							{
+								*destination=red;
+								destination++;
+								*destination=green;
+								destination++;
+								*destination=blue;
+								destination++;
+							}
+							memcpy(destination,source,length);
+							destination += length;
+							for (j=offset_right;j>0;j--)
+							{
+								*destination=red;
+								destination++;
+								*destination=green;
+								destination++;
+								*destination=blue;
+								destination++;
+							}
+							source += length;
+						}
+					}
+				}
+			}
+			DEALLOCATE(map_image);
+			DEALLOCATE(colour_bar_image);
+		}
+		else
+		{
+			image=get_Drawing_2d_image(mapping->map_drawing);
 			width=mapping->map_drawing->width;
 			height=mapping->map_drawing->height;
+		}
+		if (image&&(0<width)&&(0<height))
+		{
 			number_of_components=3;
 			number_of_bytes_per_component=1;
 			bytes_per_pixel=number_of_components*number_of_bytes_per_component;
@@ -4297,8 +4416,9 @@ This function writes the image map associated with the <mapping> window to
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"write_map_file.  Missing file_name or mapping_window");
+		display_message(ERROR_MESSAGE,"write_map_file.  "
+			"Missing file_name (%p) or mapping (%p) or map (%p)",file_name,mapping,
+			map);
 		return_code=0;
 	}
 	LEAVE;
