@@ -686,13 +686,15 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name;
-	char temp_string1[40],temp_string2[40], temp_string3[40], temp_string4[40];
+	char temp_string[40];
 	int error;
 	struct Computed_field_adaptive_adjust_contrast_type_specific_data *data;
 
 	ENTER(Computed_field_adaptive_adjust_contrast_get_command_string);
 	command_string = (char *)NULL;
-	if (field)
+	if (field && (field->type_string==computed_field_adaptive_adjust_contrast_type_string)
+		&& (data = (struct Computed_field_adaptive_adjust_contrast_type_specific_data *)
+		field->type_specific_data) )
 	{
 		error = 0;
 		append_string(&command_string,
@@ -711,20 +713,20 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string1, " dimension %d", data->image->dimension);
-		append_string(&command_string, temp_string1, &error);
+		sprintf(temp_string, " dimension %d", data->image->dimension);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string2, " sizes %d %d ",
+		sprintf(temp_string, " sizes %d %d ",
 		                    data->image->sizes[0],data->image->sizes[1]);
-		append_string(&command_string, temp_string2, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string3, " minimums %f %f ",
+		sprintf(temp_string, " minimums %f %f ",
 		                    data->image->minimums[0], data->image->minimums[1]);
-		append_string(&command_string, temp_string3, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string4, " maximums %f %f ",
+		sprintf(temp_string, " maximums %f %f ",
 		                    data->image->maximums[0], data->image->maximums[1]);
-		append_string(&command_string, temp_string4, &error);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
