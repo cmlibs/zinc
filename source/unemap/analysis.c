@@ -129,7 +129,8 @@ Storing the values in the array (<objective_values> every
 #endif /* defined (OLD_CODE) */
 	save_number_of_objective_values=number_of_objective_values;
 	number_of_signals=objective_values_step;
-	if ((extract_Device_signal_information(device,1,1,0,(float **)NULL,
+	if ((extract_Device_signal_information(device,1,0,
+		number_of_objective_values-1,(float **)NULL,
 		&objective_values,(enum Event_signal_status **)NULL,
 		&number_of_signals,&save_number_of_objective_values,(char **)NULL,
 		(int *)NULL,(float *)NULL,(float *)NULL))&&
