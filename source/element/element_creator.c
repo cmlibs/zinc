@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.c
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -1303,7 +1303,7 @@ events, not just at the end of a mouse gesture.
 int Element_creator_set_create_enabled(struct Element_creator *element_creator,
 	int create_enabled)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Sets flag controlling whether elements are created in response to
@@ -1332,6 +1332,7 @@ node selection.
 			}
 			else
 			{
+				Element_creator_end_element_creation(element_creator);
 				/* end callbacks from the global node_selection */
 				FE_node_selection_remove_callback(element_creator->node_selection,
 					Element_creator_node_selection_change,
