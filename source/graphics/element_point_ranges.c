@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -9,7 +9,6 @@ DESCRIPTION :
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
-#include "general/object.h"
 #include "graphics/element_point_ranges.h"
 #include "user_interface/message.h"
 
@@ -717,7 +716,7 @@ Ensures the <element_point_ranges> are in <element_point_ranges_list>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Element_point_ranges_add_to_list.  Not add ranges");
+					"Element_point_ranges_add_to_list.  Could not add");
 				if (new_element_point_ranges)
 				{
 					DESTROY(Element_point_ranges)(&new_element_point_ranges);
