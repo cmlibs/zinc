@@ -238,7 +238,8 @@ Updates the chosen object and text field in response to messages. \
 				FE_region_changes_get_ ## object_type ## _changes(changes), \
 				text_choose_object->current_object, &change)) \
 				{ \
-						if (change | CHANGE_LOG_OBJECT_CHANGED(object_type)) \
+						if (change & (CHANGE_LOG_OBJECT_CHANGED(object_type) | \
+										  CHANGE_LOG_OBJECT_REMOVED(object_type))) \
 					{ \
 						TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type)(text_choose_object, \
 							(struct object_type *)NULL); \
