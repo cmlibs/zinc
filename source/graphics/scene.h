@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -17,6 +17,7 @@ December 1997. Created MANAGER(Scene).
 #define SCENE_H
 
 #include "general/callback.h"
+#include "graphics/element_point_ranges.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "finite_element/finite_element_to_streamlines.h"
@@ -835,6 +836,24 @@ coordinates [x y z h(=1)] to give [x' y' z' h'], with xm = x'/h', etc. as in:
 However, if none of the scene objects have transformations, the flag
 <transformation_required> will be set to 0 and the <transformation_matrix> will
 be set to the identity.
+==============================================================================*/
+
+struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct GROUP(FE_element) *element_group,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct GT_element_group **gt_element_group_address,
+	struct GT_element_settings **gt_element_settings_address);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2000
+
+DESCRIPTION :
+Returns the nearest picked element point in <scene_picked_object_list> that is
+in <element_group> (or any group if NULL). If any of the remaining address
+arguments are not NULL, they are filled with the appropriate information
+pertaining to the nearest element point.
+The returned Element_point_ranges structure should be used or destroyed by the
+calling function.
 ==============================================================================*/
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(

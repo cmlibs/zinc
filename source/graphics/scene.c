@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -2863,6 +2863,169 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_object_update_time_behaviour */
 
+struct Scene_picked_object_get_nearest_element_point_data
+{
+	/* "nearest" value from Scene_picked_object for picked_element_point */
+	unsigned int nearest;
+	struct Element_point_ranges *nearest_element_point;
+	/* group that the element_point must be in, or any group if NULL */
+	struct GROUP(FE_element) *element_group;
+	/* information about the nearest element_point */
+	struct Scene_picked_object *scene_picked_object;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *gt_element_settings;
+};
+
+static int Scene_picked_object_get_nearest_element_point(
+	struct Scene_picked_object *scene_picked_object,
+	void *nearest_element_point_data_void)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to an element_point, the "nearest" value is
+compared with that for the current nearest element_point in the
+<nearest_element_point_data>. If there was no current nearest element_point or
+the new element_point is nearer, it becomes the nearest element_point and its
+"nearest" value is stored in the nearest_element_point_data.
+Note that the <nearest_element_point> is an Element_point_ranges structure
+created to store the nearest point; it is up to the calling function to manage
+and destroy it once returned.
+==============================================================================*/
+{
+	int element_point_number,face_number,return_code,
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Element_discretization element_discretization;
+	struct Element_point_ranges *element_point_ranges;
+	struct Element_point_ranges_identifier element_point_ranges_identifier;
+	struct FE_element *element,*top_level_element;
+	struct FE_field *native_discretization_field;
+	struct GROUP(FE_element) *element_group;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *settings;
+	struct Scene_object *scene_object;
+	struct Scene_picked_object_get_nearest_element_point_data
+		*nearest_element_point_data;
+
+	ENTER(Scene_picked_object_get_nearest_element_point);
+	if (scene_picked_object&&(nearest_element_point_data=
+		(struct Scene_picked_object_get_nearest_element_point_data	*)
+		nearest_element_point_data_void))
+	{
+		return_code=1;
+		/* proceed only if there is no picked_element_point or object is nearer */
+		if (((struct Element_point_ranges *)NULL==
+			nearest_element_point_data->nearest_element_point)||
+			(Scene_picked_object_get_nearest(scene_picked_object) <
+				nearest_element_point_data->nearest))
+		{
+			/* is the last scene_object a Graphical_element wrapper, and does the
+				 settings for the graphic refer to element_points? */
+			if ((scene_object=Scene_picked_object_get_Scene_object(
+				scene_picked_object,
+				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
+				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
+					Scene_object_get_type(scene_object))&&(gt_element_group=
+						Scene_object_get_graphical_element_group(scene_object))&&
+				(element_group=GT_element_group_get_element_group(gt_element_group))&&
+				((!nearest_element_point_data->element_group)||
+					(nearest_element_point_data->element_group==element_group))&&
+				(3==Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
+				(settings=get_settings_at_position_in_GT_element_group(
+					gt_element_group,
+					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
+				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
+					GT_element_settings_get_settings_type(settings)))
+			{
+				if (element=
+					FE_element_group_get_element_with_Use_element_type(element_group,
+					GT_element_settings_get_use_element_type(settings),
+					Scene_picked_object_get_subobject(scene_picked_object,1)))
+				{
+					/* determine discretization of element for graphic */
+					top_level_element=(struct FE_element *)NULL;
+					GT_element_settings_get_discretization(settings,
+						&element_discretization);
+					top_level_number_in_xi[0]=element_discretization.number_in_xi1;
+					top_level_number_in_xi[1]=element_discretization.number_in_xi2;
+					top_level_number_in_xi[2]=element_discretization.number_in_xi3;
+					GT_element_settings_get_face(settings,&face_number);
+					native_discretization_field=
+						GT_element_settings_get_native_discretization_field(settings);
+					if (get_FE_element_discretization(element,element_group,face_number,
+						native_discretization_field,top_level_number_in_xi,
+						&top_level_element,element_point_ranges_identifier.number_in_xi))
+					{
+						element_point_ranges_identifier.element=element;
+						element_point_ranges_identifier.xi_discretization_mode=
+							GT_element_settings_get_xi_discretization_mode(settings);
+						if (element_point_ranges=CREATE(Element_point_ranges)(
+							&element_point_ranges_identifier))
+						{
+							element_point_number=
+								Scene_picked_object_get_subobject(scene_picked_object,2);
+							if (Element_point_ranges_add_range(element_point_ranges,
+								element_point_number,element_point_number))
+							{
+								if (nearest_element_point_data->nearest_element_point)
+								{
+									DESTROY(Element_point_ranges)(
+										&(nearest_element_point_data->nearest_element_point));
+								}
+								nearest_element_point_data->nearest_element_point=
+									element_point_ranges;
+								nearest_element_point_data->scene_picked_object=
+									scene_picked_object;
+								nearest_element_point_data->gt_element_group=gt_element_group;
+								nearest_element_point_data->gt_element_settings=settings;
+								nearest_element_point_data->nearest=
+									Scene_picked_object_get_nearest(scene_picked_object);
+							}
+							else
+							{
+								display_message(WARNING_MESSAGE,
+									"Scene_picked_object_get_nearest_element_point.  "
+									"Could not add element point range");
+								DESTROY(Element_point_ranges)(&element_point_ranges);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"Scene_picked_object_get_nearest_element_point.  "
+								"Could not create Element_point_ranges");
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"Scene_picked_object_get_nearest_element_point.  "
+							"Could not get discretization");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,
+						"Scene_picked_object_get_nearest_element_point.  Invalid element");
+					return_code=0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_nearest_element_point.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_nearest_element_point */
+
 struct Scene_picked_object_get_nearest_node_data
 {
 	/* "nearest" value from Scene_picked_object for picked_node */
@@ -2880,12 +3043,12 @@ struct Scene_picked_object_get_nearest_node_data
 static int Scene_picked_object_get_nearest_node(
 	struct Scene_picked_object *scene_picked_object,void *nearest_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to a node, the "nearest" value is compared
-with that for the currently picked_node in the <nearest_node_data>. I there was
-no currently picked_node or the new node is nearer, it becomes the picked node
+with that for the current nearest node in the <nearest_node_data>. If there was
+no current nearest node or the new node is nearer, it becomes the picked node
 and its "nearest" value is stored in the nearest_node_data.
 ==============================================================================*/
 {
@@ -2907,7 +3070,7 @@ and its "nearest" value is stored in the nearest_node_data.
 				nearest_node_data->nearest))
 		{
 			/* is the last scene_object a Graphical_element wrapper, and does the
-				 settings for the graphic refer to node_glyphs? */
+				 settings for the graphic refer to node_points? */
 			if ((scene_object=Scene_picked_object_get_Scene_object(
 				scene_picked_object,
 				Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))
@@ -5847,6 +6010,66 @@ be set to the identity.
 DECLARE_OBJECT_FUNCTIONS(Scene_picked_object)
 
 DECLARE_LIST_FUNCTIONS(Scene_picked_object)
+
+struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct GROUP(FE_element) *element_group,
+	struct Scene_picked_object **scene_picked_object_address,
+	struct GT_element_group **gt_element_group_address,
+	struct GT_element_settings **gt_element_settings_address)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2000
+
+DESCRIPTION :
+Returns the nearest picked element point in <scene_picked_object_list> that is
+in <element_group> (or any group if NULL). If any of the remaining address
+arguments are not NULL, they are filled with the appropriate information
+pertaining to the nearest element point.
+The returned Element_point_ranges structure should be used or destroyed by the
+calling function.
+==============================================================================*/
+{
+	struct Scene_picked_object_get_nearest_element_point_data
+		nearest_element_point_data;
+
+	ENTER(Scene_picked_object_list_get_nearest_element_point);
+	nearest_element_point_data.nearest=0;
+	nearest_element_point_data.nearest_element_point=
+		(struct Element_point_ranges *)NULL;
+	nearest_element_point_data.element_group=element_group;
+	nearest_element_point_data.scene_picked_object=
+		(struct Scene_picked_object *)NULL;
+	nearest_element_point_data.gt_element_group=(struct GT_element_group *)NULL;
+	nearest_element_point_data.gt_element_settings=
+		(struct GT_element_settings *)NULL;
+	if (scene_picked_object_list)
+	{
+		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+			Scene_picked_object_get_nearest_element_point,
+			(void *)&nearest_element_point_data,scene_picked_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_nearest_element_point.  "
+			"Invalid argument(s)");
+	}
+	if (scene_picked_object_address)
+	{
+		*scene_picked_object_address=nearest_element_point_data.scene_picked_object;
+	}
+	if (gt_element_group_address)
+	{
+		*gt_element_group_address=nearest_element_point_data.gt_element_group;
+	}
+	if (gt_element_settings_address)
+	{
+		*gt_element_settings_address=nearest_element_point_data.gt_element_settings;
+	}
+	LEAVE;
+
+	return (nearest_element_point_data.nearest_element_point);
+} /* Scene_picked_object_list_get_nearest_element_point */
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
