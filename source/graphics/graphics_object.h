@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Graphical object data structures.
@@ -267,7 +267,7 @@ identified in picking for node position/vector editing.
 
 struct GT_nurbs
 /*******************************************************************************
-LAST MODIFIED : 21 July 1997
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -299,6 +299,9 @@ DESCRIPTION :
 	/* piecewise linear trim curve */
 	int pwlcnt;
 	double *pwlarray;
+
+	/* store integer object_name eg. element number from which this object came */
+	int object_name;
 
 	struct GT_nurbs *ptrnext;
 }; /* struct GT_nurbs */

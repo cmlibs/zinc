@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 24 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -119,7 +119,7 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
@@ -138,6 +138,7 @@ object.
 	struct FE_element *changed_element;
 	struct FE_node *changed_node;
 	/* for highlighting of selected objects */
+	struct LIST(FE_element) *selected_element_list;
 	struct LIST(FE_node) *selected_node_list;
 
 	/* additional values for passing to element_to_graphics_object */
@@ -1019,15 +1020,26 @@ Creates a GT_object and fills it with the objects described by settings.
 The graphics object is stored with with the settings it was created from.
 ==============================================================================*/
 
+int GT_element_settings_selected_elements_change(
+	struct GT_element_settings *settings,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected elements, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
+==============================================================================*/
+
 int GT_element_settings_selected_nodes_change(
 	struct GT_element_settings *settings,void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED : 24 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
-Tells <settings> that if the graphics resulting from it depend on selection,
-that they should be updated. Must call GT_element_settings_to_graphics_object
-afterwards to complete.
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected nodes, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
 ==============================================================================*/
 
 int GT_element_settings_compile_visible_settings(

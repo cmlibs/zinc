@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -2064,7 +2064,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 static int modify_Graphics_window_view(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Parser commands for modifying the view in the current pane of <window>,
@@ -2074,7 +2074,7 @@ view angle, interest point etc.
 	char allow_skew_flag,absolute_viewport_flag,relative_viewport_flag,
 		custom_projection_flag,parallel_projection_flag,perspective_projection_flag;
 	double bottom,eye[3],far,left,lookat[3],modelview_matrix[16],ndc_placement[4],
-		near,old_view_angle,photogrammetry_matrix[12],projection_matrix[16],right,
+		near,photogrammetry_matrix[12],projection_matrix[16],right,
 		top,up[3],view_angle,viewport_coordinates[4];
 	enum Scene_viewer_projection_mode projection_mode;
 	int i,number_of_components,return_code;
@@ -2165,7 +2165,6 @@ view angle, interest point etc.
 					view_angle=0.0;
 					scene_viewer=(struct Scene_viewer *)NULL;
 				}
-				old_view_angle=view_angle;
 				allow_skew_flag=0;
 				absolute_viewport_flag=0;
 				relative_viewport_flag=0;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 20 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -1958,6 +1958,7 @@ Creates a complete GT_nurbs structure.
 		nurbs->texture_control_points=(double *)NULL;
 		nurbs->trimarray=(double *)NULL;
 		nurbs->pwlarray=(double *)NULL;
+		nurbs->object_name=0;
 
 		nurbs->ptrnext=(struct GT_nurbs *)NULL;
 	}
@@ -4568,6 +4569,8 @@ DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_polyline, \
 	g_POLYLINE,gt_polyline,DESTROY(GT_polyline))
 DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_surface, \
 	g_SURFACE,gt_surface,DESTROY(GT_surface))
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_nurbs, \
+	g_NURBS,gt_nurbs,DESTROY(GT_nurbs))
 DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex, \
 	g_VOLTEX,gt_voltex,DESTROY(GT_voltex))
 

@@ -125,6 +125,78 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_element_settings,position,int, \
 	compare_int)
 
+static int FE_element_select_dimension_1(struct FE_element *element,
+	void *graphics_object_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+If <element> is 1-dimensional, it is selected in the <graphics_object>.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_object *graphics_object;
+
+	ENTER(FE_element_select_dimension_1);
+	if (element&&(graphics_object=(struct GT_object *)graphics_object_void))
+	{
+		if (1==get_FE_element_dimension(element))
+		{
+			return_code=GT_object_select_graphic(graphics_object,
+				element->cm.number,(struct Multi_range *)NULL);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_select_dimension_1.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_select_dimension_1 */
+
+static int FE_element_select_dimension_2(struct FE_element *element,
+	void *graphics_object_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+If <element> is 2-dimensional, it is selected in the <graphics_object>.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_object *graphics_object;
+
+	ENTER(FE_element_select_dimension_2);
+	if (element&&(graphics_object=(struct GT_object *)graphics_object_void))
+	{
+		if (2==get_FE_element_dimension(element))
+		{
+			return_code=GT_object_select_graphic(graphics_object,
+				element->cm.number,(struct Multi_range *)NULL);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_select_dimension_2.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_select_dimension_2 */
+
 /*
 Global functions
 ----------------
@@ -4290,7 +4362,7 @@ Converts a finite element into a graphics object with the supplied settings.
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
@@ -4524,8 +4596,8 @@ The graphics object is stored with with the settings it was created from.
 									}
 								}
 							} break;
-							case GT_ELEMENT_SETTINGS_LINES:
 							case GT_ELEMENT_SETTINGS_CYLINDERS:
+							case GT_ELEMENT_SETTINGS_LINES:
 							case GT_ELEMENT_SETTINGS_SURFACES:
 							case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
@@ -4689,12 +4761,32 @@ The graphics object is stored with with the settings it was created from.
 								}
 							}
 						} break;
+						case GT_ELEMENT_SETTINGS_CYLINDERS:
+						case GT_ELEMENT_SETTINGS_LINES:
+						{
+							FOR_EACH_OBJECT_IN_LIST(FE_element)(
+								FE_element_select_dimension_1,(void *)settings->graphics_object,
+								settings_to_object_data->selected_element_list);
+						} break;
+						case GT_ELEMENT_SETTINGS_SURFACES:
+						{
+							FOR_EACH_OBJECT_IN_LIST(FE_element)(
+								FE_element_select_dimension_2,(void *)settings->graphics_object,
+								settings_to_object_data->selected_element_list);
+						} break;
+						case GT_ELEMENT_SETTINGS_DATA_POINTS:
+						case GT_ELEMENT_SETTINGS_ISO_SURFACES:
+						case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
+						case GT_ELEMENT_SETTINGS_VOLUMES:
+						case GT_ELEMENT_SETTINGS_STREAMLINES:
+						{
+							/* ignore for now */
+						} break;
 						default:
 						{
 							display_message(ERROR_MESSAGE,
 								"GT_element_settings_to_graphics_object.  "
-								"Cannot update selected graphics for %s",
-								GT_element_settings_type_string(settings->settings_type));
+								"Unknown settings type");
 						} break;
 					}
 				}
@@ -4724,15 +4816,77 @@ The graphics object is stored with with the settings it was created from.
 	return (return_code);
 } /* GT_element_settings_to_graphics_object */
 
+int GT_element_settings_selected_elements_change(
+	struct GT_element_settings *settings,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected elements, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_selected_elements_change);
+	USE_PARAMETER(dummy_void);
+	if (settings)
+	{
+		return_code=1;
+		if (settings->graphics_object&&(
+			GT_element_settings_type_uses_dimension(settings->settings_type,1)||
+			GT_element_settings_type_uses_dimension(settings->settings_type,2)||
+			GT_element_settings_type_uses_dimension(settings->settings_type,3)||
+			GT_element_settings_has_embedded_field(settings, NULL)))
+		{
+			switch (settings->select_mode)
+			{
+				case GRAPHICS_SELECT_ON:
+				{
+					/* for efficiency, just request update of selected graphics */
+					settings->selected_graphics_changed=1;
+				} break;
+				case GRAPHICS_NO_SELECT:
+				{
+					/* nothing to do as no names put out with graphic */
+				} break;
+				case GRAPHICS_DRAW_SELECTED:
+				case GRAPHICS_DRAW_UNSELECTED:
+				{
+					/* need to rebuild graphics_object from scratch */
+					DEACCESS(GT_object)(&(settings->graphics_object));
+					settings->graphics_object=(struct GT_object *)NULL;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_element_settings_selected_elements_change.  "
+						"Unknown select_mode");
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_selected_elements_change.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_selected_elements_change */
+
 int GT_element_settings_selected_nodes_change(
 	struct GT_element_settings *settings,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 24 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
-Tells <settings> that if the graphics resulting from it depend on selection,
-that they should be updated. Must call GT_element_settings_to_graphics_object
-afterwards to complete.
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected nodes, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
 ==============================================================================*/
 {
 	int return_code;
@@ -4742,8 +4896,8 @@ afterwards to complete.
 	if (settings)
 	{
 		return_code=1;
-		if ((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)&&
-			settings->graphics_object)
+		if (settings->graphics_object&&
+			(GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type))
 		{
 			switch (settings->select_mode)
 			{

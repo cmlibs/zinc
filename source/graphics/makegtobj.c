@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 18 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -304,14 +304,23 @@ un-selected graphics are drawn.
 								{
 									while (line&&line_2)
 									{
-										if (interpolate_line=morph_GT_polyline(proportion,line,
-											line_2))
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											line->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
-											draw_polylineGL(interpolate_line->pointlist,
-												interpolate_line->normallist, interpolate_line->n_pts,
-												interpolate_line->n_data_components, interpolate_line->data,
-												object->default_material, object->spectrum);
-											DESTROY(GT_polyline)(&interpolate_line);
+											if (interpolate_line=morph_GT_polyline(proportion,line,
+												line_2))
+											{
+												draw_polylineGL(interpolate_line->pointlist,
+													interpolate_line->normallist, interpolate_line->n_pts,
+													interpolate_line->n_data_components,
+													interpolate_line->data, object->default_material,
+													object->spectrum);
+												DESTROY(GT_polyline)(&interpolate_line);
+											}
 										}
 										line=line->ptrnext;
 										line_2=line_2->ptrnext;
@@ -321,9 +330,17 @@ un-selected graphics are drawn.
 								{
 									while (line)
 									{
-										draw_polylineGL(line->pointlist,line->normallist,
-											line->n_pts, line->n_data_components, line->data,
-											object->default_material,object->spectrum);
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											line->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
+										{
+											draw_polylineGL(line->pointlist,line->normallist,
+												line->n_pts, line->n_data_components, line->data,
+												object->default_material,object->spectrum);
+										}
 										line=line->ptrnext;
 									}
 								}
@@ -346,14 +363,23 @@ un-selected graphics are drawn.
 								{
 									while (line&&line_2)
 									{
-										if (interpolate_line=morph_GT_polyline(proportion,line,
-											line_2))
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											line->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
-											draw_dc_polylineGL(interpolate_line->pointlist,
-												interpolate_line->normallist, interpolate_line->n_pts,
-												interpolate_line->n_data_components,interpolate_line->data,
-												object->default_material,object->spectrum);
-											DESTROY(GT_polyline)(&interpolate_line);
+											if (interpolate_line=morph_GT_polyline(proportion,line,
+												line_2))
+											{
+												draw_dc_polylineGL(interpolate_line->pointlist,
+													interpolate_line->normallist, interpolate_line->n_pts,
+													interpolate_line->n_data_components,
+													interpolate_line->data,object->default_material,
+													object->spectrum);
+												DESTROY(GT_polyline)(&interpolate_line);
+											}
 										}
 										line=line->ptrnext;
 										line_2=line_2->ptrnext;
@@ -363,9 +389,17 @@ un-selected graphics are drawn.
 								{
 									while (line)
 									{
-										draw_dc_polylineGL(line->pointlist,line->normallist, 
-											line->n_pts,line->n_data_components,line->data,
-											object->default_material,object->spectrum);
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											line->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
+										{
+											draw_dc_polylineGL(line->pointlist,line->normallist, 
+												line->n_pts,line->n_data_components,line->data,
+												object->default_material,object->spectrum);
+										}
 										line=line->ptrnext;
 									}
 								}
@@ -413,19 +447,27 @@ un-selected graphics are drawn.
 								{
 									while (surface&&surface_2)
 									{
-										if (interpolate_surface=morph_GT_surface(proportion,
-											surface,surface_2))
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											surface->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
-											draw_surfaceGL(interpolate_surface->pointlist,
-												interpolate_surface->normallist,
-												interpolate_surface->texturelist,
-												interpolate_surface->n_pts1,
-												interpolate_surface->n_pts2,
-												interpolate_surface->polygon,
-												interpolate_surface->n_data_components,
-												interpolate_surface->data,
-												object->default_material, object->spectrum);
-											DESTROY(GT_surface)(&interpolate_surface);
+											if (interpolate_surface=morph_GT_surface(proportion,
+												surface,surface_2))
+											{
+												draw_surfaceGL(interpolate_surface->pointlist,
+													interpolate_surface->normallist,
+													interpolate_surface->texturelist,
+													interpolate_surface->n_pts1,
+													interpolate_surface->n_pts2,
+													interpolate_surface->polygon,
+													interpolate_surface->n_data_components,
+													interpolate_surface->data,
+													object->default_material, object->spectrum);
+												DESTROY(GT_surface)(&interpolate_surface);
+											}
 										}
 										surface=surface->ptrnext;
 										surface_2=surface_2->ptrnext;
@@ -435,11 +477,19 @@ un-selected graphics are drawn.
 								{
 									while (surface)
 									{
-										draw_surfaceGL(surface->pointlist, surface->normallist,
-											surface->texturelist, surface->n_pts1,
-											surface->n_pts2, surface->polygon,
-											surface->n_data_components, surface->data,
-											object->default_material, object->spectrum);
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											surface->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
+										{
+											draw_surfaceGL(surface->pointlist, surface->normallist,
+												surface->texturelist, surface->n_pts1,
+												surface->n_pts2, surface->polygon,
+												surface->n_data_components, surface->data,
+												object->default_material, object->spectrum);
+										}
 										surface=surface->ptrnext;
 									}
 								}
@@ -456,19 +506,27 @@ un-selected graphics are drawn.
 								{
 									while (surface&&surface_2)
 									{
-										if (interpolate_surface=morph_GT_surface(proportion,
-											surface,surface_2))
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											surface->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
-											draw_dc_surfaceGL(interpolate_surface->pointlist,
-												interpolate_surface->normallist,
-												interpolate_surface->texturelist,
-												interpolate_surface->n_pts1,
-												interpolate_surface->n_pts2,
-												interpolate_surface->polygon,strip,
-												interpolate_surface->n_data_components,
-												interpolate_surface->data,object->default_material,
-												object->spectrum);
-											DESTROY(GT_surface)(&interpolate_surface);
+											if (interpolate_surface=morph_GT_surface(proportion,
+												surface,surface_2))
+											{
+												draw_dc_surfaceGL(interpolate_surface->pointlist,
+													interpolate_surface->normallist,
+													interpolate_surface->texturelist,
+													interpolate_surface->n_pts1,
+													interpolate_surface->n_pts2,
+													interpolate_surface->polygon,strip,
+													interpolate_surface->n_data_components,
+													interpolate_surface->data,object->default_material,
+													object->spectrum);
+												DESTROY(GT_surface)(&interpolate_surface);
+											}
 										}
 										surface=surface->ptrnext;
 										surface_2=surface_2->ptrnext;
@@ -478,10 +536,19 @@ un-selected graphics are drawn.
 								{
 									while (surface)
 									{
-										draw_dc_surfaceGL(surface->pointlist,surface->normallist,
-											surface->texturelist,surface->n_pts1,surface->n_pts2,
-											surface->polygon,strip, surface->n_data_components,
-											surface->data,object->default_material,object->spectrum);
+										/* work out if subobjects selected */
+										selected_name_ranges=(struct Multi_range *)NULL;
+										name_selected=GT_object_is_graphic_selected(object,
+											surface->object_name,&selected_name_ranges);
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
+										{
+											draw_dc_surfaceGL(surface->pointlist,surface->normallist,
+												surface->texturelist,surface->n_pts1,surface->n_pts2,
+												surface->polygon,strip, surface->n_data_components,
+												surface->data,object->default_material,
+												object->spectrum);
+										}
 										surface=surface->ptrnext;
 									}
 								}
@@ -518,6 +585,17 @@ un-selected graphics are drawn.
 						return_code = 1;
 						while(return_code && nurbs)
 						{
+#if defined (NEW_CODE)
+							/* work out if subobjects selected */
+							selected_name_ranges=(struct Multi_range *)NULL;
+							name_selected=GT_object_is_graphic_selected(object,
+								nurbs->object_name,&selected_name_ranges);
+							if ((name_selected&&draw_selected)||
+								((!name_selected)&&(!draw_selected)))
+							{
+								return_code = draw_nurbsGL(nurbs);
+							}
+#endif /* defined (NEW_CODE) */
 							return_code = draw_nurbsGL(nurbs);
 							nurbs=nurbs->ptrnext;							
 						}

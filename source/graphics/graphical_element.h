@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -426,22 +426,22 @@ DESCRIPTION :
 Returns true if <node> is in the selected nodes list of <gt_element_group>.
 ==============================================================================*/
 
-int GT_element_group_get_selected_nodes(
+int GT_element_group_get_selected_node_list(
 	struct GT_element_group *gt_element_group,struct LIST(FE_node) *node_list);
 /*******************************************************************************
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Ensures all the selected nodes in <gt_element_group> are in <node_list>. Does
 not clear <node_list> first.
 ==============================================================================*/
 
-int GT_element_group_modify_selected_nodes(
+int GT_element_group_modify_selected_node_list(
 	struct GT_element_group *gt_element_group,
 	enum GT_element_group_select_modify_mode modify_mode,
 	struct LIST(FE_node) *node_list);
 /*******************************************************************************
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Modifies the list of selected nodes in <gt_element_group> with <node_list>
