@@ -8098,10 +8098,7 @@ It is up to the calling function to deallocate the returned string.
 			sprintf(temp_string,"%i",component_no+1);
 			source_name=temp_string;
 		}
-		if (ALLOCATE(component_name,char,strlen(source_name)))
-		{
-			strcpy(component_name,source_name);
-		}
+		component_name = duplicate_string(source_name);
 	}
 	else
 	{
