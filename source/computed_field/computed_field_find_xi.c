@@ -1029,7 +1029,9 @@ Stores cache data for the find_xi routines.
 	
 	if (ALLOCATE(cache,struct Computed_field_find_element_xi_cache,1))
 	{
+#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
 	  cache->graphics_buffer = (struct Graphics_buffer *)NULL;
+#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
 	  cache->valid_values = 0;
 	  cache->number_of_values = 0;
 	  cache->values = (FE_value *)NULL;
@@ -1060,10 +1062,12 @@ Frees memory/deaccess cache at <*cache_address>.
 	ENTER(DESTROY(Computed_field_find_element_xi_cache));
 	if (cache_address&&*cache_address)
 	{
+#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
 		if ((*cache_address)->graphics_buffer)
 		{
 			DESTROY(Graphics_buffer)(&(*cache_address)->graphics_buffer);
 		}
+#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
 		if ((*cache_address)->values)
 		{
 			DEALLOCATE((*cache_address)->values);
