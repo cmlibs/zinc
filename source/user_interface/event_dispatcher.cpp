@@ -847,7 +847,7 @@ DESCRIPTION :
 {
 	struct Event_dispatcher_file_descriptor_handler *handler;
 
-	ENTER(Event_dispatcher_register_file_descriptor_handler);
+	ENTER(Event_dispatcher_add_file_descriptor_handler);
 
 	if (event_dispatcher && handler_function)
 	{
@@ -917,7 +917,6 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(Event_dispatcher_remove_file_descriptor_handler);
-
 	if (event_dispatcher && event_dispatcher->handler_list && callback_id)
 	{
 #if defined (USE_XTAPP_CONTEXT)
@@ -1511,10 +1510,6 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(Event_dispatcher_main_loop);
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"enter Event_dispatcher_main_loop\n");
-#endif /* defined (DEBUG) */
 	if (event_dispatcher)
 	{
 		return_code=1;
@@ -1529,10 +1524,6 @@ DESCRIPTION :
 			"Event_dispatcher_main_loop.  Invalid arguments.");
 		return_code=0;
 	}
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave Event_dispatcher_main_loop\n");
-#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
