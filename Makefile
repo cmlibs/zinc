@@ -269,7 +269,7 @@ update : update_sources
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
 
-depend: $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_linux_memorycheck.make $(SOURCE_PATH)/cmgui_linux_dynamic.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make $(SOURCE_PATH)/cmgui_linux_optimised.make update_sources
+depend: $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_console.make $(SOURCE_PATH)/cmgui_linux_memorycheck.make $(SOURCE_PATH)/cmgui_linux_dynamic.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make $(SOURCE_PATH)/cmgui_linux_optimised.make $(SOURCE_PATH)/cmgui_linux_console.make update_sources
 	if [ "$(USER)" = "cmiss" ]; then \
 		CMGUI_DEV_ROOT=$(PWD) ; \
 		export CMGUI_DEV_ROOT ; \
