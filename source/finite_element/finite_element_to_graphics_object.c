@@ -1079,7 +1079,7 @@ colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The <select_mode> controls whether node cmiss numbers are output as integer
 names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
-the nodes (not) in the <selected_node_list> are rendered only. This
+only nodes in (or not in) the <selected_node_list> are rendered. This
 functionality is only supported if <node_group> is supplied.
 Notes:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
@@ -1140,21 +1140,24 @@ Notes:
 			}
 			computed_fields_of_node->num_required_fields=number_of_fields;
 
-			node_list=(struct LIST(FE_node) *)NULL;
-			if (node_group&&((GRAPHICS_DRAW_SELECTED==select_mode)||
-				(GRAPHICS_DRAW_UNSELECTED==select_mode)))
+			node_list = (struct LIST(FE_node) *)NULL;
+			if (node_group && ((GRAPHICS_DRAW_SELECTED == select_mode) ||
+				(GRAPHICS_DRAW_UNSELECTED == select_mode)))
 			{
-				if (GRAPHICS_DRAW_SELECTED==select_mode)
+				/* create a node list containing all the nodes in node_group */
+				node_list = CREATE(LIST(FE_node))();
+				FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_list,
+					(void *)node_list, node_group);
+				/* remove the nodes that are selected or not selected */
+				if (GRAPHICS_DRAW_SELECTED == select_mode)
 				{
-					node_list=selected_node_list;
+					REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+						FE_node_is_not_in_list, (void *)selected_node_list, node_list);
 				}
-				else
+				else /* GRAPHICS_DRAW_UNSELECTED */
 				{
-					node_list=CREATE(LIST(FE_node))();
-					FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_list,
-						(void *)node_list,node_group);
-					FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_not_in_list,
-						(void *)node_list,selected_node_list);
+					REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+						FE_node_is_in_list, (void *)selected_node_list, node_list);
 				}
 			}
 			if (node_list)
@@ -1317,7 +1320,7 @@ Notes:
 					"  Field(s) not defined for all nodes");
 				glyph_set=(struct GT_glyph_set *)NULL;
 			}
-			if (node_list&&(GRAPHICS_DRAW_UNSELECTED==select_mode))
+			if (node_list)
 			{
 				DESTROY(LIST(FE_node))(&node_list);
 			}
