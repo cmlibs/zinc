@@ -452,14 +452,27 @@ GL_EXT_texture_object extension.
 			} break;
 			case 3:
 			{
-#if defined (GL_VERSION_1_2)
-				glEnable(GL_TEXTURE_3D);
-#else /* defined (GL_VERSION_1_2) */
-				display_message(ERROR_MESSAGE,
-					"direct_render_Texture_environment.  "
-					"3D textures not supported in this version.");
-				return_code=0;
-#endif /* defined (GL_VERSION_1_2) */
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				if (Graphics_library_check_extension(GL_VERSION_1_2) ||
+					Graphics_library_check_extension(GL_EXT_texture3D))
+				{
+					/* Note that while to strictly satisfy the GL_EXT_texture3D 
+						all these uses should have the EXT delimiter the SGI
+						OpenGL is version 1.1 with GL_EXT_texture3D but supplies
+						all the 1.2 compliant symbols, so the code is simpler with
+						just one version */
+					glEnable(GL_TEXTURE_3D);
+				}
+				else
+				{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)*/
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"3D textures not supported on this display.");
+					return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				}
+#endif /* defined (GL_VERSION_1_2) || (GL_EXT_texture3D)*/
 			} break;
 		}
 #endif /* defined (OPENGL_API) */
@@ -547,31 +560,39 @@ The reduction factor applies equally in all texture dimensions.
 			} break;
 			case 3:
 			{
-#if defined (GL_VERSION_1_2)
-				do
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				if (Graphics_library_check_extension(GL_VERSION_1_2) ||
+					Graphics_library_check_extension(GL_EXT_texture3D))
 				{
-					glTexImage3D(GL_PROXY_TEXTURE_3D, (GLint)0, hardware_texture_format,
-						(GLint)(texture->width_texels/reduction),
-						(GLint)(texture->height_texels/reduction),
-						(GLint)(texture->depth_texels/reduction), (GLint)0,
-						format, type, (GLvoid *)(texture->image));
-					glGetTexLevelParameteriv(GL_PROXY_TEXTURE_3D, (GLint)0,
-						GL_TEXTURE_WIDTH, &test_width);
-					if (0 == test_width)
+					do
 					{
-						reduction *= 2;
-						return_code = (reduction < texture->width_texels) &&
-							(reduction < texture->height_texels) &&
-							(reduction < texture->depth_texels);
+						glTexImage3D(GL_PROXY_TEXTURE_3D, (GLint)0, hardware_texture_format,
+							(GLint)(texture->width_texels/reduction),
+							(GLint)(texture->height_texels/reduction),
+							(GLint)(texture->depth_texels/reduction), (GLint)0,
+							format, type, NULL);
+						glGetTexLevelParameteriv(GL_PROXY_TEXTURE_3D, (GLint)0,
+							GL_TEXTURE_WIDTH, &test_width);
+						if (0 == test_width)
+						{
+							reduction *= 2;
+							return_code = (reduction < texture->width_texels) &&
+								(reduction < texture->height_texels) &&
+								(reduction < texture->depth_texels);
+						}
 					}
+					while ((test_width == 0) && return_code);
 				}
-				while ((test_width == 0) && return_code);
-#else /* defined (GL_VERSION_1_2) */
-				display_message(ERROR_MESSAGE,
-					"Texture_get_hardware_reduction.  "
-					"3D textures not supported in this version.");
-				return_code=0;
-#endif /* defined (GL_VERSION_1_2) */
+				else
+				{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+					display_message(ERROR_MESSAGE,
+						"Texture_get_hardware_reduction.  "
+						"3D textures not supported on this display.");
+					return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 			} break;
 			default:
 			{
@@ -862,14 +883,22 @@ Directly outputs the commands setting up the <texture>.
 			} break;
 			case 3:
 			{
-#if defined (GL_VERSION_1_2)
-				texture_target = GL_TEXTURE_3D;
-#else /* defined (GL_VERSION_1_2) */
-				display_message(ERROR_MESSAGE,
-					"direct_render_texture.  "
-					"3D textures not supported in this version.");
-				return_code=0;
-#endif /* defined (GL_VERSION_1_2) */
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				if (Graphics_library_check_extension(GL_VERSION_1_2) ||
+					Graphics_library_check_extension(GL_EXT_texture3D))
+				{
+					texture_target = GL_TEXTURE_3D;
+				}
+				else
+				{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+					display_message(ERROR_MESSAGE,
+						"direct_render_texture.  "
+						"3D textures not supported on this display.");
+					return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 			} break;
 		}
 		switch(texture->storage)
@@ -1064,30 +1093,38 @@ Directly outputs the commands setting up the <texture>.
 							} break;
 							case 3:
 							{
-#if defined (GL_VERSION_1_2)
-								if (reduced_image)
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+								if (Graphics_library_check_extension(GL_VERSION_1_2) ||
+					Graphics_library_check_extension(GL_EXT_texture3D))
 								{
-									glTexImage3D(GL_TEXTURE_3D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)reduced_width_texels,
-										(GLint)reduced_height_texels,
-										(GLint)reduced_depth_texels, (GLint)0,
-										format, type, (GLvoid *)reduced_image);
+									if (reduced_image)
+									{
+										glTexImage3D(GL_TEXTURE_3D, (GLint)0,
+											(GLint)hardware_storage_format,
+											(GLint)reduced_width_texels,
+											(GLint)reduced_height_texels,
+											(GLint)reduced_depth_texels, (GLint)0,
+											format, type, (GLvoid *)reduced_image);
+									}
+									else
+									{
+										glTexImage3D(GL_TEXTURE_3D, (GLint)0,	
+											(GLint)hardware_storage_format,
+											(GLint)(texture->width_texels),
+											(GLint)(texture->height_texels),
+											(GLint)(texture->depth_texels), (GLint)0,
+											format, type, (GLvoid *)(texture->image));
+									}
 								}
 								else
 								{
-									glTexImage3D(GL_TEXTURE_3D, (GLint)0,	
-										(GLint)hardware_storage_format,
-										(GLint)(texture->width_texels),
-										(GLint)(texture->height_texels),
-										(GLint)(texture->depth_texels), (GLint)0,
-										format, type, (GLvoid *)(texture->image));
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+									display_message(ERROR_MESSAGE,"direct_render_Texture.  "
+										"3D textures not supported on this display.");
+									return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 								}
-#else /* defined (GL_VERSION_1_2) */
-								display_message(ERROR_MESSAGE,"direct_render_Texture.  "
-								  "Not compiled with 3D texture support.");
-								return_code=0;								
-#endif /* defined (GL_VERSION_1_2) */
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 							} break;
 						}
 					}
@@ -4443,14 +4480,22 @@ execute_Texture should just call direct_render_Texture.
 				} break;
 				case 3:
 				{
-#if defined (GL_VERSION_1_2)
-					texture_target = GL_TEXTURE_3D;
-#else /* defined (GL_VERSION_1_2) */
-					display_message(ERROR_MESSAGE,
-						"compile_Texture.  "
-						"3D textures not supported in this version.");
-					return_code=0;
-#endif /* defined (GL_VERSION_1_2) */
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					if (Graphics_library_check_extension(GL_VERSION_1_2) ||
+						Graphics_library_check_extension(GL_EXT_texture3D))
+					{
+						texture_target = GL_TEXTURE_3D;
+					}
+					else
+					{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+						display_message(ERROR_MESSAGE,
+							"compile_Texture.  "
+							"3D textures not supported on this display.");
+						return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 				} break;
 			}
 			if (texture->display_list||(texture->display_list=glGenLists(1)))
@@ -4706,9 +4751,13 @@ direct_render_Texture.
 #if defined (OPENGL_API)
 		glDisable(GL_TEXTURE_1D);
 		glDisable(GL_TEXTURE_2D);
-#if defined (GL_VERSION_1_2)
-		glDisable(GL_TEXTURE_3D);
-#endif /* defined (GL_VERSION_1_2) */
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+		if (Graphics_library_check_extension(GL_VERSION_1_2) ||
+			Graphics_library_check_extension(GL_EXT_texture3D))
+		{
+			glDisable(GL_TEXTURE_3D);
+		}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 #endif /* defined (OPENGL_API) */
 		return_code=1;
 	}

@@ -28,12 +28,7 @@ Functions and structures for interfacing with the graphics library.
 /* SAB On Win32 I think you have to load all OpenGL 1.2, 1.3 etc functions
 	as extensions and keep pointer references to them.  I haven't done this
 	yet so we will undefine the version symbols */
-#undef GL_VERSION_1_2
-#undef GL_VERSION_1_3
 #undef GL_VERSION_1_4
-#undef GL_ARB_vertex_program
-#undef GL_ARB_fragment_program
-#undef GL_ARB_multitexture
 #undef GL_NV_vertex_program
 #undef GL_NV_register_combiners2
 #endif /* defined (WIN32_SYSTEM) */
@@ -354,4 +349,100 @@ Read pixels from the current graphics context into <frame_data> of size <width>
 and <height> according to the storage type.  'MakeCurrent' the desired source 
 before calling this routine.
 ==============================================================================*/
+
+int Graphics_library_load_extension(char *extensions);
+/*******************************************************************************
+LAST MODIFIED : 20 February 2004
+
+DESCRIPTION :
+Attempts to load the space separated list of extensions.  Returns true if all
+the extensions succeed, false if not.
+==============================================================================*/
+
+int Graphics_library_load_extensions(char *extensions);
+/*******************************************************************************
+LAST MODIFIED : 20 February 2004
+
+DESCRIPTION :
+Attempts to load the space separated list of extensions.  Returns true if all
+the extensions succeed, false if not.
+==============================================================================*/
+
+#if defined (OPENGL_API)
+/* On UNIX systems we just test if we can load the handles but call the functions
+	directly.  On Win32 (and AIX I think) we need to use function ptrs to call each time */
+#if defined (WIN32_SYSTEM) || defined (AIX)
+#define GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES
+#endif /* defined (WIN32_SYSTEM) || defined (AIX) */
+
+#define GLEXTENSIONFLAG( extension_name ) extension_name ## _glextension_flag
+#define Graphics_library_check_extension(extension_name) \
+	(255 == extension_name ## _glextension_flag ? Graphics_library_load_extension( #extension_name) : extension_name ## _glextension_flag)
+#if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
+#define GLHANDLE( function_name ) function_name ## _handle
+#endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES */
+
+#if defined (GRAPHICS_LIBRARY_C)
+/* This is being included from the C file so do the initialisations */
+#define GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(extension_name) \
+	unsigned char extension_name ## _glextension_flag = 255
+#define GRAPHICS_LIBRARY_EXTERN
+#else /* defined (GRAPHICS_LIBRARY_C) */
+#define GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(extension_name) \
+	extern unsigned char extension_name ## _glextension_flag
+#define GRAPHICS_LIBRARY_EXTERN extern
+#endif /* defined (GRAPHICS_LIBRARY_C) */
+
+/* Extension flags */
+#if defined (GLX_ARB_get_proc_address)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GLX_ARB_get_proc_address);
+#endif /* defined (GLX_ARB_get_proc_address) */
+#if defined (GL_VERSION_1_2)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_2);
+#endif /* defined (GL_VERSION_1_2) */
+#if defined (GL_VERSION_1_3)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_3);
+#endif /* defined (GL_VERSION_1_3) */
+#if defined (GL_EXT_texture3D)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_texture3D);
+#endif /* defined (GL_EXT_texture3D) */
+#if defined (GL_ARB_vertex_program)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_vertex_program);
+#endif /* defined (GL_ARB_vertex_program) */
+#if defined (GL_ARB_fragment_program)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program);
+#endif /* defined (GL_ARB_fragment_program) */
+
+/* Extension function handles */
+#if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+/* Note that while to strictly satisfy the GL_EXT_texture3D 
+	this function would have the EXT delimiter the SGI
+	OpenGL is version 1.1 with GL_EXT_texture3D but supplies
+	all the 1.2 compliant symbols, so the code is simpler with
+	just one version */
+GRAPHICS_LIBRARY_EXTERN PFNGLTEXIMAGE3DPROC GLHANDLE(glTexImage3D);
+#define glTexImage3D (GLHANDLE(glTexImage3D))
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+#if defined (GL_VERSION_1_3)
+GRAPHICS_LIBRARY_EXTERN PFNGLACTIVETEXTUREPROC GLHANDLE(glActiveTexture);
+#define glActiveTexture (GLHANDLE(glActiveTexture))
+GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
+#define glMultiTexCoord3fv (GLHANDLE(glMultiTexCoord3fv))
+#endif /* defined (GL_VERSION_1_3) */
+#if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)
+GRAPHICS_LIBRARY_EXTERN PFNGLGENPROGRAMSARBPROC GLHANDLE(glGenProgramsARB);
+#define glGenProgramsARB (GLHANDLE(glGenProgramsARB))
+GRAPHICS_LIBRARY_EXTERN PFNGLBINDPROGRAMARBPROC GLHANDLE(glBindProgramARB);
+#define glBindProgramARB (GLHANDLE(glBindProgramARB))
+GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMSTRINGARBPROC GLHANDLE(glProgramStringARB);
+#define glProgramStringARB (GLHANDLE(glProgramStringARB))
+GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMSARBPROC GLHANDLE(glDeleteProgramsARB);
+#define glDeleteProgramsARB (GLHANDLE(glDeleteProgramsARB))
+#endif /* defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program) */
+#endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES */
+
+#endif /* defined (OPENGL_API) */
+
+
 #endif

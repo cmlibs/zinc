@@ -1047,30 +1047,30 @@ DESCRIPTION :
 	int i,j,return_code;
 	Triple *surface_point_1,*surface_point_2, *normal_point_1, *normal_point_2,
 		*texture_point_1, *texture_point_2;
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 	Triple *tangent_point_1, *tangent_point_2;
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 	struct Spectrum_render_data *render_data;
 
 	ENTER(draw_surfaceGL);
-#if ! defined GL_ARB_multitexture
+#if ! defined GL_VERSION_1_3
 	USE_PARAMETER(tangentpoints);
-#endif /* ! defined GL_ARB_multitexture */
+#endif /* ! defined GL_VERSION_1_3 */
 	/* checking arguments */
 	if (surfpts&&(1<npts1)&&(1<npts2)&&((!data)||(render_data=
 		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
 	{
 #if defined (OPENGL_API)
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 		if (tangentpoints)
 		{
-			if (!query_gl_extension("GL_ARB_multitexture"))
+			if (!Graphics_library_check_extension(GL_VERSION_1_3))
 			{
 				/* Ignore these tangentpoints */
 				tangentpoints = (Triple *)NULL;
 			}
 		}
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 		switch (polygon_type)
 		{
 			case g_QUADRILATERAL:
@@ -1084,12 +1084,12 @@ DESCRIPTION :
 						{
 							glNormal3fv(normalpoints[i+npts1*j]);
 						}
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 						if (tangentpoints)
 						{
 							glMultiTexCoord3fv(GL_TEXTURE1_ARB,tangentpoints[i+npts1*j]);
 						}
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 						if (texturepoints)
 						{
 							glTexCoord3fv(texturepoints[i+npts1*j]);
@@ -1106,12 +1106,12 @@ DESCRIPTION :
 						{
 							glNormal3fv(normalpoints[i+npts1*j+1]);
 						}
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 						if (tangentpoints)
 						{
 							glMultiTexCoord3fv(GL_TEXTURE1_ARB,tangentpoints[i+npts1*j+1]);
 						}
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 						if (texturepoints)
 						{
 							glTexCoord3fv(texturepoints[i+npts1*j+1]);
@@ -1135,13 +1135,13 @@ DESCRIPTION :
 					normal_point_1=normalpoints;
 					normal_point_2=normalpoints+npts1;
 				}
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 				if (tangentpoints)
 				{
 					tangent_point_1=tangentpoints;
 					tangent_point_2=tangentpoints+npts1;
 				}
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 				if (texturepoints)
 				{
 					texture_point_1 = texturepoints;
@@ -1160,13 +1160,13 @@ DESCRIPTION :
 						glNormal3fv(*normal_point_1);
 						normal_point_1++;
 					}
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 					if (tangentpoints)
 					{
 						glMultiTexCoord3fv(GL_TEXTURE1_ARB,*tangent_point_1);
 						tangent_point_1++;
 					}
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 					if (texturepoints)
 					{
 						glTexCoord3fv(*texture_point_1);
@@ -1187,13 +1187,13 @@ DESCRIPTION :
 							glNormal3fv(*normal_point_2);
 							normal_point_2++;
 						}
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 						if (tangentpoints)
 						{
 							glMultiTexCoord3fv(GL_TEXTURE1_ARB,*tangent_point_2);
 							tangent_point_2++;
 						}
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 						if (texturepoints)
 						{
 							glTexCoord3fv(*texture_point_2);
@@ -1212,13 +1212,13 @@ DESCRIPTION :
 							glNormal3fv(*normal_point_1);
 							normal_point_1++;
 						}
-#if defined GL_ARB_multitexture
+#if defined GL_VERSION_1_3
 						if (tangentpoints)
 						{
 							glMultiTexCoord3fv(GL_TEXTURE1_ARB,*tangent_point_1);
 							tangent_point_1++;
 						}
-#endif /* defined GL_ARB_multitexture */
+#endif /* defined GL_VERSION_1_3 */
 						if (texturepoints)
 						{
 							glTexCoord3fv(*texture_point_1);

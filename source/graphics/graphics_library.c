@@ -7,23 +7,31 @@ DESCRIPTION :
 Functions for interfacing with the graphics library.
 ==============================================================================*/
 #if defined (OPENGL_API)
+#if defined (UNIX)
+#include <dlfcn.h>
+#endif /* defined (UNIX) */
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
-#if defined (MOTIF)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 #include <X11/Xlib.h>
 #include <GL/glu.h>
+#define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
-#elif defined (GTK_USER_INTERFACE)
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <gtk/gtk.h>
 #if ! defined (WIN32_SYSTEM)
 /* SAB The WIN32 system currently uses GTK GL AREA for open GL. */
 #include <gtk/gtkgl.h>
 #endif /* ! defined (WIN32_SYSTEM) */
-#endif /* defined (GTK_USER_INTERFACE) */
+#endif /* switch (USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
 #include "general/debug.h"
+#define GRAPHICS_LIBRARY_C
 #include "graphics/graphics_library.h"
+#if defined (MOTIF)
+#include "three_d_drawing/ThreeDDraw.h"
+#endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -36,108 +44,49 @@ static struct Text_defaults
 } text_defaults;
 
 /*
-Global variables
-----------------
-*/
-/*???DB.  Should be hidden in a function */
-int graphics_library_open=0;
-
-/*
 Global functions
 ----------------
 */
-int open_graphics_library(void)
-/*******************************************************************************
-LAST MODIFIED : 14 November 1996
-
-DESCRIPTION :
-Function to open the 3-D graphics library (needed for PHIGS).
-==============================================================================*/
-{
-	int return_code;
-#if defined (DECPHIGS_API)
-	FILE *error_file;
-#endif
-
-	ENTER(open_graphics_library);
-#if defined (DECPHIGS_API)
-	error_file=fopen("sys$error:","w");
-	popenphigs(error_file,0);
-		/*???DB.  What is the 0 for ? */
-	return_code=1;
-#endif
-#if defined (graPHIGS_API)
-	popen_phigs(PDEF_ERR_FILE,PDEF_MEM_SIZE);
-	return_code=1;
-#endif
-#if defined (GL_API)
-	return_code=1;
-#endif
-#if defined (OPENGL_API)
-	/* OpenGL initialization is performed at the same time we initialise the
-		window manager */
-	return_code = 1;
-#endif
-	graphics_library_open=1;
-	LEAVE;
-
-	return (return_code);
-} /* open_graphics_library */
-
-int close_graphics_library(void)
-/*******************************************************************************
-LAST MODIFIED : 2 May 1995
-
-DESCRIPTION :
-Function to close the 3-D graphics library (needed for PHIGS).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(close_graphics_library);
-#if defined (DECPHIGS_API)
-	pclosephigs();
-	return_code=1;
-#endif
-#if defined (graPHIGS_API)
-	pclose_phigs();
-	return_code=1;
-#endif
-#if defined (GL_API)
-	gexit();
-	return_code=1;
-#endif
-#if defined (OPENGL_API)
-	return_code = 1;
-#endif
-	graphics_library_open=0;
-	LEAVE;
-
-	return (return_code);
-} /* close_graphics_library */
 
 int initialize_graphics_library(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 14 November 1995
+LAST MODIFIED : 23 February 2004
 
 DESCRIPTION :
 Sets up the default light, material and light model for the graphics library.
 ==============================================================================*/
 {
+#if defined(GLX_ARB_get_proc_address)
+	Display *display;
+#endif /* defined(GLX_ARB_get_proc_address) */
 	int return_code;
 	static int initialized=0;
 
 	ENTER(initialize_graphics_library);
+
 	return_code=1;
 	if (!initialized)
 	{
-/*???DB.  Is this necessary ? */
-#if defined (GL_API)
-		mmode(MVIEWING);
-#endif
 #if defined (OPENGL_API)
 		glMatrixMode(GL_MODELVIEW);
 		wrapperInitText(user_interface);
+
+#if defined(GLX_ARB_get_proc_address)
+		/* Try and load this function while we have the user_interface connection */
+		display = User_interface_get_display(user_interface);
+		if (255 == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
+		{
+			if (query_glx_extension("GLX_ARB_get_proc_address", display,
+				DefaultScreen(display)))
+			{
+				GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 1;
+			}
+			else
+			{
+				GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 0;
+			}
+		}
+#endif /* defined(GLX_ARB_get_proc_address) */
 #endif
 		initialized=1;
 	}
@@ -1219,3 +1168,302 @@ before calling this routine.
 	return (return_code);
 } /* Graphics_library_read_pixels */
 
+static void *Graphics_library_get_function_ptr(char *function_name)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2004
+
+DESCRIPTION :
+Finds and loads gl function symbols at runtime.
+==============================================================================*/
+{
+	void *function_ptr, *symbol_table;
+
+	ENTER(Graphics_library_get_function_ptr);
+	if (function_name)
+	{
+#if defined (OPENGL_API)
+#if defined (WIN32_SYSTEM)
+		function_ptr = (void *) wglGetProcAddress(function_name);
+#else /* defined (WIN32_SYSTEM) */
+#if defined(GLX_ARB_get_proc_address)
+		/* We don't try and load this here because testing for a GLX extension
+			requires the Display, it is done in the initialize_graphics_library above */
+		if (1 == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
+		{
+			function_ptr = (void *) glXGetProcAddressARB((const GLubyte *) function_name);
+		}
+		else
+		{
+#endif /* defined(GLX_ARB_get_proc_address) */
+#if defined (UNIX)
+			symbol_table = dlopen((char *)0, RTLD_LAZY);
+			function_ptr = dlsym(symbol_table, function_name);
+			dlclose(symbol_table);
+#else /* defined (UNIX) */
+			function_ptr = NULL;			
+#endif /* defined (UNIX) */
+#if defined(GLX_ARB_get_proc_address)
+		}
+#endif /* defined(GLX_ARB_get_proc_address) */
+#endif /* defined (WIN32_SYSTEM) */
+#else /* defined (OPENGL_API) */
+		return_code=0;
+#endif /* defined (OPENGL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_library_get_function_ptr.  Missing function name.");
+		function_ptr = NULL;
+	}
+
+	LEAVE;
+
+	return (function_ptr);
+} /* Graphics_library_get_function_ptr */
+
+int Graphics_library_load_extension(char *extension_name)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2004
+
+DESCRIPTION :
+Attempts to load the particular extensions.  Returns true if all
+the extensions succeed, false if not.
+==============================================================================*/
+{
+	int return_code;
+#if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
+#define GRAPHICS_LIBRARY_ASSIGN_HANDLE(function,type) function ## _handle = (type)
+#else /* defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES) */
+#define GRAPHICS_LIBRARY_ASSIGN_HANDLE(function,type)
+#endif /* defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES) */
+
+	ENTER(Graphics_library_load_extension);
+	if (extension_name)
+	{
+#if defined (OPENGL_API)
+		if (NULL == extension_name)
+		{
+			return_code = 0;
+		}
+#if defined GL_VERSION_1_2
+		else if (!strcmp(extension_name, "GL_VERSION_1_2"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_VERSION_1_2))
+			{
+				return_code = GLEXTENSIONFLAG(GL_VERSION_1_2);
+			}
+			else
+			{
+				if (query_gl_version(1, 2))
+				{
+					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
+						Graphics_library_get_function_ptr("glTexImage3D"))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_VERSION_1_2) = return_code;
+			}			
+		}
+#endif /* GL_VERSION_1_2 */
+#if defined GL_VERSION_1_3
+		else if (!strcmp(extension_name, "GL_VERSION_1_3"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_VERSION_1_3))
+			{
+				return_code = GLEXTENSIONFLAG(GL_VERSION_1_3);
+			}
+			else
+			{
+				if (query_gl_version(1, 3))
+				{
+					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glActiveTexture, PFNGLACTIVETEXTUREPROC)
+						Graphics_library_get_function_ptr("glActiveTexture"))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_VERSION_1_3) = return_code;
+			}
+		}
+#endif /* GL_VERSION_1_3 */
+#if defined GL_EXT_texture3D
+		else if (!strcmp(extension_name, "GL_EXT_texture3D"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_EXT_texture3D))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_texture3D);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					/* We are using the non EXT version of these functions as this simplifies
+						the code where they are used, and the SGI implementation while currently
+						only OpenGL 1.1 supplies both glTexImage3D and glTexImage3DEXT */
+					if (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glTexImage3D, PFNGLTEXIMAGE3DPROC)
+						Graphics_library_get_function_ptr("glTexImage3D"))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_EXT_texture3D) = return_code;
+			}
+		}
+#endif /* GL_EXT_texture3D */
+#if defined GL_ARB_vertex_program
+		else if (!strcmp(extension_name, "GL_ARB_vertex_program"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_vertex_program))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_vertex_program);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
+						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
+						Graphics_library_get_function_ptr("glBindProgramARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
+						Graphics_library_get_function_ptr("glProgramStringARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
+						Graphics_library_get_function_ptr("glDeleteProgramsARB")))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;
+			}
+		}
+#endif /* GL_ARB_vertex_program */
+#if defined GL_ARB_fragment_program
+		else if (!strcmp(extension_name, "GL_ARB_fragment_program"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_fragment_program))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_fragment_program);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					if ((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
+						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
+						Graphics_library_get_function_ptr("glBindProgramARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
+						Graphics_library_get_function_ptr("glProgramStringARB")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
+						Graphics_library_get_function_ptr("glDeleteProgramsARB")))
+					{
+						return_code = 1;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_fragment_program) = return_code;
+			}
+		}
+#endif /* GL_ARB_fragment_program */
+		else
+		{
+			display_message(ERROR_MESSAGE,  "Graphics_library_load_extension.  "
+				"Extension %s was not compiled in or is unknown.", extension_name);
+			return_code = 0;
+		}
+#else /* defined (OPENGL_API) */
+		return_code=0;
+#endif /* defined (OPENGL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_library_load_extension.  Missing extension name.");
+		return_code = 0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_library_load_extension */
+
+int Graphics_library_load_extensions(char *extensions)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2004
+
+DESCRIPTION :
+Attempts to load the space separated list of extensions.  Returns true if all
+the extensions succeed, false if not.
+==============================================================================*/
+{
+	char *extension, *next_extension;
+	int return_code;
+
+	ENTER(Graphics_library_load_extensions);
+	if (extensions)
+	{
+		return_code = 1;
+		extension = extensions;
+		while (return_code && (next_extension = strchr(extension, ' ')))
+		{
+			*next_extension = 0;
+			return_code = Graphics_library_load_extension(extension);
+			extension = next_extension + 1;
+		}
+		if (*extension)
+		{
+			return_code = Graphics_library_load_extension(extension);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_library_load_extensions.  Missing extension name list.");
+		return_code = 0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_library_load_extensions */
