@@ -1202,7 +1202,10 @@ descrip.mms : CmguiMake descrip_mms.sed
 	sed -f descrip_mms.sed < CmguiMake > descrip.mms
 
 $(OBJECT_PATH)/version.ObjSuffix.h : $(OBJS)
-	  echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.ObjSuffix.h;	  
+	if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi	
+	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.ObjSuffix.h;	  
 	date > date.h
 	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1999, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.ObjSuffix.h
 XCOMM	sed 's/"//;s/./"CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.ObjSuffix.h
