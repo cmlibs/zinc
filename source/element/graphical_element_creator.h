@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_creator.h
 
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Mouse controlled element creator.
@@ -9,6 +9,11 @@ Mouse controlled element creator.
 ==============================================================================*/
 #if !defined (GRAPHICAL_ELEMENT_CREATOR_H)
 #define GRAPHICAL_ELEMENT_CREATOR_H
+
+#include "finite_element/finite_element.h"
+#include "graphics/scene.h"
+#include "selection/element_selection.h"
+#include "selection/node_selection.h"
 
 /*
 Global types
@@ -77,9 +82,11 @@ struct Graphical_element_creator *CREATE(Graphical_element_creator)(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager);
+	struct MANAGER(FE_node) *node_manager,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection);
 /*******************************************************************************
-LAST MODIFIED : 26 March 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Creates a Graphical_element_creator, giving it the element_manager to put new

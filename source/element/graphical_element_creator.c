@@ -1,14 +1,13 @@
 /*******************************************************************************
 FILE : graphical_element_creator.c
 
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Mouse controlled element creator/creator.
 ==============================================================================*/
 /*#include <math.h>*/
 #include "general/debug.h"
-/*#include "general/geometry.h"*/
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
@@ -23,7 +22,7 @@ Module types
 */
 struct Graphical_element_creator
 /*******************************************************************************
-LAST MODIFIED : 21 October 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -58,6 +57,8 @@ DESCRIPTION :
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
 	/* scene only accessed while element_creator gets scene input callbacks */
 	struct Scene *scene;
 	/* put current scene input callback in stored_input_callback while
@@ -638,26 +639,25 @@ static void Graphical_element_creator_scene_input_callback(struct Scene *scene,
 	void *graphical_element_creator_void,
 	struct Scene_input_callback_data *scene_input_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Receives mouse button press, motion and release events from <scene>, and
 creates nodes and elements from the entered positions.
 ==============================================================================*/
 {
-	struct CM_element_information element_identifier;
 	FE_value node_coordinates[3];
-	int i,node_number,return_code;
+	int i,node_number,return_code,shift_pressed;
 	struct FE_field_component field_component;
-	struct FE_node *node,*temp_node;
+	struct FE_node *node;
 	struct Graphical_element_creator *element_creator;
-	struct GT_element_group *gt_element_group;
-	struct LIST(FE_node) *selected_node_list;
 
 	ENTER(Graphical_element_creator_scene_input_callback);
 	if (scene&&(element_creator=(struct Graphical_element_creator *)
 		graphical_element_creator_void)&&scene_input_callback_data)
 	{
+		shift_pressed=
+			SCENE_INPUT_MODIFY_SHIFT & scene_input_callback_data->input_modifier;
 		switch (scene_input_callback_data->input_type)
 		{
 			case SCENE_BUTTON_PRESS:
@@ -739,84 +739,21 @@ creates nodes and elements from the entered positions.
 								"Make element: You did not click on a node");
 						}
 					}
-					if (node&&(MESH_EDITOR_CREATE_ONLY_NODES !=
-						element_creator->mesh_editor_create_mode))
+					if (!shift_pressed)
 					{
-						if (!element_creator->element)
-						{
-							element_identifier.type=CM_ELEMENT;
-							element_identifier.number=1;
-							while (element_creator->element=
-								FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-									&element_identifier,element_creator->element_manager))
-							{
-								element_identifier.number++;
-							}
-							if (Graphical_element_creator_make_template_element(
-								element_creator)&&(element_creator->element=CREATE(FE_element)(
-								&element_identifier,element_creator->template_element)))
-							{
-								ACCESS(FE_element)(element_creator->element);
-								element_creator->number_of_clicked_nodes=0;
-							}
-						}
-						if (element_creator->element)
-						{
-							if (set_FE_element_node(element_creator->element,
-								element_creator->number_of_clicked_nodes,node))
-							{
-								element_creator->number_of_clicked_nodes++;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Graphical_element_creator_scene_input_callback.  "
-									"Could not set node");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Graphical_element_creator_scene_input_callback.  "
-								"Could not create element");
-							return_code=0;
-						}
+						FE_node_selection_begin_cache(element_creator->node_selection);
+						FE_node_selection_clear(element_creator->node_selection);
 					}
-					if (return_code)
+					if (node)
 					{
-						if (node)
-						{
-							/* highlight node just created */
-							if (selected_node_list=CREATE(LIST(FE_node))())
-							{
-								switch (element_creator->mesh_editor_create_mode)
-								{
-									case MESH_EDITOR_CREATE_ONLY_NODES:
-									{
-										ADD_OBJECT_TO_LIST(FE_node)(node,selected_node_list);
-									} break;
-									case MESH_EDITOR_CREATE_ELEMENTS:
-									case MESH_EDITOR_CREATE_NODES_AND_ELEMENTS:
-									{
-										for (i=0;i<element_creator->number_of_clicked_nodes;i++)
-										{
-											get_FE_element_node(element_creator->element,i,
-												&temp_node);
-											ensure_FE_node_is_in_list(temp_node,
-												(void *)selected_node_list);
-										}
-									} break;
-								}
-								gt_element_group=Scene_get_graphical_element_group(scene,
-									element_creator->element_group);
-								GT_element_group_modify_selected_node_list(gt_element_group,
-									GT_ELEMENT_GROUP_SELECT_REPLACE,selected_node_list);
-								DESTROY(LIST(FE_node))(&selected_node_list);
-							}
-						}
+						/* select the node just added */
+						FE_node_selection_select_node(element_creator->node_selection,node);
 					}
-					else
+					if (!shift_pressed)
+					{
+						FE_node_selection_end_cache(element_creator->node_selection);
+					}
+					if (!return_code)
 					{
 						display_message(WARNING_MESSAGE,
 							"Graphical_element_creator_scene_input_callback.  "
@@ -840,15 +777,6 @@ creates nodes and elements from the entered positions.
 				printf("Graphical_element_creator: button release!\n");
 				/*???debug end */
 #endif /* defined (DEBUG) */
-				/*???RC must call Graphical_element_creator_release_input on
-					button release only - otherwise the button release will go to
-					the graphical node editor! */
-				if (element_creator->element&&
-					(element_creator->number_of_clicked_nodes ==
-						element_creator->element->information->number_of_nodes))
-				{
-					return_code=Graphical_element_creator_add_element(element_creator);
-				}
 			} break;
 			default:
 			{
@@ -975,6 +903,98 @@ clean up the nodes array.
 	return (return_code);
 } /* Graphical_element_creator_release_input */
 
+static void Graphical_element_creator_node_selection_change(
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection_changes *changes,void *element_creator_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Callback for change in the global node selection.
+==============================================================================*/
+{
+	struct CM_element_information element_identifier;
+	struct FE_node *node;
+	struct Graphical_element_creator *element_creator;
+
+	ENTER(Graphical_element_creator_node_selection_change);
+	if (node_selection&&changes&&
+		(element_creator=(struct Graphical_element_creator *)element_creator_void))
+	{
+		/* if exactly 1 node selected, add it to element */
+		if (1==NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))
+		{
+			if ((MESH_EDITOR_CREATE_ELEMENTS ==
+				element_creator->mesh_editor_create_mode) ||
+				(MESH_EDITOR_CREATE_NODES_AND_ELEMENTS ==
+					element_creator->mesh_editor_create_mode))
+			{
+				node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+					(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+					changes->newly_selected_node_list);
+				if (IS_OBJECT_IN_GROUP(FE_node)(node,element_creator->node_group))
+				{
+					if (!element_creator->element)
+					{
+						element_identifier.type=CM_ELEMENT;
+						element_identifier.number=1;
+						while (element_creator->element=
+							FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+								&element_identifier,element_creator->element_manager))
+						{
+							element_identifier.number++;
+						}
+						if (Graphical_element_creator_make_template_element(
+							element_creator)&&
+							(element_creator->element=CREATE(FE_element)(&element_identifier,
+								element_creator->template_element)))
+						{
+							ACCESS(FE_element)(element_creator->element);
+							element_creator->number_of_clicked_nodes=0;
+						}
+					}
+					if (element_creator->element)
+					{
+						if (set_FE_element_node(element_creator->element,
+							element_creator->number_of_clicked_nodes,node))
+						{
+							element_creator->number_of_clicked_nodes++;
+							if (element_creator->number_of_clicked_nodes ==
+								element_creator->element->information->number_of_nodes)
+							{
+								Graphical_element_creator_add_element(element_creator);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Graphical_element_creator_scene_input_callback.  "
+								"Could not set node");
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Graphical_element_creator_scene_input_callback.  "
+							"Could not create element");
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Element creator: Selected node not from current group");
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_element_creator_node_selection_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Graphical_element_creator_node_selection_change */
+
 /*
 Global functions
 ----------------
@@ -983,9 +1003,11 @@ struct Graphical_element_creator *CREATE(Graphical_element_creator)(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager)
+	struct MANAGER(FE_node) *node_manager,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Creates a Graphical_element_creator, giving it the element_manager to put new
@@ -996,7 +1018,8 @@ enable the creation of a coordinate field.
 	struct Graphical_element_creator *element_creator;
 
 	ENTER(CREATE(Graphical_element_creator));
-	if (basis_manager&&element_manager&&fe_field_manager&&node_manager)
+	if (basis_manager&&element_manager&&fe_field_manager&&node_manager&&
+		element_selection&&node_selection)
 	{
 		if (ALLOCATE(element_creator,struct Graphical_element_creator,1))
 		{
@@ -1018,6 +1041,12 @@ enable the creation of a coordinate field.
 			element_creator->element_manager=element_manager;
 			element_creator->fe_field_manager=fe_field_manager;
 			element_creator->node_manager=node_manager;
+			element_creator->element_selection=element_selection;
+			element_creator->node_selection=node_selection;
+			/* request callbacks from the global node_selection */
+			FE_node_selection_add_callback(node_selection,
+				Graphical_element_creator_node_selection_change,
+				(void *)element_creator);
 			element_creator->scene=(struct Scene *)NULL;
 			element_creator->stored_input_callback.procedure=
 				(Scene_input_callback_procedure *)NULL;
@@ -1090,6 +1119,11 @@ Deaccesses objects and frees memory used by the Graphical_element_creator at
 			{
 				DEACCESS(GROUP(FE_node))(&(element_creator->node_group));
 			}
+			/* remove callbacks from the global node_selection */
+			FE_node_selection_remove_callback(element_creator->node_selection,
+				Graphical_element_creator_node_selection_change,
+				(void *)element_creator);
+
 			if (element_creator->scene)
 			{
 				DEACCESS(Scene)(&(element_creator->scene));
@@ -1156,8 +1190,6 @@ DESCRIPTION :
 		return_code=1;
 		if (mesh_editor_create_mode != element_creator->mesh_editor_create_mode)
 		{
-			/* clear all highlighted objects highlight node just created */
-			Scene_clear_selected(scene);
 			if (element_creator->element)
 			{
 				display_message(WARNING_MESSAGE,"Aborting current element creation");

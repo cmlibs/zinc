@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_node_editor.c
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -9,17 +9,13 @@ Scene input.
 ==============================================================================*/
 #include <math.h>
 #include "command/command.h"
-/*#include "finite_element/finite_element_to_graphics_object.h"*/
 #include "general/debug.h"
-/*#include "general/geometry.h"*/
 #include "general/matrix_vector.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
-#include "graphics/scene.h"
 #include "node/graphical_node_editor.h"
 #include "user_interface/message.h"
-/*#include "user_interface/user_interface.h"*/
 
 /*
 Module types
@@ -27,7 +23,7 @@ Module types
 */
 struct Graphical_node_editor
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -36,22 +32,20 @@ changes in node position and derivatives etc.
 {
 	struct Scene *scene;
 	struct MANAGER(FE_node) *node_manager;
+	struct FE_node_selection *node_selection;
 	/* information about picked nodes the editor knows about */
 	struct Scene_picked_object *scene_picked_object;
 	struct FE_node *last_picked_node;
-	int last_picked_node_just_added;
+	int picked_node_was_unselected;
 	int motion_detected;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *gt_element_settings;
 	double last_farx,last_fary,last_farz,last_nearx,last_neary,last_nearz;
-	/* the element and node groups objects are movied in */
-	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *node_group;
 }; /* struct Graphical_node_editor */
 
 struct FE_node_edit_information
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Describes how to move a node in space. The node will move on the plane normal
@@ -80,6 +74,8 @@ to its position between these two planes.
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 	/* need the node manager for global modify */
 	struct MANAGER(FE_node) *node_manager;
+	/* only edit the node if in the node_group, if supplied */
+	struct GROUP(FE_node) *node_group;
 	/* information for undoing scene object transformations - only needs to be
 		 done if transformation_required is set */
 	int transformation_required,LU_indx[4];
@@ -324,7 +320,7 @@ applied to multiple nodes.
 
 static int FE_node_edit_position(struct FE_node *node,void *edit_info_void)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Translates the <rc_coordinate_field> of <node> according to the delta change
@@ -342,10 +338,11 @@ stored in the <edit_info>.
 			edit_info->rc_coordinate_field)))
 	{
 		return_code=1;
-		if (node != edit_info->last_picked_node)
+		/* the last_picked_node was edited in FE_node_calculate_delta_position.
+			 Also, don't edit unless in node_group, if supplied */
+		if ((node != edit_info->last_picked_node)&&((!edit_info->node_group)||
+			IS_OBJECT_IN_GROUP(FE_node)(node,edit_info->node_group)))
 		{
-			/* the last_picked_node was already updated in
-				 FE_node_calculate_delta_position */
 			/* clear coordinates in case less than 3 dimensions */
 			coordinates[0]=0.0;
 			coordinates[1]=0.0;
@@ -594,7 +591,7 @@ glyph_centre[0] must be 0.0, and glyph_scale_factors[0] must be non-zero.
 
 static int FE_node_edit_vector(struct FE_node *node,void *edit_info_void)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Translates the <rc_coordinate_field> of <node> according to the delta change
@@ -614,10 +611,11 @@ stored in the <edit_info>.
 		(9>=number_of_orientation_scale_components))
 	{
 		return_code=1;
-		if (node != edit_info->last_picked_node)
+		/* the last_picked_node was edited in FE_node_calculate_delta_vector.
+			 Also, don't edit unless in node_group, if supplied */
+		if ((node != edit_info->last_picked_node)&&((!edit_info->node_group)||
+			IS_OBJECT_IN_GROUP(FE_node)(node,edit_info->node_group)))
 		{
-			/* the last_picked_node was already updated in
-				 FE_node_calculate_delta_vector */
 			if (Computed_field_evaluate_at_node(
 				edit_info->orientation_scale_field,node,orientation_scale))
 			{
@@ -688,7 +686,7 @@ static void GNE_scene_input_callback(struct Scene *scene,
 	void *graphical_node_editor_void,
 	struct Scene_input_callback_data *scene_input_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Receives mouse button press, motion and release events from <scene>, and
@@ -696,7 +694,7 @@ processes them into node movements as necessary.
 ==============================================================================*/
 {
 	double d;
-	int number_of_selected_nodes,return_code,shift_pressed;
+	int clear_selection,number_of_selected_nodes,return_code,shift_pressed;
 	struct Computed_field *coordinate_field;
 	struct FE_node *picked_node;
 	struct FE_node_edit_information edit_info;
@@ -711,7 +709,6 @@ processes them into node movements as necessary.
 	if (scene&&(node_editor=(struct Graphical_node_editor *)
 		graphical_node_editor_void)&&scene_input_callback_data)
 	{
-		node_list=CREATE(LIST(FE_node))();
 		shift_pressed=
 			SCENE_INPUT_MODIFY_SHIFT & scene_input_callback_data->input_modifier;
 		switch (scene_input_callback_data->input_type)
@@ -725,53 +722,45 @@ processes them into node movements as necessary.
 #endif /* defined (DEBUG) */
 				picked_node=Scene_picked_object_list_get_nearest_node(
 					scene_input_callback_data->picked_object_list,
-					node_editor->node_manager,node_editor->node_group,
+					node_editor->node_manager,(struct GROUP(FE_node) *)NULL,
 					&scene_picked_object,&gt_element_group,&gt_element_settings);
 				REACCESS(FE_node)(&(node_editor->last_picked_node),picked_node);
-				node_editor->last_picked_node_just_added=0;
-				/* need to know whether picked_node is currently selected */
 				if (picked_node)
 				{
-					if (!(node_editor->node_group))
-					{
-						REACCESS(GROUP(FE_element))(&(node_editor->element_group),
-							GT_element_group_get_element_group(gt_element_group));
-						REACCESS(GROUP(FE_node))(&(node_editor->node_group),
-							GT_element_group_get_node_group(gt_element_group));
-					}
+					node_editor->picked_node_was_unselected=
+						!FE_node_selection_is_node_selected(node_editor->node_selection,
+							picked_node);
+				}
+				else
+				{
+					node_editor->picked_node_was_unselected=0;
+				}
+				if (clear_selection=((!shift_pressed)&&((!picked_node)||
+					(node_editor->picked_node_was_unselected))))
+				{
+					FE_node_selection_begin_cache(node_editor->node_selection);
+					FE_node_selection_clear(node_editor->node_selection);
+				}
+				if (picked_node)
+				{
 					REACCESS(Scene_picked_object)(&(node_editor->scene_picked_object),
 						scene_picked_object);
 					REACCESS(GT_element_group)(&(node_editor->gt_element_group),
 						gt_element_group);
 					REACCESS(GT_element_settings)(&(node_editor->gt_element_settings),
 						gt_element_settings);
-					if (!GT_element_group_is_node_selected(gt_element_group,picked_node))
-					{
-						ADD_OBJECT_TO_LIST(FE_node)(picked_node,node_list);
-						if (shift_pressed)
-						{
-							GT_element_group_modify_selected_node_list(gt_element_group,
-								GT_ELEMENT_GROUP_SELECT_ADD,node_list);
-						}
-						else
-						{
-							GT_element_group_modify_selected_node_list(gt_element_group,
-								GT_ELEMENT_GROUP_SELECT_REPLACE,node_list);
-						}
-						node_editor->last_picked_node_just_added=1;
-					}
+					FE_node_selection_select_node(node_editor->node_selection,
+						picked_node);
 				}
-				else
+				else if (clear_selection)
 				{
-					if (!shift_pressed&&(node_editor->node_group))
-					{
-						GT_element_group_clear_selected(node_editor->gt_element_group);
-						DEACCESS(GROUP(FE_element))(&(node_editor->element_group));
-						DEACCESS(GROUP(FE_node))(&(node_editor->node_group));
-						DEACCESS(Scene_picked_object)(&(node_editor->scene_picked_object));
-						DEACCESS(GT_element_group)(&(node_editor->gt_element_group));
-						DEACCESS(GT_element_settings)(&(node_editor->gt_element_settings));
-					}
+					DEACCESS(Scene_picked_object)(&(node_editor->scene_picked_object));
+					DEACCESS(GT_element_group)(&(node_editor->gt_element_group));
+					DEACCESS(GT_element_settings)(&(node_editor->gt_element_settings));
+				}
+				if (clear_selection)
+				{
+					FE_node_selection_end_cache(node_editor->node_selection);
 				}
 				node_editor->last_nearx=scene_input_callback_data->nearx;
 				node_editor->last_neary=scene_input_callback_data->neary;
@@ -830,6 +819,8 @@ processes them into node movements as necessary.
 					edit_info.far2y=scene_input_callback_data->fary;
 					edit_info.far2z=scene_input_callback_data->farz;
 					edit_info.node_manager=node_editor->node_manager;
+					edit_info.node_group=
+						GT_element_group_get_node_group(node_editor->gt_element_group);
 					/* get coordinate field in RC coordinates */
 					if (!(coordinate_field=GT_element_settings_get_coordinate_field(
 						node_editor->gt_element_settings)))
@@ -878,8 +869,8 @@ processes them into node movements as necessary.
 					{
 						if (node_editor->motion_detected)
 						{
-							if (GT_element_group_get_selected_node_list(
-								node_editor->gt_element_group,node_list))
+							if (node_list=FE_node_selection_get_node_list(
+								node_editor->node_selection))
 							{
 								number_of_selected_nodes=NUMBER_IN_LIST(FE_node)(node_list);
 								if (1<number_of_selected_nodes)
@@ -929,13 +920,10 @@ processes them into node movements as necessary.
 						else
 						{
 							/* unselect of last_picked_node if not just added */
-							if (shift_pressed&&(!(node_editor->last_picked_node_just_added)))
+							if (shift_pressed&&(!(node_editor->picked_node_was_unselected)))
 							{
-								ADD_OBJECT_TO_LIST(FE_node)(
-									node_editor->last_picked_node,node_list);
-								GT_element_group_modify_selected_node_list(
-									node_editor->gt_element_group,
-									GT_ELEMENT_GROUP_SELECT_REMOVE,node_list);
+								FE_node_selection_unselect_node(node_editor->node_selection,
+									node_editor->last_picked_node);
 							}
 						}
 					}
@@ -947,24 +935,8 @@ processes them into node movements as necessary.
 					Computed_field_end_wrap(&(edit_info.rc_coordinate_field));
 				}
 				/* deaccess last_picked_node since only kept for one input movement */
-				if (node_editor->last_picked_node)
-				{
-					DEACCESS(FE_node)(&(node_editor->last_picked_node));
-				}
-#if defined (OLD_CODE)
-				/* if active_node_group group is empty, deaccess objects not needed */
-				if (!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-					(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-					node_editor->active_node_group)))
-				{
-					if (node_editor->scene_picked_object)
-					{
-						DEACCESS(Scene_picked_object)(&(node_editor->scene_picked_object));
-						DEACCESS(GT_element_group)(&(node_editor->gt_element_group));
-						DEACCESS(GT_element_settings)(&(node_editor->gt_element_settings));
-					}
-				}
-#endif /* defined (OLD_CODE) */
+				REACCESS(FE_node)(&(node_editor->last_picked_node),
+					(struct FE_node *)NULL);
 			} break;
 			default:
 			{
@@ -972,7 +944,6 @@ processes them into node movements as necessary.
 					"GNE_scene_input_callback.  Invalid input_type");
 			} break;
 		}
-		DESTROY(LIST(FE_node))(&node_list);
 	}
 	else
 	{
@@ -988,9 +959,10 @@ Global functions
 */
 
 struct Graphical_node_editor *CREATE(Graphical_node_editor)(
-	struct Scene *scene,struct MANAGER(FE_node) *node_manager)
+	struct Scene *scene,struct MANAGER(FE_node) *node_manager,
+	struct FE_node_selection *node_selection)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Creates the structure that needs to be passed to the GNE_scene_input_callback.
@@ -1000,12 +972,13 @@ Creates the structure that needs to be passed to the GNE_scene_input_callback.
 	struct Scene_input_callback input_callback;
 
 	ENTER(CREATE(Graphical_node_editor));
-	if (scene&&node_manager)
+	if (scene&&node_manager&&node_selection)
 	{
 		if (ALLOCATE(graphical_node_editor,struct Graphical_node_editor,1))
 		{
 			graphical_node_editor->scene=ACCESS(Scene)(scene);
 			graphical_node_editor->node_manager=node_manager;
+			graphical_node_editor->node_selection=node_selection;
 
 			input_callback.procedure=GNE_scene_input_callback;
 			input_callback.data=(void *)graphical_node_editor;
@@ -1016,8 +989,6 @@ Creates the structure that needs to be passed to the GNE_scene_input_callback.
 			graphical_node_editor->gt_element_group=(struct GT_element_group *)NULL;
 			graphical_node_editor->gt_element_settings=
 				(struct GT_element_settings *)NULL;
-			graphical_node_editor->element_group=(struct GROUP(FE_element) *)NULL;
-			graphical_node_editor->node_group=(struct GROUP(FE_node) *)NULL;
 		}
 		else
 		{
@@ -1062,14 +1033,6 @@ structure itself.
 			DEACCESS(Scene_picked_object)(&(node_editor->scene_picked_object));
 			DEACCESS(GT_element_group)(&(node_editor->gt_element_group));
 			DEACCESS(GT_element_settings)(&(node_editor->gt_element_settings));
-			if (node_editor->element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&(node_editor->element_group));
-			}
-			if (node_editor->node_group)
-			{
-				DEACCESS(GROUP(FE_node))(&(node_editor->node_group));
-			}
 		}
 		DEALLOCATE(*node_editor_address);
 		return_code=1;

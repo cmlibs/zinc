@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_node_editor.h
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -9,6 +9,10 @@ Scene input.
 ==============================================================================*/
 #if !defined (GRAPHICAL_NODE_EDITOR_H)
 #define GRAPHICAL_NODE_EDITOR_H
+
+#include "finite_element/finite_element.h"
+#include "graphics/scene.h"
+#include "selection/node_selection.h"
 
 /*
 Global types
@@ -28,10 +32,12 @@ The contents of this structure are private.
 Global functions
 ----------------
 */
+
 struct Graphical_node_editor *CREATE(Graphical_node_editor)(
-	struct Scene *scene,struct MANAGER(FE_node) *node_manager);
+	struct Scene *scene,struct MANAGER(FE_node) *node_manager,
+	struct FE_node_selection *node_selection);
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Creates the structure that needs to be passed to the GNE_scene_input_callback.
