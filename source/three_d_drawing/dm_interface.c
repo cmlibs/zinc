@@ -153,6 +153,7 @@ supported on displays other than SGI will do.
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
 		GLX_DEPTH_SIZE, 5,
+		GLX_DOUBLEBUFFER, GL_FALSE,
 		None
 	};
 	static int fbvisattrsRGB_no_depth[] =
@@ -160,6 +161,7 @@ supported on displays other than SGI will do.
 		GLX_RED_SIZE, 5,
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
+		GLX_DOUBLEBUFFER, GL_FALSE,
 		None
 	};
 	int *fbvisattrs;
@@ -172,6 +174,7 @@ supported on displays other than SGI will do.
 		GLX_BLUE_SIZE, 5,
 		GLX_ALPHA_SIZE, 1,
 		GLX_DEPTH_SIZE, 5,
+		GLX_DOUBLEBUFFER, GL_FALSE,
 		None
 	};
 	static int visattrsRGB_no_depth[] =
@@ -181,6 +184,7 @@ supported on displays other than SGI will do.
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
 		GLX_ALPHA_SIZE, 1,
+		GLX_DOUBLEBUFFER, GL_FALSE,
 		None
 	};
 	int *visattrs;
