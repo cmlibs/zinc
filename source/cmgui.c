@@ -779,7 +779,16 @@ Main program for the CMISS Graphical User Interface
 	}
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-	create_interpreter(&status);
+	if (no_display)
+	  {
+		 int redirect_output = 0;
+		 create_interpreter(&redirect_output, &status);
+	  }
+	else
+	  {
+		 int redirect_output = 1;
+		 create_interpreter(&redirect_output, &status);
+	  }
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	if(no_display || command_list)
