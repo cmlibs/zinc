@@ -3798,6 +3798,7 @@ Creates a control_curve_editor widget.
 							if (init_widgets)
 							{
 								control_curve_editor_set_curve(curve_editor->widget,curve);
+								XtManageChild(curve_editor->widget);
 								return_widget=curve_editor->widget;
 							}
 							else
@@ -4054,7 +4055,7 @@ Sets the Control_curve to be edited by the control_curve_editor widget.
 					callback.procedure=control_curve_editor_update_extend_mode;
 					choose_field_component_set_callback(
 						curve_editor->extend_mode_widget,&callback);
-					XtManageChild(curve_editor->widget);
+					XtSetSensitive(curve_editor->widget,True);
 				}
 				else
 				{
@@ -4082,7 +4083,7 @@ Sets the Control_curve to be edited by the control_curve_editor widget.
 				/* set subwidget curves to NULL */
 				choose_field_component_set_field_component(
 					curve_editor->component_widget,(struct FE_field *)NULL,0);
-				XtUnmanageChild(curve_editor->widget);
+				XtSetSensitive(curve_editor->widget,False);
 			}
 		}
 		else
