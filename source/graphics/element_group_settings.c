@@ -6189,7 +6189,7 @@ If there is a visible graphics_object in <settings>, expands the
 int gfx_modify_g_element_node_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT NODE_POINTS command.
@@ -6389,6 +6389,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
 					}
+					if (glyph)
+					{
+						DEACCESS(GT_object)(&glyph);
+					}
 					if (orientation_scale_field)
 					{
 						DEACCESS(Computed_field)(&orientation_scale_field);
@@ -6433,7 +6437,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_data_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT DATA_POINTS command.
@@ -6631,6 +6635,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
+					}
+					if (glyph)
+					{
+						DEACCESS(GT_object)(&glyph);
 					}
 					if (orientation_scale_field)
 					{
@@ -7420,7 +7428,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -7665,6 +7673,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
+					}
+					if (glyph)
+					{
+						DEACCESS(GT_object)(&glyph);
 					}
 					if (orientation_scale_field)
 					{
