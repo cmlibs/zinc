@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 10 February 2002
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -272,7 +272,7 @@ int register_write_signal_file(char *file_name,int channel_number)
 	FILE *output_file;
 	float sampling_frequency;
 	int electrodes_in_row[8]={8,8,8,8,8,8,8,8},i,index,j,number_of_channels,
-		return_code;
+		number_of_regions,number_of_unemap_channels,return_code;
 	short int *destination,*samples,*source;
 	struct Device **device;
 	struct Rig *rig;
@@ -282,22 +282,32 @@ int register_write_signal_file(char *file_name,int channel_number)
 	ENTER(register_write_signal_file);
 	return_code=0;
 	/* check arguments */
-	if (file_name&&unemap_get_number_of_channels(&number_of_channels)&&
-		(0<channel_number)&&(channel_number<number_of_channels))
+	if (file_name&&unemap_get_number_of_channels(&number_of_unemap_channels)&&
+		(0<=channel_number)&&(channel_number<=number_of_unemap_channels))
 	{
 		if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
 			(0<number_of_samples)&&ALLOCATE(samples,short int,number_of_samples*
-			number_of_channels))
+			number_of_unemap_channels))
 		{
 			if (unemap_get_samples_acquired(0,0,samples,(int *)NULL)&&
 				unemap_get_sampling_frequency(&sampling_frequency))
 			{
 				/* create a rig for saving signals */
+				if (0==channel_number)
+				{
+					number_of_channels=number_of_unemap_channels;
+					number_of_regions=number_of_unemap_channels/max_channels;
+				}
+				else
+				{
+					number_of_channels=max_channels;
+					number_of_regions=1;
+				}
 				if (rig=create_standard_Rig("default",PATCH,MONITORING_OFF,
-					EXPERIMENT_OFF,8,electrodes_in_row,1,0,(float)1))
+					EXPERIMENT_OFF,8,electrodes_in_row,-number_of_regions,0,(float)1))
 				{
 					if (signal_buffer=create_Signal_buffer(SHORT_INT_VALUE,
-						max_channels,(int)number_of_samples,sampling_frequency))
+						number_of_channels,(int)number_of_samples,sampling_frequency))
 					{
 						/* set the times */
 						for (index=0;index<(int)number_of_samples;index++)
@@ -320,20 +330,27 @@ int register_write_signal_file(char *file_name,int channel_number)
 						}
 						if (rig)
 						{
-							source=samples+(((channel_number-1)/
-								NUMBER_OF_CHANNELS_ON_NI_CARD)*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							if (0==channel_number)
+							{
+								source=samples;
+							}
+							else
+							{
+								source=samples+(((channel_number-1)/
+									NUMBER_OF_CHANNELS_ON_NI_CARD)*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							}
 							destination=(signal_buffer->signals).short_int_values;
 							signal_buffer->start=0;
 							signal_buffer->end=(int)number_of_samples-1;
 							for (index=(int)number_of_samples;index>0;index--)
 							{
-								for (j=max_channels;j>0;j--)
+								for (j=number_of_channels;j>0;j--)
 								{
 									*destination= *source;
 									destination++;
 									source++;
 								}
-								source += (number_of_channels-max_channels);
+								source += (number_of_unemap_channels-number_of_channels);
 							}
 							if (output_file=fopen(file_name,"wb"))
 							{
@@ -690,11 +707,12 @@ static void process_keyboard(
 		channel_check[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],
 		channel_number_1,channel_number_2,channel_number_3,count,filter_taps,first,
 		GA0_state,GA1_state,i,input_mode,j,k,l,max_settling,NI_gain,
-		number_of_settled_channels,number_of_test_cards,number_of_waveform_points,
-		phase_finished,phase_flag,phase0_flag,polarity,sampling_interval,
-		settling_step_max,shift_register_number,
+		number_of_settled_channels,number_of_test_cards,number_of_test_channels,
+		number_of_waveform_points,phase_finished,phase_flag,phase0_flag,polarity,
+		sampling_interval,settling_step_max,shift_register_number,
 		temp_channel_check[MAXIMUM_NUMBER_OF_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD],temp_c_number,test_channel,tested_card,
+		NUMBER_OF_CHANNELS_ON_NI_CARD],temp_c_number,test_channel,
+		test_channels[MAXIMUM_NUMBER_OF_NI_CARDS],tested_card,
 		tested_cards[MAXIMUM_NUMBER_OF_NI_CARDS],tester_card_1,tester_card_2,
 		tester_card_3,total_checks;
 	long int maximum_sample_value,minimum_sample_value;
@@ -5570,6 +5588,10 @@ static void process_keyboard(
 				} break;
 				case 'i':
 				{
+					char electrode_option;
+					int channel_to_be_tested,no_connected_channels,number_of_electrodes,
+						number_of_electrode_channels;
+
 					/* test electrodes */
 					unemap_set_power(1);
 					unemap_stop_stimulating(0);
@@ -5583,41 +5605,70 @@ static void process_keyboard(
 					number_of_waveform_points=500;
 #endif /* defined (CALIBRATE_SQUARE_WAVE) */
 					pause_for_error_option='y';
-					number_of_test_cards=
+					number_of_electrodes=
 						(int)number_of_channels/NUMBER_OF_CHANNELS_ON_NI_CARD;
-					if (number_of_test_cards>MAXIMUM_NUMBER_OF_NI_CARDS)
+					if (number_of_electrodes>MAXIMUM_NUMBER_OF_NI_CARDS)
 					{
-						number_of_test_cards=MAXIMUM_NUMBER_OF_NI_CARDS;
+						number_of_electrodes=MAXIMUM_NUMBER_OF_NI_CARDS;
 					}
-					if (number_of_test_cards>=1)
+					if (number_of_electrodes>=1)
 					{
-						for (i=0;i<number_of_test_cards;i++)
+						for (i=0;i<number_of_electrodes;i++)
 						{
 							tested_cards[i]=0;
 						}
 						printf("Number of cards to be tested (1-%d) ? ",
-							number_of_test_cards);
+							number_of_electrodes);
 						scanf("%d",&tested_card);
 						if (tested_card<1)
 						{
-							number_of_test_cards=1;
+							number_of_electrodes=1;
 						}
 						else
 						{
-							if (tested_card<number_of_test_cards)
+							if (tested_card<number_of_electrodes)
 							{
-								number_of_test_cards=tested_card;
+								number_of_electrodes=tested_card;
 							}
 						}
-						for (i=0;i<number_of_test_cards;i++)
+						for (i=0;i<number_of_electrodes;i++)
 						{
 							tested_cards[i]=1;
 						}
-						max_channels=number_of_test_cards*NUMBER_OF_CHANNELS_ON_NI_CARD;
+						electrode_option='0';
+						if (1<number_of_electrodes)
+						{
+							printf(
+								"Single electrode (1) or one electrode per card (0) ? (1/0) ");
+							do
+							{
+								scanf("%c",&electrode_option);
+							} while (!isalnum(electrode_option));
+						}
+						if ('1'==electrode_option)
+						{
+							number_of_electrode_channels=number_of_electrodes*
+								NUMBER_OF_CHANNELS_ON_NI_CARD;
+							number_of_electrodes=1;
+						}
+						else
+						{
+							number_of_electrode_channels=NUMBER_OF_CHANNELS_ON_NI_CARD;
+						}
 						if (report=fopen("report.txt","w"))
 						{
-							fprintf(report,"Number of cards to be tested = %d\n",
-								number_of_test_cards);
+							if ('1'==electrode_option)
+							{
+								fprintf(report,"Single electrode\n");
+								fprintf(report,"Number of cards to be tested = %d\n",
+									number_of_electrode_channels/NUMBER_OF_CHANNELS_ON_NI_CARD);
+							}
+							else
+							{
+								fprintf(report,"One electrode per card\n");
+								fprintf(report,"Number of cards to be tested = %d\n",
+									number_of_electrodes);
+							}
 							fprintf(report,"\n");
 							fprintf(report,"number_of_samples = %lu\n",number_of_samples);
 							fprintf(report,"sampling_frequency = %g\n",sampling_frequency);
@@ -5736,21 +5787,21 @@ static void process_keyboard(
 							total_checks=0;
 							unemap_set_power(1);
 							unemap_set_isolate_record_mode(0,0);
-							printf("Stimulate down channel (1-%d) (0 for all) ? ",
-								max_channels);
-							scanf("%d",&test_channel);
-							if (test_channel<1)
+							printf("Channel to test (1-%d) (0 for all) ? ",
+								number_of_electrode_channels);
+							scanf("%d",&channel_to_be_tested);
+							if (channel_to_be_tested<1)
 							{
-								test_channel=0;
+								channel_to_be_tested=0;
 							}
 							else
 							{
-								if (test_channel>max_channels)
+								if (channel_to_be_tested>number_of_electrode_channels)
 								{
-									test_channel=0;
+									channel_to_be_tested=0;
 								}
 							}
-							fprintf(report,"Testing channel %d\n",test_channel);
+							fprintf(report,"Testing channel %d\n",channel_to_be_tested);
 							printf("Correlated proportion (0-1) ? ");
 							scanf("%f",&correlated_proportion);
 							if (correlated_proportion<0)
@@ -5766,21 +5817,6 @@ static void process_keyboard(
 							}
 							fprintf(report,"Correlated proportion %g\n",
 								correlated_proportion);
-							if (0==test_channel)
-							{
-								for (i=0;i<max_channels;i++)
-								{
-									channel_check[i]=0;
-								}
-							}
-							else
-							{
-								for (i=0;i<max_channels;i++)
-								{
-									channel_check[i]= -1;
-								}
-								channel_check[test_channel-1]=0;
-							}
 							pause_for_error_option='n';
 							phase0_flag=0x1;
 							phase_flag=phase0_flag<<1;
@@ -5792,9 +5828,198 @@ static void process_keyboard(
 							unemap_get_voltage_range(1,&minimum_voltage,&maximum_voltage);
 							gain=(maximum_voltage-minimum_voltage)/
 								(float)(maximum_sample_value-minimum_sample_value);
-							for (test_channel=1;test_channel<=max_channels;test_channel++)
+							printf("Phase 1 : Testing cross talk ? (y/n) ");
+							do
 							{
-								if (0==channel_check[test_channel-1])
+								scanf("%c",&phase_option);
+							} while (!isalnum(phase_option));
+							if (('y'==phase_option)||('Y'==phase_option))
+							{
+								fprintf(report,"Phase 1 : Testing cross talk\n");
+								if (0==channel_to_be_tested)
+								{
+									for (i=0;i<number_of_electrode_channels*number_of_electrodes;
+										i++)
+									{
+										channel_check[i]=0;
+									}
+								}
+								else
+								{
+									for (i=0;i<number_of_electrode_channels*number_of_electrodes;
+										i++)
+									{
+										channel_check[i]= -1;
+									}
+									for (i=0;i<number_of_electrodes;i++)
+									{
+										channel_check[channel_to_be_tested-1+
+											i*NUMBER_OF_CHANNELS_ON_NI_CARD]=0;
+									}
+								}
+								for (test_channel=1;test_channel<=number_of_electrode_channels;
+									test_channel++)
+								{
+									number_of_test_channels=0;
+									for (i=0;i<number_of_electrodes;i++)
+									{
+										if (0==channel_check[test_channel-1+
+											i*NUMBER_OF_CHANNELS_ON_NI_CARD])
+										{
+											unemap_set_channel_stimulating(test_channel+
+												i*NUMBER_OF_CHANNELS_ON_NI_CARD,1);
+											test_channels[number_of_test_channels]=test_channel+
+												i*NUMBER_OF_CHANNELS_ON_NI_CARD;
+											number_of_test_channels++;
+										}
+									}
+									if (0<number_of_test_channels)
+									{
+										/* use half of maximum */
+										calibrate_amplitude_1=
+											CALIBRATE_AMPLITUDE_FACTOR*maximum_voltage;
+#if defined (CALIBRATE_SQUARE_WAVE)
+										calibrate_voltage_1[0]=calibrate_amplitude_1;
+										calibrate_voltage_1[1]= -calibrate_amplitude_1;
+#else /* defined (CALIBRATE_SQUARE_WAVE) */
+										/* calculate cosine wave */
+										two_pi=(double)8*atan((double)1);
+										for (i=0;i<number_of_waveform_points;i++)
+										{
+											calibrate_voltage_1[i]=
+												calibrate_amplitude_1*(float)cos(two_pi*
+												(double)i/(double)number_of_waveform_points);
+										}
+#endif /* defined (CALIBRATE_SQUARE_WAVE) */
+										if (unemap_load_voltage_stimulating(number_of_test_channels,
+											test_channels,number_of_waveform_points,
+											/*points/s*/(float)number_of_waveform_points*
+											CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1,0,
+											(Unemap_stimulation_end_callback *)NULL,
+											(void *)NULL)&&
+											unemap_start_stimulating())
+										{
+											calibrate_amplitude_1=calibrate_voltage_1[0];
+											/* wait for the high-pass (DC removal) to settle */
+											allow_to_settle(0,tested_cards,temp_channel_check,
+												phase_flag,report,&number_of_settled_channels,
+												sampling_delay,samples,mean,number_of_samples,
+												number_of_channels,tol_settling,max_settling);
+											unemap_stop_stimulating(0);
+											/* work out correlations */
+											two_pi=(double)8*atan((double)1);
+											for (k=0;k<number_of_electrodes;k++)
+											{
+												printf("%d is correlated with:",test_channel+
+													k*NUMBER_OF_CHANNELS_ON_NI_CARD);
+												fprintf(report,"%d is correlated with:",test_channel+
+													k*NUMBER_OF_CHANNELS_ON_NI_CARD);
+												for (i=0;i<number_of_electrode_channels;i++)
+												{
+													if (i!=test_channel-1)
+													{
+														/* calculate the component at the test frequency */
+														a=(float)0;
+														b=(float)0;
+														sample=samples+i+k*NUMBER_OF_CHANNELS_ON_NI_CARD;
+														for (j=0;j<(int)number_of_samples;j++)
+														{
+															temp=(float)(*sample)-
+																mean[i+k*NUMBER_OF_CHANNELS_ON_NI_CARD];
+															a += temp*(float)sin(two_pi*
+																(double)CALIBRATE_WAVEFORM_FREQUENCY*
+																(double)j/(double)number_of_samples);
+															b += temp*(float)cos(two_pi*
+																(double)CALIBRATE_WAVEFORM_FREQUENCY*
+																(double)j/(double)number_of_samples);
+															sample += number_of_channels;
+														}
+														a *= (float)2/(float)number_of_samples;
+														b *= (float)2/(float)number_of_samples;
+														rms=a*a+b*b;
+														rms=(float)sqrt((double)rms);
+														if (gain*rms>
+															correlated_proportion*calibrate_amplitude_1)
+														{
+															printf(" %d",i+1+k*NUMBER_OF_CHANNELS_ON_NI_CARD);
+															fprintf(report," %d",
+																i+1+k*NUMBER_OF_CHANNELS_ON_NI_CARD);
+															channel_check[test_channel-1+
+																k*NUMBER_OF_CHANNELS_ON_NI_CARD]=
+																test_channel+k*NUMBER_OF_CHANNELS_ON_NI_CARD;
+															channel_check[i+k*NUMBER_OF_CHANNELS_ON_NI_CARD]=
+																test_channel+k*NUMBER_OF_CHANNELS_ON_NI_CARD;
+														}
+													}
+												}
+												printf("\n");
+												fprintf(report,"\n");
+											}
+#if defined (OLD_CODE)
+											/* write the signals file */
+											register_write_signal_file("electrodes.sig",test_channel);
+#endif /* defined (OLD_CODE) */
+										}
+										else
+										{
+											printf(
+							"Test electrodes.  Could not start stimulation for channel %d\n",
+												test_channel);
+											fprintf(report,
+"Test electrodes.  Could not start stimulation for channel %d <<< CHECK >>>\n",
+												test_channel);
+										}
+										/* turn off stimulation */
+										unemap_stop_stimulating(0);
+									}
+									unemap_set_channel_stimulating(0,0);
+								}
+								for (i=0;i<number_of_electrode_channels*number_of_electrodes;
+									i++)
+								{
+									if (0==i%number_of_electrode_channels)
+									{
+										printf("electrode %d\n",i/number_of_electrode_channels+1);
+										fprintf(report,"electrode %d\n",
+											i/number_of_electrode_channels+1);
+									}
+									if (i+1==channel_check[i])
+									{
+										printf("%d",i%number_of_electrode_channels+1);
+										fprintf(report,"%d",i%number_of_electrode_channels+1);
+										for (j=i+1;
+											j<number_of_electrode_channels*number_of_electrodes;j++)
+										{
+											if (i+1==channel_check[j])
+											{
+												printf(" %d",j%number_of_electrode_channels+1);
+												fprintf(report," %d",j%number_of_electrode_channels+1);
+											}
+										}
+										printf(" are connected\n");
+										fprintf(report," are connected\n");
+									}
+								}
+							}
+							printf("Phase 2 : Testing connection ? (y/n)\n");
+							printf(
+		"  If yes, it is assumed that all channels have been connected together ");
+							do
+							{
+								scanf("%c",&phase_option);
+							} while (!isalnum(phase_option));
+							if (('y'==phase_option)||('Y'==phase_option))
+							{
+								fprintf(report,"Phase 2 : Testing connection\n");
+								for (i=0;i<number_of_electrode_channels*number_of_electrodes;
+									i++)
+								{
+									channel_check[i]=0;
+								}
+								no_connected_channels=1;
+								test_channel=1;
+								while (no_connected_channels&&(test_channel<=
+									number_of_electrode_channels*number_of_electrodes))
 								{
 									unemap_set_channel_stimulating(test_channel,1);
 									/* use half of maximum */
@@ -5830,9 +6055,8 @@ static void process_keyboard(
 										unemap_stop_stimulating(0);
 										/* work out correlations */
 										two_pi=(double)8*atan((double)1);
-										printf("%d is correlated with:",test_channel);
-										fprintf(report,"%d is correlated with:",test_channel);
-										for (i=0;i<max_channels;i++)
+										for (i=0;i<number_of_electrodes*
+											number_of_electrode_channels;i++)
 										{
 											if (i!=test_channel-1)
 											{
@@ -5858,28 +6082,32 @@ static void process_keyboard(
 												if (gain*rms>
 													correlated_proportion*calibrate_amplitude_1)
 												{
+													if (no_connected_channels)
+													{
+														printf("Connected: %d",test_channel);
+														fprintf(report,"Connected: %d",test_channel);
+														channel_check[test_channel-1]=1;
+														no_connected_channels=0;
+														/* write the signals file */
+														register_write_signal_file("electrodes_phase2.sig",
+															0);
+													}
 													printf(" %d",i+1);
 													fprintf(report," %d",i+1);
-													channel_check[test_channel-1]=test_channel;
-													channel_check[i]=test_channel;
+													channel_check[i]=1;
 												}
-#if defined (OLD_CODE)
-												fprintf(report,"%3d " FLOAT_FORMAT "\n",i+1,rms);
-												printf("%3d " FLOAT_FORMAT "\n",i+1,rms);
-#endif /* defined (OLD_CODE) */
 											}
 										}
-										printf("\n");
-										fprintf(report,"\n");
-#if defined (OLD_CODE)
-										/* write the signals file */
-										register_write_signal_file("electrodes.sig",test_channel);
-#endif /* defined (OLD_CODE) */
+										if (no_connected_channels)
+										{
+											printf("%d is not connected\n",test_channel);
+											fprintf(report,"%d is not connected\n",test_channel);
+										}
 									}
 									else
 									{
 										printf(
-							"Test electrodes.  Could not start stimulation for channel %d\n",
+						"Test electrodes.  Could not start stimulation for channel %d\n",
 											test_channel);
 										fprintf(report,
 "Test electrodes.  Could not start stimulation for channel %d <<< CHECK >>>\n",
@@ -5888,24 +6116,29 @@ static void process_keyboard(
 									/* turn off stimulation */
 									unemap_stop_stimulating(0);
 									unemap_set_channel_stimulating(0,0);
+									test_channel++;
 								}
-							}
-							for (i=0;i<max_channels;i++)
-							{
-								if (i+1==channel_check[i])
+								if (!no_connected_channels)
 								{
-									printf("%d",i+1);
-									fprintf(report,"%d",i+1);
-									for (j=i+1;j<max_channels;j++)
+									printf("\n");
+									fprintf(report,"\n");
+								}
+								for (i=0;i<number_of_electrodes;i++)
+								{
+									printf("electrode %d\n",i+1);
+									fprintf(report,"electrode %d\n",i+1);
+									printf("  not connected:");
+									fprintf(report,"  not connected:");
+									for (j=0;j<number_of_electrode_channels;j++)
 									{
-										if (i+1==channel_check[j])
+										if (0==channel_check[i*number_of_electrode_channels+j])
 										{
 											printf(" %d",j+1);
 											fprintf(report," %d",j+1);
 										}
 									}
-									printf(" are connected\n");
-									fprintf(report," are connected\n");
+									printf("\n");
+									fprintf(report,"\n");
 								}
 							}
 							fclose(report);
