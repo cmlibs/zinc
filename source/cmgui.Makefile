@@ -390,11 +390,11 @@ HELP_LIB =
 HELP_SRCS = \
 	help/help_interface.c
 
-MEMORY_CHECK_LIB = 
+MEMORYCHECK_LIB = 
 ifeq ($(SYSNAME:IRIX%=),)
-   ifdef MEMORY_CHECK
-      MEMORY_CHECK_LIB += -lmalloc_ss -lfpe 
-   endif # MEMORY_CHECK
+   ifdef MEMORYCHECK
+      MEMORYCHECK_LIB += -lmalloc_ss -lfpe 
+   endif # MEMORYCHECK
 endif # SYSNAME == IRIX%=
 
 USER_INTERFACE_INC = 
@@ -484,7 +484,7 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
 	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
-	$(MOVIE_FILE_LIB) $(XML_LIB) $(MEMORY_CHECK_LIB) $(LIB)
+	$(MOVIE_FILE_LIB) $(XML_LIB) $(MEMORYCHECK_LIB) $(LIB)
 
 API_SRCS = \
 	api/cmiss_core.c \
@@ -811,17 +811,17 @@ endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 SRCS = $(SRCS_1) $(SRCS_2)
 
-ifneq ($(MEMORY_CHECK),true)
+ifneq ($(MEMORYCHECK),true)
    OBJSA = $(SRCS:.c=.o)
    OBJSB = $(OBJSA:.cpp=.o)
    OBJS = $(OBJSB:.f=.o)
-else # $(MEMORY_CHECK) != true
+else # $(MEMORYCHECK) != true
    OBJSA = $(SRCS:.c=.o)
    OBJSB = $(OBJSA:.cpp=.o)
    # Override the one changed file in the source list 
    OBJSC = $(OBJSB:general/debug.o=general/debug_memory_check.o)
    OBJS = $(OBJSC:.f=.o)
-endif # $(MEMORY_CHECK) != true
+endif # $(MEMORYCHECK) != true
 
 $(BIN_TARGET) :
 
@@ -1109,7 +1109,7 @@ endif # SYSNAME == win32
 force :
 	@echo "\n" > /dev/null
 
-ifeq ($(MEMORY_CHECK),true)
+ifeq ($(MEMORYCHECK),true)
    # Specify rule for making a memory checking object with the normal c file 
    # This allows us to make a memory checking version without creating a new extension
    general/debug_memory_check.o: general/debug.c general/debug.h
@@ -1121,7 +1121,7 @@ ifeq ($(MEMORY_CHECK),true)
 		else \
 			$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.o $(ALL_FLAGS) -DMEMORY_CHECKING $(PRODUCT_PATH)/general/debug.c; \
 		fi
-endif # $(MEMORY_CHECK) == true
+endif # $(MEMORYCHECK) == true
 
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
