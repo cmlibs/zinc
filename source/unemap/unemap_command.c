@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_command.c
 
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Functions and for executing unemap commands.
@@ -360,7 +360,7 @@ will be destroyed with it.
 
 	ENTER(CREATE(Unemap_command_data));
 	unemap_command_data = (struct Unemap_command_data *)NULL;
-	if (event_dispatcher && execute_command && user_interface &&
+	if (event_dispatcher && execute_command &&
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D)
 #if defined (MOTIF)
