@@ -8777,9 +8777,17 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 									}
 								} /* if(map->colour_electrodes_with_signal) */
 								else
-								{								
-									graphics_context=(drawing_information->graphics_context).
-										unhighlighted_colour;
+								{												
+									if ((*electrode)->highlight)
+									{
+										graphics_context=(drawing_information->graphics_context).
+											highlighted_colour;
+									}
+									else
+									{
+										graphics_context=(drawing_information->graphics_context).
+											unhighlighted_colour;
+									}
 								}
 								if (*electrode_drawn)
 								{								
