@@ -71,7 +71,7 @@ char **Graphics_select_mode_get_valid_strings(int *number_of_valid_strings)
 LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
+Returns an allocated array of pointers to all static strings for valid
 Graphics_select_modes - obtained from function Graphics_select_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
@@ -127,7 +127,7 @@ LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Returns the <Graphics_select_mode> described by <select_mode_string>,
-or NULL if not recognized.
+or GRAPHICS_SELECT_MODE_INVALID if not recognized.
 ==============================================================================*/
 {
 	enum Graphics_select_mode select_mode;
