@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 14 December 1999
+LAST MODIFIED : 15 December 1999
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -24,6 +24,13 @@ DESCRIPTION :
 		means that using the same averaging times for all electrodes is could cause
 		problems.  If we use different averaging times for each electrode, how do we
 		get the offsets?  Ignore at present - see how Greg's algorithm works
+	- How does the edit box (white) work for threshold/level?
+		When the current event is changed, if the new current marker is not within
+		the edit box or is within an 1/8 of the beginning or an 1/8 of the end of
+		the edit box, the edit box is centred on the new current marker
+	- What does Baseline do?
+		Makes the first and last values in each interval 0 by subtracting a straight
+		line that goes from the first value to the last value
 4 How should the interface work?
 	- extend the search box so that the intervals are specified rather than
 		assumed to be constant width
@@ -38,8 +45,34 @@ DESCRIPTION :
 		search box)
 	- retain constant beat width version by having that when the number of
 		intervals is changed, it goes to constant width intervals
-???DB.  To do
-1 Investigate the use of draw_highlight_event_box
+	- be able to reject beats by rejecting the corresponding events (the nth
+		event corresponds to the nth beat)
+???DB.  What is the correspondence between beats and events?
+	- allow event editing in beat averaging
+	- save search/edit intervals when apply (for reset)
+5 Intended method of use
+	- read signal file
+	- pick a signal to use to determine the averaging intervals
+	- select Event detection using the Interval algorithm
+	- choose the number of beats to average over and place the search interval
+		over the beats
+	- calculate the event times
+	- edit the event times
+	- select Beat averaging
+	- click Align
+	- move the search box to include information before event
+	- choose Baseline and Beat average
+	- check that happy for current signal.  If not, adjust event times and
+		realign the search interval
+	- identify bad averages by either stepping through or applying and
+		looking at the signals window (if applying, need to reset before fixing)
+	- for a bad average can reject beats by rejecting events
+6 Bug fixes
+	- make beat averaging always use EDA_INTERVAL
+	- don't use the highlight colour for the electrode name in the trace window
+		(because inconsistent for cross correlation)
+	- beat average should start from time 0
+	- widget layout for event detection under linux
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>

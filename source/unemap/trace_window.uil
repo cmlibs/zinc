@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 1 December 1999
+!LAST MODIFIED : 15 December 1999
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -1001,6 +1001,7 @@ object
 		{
 		arguments
 			{
+			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmScrollBar trace_enlarge_threshold_scroll;
@@ -1052,6 +1053,7 @@ object
 		{
 		arguments
 			{
+			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmScrollBar trace_enlarge_separation_scroll;
@@ -2184,6 +2186,7 @@ object
 		arguments
 			{
 			XmNcolumns = 4;
+			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmScrollBar trace_power_min_f_scroll;
 			XmNleftOffset = 0;
@@ -2261,6 +2264,7 @@ object
 		arguments
 			{
 			XmNcolumns = 4;
+			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmScrollBar trace_power_max_f_scroll;
 			XmNleftOffset = 0;
@@ -2442,6 +2446,7 @@ object
 		arguments
 			{
 			XmNcolumns = 4;
+			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmScrollBar trace_filtering_high_scroll;
 			XmNleftOffset = 0;
@@ -2519,6 +2524,7 @@ object
 		arguments
 			{
 			XmNcolumns = 4;
+			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmScrollBar trace_filtering_low_scroll;
 			XmNleftOffset = 0;
@@ -2578,6 +2584,7 @@ object
 		arguments
 			{
 			XmNcolumns = 4;
+			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmToggleButtonGadget trace_filtering_notch_toggle;
 			XmNleftOffset = 0;
