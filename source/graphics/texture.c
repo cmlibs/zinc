@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 21 August 2002
+LAST MODIFIED : 28 August 2002
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -3223,7 +3223,7 @@ Returns the byte values in the texture at x,y,z.
 int Texture_get_pixel_values(struct Texture *texture,
 	double x, double y, double z, double *values)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2002
+LAST MODIFIED : 28 August 2002
 
 DESCRIPTION :
 Returns the byte values in the texture using the texture coordinates relative
@@ -3236,8 +3236,8 @@ is constant from the half texel location to the edge.
 	double local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
 	int bytes_per_pixel, component_max, dimension, high_offset[3], i, j, k,
 		low_offset[3], max_i, max_j, max_k, n, number_of_bytes_per_component,
-		number_of_components, offset, offset_i, offset_j, offset_k, return_code,
-		row_width_bytes, size[3], v_i, x_i, y_i, z_i;
+		number_of_components, offset, offset_i, offset_j, offset_k,
+		original_size[3], return_code, row_width_bytes, size[3], v_i, x_i, y_i, z_i;
 	unsigned char *pixel_ptr;
 	unsigned short short_value;
 
@@ -3252,47 +3252,66 @@ is constant from the half texel location to the edge.
 		row_width_bytes=
 			((int)(texture->width_texels*bytes_per_pixel+3)/4)*4;
 
-		/* make x, y and z range from 0.0 to 1.0 over full texture size */
-		x *= ((double)texture->original_width_texels /
-			(double)texture->width_texels) / texture->width;
-		y *= ((double)texture->original_height_texels /
-			(double)texture->height_texels) / texture->height;
-		z *= ((double)texture->original_depth_texels /
-			(double)texture->depth_texels) / texture->depth;
 		switch (texture->wrap_mode)
 		{
 			case TEXTURE_CLAMP_WRAP:
 			{
-				if (x < 0.0)
+				if ((x < 0.0) || (0.0 == texture->width))
 				{
 					x = 0.0;
 				}
-				else if (x > 1.0)
+				else if (x > texture->width)
 				{
-					x = 1.0;
+					x = texture->original_width_texels;
 				}
-				if (y < 0.0)
+				else
+				{
+					x *= ((double)texture->original_width_texels / texture->width);
+				}
+
+				if ((y < 0.0) || (0.0 == texture->height))
 				{
 					y = 0.0;
 				}
-				else if (y > 1.0)
+				else if (y > texture->height)
 				{
-					y = 1.0;
+					y = texture->original_height_texels;
 				}
-				if (z < 0.0)
+				else
+				{
+					y *= ((double)texture->original_height_texels / texture->height);
+				}
+
+				if ((z < 0.0) || (0.0 == texture->depth))
 				{
 					z = 0.0;
 				}
-				else if (z > 1.0)
+				else if (z > texture->depth)
 				{
-					z = 1.0;
+					z = texture->original_depth_texels;
+				}
+				else
+				{
+					z *= ((double)texture->original_depth_texels / texture->depth);
 				}
 			} break;
 			case TEXTURE_REPEAT_WRAP:
 			{
+				/* make x, y and z range from 0.0 to 1.0 over full texture size */
+				x *= ((double)texture->original_width_texels /
+					(double)texture->width_texels) / texture->width;
 				x -= floor(x);
+				x *= (double)(texture->width_texels);
+
+				y *= ((double)texture->original_height_texels /
+					(double)texture->height_texels) / texture->height;
 				y -= floor(y);
+				y *= (double)(texture->height_texels);
+
+				z *= ((double)texture->original_depth_texels /
+					(double)texture->depth_texels) / texture->depth;
 				z -= floor(z);
+				z *= (double)(texture->depth_texels);
 			} break;
 			default:
 			{
@@ -3309,9 +3328,6 @@ is constant from the half texel location to the edge.
 		{
 			component_max = 255;
 		}
-		x *= (double)(texture->width_texels);
-		y *= (double)(texture->height_texels);
-		z *= (double)(texture->depth_texels);
 		switch (texture->filter_mode)
 		{
 			case TEXTURE_LINEAR_FILTER:
@@ -3324,26 +3340,30 @@ is constant from the half texel location to the edge.
 				size[1] = texture->height_texels;
 				size[2] = texture->depth_texels;
 				offset = bytes_per_pixel;
-				for (i = 0; i < dimension; i++)
+				switch (texture->wrap_mode)
 				{
-					max_v = (double)size[i] - 0.5;
-					v = pos[i];
-					if ((0.5 <= v) && (v < max_v))
+					case TEXTURE_CLAMP_WRAP:
 					{
-						v_i = (int)(v - 0.5);
-						local_xi[i] = v - 0.5 - (double)v_i;
-						low_offset[i] = v_i*offset;
-						high_offset[i] = (v_i + 1)*offset;
-					}
-					else
-					{
-						/* result depends on the wrap mode */
-						low_offset[i] = (size[i] - 1)*offset;
-						high_offset[i] = 0;
-						switch (texture->wrap_mode)
+						/* note we clamp to the original size; not the power-of-2 */
+						original_size[0] = texture->original_width_texels;
+						original_size[1] = texture->original_height_texels;
+						original_size[2] = texture->original_depth_texels;
+						offset = bytes_per_pixel;
+						for (i = 0; i < dimension; i++)
 						{
-							case TEXTURE_CLAMP_WRAP:
+							max_v = (double)original_size[i] - 0.5;
+							v = pos[i];
+							if ((0.5 <= v) && (v < max_v))
 							{
+								v_i = (int)(v - 0.5);
+								local_xi[i] = v - 0.5 - (double)v_i;
+								low_offset[i] = v_i*offset;
+								high_offset[i] = (v_i + 1)*offset;
+							}
+							else
+							{
+								low_offset[i] = (original_size[i] - 1)*offset;
+								high_offset[i] = 0;
 								if (v < 0.5)
 								{
 									local_xi[i] = 1.0;
@@ -3352,9 +3372,27 @@ is constant from the half texel location to the edge.
 								{
 									local_xi[i] = 0.0;
 								}
-							} break;
-							case TEXTURE_REPEAT_WRAP:
+							}
+							offset *= size[i];
+						}
+					} break;
+					case TEXTURE_REPEAT_WRAP:
+					{
+						for (i = 0; i < dimension; i++)
+						{
+							max_v = (double)size[i] - 0.5;
+							v = pos[i];
+							if ((0.5 <= v) && (v < max_v))
 							{
+								v_i = (int)(v - 0.5);
+								local_xi[i] = v - 0.5 - (double)v_i;
+								low_offset[i] = v_i*offset;
+								high_offset[i] = (v_i + 1)*offset;
+							}
+							else
+							{
+								low_offset[i] = (size[i] - 1)*offset;
+								high_offset[i] = 0;
 								if (v < 0.5)
 								{
 									local_xi[i] = v + 0.5;
@@ -3363,10 +3401,10 @@ is constant from the half texel location to the edge.
 								{
 									local_xi[i] = v - max_v;
 								}
-							} break;
+							}
+							offset *= size[i];
 						}
-					}
-					offset *= size[i];
+					} break;
 				}
 
 				max_i = 2;
@@ -3477,15 +3515,15 @@ is constant from the half texel location to the edge.
 				if (TEXTURE_CLAMP_WRAP == texture->wrap_mode)
 				{
 					/* fix problem of value being exactly on upper boundary */
-					if (x_i == texture->width_texels)
+					if (x_i == texture->original_width_texels)
 					{
 						x_i--;
 					}
-					if (y_i == texture->height_texels)
+					if (y_i == texture->original_height_texels)
 					{
 						y_i--;
 					}
-					if (z_i == texture->depth_texels)
+					if (z_i == texture->original_depth_texels)
 					{
 						z_i--;
 					}
