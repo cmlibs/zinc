@@ -79,6 +79,14 @@ LAST MODIFIED : 18 November 2000
 DESCRIPTION :
 Returns the <cmgui_interface>'s graphics object list.
 ==============================================================================*/
+struct Graphical_material *Cell_cmgui_interface_get_default_graphical_material(
+	  struct Cell_cmgui_interface *cmgui_interface);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2002
+
+DESCRIPTION :
+Returns the <cmgui_interface>'s default graphical material.
+==============================================================================*/
 struct MANAGER(Graphical_material)
   *Cell_cmgui_interface_get_graphical_material_manager(
     struct Cell_cmgui_interface *cmgui_interface);

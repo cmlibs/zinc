@@ -20001,7 +20001,6 @@ otherwise the file of graphics objects is read.
 {
 	char *file_name;
 	int return_code;
-	struct File_read_graphics_object_data data;
 	struct Cmiss_command_data *command_data;
 	struct Modifier_entry *entry;
 
@@ -20022,9 +20021,6 @@ otherwise the file of graphics objects is read.
 			if (return_code=process_multiple_options(state,
 				command_data->set_file_name_option_table))
 			{
-				data.object_list=command_data->graphics_object_list;
-				data.graphical_material_manager=
-					command_data->graphical_material_manager;
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_read_filename(".exgobj",
@@ -20038,7 +20034,9 @@ otherwise the file of graphics objects is read.
 					/* open the file */
 					if (return_code=check_suffix(&file_name,".exgobj"))
 					{
-						return_code=file_read_graphics_objects(file_name,(void *)&data);
+						return_code=file_read_graphics_objects(file_name,
+							command_data->graphical_material_manager,
+							command_data->graphics_object_list);
 					}
 				}
 			}
@@ -20071,11 +20069,11 @@ If a file is not specified a file selection box is presented to the user,
 otherwise the wavefront obj file is read.
 ==============================================================================*/
 {
-	char *file_name, *graphics_object_name,*render_type_string,**valid_strings;
+	char *file_name, *graphics_object_name, *render_type_string, 
+		*specified_graphics_object_name, **valid_strings;
 	enum Render_type render_type;
 	float time;
 	int number_of_valid_strings, return_code;
-	struct File_read_graphics_object_from_obj_data data;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 
@@ -20085,6 +20083,7 @@ otherwise the wavefront obj file is read.
 	{
 		if ((command_data=(struct Cmiss_command_data *)command_data_void))
 		{
+			specified_graphics_object_name=(char *)NULL;
 			graphics_object_name=(char *)NULL;
 			time = 0;
 			file_name=(char *)NULL;
@@ -20094,7 +20093,7 @@ otherwise the wavefront obj file is read.
 			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
 			  &file_name, &(command_data->example_directory), set_file_name);
 			/* as */
-			Option_table_add_entry(option_table,"as",&graphics_object_name,
+			Option_table_add_entry(option_table,"as",&specified_graphics_object_name,
 				(void *)1,set_name);
 			/* render_type */
 			render_type = RENDER_TYPE_SHADED;
@@ -20115,21 +20114,7 @@ otherwise the wavefront obj file is read.
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
-				data.default_material=command_data->default_graphical_material;
-				data.object_list=command_data->graphics_object_list;
-				data.graphical_material_manager=
-					command_data->graphical_material_manager;
 				STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
-				data.render_type = render_type;
-				data.time = time;
-				if(graphics_object_name)
-				{
-					data.graphics_object_name = graphics_object_name;
-				}
-				else
-				{
-					data.graphics_object_name = file_name;
-				}
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_read_filename(".obj",
@@ -20140,10 +20125,22 @@ otherwise the wavefront obj file is read.
 				}
 				if (return_code)
 				{
+					if(specified_graphics_object_name)
+					{
+						graphics_object_name = specified_graphics_object_name;
+					}
+					else
+					{
+						graphics_object_name = file_name;
+					}
 					/* open the file */
 					if (return_code=check_suffix(&file_name,".obj"))
 					{
-						return_code=file_read_voltex_graphics_object_from_obj(file_name,(void *)&data);
+						return_code=file_read_voltex_graphics_object_from_obj(file_name,
+							graphics_object_name, render_type, time, 
+							command_data->graphical_material_manager,
+							command_data->default_graphical_material,
+							command_data->graphics_object_list);
 					}
 				}
 			}
@@ -20151,9 +20148,9 @@ otherwise the wavefront obj file is read.
 			{
 				DEALLOCATE(file_name);
 			}
-			if (graphics_object_name)
+			if (specified_graphics_object_name)
 			{
-				DEALLOCATE(graphics_object_name);
+				DEALLOCATE(specified_graphics_object_name);
 			}
 		}
 		else

@@ -204,127 +204,15 @@ enumerated <surface_type>.
 	return (return_code);
 } /* file_read_GT_surface_type */
 
-#if defined (OLD_CODE)
-static int file_read_GT_object_type(FILE *file,
-	enum GT_object_type *object_type)
-/*******************************************************************************
-LAST MODIFIED : 13 August 1998
-
-DESCRIPTION :
-Reads an object type, as a string, from a <file> and translates it into a
-numeric <object_type>.
-???RC.  26 June 97.  Added nurbs_type for NURBS. NURBSMORPH is no longer
-	recognized as a graphics object type, but are just NURBS with
-	nurbs_type==g_NURBS_MORPH(==1).  Removed POLYLINE_W_NORMAL
-==============================================================================*/
-{
-	char *object_type_string;
-	int return_code;
-
-	ENTER(file_read_GT_object_type);
-	/* check arguments */
-	if (file&&object_type)
-	{
-		if (read_string(file,"s",&object_type_string))
-		{
-/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
-/*      if (strcmp(object_type_string,"TEXT"))
-			{*/
-				if (strcmp(object_type_string,"POINT"))
-				{
-					if (strcmp(object_type_string,"POLYLINE"))
-					{
-						if (strcmp(object_type_string,"SURFACE"))
-						{
-							if (strcmp(object_type_string,"NURBS"))
-							{
-								if (strcmp(object_type_string,"USERDEF"))
-								{
-									if (strcmp(object_type_string,"POINTSET"))
-									{
-										return_code=0;
-										display_message(ERROR_MESSAGE,
-											"Invalid object type string.  %s",object_type_string);
-/*???RC temporary - until people accept the change */
-										if (!strcmp(object_type_string,"NURBSMORPH"))
-										{
-											display_message(INFORMATION_MESSAGE,
-									"NURBSMORPH should be read in as NURBS with nurbs_type=1\n");
-											display_message(INFORMATION_MESSAGE,
-					"place nurbs_type value (0/1) on line after transformation matrix\n");
-										}
-									}
-									else
-									{
-										*object_type=g_POINTSET;
-										return_code=1;
-									}
-								}
-								else
-								{
-									*object_type=g_USERDEF;
-									return_code=1;
-								}
-							}
-							else
-							{
-								*object_type=g_NURBS;
-								return_code=1;
-							}
-						}
-						else
-						{
-							*object_type=g_SURFACE;
-							return_code=1;
-						}
-					}
-					else
-					{
-						*object_type=g_POLYLINE;
-						return_code=1;
-					}
-				}
-				else
-				{
-					*object_type=g_POINT;
-					return_code=1;
-				}
-/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
-/*      }
-			else
-			{
-				*object_type=g_TEXT;
-				return_code=1;
-			}*/
-			DEALLOCATE(object_type_string);
-		}
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,
-				"file_read_GT_object_type.  Error reading object type string");
-		}
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,
-			"file_read_GT_object_type.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* file_read_GT_object_type */
-#endif /* defined (OLD_CODE) */
-
 /*
 Global functions
 ----------------
 */
 int file_read_graphics_objects(char *file_name,
-	void *file_read_graphics_object_data_void)
+	struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct LIST(GT_object) *object_list)
 /*******************************************************************************
-LAST MODIFIED : 20 October 1998
+LAST MODIFIED : 20 November 2002
 
 DESCRIPTION :
 ???RC.  26 June 97.  Added nurbs_type for NURBS. NURBSMORPH are NURBS with
@@ -350,7 +238,6 @@ DESCRIPTION :
 	gtMatrix transform;
 	gtTransformType transtype;
 	struct Graphical_material *object_material;
-	struct File_read_graphics_object_data *file_read_graphics_object_data;
 	struct GT_nurbs *nurbs;
 	struct GT_point *point;
 	struct GT_pointset *pointset;
@@ -365,9 +252,7 @@ DESCRIPTION :
 	/*???debug*/
 	printf("ENTER(file_read_graphics_objects)\n");
 #endif /* defined (DEBUG) */
-	if (file_name&&(file_read_graphics_object_data=
-		(struct File_read_graphics_object_data *)
-		file_read_graphics_object_data_void))
+	if (file_name)
 	{
 		/* files without a header default to 1 */
 		version=1;
@@ -432,7 +317,7 @@ DESCRIPTION :
 							fscanf(fp,"%f", &time);
 						}
 						file_read_Graphical_material_name(fp,&object_material,
-							file_read_graphics_object_data->graphical_material_manager);
+							graphical_material_manager);
 						if (version<2)
 						{
 							transtype=g_ID;
@@ -466,7 +351,7 @@ DESCRIPTION :
 							}
 						}
 						if (obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-							objname,file_read_graphics_object_data->object_list))
+							objname,object_list))
 						{
 							if (GT_object_has_time(obj,time))
 							{
@@ -878,10 +763,9 @@ DESCRIPTION :
 							if (return_code)
 							{
 								if(!FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-									objname,file_read_graphics_object_data->object_list))
+									objname,object_list))
 								{
-									ADD_OBJECT_TO_LIST(GT_object)(obj,
-										file_read_graphics_object_data->object_list);
+									ADD_OBJECT_TO_LIST(GT_object)(obj, object_list);
 								}
 							}
 							else
@@ -923,9 +807,12 @@ DESCRIPTION :
 } /* file_read_graphics_objects */
 
 int file_read_voltex_graphics_object_from_obj(char *file_name,
-	void *file_read_graphics_object_from_obj_data_void)
+	char *graphics_object_name, enum Render_type render_type,
+	float time, struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct Graphical_material *default_material,
+	struct LIST(GT_object) *object_list)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 20 November 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -941,7 +828,6 @@ DESCRIPTION :
 	gtObject *obj;
 	char objname[100];
 	struct Environment_map *environment_map;
-	struct File_read_graphics_object_from_obj_data *file_read_graphics_object_data;
 	struct Graphical_material *material;
 	struct GT_voltex *voltex;
 	struct VT_volume_texture *vtexture;
@@ -953,16 +839,14 @@ DESCRIPTION :
 	printf("ENTER(file_read_voltex_graphics_object_from_obj\n");
 #endif /* defined (DEBUG) */
 	return_code = 1;
-	if (file_name&&(file_read_graphics_object_data=
-		(struct File_read_graphics_object_from_obj_data *)
-		file_read_graphics_object_from_obj_data_void))
+	if (file_name)
 	{
 		if(file = fopen(file_name, "r"))
 		{
 			if(vtexture = CREATE(VT_volume_texture)("temp_read_volume"))
 			{
 				if(read_volume_texture_from_obj_file(vtexture,
-					file, file_read_graphics_object_data->graphical_material_manager,
+					file, graphical_material_manager,
 					(struct MANAGER(Environment_map) *)NULL, 0))
 				{
 					n_vertices = vtexture->mc_iso_surface->n_vertices;
@@ -975,27 +859,25 @@ DESCRIPTION :
 						&& ALLOCATE(texturemap_index,int,3*n_triangles)
 						&& ALLOCATE(vertex_list,struct VT_iso_vertex, n_vertices))
 					{
-						if(file_read_graphics_object_data->graphics_object_name)
+						if(graphics_object_name)
 						{
-							sprintf(objname, "%s",
-								file_read_graphics_object_data->graphics_object_name);
+							sprintf(objname, "%s", graphics_object_name);
 						}
 						else
 						{
 							sprintf(objname, "%s", file_name);
 						}
 						if(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-							objname,file_read_graphics_object_data->object_list))
+							objname, object_list))
 						{
 							if (g_VOLTEX==obj->object_type)
 							{
-								if (GT_object_has_time(obj,file_read_graphics_object_data->time))
+								if (GT_object_has_time(obj, time))
 								{
 									display_message(WARNING_MESSAGE,
 										"Overwriting time %g in graphics object '%s'",
-										file_read_graphics_object_data->time, objname);
-									return_code=GT_object_delete_time(obj,
-										file_read_graphics_object_data->time);
+										time, objname);
+									return_code=GT_object_delete_time(obj, time);
 								}
 							}
 							else
@@ -1008,15 +890,13 @@ DESCRIPTION :
 						}
 						else
 						{
-							obj=CREATE(GT_object)(objname, g_VOLTEX,
-								file_read_graphics_object_data->default_material);
+							obj=CREATE(GT_object)(objname, g_VOLTEX, default_material);
 							if (obj)
 							{
-								ADD_OBJECT_TO_LIST(GT_object)(obj,
-									file_read_graphics_object_data->object_list);
+								ADD_OBJECT_TO_LIST(GT_object)(obj, object_list);
 							}
 						}
-						switch (file_read_graphics_object_data->render_type)
+						switch (render_type)
 						{
 							case RENDER_TYPE_SHADED:
 							{
@@ -1138,8 +1018,7 @@ DESCRIPTION :
 										/*???Mark.  This should be + */
 									}
 								} /* i */
-								GT_OBJECT_ADD(GT_voltex)(obj,
-									file_read_graphics_object_data->time, voltex);
+								GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
 							}
 							else
 							{

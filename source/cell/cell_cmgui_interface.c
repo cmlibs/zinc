@@ -666,6 +666,33 @@ Returns the <cmgui_interface>'s graphics object list.
   return(list);
 } /* Cell_cmgui_interface_get_graphics_object_list() */
 
+struct Graphical_material *Cell_cmgui_interface_get_default_graphical_material(
+    struct Cell_cmgui_interface *cmgui_interface)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2002
+
+DESCRIPTION :
+Returns the <cmgui_interface>'s default graphical material.
+==============================================================================*/
+{
+  struct Graphical_material *default_graphical_material;
+
+  ENTER(Cell_cmgui_interface_get_default_graphical_material);
+  if (cmgui_interface)
+  {
+    default_graphical_material = cmgui_interface->default_graphical_material;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,
+      "Cell_cmgui_interface_get_default_graphical_material.  "
+      "Invalid argument(s)");
+    default_graphical_material = (struct Graphical_material *)NULL;
+  }
+  LEAVE;
+  return(default_graphical_material);
+} /* Cell_cmgui_interface_get_default_graphical_material() */
+
 struct MANAGER(Graphical_material)
   *Cell_cmgui_interface_get_graphical_material_manager(
     struct Cell_cmgui_interface *cmgui_interface)

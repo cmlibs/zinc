@@ -191,66 +191,54 @@ that OBJ file is used to create the graphical object - otherwise a sime arrow
 is created.
 ==============================================================================*/
 {
-  int return_code = 0;
-  struct File_read_graphics_object_from_obj_data *obj_data;
-  struct LIST(GT_object) *graphics_list;
+	int return_code = 0;
+	struct File_read_graphics_object_from_obj_data *obj_data;
+	struct LIST(GT_object) *graphics_list;
 
-  ENTER(Cell_graphic_create_graphical_object);
-  if (cell_graphic && cmgui_interface)
-  {
-    if (obj_file)
-    {
-      /* Create the graphics object from a wavefront obj file */
-      if (ALLOCATE(obj_data,struct File_read_graphics_object_from_obj_data,1))
-      {
-        graphics_list = Cell_cmgui_interface_get_graphics_object_list(
-          cmgui_interface);
-        obj_data->object_list = graphics_list;
-        obj_data->graphical_material_manager =
-          Cell_cmgui_interface_get_graphical_material_manager(cmgui_interface);
-        obj_data->time = 0.0;
-        obj_data->graphics_object_name = cell_graphic->name;
-        obj_data->render_type = RENDER_TYPE_SHADED;
-        return_code = file_read_voltex_graphics_object_from_obj(obj_file,
-          (void *)obj_data);
-        if (return_code)
-        {
-          cell_graphic->graphics_object =
-            ACCESS(GT_object)(FIND_BY_IDENTIFIER_IN_LIST(GT_object,
-              name)(cell_graphic->name,graphics_list));
-          REMOVE_OBJECT_FROM_LIST(GT_object)(cell_graphic->graphics_object,
-            graphics_list);
-        }
-        else
-        {
-          display_message(ERROR_MESSAGE,"Cell_graphic_create_graphics_object.  "
-            "Unable to read the wavefront obj file");
-        }
-        DEALLOCATE(obj_data);
-      }
-      else
-      {
-        display_message(ERROR_MESSAGE,"set_graphics_information. "
-          "Unable to allocate memory for the wavefront obj");
-        return_code = 0;
-      }
-    }
-    else
-    {
-      /* Just create an arrow */
-      cell_graphic->graphics_object = ACCESS(GT_object)(make_glyph_arrow_solid(
-        cell_graphic->name,12,2.0/3.0,1.0/6.0));
-      return_code = 1;
-    }
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,"Cell_graphic_create_graphical_object.  "
-      "Invalid argument(s)");
-    return_code = 0;
-  }
-  LEAVE;
-  return(return_code);
+	ENTER(Cell_graphic_create_graphical_object);
+	if (cell_graphic && cmgui_interface)
+	{
+		if (obj_file)
+		{
+			/* Create the graphics object from a wavefront obj file */
+			graphics_list = Cell_cmgui_interface_get_graphics_object_list(
+				cmgui_interface);
+			return_code = file_read_voltex_graphics_object_from_obj(obj_file,
+				cell_graphic->name, RENDER_TYPE_SHADED, /*time*/0.0,
+				Cell_cmgui_interface_get_graphical_material_manager(cmgui_interface),
+				Cell_cmgui_interface_get_default_graphical_material(cmgui_interface),
+				Cell_cmgui_interface_get_graphics_object_list(cmgui_interface));
+			if (return_code)
+			{
+				cell_graphic->graphics_object =
+					ACCESS(GT_object)(FIND_BY_IDENTIFIER_IN_LIST(GT_object,
+					name)(cell_graphic->name,graphics_list));
+				REMOVE_OBJECT_FROM_LIST(GT_object)(cell_graphic->graphics_object,
+					graphics_list);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Cell_graphic_create_graphics_object.  "
+					"Unable to read the wavefront obj file");
+			}
+			DEALLOCATE(obj_data);
+		}
+		else
+		{
+			/* Just create an arrow */
+			cell_graphic->graphics_object = ACCESS(GT_object)(make_glyph_arrow_solid(
+				cell_graphic->name,12,2.0/3.0,1.0/6.0));
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cell_graphic_create_graphical_object.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
 } /* Cell_graphic_create_graphical_object() */
 
 int Cell_graphic_create_graphical_material(struct Cell_graphic *cell_graphic,
