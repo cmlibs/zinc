@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_tool.h
 
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Interactive tool for selecting element/grid points with mouse and other devices.
@@ -34,9 +34,13 @@ Global functions
 struct Element_point_tool *CREATE(Element_point_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Graphical_material *rubber_band_material);
+	struct Computed_field_package *computed_field_package,
+	struct Graphical_material *rubber_band_material,
+	struct User_interface *user_interface,
+	struct Time_keeper *time_keeper,
+	struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Creates an Element_point_tool with Interactive_tool in
@@ -52,6 +56,45 @@ LAST MODIFIED : 16 May 2000
 DESCRIPTION :
 Frees and deaccesses objects in the <element_point_tool> and deallocates the
 structure itself.
+==============================================================================*/
+
+int Element_point_tool_pop_up_dialog(
+	struct Element_point_tool *element_point_tool);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Pops up a dialog for editing settings of the Element_point_tool.
+==============================================================================*/
+
+int Element_point_tool_pop_down_dialog(
+	struct Element_point_tool *element_point_tool);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Hides the dialog for editing settings of the Element_point_tool.
+==============================================================================*/
+
+struct Computed_field *Element_point_tool_get_url_field(
+	struct Element_point_tool *element_point_tool);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Returns the url_field to be looked up in a web browser when the element is
+clicked on in the <element_point_tool>.
+==============================================================================*/
+
+int Element_point_tool_set_url_field(
+	struct Element_point_tool *element_point_tool,
+	struct Computed_field *url_field);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Sets the url_field to be looked up in a web browser when the element is clicked
+on in the <element_point_tool>.
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_POINT_TOOL_H) */

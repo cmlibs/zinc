@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : node_tool.uil
 !
-! LAST MODIFIED : 14 May 2001
+! LAST MODIFIED : 4 July 2002
 !
 ! DESCRIPTION :
 ! Node/data tool icons with dialog widgets for controlling settings.
@@ -17,6 +17,8 @@ procedure
 	node_tool_id_coord_field_form;
 	node_tool_id_create_btn;
 	node_tool_id_streaming_btn;
+	node_tool_id_url_field_btn;
+	node_tool_id_url_field_form;
 	node_tool_id_node_group_form;
 
 	node_tool_select_btn_CB;
@@ -25,6 +27,7 @@ procedure
 	node_tool_define_btn_CB;
 	node_tool_create_btn_CB;
 	node_tool_streaming_btn_CB;
+	node_tool_url_field_btn_CB;
 	node_tool_destroy_selected_CB;
 	node_tool_undefine_selected_CB;
 
@@ -149,6 +152,7 @@ object
 			XmRowColumn node_tool_coord_field_entry;
   		XmToggleButtonGadget node_tool_create_btn;
   		XmToggleButtonGadget node_tool_streaming_btn;
+			XmRowColumn node_tool_url_field_entry;
 			XmRowColumn node_tool_node_group_entry;
 			XmSeparatorGadget node_tool_separator1;
 			XmPushButtonGadget node_tool_destroy_selected_btn;
@@ -365,6 +369,52 @@ object
 			};
 		};
 !*******************************************************************************
+  node_tool_url_field_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = node_tool_node_group_entry;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmToggleButtonGadget node_tool_url_field_btn;
+      XmForm node_tool_url_field_form;
+      };
+    };
+  node_tool_url_field_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("URL field:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_tool_id_url_field_btn(node_tool_structure);
+      XmNvalueChangedCallback = procedure
+				node_tool_url_field_btn_CB(node_tool_structure);
+			};
+    };
+	node_tool_url_field_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				node_tool_id_url_field_form(node_tool_structure);
+			};
+		};
+!*******************************************************************************
 	node_tool_separator1: XmSeparatorGadget
 		{
 		arguments
@@ -372,7 +422,7 @@ object
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = node_tool_node_group_entry;
+			XmNtopWidget = node_tool_url_field_entry;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};

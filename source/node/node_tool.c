@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -23,6 +23,7 @@ Scene input.
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
+#include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
@@ -51,13 +52,14 @@ Module types
 
 struct Node_tool
 /*******************************************************************************
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
 changes in node position and derivatives etc.
 ==============================================================================*/
 {
+	struct Execute_command *execute_command;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
 	struct MANAGER(FE_node) *node_manager;
@@ -87,7 +89,7 @@ changes in node position and derivatives etc.
 	int streaming_create_enabled;
 	enum Node_tool_edit_mode edit_mode;
 	struct GROUP(FE_node) *node_group;
-	struct Computed_field *coordinate_field;
+	struct Computed_field *coordinate_field, *url_field;
 	struct FE_node *template_node;
 	/* information about picked nodes the editor knows about */
 	struct Scene_picked_object *scene_picked_object;
@@ -101,7 +103,8 @@ changes in node position and derivatives etc.
 
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
 		define_button,edit_button,motion_update_button,node_group_form,
-		node_group_widget,select_button,streaming_create_button;
+		node_group_widget,select_button,streaming_create_button,
+		url_field_button,url_field_form,url_field_widget;
 	Widget widget,window_shell;
 }; /* struct Node_tool */
 
@@ -159,6 +162,8 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,node_group_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,url_field_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,url_field_form)
 
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
 	struct FE_node *node)
@@ -1319,6 +1324,80 @@ ie. streaming in response to interactive events = user drags.
 	LEAVE;
 } /* Node_tool_streaming_create_button_CB */
 
+static void Node_tool_url_field_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Callback from toggle button enabling a url_field to be selected.
+==============================================================================*/
+{
+	struct Computed_field *url_field;
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_url_field_button_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		if (Node_tool_get_url_field(node_tool))
+		{
+			Node_tool_set_url_field(node_tool, (struct Computed_field *)NULL);
+		}
+		else
+		{
+			/* get label field from widget */
+			url_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				node_tool->url_field_widget);
+			if (url_field)
+			{
+				Node_tool_set_url_field(node_tool, url_field);
+			}
+			else
+			{
+				XtVaSetValues(node_tool->url_field_button, XmNset, False, NULL);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_url_field_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_url_field_button_CB */
+
+static void Node_tool_update_url_field(Widget widget,
+	void *node_tool_void, void *url_field_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Callback for change of url_field.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_update_url_field);
+	USE_PARAMETER(widget);
+	if (node_tool = (struct Node_tool *)node_tool_void)
+	{
+		/* skip messages from chooser if it is grayed out */
+		if (XtIsSensitive(node_tool->url_field_widget))
+		{
+			Node_tool_set_url_field(node_tool,
+				(struct Computed_field *)url_field_void);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_update_url_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_update_url_field */
+
 static void Node_tool_update_node_group(Widget widget,
 	void *node_tool_void,void *node_group_void)
 /*******************************************************************************
@@ -1463,7 +1542,7 @@ Attempts to undefine all the nodes currently in the global selection.
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2000
+LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -1473,9 +1552,11 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
+	char *url_string;
 	double d;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Interactive_event_type event_type;
+	FE_value time;
 	int clear_selection,input_modifier,return_code,shift_pressed;
 	struct Computed_field *coordinate_field;
 	struct FE_node *picked_node;
@@ -1520,6 +1601,31 @@ release.
 							}
 							if (picked_node)
 							{
+								/* Open url_field of picked_node in browser */
+								if (node_tool->url_field)
+								{
+									if (Computed_field_is_defined_at_node(node_tool->url_field,
+										picked_node))
+									{
+										if (node_tool->time_keeper)
+										{
+											time = Time_keeper_get_time(node_tool->time_keeper);
+										}
+										else
+										{
+											time = 0;
+										}
+										if (url_string = Computed_field_evaluate_as_string_at_node(
+											node_tool->url_field, /*component_number*/-1,
+											picked_node, time))
+										{
+											do_help(url_string,
+												/*help_examples_directory*/(char *)NULL,
+												node_tool->execute_command, node_tool->user_interface);
+											DEALLOCATE(url_string);
+										}
+									}
+								}
 								node_tool->picked_node_was_unselected=
 									!FE_node_selection_is_node_selected(node_tool->node_selection,
 										picked_node);
@@ -1929,9 +2035,10 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
-	struct Time_keeper *time_keeper)
+	struct Time_keeper *time_keeper,
+	struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -1963,6 +2070,10 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			DIALOG_IDENTIFY(node_tool,node_group_form)},
 		{"node_tool_id_coord_field_form",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,coordinate_field_form)},
+		{"node_tool_id_url_field_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,url_field_button)},
+		{"node_tool_id_url_field_form",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,url_field_form)},
 		{"node_tool_select_btn_CB",
 		 (XtPointer)Node_tool_select_button_CB},
 		{"node_tool_edit_btn_CB",
@@ -1975,6 +2086,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		 (XtPointer)Node_tool_create_button_CB},
 		{"node_tool_streaming_btn_CB",
 		 (XtPointer)Node_tool_streaming_create_button_CB},
+		{"node_tool_url_field_btn_CB",
+		 (XtPointer)Node_tool_url_field_button_CB},
 		{"node_tool_destroy_selected_CB",
 		 (XtPointer)Node_tool_destroy_selected_CB},
 		{"node_tool_undefine_selected_CB",
@@ -1994,13 +2107,14 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		node_group_manager&&(element_manager||use_data)&&node_selection&&
 		computed_field_package&&(computed_field_manager=
 			Computed_field_package_get_computed_field_manager(computed_field_package))
-		&&rubber_band_material&&user_interface)
+		&&rubber_band_material&&user_interface&&execute_command)
 	{
 		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
 			&node_tool_hierarchy,&node_tool_hierarchy_open))
 		{
 			if (ALLOCATE(node_tool,struct Node_tool,1))
 			{
+				node_tool->execute_command=execute_command;
 				node_tool->interactive_tool_manager=interactive_tool_manager;
 				node_tool->node_manager=node_manager;
 				node_tool->use_data=use_data;
@@ -2031,6 +2145,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_has_up_to_3_numerical_components, (void *)NULL,
 						computed_field_manager);
+				node_tool->url_field = (struct Computed_field *)NULL;
 				node_tool->template_node=(struct FE_node *)NULL;
 				/* interactive_tool */
 				if (use_data)
@@ -2071,6 +2186,9 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->node_group_widget=(Widget)NULL;
 				node_tool->select_button=(Widget)NULL;
 				node_tool->streaming_create_button=(Widget)NULL;
+				node_tool->url_field_button=(Widget)NULL;
+				node_tool->url_field_form=(Widget)NULL;
+				node_tool->url_field_widget=(Widget)NULL;
 				node_tool->widget=(Widget)NULL;
 				node_tool->window_shell=(Widget)NULL;
 
@@ -2125,6 +2243,22 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 								{
 									init_widgets=0;
 								}
+								if (node_tool->url_field_widget =
+									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+										node_tool->url_field_form,
+										node_tool->url_field, computed_field_manager,
+										Computed_field_has_string_value_type,
+										(void *)NULL, user_interface))
+								{
+									callback.data = (void *)node_tool;
+									callback.procedure = Node_tool_update_url_field;
+									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+										node_tool->url_field_widget, &callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
 								if (node_tool->node_group_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_node))(
 										node_tool->node_group_form,
@@ -2153,8 +2287,13 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 										/*state*/node_tool->motion_update_enabled,/*notify*/False);
 									XmToggleButtonGadgetSetState(node_tool->select_button,
 										/*state*/node_tool->select_enabled,/*notify*/False);
-									XmToggleButtonGadgetSetState(node_tool->streaming_create_button,
-										/*state*/node_tool->streaming_create_enabled,/*notify*/False);
+									XmToggleButtonGadgetSetState(
+										node_tool->streaming_create_button,
+										/*state*/node_tool->streaming_create_enabled,
+										/*notify*/False);
+									XmToggleButtonGadgetSetState(node_tool->url_field_button,
+										/*state*/False, /*notify*/False);
+									XtSetSensitive(node_tool->url_field_widget, /*state*/False);
 									XtManageChild(node_tool->widget);
 									XtRealizeWidget(node_tool->window_shell);
 								}
@@ -3003,3 +3142,73 @@ created as the user drags the mouse around.
 
 	return (return_code);
 } /* Node_tool_set_streaming_create_enabled */
+
+struct Computed_field *Node_tool_get_url_field(
+	struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Returns the url_field to be looked up in a web browser when the node is clicked
+on in the <node_tool>.
+==============================================================================*/
+{
+	struct Computed_field *url_field;
+
+	ENTER(Node_tool_get_url_field);
+	if (node_tool)
+	{
+		url_field=node_tool->url_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_url_field.  Invalid argument(s)");
+		url_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (url_field);
+} /* Node_tool_get_url_field */
+
+int Node_tool_set_url_field(struct Node_tool *node_tool,
+	struct Computed_field *url_field)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Sets the url_field to be looked up in a web browser when the node is clicked on
+in the <node_tool>.
+==============================================================================*/
+{
+	int field_set, return_code;
+
+	ENTER(Node_tool_set_url_field);
+	if (node_tool && ((!url_field) ||
+		Computed_field_has_string_value_type(url_field, (void *)NULL)))
+	{
+		return_code = 1;
+		if (url_field != node_tool->url_field)
+		{
+			node_tool->url_field = url_field;
+			if (url_field)
+			{
+				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+					node_tool->url_field_widget,node_tool->url_field);
+			}
+			field_set = ((struct Computed_field *)NULL != url_field);
+			XtVaSetValues(node_tool->url_field_button,
+				XmNset, (XtPointer)field_set, NULL);
+			XtSetSensitive(node_tool->url_field_widget, field_set);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_url_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_url_field */

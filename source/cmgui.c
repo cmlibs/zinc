@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 18 April 2002
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -336,7 +336,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
-LAST MODIFIED : 26 June 2002
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -1431,15 +1431,19 @@ Main program for the CMISS Graphical User Interface
 					command_data.computed_field_package,
 					command_data.default_graphical_material,
 					command_data.user_interface,
-					command_data.default_time_keeper);
+					command_data.default_time_keeper,
+					command_data.execute_command);
 				command_data.element_tool=CREATE(Element_tool)(
 					command_data.interactive_tool_manager,
 					command_data.element_manager,
 					command_data.element_group_manager,
 					command_data.element_selection,
 					command_data.element_point_ranges_selection,
+					command_data.computed_field_package,
 					command_data.default_graphical_material,
-					command_data.user_interface);
+					command_data.user_interface,
+					command_data.default_time_keeper,
+					command_data.execute_command);
 				command_data.data_tool=CREATE(Node_tool)(
 					command_data.interactive_tool_manager,
 					command_data.data_manager,/*use_data*/1,
@@ -1449,11 +1453,16 @@ Main program for the CMISS Graphical User Interface
 					command_data.computed_field_package,
 					command_data.default_graphical_material,
 					command_data.user_interface,
-					command_data.default_time_keeper);
+					command_data.default_time_keeper,
+					command_data.execute_command);
 				command_data.element_point_tool=CREATE(Element_point_tool)(
 					command_data.interactive_tool_manager,
 					command_data.element_point_ranges_selection,
-					command_data.default_graphical_material);
+					command_data.computed_field_package,
+					command_data.default_graphical_material,
+					command_data.user_interface,
+					command_data.default_time_keeper,
+					command_data.execute_command);
 				command_data.select_tool=CREATE(Select_tool)(
 					command_data.interactive_tool_manager,
 					command_data.any_object_selection,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.h
 
-LAST MODIFIED : 20 June 2002
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -36,10 +36,13 @@ struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
-	struct User_interface *user_interface);
+	struct User_interface *user_interface,
+	struct Time_keeper *time_keeper,
+	struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
@@ -120,6 +123,26 @@ LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns flag controlling whether line & 1-D top-level elements can be selected.
+==============================================================================*/
+
+struct Computed_field *Element_tool_get_url_field(
+	struct Element_tool *element_tool);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Returns the url_field to be looked up in a web browser when the element is
+clicked on in the <element_tool>.
+==============================================================================*/
+
+int Element_tool_set_url_field(struct Element_tool *element_tool,
+	struct Computed_field *url_field);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Sets the url_field to be looked up in a web browser when the element is clicked
+on in the <element_tool>.
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_TOOL_H) */

@@ -1,19 +1,29 @@
 /*******************************************************************************
 FILE : element_point_tool.c
 
-LAST MODIFIED : 18 September 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Interactive tool for selecting element/grid points with mouse and other devices.
 ==============================================================================*/
+#include <Xm/Protocols.h>
+#include <Xm/MwmUtil.h>
+#include <Xm/Xm.h>
+#include <Xm/ToggleBG.h>
+#include "choose/choose_computed_field.h"
 #include "command/command.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "element/element_point_tool.h"
 #include "element/element_point_tool.uidh"
+#include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
+#include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
+#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
 /*
@@ -35,22 +45,30 @@ Module types
 
 struct Element_point_tool
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Object storing all the parameters for interactively selecting element points.
 ==============================================================================*/
 {
+	struct Execute_command *execute_command;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Graphical_material *rubber_band_material;
+	struct Time_keeper *time_keeper;
+	struct User_interface *user_interface;
+	/* user settings */
+	struct Computed_field *url_field;
 	/* information about picked element_point_ranges */
 	int picked_element_point_was_unselected;
 	int motion_detected;
 	struct Element_point_ranges *last_picked_element_point;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
+
+	Widget url_field_button, url_field_form, url_field_widget;
+	Widget widget, window_shell;
 }; /* struct Element_point_tool */
 
 /*
@@ -58,10 +76,118 @@ Module functions
 ----------------
 */
 
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,url_field_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,url_field_form)
+
+static void Element_point_tool_close_CB(Widget widget,void *element_point_tool_void,
+	void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Callback when "close" is selected from the window menu, or it is double
+clicked. How this is made to occur is as follows. The dialog has its
+XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
+WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
+function in response to the close command. See CREATE for more details.
+Function pops down dialog as a response,
+==============================================================================*/
+{
+	struct Element_point_tool *element_point_tool;
+
+	ENTER(Element_point_tool_close_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_point_tool=(struct Element_point_tool *)element_point_tool_void)
+	{
+		XtPopdown(element_point_tool->window_shell);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_close_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_tool_close_CB */
+
+static void Element_point_tool_url_field_button_CB(Widget widget,
+	void *element_point_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Callback from toggle button enabling a url_field to be selected.
+==============================================================================*/
+{
+	struct Computed_field *url_field;
+	struct Element_point_tool *element_point_tool;
+
+	ENTER(Element_point_tool_url_field_button_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_point_tool=(struct Element_point_tool *)element_point_tool_void)
+	{
+		if (Element_point_tool_get_url_field(element_point_tool))
+		{
+			Element_point_tool_set_url_field(element_point_tool, (struct Computed_field *)NULL);
+		}
+		else
+		{
+			/* get label field from widget */
+			url_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				element_point_tool->url_field_widget);
+			if (url_field)
+			{
+				Element_point_tool_set_url_field(element_point_tool, url_field);
+			}
+			else
+			{
+				XtVaSetValues(element_point_tool->url_field_button, XmNset, False, NULL);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_url_field_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_tool_url_field_button_CB */
+
+static void Element_point_tool_update_url_field(Widget widget,
+	void *element_point_tool_void, void *url_field_void)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Callback for change of url_field.
+==============================================================================*/
+{
+	struct Element_point_tool *element_point_tool;
+
+	ENTER(Element_point_tool_update_url_field);
+	USE_PARAMETER(widget);
+	if (element_point_tool = (struct Element_point_tool *)element_point_tool_void)
+	{
+		/* skip messages from chooser if it is grayed out */
+		if (XtIsSensitive(element_point_tool->url_field_widget))
+		{
+			Element_point_tool_set_url_field(element_point_tool,
+				(struct Computed_field *)url_field_void);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_update_url_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_tool_update_url_field */
+
 static void Element_point_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_point_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 18 September 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -71,13 +197,17 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
+	char *url_string;
 	enum Interactive_event_type event_type;
-	int clear_selection,input_modifier,shift_pressed;
+	FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int clear_selection, input_modifier, shift_pressed, start, stop;
 	struct Element_point_ranges *picked_element_point;
+	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct Element_point_tool *element_point_tool;
 	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
 	struct LIST(Element_point_ranges) *element_point_ranges_list;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
+	struct Multi_range *multi_range;
 	struct Scene *scene;
 
 	ENTER(Element_point_tool_interactive_event_handler);
@@ -108,6 +238,57 @@ release.
 									(struct GT_element_group **)NULL,
 									(struct GT_element_settings **)NULL))
 							{
+								/* Open url_field of picked_element_point in browser */
+								if (element_point_tool->url_field)
+								{
+									if (Element_point_ranges_get_identifier(
+										picked_element_point, &element_point_ranges_identifier))
+									{
+										if (Computed_field_is_defined_in_element(
+											element_point_tool->url_field,
+											element_point_ranges_identifier.element))
+										{
+											if (element_point_tool->time_keeper)
+											{
+												time =
+													Time_keeper_get_time(element_point_tool->time_keeper);
+											}
+											else
+											{
+												time = 0;
+											}
+											/* need to get the xi for the picked_element_point
+												 in order to evaluate the url_field there */
+											if ((multi_range = Element_point_ranges_get_ranges(
+												picked_element_point)) &&
+												(Multi_range_get_range(multi_range, /*range_no*/0,
+													&start, &stop)) &&
+												FE_element_get_numbered_xi_point(
+													element_point_ranges_identifier.element,
+													element_point_ranges_identifier.xi_discretization_mode,
+													element_point_ranges_identifier.number_in_xi,
+													element_point_ranges_identifier.exact_xi,
+													/*coordinate_field*/(struct Computed_field *)NULL,
+													/*density_field*/(struct Computed_field *)NULL,
+													start, xi, time))
+											{
+												if (url_string =
+													Computed_field_evaluate_as_string_in_element(
+														element_point_tool->url_field,
+														/*component_number*/-1,
+														element_point_ranges_identifier.element, xi, time,
+														element_point_ranges_identifier.top_level_element))
+												{
+													do_help(url_string,
+														/*help_examples_directory*/(char *)NULL,
+														element_point_tool->execute_command,
+														element_point_tool->user_interface);
+													DEALLOCATE(url_string);
+												}
+											}
+										}
+									}
+								}
 								if (!Element_point_ranges_selection_is_element_point_ranges_selected(
 									element_point_tool->element_point_ranges_selection,
 									picked_element_point))
@@ -256,6 +437,26 @@ release.
 	LEAVE;
 } /* Element_point_tool_interactive_event_handler */
 
+static int Element_point_tool_bring_up_interactive_tool_dialog(
+	void *element_point_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Brings up a dialog for editing settings of the Element_point_tool - in a standard
+format for passing to an Interactive_toolbar.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_point_tool_bring_up_interactive_tool_dialog);
+	return_code =
+		Element_point_tool_pop_up_dialog((struct Element_point_tool *)element_point_tool_void);
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_tool_bring_up_interactive_tool_dialog */
+
 static Widget Element_point_tool_make_interactive_tool_button(
 	void *element_point_tool_void,Widget parent)
 /*******************************************************************************
@@ -317,9 +518,13 @@ Global functions
 struct Element_point_tool *CREATE(Element_point_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Graphical_material *rubber_band_material)
+	struct Computed_field_package *computed_field_package,
+	struct Graphical_material *rubber_band_material,
+	struct User_interface *user_interface,
+	struct Time_keeper *time_keeper,
+	struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Creates an Element_point_tool with Interactive_tool in
@@ -327,40 +532,181 @@ Creates an Element_point_tool with Interactive_tool in
 <element_point_ranges_selection> in response to interactive_events.
 ==============================================================================*/
 {
+	Atom WM_DELETE_WINDOW;
+	int init_widgets;
+	MrmType element_point_tool_dialog_class;
+	static MrmRegisterArg callback_list[]=
+	{
+		{"elem_pnt_tool_id_url_field_btn",(XtPointer)
+			DIALOG_IDENTIFY(element_point_tool,url_field_button)},
+		{"elem_pnt_tool_id_url_field_form",(XtPointer)
+			DIALOG_IDENTIFY(element_point_tool,url_field_form)},
+		{"elem_pnt_tool_url_field_btn_CB",
+		 (XtPointer)Element_point_tool_url_field_button_CB}
+	};
+	static MrmRegisterArg identifier_list[]=
+	{
+		{"elem_pnt_tool_structure",(XtPointer)NULL}
+	};
+	struct Callback_data callback;
 	struct Element_point_tool *element_point_tool;
+	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(CREATE(Element_point_tool));
 	if (interactive_tool_manager&&element_point_ranges_selection&&
-		rubber_band_material)
+		computed_field_package&&(computed_field_manager=
+			Computed_field_package_get_computed_field_manager(computed_field_package))
+		&&rubber_band_material&&user_interface&&execute_command)
 	{
-		if (ALLOCATE(element_point_tool,struct Element_point_tool,1))
+		if (MrmOpenHierarchy_base64_string(element_point_tool_uidh,
+			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
 		{
-			element_point_tool->interactive_tool_manager=interactive_tool_manager;
-			element_point_tool->element_point_ranges_selection=
-				element_point_ranges_selection;
-			element_point_tool->rubber_band_material=
-				ACCESS(Graphical_material)(rubber_band_material);
-			element_point_tool->interactive_tool=CREATE(Interactive_tool)(
-				"element_point_tool","Element point tool",
-				Interactive_tool_element_point_type_string,
-				Element_point_tool_interactive_event_handler,
-				Element_point_tool_make_interactive_tool_button,
-				(Interactive_tool_bring_up_dialog_function *)NULL,
-				(Interactive_tool_destroy_tool_data_function *)NULL,
-				(void *)element_point_tool);
-			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
-				element_point_tool->interactive_tool,
-				element_point_tool->interactive_tool_manager);
-			element_point_tool->last_picked_element_point=
-				(struct Element_point_ranges *)NULL;
-			element_point_tool->last_interaction_volume=
-				(struct Interaction_volume *)NULL;
-			element_point_tool->rubber_band=(struct GT_object *)NULL;
+			if (ALLOCATE(element_point_tool,struct Element_point_tool,1))
+			{
+				element_point_tool->execute_command=execute_command;
+				element_point_tool->interactive_tool_manager=interactive_tool_manager;
+				element_point_tool->element_point_ranges_selection=
+					element_point_ranges_selection;
+				element_point_tool->rubber_band_material=
+					ACCESS(Graphical_material)(rubber_band_material);
+				element_point_tool->user_interface=user_interface;
+				element_point_tool->time_keeper = (struct Time_keeper *)NULL;
+				if (time_keeper)
+				{
+					element_point_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
+				}
+				/* user settings */
+				element_point_tool->url_field = (struct Computed_field *)NULL;
+				/* interactive_tool */
+				element_point_tool->interactive_tool=CREATE(Interactive_tool)(
+					"element_point_tool","Element point tool",
+					Interactive_tool_element_point_type_string,
+					Element_point_tool_interactive_event_handler,
+					Element_point_tool_make_interactive_tool_button,
+					Element_point_tool_bring_up_interactive_tool_dialog,
+					(Interactive_tool_destroy_tool_data_function *)NULL,
+					(void *)element_point_tool);
+				ADD_OBJECT_TO_MANAGER(Interactive_tool)(
+					element_point_tool->interactive_tool,
+					element_point_tool->interactive_tool_manager);
+				element_point_tool->last_picked_element_point=
+					(struct Element_point_ranges *)NULL;
+				element_point_tool->last_interaction_volume=
+					(struct Interaction_volume *)NULL;
+				element_point_tool->rubber_band=(struct GT_object *)NULL;
+				/* initialise widgets */
+				element_point_tool->url_field_button=(Widget)NULL;
+				element_point_tool->url_field_form=(Widget)NULL;
+				element_point_tool->url_field_widget=(Widget)NULL;
+				element_point_tool->widget=(Widget)NULL;
+				element_point_tool->window_shell=(Widget)NULL;
+
+				/* make the dialog shell */
+				if (element_point_tool->window_shell=
+					XtVaCreatePopupShell("Element point tool",
+						topLevelShellWidgetClass,
+						User_interface_get_application_shell(user_interface),
+						XmNdeleteResponse,XmDO_NOTHING,
+						XmNmwmDecorations,MWM_DECOR_ALL,
+						XmNmwmFunctions,MWM_FUNC_ALL,
+						/*XmNtransient,FALSE,*/
+						XmNallowShellResize,False,
+						XmNtitle,"Element point tool",
+						NULL))
+				{
+					/* Set up window manager callback for close window message */
+					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(element_point_tool->window_shell),
+						"WM_DELETE_WINDOW",False);
+					XmAddWMProtocolCallback(element_point_tool->window_shell,
+						WM_DELETE_WINDOW,Element_point_tool_close_CB,element_point_tool);
+					/* Register the shell with the busy signal list */
+					create_Shell_list_item(&(element_point_tool->window_shell),user_interface);
+					/* register the callbacks */
+					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
+						element_point_tool_hierarchy,callback_list,XtNumber(callback_list)))
+					{
+						/* assign and register the identifiers */
+						identifier_list[0].value=(XtPointer)element_point_tool;
+						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
+							element_point_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
+						{
+							/* fetch element tool widgets */
+							if (MrmSUCCESS==MrmFetchWidget(element_point_tool_hierarchy,
+								"element_point_tool",element_point_tool->window_shell,
+								&(element_point_tool->widget),&element_point_tool_dialog_class))
+							{
+								init_widgets=1;
+								if (element_point_tool->url_field_widget =
+									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+										element_point_tool->url_field_form,
+										element_point_tool->url_field, computed_field_manager,
+										Computed_field_has_string_value_type,
+										(void *)NULL, user_interface))
+								{
+									callback.data = (void *)element_point_tool;
+									callback.procedure = Element_point_tool_update_url_field;
+									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+										element_point_tool->url_field_widget, &callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
+								if (init_widgets)
+								{
+									XmToggleButtonGadgetSetState(
+										element_point_tool->url_field_button,
+										/*state*/False, /*notify*/False);
+									XtSetSensitive(element_point_tool->url_field_widget,
+										/*state*/False);
+									XtManageChild(element_point_tool->widget);
+									XtRealizeWidget(element_point_tool->window_shell);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"CREATE(Element_point_tool).  Could not init widgets");
+									DESTROY(Element_point_tool)(&element_point_tool);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"CREATE(Element_point_tool).  Could not fetch element_point_tool");
+								DESTROY(Element_point_tool)(&element_point_tool);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"CREATE(Element_point_tool).  Could not register identifiers");
+							DESTROY(Element_point_tool)(&element_point_tool);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"CREATE(Element_point_tool).  Could not register callbacks");
+						DESTROY(Element_point_tool)(&element_point_tool);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Element_point_tool).  Could not create Shell");
+					DESTROY(Element_point_tool)(&element_point_tool);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Element_point_tool).  Not enough memory");
+			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Element_point_tool).  Not enough memory");
+				"CREATE(Element_point_tool).  Could not open hierarchy");
 		}
 	}
 	else
@@ -377,7 +723,7 @@ Creates an Element_point_tool with Interactive_tool in
 int DESTROY(Element_point_tool)(
 	struct Element_point_tool **element_point_tool_address)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Frees and deaccesses objects in the <element_point_tool> and deallocates the
@@ -403,6 +749,16 @@ structure itself.
 		REACCESS(GT_object)(&(element_point_tool->rubber_band),
 			(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(element_point_tool->rubber_band_material));
+		if (element_point_tool->time_keeper)
+		{
+			DEACCESS(Time_keeper)(&(element_point_tool->time_keeper));
+		}
+		if (element_point_tool->window_shell)
+		{
+			destroy_Shell_list_item_from_shell(&(element_point_tool->window_shell),
+				element_point_tool->user_interface);
+			XtDestroyWidget(element_point_tool->window_shell);
+		}
 		DEALLOCATE(*element_point_tool_address);
 		return_code=1;
 	}
@@ -415,3 +771,132 @@ structure itself.
 
 	return (return_code);
 } /* DESTROY(Element_point_tool) */
+
+int Element_point_tool_pop_up_dialog(
+	struct Element_point_tool *element_point_tool)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Pops up a dialog for editing settings of the Element_point_tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_point_tool_pop_up_dialog);
+	if (element_point_tool)
+	{
+		XtPopup(element_point_tool->window_shell, XtGrabNone);
+		/* make sure in addition that it is not shown as an icon */
+		XtVaSetValues(element_point_tool->window_shell, XmNiconic, False, NULL);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_pop_up_dialog.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_tool_pop_up_dialog */
+
+int Element_point_tool_pop_down_dialog(
+	struct Element_point_tool *element_point_tool)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Hides the dialog for editing settings of the Element_point_tool.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_point_tool_pop_down_dialog);
+	if (element_point_tool)
+	{
+		XtPopdown(element_point_tool->window_shell);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_pop_down_dialog.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_tool_pop_down_dialog */
+
+struct Computed_field *Element_point_tool_get_url_field(
+	struct Element_point_tool *element_point_tool)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Returns the url_field to be looked up in a web browser when the element is
+clicked on in the <element_point_tool>.
+==============================================================================*/
+{
+	struct Computed_field *url_field;
+
+	ENTER(Element_point_tool_get_url_field);
+	if (element_point_tool)
+	{
+		url_field=element_point_tool->url_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_get_url_field.  Invalid argument(s)");
+		url_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (url_field);
+} /* Element_point_tool_get_url_field */
+
+int Element_point_tool_set_url_field(
+	struct Element_point_tool *element_point_tool,
+	struct Computed_field *url_field)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Sets the url_field to be looked up in a web browser when the element is clicked
+on in the <element_point_tool>.
+==============================================================================*/
+{
+	int field_set, return_code;
+
+	ENTER(Element_point_tool_set_url_field);
+	if (element_point_tool && ((!url_field) ||
+		Computed_field_has_string_value_type(url_field, (void *)NULL)))
+	{
+		return_code = 1;
+		if (url_field != element_point_tool->url_field)
+		{
+			element_point_tool->url_field = url_field;
+			if (url_field)
+			{
+				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+					element_point_tool->url_field_widget,element_point_tool->url_field);
+			}
+			field_set = ((struct Computed_field *)NULL != url_field);
+			XtVaSetValues(element_point_tool->url_field_button,
+				XmNset, (XtPointer)field_set, NULL);
+			XtSetSensitive(element_point_tool->url_field_widget, field_set);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_set_url_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_tool_set_url_field */

@@ -2888,10 +2888,10 @@ Computed_field_set_values_in_[managed_]element.
 int Computed_field_default_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
-Inherits its result from the first source field.
+Inherits its result from the first source field -- if any.
 ==============================================================================*/
 {
 	int return_code;
@@ -2900,15 +2900,22 @@ Inherits its result from the first source field.
 	if (field&&element&&number_in_xi&&element->shape&&
 		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=element->shape->dimension))
 	{
-		return_code=Computed_field_get_native_discretization_in_element(
-			field->source_fields[0],element,number_in_xi);
+		if (field->source_fields && (0 < field->number_of_source_fields))
+		{
+			return_code=Computed_field_get_native_discretization_in_element(
+				field->source_fields[0],element,number_in_xi);
+		}
+		else
+		{
+			return_code = 0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_default_get_native_discretization_in_element.  "
 			"Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

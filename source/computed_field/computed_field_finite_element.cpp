@@ -6105,6 +6105,61 @@ Used for choosing field suitable for identifying grid points.
 	return (return_code);
 } /* Computed_field_is_scalar_integer_grid_in_element */
 
+int Computed_field_has_string_value_type(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Returns true if <field> is of string value type.
+Currently only FE_fields can return string value type, hence this function is
+restricted to this module.
+Eventually, other computed fields will be of string type and this function will
+belong elsewhere.
+Note: not returning possible true result for embedded field as evaluate
+at node function does not allow for string value either.
+==============================================================================*/
+{
+	enum FE_nodal_value_type nodal_value_type;
+	int return_code;
+	int version_number;
+	struct Computed_field *time_field;
+	struct FE_field *fe_field;
+
+	ENTER(Computed_field_has_string_value_type);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		fe_field = (struct FE_field *)NULL;
+		if (field->type_string == computed_field_finite_element_type_string)
+		{
+			Computed_field_get_type_finite_element(field, &fe_field);
+		}
+		else if (field->type_string == computed_field_node_value_type_string)
+		{
+			Computed_field_get_type_node_value(field, &fe_field,
+				&nodal_value_type, &version_number);
+		}
+		else if (field->type_string ==
+			computed_field_node_array_value_at_time_type_string)
+		{
+			Computed_field_get_type_node_array_value_at_time(field, &fe_field,
+				&nodal_value_type, &version_number, &time_field);
+		}
+		return_code = ((struct FE_field *)NULL != fe_field) &&
+			(STRING_VALUE == get_FE_field_value_type(fe_field));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_string_value_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_has_string_value_type */
+
 int Computed_field_depends_on_embedded_field(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000

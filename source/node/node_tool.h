@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 20 June 2001
+LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -52,9 +52,10 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
-	struct Time_keeper *time_keeper);
+	struct Time_keeper *time_keeper,
+	struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -253,6 +254,26 @@ LAST MODIFIED : 14 May 2001
 DESCRIPTION :
 Sets flag controlling, if create_enabled, whether a stream of nodes is
 created as the user drags the mouse around.
+==============================================================================*/
+
+struct Computed_field *Node_tool_get_url_field(
+	struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Returns the url_field to be looked up in a web browser when the node is clicked
+on in the <node_tool>.
+==============================================================================*/
+
+int Node_tool_set_url_field(struct Node_tool *node_tool,
+	struct Computed_field *url_field);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Sets the url_field to be looked up in a web browser when the node is clicked on
+in the <node_tool>.
 ==============================================================================*/
 
 #endif /* !defined (NODE_TOOL_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 20 June 2002
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -10,12 +10,17 @@ Interactive tool for selecting elements with mouse and other devices.
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
+#include "choose/choose_computed_field.h"
 #include "command/command.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "element/element_operations.h"
 #include "element/element_tool.h"
 #include "element/element_tool.uidh"
+#include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
+#include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
@@ -26,6 +31,7 @@ Interactive tool for selecting elements with mouse and other devices.
 Module variables
 ----------------
 */
+
 #if defined (MOTIF)
 static int element_tool_hierarchy_open=0;
 static MrmHierarchy element_tool_hierarchy;
@@ -41,12 +47,13 @@ Module types
 
 struct Element_tool
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Object storing all the parameters for interactively selecting elements.
 ==============================================================================*/
 {
+	struct Execute_command *execute_command;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
 	/* needed for destroy button */
@@ -54,10 +61,13 @@ Object storing all the parameters for interactively selecting elements.
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct FE_element_selection *element_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
+	struct Computed_field_package *computed_field_package;
 	struct Graphical_material *rubber_band_material;
+	struct Time_keeper *time_keeper;
 	struct User_interface *user_interface;
 	/* user-settable flags */
 	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
+	struct Computed_field *url_field;
 	/* information about picked element */
 	int picked_element_was_unselected;
 	int motion_detected;
@@ -65,7 +75,8 @@ Object storing all the parameters for interactively selecting elements.
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 
-	Widget select_elements_button,select_faces_button,select_lines_button;
+	Widget select_elements_button,select_faces_button,select_lines_button,
+		url_field_button,url_field_form,url_field_widget;
 	Widget widget,window_shell;
 }; /* struct Element_tool */
 
@@ -80,6 +91,8 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
 	select_faces_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
 	select_lines_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool,url_field_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool,url_field_form)
 
 static void Element_tool_close_CB(Widget widget,void *element_tool_void,
 	void *call_data)
@@ -193,6 +206,80 @@ can be selected.
 	LEAVE;
 } /* Element_tool_select_lines_button_CB */
 
+static void Element_tool_url_field_button_CB(Widget widget,
+	void *element_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Callback from toggle button enabling a url_field to be selected.
+==============================================================================*/
+{
+	struct Computed_field *url_field;
+	struct Element_tool *element_tool;
+
+	ENTER(Element_tool_url_field_button_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_tool=(struct Element_tool *)element_tool_void)
+	{
+		if (Element_tool_get_url_field(element_tool))
+		{
+			Element_tool_set_url_field(element_tool, (struct Computed_field *)NULL);
+		}
+		else
+		{
+			/* get label field from widget */
+			url_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				element_tool->url_field_widget);
+			if (url_field)
+			{
+				Element_tool_set_url_field(element_tool, url_field);
+			}
+			else
+			{
+				XtVaSetValues(element_tool->url_field_button, XmNset, False, NULL);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_url_field_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_tool_url_field_button_CB */
+
+static void Element_tool_update_url_field(Widget widget,
+	void *element_tool_void, void *url_field_void)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Callback for change of url_field.
+==============================================================================*/
+{
+	struct Element_tool *element_tool;
+
+	ENTER(Element_tool_update_url_field);
+	USE_PARAMETER(widget);
+	if (element_tool = (struct Element_tool *)element_tool_void)
+	{
+		/* skip messages from chooser if it is grayed out */
+		if (XtIsSensitive(element_tool->url_field_widget))
+		{
+			Element_tool_set_url_field(element_tool,
+				(struct Computed_field *)url_field_void);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_update_url_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_tool_update_url_field */
+
 static void Element_tool_destroy_selected_CB(Widget widget,
 	void *element_tool_void,void *call_data)
 /*******************************************************************************
@@ -239,7 +326,7 @@ need other safeguard controls before allowing this.
 static void Element_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 18 September 2000
+LAST MODIFIED  5 July 2002
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -249,14 +336,20 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
+	char *url_string;
 	enum Interactive_event_type event_type;
-	int clear_selection,input_modifier,shift_pressed;
+	FE_value time, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int clear_selection, element_dimension, i, input_modifier,
+		number_of_xi_points, shift_pressed;
+	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_element *picked_element;
+	struct FE_element_shape *element_shape;
 	struct Element_tool *element_tool;
 	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
 	struct LIST(FE_element) *element_list;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Scene *scene;
+	Triple *xi_points;
 
 	ENTER(Element_tool_interactive_event_handler);
 	if (device_id&&event&&(element_tool=
@@ -288,6 +381,55 @@ release.
 								(struct GT_element_group **)NULL,
 								(struct GT_element_settings **)NULL))
 							{
+								/* Open url_field of picked_element in browser */
+								if (element_tool->url_field)
+								{
+									if (Computed_field_is_defined_in_element(element_tool->url_field,
+										picked_element))
+									{
+										if (element_tool->time_keeper)
+										{
+											time = Time_keeper_get_time(element_tool->time_keeper);
+										}
+										else
+										{
+											time = 0;
+										}
+										/* since we don't really have fields constant over an
+											 element, evaluate at its centre */
+										element_dimension =
+											get_FE_element_dimension(picked_element);
+										for (i = 0; i < element_dimension; i++)
+										{
+											number_in_xi[i] = 1;
+										}
+										get_FE_element_shape(picked_element, &element_shape);
+										if (FE_element_shape_get_xi_points_cell_centres(
+											element_shape, number_in_xi,
+											&number_of_xi_points, &xi_points))
+										{
+											/*???debug*/printf("element_tool: xi =");
+											for (i = 0; i < element_dimension; i++)
+											{
+												xi[i] = xi_points[0][i];
+												/*???debug*/printf(" %g",xi[i]);
+											}
+											/*???debug*/printf("\n");
+											if (url_string =
+												Computed_field_evaluate_as_string_in_element(
+													element_tool->url_field, /*component_number*/-1,
+													picked_element, xi, time, (struct FE_element *)NULL))
+											{
+												do_help(url_string,
+													/*help_examples_directory*/(char *)NULL,
+													element_tool->execute_command,
+													element_tool->user_interface);
+												DEALLOCATE(url_string);
+											}
+											DEALLOCATE(xi_points);
+										}
+									}
+								}
 								if (!FE_element_selection_is_element_selected(
 									element_tool->element_selection,picked_element))
 								{
@@ -504,10 +646,13 @@ struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
-	struct User_interface *user_interface)
+	struct User_interface *user_interface,
+	struct Time_keeper *time_keeper,
+	struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
@@ -515,6 +660,7 @@ Selects elements in <element_selection> in response to interactive_events.
 ==============================================================================*/
 {
 	Atom WM_DELETE_WINDOW;
+	int init_widgets;
 	MrmType element_tool_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
@@ -524,12 +670,18 @@ Selects elements in <element_selection> in response to interactive_events.
 			DIALOG_IDENTIFY(element_tool,select_faces_button)},
 		{"elem_tool_id_select_lines_btn",(XtPointer)
 			DIALOG_IDENTIFY(element_tool,select_lines_button)},
+		{"elem_tool_id_url_field_btn",(XtPointer)
+			DIALOG_IDENTIFY(element_tool,url_field_button)},
+		{"elem_tool_id_url_field_form",(XtPointer)
+			DIALOG_IDENTIFY(element_tool,url_field_form)},
 		{"elem_tool_select_elems_btn_CB",
 		 (XtPointer)Element_tool_select_elements_button_CB},
 		{"elem_tool_select_faces_btn_CB",
 		 (XtPointer)Element_tool_select_faces_button_CB},
 		{"elem_tool_select_lines_btn_CB",
 		 (XtPointer)Element_tool_select_lines_button_CB},
+		{"elem_tool_url_field_btn_CB",
+		 (XtPointer)Element_tool_url_field_button_CB},
 		{"elem_tool_destroy_selected_CB",
 		 (XtPointer)Element_tool_destroy_selected_CB}
 	};
@@ -537,31 +689,43 @@ Selects elements in <element_selection> in response to interactive_events.
 	{
 		{"elem_tool_structure",(XtPointer)NULL}
 	};
+	struct Callback_data callback;
 	struct Element_tool *element_tool;
+	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(CREATE(Element_tool));
 	element_tool=(struct Element_tool *)NULL;
 	if (interactive_tool_manager&&element_manager&&element_group_manager&&
-		element_selection&&rubber_band_material&&user_interface)
+		element_selection&&computed_field_package&&(computed_field_manager=
+			Computed_field_package_get_computed_field_manager(computed_field_package))
+		&&rubber_band_material&&user_interface&&execute_command)
 	{
 		if (MrmOpenHierarchy_base64_string(element_tool_uidh,
 			&element_tool_hierarchy,&element_tool_hierarchy_open))
 		{
 			if (ALLOCATE(element_tool,struct Element_tool,1))
 			{
+				element_tool->execute_command=execute_command;
 				element_tool->interactive_tool_manager=interactive_tool_manager;
 				element_tool->element_manager=element_manager;
 				element_tool->element_group_manager=element_group_manager;
 				element_tool->element_selection=element_selection;
 				element_tool->element_point_ranges_selection=
 					element_point_ranges_selection;
+				element_tool->computed_field_package=computed_field_package;
 				element_tool->rubber_band_material=
 					ACCESS(Graphical_material)(rubber_band_material);
 				element_tool->user_interface=user_interface;
+				element_tool->time_keeper = (struct Time_keeper *)NULL;
+				if (time_keeper)
+				{
+					element_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
+				}
 				/* user-settable flags */
 				element_tool->select_elements_enabled=1;
 				element_tool->select_faces_enabled=1;
 				element_tool->select_lines_enabled=1;
+				element_tool->url_field = (struct Computed_field *)NULL;
 				/* interactive_tool */
 				element_tool->interactive_tool=CREATE(Interactive_tool)(
 					"element_tool","Element tool",
@@ -581,6 +745,9 @@ Selects elements in <element_selection> in response to interactive_events.
 				element_tool->select_elements_button=(Widget)NULL;
 				element_tool->select_faces_button=(Widget)NULL;
 				element_tool->select_lines_button=(Widget)NULL;
+				element_tool->url_field_button=(Widget)NULL;
+				element_tool->url_field_form=(Widget)NULL;
+				element_tool->url_field_widget=(Widget)NULL;
 				element_tool->widget=(Widget)NULL;
 				element_tool->window_shell=(Widget)NULL;
 
@@ -618,16 +785,50 @@ Selects elements in <element_selection> in response to interactive_events.
 								"element_tool",element_tool->window_shell,
 								&(element_tool->widget),&element_tool_dialog_class))
 							{
-								XmToggleButtonGadgetSetState(
-									element_tool->select_elements_button,
-									/*state*/element_tool->select_elements_enabled,
-									/*notify*/False);
-								XmToggleButtonGadgetSetState(element_tool->select_faces_button,
-									/*state*/element_tool->select_faces_enabled,/*notify*/False);
-								XmToggleButtonGadgetSetState(element_tool->select_lines_button,
-									/*state*/element_tool->select_lines_enabled,/*notify*/False);
-								XtManageChild(element_tool->widget);
-								XtRealizeWidget(element_tool->window_shell);
+								init_widgets=1;
+								if (element_tool->url_field_widget =
+									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+										element_tool->url_field_form,
+										element_tool->url_field, computed_field_manager,
+										Computed_field_has_string_value_type,
+										(void *)NULL, user_interface))
+								{
+									callback.data = (void *)element_tool;
+									callback.procedure = Element_tool_update_url_field;
+									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+										element_tool->url_field_widget, &callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
+								if (init_widgets)
+								{
+									XmToggleButtonGadgetSetState(
+										element_tool->select_elements_button,
+										/*state*/element_tool->select_elements_enabled,
+										/*notify*/False);
+									XmToggleButtonGadgetSetState(
+										element_tool->select_faces_button,
+										/*state*/element_tool->select_faces_enabled,
+										/*notify*/False);
+									XmToggleButtonGadgetSetState(
+										element_tool->select_lines_button,
+										/*state*/element_tool->select_lines_enabled,
+										/*notify*/False);
+									XmToggleButtonGadgetSetState(element_tool->url_field_button,
+										/*state*/False, /*notify*/False);
+									XtSetSensitive(element_tool->url_field_widget,
+										/*state*/False);
+									XtManageChild(element_tool->widget);
+									XtRealizeWidget(element_tool->window_shell);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"CREATE(Element_tool).  Could not init widgets");
+									DESTROY(Element_tool)(&element_tool);
+								}
 							}
 							else
 							{
@@ -681,7 +882,7 @@ Selects elements in <element_selection> in response to interactive_events.
 
 int DESTROY(Element_tool)(struct Element_tool **element_tool_address)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Frees and deaccesses objects in the <element_tool> and deallocates the
@@ -702,6 +903,10 @@ structure itself.
 			(struct Interaction_volume *)NULL);
 		REACCESS(GT_object)(&(element_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(element_tool->rubber_band_material));
+		if (element_tool->time_keeper)
+		{
+			DEACCESS(Time_keeper)(&(element_tool->time_keeper));
+		}
 		if (element_tool->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(&(element_tool->window_shell),
@@ -1004,3 +1209,73 @@ Returns flag controlling whether line & 1-D top-level elements can be selected.
 
 	return (return_code);
 } /* Element_tool_set_select_lines_enabled */
+
+struct Computed_field *Element_tool_get_url_field(
+	struct Element_tool *element_tool)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Returns the url_field to be looked up in a web browser when the element is
+clicked on in the <element_tool>.
+==============================================================================*/
+{
+	struct Computed_field *url_field;
+
+	ENTER(Element_tool_get_url_field);
+	if (element_tool)
+	{
+		url_field=element_tool->url_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_get_url_field.  Invalid argument(s)");
+		url_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (url_field);
+} /* Element_tool_get_url_field */
+
+int Element_tool_set_url_field(struct Element_tool *element_tool,
+	struct Computed_field *url_field)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2002
+
+DESCRIPTION :
+Sets the url_field to be looked up in a web browser when the element is clicked
+on in the <element_tool>.
+==============================================================================*/
+{
+	int field_set, return_code;
+
+	ENTER(Element_tool_set_url_field);
+	if (element_tool && ((!url_field) ||
+		Computed_field_has_string_value_type(url_field, (void *)NULL)))
+	{
+		return_code = 1;
+		if (url_field != element_tool->url_field)
+		{
+			element_tool->url_field = url_field;
+			if (url_field)
+			{
+				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+					element_tool->url_field_widget,element_tool->url_field);
+			}
+			field_set = ((struct Computed_field *)NULL != url_field);
+			XtVaSetValues(element_tool->url_field_button,
+				XmNset, (XtPointer)field_set, NULL);
+			XtSetSensitive(element_tool->url_field_widget, field_set);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_set_url_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_tool_set_url_field */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.h
 
-LAST MODIFIED : 11 September 2000
+LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
 Implements computed fields which interface to finite element fields.
@@ -146,6 +146,21 @@ DESCRIPTION :
 Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
 is defined in <element> AND is grid-based.
 Used for choosing field suitable for identifying grid points.
+==============================================================================*/
+
+int Computed_field_has_string_value_type(struct Computed_field *field,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2002
+
+DESCRIPTION :
+Returns true if <field> is of string value type.
+Currently only FE_fields can return string value type, hence this function is
+restricted to this module.
+Eventually, other computed fields will be of string type and this function will
+belong elsewhere.
+Note: not returning possible true result for embedded field as evaluate
+at node function does not allow for string value either.
 ==============================================================================*/
 
 int Computed_field_is_type_embedded(struct Computed_field *field, void *dummy);

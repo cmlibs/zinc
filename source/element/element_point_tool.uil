@@ -1,13 +1,30 @@
 !*******************************************************************************
 ! FILE : element_point_tool.uil
 !
-! LAST MODIFIED : 16 May 2000
+! LAST MODIFIED : 5 July 2002
 !
 ! DESCRIPTION :
 ! Interactive tool icons.
 !===============================================================================
-module element_point_tool
+module element_point_tool_module
 	version = 'v1.0'
+
+procedure
+	elem_pnt_tool_id_url_field_btn;
+	elem_pnt_tool_id_url_field_form;
+
+	elem_pnt_tool_url_field_btn_CB;
+
+identifier
+	!Pointer to data specific to this instance of the elem_tool widget
+	elem_pnt_tool_structure;
+	!The gap between widgets
+	widget_spacing;
+	!fonts here
+	normal_font;
+	button_font;
+	list_font;
+	heading_font;
 
 value
 	black  : color('black',  foreground);
@@ -64,8 +81,68 @@ value
 			'  .... .  .. . . . .  .     . . ',
 			'                                ');
 
-!*******************************************************************************
 object
+!******************************************************************************
+	element_point_tool: XmForm
+	{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmRowColumn elem_pnt_tool_url_field_entry;
+			};
+		};
+!*******************************************************************************
+  elem_pnt_tool_url_field_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmToggleButtonGadget elem_pnt_tool_url_field_btn;
+      XmForm elem_pnt_tool_url_field_form;
+      };
+    };
+  elem_pnt_tool_url_field_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("URL field:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_pnt_tool_id_url_field_btn(elem_pnt_tool_structure);
+      XmNvalueChangedCallback = procedure
+				elem_pnt_tool_url_field_btn_CB(elem_pnt_tool_structure);
+			};
+    };
+	elem_pnt_tool_url_field_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_pnt_tool_id_url_field_form(elem_pnt_tool_structure);
+			};
+		};
+!*******************************************************************************
 	element_point_tool_button: XmToggleButton
 		{
 		arguments
