@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 10 February 2002
+LAST MODIFIED : 24 April 2002
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -459,7 +459,7 @@ static int allow_to_settle(int test_channel,int *test_cards,int *channel_check,
 	int phase_flag,FILE *report,int *number_of_settled_channels,
 	int sampling_delay,short int *samples,float *mean,
 	unsigned long number_of_samples,unsigned long number_of_channels,
-	float tol_settling,int max_settling)
+	float tol_settling,int max_settling,int silent)
 {
 	float maximum,
 		previous_mean[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],
@@ -470,8 +470,11 @@ static int allow_to_settle(int test_channel,int *test_cards,int *channel_check,
 
 	return_code=1;
 	/* wait for the high-pass (DC removal) to settle */
-	printf("Settling\n");
-	fprintf(report,"Settling\n");
+	if (!silent)
+	{
+		printf("Settling\n");
+		fprintf(report,"Settling\n");
+	}
 	*number_of_settled_channels=0;
 	channel_number=0;
 	for (j=0;j<MAXIMUM_NUMBER_OF_NI_CARDS;j++)
@@ -576,26 +579,32 @@ static int allow_to_settle(int test_channel,int *test_cards,int *channel_check,
 					channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 				}
 			}
-			printf(" %g\n",maximum);
-			fprintf(report," %g\n",maximum);
+			if (!silent)
+			{
+				printf(" %g\n",maximum);
+				fprintf(report," %g\n",maximum);
+			}
 		}
 		k++;
 	} while ((*number_of_settled_channels<
 		MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)&&
 		(k<max_settling));
-	if (*number_of_settled_channels<MAXIMUM_NUMBER_OF_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)
+	if (!silent)
 	{
-		printf("Failed to settle for:");
-		for (i=0;i<MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
+		if (*number_of_settled_channels<MAXIMUM_NUMBER_OF_NI_CARDS*
+			NUMBER_OF_CHANNELS_ON_NI_CARD)
 		{
-			if (channel_check[i]&phase_flag)
+			printf("Failed to settle for:");
+			for (i=0;i<MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
 			{
-				printf(" %d",i+1);
+				if (channel_check[i]&phase_flag)
+				{
+					printf(" %d",i+1);
+				}
 			}
+			printf("\n");
+			pause_for_error();
 		}
-		printf("\n");
-		pause_for_error();
 	}
 
 	return (return_code);
@@ -1459,7 +1468,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -1994,7 +2003,7 @@ static void process_keyboard(
 												allow_to_settle(0,tested_cards,temp_channel_check,
 													phase_flag,report,&number_of_settled_channels,
 													sampling_delay,samples,mean,number_of_samples,
-													number_of_channels,tol_settling,max_settling);
+													number_of_channels,tol_settling,max_settling,0);
 												if (number_of_settled_channels<
 													MAXIMUM_NUMBER_OF_NI_CARDS*
 													NUMBER_OF_CHANNELS_ON_NI_CARD)
@@ -2579,7 +2588,7 @@ static void process_keyboard(
 													allow_to_settle(0,tested_cards,temp_channel_check,
 														phase_flag,report,&number_of_settled_channels,
 														sampling_delay,samples,mean,number_of_samples,
-														number_of_channels,tol_settling,max_settling);
+														number_of_channels,tol_settling,max_settling,0);
 													tested_cards[k]=1;
 													tested_cards[tester_card_2-1]=0;
 													first=0;
@@ -3137,7 +3146,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -3580,7 +3589,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -3632,7 +3641,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -3775,7 +3784,7 @@ static void process_keyboard(
 												temp_channel_check,phase_flag,report,
 												&number_of_settled_channels,sampling_delay,samples,mean,
 												number_of_samples,number_of_channels,tol_settling,
-												max_settling);
+												max_settling,0);
 											if (number_of_settled_channels<
 												MAXIMUM_NUMBER_OF_NI_CARDS*
 												NUMBER_OF_CHANNELS_ON_NI_CARD)
@@ -3888,7 +3897,7 @@ static void process_keyboard(
 														temp_channel_check,phase_flag,report,
 														&number_of_settled_channels,sampling_delay,samples,
 														mean,number_of_samples,number_of_channels,
-														tol_settling,max_settling);
+														tol_settling,max_settling,0);
 													if (number_of_settled_channels<
 														MAXIMUM_NUMBER_OF_NI_CARDS*
 														NUMBER_OF_CHANNELS_ON_NI_CARD)
@@ -4301,7 +4310,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -4379,7 +4388,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -4488,7 +4497,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -4596,7 +4605,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -4919,7 +4928,7 @@ static void process_keyboard(
 											temp_channel_check,phase_flag,report,
 											&number_of_settled_channels,sampling_delay,samples,mean,
 											number_of_samples,number_of_channels,tol_settling,
-											max_settling);
+											max_settling,0);
 										if (number_of_settled_channels<
 											MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)
 										{
@@ -5673,6 +5682,12 @@ static void process_keyboard(
 							fprintf(report,"number_of_samples = %lu\n",number_of_samples);
 							fprintf(report,"sampling_frequency = %g\n",sampling_frequency);
 							fprintf(report,"\n");
+							max_settling=5;
+							tol_settling=(float)0;
+							fprintf(report,"max_settling=%d\n",max_settling);
+							fprintf(report,"tol_settling=%g\n",tol_settling);
+							fprintf(report,"\n");
+#if defined (OLD_CODE)
 /*							max_settling=20;*/
 							max_settling=5;
 							tol_settling=(float)1;
@@ -5784,6 +5799,7 @@ static void process_keyboard(
 							fprintf(report,"tol_calibrate_gain=%g\n",tol_calibrate_gain);
 							fprintf(report,"tol_isolation=%g\n",tol_isolation);
 							fprintf(report,"\n");
+#endif /* defined (OLD_CODE) */
 							total_checks=0;
 							unemap_set_power(1);
 							unemap_set_isolate_record_mode(0,0);
@@ -5904,7 +5920,7 @@ static void process_keyboard(
 											allow_to_settle(0,tested_cards,temp_channel_check,
 												phase_flag,report,&number_of_settled_channels,
 												sampling_delay,samples,mean,number_of_samples,
-												number_of_channels,tol_settling,max_settling);
+												number_of_channels,tol_settling,max_settling,1);
 											unemap_stop_stimulating(0);
 											/* work out correlations */
 											two_pi=(double)8*atan((double)1);
@@ -6051,7 +6067,7 @@ static void process_keyboard(
 										allow_to_settle(0,tested_cards,temp_channel_check,
 											phase_flag,report,&number_of_settled_channels,
 											sampling_delay,samples,mean,number_of_samples,
-											number_of_channels,tol_settling,max_settling);
+											number_of_channels,tol_settling,max_settling,1);
 										unemap_stop_stimulating(0);
 										/* work out correlations */
 										two_pi=(double)8*atan((double)1);
