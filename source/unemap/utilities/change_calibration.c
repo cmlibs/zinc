@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : change_calibration.c
 
-LAST MODIFIED : 27 May 1999
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Allow the user to change the calibration for a signal file.  Do not use
@@ -48,17 +48,21 @@ Prints the <number_of_strings> to a message box.
 Main program
 ------------
 */
-main(int argc,char *argv[])
+
+int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 27 May 1999
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	char file_name[120];
 	FILE *signal_file;
+	int return_code;
 	struct Rig *signal_rig;
 
+	/* zero is a successful return */
+	return_code = 0;
 	signal_rig=(struct Rig *)NULL;
 	/* read the signal file */
 	printf("Signal file name ? ");
@@ -83,15 +87,20 @@ DESCRIPTION :
 			else
 			{
 				printf("ERROR.  Writing new signal file\n");
+				return_code = 3;
 			}
 		}
 		else
 		{
 			printf("ERROR.  Could not read calibration file\n");
+			return_code = 2;
 		}
 	}
 	else
 	{
 		printf("ERROR.  Could not read signal file\n");
+		return_code = 1;
 	}
+
+	return (return_code);
 } /* main */
