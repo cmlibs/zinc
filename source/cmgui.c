@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -115,7 +115,6 @@ DESCRIPTION :
 #if defined (MOTIF)
 #include "view/coord.h"
 #endif /* defined (MOTIF) */
-#include "unemap/unemap_package.h"
 #if defined (CELL)
 #include "cell/cell_interface.h"
 #endif /* defined (CELL) */
@@ -126,6 +125,9 @@ DESCRIPTION :
 #include "perl_interpreter.h"
 #endif /* defined (PERL_INTERPRETER) */
 #endif /* defined (F90_INTERPRETER) */
+#if defined (UNEMAP)
+#include "unemap/unemap_command.h"
+#endif /* defined (UNEMAP) */
 
 /*
 Global variables
@@ -444,7 +446,6 @@ Main program for the CMISS Graphical User Interface
 	struct Execute_command *execute_command, *set_command;
 	struct FE_field *fe_field;
 	struct Graphical_material *default_selected_material;
-	struct GT_object *glyph, *mirror_glyph;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Modifier_entry set_file_name_option_table[]=
 	{
@@ -466,11 +467,9 @@ Main program for the CMISS Graphical User Interface
 	return_code=1;
 
 	/* initialize application specific global variables */
-	execute_command = CREATE(Execute_command)(cmiss_execute_command,
-		(void *)(&command_data));
+	execute_command = CREATE(Execute_command)();
 	command_data.execute_command= execute_command;
-	set_command = CREATE(Execute_command)(cmiss_set_command,
-		(void *)(&command_data));
+	set_command = CREATE(Execute_command)();
 	command_data.set_command= set_command;
 	command_data.user_interface= (struct User_interface *)NULL;
 #if defined (MOTIF)
@@ -497,7 +496,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (MOTIF) */
 	command_data.command_console = (struct Console *)NULL;
 #if defined (UNEMAP)
-	command_data.unemap_system_window=(struct System_window *)NULL;
+	command_data.unemap_command_data=(struct Unemap_command_data *)NULL;
 #endif /* defined (UNEMAP) */
 #if defined (CELL)
 	command_data.cell_interface = (struct Cell_interface *)NULL;
@@ -550,7 +549,6 @@ Main program for the CMISS Graphical User Interface
 	command_data.computed_field_package=(struct Computed_field_package *)NULL;
 	command_data.default_scene=(struct Scene *)NULL;
 	command_data.scene_manager=(struct MANAGER(Scene) *)NULL;
-	command_data.unemap_package=(struct Unemap_package *)NULL;
 	command_data.command_window=(struct Command_window *)NULL;
 	command_data.fe_time = (struct FE_time *)NULL;
 #if defined (SGI_MOVIE_FILE)
@@ -759,96 +757,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.device_list=CREATE(LIST(Io_device))();
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-	/* create glyph list */
-		/*???RC.  Eventually want glyph manager */
-	if (command_data.glyph_list=CREATE(LIST(GT_object))())
-	{
-		/* add standard glyphs */
-		if (glyph=make_glyph_arrow_line("arrow_line",0.25,0.125))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_arrow_line",mirror_glyph))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_arrow_solid("arrow_solid",12,2./3.,1./6.))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_arrow_solid",mirror_glyph))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_axes("axes",0.1,0.025,0.1))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_cone("cone",12))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_cone",mirror_glyph))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_cross("cross"))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_cube_solid("cube_solid"))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_cube_wireframe("cube_wireframe"))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_cylinder("cylinder6",6))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_cylinder("cylinder",12))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_cylinder("cylinder_hires",48))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_sphere("diamond",4,2))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_line("line"))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		mirror_glyph = glyph;
-		if (glyph=make_glyph_mirror("mirror_line",mirror_glyph))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_point("point",g_POINT_MARKER,0))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_sheet("sheet"))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_sphere("sphere",12,6))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-		if (glyph=make_glyph_sphere("sphere_hires",48,24))
-		{
-			ADD_OBJECT_TO_LIST(GT_object)(glyph,command_data.glyph_list);
-		}
-	}
+	command_data.glyph_list = make_standard_glyphs();
 
 	/* global list of selected objects */
 	command_data.any_object_selection=CREATE(Any_object_selection)();
@@ -1474,6 +1383,48 @@ Main program for the CMISS Graphical User Interface
 			}
 #endif /* defined (MOTIF) */
 
+#if defined (UNEMAP)
+			command_data.unemap_command_data =
+				CREATE(Unemap_command_data)(
+					command_data.event_dispatcher,
+					command_data.execute_command,
+					command_data.user_interface,
+#if defined (UNEMAP_USE_3D)
+#if defined (MOTIF)
+					command_data.node_tool,
+					command_data.transform_tool,
+#endif /* defined (MOTIF) */
+					command_data.glyph_list,
+					command_data.fe_time,
+					command_data.computed_field_package,
+					command_data.basis_manager,
+					command_data.element_manager,
+					command_data.fe_field_manager,
+					command_data.data_manager,
+					command_data.node_manager,
+					command_data.graphical_material_manager,
+					command_data.default_graphical_material,
+					command_data.element_group_manager,
+					command_data.data_group_manager,
+					command_data.node_group_manager,
+					command_data.interactive_tool_manager,
+					command_data.light_manager,
+					command_data.default_light,
+					command_data.light_model_manager,
+					command_data.default_light_model,
+					command_data.texture_manager,
+					command_data.scene_manager,
+					command_data.spectrum_manager,
+					command_data.element_point_ranges_selection,
+					command_data.element_selection,
+					command_data.data_selection,
+					command_data.node_selection,
+#endif /* defined (UNEMAP_USE_3D) */
+					(struct System_window *)NULL,
+					command_data.default_time_keeper
+					);
+#endif /* defined (UNEMAP) */
+		
 			if (return_code)
 			{
 				/* initialize random number generator */
@@ -1635,7 +1586,7 @@ Main program for the CMISS Graphical User Interface
 						else
 						{
 							if (command_window=CREATE(Command_window)(execute_command,
-									 command_data.user_interface,version_id_string))
+								command_data.user_interface,version_id_string))
 							{
 								command_data.command_window=command_window;
 								if (!batch_mode)
@@ -1673,6 +1624,11 @@ Main program for the CMISS Graphical User Interface
 					}
 #endif /* defined (MOTIF) */
 				}
+				/*???RC Not sure if this is the best place to put this */
+				Execute_command_set_command_function(execute_command,
+					cmiss_execute_command, (void *)(&command_data));
+				Execute_command_set_command_function(set_command,
+					cmiss_execute_command, (void *)(&command_data));
 				if(return_code)
 				{
 #if defined (MOTIF)
@@ -1768,12 +1724,12 @@ Main program for the CMISS Graphical User Interface
 					DESTROY(Cell_interface)(&command_data.cell_interface);
 				}
 #endif /* defined (CELL) */
-
-#if defined (UNEMAP)			
-				/*created in execute_command_unemap_open in command/cmiss.c */
-				DESTROY(Unemap_package)(&command_data.unemap_package); 
+#if defined (UNEMAP)
+				if (command_data.unemap_command_data)
+				{
+					DESTROY(Unemap_command_data)(&command_data.unemap_command_data);
+				}
 #endif /* defined (UNEMAP) */
-
 #if defined (MOTIF)
 				/* viewers */
 				if (command_data.data_viewer)
