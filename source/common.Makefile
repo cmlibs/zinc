@@ -237,7 +237,10 @@ ifeq ($(SYSNAME),AIX)
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend -f-
    CPREPROCESS = 
-   LINK = xlc
+   #Specify a runtime libpath so that the executable doesn't just add in the location
+   #of every library (dynamic and static).  In particular I do not want Mesa to be loaded
+   #by default even if that is what is linked against.
+   LINK = xlc -blibpath:/usr/lib:/lib
    ifeq ($(ABI),32)
       #Increase the maximum memory for a 32 bit executable
       LINK += -bmaxdata:0x80000000
