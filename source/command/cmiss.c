@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -10766,55 +10766,173 @@ element groups are destroyed together.
 } /* gfx_destroy_node_group */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_nodes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Executes a GFX DESTROY NODES command.
 ==============================================================================*/
 {
-	int number_of_nodes_destroyed,return_code;
+	char all_flag,ranges_flag,selected_flag;
+	int number_of_nodes_destroyed,number_of_nodes_not_destroyed,return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{NULL,NULL,NULL,set_Multi_range}
-	};
 	struct FE_node *node_to_destroy;
+	struct FE_node_list_conditional_data list_conditional_data;
+	struct GROUP(FE_node) *node_group;
+	struct LIST(FE_node) *destroy_node_list,*temp_node_list;
 	struct Multi_range *node_ranges;
+	struct Option_table *option_table;
 
 	ENTER(gfx_destroy_nodes);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialise defaults */
+		all_flag=0;
+		selected_flag=0;
 		node_ranges=CREATE(Multi_range)();
-		(option_table[0]).to_be_modified=node_ranges;
-		return_code=process_multiple_options(state,option_table);
-		/* no errors, not asking for help */
-		if (return_code)
+
+		option_table=CREATE(Option_table)();
+		/* all */
+		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+		/* selected */
+		Option_table_add_entry(option_table,"selected",&selected_flag,
+			NULL,set_char_flag);
+		/* default option: node number ranges */
+		Option_table_add_entry(option_table,(char *)NULL,(void *)node_ranges,
+			NULL,set_Multi_range);
+		if (return_code=Option_table_multi_parse(option_table,state))
 		{
-			number_of_nodes_destroyed=0;
-			while (return_code&&(node_to_destroy=
-				FIRST_OBJECT_IN_MANAGER_THAT(FE_node)(
-					FE_node_is_in_Multi_range_and_can_be_destroyed,
-					(void *)node_ranges,command_data->node_manager)))
+			if (destroy_node_list=CREATE(LIST(FE_node))())
 			{
-				if (REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
-					command_data->node_manager))
+				ranges_flag=(0<Multi_range_get_number_of_ranges(node_ranges));
+				if (selected_flag)
 				{
-					number_of_nodes_destroyed++;
+					/* add the selected nodes to destroy_node_list, and if node_ranges
+						 given, intersect with them */
+					return_code=COPY_LIST(FE_node)(destroy_node_list,
+						FE_node_selection_get_node_list(command_data->node_selection))&&
+						((!ranges_flag)||REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+							FE_node_is_not_in_Multi_range,node_ranges,destroy_node_list));
+				}
+				else if (ranges_flag)
+				{
+					/* add nodes with numbers in node_ranges to destroy_node_list */
+					list_conditional_data.node_list=destroy_node_list;
+					list_conditional_data.function=FE_node_is_in_Multi_range;
+					list_conditional_data.user_data=node_ranges;
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+						ensure_FE_node_is_in_list_conditional,
+						(void *)&list_conditional_data,command_data->node_manager);
+				}
+				else if (all_flag)
+				{
+					/* add all nodes to destroy_node_list */
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+						ensure_FE_node_is_in_list,(void *)destroy_node_list,
+						command_data->node_manager);
+				}
+				if (return_code)
+				{
+					if (0<NUMBER_IN_LIST(FE_node)(destroy_node_list))
+					{
+						/* keep original destroy_node_list for reporting if not all nodes
+							 could be destroyed */
+						temp_node_list=CREATE(LIST(FE_node))();
+						COPY_LIST(FE_node)(temp_node_list,destroy_node_list);
+						/* remove all nodes in use by elements = cannot be destroyed */
+						FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+							ensure_top_level_FE_element_nodes_are_not_in_list,
+							(void *)destroy_node_list,command_data->element_manager);
+						/* remove nodes still in destroy_node_list from temp_node_list so
+							 it lists only those that could not be destroyed */
+						REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+							FE_node_is_in_list,(void *)destroy_node_list,temp_node_list);
+						/* remove the nodes from all groups they are in */
+						while (return_code&&(node_group=
+							FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
+								FE_node_group_intersects_list,(void *)destroy_node_list,
+								command_data->node_group_manager)))
+						{
+							MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
+							if (!REMOVE_OBJECTS_FROM_GROUP_THAT(FE_node)(
+								FE_node_is_in_list,(void *)destroy_node_list,node_group))
+							{
+								return_code=0;
+							}
+							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+						}
+						/* remove nodes from the node_selection */
+						FE_node_selection_begin_cache(command_data->node_selection);
+						FOR_EACH_OBJECT_IN_LIST(FE_node)(
+							FE_node_unselect_in_FE_node_selection,
+							(void *)command_data->node_selection,destroy_node_list);
+						FE_node_selection_end_cache(command_data->node_selection);
+						/* now remove the nodes from the manager */
+						number_of_nodes_destroyed=0;
+						while (return_code&&(node_to_destroy=
+							FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+								(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+								destroy_node_list)))
+						{
+							/* node cannot be destroyed while it is in a list */
+							if (REMOVE_OBJECT_FROM_LIST(FE_node)(node_to_destroy,
+								destroy_node_list))
+							{
+								if (FE_node_can_be_destroyed(node_to_destroy))
+								{
+									if (return_code=REMOVE_OBJECT_FROM_MANAGER(FE_node)(
+										node_to_destroy,command_data->node_manager))
+									{
+										number_of_nodes_destroyed++;
+									}
+								}
+								else
+								{
+									/* add it to temp_node_list for reporting */
+									ADD_OBJECT_TO_LIST(FE_node)(node_to_destroy,temp_node_list);
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						if (0<(number_of_nodes_not_destroyed=
+							NUMBER_IN_LIST(FE_node)(temp_node_list)))
+						{
+							display_message(WARNING_MESSAGE,
+								"%d node(s) destroyed; "
+								"%d node(s) could not be destroyed because in use",
+								number_of_nodes_destroyed,number_of_nodes_not_destroyed);
+							return_code=0;
+						}
+						DESTROY(LIST(FE_node))(&temp_node_list);
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"gfx destroy nodes:  No nodes specified");
+						return_code=0;
+					}
 				}
 				else
 				{
-					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"gfx_destroy_nodes.  Could not fill destroy_node_list");
 				}
+				DESTROY(LIST(FE_node))(&destroy_node_list);
 			}
-			display_message(INFORMATION_MESSAGE,"%d node(s) destroyed\n",
-				number_of_nodes_destroyed);
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_destroy_nodes.  Could not make destroy_node_list");
+				return_code=0;
+			}
 		}
+		DESTROY(Option_table)(&option_table);
 		DESTROY(Multi_range)(&node_ranges);
 	}
 	else
@@ -10826,7 +10944,6 @@ Executes a GFX DESTROY NODES command.
 
 	return (return_code);
 } /* gfx_destroy_nodes */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_vtextures(struct Parse_state *state,
