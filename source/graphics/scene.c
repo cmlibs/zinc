@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1308,7 +1308,7 @@ static struct GT_object *make_axis_graphics_object(
 	struct Graphical_material *default_material,
 	struct LIST(GT_object) *glyph_list)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Creates a graphics object of type g_GLYPH_SET which contains a single reference
@@ -1317,7 +1317,7 @@ to the "axes" glyph used for displaying axes with the scene.
 {
 	struct GT_glyph_set *glyph_set;
 	struct GT_object *glyph,*graphics_object;
-	Triple *axis1_list,*axis2_list,*axis3_list,*point_list;
+	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
 
 	ENTER(make_axis_graphics_object);
 	if (default_material&&glyph_list)
@@ -1325,7 +1325,8 @@ to the "axes" glyph used for displaying axes with the scene.
 		glyph_set=(struct GT_glyph_set *)NULL;
 		if ((glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("axes",glyph_list))&&
 			ALLOCATE(point_list,Triple,1)&&ALLOCATE(axis1_list,Triple,1)&&
-			ALLOCATE(axis2_list,Triple,1)&&ALLOCATE(axis3_list,Triple,1))
+			ALLOCATE(axis2_list,Triple,1)&&ALLOCATE(axis3_list,Triple,1) &&
+			ALLOCATE(scale_list,Triple,1))
 		{
 			(*point_list)[0]=0.0;
 			(*point_list)[1]=0.0;
@@ -1339,14 +1340,18 @@ to the "axes" glyph used for displaying axes with the scene.
 			(*axis3_list)[0]=0.0;
 			(*axis3_list)[1]=0.0;
 			(*axis3_list)[2]=1.0;
+			(*scale_list)[0]=1.0;
+			(*scale_list)[1]=1.0;
+			(*scale_list)[2]=1.0;
 			if (!(glyph_set=CREATE(GT_glyph_set)(1,point_list,axis1_list,axis2_list,
-				axis3_list,glyph,(char **)NULL,g_NO_DATA,(GTDATA *)NULL,
+				axis3_list, scale_list, glyph,(char **)NULL,g_NO_DATA,(GTDATA *)NULL,
 				/*object_name*/0,/*names*/(int *)NULL)))
 			{
 				DEALLOCATE(point_list);
 				DEALLOCATE(axis1_list);
 				DEALLOCATE(axis2_list);
 				DEALLOCATE(axis3_list);
+				DEALLOCATE(scale_list);
 			}
 		}
 		if (glyph_set)
@@ -7222,7 +7227,7 @@ Removes <child_scene> from the list of scenes in <scene>.
 int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,char *scene_object_name)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings
@@ -7234,10 +7239,11 @@ the same element group to be added twice.
 ==============================================================================*/
 {
 	char *element_group_name;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum GT_visibility_type visibility;
 	int default_value,maximum_value,return_code;
-	struct Computed_field *default_coordinate_field,*element_xi_coordinate_field,
-		*orientation_scale_field;
+	struct Computed_field *default_coordinate_field, *element_xi_coordinate_field,
+		*orientation_scale_field, *variable_scale_field;
 	struct Element_discretization element_discretization;
 	struct GROUP(FE_node) *data_group,*node_group;
 	struct GT_object *glyph;
@@ -7384,13 +7390,15 @@ the same element group to be added twice.
 																		scene->graphical_material_manager));
 															/* set the glyph to "point" */
 															GT_element_settings_get_glyph_parameters(settings,
-																&glyph,glyph_centre,glyph_size,
-																&orientation_scale_field,glyph_scale_factors);
+																&glyph, &glyph_scaling_mode, glyph_centre,
+																glyph_size, &orientation_scale_field,
+																glyph_scale_factors, &variable_scale_field);
 															glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 																"point",scene->glyph_list);
 															GT_element_settings_set_glyph_parameters(settings,
-																glyph,glyph_centre,glyph_size,
-																orientation_scale_field,glyph_scale_factors);
+																glyph, glyph_scaling_mode, glyph_centre,
+																glyph_size, orientation_scale_field,
+																glyph_scale_factors, variable_scale_field);
 															if (!GT_element_group_add_settings(gt_element_group,
 																settings,0))
 															{
