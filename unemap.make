@@ -153,7 +153,7 @@ depend : $(SOURCE_PATH)/unemap_sgi.make $(SOURCE_PATH)/unemap_sginodes.make $(SO
 		$(MAKE) -f unemap_sginodes.make depend  ; \
 		$(MAKE) -f unemap_sgioptimised.make depend  ; \
 		$(MAKE) -f unemap_sgi64.make depend  ; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f unemap_linux.make depend ; $(MAKE) -f unemap_linux_nodes.make depend ' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f unemap_linux.make depend ; $(MAKE) -f unemap_linux_nodes.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
