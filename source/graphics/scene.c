@@ -9134,6 +9134,14 @@ Parser commands for modifying scenes - lighting, etc.
 						Scene_end_cache(scene);
 					}
 					DESTROY(Option_table)(&option_table);
+					if (light_to_add)
+					{
+						DEACCESS(Light)(&light_to_add);
+					}
+					if (light_to_remove)
+					{
+						DEACCESS(Light)(&light_to_remove);
+					}
 				}
 				else
 				{
