@@ -987,6 +987,13 @@ or conditional function, eg. add_FE_element_using_node_list_to_list.
 	struct LIST(FE_node) *node_list;
 };
 
+struct Dfn_FE_field_at_elem_frm_template_data
+{	
+	struct FE_field *field,*template_field;	
+	struct MANAGER(FE_element) *element_manager;
+
+}; /* Dfn_FE_field_at_elem_frm_template_data*/
+
 /*
 Global variables
 ----------------
@@ -1013,6 +1020,15 @@ DESCRIPTION :
 An object for defining the components, number_of_versions,
 number_of_derivatives and their types at a node.
 By default each component has 1 version and no derivatives.
+==============================================================================*/
+
+struct FE_node_field_creator *create_FE_node_field_creator_from_node_field(
+	struct FE_node *node, struct FE_field *field);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2001
+
+DESCRIPTION :
+Creates an FE_node_field_creator from <node>,<field>
 ==============================================================================*/
 
 int DESTROY(FE_node_field_creator)(
@@ -1044,6 +1060,23 @@ LAST MODIFIED: 16 November 2001
 
 DESCRIPTION:
 Specifies the <number_of_versions> for <component_number> specified.
+==============================================================================*/
+
+int FE_node_field_creator_get_nodal_derivative_versions(
+	struct FE_node_field_creator *node_field_creator, 
+	int *number_of_derivatives, 
+	enum FE_nodal_value_type **nodal_derivative_types,int **max_versions);
+/*******************************************************************************
+LAST MODIFIED: 11 February 2002
+
+DESCRIPTION:
+Given <node_field_creator>, returns <number_of_derivatives>
+which is the size of the arrays <nodal_derivative_types> (containing the 
+FE_nodal_value_type of the derivates present at the node_field_creator) 
+and <max_versions> (which contains the maximum number of versions of each 
+derivative type).
+Note: This function allocates the arrays nodal_derivative_types and max_versions, 
+the user is responsible for freeing them.
 ==============================================================================*/
 
 #if defined (DEBUG)
@@ -2756,6 +2789,43 @@ components are grid-based with the same number_in_xi.
 The <components> are duplicated by this functions, so the calling function must
 destroy them.
 Should only be called for unmanaged elements.
+==============================================================================*/
+
+int define_FE_field_cp_at_element_from_template_field_modify_theta(
+	struct FE_element *element,
+	struct FE_field *field, struct FE_field *template_field);
+/*******************************************************************************
+LAST MODIFIED : 15 February 2002
+
+DESCRIPTION :
+Defines <field> at <element> using exactly the same bases etc. as the
+<template_field>. Note: nodes referred to by the new element field must have
+already been set up with the same values, derivatives and versions as the
+<template_field>.
+Function checks that the number of components and value types of the fields
+are the same.
+Copies all components. Changes the modify function of the second function to
+theta_closest_in_xi1. This makes the assumption that the <field> is a
+coordinate field of type CYLINDRICAL_POLAR.
+ 
+In other situations, it would be possible to simply assign the pointers, 
+be we alter (some of the) component's modify function.
+  
+Note: Could generalise this more, by passing in the modify function(s),
+but leave off doing this until need a similar function, to get a better idea of
+what's required, i.e how to specify which component modifies to change.
+==============================================================================*/
+
+int iterative_define_FE_field_cp_at_element_from_template_field_modify_theta(
+	struct FE_element *element,void *dfn_FE_field_at_elem_frm_template_data_void);
+/*******************************************************************************
+LAST MODIFIED : 12 February 2002
+
+DESCRIPTION :
+If <element> is of type CM_ELEMENT, calls Iteratively calls 
+define_FE_field_cp_at_element_from_template_field_modify_theta with
+<dfn_FE_field_at_elem_frm_template_data>'s field, template_field and 
+element_manager
 ==============================================================================*/
 
 int FE_element_has_grid_based_fields(struct FE_element *element);

@@ -12569,6 +12569,81 @@ By default each component has 1 version and no derivatives.
 	return (node_field_creator);
 } /* CREATE(FE_node_field_creator) */
 
+struct FE_node_field_creator *create_FE_node_field_creator_from_node_field(
+	struct FE_node *node, struct FE_field *field)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2001
+
+DESCRIPTION :
+Creates an FE_node_field_creator from <node>,<field>
+==============================================================================*/
+{
+	enum FE_nodal_value_type nodal_value_type;
+	int i,j,number_of_components,number_of_derivatives,number_of_versions,success;
+	struct FE_node_field_component *node_field_components;
+	struct FE_node_field_creator *node_field_creator;
+	struct FE_node_field *node_field;
+
+	ENTER(create_FE_node_field_creator_from_node_field);
+	node_field_creator = (struct FE_node_field_creator *)NULL;			
+	if (node&&field&&node->fields)
+	{	
+		if((node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
+			node->fields->node_field_list))&&
+			(node_field_components=node_field->components))
+		{	
+			number_of_components=field->number_of_components;
+			if (node_field_creator=CREATE(FE_node_field_creator)(number_of_components))
+			{
+				success=1;
+				for(i=0;(i<number_of_components)&&success;i++)
+				{
+					number_of_versions=node_field_components[i].number_of_versions;
+					if (!FE_node_field_creator_define_versions(node_field_creator,i,
+						number_of_versions))
+					{
+						success=0;
+					}
+					number_of_derivatives=node_field_components[i].number_of_derivatives;
+					for(j=1;(j<=number_of_derivatives)&&success;j++)
+					{
+						nodal_value_type=node_field_components[i].nodal_value_types[j];
+						if (!FE_node_field_creator_define_derivative(node_field_creator,i,
+							nodal_value_type))
+						{
+							success=0;
+						}
+					}
+				}
+				if (!success)
+				{
+					DESTROY(FE_node_field_creator)(&node_field_creator);
+					display_message(ERROR_MESSAGE,
+						"create_FE_node_field_creator_from_node_field.  Failed");
+				}
+			}
+			else
+			{	
+				display_message(ERROR_MESSAGE,
+					"create_FE_node_field_creator_from_node_field.  Unable to allocate");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_FE_node_field_creator_from_node_field. field not defined at node");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"create_FE_node_field_creator_from_node_field.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (node_field_creator);
+} /* create_FE_node_field_creator_from_node_field */
+
 int DESTROY(FE_node_field_creator)(
 	struct FE_node_field_creator **node_field_creator_address)
 /*******************************************************************************
@@ -12604,6 +12679,117 @@ Frees the memory for the node field creator and sets
 
 	return (return_code);
 } /* DESTROY(FE_node_field_creator) */
+
+int FE_node_field_creator_get_nodal_derivative_versions(
+	struct FE_node_field_creator *node_field_creator, 
+	int *number_of_derivatives, 
+	enum FE_nodal_value_type **nodal_derivative_types,int **max_versions)
+/*******************************************************************************
+LAST MODIFIED: 11 February 2002
+
+DESCRIPTION:
+Given <node_field_creator>, returns <number_of_derivatives>
+which is the size of the arrays <nodal_derivative_types> (containing the 
+FE_nodal_value_type of the derivates present at the node_field_creator) 
+and <max_versions> (which contains the maximum number of versions of each 
+derivative type).
+Note: This function allocates the arrays nodal_derivative_types and max_versions, 
+the user is responsible for freeing them.
+==============================================================================*/
+{
+	enum FE_nodal_value_type  *the_nodal_derivative_types,**nodal_value_types,
+		*the_nodal_value_types,a_nodal_value_type;
+	int array_size,found,max_array_size,i,j,k,number_of_components,
+		number_of_component_derivatives,number_of_versions,	return_code,*max_nodal_versions;
+	max_nodal_versions=(int *)NULL;
+	the_nodal_derivative_types=(enum FE_nodal_value_type *)NULL;
+	return_code = 0;
+	if(node_field_creator&&number_of_derivatives)
+	{
+		/*max_array_size will contain the max possible comb of versions and derviative types */
+		/*will usually be too big.*/
+		max_array_size=0;
+		number_of_components=node_field_creator->number_of_components;
+		for(i=0;i<number_of_components;i++)
+		{
+			max_array_size+=node_field_creator->numbers_of_versions[i]*
+				node_field_creator->numbers_of_derivatives[i];
+		}
+		if(ALLOCATE(the_nodal_derivative_types,enum FE_nodal_value_type,max_array_size)&&
+			ALLOCATE(max_nodal_versions,int,max_array_size))
+		{	
+			/*fill in arrays with blanks*/
+			for(i=0;i<max_array_size;i++)
+			{
+				the_nodal_derivative_types[i]=FE_NODAL_UNKNOWN;
+				max_nodal_versions[i]=0;
+			}
+			return_code = 1;			
+			/*nodal_value_types an array of arrays of FE_nodal_value_type*/
+			nodal_value_types=node_field_creator->nodal_value_types;
+			/*for all components*/		
+			array_size=0;
+			for(i=0;i<number_of_components;i++)
+			{										
+				number_of_component_derivatives=node_field_creator->numbers_of_derivatives[i];
+				number_of_versions=node_field_creator->numbers_of_versions[i];						
+				/*the_nodal_value_types an array of FE_nodal_value_type*/
+				the_nodal_value_types=*nodal_value_types;
+				/* for all the derivatives*/
+				/* number_of_component_derivatives+1 as also have nodal value*/
+				for(j=0;j<number_of_component_derivatives+1;j++)
+				{	
+					if(j!=0)/*don't consider 1st as this is nodal value, not derivative*/
+					{						
+						a_nodal_value_type=*the_nodal_value_types;
+						k=0;
+						found=0;
+						/*loop through any previously stored derivative/versions*/
+						while((k<=array_size)&&(!found))
+						{
+							/* have we already stored the derivative/version */
+							if((a_nodal_value_type==the_nodal_derivative_types[k])&&
+								(max_nodal_versions[k]==number_of_versions))
+							{
+								found=1;
+							}
+							else
+							{
+								k++;
+							}
+						}
+						if(!found)
+						{
+							/* if we haven't found the derivative/version, store it*/
+							the_nodal_derivative_types[array_size]=a_nodal_value_type;
+							max_nodal_versions[array_size]=number_of_versions;
+							array_size++;
+						}					
+					}/* 	if(j!=0)*/
+					the_nodal_value_types++;
+				}/* for(j=0;j<number_of_component_derivatives+1;j++) */
+				nodal_value_types++;
+			}/* for(i=0;i<number_of_components;i++) */
+			*number_of_derivatives=array_size;	
+			*nodal_derivative_types=the_nodal_derivative_types;
+			*max_versions=max_nodal_versions;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_field_creator_get_nodal_derivative_versions. array alocation failed");
+			return_code = 0;
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"FE_node_field_creator_get_nodal_derivative_versions. Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}/* FE_node_field_creator_get_nodal_derivative_versions*/
 
 int FE_node_field_creator_define_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
@@ -20477,6 +20663,48 @@ Frees the memory for the linear combination and sets
 	return (return_code);
 } /* DESTROY(Linear_combination_of_global_values) */
 
+static struct Linear_combination_of_global_values *copy_create_Linear_combination_of_global_values(
+	struct Linear_combination_of_global_values *source)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2002
+
+DESCRIPTION :
+Creates and returns an exact copy of the struct Linear_combination_of_global_values
+<source>.
+==============================================================================*/
+{	
+	int i,number_of_global_values;
+	struct Linear_combination_of_global_values *map;
+
+	ENTER(copy_create_Linear_combination_of_global_values);
+	map=(struct Linear_combination_of_global_values *)NULL;
+	if(source)
+	{
+		number_of_global_values=source->number_of_global_values;
+		map=CREATE(Linear_combination_of_global_values)(number_of_global_values);
+		if(map)
+		{
+			for(i=0;i<number_of_global_values;i++)
+			{
+				map->global_value_indices=source->global_value_indices;
+				map->coefficient_indices=source->coefficient_indices;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"copy_create_Linear_combination_of_global_values, failed to create map");
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+				"copy_create_Linear_combination_of_global_values, Invalid argument");
+	}
+	LEAVE;
+	return(map);
+}/* copy_create_Linear_combination_of_global_values */
+
 struct Standard_node_to_element_map *CREATE(Standard_node_to_element_map)(
 	int node_index,int number_of_nodal_values)
 /*******************************************************************************
@@ -20559,6 +20787,49 @@ Frees the memory for the map and sets <*map_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(Standard_node_to_element_map) */
+
+static struct Standard_node_to_element_map *copy_create_Standard_node_to_element_map(
+	struct Standard_node_to_element_map *source)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2002
+
+DESCRIPTION :
+Creates and returns an exact copy of the struct Standard_node_to_element_map
+<source>.
+==============================================================================*/
+{	
+	int i,node_index,number_of_nodal_values;
+	struct Standard_node_to_element_map *map;
+
+	ENTER(copy_create_Standard_node_to_element_map)
+	map=(struct Standard_node_to_element_map *)NULL;	
+	if(source)
+	{
+		node_index=source->node_index;
+		number_of_nodal_values=source->number_of_nodal_values;
+		map=CREATE(Standard_node_to_element_map)(node_index,number_of_nodal_values);
+		if(map)
+		{
+			for(i=0;i<number_of_nodal_values;i++)
+			{
+				map->nodal_value_indices[i]=source->nodal_value_indices[i];
+				map->scale_factor_indices[i]=source->scale_factor_indices[i];
+			}
+		}
+		else
+		{		 
+			display_message(ERROR_MESSAGE,
+				"copy_create_Standard_node_to_element_map, failed to create map");
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+				"copy_create_Standard_node_to_element_map, Invalid argument");
+	}
+	LEAVE;
+	return(map);
+}/* copy_create_Standard_node_to_element_map */
 
 struct General_node_to_element_map *CREATE(General_node_to_element_map)(
 	int node_index,int number_of_nodal_values)
@@ -20643,6 +20914,156 @@ Frees the memory for the map and sets <*map_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(General_node_to_element_map) */
+
+static struct General_node_to_element_map *copy_create_General_node_to_element_map(
+	struct General_node_to_element_map *source)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2002
+
+DESCRIPTION :
+Creates and returns an exact copy of the struct General_node_to_element_map
+<source>.
+==============================================================================*/
+{	
+	int i,node_index,number_of_nodal_values;
+	struct General_node_to_element_map *map;
+	struct Linear_combination_of_global_values **element_value,
+		**source_element_value;
+
+	ENTER(copy_create_General_node_to_element_map)
+	map=(struct General_node_to_element_map *)NULL;
+	element_value=(struct Linear_combination_of_global_values **)NULL;
+	source_element_value=(struct Linear_combination_of_global_values **)NULL;	
+	if(source)
+	{
+		node_index=source->node_index;
+		number_of_nodal_values=source->number_of_nodal_values;
+		source_element_value=source->element_values;
+		map=CREATE(General_node_to_element_map)(node_index,number_of_nodal_values);
+		if(map)
+		{
+			element_value=map->element_values;
+			for (i=number_of_nodal_values;i>0;i--)
+			{
+				
+				*element_value=copy_create_Linear_combination_of_global_values(
+					*source_element_value);
+				element_value++;
+				source_element_value++;
+			}
+		}
+		else
+		{		 
+			display_message(ERROR_MESSAGE,
+				"copy_create_General_node_to_element_map, failed to create map");
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+				"copy_create_General_node_to_element_map, Invalid argument");
+	}
+	LEAVE;
+	return(map);
+}/* copy_create_General_node_to_element_map */
+
+struct FE_element_field_component *copy_create_FE_element_field_component(
+	struct FE_element_field_component *source_component)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2002
+
+DESCRIPTION :
+Creates and returns an exact copy of the struct FE_element_field_component 
+<source_component>.
+==============================================================================*/
+{
+	int  i,number_of_maps;
+	struct FE_element_field_component *component;
+
+	ENTER(copy_create_FE_element_field_component);
+	component=(struct FE_element_field_component *)NULL;
+	if(source_component)
+	{
+		switch(source_component->type)
+		{
+			case STANDARD_NODE_TO_ELEMENT_MAP:
+			{
+				number_of_maps=source_component->map.standard_node_based.number_of_nodes;
+			}	break;
+			case GENERAL_NODE_TO_ELEMENT_MAP:	
+			{
+				number_of_maps=source_component->map.general_node_based.number_of_nodes;
+			}	break;
+			case FIELD_TO_ELEMENT_MAP:	
+			{
+				number_of_maps=source_component->map.field_based.number_of_element_values;
+			}	break;
+			case ELEMENT_GRID_MAP:
+			{
+				number_of_maps=1;
+			}	break;
+		}/* switch(source_component->type) */
+		/*create the component*/
+		component=CREATE(FE_element_field_component)(source_component->type,number_of_maps,
+			source_component->basis,source_component->modify);
+		/* fill in the interior of component */
+		if(component)
+		{			
+			switch(source_component->type)
+			{
+				case STANDARD_NODE_TO_ELEMENT_MAP:
+				{																
+					for(i=0;i<number_of_maps;i++)
+					{					
+						component->map.standard_node_based.node_to_element_maps[i]=
+							copy_create_Standard_node_to_element_map(
+								source_component->map.standard_node_based.node_to_element_maps[i]);
+					}													
+				}	break;
+				case GENERAL_NODE_TO_ELEMENT_MAP:	
+				{									
+					for(i=0;i<number_of_maps;i++)
+					{					
+						component->map.general_node_based.node_to_element_maps[i]=
+							copy_create_General_node_to_element_map(
+								source_component->map.general_node_based.node_to_element_maps[i]);
+					}														
+				}	break;
+				case FIELD_TO_ELEMENT_MAP:	
+				{											
+					for(i=0;i<number_of_maps;i++)
+					{					
+						component->map.field_based.element_values[i]=
+							copy_create_Linear_combination_of_global_values(
+								source_component->map.field_based.element_values[i]);									
+					}													
+				}	break;
+				case ELEMENT_GRID_MAP:
+				{					
+					for(i=0;i<source_component->basis->type[0];i++)
+					{
+						component->map.element_grid_based.number_in_xi[i]=
+							source_component->map.element_grid_based.number_in_xi[i];
+					}
+					component->map.element_grid_based.value_index=
+						source_component->map.element_grid_based.value_index;
+				}	break;
+			}/* switch(source_component->type) */
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"copy_create_FE_element_field_component, failed to create component");
+		}
+	} 
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"copy_create_FE_element_field_component, Invalid argument");
+	}
+	LEAVE;
+	return(component);
+}/* copy_create_FE_element_field_component */
 
 struct FE_element_field_component *CREATE(FE_element_field_component)(
 	enum Global_to_element_map_type type,int number_of_maps,
@@ -28683,6 +29104,156 @@ Should only be called for unmanaged elements.
 
 	return (return_code);
 } /* define_FE_field_at_element */
+
+int define_FE_field_cp_at_element_from_template_field_modify_theta(
+	struct FE_element *element,
+	struct FE_field *field, struct FE_field *template_field)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2002
+
+DESCRIPTION :
+Defines <field> at <element> using exactly the same bases etc. as the
+<template_field>. Note: nodes referred to by the new element field must have
+already been set up with the same values, derivatives and versions as the
+<template_field>.
+Function checks that the number of components and value types of the fields
+are the same.
+Copies all components. Changes the modify function of the second function to
+theta_closest_in_xi1. This makes the assumption that the <field> is a
+coordinate field of type CYLINDRICAL_POLAR.
+ 
+In other situations, it would be possible to simply assign the pointers, 
+be we alter (some of the) component's modify function.
+  
+Note: Could generalise this more, by passing in the modify function(s),
+but leave off doing this until need a similar function, to get a better idea of
+what's required, i.e how to specify which component modifies to change.
+==============================================================================*/
+{
+	int i,number_of_components,return_code;
+	struct FE_element_field *source_element_field;
+	struct FE_element_field_component **components,**current_component;
+
+	ENTER(define_FE_field_cp_at_element_from_template_field_modify_theta);
+	return_code = 0;
+	source_element_field=(struct FE_element_field *)NULL;
+	components=(struct FE_element_field_component **)NULL;
+	current_component=(struct FE_element_field_component **)NULL;
+	if (element && element->shape && element->information &&
+		element->information->fields && field && template_field&&
+		(field->number_of_components==template_field->number_of_components)&&
+		(field->fe_field_type==template_field->fe_field_type)&&
+		(field->cm_field_type==template_field->cm_field_type)&&
+		(field->value_type==template_field->value_type))
+	{
+		if (source_element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
+			template_field, element->information->fields->element_field_list))
+		{
+			number_of_components=source_element_field->field->number_of_components;
+			if(ALLOCATE(components,struct FE_element_field_component  *,
+				number_of_components))
+			{			
+				current_component=components;
+				for(i=0;i<number_of_components;i++)
+				{
+					
+					*current_component=
+						copy_create_FE_element_field_component(source_element_field->components[i]);
+					current_component++;					
+				}
+				/*make theta (second component) modify function theta_closest_in_xi1 */
+				components[1]->modify=theta_closest_in_xi1;
+				return_code = define_FE_field_at_element(element,field,components);
+				/* destroy the components */
+				current_component=components;
+				for(i=0;i<number_of_components;i++)
+				{
+					DESTROY(FE_element_field_component)(current_component);
+					current_component++;
+				}
+				DEALLOCATE(components);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+				"define_FE_field_cp_at_element_from_template_field_modify_theta.  "
+				"out of memory for components");
+			}			
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"define_FE_field_cp_at_element_from_template_field_modify_theta.  "
+				"Template field not defined at element");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_FE_field_cp_at_element_from_template_field_modify_theta. "
+			" Invalid argument(s)");
+	}
+	LEAVE;
+	return (return_code);
+} /* define_FE_field_cp_at_element_from_template_field_modify_theta */
+
+int iterative_define_FE_field_cp_at_element_from_template_field_modify_theta(
+	struct FE_element *element,void *dfn_FE_field_at_elem_frm_template_data_void)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+If <element> is of type CM_ELEMENT, calls Iteratively calls 
+define_FE_field_cp_at_element_from_template_field_modify_theta with
+<dfn_FE_field_at_elem_frm_template_data>'s field, template_field and 
+element_manager
+==============================================================================*/
+{	
+	int return_code;
+	struct Dfn_FE_field_at_elem_frm_template_data 
+		*dfn_FE_field_at_elem_frm_template_data;
+	struct FE_element *element_copy;
+	struct FE_field *field,*template_field;
+	struct MANAGER(FE_element) *element_manager;
+
+	ENTER(iterative_define_FE_field_cp_at_element_from_template_field_modify_theta);
+	field=(struct FE_field *)NULL;
+	template_field=(struct FE_field *)NULL;
+	element_manager=(struct MANAGER(FE_element) *)NULL;
+	element_copy=(struct FE_element *)NULL;
+	if(element&&dfn_FE_field_at_elem_frm_template_data_void&&
+		(dfn_FE_field_at_elem_frm_template_data=
+			(struct Dfn_FE_field_at_elem_frm_template_data *)
+			dfn_FE_field_at_elem_frm_template_data_void))
+	{
+		return_code=1;			
+		if(element->cm.type==CM_ELEMENT)
+		{
+			field=dfn_FE_field_at_elem_frm_template_data->field;
+			template_field=dfn_FE_field_at_elem_frm_template_data->template_field;
+			element_manager=dfn_FE_field_at_elem_frm_template_data->element_manager;
+			if (element_copy=CREATE(FE_element)(element->identifier, element))
+			{
+				return_code=
+					define_FE_field_cp_at_element_from_template_field_modify_theta(element_copy,
+					field, template_field);
+				MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(element,element_copy,
+					element_manager);
+			}
+			/* destroy the working copy */
+			DESTROY(FE_element)(&element_copy);
+		}
+	}	
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"iterative_define_FE_field_cp_at_element_from_template_field_modify_theta"
+			" Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+}/* iterative_define_FE_field_cp_at_element_from_template_field_modify_theta */
 
 static int FE_element_field_has_element_grid_map(
 	struct FE_element_field *element_field,void *dummy_void)
@@ -40718,6 +41289,7 @@ Assumes the node is managed, copys the node out the manager to modify.
 	LEAVE;
 	return (return_code);
 } /*iterative_define_FE_field_at_node */
+
 
 struct FE_node_order_info *CREATE(FE_node_order_info)(
 	int number_of_nodes)
