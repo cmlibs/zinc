@@ -14,6 +14,7 @@
 #if !defined (__FUNCTION_BASE_HPP__)
 #define __FUNCTION_BASE_HPP__
 
+#include <iostream>
 #include <stdexcept>
 
 //#define BEFORE_CACHING
