@@ -739,7 +739,7 @@ and their labels.
 									}
 									else
 									{
-										XtSetArg(args[2],XmNcolumns,8);
+										XtSetArg(args[2],XmNcolumns,10);
 									}
 									if (widget=XmCreateTextField(
 										node_field_viewer->component_rowcol,"value",args,3))
