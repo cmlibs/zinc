@@ -2900,7 +2900,10 @@ does not wait for cm commands to complete, otherwise it does.
 					(return_struct->data_input=CREATE(Wh_input)(connection_info[2][0],
 					(char *)NULL,wormhole_timeout))&&
 					(return_struct->data_output=
-					CREATE(Wh_output)(connection_info[2][1],(char *)NULL)))
+					CREATE(Wh_output)(connection_info[2][1],(char *)NULL))&&
+					/* SAB Check that something connects */
+					(1 == wh_output_wait(return_struct->command_output,
+					/*timeout_seconds*/7)))
 				{
 					return_struct->element_manager=element_manager;
 /*???DB.  Element transfer needs debugging */
