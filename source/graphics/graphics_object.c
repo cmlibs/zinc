@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -165,7 +165,7 @@ returned if <time> is lower than any times in the array or an error occurs.
 static int GT_OBJECT_DELETE_TIME_NUMBER(primitive_type)( \
 	struct GT_object *graphics_object,int time_no) \
 /***************************************************************************** \
-LAST MODIFIED : 19 June 1997 \
+LAST MODIFIED : 28 August 2000 \
 \
 DESCRIPTION : \
 Removes time<time_no> and all the primitives in it from <graphics_object>. \
@@ -185,6 +185,7 @@ Removes time<time_no> and all the primitives in it from <graphics_object>. \
 			if (primitive_ptr=graphics_object->gu.primitive_var) \
 			{ \
 				primitive_ptr += time_no-1; \
+				times += time_no-1; \
 				/* Remove primitives at this time */ \
 				while (primitive= *primitive_ptr) \
 				{ \
@@ -194,9 +195,9 @@ Removes time<time_no> and all the primitives in it from <graphics_object>. \
 				/* Shift following times and primitives down */ \
 				for (i=(graphics_object->number_of_times)-time_no;i>0;i--) \
 				{ \
-					times[0]=times[1]; \
+					*times = *(times+1); \
 					times++; \
-					primitive_ptr[0]=primitive_ptr[1]; \
+					*primitive_ptr = *(primitive_ptr+1); \
 					primitive_ptr++; \
 				} \
 				graphics_object->number_of_times--; \
@@ -4504,7 +4505,7 @@ Removes all primitive at <time> from <graphics_object>.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"GT_object_delete_time.  No objects at time %g",time);
+				"GT_object_delete_time.  No primatives at time %g",time);
 			return_code=0;
 		}
 	}
