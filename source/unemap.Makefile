@@ -426,7 +426,6 @@ ifdef USE_UNEMAP_3D
 CHOOSE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_fe_field.c \
-	choose/choose_node_group.c \
 	choose/chooser.c
 COLOUR_SRCS = \
 	colour/edit_var.c
@@ -444,14 +443,17 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_value_index_ranges.c \
 	computed_field/computed_field_vector_operations.c \
 	computed_field/computed_field_wrappers.c
+ELEMENT_SRCS = \
+	element/element_operations.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
+	finite_element/finite_element.c \
 	finite_element/finite_element_discretization.c \
+	finite_element/finite_element_region.c \
 	finite_element/finite_element_time.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
-	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
 	finite_element/import_finite_element.c
 GENERAL_SRCS = \
@@ -517,6 +519,10 @@ MOTIF_INTERFACE_SRCS =  \
 NODE_SRCS = \
 	node/node_operations.c \
 	node/node_tool.c
+REGION_SRCS = \
+   region/cmiss_region.c \
+   region/cmiss_region_chooser.c \
+   region/cmiss_region_write_info.c
 SELECTION_SRCS = \
 	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
@@ -567,6 +573,7 @@ else # USE_UNEMAP_3D
 CHOOSE_SRCS =
 COLOUR_SRCS =
 COMPUTED_FIELD_SRCS =
+ELEMENT_SRCS =
 FINITE_ELEMENT_SRCS =
 GENERAL_SRCS = \
 	general/callback.c \
@@ -592,6 +599,7 @@ INTERACTION_SRCS =
 POSITION_SRCS =
 MOTIF_INTERFACE_SRCS =
 NODE_SRCS =
+REGION_SRCS =
 SELECTION_SRCS =
 TIME_SRCS = \
 	time/time.c \
@@ -646,6 +654,7 @@ SRCS = \
 	$(COLOUR_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
+	$(ELEMENT_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
@@ -654,6 +663,7 @@ SRCS = \
 	$(MOTIF_INTERFACE_SRCS) \
 	$(NODE_SRCS) \
 	$(POSITION_SRCS) \
+	$(REGION_SRCS) \
 	$(SELECTION_SRCS) \
 	$(THREE_D_DRAWING_SRCS) \
 	$(TIME_SRCS) \

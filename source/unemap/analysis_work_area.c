@@ -3877,8 +3877,8 @@ Sets up the analysis work area for analysing a set of signals.
 			rig_node=(struct FE_node *)NULL;
 			rig_node_group=(struct FE_region *)NULL;
 			if ((rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig))&&
-				(rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group))&&
+				(rig_node=FE_region_get_first_FE_node_that(rig_node_group,
+					(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL)) &&
 				(highlight_field=get_Signal_drawing_package_highlight_field(
 					analysis->signal_drawing_package)))
 			{
@@ -12831,8 +12831,8 @@ own min/max
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
 					display_end_time_field);
 				/* run through all the nodes setting signals min, max */
-				FOR_EACH_OBJECT_IN_FE_region(iterative_unrange_rig_node_signal,
-					(void *)min_max_iterator,rig_node_group);
+				FE_region_for_each_FE_node(rig_node_group,
+					iterative_unrange_rig_node_signal, (void *)min_max_iterator);
 				DESTROY(Min_max_iterator)(&min_max_iterator);
 			}
 			else
@@ -12988,9 +12988,9 @@ then sets all signals to this range.
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
 					display_end_time_field);
 				/* run through all the nodes to get accepted,undecided signal's min, max */
-				FOR_EACH_OBJECT_IN_FE_region
-					(iterative_get_rig_node_accepted_undecided_signal_min_max,
-						(void *)min_max_iterator,rig_node_group);
+				FE_region_for_each_FE_node(rig_node_group,
+					iterative_get_rig_node_accepted_undecided_signal_min_max,
+						(void *)min_max_iterator);
 				/*min_max_iterator.max,min_max_iterator.min now set  */
 				set_Min_max_iterator_count(min_max_iterator,0);
 				set_Min_max_iterator_signal_minimum_field(min_max_iterator,signal_minimum_field);
@@ -13000,8 +13000,9 @@ then sets all signals to this range.
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
 					display_end_time_field);
 				/* run through all the nodes setting signals min, max */
-				FOR_EACH_OBJECT_IN_FE_region(iterative_set_rig_node_signal_min_max,
-					(void *)min_max_iterator,rig_node_group);
+				FE_region_for_each_FE_node(rig_node_group,
+					iterative_set_rig_node_signal_min_max,
+					(void *)min_max_iterator);
 				DESTROY(Min_max_iterator)(&min_max_iterator);
 			}
 			else
@@ -13192,8 +13193,8 @@ same as the range for the current signal.
 				set_Min_max_iterator_signal_maximum_field(min_max_iterator,
 					signal_maximum_field);
 				/* run through all the nodes setting signals min, max */
-				FOR_EACH_OBJECT_IN_FE_region(iterative_set_rig_node_signal_min_max,
-					(void *)min_max_iterator,rig_node_group);
+				FE_region_for_each_FE_node(rig_node_group,
+					iterative_set_rig_node_signal_min_max, (void *)min_max_iterator);
 				DESTROY(Min_max_iterator)(&min_max_iterator);
 			}
 			else
@@ -14026,7 +14027,7 @@ else
 static int accept_signal(struct Analysis_work_area *analysis,
 	struct Device **signal_device)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 16 May 2003
 
 DESCRIPTION : accept the analysis signal.
 ==============================================================================*/
@@ -14036,18 +14037,18 @@ DESCRIPTION : accept the analysis signal.
 	int average_width,device_number,i,minimum_separation,
 		number_of_objective_values,objective_values_step,return_code,
 		threshold_percentage,xpos,ypos;
-	struct Cmiss_region *root_cmiss_region;
 	struct Device **device;
-	struct FE_region *root_fe_region;
 	struct Region *current_region;
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 	struct Signals_area *signals;
 #if defined(UNEMAP_USE_3D)
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_field *device_name_field,*signal_status_field;
 	struct FE_node *rig_node,*node;
 	struct FE_region *rig_node_group,*unrejected_node_group;
+	struct FE_region *root_fe_region;
 #endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(accept_signal);
@@ -14277,25 +14278,25 @@ DESCRIPTION : accept the analysis signal.
 static int reject_signal(struct Analysis_work_area *analysis,
 	struct Device **signal_device)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 Reject the  <signal> in <analysis>
 ==============================================================================*/
 {
 	int device_number,i,return_code,xpos,ypos;
-	struct Cmiss_region *root_cmiss_region;
 	struct Device **device;
-	struct FE_region *root_fe_region;
 	struct Region *current_region;
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 	struct Signals_area *signals;
 #if defined(UNEMAP_USE_3D)
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_field *device_name_field,*signal_status_field;
 	struct FE_node *rig_node,*node;
 	struct FE_region *rig_node_group,*unrejected_node_group;
+	struct FE_region *root_fe_region;
 #endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(reject_signal);
@@ -17747,9 +17748,9 @@ cf highlight_analysis_device
 									highlight_iterator.count=0;
 									highlight_iterator.highlight_field=
 										signal_drawing_package->highlight_field;
-									FOR_EACH_OBJECT_IN_FE_region(
+									FE_region_for_each_FE_node(rig_node_group,
 										iterative_set_highlight_field,
-										(void *)(&highlight_iterator),rig_node_group);
+										(void *)(&highlight_iterator));
 								}
 							}
 							region_item=get_Region_list_item_next(region_item);

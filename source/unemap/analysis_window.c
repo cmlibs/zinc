@@ -2698,7 +2698,7 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 	enum Signal_order signal_order;
 	int return_code;
 	struct FE_node_order_info *node_order_info;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 	struct Region *current_region;
 	struct Rig *rig;
 	struct Signal_drawing_package *signal_drawing_package;
@@ -2707,7 +2707,7 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 	node_order_info=(struct FE_node_order_info *)NULL;
 	current_region=(struct Region *)NULL;
 	rig=(struct Rig *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 	signal_drawing_package=(struct Signal_drawing_package *)NULL;
 	if (analysis_window)
 	{
@@ -5418,7 +5418,7 @@ DESCRIPTION : returns the rig_node_order_info of <analysis_window>
 #if defined (UNEMAP_USE_NODES)
 struct FE_node_order_info
 	*create_and_sort_FE_node_order_info_from_rig_node_group(
-	struct GROUP(FE_node) *rig_node_group,enum Signal_order signal_order,
+	struct FE_region *rig_node_group,enum Signal_order signal_order,
 	struct Signal_drawing_package *signal_drawing_package)
 /*******************************************************************************
 LAST MODIFIED : 10 August 2000
@@ -5445,9 +5445,8 @@ creates (and returns) an FE_node_order_info containing the nodes of
 	{
 		if (node_order_info=CREATE(FE_node_order_info)(0))
 		{
-			if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-				fill_FE_node_order_info,(void *)node_order_info,
-				rig_node_group))
+			if (success=FE_region_for_each_FE_node(rig_node_group,
+				fill_FE_node_order_info,(void *)node_order_info))
 			{
 				number_of_nodes=get_FE_node_order_info_number_of_nodes(node_order_info);
 				/* create and fill an array of Rig_node_sort pointers to sort*/

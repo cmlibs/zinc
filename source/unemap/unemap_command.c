@@ -422,7 +422,7 @@ will be destroyed with it.
 int DESTROY(Unemap_command_data)(
 	struct Unemap_command_data **unemap_command_data_address)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 Destroys the Unemap_command_data at <unemap_command_data_address>.
@@ -441,8 +441,10 @@ Destroys the Unemap_command_data at <unemap_command_data_address>.
 			DESTROY(System_window)(&(unemap_command_data->unemap_system_window));
 		}
 #endif /* defined (NOT_ACQUISITION_ONLY) */
+#if defined (UNEMAP_USE_3D)
 		DEACCESS(Cmiss_region)(&(unemap_command_data->root_cmiss_region));
 		DEACCESS(Cmiss_region)(&(unemap_command_data->data_root_cmiss_region));
+#endif /* defined (UNEMAP_USE_3D) */
 		DEALLOCATE(*unemap_command_data_address);
 		*unemap_command_data_address = (struct Unemap_command_data *)NULL;
 		return_code = 1;

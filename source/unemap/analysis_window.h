@@ -398,7 +398,7 @@ DESCRIPTION : returns the rig_node_order_info of <analysis_window>
 
 #if defined (UNEMAP_USE_NODES)
 struct FE_node_order_info *create_and_sort_FE_node_order_info_from_rig_node_group(
-	struct GROUP(FE_node) *rig_node_group,enum Signal_order signal_order,
+	struct FE_region *rig_node_group,enum Signal_order signal_order,
 	struct Signal_drawing_package *signal_drawing_package);
 /*******************************************************************************
 LAST MODIFIED : 10 August 2000

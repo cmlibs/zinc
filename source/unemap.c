@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -28,6 +28,7 @@ Main program for unemap.  Based on cmgui.
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_vector_operations.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/import_finite_element.h"
 #include "graphics/glyph.h"
 #include "graphics/light.h"
@@ -38,6 +39,7 @@ Main program for unemap.  Based on cmgui.
 #include "graphics/transform_tool.h"
 #include "interaction/interactive_tool.h"
 #include "node/node_tool.h"
+#include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -369,6 +371,8 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D)
 	float default_light_direction[3]={0.0,-0.5,-1.0};	
+	struct Cmiss_region *root_cmiss_region = (struct Cmiss_region *)NULL;
+	struct Cmiss_region *data_root_cmiss_region = (struct Cmiss_region *)NULL;
 	struct Colour ambient_colour,default_colour;	
 	struct Computed_field *computed_field=(struct Computed_field *)NULL;
 	struct Computed_field_package *computed_field_package=
@@ -380,7 +384,7 @@ Main program for unemap
 		(struct FE_element_selection *)NULL;
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
 	struct FE_node_selection *data_selection=(struct FE_node_selection *)NULL;
-	struct FE_time *fe_time = (struct FE_time *)NULL;
+	struct FE_region *data_root_fe_region, *root_fe_region;
 	struct Graphical_material *default_graphical_material=
 		(struct Graphical_material *)NULL;
 	struct Graphical_material *default_selected_material=
@@ -393,19 +397,8 @@ Main program for unemap
 	struct MANAGER(Computed_field) *computed_field_manager=
 		(struct MANAGER(Computed_field) *)NULL;
 	struct MANAGER(FE_basis) *fe_basis_manager=(struct MANAGER(FE_basis) *)NULL;
-	struct MANAGER(FE_field) *fe_field_manager=(struct MANAGER(FE_field) *)NULL;
-	struct MANAGER(FE_element) *element_manager=
-		(struct MANAGER(FE_element) *)NULL;
-	struct MANAGER(FE_node) *data_manager=(struct MANAGER(FE_node) *)NULL;
-	struct MANAGER(FE_node) *node_manager=(struct MANAGER(FE_node) *)NULL;
 	struct MANAGER(Graphical_material) *graphical_material_manager=
 		(struct MANAGER(Graphical_material) *)NULL;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager=
-		(struct MANAGER(GROUP(FE_element)) *)NULL;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager=
-		(struct MANAGER(GROUP(FE_node)) *)NULL;
-	struct MANAGER(GROUP(FE_node))*node_group_manager=
-		(struct MANAGER(GROUP(FE_node))*)NULL;		
 	struct MANAGER(Interactive_tool) *interactive_tool_manager=
 		(struct MANAGER(Interactive_tool) *)NULL;
 	struct MANAGER(Light) *light_manager=(struct MANAGER(Light) *)NULL;
@@ -688,22 +681,40 @@ Main program for unemap
 			event_dispatcher,user_interface));
 #if defined (UNEMAP_USE_3D)
 		texture_manager=CREATE_MANAGER(Texture)();	
-		fe_field_manager=CREATE_MANAGER(FE_field)();
-		element_group_manager=CREATE_MANAGER(GROUP(FE_element))();
-		data_manager=CREATE_MANAGER(FE_node)();
-		node_manager=CREATE_MANAGER(FE_node)();
-		element_manager=CREATE_MANAGER(FE_element)();
-		node_group_manager=CREATE_MANAGER(GROUP(FE_node))();
-		data_group_manager=CREATE_MANAGER(GROUP(FE_node))();
-		fe_basis_manager=CREATE_MANAGER(FE_basis)(); 
+		fe_basis_manager=CREATE_MANAGER(FE_basis)();
+
+		root_cmiss_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
+		/* add FE_region to root_cmiss_region */
+		if (root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
+			fe_basis_manager))
+		{
+			Cmiss_region_attach_FE_region(root_cmiss_region, root_fe_region);
+		}
+
+		data_root_cmiss_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
+		/* add FE_region to data_root_cmiss_region but make it use fields and elements
+			 from the root_cmiss_region with the data_hack! */
+		if (data_root_fe_region = create_data_hack_FE_region(root_fe_region))
+		{
+			Cmiss_region_attach_FE_region(data_root_cmiss_region, data_root_fe_region);
+		}
+
+		/* add callbacks so root_cmiss_region and data_root_cmiss_region keep their children
+			 synchronised */
+		Cmiss_region_add_callback(root_cmiss_region,
+			Cmiss_region_synchronise_children_with_FE_region,
+			(void *)data_root_cmiss_region);
+		Cmiss_region_add_callback(data_root_cmiss_region,
+			Cmiss_region_synchronise_children_with_FE_region,
+			(void *)root_cmiss_region);
+
 		/* global list of selected objects */
 		element_point_ranges_selection=CREATE(Element_point_ranges_selection)();
-		element_selection=CREATE(FE_element_selection)();
-		node_selection=CREATE(FE_node_selection)();
-		data_selection=CREATE(FE_node_selection)();
+		element_selection=CREATE(FE_element_selection)(root_fe_region);
+		node_selection=CREATE(FE_node_selection)(root_fe_region);
+		data_selection=CREATE(FE_node_selection)(data_root_fe_region);
 		/* interactive_tool manager */
 		interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
-		fe_time=ACCESS(FE_time)(CREATE(FE_time)());
 		scene_manager=CREATE_MANAGER(Scene)();
 		if (light_model_manager=CREATE_MANAGER(Light_model)())
 		{
@@ -794,7 +805,6 @@ Main program for unemap
 				}
 			}						
 		}
-		data_manager=CREATE_MANAGER(FE_node)();
 		if ((computed_field_package=CREATE(Computed_field_package)())&&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
 			computed_field_package)))
@@ -828,23 +838,21 @@ Main program for unemap
 					computed_field_package);
 				Computed_field_register_types_component_operations(
 					computed_field_package);
-				if (fe_field_manager)
+				if (root_fe_region)
 				{
 						Computed_field_register_types_finite_element(
-							computed_field_package,
-							fe_field_manager, fe_time);
+							computed_field_package, root_cmiss_region);
 				}
 			}
 		}
 		glyph_list=make_standard_glyphs();
 		node_tool=CREATE(Node_tool)(interactive_tool_manager,
-			node_manager,/*use_data*/0,node_group_manager,element_manager,
+			root_cmiss_region,/*use_data*/0,
 			node_selection,computed_field_package,default_graphical_material,
 			user_interface, time_keeper, execute_command);		
 		transform_tool=create_Interactive_tool_transform(user_interface);
 		ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
 			interactive_tool_manager);
-		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 			/*???DB.  To be done */
 		all_FE_element_shape=CREATE_LIST(FE_element_shape)();
@@ -859,10 +867,8 @@ Main program for unemap
 			unemap_end_application_loop,(void *)user_interface,
 #if defined (UNEMAP_USE_3D)
 			element_point_ranges_selection,element_selection,
-			fe_field_manager,node_selection,data_selection,
-			fe_time,fe_basis_manager,
-			element_manager,data_manager,node_manager,
-			element_group_manager,data_group_manager,node_group_manager,
+			node_selection,data_selection,
+			fe_basis_manager,root_cmiss_region,data_root_cmiss_region,
 			texture_manager,interactive_tool_manager,scene_manager,
 			light_model_manager,light_manager,spectrum_manager,
 			graphical_material_manager,glyph_list,
@@ -899,18 +905,12 @@ Main program for unemap
 				transform_tool,
 #endif /* defined (MOTIF) */
 				glyph_list,
-				fe_time,
 				computed_field_package,
 				fe_basis_manager,
-				element_manager,
-				fe_field_manager,
-				data_manager,
-				node_manager,
+				root_cmiss_region,
+				data_root_cmiss_region,
 				graphical_material_manager,
 				default_graphical_material,
-				element_group_manager,
-				data_group_manager,
-				node_group_manager,
 				interactive_tool_manager,
 				light_manager,
 				default_light,
@@ -994,23 +994,41 @@ Main program for unemap
 		DESTROY(FE_element_selection)(&element_selection);
 		DESTROY(Element_point_ranges_selection)(&element_point_ranges_selection);
 		DESTROY(LIST(GT_object))(&glyph_list);
-		DESTROY(MANAGER(FE_field))(&fe_field_manager);
-		DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
-		DESTROY(MANAGER(FE_node))(&node_manager);
-		DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
-		DESTROY(MANAGER(FE_node))(&data_manager);
-		DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
-		DESTROY(MANAGER(FE_element))(&element_manager);	
+
+		/* remove callbacks synchronising root_cmiss_region and data_root_cmiss_region since
+			 they were established by the Command_data -- this must be done before
+			 the regions are destroyed */
+		Cmiss_region_remove_callback(root_cmiss_region,
+			Cmiss_region_synchronise_children_with_FE_region,
+			(void *)data_root_cmiss_region);
+		Cmiss_region_remove_callback(data_root_cmiss_region,
+			Cmiss_region_synchronise_children_with_FE_region,
+			(void *)root_cmiss_region);
+
+		DEACCESS(Cmiss_region)(&data_root_cmiss_region);
+		DEACCESS(Cmiss_region)(&root_cmiss_region);
+
 		DESTROY(MANAGER(FE_basis))(&fe_basis_manager);
-		DESTROY_LIST(FE_element_field_info)(&all_FE_element_field_info);
-		DESTROY_LIST(FE_element_shape)(&all_FE_element_shape);
+
+		/* check if there are any objects in all lists; if so, do not destroy
+			them since this will cause memory addresses to be deallocated twice
+			as DEACCESS will also request the objects be removed from the list.
+			Do, however, send out an error message */
+		if (0 == NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape))
+		{
+			DESTROY(LIST(FE_element_shape))(&all_FE_element_shape);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
+				NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape));
+		}
 		DESTROY(MANAGER(Spectrum))(&spectrum_manager);
 		DEACCESS(Graphical_material)(&default_graphical_material);			
 		DEACCESS(Graphical_material)(&default_selected_material);
 		DEACCESS(Graphical_material)(&electrode_selected_material);			
 		DESTROY(MANAGER(Graphical_material))(&graphical_material_manager);
 		DESTROY(MANAGER(Texture))(&texture_manager);
-		DEACCESS(FE_time)(&fe_time);
 		DEACCESS(Light_model)(&default_light_model);
 		DESTROY(MANAGER(Light_model))(&light_model_manager);
 		DEACCESS(Light)(&default_light);

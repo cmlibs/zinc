@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.h
 
-LAST MODIFIED : 13 May 2003
+LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -1025,6 +1025,24 @@ it contains will be significantly modified during the merge. It would be more
 expensive to keep FE_regions unchanged during the merge, a behaviour not
 required at this time for import functions. If this is required in future,
 FE_regions_merge would have to be changed.
+==============================================================================*/
+
+void Cmiss_region_synchronise_children_with_FE_region(
+	struct Cmiss_region *region1, struct Cmiss_region_changes *region_changes,
+	void *region2_void);
+/*******************************************************************************
+LAST MODIFIED : 16 May 2003
+
+DESCRIPTION :
+Callback from <region1> informing of <changes>.
+Ensures <region2> has children of the same name and in the same order as
+<region1>. Any newly created child regions in <region2> are created with
+FE_regions using the FE_region from <region2> as their master_fe_region.
+Used to keep root_region and data_root_region in sync.
+???RC Temporary: remove once data_root_region is eliminated.
+???RC Note cannot handle renaming children.
+???RC Note cannot handle both root_region and data_root_region simultaneously
+having children added or removed.
 ==============================================================================*/
 
 #endif /* !defined (FINITE_ELEMENT_REGION_H) */
