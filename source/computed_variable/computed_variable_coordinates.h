@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_coordinates.h
 
-LAST MODIFIED : 29 June 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 Implements computed variables which transform between coordinate systems.
@@ -27,6 +27,15 @@ Only used to name independent variables and so can't be evaluated.
 ==============================================================================*/
 
 PROTOTYPE_CMISS_VARIABLE_IS_TYPE_FUNCTION(coordinates);
+
+int Cmiss_variable_coordinates_get_type(Cmiss_variable_id variable,
+	int *dimension_address);
+/*******************************************************************************
+LAST MODIFIED : 28 July 2003
+
+DESCRIPTION :
+If <variable> is of type coordinates gets its <*dimension_address>.
+==============================================================================*/
 
 int Cmiss_variable_spheroidal_coordinates_focus_set_type(
 	Cmiss_variable_id variable);
@@ -55,4 +64,5 @@ Independent variables are: coordinates and spheroidal_coordinates_focus.
 
 PROTOTYPE_CMISS_VARIABLE_IS_TYPE_FUNCTION(
 	prolate_spheroidal_to_rectangular_cartesian);
+
 #endif /* !defined (__CMISS_VARIABLE_COORDINATES_H__) */

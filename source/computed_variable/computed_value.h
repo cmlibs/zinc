@@ -143,4 +143,20 @@ DESCRIPTION :
 A default implementation of Cmiss_value_get string which calls the
 Cmiss_value_get_reals method and concatenates these into a list of numbers.
 ==============================================================================*/
+
+int Cmiss_value_increment(Cmiss_value_id value,Cmiss_value_id increment);
+/*******************************************************************************
+LAST MODIFIED : 29 July 2003
+
+DESCRIPTION :
+Calculates <value>+<increment> and puts in <value>.
+==============================================================================*/
+
+int Cmiss_value_scalar_multiply(Cmiss_value_id value,FE_value scalar);
+/*******************************************************************************
+LAST MODIFIED : 29 July 2003
+
+DESCRIPTION :
+Calculates <scalar>*<value> and puts in <value>.
+==============================================================================*/
 #endif /* !defined (__CMISS_VALUE_H__) */

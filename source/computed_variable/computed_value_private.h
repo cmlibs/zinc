@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_private.h
 
-LAST MODIFIED : 20 July 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -133,27 +133,52 @@ DESCRIPTION :
 Creates a string representation of the Cmiss_value useful for output.
 ==============================================================================*/
 
-#define START_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION( \
-	value_type ) \
+#define START_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION( value_type ) \
 int Cmiss_value_ ## value_type ## _get_string_type_specific( \
 	Cmiss_value_id value, char **string) \
 { \
 	int return_code; \
 \
-	ENTER(Cmiss_value_ ## value_type ## \
-		_get_string_type_specific); \
+	ENTER(Cmiss_value_ ## value_type ## _get_string_type_specific); \
 	return_code=0; \
 	ASSERT_IF(value&&(Cmiss_value_ ## value_type ## _type_string== \
-		Cmiss_value_get_type_id_string(value))&& \
-		result,return_code,0)
+		Cmiss_value_get_type_id_string(value))&&result,return_code,0)
 
-#define END_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION( \
-	value_type ) \
+#define END_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION( value_type ) \
 	LEAVE; \
 \
 	return (return_code); \
-} /* Cmiss_value_ ## value_type ## \
-	_get_string_type_specific */
+} /* Cmiss_value_ ## value_type ## _get_string_type_specific */
+
+typedef int (*Cmiss_value_increment_type_specific_function)(
+	Cmiss_value_id value,Cmiss_value_id increment);
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+Perform <value> += <increment>.
+==============================================================================*/
+
+#define START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION( value_type ) \
+int Cmiss_value_ ## value_type ## _increment_type_specific( \
+	Cmiss_value_id value,Cmiss_value_id increment) \
+{ \
+	int return_code; \
+	struct Cmiss_value_ ## value_type ## _type_specific_data *data_value; \
+\
+	ENTER(Cmiss_value_ ## value_type ## _increment_type_specific); \
+	return_code=0; \
+	data_value=(struct Cmiss_value_ ## value_type ## _type_specific_data *) \
+		Cmiss_value_get_type_specific_data(value); \
+	ASSERT_IF(data_value&&increment,return_code,0) \
+	ASSERT_IF(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value),return_code,0)
+
+#define END_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION( value_type ) \
+	LEAVE; \
+\
+	return (return_code); \
+} /* Cmiss_value_ ## value_type ## _increment_type_specific */
 
 typedef int (*Cmiss_value_multiply_and_accumulate_type_specific_function)(
 	Cmiss_value_id total,Cmiss_value_id value_1,
@@ -219,6 +244,36 @@ int Cmiss_value_ ## value_type ## _same_sub_type_type_specific( \
 	return (return_code); \
 } /* Cmiss_value_ ## value_type ## _same_sub_type_type_specific */
 
+typedef int (*Cmiss_value_scalar_multiply_type_specific_function)(
+	Cmiss_value_id value,FE_value scalar);
+/*******************************************************************************
+LAST MODIFIED : 28 July 2003
+
+DESCRIPTION :
+Performs <value>=<scalar>*<value>.
+==============================================================================*/
+
+#define START_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION( value_type ) \
+int Cmiss_value_ ## value_type ## _scalar_multiply_type_specific( \
+	Cmiss_value_id value,FE_value scalar) \
+{ \
+	int return_code; \
+	struct Cmiss_value_ ## value_type ## _type_specific_data *data; \
+\
+	ENTER(Cmiss_value_ ## value_type ## _scalar_multiply_type_specific); \
+	return_code=0; \
+	data=(struct Cmiss_value_ ## value_type ## _type_specific_data *) \
+		Cmiss_value_get_type_specific_data(value); \
+	ASSERT_IF(data,return_code,0) \
+	ASSERT_IF(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value),return_code,0)
+
+#define END_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION( value_type ) \
+	LEAVE; \
+\
+	return (return_code); \
+} /* Cmiss_value_ ## value_type ## _scalar_multiply_type_specific */
+
 
 /*
 Friend macros
@@ -252,7 +307,7 @@ PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(value_type) \
 
 #define CMISS_VALUE_ESTABLISH_METHODS( value, value_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 16 July 2003 \
+LAST MODIFIED : 28 July 2003 \
 \
 DESCRIPTION : \
 Each Cmiss_value_set_type function should call this macro to establish the \
@@ -265,8 +320,10 @@ Cmiss_value_establish_methods(value, \
 	Cmiss_value_ ## value_type ## _duplicate_data_type_specific, \
 	Cmiss_value_ ## value_type ## _get_reals_type_specific, \
 	Cmiss_value_ ## value_type ## _get_string_type_specific, \
+	Cmiss_value_ ## value_type ## _increment_type_specific, \
 	Cmiss_value_ ## value_type ## _multiply_and_accumulate_type_specific, \
-	Cmiss_value_ ## value_type ## _same_sub_type_type_specific)
+	Cmiss_value_ ## value_type ## _same_sub_type_type_specific, \
+	Cmiss_value_ ## value_type ## _scalar_multiply_type_specific)
 
 /*
 Friend functions
@@ -277,13 +334,17 @@ int Cmiss_value_establish_methods(Cmiss_value_id value,
 	Cmiss_value_duplicate_data_type_specific_function
 	duplicate_data_type_specific_function,
 	Cmiss_value_get_reals_type_specific_function get_reals_type_specific_function,
-	Cmiss_value_get_string_type_specific_function get_string_type_specific_function,
+	Cmiss_value_get_string_type_specific_function
+	get_string_type_specific_function,
+	Cmiss_value_increment_type_specific_function increment_type_specific_function,
 	Cmiss_value_multiply_and_accumulate_type_specific_function
 	multiply_and_accumulate_type_specific_function,
 	Cmiss_value_same_sub_type_type_specific_function
-	same_sub_type_type_specific_function);
+	same_sub_type_type_specific_function,
+	Cmiss_value_scalar_multiply_type_specific_function
+	scalar_multiply_type_specific_function);
 /*******************************************************************************
-LAST MODIFIED : 16 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 Sets the methods for the <value>.

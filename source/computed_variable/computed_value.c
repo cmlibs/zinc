@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.c
 
-LAST MODIFIED : 20 July 2003
+LAST MODIFIED : 29 July 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -24,7 +24,7 @@ Module types
 */
 struct Cmiss_value
 /*******************************************************************************
-LAST MODIFIED : 15 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 A value that knows what type it is.
@@ -52,12 +52,16 @@ A value that knows what type it is.
 	Cmiss_value_duplicate_data_type_specific_function
 		duplicate_data_type_specific_function;
 	Cmiss_value_get_reals_type_specific_function get_reals_type_specific_function;
-	Cmiss_value_get_string_type_specific_function get_string_type_specific_function;
+	Cmiss_value_get_string_type_specific_function
+		get_string_type_specific_function;
+	Cmiss_value_increment_type_specific_function increment_type_specific_function;
 	Cmiss_value_multiply_and_accumulate_type_specific_function
 		multiply_and_accumulate_type_specific_function;
 	Cmiss_value_same_sub_type_type_specific_function
 		same_sub_type_type_specific_function;
 		/*???DB.  More than just same type_string.  How to indicate this? */
+	Cmiss_value_scalar_multiply_type_specific_function
+		scalar_multiply_type_specific_function;
 	int access_count;
 };  /* struct Cmiss_value */
 
@@ -70,13 +74,17 @@ int Cmiss_value_establish_methods(Cmiss_value_id value,
 	Cmiss_value_duplicate_data_type_specific_function
 	duplicate_data_type_specific_function,
 	Cmiss_value_get_reals_type_specific_function get_reals_type_specific_function,
-	Cmiss_value_get_string_type_specific_function get_string_type_specific_function,
+	Cmiss_value_get_string_type_specific_function
+	get_string_type_specific_function,
+	Cmiss_value_increment_type_specific_function increment_type_specific_function,
 	Cmiss_value_multiply_and_accumulate_type_specific_function
 	multiply_and_accumulate_type_specific_function,
 	Cmiss_value_same_sub_type_type_specific_function
-	same_sub_type_type_specific_function)
+	same_sub_type_type_specific_function,
+	Cmiss_value_scalar_multiply_type_specific_function
+	scalar_multiply_type_specific_function)
 /*******************************************************************************
-LAST MODIFIED : 15 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 Sets the methods for the <value>.
@@ -96,8 +104,11 @@ Sets the methods for the <value>.
 			multiply_and_accumulate_type_specific_function;
 		value->get_reals_type_specific_function=get_reals_type_specific_function;
 		value->get_string_type_specific_function=get_string_type_specific_function;
+		value->increment_type_specific_function=increment_type_specific_function;
 		value->same_sub_type_type_specific_function=
 			same_sub_type_type_specific_function;
+		value->scalar_multiply_type_specific_function=
+			scalar_multiply_type_specific_function;
 		return_code=1;
 	}
 	else
@@ -165,7 +176,7 @@ Sets the type specific information for the <value>.
 
 int Cmiss_value_clear_type(Cmiss_value_id value)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 Used internally by DESTROY and Cmiss_value_set_type_*() functions to
@@ -209,8 +220,10 @@ to ensure that the value is not left in an invalid state.
 			(Cmiss_value_duplicate_data_type_specific_function)NULL,
 			(Cmiss_value_get_reals_type_specific_function)NULL,
 			(Cmiss_value_get_string_type_specific_function)NULL,
+			(Cmiss_value_increment_type_specific_function)NULL,
 			(Cmiss_value_multiply_and_accumulate_type_specific_function)NULL,
-			(Cmiss_value_same_sub_type_type_specific_function)NULL);
+			(Cmiss_value_same_sub_type_type_specific_function)NULL,
+			(Cmiss_value_scalar_multiply_type_specific_function)NULL);
 	}
 	else
 	{
@@ -228,7 +241,7 @@ Global functions
 */
 Cmiss_value_id CREATE(Cmiss_value)(void)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 Creates an empty value with no type.  Each type of value has its own "set_type"
@@ -249,8 +262,10 @@ function.
 			(Cmiss_value_duplicate_data_type_specific_function)NULL,
 			(Cmiss_value_get_reals_type_specific_function)NULL,
 			(Cmiss_value_get_string_type_specific_function)NULL,
+			(Cmiss_value_increment_type_specific_function)NULL,
 			(Cmiss_value_multiply_and_accumulate_type_specific_function)NULL,
-			(Cmiss_value_same_sub_type_type_specific_function)NULL);
+			(Cmiss_value_same_sub_type_type_specific_function)NULL,
+			(Cmiss_value_scalar_multiply_type_specific_function)NULL);
 		/* initialise access_count */
 		value->access_count=0;
 	}
@@ -296,7 +311,7 @@ Frees memory/deaccess objects for Cmiss_value at <*value_address>.
 int Cmiss_value_copy(Cmiss_value_id destination,
 	Cmiss_value_id source)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 Copies the type and contents from <source> to <destination>.
@@ -327,8 +342,10 @@ Copies the type and contents from <source> to <destination>.
 				source->duplicate_data_type_specific_function,
 				source->get_reals_type_specific_function,
 				source->get_string_type_specific_function,
+				source->increment_type_specific_function,
 				source->multiply_and_accumulate_type_specific_function,
-				source->same_sub_type_type_specific_function);
+				source->same_sub_type_type_specific_function,
+				source->scalar_multiply_type_specific_function);
 			return_code=1;
 		}
 	}
@@ -482,7 +499,7 @@ Calculates <total>+<value_1>*<value_2> and puts in <total>.
 	else
 	{
 		display_message(ERROR_MESSAGE,"Cmiss_value_multiply_and_accumulate.  "
-			"Invalid argument(s).  %p %p",value_1,value_2);
+			"Invalid argument(s).  %p %p %p",total,value_1,value_2);
 	}
 	LEAVE;
 
@@ -574,3 +591,75 @@ Cmiss_value_get_reals method and concatenates these into a list of numbers.
 
 	return (return_code);
 } /* Cmiss_value_default_get_string */
+
+int Cmiss_value_increment(Cmiss_value_id value,Cmiss_value_id increment)
+/*******************************************************************************
+LAST MODIFIED : 29 July 2003
+
+DESCRIPTION :
+Calculates <value>+<increment> and puts in <value>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_value_increment);
+	return_code=0;
+	/* check arguments */
+	if (value&&increment)
+	{
+		if (value->increment_type_specific_function)
+		{
+			return_code=(value->increment_type_specific_function)(value,increment);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Cmiss_value_increment.  "
+				"Missing method");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_value_increment.  "
+			"Invalid argument(s).  %p %p",value,increment);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_value_increment */
+
+int Cmiss_value_scalar_multiply(Cmiss_value_id value,FE_value scalar)
+/*******************************************************************************
+LAST MODIFIED : 29 July 2003
+
+DESCRIPTION :
+Calculates <scalar>*<value> and puts in <value>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_value_scalar_multiply);
+	return_code=0;
+	/* check arguments */
+	if (value)
+	{
+		if (value->scalar_multiply_type_specific_function)
+		{
+			return_code=(value->scalar_multiply_type_specific_function)(value,scalar);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Cmiss_value_scalar_multiply.  "
+				"Missing method");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_value_scalar_multiply.  "
+			"Missing <value>");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_value_scalar_multiply */

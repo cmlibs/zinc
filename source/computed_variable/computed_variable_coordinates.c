@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_coordinates.c
 
-LAST MODIFIED : 20 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 Implements computed variables which transform between coordinate systems.
@@ -852,7 +852,6 @@ struct
 LAST MODIFIED : 27 June 2003
 
 DESCRIPTION :
-???DB.  Have independent variables to be the same as finite_element ?
 ==============================================================================*/
 {
 	double focus,lambda,mu,theta;
@@ -891,7 +890,7 @@ enum Cmiss_variable_evaluate_derivative_prolate_spheroidal_to_rectangular_cartes
 static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 	prolate_spheroidal_to_rectangular_cartesian)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2003
+LAST MODIFIED : 28 July 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -941,9 +940,8 @@ DESCRIPTION :
 					/* differentiating with respect to coordinates */
 					independent_variables_type[independent_variables_index]=
 						COORDINATES_TYPE;
-					/*???DB.  What if want derivative with respect to a subset of lambda,
-						mu and theta? */
-					number_of_values=3;
+					return_code=Cmiss_variable_coordinates_get_type(independent_variable,
+						&number_of_values);
 				}
 				else if (CMISS_VARIABLE_IS_TYPE(spheroidal_coordinates_focus)(
 					independent_variable))
@@ -1011,11 +1009,7 @@ DESCRIPTION :
 							zero_derivative=0;
 							derivative_number_of_values=1;
 							derivative_order=0;
-							/* zero derivative check.  Doesn't check if the derivative order
-								for a particular xi exceeds the order of the polynomial
-								(done in <calculate_monomial_derivative_values>) */
-								/*???DB.  Could be more efficient */
-							/* Also set up mapping from variables involved in derivative to
+							/* also set up mapping from variables involved in derivative to
 								all independent variables */
 							while (i<=independent_variables_index)
 							{
@@ -1259,8 +1253,6 @@ DESCRIPTION :
 				}
 				DEALLOCATE(matrices);
 			}
-			/* remove temporary storage that was built up along with the derivative
-				matrix */
 		}
 		else
 		{
@@ -1268,6 +1260,8 @@ DESCRIPTION :
 				"Cmiss_variable_prolate_spheroidal_to_rectangular_cartesian_evaluate_derivative_type_specific.  "
 				"Could not allocate working storage");
 		}
+		/* remove temporary storage that was built up along with the derivative
+			matrix */
 		DEALLOCATE(derivative_independent_variables);
 		DEALLOCATE(independent_variables_type);
 		DEALLOCATE(independent_variables_number_of_values);
@@ -1508,8 +1502,6 @@ static
 END_CMISS_VARIABLE_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION(
 	prolate_spheroidal_to_rectangular_cartesian)
 
-/*???DB.  Where I'm up to */
-
 /*
 Global functions
 ----------------
@@ -1586,6 +1578,42 @@ Only used to name independent variables and so can't be evaluated.
 } /* Cmiss_variable_coordinates_set_type */
 
 DECLARE_CMISS_VARIABLE_IS_TYPE_FUNCTION(coordinates)
+
+int Cmiss_variable_coordinates_get_type(Cmiss_variable_id variable,
+	int *dimension_address)
+/*******************************************************************************
+LAST MODIFIED : 28 July 2003
+
+DESCRIPTION :
+If <variable> is of type coordinates gets its <*dimension_address>.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_variable_coordinates_type_specific_data *data;
+
+	ENTER(Cmiss_variable_coordinates_set_type);
+	return_code=0;
+	/* check arguments */
+	if (variable&&CMISS_VARIABLE_IS_TYPE(coordinates)(variable)&&
+		dimension_address)
+	{
+		data=(struct Cmiss_variable_coordinates_type_specific_data *)
+			Cmiss_variable_get_type_specific_data(variable);
+		ASSERT_IF(data,return_code,0)
+		{
+			return_code=Cmiss_value_get_reals(data->coordinates,dimension_address,
+				(FE_value **)NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_variable_coordinates_set_type.  "
+			"Invalid argument(s).  %p %p\n",variable,dimension_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_variable_coordinates_set_type */
 
 int Cmiss_variable_spheroidal_coordinates_focus_set_type(
 	Cmiss_variable_id variable)

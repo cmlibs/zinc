@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : computed_value_finite_element.c
 
-LAST MODIFIED : 20 July 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 Implements computed values which interface to finite elements:
 - element_xi
 ==============================================================================*/
+#include "computed_variable/computed_value_fe_value.h"
 #include "computed_variable/computed_value_finite_element.h"
 #include "computed_variable/computed_value_private.h"
 #include "general/debug.h"
@@ -127,7 +128,28 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(element_xi)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(element_xi)
 
-#define Cmiss_value_element_xi_get_string_type_specific Cmiss_value_default_get_string
+#define Cmiss_value_element_xi_get_string_type_specific \
+	Cmiss_value_default_get_string
+
+static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(element_xi)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *fe_value_vector;
+	int number_of_fe_values;
+
+	/* check that <value> and <increment> "match" */
+	if (Cmiss_value_FE_value_vector_get_type(increment,&number_of_fe_values,
+		&fe_value_vector)&&(data_value->dimension=number_of_fe_values))
+	{
+		return_code=FE_element_xi_increment(&(data_value->element),data_value->xi,
+			fe_value_vector);
+	}
+}
+END_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(element_xi)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	element_xi)
@@ -204,6 +226,18 @@ static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 	}
 }
 END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
+
+static START_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(element_xi)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	USE_PARAMETER(scalar);
+	return_code=0;
+}
+END_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(element_xi)
 
 /*
 Global functions

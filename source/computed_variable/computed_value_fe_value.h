@@ -1,13 +1,15 @@
 /*******************************************************************************
 FILE : computed_value_fe_value.h
 
-LAST MODIFIED : 25 July 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 computed_value types for FE_value, FE_value vector and FE_value_matrix
 ==============================================================================*/
 #if !defined (__CMISS_VALUE_FE_VALUE_H__)
 #define __CMISS_VALUE_FE_VALUE_H__
+
+#include "computed_variable/computed_value.h"
 
 /*
 Global functions

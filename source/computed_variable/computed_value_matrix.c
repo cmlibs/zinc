@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_matrix.c
 
-LAST MODIFIED : 20 July 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 Implements a matrix computed value.
@@ -122,7 +122,51 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 
-#define Cmiss_value_matrix_get_string_type_specific Cmiss_value_default_get_string
+#define Cmiss_value_matrix_get_string_type_specific \
+	Cmiss_value_default_get_string
+
+static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(matrix)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i,j,number_of_columns,number_of_rows;
+	Matrix_value value_increment,value_value;
+	struct Cmiss_value_matrix_type_specific_data *data_increment;
+	struct Matrix *matrix_increment,*matrix_value;
+
+	/* check that <value> and <increment> "match" */
+	if (CMISS_VALUE_IS_TYPE(matrix)(increment)&&(data_increment=
+		(struct Cmiss_value_matrix_type_specific_data *)
+		Cmiss_value_get_type_specific_data(increment))&&
+		(matrix_value=data_value->matrix)&&
+		(matrix_increment=data_increment->matrix)&&
+		Matrix_get_dimensions(matrix_value,&number_of_rows,&number_of_columns)&&
+		Matrix_get_dimensions(matrix_increment,&i,&j)&&
+		(number_of_rows==i)&&(number_of_columns==j))
+	{
+		return_code=1;
+		i=1;
+		while (return_code&&(i<=number_of_rows))
+		{
+			j=1;
+			while (return_code&&(j<=number_of_columns))
+			{
+				if ((return_code=Matrix_get_value(matrix_value,i,j,&value_value))&&
+					(return_code=Matrix_get_value(matrix_increment,i,j,&value_increment)))
+				{
+					value_value += value_increment;
+					return_code=Matrix_set_value(matrix_value,i,j,value_value);
+				}
+				j++;
+			}
+			i++;
+		}
+	}
+}
+END_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(matrix)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	matrix)
@@ -172,6 +216,41 @@ static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(matrix)
 	}
 }
 END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(matrix)
+
+static START_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(matrix)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i,j,number_of_columns,number_of_rows;
+	Matrix_value value_value;
+	struct Matrix *matrix_value;
+
+	if ((matrix_value=data->matrix)&&Matrix_get_dimensions(matrix_value,
+		&number_of_rows,&number_of_columns)&&(0<number_of_rows)&&
+		(0<number_of_columns))
+	{
+		return_code=1;
+		i=1;
+		while (return_code&&(i<=number_of_rows))
+		{
+			j=1;
+			while (return_code&&(j<=number_of_columns))
+			{
+				if (return_code=Matrix_get_value(matrix_value,i,j,&value_value))
+				{
+					value_value *= scalar;
+					return_code=Matrix_set_value(matrix_value,i,j,value_value);
+				}
+				j++;
+			}
+			i++;
+		}
+	}
+}
+END_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(matrix)
 
 /*
 Global functions

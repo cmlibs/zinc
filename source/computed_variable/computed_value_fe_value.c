@@ -1,12 +1,12 @@
 /*******************************************************************************
 FILE : computed_value_fe_value.c
 
-LAST MODIFIED : 25 July 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 computed_value types for FE_value, FE_value vector and FE_value_matrix
 ==============================================================================*/
-#include "computed_variable/computed_value.h"
+#include "computed_variable/computed_value_fe_value.h"
 #include "computed_variable/computed_value_private.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
@@ -57,7 +57,27 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value)
 
-#define Cmiss_value_FE_value_get_string_type_specific Cmiss_value_default_get_string
+#define Cmiss_value_FE_value_get_string_type_specific \
+	Cmiss_value_default_get_string
+
+static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(FE_value)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Cmiss_value_FE_value_type_specific_data *data_increment;
+
+	if (CMISS_VALUE_IS_TYPE(FE_value)(increment)&&(data_increment=
+		(struct Cmiss_value_FE_value_type_specific_data *)
+		Cmiss_value_get_type_specific_data(increment)))
+	{
+		data_value->fe_value += data_increment->fe_value;
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(FE_value)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value)
@@ -83,6 +103,18 @@ static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value)
 	return_code=1;
 }
 END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value)
+
+static START_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(FE_value)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	data->fe_value *= scalar;
+	return_code=1;
+}
+END_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(FE_value)
 
 static char Cmiss_value_FE_value_matrix_type_string[]="FE_value_matrix";
 
@@ -178,7 +210,41 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 
-#define Cmiss_value_FE_value_matrix_get_string_type_specific Cmiss_value_default_get_string
+#define Cmiss_value_FE_value_matrix_get_string_type_specific \
+	Cmiss_value_default_get_string
+
+static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *increment_address,*value_address;
+	int i;
+	struct Cmiss_value_FE_value_matrix_type_specific_data *data_increment;
+
+	/* check that <value> and <increment> "match" */
+	if (CMISS_VALUE_IS_TYPE(FE_value_matrix)(increment)&&(data_increment=
+		(struct Cmiss_value_FE_value_matrix_type_specific_data *)
+		Cmiss_value_get_type_specific_data(increment))&&
+		(value_address=data_value->fe_value_matrix)&&
+		(increment_address=data_increment->fe_value_matrix)&&
+		(data_value->number_of_rows==data_increment->number_of_rows)&&
+		(data_value->number_of_columns==data_increment->number_of_columns))
+	{
+		i=(data_value->number_of_rows)*(data_value->number_of_columns);
+		while (i>0)
+		{
+			*value_address += *increment_address;
+			value_address++;
+			increment_address++;
+			i--;
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value_matrix)
@@ -260,6 +326,30 @@ static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(
 	}
 }
 END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+
+static START_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *value_address;
+	int i;
+
+	if (value_address=data->fe_value_matrix)
+	{
+		i=(data->number_of_rows)*(data->number_of_columns);
+		while (i>0)
+		{
+			*value_address *= scalar;
+			value_address++;
+			i--;
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 
 static char Cmiss_value_FE_value_vector_type_string[]="FE_value_vector";
 
@@ -353,7 +443,40 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
 
-#define Cmiss_value_FE_value_vector_get_string_type_specific Cmiss_value_default_get_string
+#define Cmiss_value_FE_value_vector_get_string_type_specific \
+	Cmiss_value_default_get_string
+
+static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *increment_address,*value_address;
+	int i;
+	struct Cmiss_value_FE_value_vector_type_specific_data *data_increment;
+
+	/* check that <value> and <increment> "match" */
+	if (CMISS_VALUE_IS_TYPE(FE_value_vector)(increment)&&(data_increment=
+		(struct Cmiss_value_FE_value_vector_type_specific_data *)
+		Cmiss_value_get_type_specific_data(increment))&&
+		(value_address=data_value->fe_value_vector)&&
+		(increment_address=data_increment->fe_value_vector)&&
+		(data_value->number_of_fe_values==data_increment->number_of_fe_values))
+	{
+		i=data_value->number_of_fe_values;
+		while (i>0)
+		{
+			*value_address += *increment_address;
+			value_address++;
+			increment_address++;
+			i--;
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value_vector)
@@ -414,6 +537,30 @@ static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(
 	}
 }
 END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
+
+static START_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *value_address;
+	int i;
+
+	if (value_address=data->fe_value_vector)
+	{
+		i=data->number_of_fe_values;
+		while (i>0)
+		{
+			*value_address *= scalar;
+			value_address++;
+			i--;
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
 
 /*
 Global functions

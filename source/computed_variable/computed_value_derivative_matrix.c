@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_derivative_matrix.c
 
-LAST MODIFIED : 24 July 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 Implements the derivative matrix computed value.
@@ -256,7 +256,60 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 
-#define Cmiss_value_derivative_matrix_get_string_type_specific Cmiss_value_default_get_string
+#define Cmiss_value_derivative_matrix_get_string_type_specific \
+	Cmiss_value_default_get_string
+
+static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i,number_of_columns_increment,number_of_columns_value,
+		number_of_matrices,number_of_rows_increment,number_of_rows_value,order;
+	struct Cmiss_value_derivative_matrix_type_specific_data *data_increment;
+
+	/* check that <value> and <increment> "match" */
+	order=data_value->order;
+	if (CMISS_VALUE_IS_TYPE(derivative_matrix)(increment)&&
+		(data_increment=(struct Cmiss_value_derivative_matrix_type_specific_data *)
+		Cmiss_value_get_type_specific_data(increment))&&
+		(order==data_increment->order))
+	{
+		number_of_matrices=1;
+		for (i=0;i<order;i++)
+		{
+			number_of_matrices *= 2;
+		}
+		number_of_matrices -= 1;
+		i=0;
+		while ((i<number_of_matrices)&&
+			(Cmiss_value_matrix_get_dimensions((data_value->matrices)[i],
+			&number_of_rows_value,&number_of_columns_value))&&
+			(Cmiss_value_matrix_get_dimensions((data_increment->matrices)[i],
+			&number_of_rows_increment,&number_of_columns_increment))&&
+			(number_of_rows_value==number_of_rows_increment)&&
+			(number_of_columns_value==number_of_columns_increment))
+		{
+			i++;
+		}
+		if (i==number_of_matrices)
+		{
+			i=0;
+			while ((i<number_of_matrices)&&Cmiss_value_increment(
+				(data_value->matrices)[i],(data_increment->matrices)[i]))
+			{
+				i++;
+			}
+			if (i==number_of_matrices)
+			{
+				return_code=1;
+			}
+		}
+	}
+}
+END_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	derivative_matrix)
@@ -898,6 +951,34 @@ DESCRIPTION :
 	}
 }
 END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
+
+static START_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(
+	derivative_matrix)
+/*******************************************************************************
+LAST MODIFIED : 29 July 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i,number_of_matrices;
+
+	number_of_matrices=1;
+	for (i=data->order;i>0;i--)
+	{
+		number_of_matrices *= 2;
+	}
+	i=0;
+	while ((i<number_of_matrices)&&Cmiss_value_scalar_multiply(
+		(data->matrices)[i],scalar))
+	{
+		i++;
+	}
+	if (i==number_of_matrices)
+	{
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_SCALAR_MULTIPLY_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 
 /*
 Global functions
