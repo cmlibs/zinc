@@ -338,11 +338,11 @@ endif # CMISS_ROOT_DEFINED
 $(OBJECT_PATH)/%.c : $(SOURCE_PATH)/%.c
 
 %.d :
-	if [ ! -d $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D)) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D))
+	if [ ! -d $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D))) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D))) ; \
+	fi
 	@stem_name=$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)); \
    source_name=$(firstword $(wildcard $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp)) ; \
-	fi ; \
 	set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $${source_name} | \
 	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g" > $(OBJECT_PATH)/$${stem_name}.d ;
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
