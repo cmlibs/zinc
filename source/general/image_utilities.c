@@ -647,6 +647,10 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 		{
 			file_format_extension="ps";
 		} break;
+		case RAW_FILE_FORMAT:
+		{
+			file_format_extension="raw";
+		} break;
 		case RGB_FILE_FORMAT:
 		{
 			file_format_extension="rgb";
@@ -673,7 +677,7 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 
 char *Image_file_format_string(enum Image_file_format image_file_format)
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Returns the token that should represent the file format
@@ -719,7 +723,7 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 char **Image_file_format_get_valid_strings_for_reading(
 	int *number_of_valid_strings)
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Returns an allocated array of pointers to all static strings for
@@ -733,12 +737,13 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	ENTER(Image_file_format_get_valid_strings_for_reading);
 	if (number_of_valid_strings)
 	{
-		*number_of_valid_strings=3;
+		*number_of_valid_strings=4;
 		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
 		{
-			valid_strings[0]=Image_file_format_string(RGB_FILE_FORMAT);
-			valid_strings[1]=Image_file_format_string(TIFF_FILE_FORMAT);
-			valid_strings[2]=Image_file_format_string(YUV_FILE_FORMAT);
+			valid_strings[0]=Image_file_format_string(RAW_FILE_FORMAT);
+			valid_strings[1]=Image_file_format_string(RGB_FILE_FORMAT);
+			valid_strings[2]=Image_file_format_string(TIFF_FILE_FORMAT);
+			valid_strings[3]=Image_file_format_string(YUV_FILE_FORMAT);
 		}
 		else
 		{
@@ -878,6 +883,120 @@ Returns the <Image_file_format> determined from the file_extension in
 
 	return (image_file_format);
 } /* Image_file_format_from_file_name */
+
+char *Raw_image_storage_string(enum Raw_image_storage raw_image_storage)
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the raw_image_storage,
+eg. RAW_INTERLEAVED_RGB = "raw_interleaved_rgb". This string should match the
+command used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Raw_image_storage_string);
+	switch (raw_image_storage)
+	{
+		case RAW_INTERLEAVED_RGB:
+		{
+			return_string="raw_interleaved_rgb";
+		} break;
+		case 	RAW_PLANAR_RGB:
+		{
+			return_string="raw_planar_rgb";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Raw_image_storage_string.  Unknown raw_image_storage");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Raw_image_storage_string */
+
+char **Raw_image_storage_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Raw_image_storage values.
+Strings are obtained from function Raw_image_storage_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Raw_image_storage_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=2;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=Raw_image_storage_string(RAW_INTERLEAVED_RGB);
+			valid_strings[1]=Raw_image_storage_string(RAW_PLANAR_RGB);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Raw_image_storage_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Raw_image_storage_get_valid_strings.  Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Raw_image_storage_get_valid_strings */
+
+enum Raw_image_storage Raw_image_storage_from_string(
+	char *raw_image_storage_string)
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Returns the <Raw_image_storage> described by <raw_image_storage_string>.
+==============================================================================*/
+{
+	enum Raw_image_storage raw_image_storage;
+
+	ENTER(Raw_image_storage_from_string);
+	if (raw_image_storage_string)
+	{
+		if (fuzzy_string_compare_same_length(raw_image_storage_string,
+			Raw_image_storage_string(RAW_INTERLEAVED_RGB)))
+		{
+			raw_image_storage = RAW_INTERLEAVED_RGB;
+		}
+		else if (fuzzy_string_compare_same_length(raw_image_storage_string,
+			Raw_image_storage_string(RAW_PLANAR_RGB)))
+		{
+			raw_image_storage = RAW_PLANAR_RGB;
+		}
+		else
+		{
+			raw_image_storage = RAW_IMAGE_STORAGE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Raw_image_storage_from_string.  Invalid argument");
+		raw_image_storage = RAW_IMAGE_STORAGE_INVALID;
+	}
+	LEAVE;
+
+	return (raw_image_storage);
+} /* Raw_image_storage_from_string */
 
 int write_rgb_image_file(char *file_name,int number_of_components,
 	int number_of_bytes_per_component,
@@ -2531,6 +2650,165 @@ Writes an image in TIFF file format.
 	return (return_code);
 } /* write_tiff_image_file */
 #endif /* defined (OLD_CODE) */
+
+int read_raw_image_file(char *file_name,int *number_of_components_address,
+	int *number_of_bytes_per_component,
+	long int *height_address,long int *width_address,
+	enum Raw_image_storage raw_image_storage, unsigned long **image_address)
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Reads an image from a RAW file, returning it as an RGB image. RAW images have
+no header, and hence the <raw_image_storage> and width at <*width_address> must
+be specified in order to read it. If a positive <height> is specified, an
+image of that height will be returned, otherwise the height will be calculated
+from the file size. Note indexed RAW files are not supported.
+==============================================================================*/
+{
+	unsigned char *byte_row,*image,*image_ptr;
+	FILE *image_file;
+	int aligned_row_size,bytes_read,comp,i,return_code,row,row_size;
+	long int file_size,height,width;
+	struct stat buf;
+
+	ENTER(read_raw_image_file);
+	if (file_name&&number_of_components_address&&height_address&&width_address&&
+		image_address)
+	{
+		if (0<(width = *width_address))
+		{
+			return_code=1;
+			if (image_file=fopen(file_name,"rb"))
+			{
+				/* use stat to get size of file to determine format from */
+				if ((0==stat(file_name,&buf))&&(0<(file_size=(long int)(buf.st_size))))
+				{
+					if (0 >= (height = *height_address))
+					{
+						/* set height to include all data, padding rest of last line */
+						height = (file_size + width*3 - 1) / (width*3);
+					}
+					/* rows are 4-byte aligned */
+					row_size=width*3;
+					aligned_row_size=((width*3+3)/4)*4;
+					if (ALLOCATE(image,unsigned char,aligned_row_size*height))
+					{
+						switch (raw_image_storage)
+						{
+							case RAW_INTERLEAVED_RGB:
+							{
+								/* values are in RGB triples */
+								/* convert image from top-to-bottom to bottom-to-top for
+									 OpenGL image/texture storage */
+								for (row=1;(row <= height)&&return_code;row++)
+								{
+									image_ptr = image + (height-row)*aligned_row_size;
+									if (aligned_row_size != (bytes_read=fread(image_ptr,
+										/*value_size*/1,row_size,image_file)))
+									{
+										/* fill rest of line with zeros */
+										memset(image_ptr+bytes_read,0,aligned_row_size-bytes_read);
+									}
+								}
+							} break;
+							case RAW_PLANAR_RGB:
+							{
+								/* red image then green image then blue image */
+								if (ALLOCATE(byte_row,unsigned char,width))
+								{
+									for (comp=0;(comp<3)&&return_code;comp++)
+									{
+										/* convert image from top-to-bottom to bottom-to-top for
+											 OpenGL image/texture storage */
+										for (row=1;(row <= height)&&return_code;row++)
+										{
+											image_ptr = image + (height-row)*aligned_row_size + comp;
+											if (width != (bytes_read=fread(byte_row,
+												/*value_size*/1,width,image_file)))
+											{
+												/* fill rest of line with zeros */
+												memset(byte_row+bytes_read,0,width-bytes_read);
+											}
+											for (i=0;i<width;i++)
+											{
+												*image_ptr = byte_row[i];
+												image_ptr += 3;
+											}
+											if ((0==comp)&&(row_size < aligned_row_size))
+											{
+												/* fill rest of line with zeros */
+												memset(image_ptr,0,aligned_row_size-row_size);
+											}
+										}
+									}
+									DEALLOCATE(byte_row);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"read_raw_image_file.  Not enough memory");
+									return_code=0;
+								}
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"read_raw_image_file.  Unknown raw image storage");
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							*number_of_components_address = 3;
+							*number_of_bytes_per_component = 1;
+							*height_address = height;
+							*width_address = width;
+							*image_address = (unsigned long *)image;
+						}
+						else
+						{
+							DEALLOCATE(image);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"read_raw_image_file.  Not enough memory");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"read_raw_image_file.  Could not get size of file '%s'",file_name);
+					return_code=0;
+				}
+				fclose(image_file);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"read_raw_image_file.  Could not open image file '%s'",file_name);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"read_raw_image_file.  No width specified for file '%s'",file_name);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"read_raw_image_file.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* read_raw_image_file */
 
 int read_rgb_image_file(char *file_name,int *number_of_components_address,
 	int *number_of_bytes_per_component,
@@ -4311,7 +4589,7 @@ int read_yuv_image_file(char *file_name,int *number_of_components_address,
 	long int *height_address,long int *width_address,
 	unsigned long **image_address)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Reads an image from a YUV file, returning it as an RGB image.
@@ -4322,13 +4600,13 @@ colour of the pixels, hence the colour resolution is somewhat reduced.
 Refer to the code for the conversion to RGB.
 YUV files have no header; the image dimensions are computed from the file size.
 Several standard video sizes are supported as described in the code. Support for
-other resolutions is given by allowing the file extension .yuv#### to specify
-the horizontal resolution; the vertical resolution is then computed from the
-file size.
+other resolutions is given by specifying the width, and optionally the height
+in the <width_address> and <height_address> locations.
+If just the width is specified, the height is computed from the file size.
 ==============================================================================*/
 {
-#define limit(x) ((((x)>0xffffff)?0xff0000:(((x)<=0xffff)?0:(x)&0xff0000))>>16)
-	char *file_extension;
+#define YUV_LIMIT(x) \
+((((x)>0xffffff)?0xff0000:(((x)<=0xffff)?0:(x)&0xff0000))>>16)
 	unsigned char *image,*image_ptr,*yuv;
 	FILE *image_file;
 	int b,bytes_read,g,j,num_yyuv,r,rest_of_line,return_code,row,row_size,
@@ -4346,17 +4624,30 @@ file size.
 			/* use stat to get size of file to determine format from */
 			if ((0==stat(file_name,&buf))&&(0<(file_size=(long int)(buf.st_size))))
 			{
-				/* first check if the horizontal resolution is specified in the file
-					 extension .yuv####. Note at present limit width to be a multiple of
-					 4 so that final RGB is 4 byte aligned and there are an even number
-					 of pixels for the u y1 v y2 quad */
-				if ((file_extension=strrchr(file_name,'.'))&&
-					fuzzy_string_compare(".yuv",file_extension)&&
-					(0<(width=(long)atoi(file_extension+4)))&&
-					(0==(width % 4)))
+				if (0<(width = *width_address))
 				{
-					/* set height to include all data, padding rest of last line */
-					height = (file_size + width*2 - 1) / (width*2);
+					/* Limit width to multiple of 4 so that final RGB is 4 byte aligned
+						 and there are an even number of pixels for the u y1 v y2 quad */
+					if (0==(width % 4))
+					{
+						if (0 >= (height = *height_address))
+						{
+							/* set height to include all data, padding rest of last line */
+							height = (file_size + width*2 - 1) / (width*2);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
+							"Width must be a multiple of 4 pixels");
+						return_code=0;
+					}
+				}
+				else if (0<(height = *height_address))
+				{
+					display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
+						"Must specify width if height is to specified");
+					return_code=0;
 				}
 				else
 				{
@@ -4374,24 +4665,6 @@ file size.
 						width = 1920;
 						height = 540;
 					}
-#if defined (SAVE_CODE)
-					/* save this for documentation reasons - not sure if we'll ever get
-						 files of this size, hence leave more automatic sizes available */
-					else if ((1920*1035*2) == file_size)
-					{
-						/* Japanese HDTV standard, 2 interlaced fields; put fields
-							 side by side in double wide image, pad 518th line on field 2 */
-						width = 3840;
-						height = 518;
-					}
-					else if (((1920*518*2) == file_size) || ((1920*517*2) == file_size))
-					{
-						/* Japanese HDTV standard, single field;
-							 pad 518th line on field 2 */
-						width = 1920;
-						height = 518;
-					}
-#endif /* defined (SAVE_CODE) */
 					else if ((720*486*2) == file_size)
 					{
 						/* CCIR-601 NSTC format, 2 interlaced fields; put fields
@@ -4475,15 +4748,16 @@ file size.
 									G = (G + YUV_OFFSET)*(255.0/YUV_RANGE);
 									B = (B + YUV_OFFSET)*(255.0/YUV_RANGE);
 #endif /* defined (SAVE_CODE) */
-									*image_ptr++ = limit(r+y1);
-									*image_ptr++ = limit(g+y1);
-									*image_ptr++ = limit(b+y1);
-									*image_ptr++ = limit(r+y2);
-									*image_ptr++ = limit(g+y2);
-									*image_ptr++ = limit(b+y2);
+									*image_ptr++ = YUV_LIMIT(r+y1);
+									*image_ptr++ = YUV_LIMIT(g+y1);
+									*image_ptr++ = YUV_LIMIT(b+y1);
+									*image_ptr++ = YUV_LIMIT(r+y2);
+									*image_ptr++ = YUV_LIMIT(g+y2);
+									*image_ptr++ = YUV_LIMIT(b+y2);
 								}
 								if (num_yyuv < (width/2))
 								{
+									/* fill rest of line with zeros */
 									rest_of_line=(width - num_yyuv*2)*3;
 									memset(image_ptr,0,rest_of_line);
 									image_ptr += rest_of_line;
@@ -4491,17 +4765,31 @@ file size.
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
-									"Unexpected end of file '%s'",file_name);
-								/*return_code=0;*/
+								/* fill line with zeros */
+								rest_of_line=width*3;
+								memset(image_ptr,0,rest_of_line);
+								image_ptr += rest_of_line;
 							}
 						}
+						if (return_code)
+						{
+							*number_of_components_address = 3;
+							*number_of_bytes_per_component = 1;
+							*height_address = height;
+							*width_address = width;
+							*image_address = (unsigned long *)image;
+						}
+						else
+						{
+							DEALLOCATE(image);
+						}
 					}
-					*number_of_components_address = 3;
-					*number_of_bytes_per_component = 1;
-					*height_address = height;
-					*width_address = width;
-					*image_address = (unsigned long *)image;
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"read_yuv_image_file.  Not enough memory");
+						return_code=0;
+					}
 				}
 			}
 			else
@@ -4530,13 +4818,16 @@ file size.
 } /* read_yuv_image_file */
 
 int read_image_file(char *file_name,int *number_of_components,
-	int *number_of_bytes_per_component,
-	long int *height,long int *width, long unsigned **image)
+	int *number_of_bytes_per_component,long int *height,long int *width,
+	enum Raw_image_storage raw_image_storage, long unsigned **image)
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Detects the image type from the file extension (rgb/tiff) and then reads it.
+For formats that do not have a header, eg. RAW and YUV, a width and height may
+be specified in the <width> and <height> arguments. For the RAW format, the
+<raw_image_storage> is needed.
 ==============================================================================*/
 {
 	enum Image_file_format image_file_format;
@@ -4554,6 +4845,11 @@ Detects the image type from the file extension (rgb/tiff) and then reads it.
 				display_message(ERROR_MESSAGE,"Cannot read postscript image file '%s'",
 					file_name);
 				return_code=0;
+			} break;
+			case RAW_FILE_FORMAT:
+			{
+				return_code=read_raw_image_file(file_name,number_of_components,
+					number_of_bytes_per_component,height,width,raw_image_storage,image);
 			} break;
 			case RGB_FILE_FORMAT:
 			{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.h
 
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Utilities for handling images.
@@ -19,7 +19,7 @@ Global types
 */
 enum Image_file_format
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Enumerator for specifying the image file format.
@@ -30,6 +30,7 @@ list for automatic creation of choose_enumerator widgets.
 	UNKNOWN_IMAGE_FILE_FORMAT,
 	IMAGE_FILE_FORMAT_BEFORE_FIRST,
 	POSTSCRIPT_FILE_FORMAT,
+	RAW_FILE_FORMAT,
 	RGB_FILE_FORMAT,
 	TIFF_FILE_FORMAT,
 	YUV_FILE_FORMAT,
@@ -48,6 +49,13 @@ enum Tiff_image_compression
 	TIFF_LZW_COMPRESSION,
 	TIFF_PACK_BITS_COMPRESSION
 }; /* enum Tiff_image_compression */
+
+enum Raw_image_storage
+{
+	RAW_INTERLEAVED_RGB,
+	RAW_PLANAR_RGB,
+	RAW_IMAGE_STORAGE_INVALID
+}; /* enum Image_storage */
 
 /*
 Global functions
@@ -119,6 +127,36 @@ Returns the <Image_file_format> determined from the file_extension in
 <file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
 ==============================================================================*/
 
+char *Raw_image_storage_string(enum Raw_image_storage raw_image_storage);
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the raw_image_storage,
+eg. RAW_INTERLEAVED_RGB = "raw_interleaved_rgb". This string should match the
+command used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Raw_image_storage_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Raw_image_storage values.
+Strings are obtained from function Raw_image_storage_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Raw_image_storage Raw_image_storage_from_string(
+	char *raw_image_storage_string);
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Returns the <Raw_image_storage> described by <raw_image_storage_string>.
+==============================================================================*/
+
 int write_rgb_image_file(char *file_name,int number_of_components,
 	int number_of_bytes_per_component,
 	int number_of_rows,int number_of_columns,int row_padding,
@@ -181,14 +219,17 @@ DESCRIPTION :
 Reads an image from a TIFF file.
 ==============================================================================*/
 
-int read_image_file(char *file_name, int *number_of_components,
-	int *number_of_bytes_per_component, long int *height,long int *width,
-	long unsigned **image);
+int read_image_file(char *file_name,int *number_of_components,
+	int *number_of_bytes_per_component,long int *height,long int *width,
+	enum Raw_image_storage raw_image_storage, long unsigned **image);
 /*******************************************************************************
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
-Detects the image type from the file extension (rgb/tiff) and then reads.
+Detects the image type from the file extension (rgb/tiff) and then reads it.
+For formats that do not have a header, eg. RAW and YUV, a width and height may
+be specified in the <width> and <height> arguments. For the RAW format, the
+<raw_image_storage> is needed.
 ==============================================================================*/
 
 int get_radial_distortion_corrected_coordinates(double dist_x,double dist_y,
