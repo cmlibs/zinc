@@ -1,9 +1,12 @@
 //******************************************************************************
 // FILE : function_gradient.hpp
 //
-// LAST MODIFIED : 25 August 2004
+// LAST MODIFIED : 21 October 2004
 //
 // DESCRIPTION :
+// ***Not used***
+// API now uses a combination of Function_matrix_transpose and
+// Function_derivative.
 //==============================================================================
 #if !defined (__FUNCTION_GRADIENT_HPP__)
 #define __FUNCTION_GRADIENT_HPP__
