@@ -528,9 +528,9 @@ DESCRIPTION :
 													do
 													{
 	/*???debug */
-	float alpha_aa_save,alpha_ab_save,alpha_ac_save,alpha_ba_save,alpha_bb_save,
+/*	float alpha_aa_save,alpha_ab_save,alpha_ac_save,alpha_ba_save,alpha_bb_save,
 		alpha_bc_save,alpha_ca_save,alpha_cb_save,alpha_cc_save,beta_a_save,
-		beta_b_save,beta_c_save;
+		beta_b_save,beta_c_save;*/
 														beta_a=0;
 														beta_b=0;
 														beta_c=0;
@@ -569,7 +569,7 @@ DESCRIPTION :
 														alpha_bb *= 1+lambda;
 														alpha_cc *= 1+lambda;
 	/*???debug */
-	alpha_aa_save=alpha_aa;
+	/*alpha_aa_save=alpha_aa;
 	alpha_ab_save=alpha_ab;
 	alpha_ac_save=alpha_ac;
 	alpha_ba_save=alpha_ba;
@@ -580,7 +580,7 @@ DESCRIPTION :
 	alpha_cc_save=alpha_cc;
 	beta_a_save=beta_a;
 	beta_b_save=beta_b;
-	beta_c_save=beta_c;
+	beta_c_save=beta_c;*/
 														/* solve the linear equations alpha*delta=beta for
 															delta */
 														temp_a=fabs(alpha_aa);
