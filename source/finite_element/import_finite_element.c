@@ -17,6 +17,11 @@ socket) into the graphical interface to CMISS.
 #include "general/object.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+#if defined (SGI)
+/* For finite so that we can check for Nans which some compilers seem
+	to accept as valid in an fscanf */
+#include <ieeefp.h>
+#endif /* defined (SGI) */
 
 /*
 Module types
@@ -696,7 +701,7 @@ the <field_order_info>.
 								for (k=0;(k<number_of_values)&&return_code;k++)
 								{
 									if (!((1==fscanf(input_file,FE_VALUE_INPUT_STRING,&value))&&
-										set_FE_field_FE_value_value(field,k,value)))
+										finite(value)&&set_FE_field_FE_value_value(field,k,value)))
 									{
 										display_message(ERROR_MESSAGE,
 											"read_FE_field_values.  Error getting FE_value");
@@ -1309,6 +1314,12 @@ Reads in a node from an <input_file>.
 												{
 													display_message(ERROR_MESSAGE,"read_FE_node.  "
 														"Error reading nodal value from file");
+													return_code=0;
+												}
+												if (!finite(values[k]))
+												{
+													display_message(ERROR_MESSAGE,"read_FE_node.  "
+														"Infinity or NAN read from node file.");
 													return_code=0;
 												}
 											}
@@ -3232,6 +3243,12 @@ in a grid field.
 																	"Error reading grid FE_value value from file");
 																return_code=0;
 															}
+															if (!finite(values[k]))
+															{
+																display_message(ERROR_MESSAGE,"read_FE_element.  "
+																	"Infinity or NAN element value read from element file.");
+																return_code=0;
+															}
 														}
 														if (return_code)
 														{
@@ -3360,6 +3377,12 @@ in a grid field.
 								{
 									display_message(ERROR_MESSAGE,
 										"read_FE_element.  Error reading scale factor from file");
+									return_code=0;
+								}
+								if (!finite(scale_factor[i]))
+								{
+									display_message(ERROR_MESSAGE,"read_FE_element.  "
+										"Infinity or NAN scale factor read from element file.");
 									return_code=0;
 								}
 							}
