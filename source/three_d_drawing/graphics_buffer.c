@@ -14,9 +14,9 @@ Should be merged with dm_interface.c
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
-#if GTK_MAJOR_VERSION < 2
+#if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
 #define GTK_USE_GTKGLAREA
-#endif /* GTK_MAJOR_VERSION < 2 */
+#endif /* ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)*/
 #if defined (GTK_USE_GTKGLAREA)
 #include <gtkgl/gtkglarea.h>
 #else /* defined (GTK_USE_GTKGLAREA) */
