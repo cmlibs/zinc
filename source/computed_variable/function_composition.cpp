@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composition.cpp
 //
-// LAST MODIFIED : 24 August 2004
+// LAST MODIFIED : 10 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -330,12 +330,19 @@ string_handle Function_composition::get_string_representation()
 
 Function_variable_handle Function_composition::input()
 //******************************************************************************
-// LAST MODIFIED : 11 June 2004
+// LAST MODIFIED : 10 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(0));
+	Function_variable_handle result(0);
+
+	if (value_private&&(value_private->function()))
+	{
+		result=(value_private->function())->input();
+	}
+
+	return (result);
 }
 
 Function_variable_handle Function_composition::output()
