@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.c
 
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Source code for the tracking editor dialog box.
@@ -95,7 +95,7 @@ DESCRIPTION :
 
 struct Tracking_editor_dialog
 /*******************************************************************************
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -137,6 +137,7 @@ DESCRIPTION :
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
 	struct LIST(GT_object) *glyph_list;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_graphical_material;
@@ -3056,7 +3057,7 @@ Turns on the Abort button.
 static int tracking_editor_file_read_movie(char *movie_file_name,
 	void *track_ed_void)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Reads a movie file into the tracking editor.
@@ -3104,7 +3105,7 @@ Reads a movie file into the tracking editor.
 			if (return_code=(enable_Mirage_movie_graphics(tmp_movie,
 				track_ed->basis_manager,track_ed->computed_field_manager,
 				track_ed->element_manager,track_ed->element_group_manager,
-				track_ed->fe_field_manager,track_ed->glyph_list,
+				track_ed->fe_field_manager,track_ed->fe_time,track_ed->glyph_list,
 				track_ed->graphical_material_manager,
 				track_ed->default_graphical_material,track_ed->light_manager,
 				track_ed->node_manager,track_ed->node_group_manager,
@@ -5324,6 +5325,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_time *fe_time,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
@@ -5348,7 +5350,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5427,7 +5429,7 @@ DESCRIPTION :
 	ENTER(open_tracking_editor_dialog);
 	USE_PARAMETER(exit_button_callback);
 	if (address&&background_colour&&basis_manager&&computed_field_manager&&
-		element_manager&&element_group_manager&&fe_field_manager&&
+		element_manager&&element_group_manager&&fe_field_manager&&fe_time&&
 		glyph_list&&graphical_material_manager&&default_graphical_material&&
 		graphics_window_manager&&light_manager&&default_light&&
 		light_model_manager&&default_light_model&&
@@ -5462,6 +5464,7 @@ DESCRIPTION :
 					track_ed->element_manager=element_manager;
 					track_ed->element_group_manager=element_group_manager;
 					track_ed->fe_field_manager=fe_field_manager;
+					track_ed->fe_time = fe_time;
 					track_ed->glyph_list=glyph_list;
 					track_ed->graphical_material_manager=
 						graphical_material_manager;

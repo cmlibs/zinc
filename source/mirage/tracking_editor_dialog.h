@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.h
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Structures and functions prototypes for the tracking editor dialog.
@@ -54,7 +54,7 @@ Global functions
 void tracking_editor_close_cb(Widget widget_id,XtPointer client_data,
 	XtPointer call_data);
 /*******************************************************************************
-LAST MODIFIED : 27 March 1998
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Closes the dialog window, and any children dialogs that may be open.
@@ -69,6 +69,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_time *fe_time,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
@@ -93,7 +94,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 ==============================================================================*/
