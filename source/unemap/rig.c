@@ -10,6 +10,8 @@ Contains function definitions for measurement rigs.
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+/*ieeefp.h doesn't exist for Linux. Needed for finite() for Irix*/
+/*finite() in math.h in Linux */
 #if defined (NOT_ANSI)
 #include <ieeefp.h>
 #endif /* defined (NOT_ANSI) */
@@ -4048,19 +4050,14 @@ the <input_file>.
 {
 	enum Region_type rig_type;
 	enum Signal_value_type signal_value_type;
-	float frequency;
-	int fread_result,index,number_of_devices,number_of_samples,number_of_signals,
+	float frequency,*buffer_value;
+	int fread_result,i,index,number_of_devices,number_of_samples,number_of_signals,
 		return_code,temp_int;
 	struct Device **device;
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 
-#if defined (NOT_ANSI)
-/*???DB.  isnan is not ansi? */
-	float *buffer_value;
-	int i;
-#endif /* defined (NOT_ANSI) */
 	ENTER(read_signal_file);
 	/* check the arguments */
 	if (input_file&&rig_pointer)
@@ -4125,8 +4122,7 @@ the <input_file>.
 											{
 												fread_result=BINARY_FILE_READ((char *)buffer->signals.
 													float_values,sizeof(float),
-													number_of_samples*number_of_signals,input_file);
-#if defined (NOT_ANSI)
+													number_of_samples*number_of_signals,input_file);											
 												/* check signal values.  If it's not a valid float, set
 													 it to 0  */																								
 												buffer_value=buffer->signals.float_values;
@@ -4146,6 +4142,7 @@ the <input_file>.
 														}
 #endif /* defined (OLD_CODE) */
 													/* check if data is valid finite() checks inf and nan*/
+													/*finite() in math.h for Linux, ieeefp.h for Irix*/
 													if(!finite( (double)(*buffer_value)  ))
 													{
 														*buffer_value=0.0;
@@ -4154,8 +4151,7 @@ the <input_file>.
 															"Set to 0 ");
 													}
 													buffer_value++;
-												}
-#endif /*defined (NOT_ANSI)*/
+												}											
 											} break;
 										}
 										if (fread_result==number_of_samples*number_of_signals)
