@@ -1313,7 +1313,11 @@ i.e sock is a hemisphere, torso is a cylinder.
 						DESTROY(FE_node)(&template_node);
 					}	
 					template_node = create_mapping_template_node(SOCK,field_order_info,
-						package,1,1,number_of_columns);
+						package,1,1,number_of_columns);				
+					r_value_and_derivatives[0]=0;
+					r_value_and_derivatives[1]=0;
+					r_value_and_derivatives[2]=0;
+					r_value_and_derivatives[3]=0;
 					theta = function->x_mesh[0];
 					mu = 0;
 					lambda = sock_lambda;
