@@ -316,7 +316,6 @@ MIRAGE_SRCS = \
 	mirage/mirage_node_editor.c \
 	mirage/movie.c \
 	mirage/movie_data.c \
-	mirage/photogrammetry.c \
 	mirage/tracking_editor_data.c \
 	mirage/tracking_editor_dialog.c \
 	slider/emoter_dialog.c
@@ -820,6 +819,10 @@ COMMAND_SRCS = \
 	command/command.c \
 	command/command_window.c \
 	command/parser.c 
+CURVE_SRCS = \
+	curve/control_curve.c \
+	curve/control_curve_editor.c \
+	curve/control_curve_editor_dialog.c
 DATA_SRCS = \
 	data/data_2d.c \
 	data/data_2d_dialog.c \
@@ -855,6 +858,7 @@ GENERAL_SRCS = \
 	general/multi_range.c \
 	general/myio.c \
 	general/mystring.c \
+	general/photogrammetry.c \
 	general/postscript.c \
 	general/value.c 
 GRAPHICS_SRCS = \
@@ -960,10 +964,6 @@ USER_INTERFACE_SRCS = \
 	user_interface/message.c \
 	user_interface/printer.c \
 	user_interface/user_interface.c
-CURVE_SRCS = \
-	curve/control_curve.c \
-	curve/control_curve_editor.c \
-	curve/control_curve_editor_dialog.c
 VIEW_SRCS = \
 	view/camera.c \
 	view/coord.c \
@@ -1094,6 +1094,10 @@ depend :
 	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- $(SRCS_1) 2>> DependMake.tmp)
 	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- $(SRCS_2) 2>> DependMake.tmp)
 	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- filt/exnodecmgui.c 2>> DependMake.tmp)
+	/* The uidh get their full path in the dependencies which stops the VPATH
+	.uil.uidh rule from picking up dependencies so I remove this PATH */
+	sed "s%$(UIDH_PATH)/%%g" DependMake > DependMake.tmp2
+	mv DependMake.tmp2 DependMake
 #if defined (IRIX) /* switch OperatingSystem */
 	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
 #elif defined(LINUX) /* switch OperatingSystem */

@@ -161,10 +161,11 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define UnemapMake unemap_linux.make
 #define DependMake unemap_linux.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux
+/* Can't use linux on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_g
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_g
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_g
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
 #endif /* switch OperatingSystem */
 
 #if defined (USE_UNEMAP_NODES)
@@ -503,16 +504,19 @@ ALL_LIB = alpha.opt/opt
 
 COMMAND_SRCS = \
 	command/parser.c
+
 #if defined (USE_UNEMAP_NODES)
+COLOUR_SRCS = \
+	colour/edit_var.c
+CURVE_SRCS = \
+	curve/control_curve.c
 FINITE_ELEMENT_SRCS = \
+	finite_element/computed_field.c \
+	finite_element/export_finite_element.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_streamlines.c \
 	finite_element/finite_element.c \
-	finite_element/computed_field.c
-#else /* defined (USE_UNEMAP_NODES) */
-FINITE_ELEMENT_SRCS =
-#endif /* defined (USE_UNEMAP_NODES) */
-#if defined (USE_UNEMAP_NODES)
+	finite_element/import_finite_element.c
 GENERAL_SRCS = \
 	general/callback.c \
 	general/compare.c \
@@ -527,43 +531,6 @@ GENERAL_SRCS = \
 	general/child_process.c \
 	general/value.c \
 	general/postscript.c
-#else
-GENERAL_SRCS = \
-	general/callback.c \
-	general/compare.c \
-	general/debug.c \
-	general/error_handler.c \
-	general/geometry.c \
-	general/heapsort.c \
-	general/image_utilities.c \
-	general/matrix_vector.c \
-	general/myio.c \
-	general/mystring.c \
-	general/postscript.c
-#endif /* (USE_UNEMAP_NODES) */
-
-#if defined (USE_UNEMAP_NODES)
-COLOUR_SRCS = \
-	colour/edit_var.c
-#else
-COLOUR_SRCS =
-#endif /*(USE_UNEMAP_NODES) */
-#if defined (USE_UNEMAP_NODES)
-MIRAGE_SRCS = \
-	mirage/photogrammetry.c
-#else
-MIRAGE_SRCS =
-#endif /*(USE_UNEMAP_NODES) */
-#if defined (USE_UNEMAP_NODES)
-THREE_D_DRAWING_SRCS = \
-	three_d_drawing/dm_interface.c \
-	three_d_drawing/movie_extensions.c \
-	three_d_drawing/ThreeDDraw.c
-#else
-THREE_D_DRAWING_SRCS =
-#endif /*(USE_UNEMAP_NODES) */
-
-#if defined (USE_UNEMAP_NODES)
 GRAPHICS_SRCS = \
 	graphics/complex.c \
 	graphics/laguer.c \
@@ -588,28 +555,72 @@ GRAPHICS_SRCS = \
 	graphics/scene.c \
 	graphics/spectrum_settings.c \
  	graphics/texture.c
+POSITION_SRCS = \
+	io_devices/input_module.c \
+	io_devices/matrix.c
+THREE_D_DRAWING_SRCS = \
+	three_d_drawing/dm_interface.c \
+	three_d_drawing/movie_extensions.c \
+	three_d_drawing/ThreeDDraw.c
+TIME_SRCS = \
+	time/time.c \
+	time/time_keeper.c \
+	time/time_editor.c \
+	time/time_editor_dialog.c
+UNEMAP_SRCS = \
+	unemap/acquisition.c \
+	unemap/acquisition_window.c \
+	unemap/acquisition_work_area.c \
+	unemap/analysis.c \
+	unemap/analysis_window.c \
+	unemap/analysis_work_area.c \
+	unemap/bard.c \
+	unemap/beekeeper.c \
+	unemap/cardiomapp.c \
+	unemap/drawing_2d.c \
+	unemap/interpolate.c \
+	unemap/map_dialog.c \
+	unemap/mapping.c \
+	unemap/mapping_window.c \
+	unemap/neurosoft.c \
+	unemap/page_window.c \
+	unemap/rig.c \
+	unemap/rig_node.c \
+	unemap/setup_dialog.c \
+	unemap/spectral_methods.c \
+	unemap/system_window.c \
+	unemap/trace_window.c \
+	unemap/unemap_package.c \
+	unemap/unemap_hardware_client.c
 #else
+COLOUR_SRCS =
+CURVE_SRCS =
+FINITE_ELEMENT_SRCS =
+GENERAL_SRCS = \
+	general/callback.c \
+	general/compare.c \
+	general/debug.c \
+	general/error_handler.c \
+	general/geometry.c \
+	general/heapsort.c \
+	general/image_utilities.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	general/postscript.c
 GRAPHICS_SRCS = \
 	graphics/colour.c \
 	graphics/material.c \
 	graphics/spectrum.c \
 	graphics/spectrum_settings.c \
 	graphics/texture.c
-#endif
-#if defined (USE_UNEMAP_NODES)
-POSITION_SRCS = \
-	io_devices/input_module.c \
-	io_devices/matrix.c
-#else /* defined (USE_UNEMAP_NODES) */
 POSITION_SRCS =
-#endif /* defined (USE_UNEMAP_NODES) */
-
 TIME_SRCS = \
 	time/time.c \
 	time/time_keeper.c \
 	time/time_editor.c \
 	time/time_editor_dialog.c
-#if defined (USE_UNEMAP_NODES)
+THREE_D_DRAWING_SRCS =
 UNEMAP_SRCS = \
 	unemap/acquisition.c \
 	unemap/acquisition_window.c \
@@ -635,33 +646,7 @@ UNEMAP_SRCS = \
 	unemap/trace_window.c \
 	unemap/unemap_package.c \
 	unemap/unemap_hardware_client.c
-#else
-UNEMAP_SRCS = \
-	unemap/acquisition.c \
-	unemap/acquisition_window.c \
-	unemap/acquisition_work_area.c \
-	unemap/analysis.c \
-	unemap/analysis_window.c \
-	unemap/analysis_work_area.c \
-	unemap/bard.c \
-	unemap/beekeeper.c \
-	unemap/cardiomapp.c \
-	unemap/drawing_2d.c \
-	unemap/interpolate.c \
-	unemap/map_dialog.c \
-	unemap/mapping.c \
-	unemap/mapping_window.c \
-	unemap/neurosoft.c \
-	unemap/page_window.c \
-	unemap/rig.c \
-	unemap/rig_node.c \
-	unemap/setup_dialog.c \
-	unemap/spectral_methods.c \
-	unemap/system_window.c \
-	unemap/trace_window.c \
-	unemap/unemap_package.c \
-	unemap/unemap_hardware_client.c
-#endif
+#endif /*(USE_UNEMAP_NODES) */
 USER_INTERFACE_SRCS = \
 	user_interface/confirmation.c \
 	user_interface/filedir.c \
@@ -672,10 +657,10 @@ USER_INTERFACE_SRCS = \
 SRCS = \
 	$(COLOUR_SRCS) \
 	$(COMMAND_SRCS) \
+	$(CURVE_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
-	$(MIRAGE_SRCS) \
 	$(POSITION_SRCS) \
 	$(THREE_D_DRAWING_SRCS) \
 	$(TIME_SRCS) \
@@ -725,6 +710,10 @@ depend :
 	echo -n > DependMake
 	(makedepend -f DependMake -Y -o.ObjSuffix -- $(ALL_FLAGS) -- unemap.c 2> DependMake.tmp)
 	(makedepend -f DependMake -a -Y -o.ObjSuffix -- $(ALL_FLAGS) -- $(SRCS) 2>> DependMake.tmp)
+	/* The uidh get their full path in the dependencies which stops the VPATH
+	.uil.uidh rule from picking up dependencies so I remove this PATH */
+	sed "s%$(UIDH_PATH)/%%g" DependMake > DependMake.tmp2
+	mv DependMake.tmp2 DependMake
 	/* Try and make a rule for the uidhs if they don't exist already,
 	It is bad, based on the format of the error output from makedepend and it only
 	gets the first inclusion.  If it fails then you can get the correct makedepend 

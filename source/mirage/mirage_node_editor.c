@@ -10,12 +10,12 @@ Special graphical node editor for mirage digitiser windows.
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/image_utilities.h"
+#include "general/photogrammetry.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/scene.h"
 #include "mirage/movie.h"
 #include "mirage/mirage_node_editor.h"
-#include "mirage/photogrammetry.h"
 #include "user_interface/message.h"
 
 /*

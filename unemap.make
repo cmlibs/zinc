@@ -12,11 +12,12 @@ VPATH=$(PRODUCT_PATH)
 #we want) and shortens the name you have to type.
 #SGI debug version
 unemap32 : $(SOURCE_PATH)/unemap_sgi.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sgi.make ]; then \
-		make -f unemap_sgi.make CMGUI_ROOT=$(PWD) ; \
+		make -f unemap_sgi.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make ; \
 	fi
 
 $(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -32,11 +33,12 @@ $(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake unemap.make
 
 #SGI rig nodes version
 unemap_nodes : $(SOURCE_PATH)/unemap_sginodes.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sginodes.make ]; then \
-		make -f unemap_sginodes.make CMGUI_ROOT=$(PWD) ; \
+		make -f unemap_sginodes.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/unemap_sginodes.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/unemap_sginodes.make ; \
 	fi
 
 $(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -52,11 +54,12 @@ $(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
 
 #SGI optimised version
 unemap_optimised : $(SOURCE_PATH)/unemap_sgioptimised.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sgioptimised.make ]; then \
-		make -f unemap_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
+		make -f unemap_sgioptimised.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/unemap_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/unemap_sgioptimised.make ; \
 	fi	
 
 $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -72,11 +75,12 @@ $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.mak
 
 #SGI 64bit version
 unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sgi64.make ]; then \
-		make -f unemap_sgi64.make CMGUI_ROOT=$(PWD) ; \
+		make -f unemap_sgi64.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/unemap_sgi64.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/unemap_sgi64.make ; \
 	fi	
 
 $(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -92,11 +96,12 @@ $(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake unemap.make
 
 #Linux version
 unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_linux.make ]; then \
-		make -f unemap_linux.make CMGUI_ROOT=$(PWD) ; \
+		make -f unemap_linux.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/unemap_linux.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/unemap_linux.make ; \
 	fi
 
 $(SOURCE_PATH)/unemap_linux.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -126,12 +131,13 @@ update :
 
 depend : $(SOURCE_PATH)/unemap_sgi.make $(SOURCE_PATH)/unemap_sginodes.make $(SOURCE_PATH)/unemap_sgioptimised.make $(SOURCE_PATH)/unemap_sgi64.make $(SOURCE_PATH)/unemap_linux.make
 	if [ "$(USER)" = "cmiss" ]; then \
+		export CMGUI_DEV_ROOT=$(PWD) ; \
 		cd $(PRODUCT_SOURCE_PATH); \
 		make -f unemap_sgi.make depend  ; \
 		make -f unemap_sginodes.make depend  ; \
 		make -f unemap_sgioptimised.make depend  ; \
 		make -f unemap_sgi64.make depend  ; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_SOURCE_PATH) ; make -f unemap_linux.make depend  CMGUI_ROOT=$(PWD) ' ; \
+		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; make -f unemap_linux.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi

@@ -30,6 +30,7 @@ interest and set scene_viewer values directly.
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#include "general/photogrammetry.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_window.h"
 #include "graphics/graphics_window.uidh"
@@ -38,10 +39,6 @@ interest and set scene_viewer values directly.
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
-#if defined (MIRAGE)
-#include "mirage/photogrammetry.h"
-  /*???RC.  Later make photogrammetry available for general use */
-#endif /* defined (MIRAGE) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"

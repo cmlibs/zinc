@@ -4,6 +4,7 @@ PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
 BIN_PATH=devbin
 SOURCE_PATH=source
+MAILFILE_PATH=mailfiles
 
 VPATH=$(PRODUCT_PATH)
 
@@ -12,11 +13,12 @@ VPATH=$(PRODUCT_PATH)
 #we want) and shortens the name you have to type.
 #SGI debug version
 cmgui : force $(SOURCE_PATH)/cmgui_sgi.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi.make ]; then \
-		make -f cmgui_sgi.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f cmgui_sgi.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi.make ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -32,11 +34,12 @@ $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 
 #SGI optimised version
 cmgui_optimised : force $(SOURCE_PATH)/cmgui_sgioptimised.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgioptimised.make ]; then \
-		make -f cmgui_sgioptimised.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f cmgui_sgioptimised.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgioptimised.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgioptimised.make ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -52,11 +55,12 @@ $(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 
 #SGI optimised lite version
 cmgui_lite : force $(SOURCE_PATH)/cmgui_sgilite.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgilite.make ]; then \
-		make -f cmgui_sgilite.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f cmgui_sgilite.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgilite.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgilite.make ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -72,11 +76,12 @@ $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 
 #SGI debug memory check version
 cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi_memorycheck.make ]; then \
-		make -f cmgui_sgi_memorycheck.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f cmgui_sgi_memorycheck.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi_memorycheck.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi_memorycheck.make ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -89,11 +94,12 @@ $(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake cmgui.mak
 
 #SGI 64bit version
 cmgui64 : force $(SOURCE_PATH)/cmgui_sgi64.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi64.make ]; then \
-		make -f cmgui_sgi64.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f cmgui_sgi64.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi64.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi64.make ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -109,11 +115,12 @@ $(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 
 #Linux version
 cmgui_linux : force $(SOURCE_PATH)/cmgui_linux.make
+	export CMGUI_DEV_ROOT=$(PWD) ; \
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_linux.make ]; then \
-		make -f cmgui_linux.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f cmgui_linux.make ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_linux.make CMGUI_DEV_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_linux.make ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_linux.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -143,12 +150,13 @@ update :
 
 depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	if [ "$(USER)" = "cmiss" ]; then \
+		export CMGUI_DEV_ROOT=$(PWD) ; \
 		cd $(PRODUCT_SOURCE_PATH); \
 		make -f cmgui_sgi.make depend ; \
 		make -f cmgui_sgioptimised.make depend ; \
 		make -f cmgui_sgi_memorycheck.make depend ; \
 		make -f cmgui_sgi64.make depend ; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_SOURCE_PATH) ; make -f cmgui_linux.make depend ' ; \
+		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; make -f cmgui_linux.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
@@ -167,23 +175,23 @@ run_tests :
 cronjob :
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
-		echo -n > programmer.mail ; \
+		echo -n > $(MAILFILE_PATH)/programmer.mail ; \
 		if ! make -f cmgui.make depend; then \
-			cat dependfail.mail >> programmer.mail ; \
+			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
 		if ! make -f cmgui.make update; then \
-			cat updatefail.mail >> programmer.mail ; \
+			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
 		if ! make -f cmgui.make run_tests; then \
-			cat testfail.mail >> programmer.mail ; \
+			cat $(MAILFILE_PATH)/testfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
 		if [ -s $(TEST_PATH)/all.mail ]; then \
-			cat $(TEST_PATH)/all.mail >> programmer.mail ; \
+			cat $(TEST_PATH)/all.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
-		if [ -s programmer.mail ]; then \
-			cat header.mail programmer.mail | sed "s/DATE/`date`/" | mail cmguiprogrammers@esu1.auckland.ac.nz ; \
+		if [ -s $(MAILFILE_PATH)/programmer.mail ]; then \
+			cat $(MAILFILE_PATH)/header.mail $(MAILFILE_PATH)/programmer.mail | sed "s/DATE/`date`/" | mail cmguiprogrammers@esu1.auckland.ac.nz ; \
 		else \
-			cat success.mail | sed "s/DATE/`date`/" | mail s.blackett@auckland.ac.nz ; \
+			cat $(MAILFILE_PATH)/success.mail | sed "s/DATE/`date`/" | mail s.blackett@auckland.ac.nz ; \
 		fi; \
 	else \
 		echo "Must be cmiss"; \

@@ -13,7 +13,7 @@ format specified in general/matrix_vector.h.
 #include <GL/glu.h>
 #include "general/debug.h"
 #include "general/matrix_vector.h"
-#include "mirage/photogrammetry.h"
+#include "general/photogrammetry.h"
 #include "user_interface/message.h"
 
 /*
