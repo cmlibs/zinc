@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_window.c
 
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Functions for using the Cell_window structure.
@@ -1616,7 +1616,7 @@ struct Cell_window *create_Cell_window(struct User_interface *user_interface,
   struct MANAGER(Spectrum) *spectrum_manager,struct Spectrum *default_spectrum,
   struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1999
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Create the structures and retrieve the cell window from the uil file. <filename>
@@ -2100,7 +2100,7 @@ specifies a file to print messages to, if non-NULL.
                   CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_node)(
                     (cell->distributed).node_chooser_form,
                     (struct FE_node *)NULL,node_manager,
-                    (MANAGER_CONDITIONAL_FUNCTION(FE_node) *)NULL,
+                    (MANAGER_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
                     GET_NAME(FE_node),node_string_to_FE_node))
                 {
                   XtSetSensitive((cell->distributed).node_chooser_widget,False);

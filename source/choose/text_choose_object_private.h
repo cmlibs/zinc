@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text_choose_object_private.h
 
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -37,7 +37,7 @@ Module variables
 #define FULL_DECLARE_TEXT_CHOOSE_OBJECT_TYPE( object_type ) \
 struct TEXT_CHOOSE_OBJECT(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Contains information required by the text_choose_object control dialog. \
@@ -47,6 +47,7 @@ Contains information required by the text_choose_object control dialog. \
 	struct MANAGER(object_type) *object_manager; \
 	void *manager_callback_id; \
 	MANAGER_CONDITIONAL_FUNCTION(object_type) *conditional_function; \
+	void *conditional_function_user_data; \
 	int (*object_to_string)(struct object_type *,char **); \
 	struct object_type *(*string_to_object)(char *, \
 		struct MANAGER(object_type) *); \
@@ -165,13 +166,14 @@ static int TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)( \
 	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object, \
 	struct object_type *new_object) \
 /***************************************************************************** \
-LAST MODIFIED : 10 September 1999 \
+LAST MODIFIED : 6 June 2000 \
 \
 DESCRIPTION : \
 Makes sure the <new_object> is valid for this text chooser, then calls an \
 update in case it has changed, and writes the new object string in the widget. \
 ============================================================================*/ \
 { \
+	char *current_string; \
 	static char *null_object_name="<NONE>"; \
 	char *object_name; \
 	int return_code; \
@@ -180,46 +182,57 @@ update in case it has changed, and writes the new object string in the widget. \
 	/* check arguments */ \
 	if (text_choose_object) \
 	{ \
-		if (new_object&&(!IS_MANAGED(object_type)(new_object, \
-			text_choose_object->object_manager)|| \
-			(text_choose_object->conditional_function && \
-			!(text_choose_object->conditional_function(new_object,(void *)NULL))))) \
+		if (current_string=XmTextFieldGetString(text_choose_object->widget)) \
 		{ \
-			display_message(ERROR_MESSAGE, \
-				"TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type).  Invalid object"); \
-			new_object=(struct object_type *)NULL; \
-		} \
-		if (new_object) \
-		{ \
-			text_choose_object->current_object=new_object; \
-		} \
-		else \
-		{ \
-			if (!text_choose_object->current_object) \
+			if (new_object&&(!IS_MANAGED(object_type)(new_object, \
+				text_choose_object->object_manager)|| \
+				(text_choose_object->conditional_function && \
+					!(text_choose_object->conditional_function(new_object, \
+						text_choose_object->conditional_function_user_data))))) \
 			{ \
-				text_choose_object->current_object= \
-					FIRST_OBJECT_IN_MANAGER_THAT(object_type)(\
-						text_choose_object->conditional_function,(void *)NULL, \
-						text_choose_object->object_manager); \
+				display_message(ERROR_MESSAGE, \
+					"TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type).  Invalid object"); \
+				new_object=(struct object_type *)NULL; \
 			} \
-		} \
-		/* write out the current_object */ \
-		if (text_choose_object->current_object) \
-		{ \
-			if (text_choose_object->object_to_string( \
-				text_choose_object->current_object,&object_name)) \
+			if (new_object) \
 			{ \
-				XtVaSetValues(text_choose_object->widget,XmNvalue,object_name,NULL); \
-				DEALLOCATE(object_name); \
+				text_choose_object->current_object=new_object; \
 			} \
+			else \
+			{ \
+				if (!text_choose_object->current_object) \
+				{ \
+						text_choose_object->current_object= \
+						FIRST_OBJECT_IN_MANAGER_THAT(object_type)(\
+							text_choose_object->conditional_function, \
+							text_choose_object->conditional_function_user_data, \
+							text_choose_object->object_manager); \
+				} \
+			} \
+			/* write out the current_object */ \
+			if (text_choose_object->current_object) \
+			{ \
+				if (text_choose_object->object_to_string( \
+					text_choose_object->current_object,&object_name)) \
+				{ \
+					if (strcmp(object_name,current_string)) \
+					{ \
+						XmTextFieldSetString(text_choose_object->widget,object_name); \
+					} \
+					DEALLOCATE(object_name); \
+				} \
+			} \
+			else \
+			{ \
+				if (strcmp(null_object_name,current_string)) \
+				{ \
+					XmTextFieldSetString(text_choose_object->widget,null_object_name); \
+				} \
+			} \
+			/* inform the client of any change */ \
+			TEXT_CHOOSE_OBJECT_UPDATE(object_type)(text_choose_object); \
+			XtFree(current_string); \
 		} \
-		else \
-		{ \
-			XtVaSetValues(text_choose_object->widget, \
-				XmNvalue,null_object_name,NULL); \
-		} \
-		/* inform the client of and change */ \
-		TEXT_CHOOSE_OBJECT_UPDATE(object_type)(text_choose_object); \
 		return_code=1; \
 	} \
 	else \
@@ -247,7 +260,7 @@ update in case it has changed, and writes the new object string in the widget. \
 static void TEXT_CHOOSE_OBJECT_CB(object_type)(Widget widget, \
 	XtPointer client_data,XtPointer call_data) \
 /***************************************************************************** \
-LAST MODIFIED : 28 June 1999 \
+LAST MODIFIED : 6 June 2000 \
 \
 DESCRIPTION : \
 Callback for the text field - change of object. \
@@ -262,12 +275,11 @@ Callback for the text field - change of object. \
 		(struct TEXT_CHOOSE_OBJECT(object_type) *)client_data)) \
 	{ \
 		/* Get the object name string */ \
-		XtVaGetValues(widget,XmNvalue,&object_name,NULL); \
-		TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
-			text_choose_object->string_to_object(object_name, \
-				text_choose_object->object_manager)); \
-		if (object_name) \
+		if (object_name=XmTextFieldGetString(widget)) \
 		{ \
+			TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
+				text_choose_object->string_to_object(object_name, \
+					text_choose_object->object_manager)); \
 			XtFree(object_name); \
 		} \
 	} \
@@ -365,7 +377,7 @@ Global functions
 #define DECLARE_CREATE_TEXT_CHOOSE_OBJECT_WIDGET_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_TEXT_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 9 February 2000 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
@@ -386,6 +398,8 @@ Creates an option menu from which an object from the manager may be chosen. \
 			text_choose_object->object_manager=object_manager; \
 			text_choose_object->manager_callback_id=(void *)NULL; \
 			text_choose_object->conditional_function=conditional_function; \
+			text_choose_object->conditional_function_user_data= \
+				conditional_function_user_data; \
 			text_choose_object->object_to_string=object_to_string; \
 			text_choose_object->string_to_object=string_to_object; \
 			text_choose_object->widget_parent=parent; \
@@ -447,10 +461,52 @@ Creates an option menu from which an object from the manager may be chosen. \
 	return (return_widget); \
 } /* CREATE_TEXT_CHOOSE_OBJECT_WIDGET(object_type) */
 
+#define DECLARE_TEXT_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION( object_type ) \
+PROTOTYPE_TEXT_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type) \
+/***************************************************************************** \
+LAST MODIFIED : 9 June 2000 \
+\
+DESCRIPTION : \
+Returns a pointer to the callback item of the text_choose_object_widget. \
+============================================================================*/ \
+{ \
+	struct Callback_data *return_address; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
+\
+	ENTER(TEXT_CHOOSE_OBJECT_GET_CALLBACK(object_type)); \
+	if (text_choose_object_widget) \
+	{ \
+		text_choose_object=(struct TEXT_CHOOSE_OBJECT(object_type) *)NULL; \
+		/* Get the pointer to the data for the text_choose_object dialog */ \
+		XtVaGetValues(text_choose_object_widget,XmNuserData, \
+			&text_choose_object,NULL); \
+		if (text_choose_object) \
+		{ \
+			return_address=&(text_choose_object->update_callback); \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"TEXT_CHOOSE_OBJECT_GET_CALLBACK(" #object_type \
+				").  Missing widget data"); \
+			return_address=(struct Callback_data *)NULL; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"TEXT_CHOOSE_OBJECT_GET_CALLBACK(" #object_type ").  Missing widget"); \
+		return_address=(struct Callback_data *)NULL; \
+	} \
+	LEAVE; \
+\
+	return (return_address); \
+} /* TEXT_CHOOSE_OBJECT_GET_CALLBACK(object_type) */
+
 #define DECLARE_TEXT_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION( object_type ) \
 PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Changes the callback item of the text_choose_object_widget. \
@@ -460,9 +516,9 @@ Changes the callback item of the text_choose_object_widget. \
 	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_SET_CALLBACK(object_type)); \
-	/* check arguments */ \
 	if (text_choose_object_widget&&new_callback) \
 	{ \
+		text_choose_object=(struct TEXT_CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the text_choose_object dialog */ \
 		XtVaGetValues(text_choose_object_widget,XmNuserData, \
 			&text_choose_object,NULL); \
@@ -492,10 +548,51 @@ Changes the callback item of the text_choose_object_widget. \
 	return (return_code); \
 } /* TEXT_CHOOSE_OBJECT_SET_CALLBACK(object_type) */
 
+#define DECLARE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION( object_type ) \
+PROTOTYPE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION( object_type ) \
+/***************************************************************************** \
+LAST MODIFIED : 9 June 2000 \
+\
+DESCRIPTION : \
+Returns the currently chosen object in the text_choose_object_widget. \
+============================================================================*/ \
+{ \
+	struct object_type *return_address; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
+\
+	ENTER(TEXT_CHOOSE_OBJECT_GET_OBJECT(object_type)); \
+	if (text_choose_object_widget) \
+	{ \
+		text_choose_object=(struct TEXT_CHOOSE_OBJECT(object_type) *)NULL; \
+		/* Get the pointer to the data for the text_choose_object dialog */ \
+		XtVaGetValues(text_choose_object_widget,XmNuserData, \
+			&text_choose_object,NULL); \
+		if (text_choose_object) \
+		{ \
+			return_address=text_choose_object->current_object; \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE,"TEXT_CHOOSE_OBJECT_GET_OBJECT(" \
+				#object_type ").  Missing widget data"); \
+			return_address=(struct object_type *)NULL; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"TEXT_CHOOSE_OBJECT_GET_OBJECT(" #object_type ").  Missing widget"); \
+		return_address=(struct object_type *)NULL; \
+	} \
+	LEAVE; \
+\
+	return (return_address); \
+} /* TEXT_CHOOSE_OBJECT_GET_OBJECT(object_type) */
+
 #define DECLARE_TEXT_CHOOSE_OBJECT_SET_OBJECT_FUNCTION( object_type ) \
 PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 28 June 1999 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Changes the chosen object in the text_choose_object_widget. \
@@ -507,6 +604,7 @@ Changes the chosen object in the text_choose_object_widget. \
 	ENTER(TEXT_CHOOSE_OBJECT_SET_OBJECT(object_type)); \
 	if (text_choose_object_widget) \
 	{ \
+		text_choose_object=(struct TEXT_CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the text_choose_object dialog */ \
 		XtVaGetValues(text_choose_object_widget,XmNuserData, \
 			&text_choose_object,NULL); \
@@ -536,88 +634,57 @@ Changes the chosen object in the text_choose_object_widget. \
 	return (return_code); \
 } /* TEXT_CHOOSE_OBJECT_SET_OBJECT(object_type) */
 
-#define DECLARE_TEXT_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION( object_type ) \
-PROTOTYPE_TEXT_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type) \
+#define DECLARE_TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION( \
+	object_type ) \
+PROTOTYPE_TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
-Returns a pointer to the callback item of the text_choose_object_widget. \
+Changes the conditional_function and user_data limiting the available \
+selection of objects. Also allows new_object to be set simultaneously. \
 ============================================================================*/ \
 { \
-	struct Callback_data *return_address; \
+	int return_code; \
 	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
-	ENTER(TEXT_CHOOSE_OBJECT_GET_CALLBACK(object_type)); \
-	/* check arguments */ \
+	ENTER(TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type)); \
 	if (text_choose_object_widget) \
 	{ \
+		text_choose_object=(struct TEXT_CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the text_choose_object dialog */ \
-		XtVaGetValues(text_choose_object_widget,XmNuserData, \
-			&text_choose_object,NULL); \
+		XtVaGetValues(text_choose_object_widget, \
+			XmNuserData,&text_choose_object,NULL); \
 		if (text_choose_object) \
 		{ \
-			return_address=&(text_choose_object->update_callback); \
+			text_choose_object->conditional_function=conditional_function; \
+			text_choose_object->conditional_function_user_data= \
+				conditional_function_user_data; \
+			/* set the last_updated_object to the new_object since it is what the \
+				 rest of the application now thinks is the chosen object. */ \
+			text_choose_object->last_updated_object=new_object; \
+			return_code=TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)( \
+				text_choose_object,new_object); \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"TEXT_CHOOSE_OBJECT_GET_CALLBACK(" #object_type \
+				"TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(" #object_type \
 				").  Missing widget data"); \
-			return_address=(struct Callback_data *)NULL; \
+			return_code=0; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"TEXT_CHOOSE_OBJECT_GET_CALLBACK(" #object_type ").  Missing widget"); \
-		return_address=(struct Callback_data *)NULL; \
+			"TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(" #object_type \
+			").  Missing widget"); \
+		return_code=0; \
 	} \
 	LEAVE; \
 \
-	return (return_address); \
-} /* TEXT_CHOOSE_OBJECT_GET_CALLBACK(object_type) */
-
-#define DECLARE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION( object_type ) \
-PROTOTYPE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION( object_type ) \
-/***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
-\
-DESCRIPTION : \
-Returns the currently chosen object in the text_choose_object_widget. \
-============================================================================*/ \
-{ \
-	struct object_type *return_address; \
-	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
-\
-	ENTER(TEXT_CHOOSE_OBJECT_GET_OBJECT(object_type)); \
-	/* check arguments */ \
-	if (text_choose_object_widget) \
-	{ \
-		/* Get the pointer to the data for the text_choose_object dialog */ \
-		XtVaGetValues(text_choose_object_widget,XmNuserData, \
-			&text_choose_object,NULL); \
-		if (text_choose_object) \
-		{ \
-			return_address=text_choose_object->current_object; \
-		} \
-		else \
-		{ \
-			display_message(ERROR_MESSAGE,"TEXT_CHOOSE_OBJECT_GET_OBJECT(" \
-				#object_type ").  Missing widget data"); \
-			return_address=(struct object_type *)NULL; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"TEXT_CHOOSE_OBJECT_GET_OBJECT(" #object_type ").  Missing widget"); \
-		return_address=(struct object_type *)NULL; \
-	} \
-	LEAVE; \
-\
-	return (return_address); \
-} /* TEXT_CHOOSE_OBJECT_GET_OBJECT(object_type) */
+	return (return_code); \
+} /* TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type) */
 
 #define DECLARE_TEXT_CHOOSE_OBJECT_MODULE_FUNCTIONS( object_type ) \
 DECLARE_TEXT_CHOOSE_OBJECT_UPDATE_FUNCTION(object_type) \
@@ -631,5 +698,7 @@ DECLARE_CREATE_TEXT_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type) \
 DECLARE_TEXT_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type) \
 DECLARE_TEXT_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type) \
 DECLARE_TEXT_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type) \
-DECLARE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type)
+DECLARE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type) \
+DECLARE_TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type)
+
 #endif /* !defined (TEXT_CHOOSE_OBJECT_PRIVATE_H) */

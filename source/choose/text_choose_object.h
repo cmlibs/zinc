@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text_choose_object.h
 
-LAST MODIFIED : 18 August 1998
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -37,11 +37,12 @@ Widget CREATE_TEXT_CHOOSE_OBJECT_WIDGET(object_type)(Widget parent, \
 	struct object_type *current_object, \
 	struct MANAGER(object_type) *object_manager, \
 	MANAGER_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
+	void *conditional_function_user_data, \
 	int (object_to_string)(struct object_type *,char **), \
 	struct object_type *(string_to_object)(char *, \
 		struct MANAGER(object_type) *)) \
 /***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Creates a text box from which an object from the manager may be entered. \
@@ -51,44 +52,6 @@ The <object_to_string> function must be supplied, and builds a string to \
 describe the identifier of the object. The <string_to_object> function does \
 the reverse. These functions are useful in the case of elements where only \
 the element number (or face or line) is to be specified, not all three. \
-============================================================================*/
-
-#if defined (FULL_NAMES)
-#define TEXT_CHOOSE_OBJECT_SET_CALLBACK_( object_type ) \
-	text_choose_object_set_callback_ ## object_type
-#else
-#define TEXT_CHOOSE_OBJECT_SET_CALLBACK_( object_type ) cosc ## object_type
-#endif
-#define TEXT_CHOOSE_OBJECT_SET_CALLBACK( object_type ) \
-	TEXT_CHOOSE_OBJECT_SET_CALLBACK_(object_type)
-
-#define PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION( object_type ) \
-int TEXT_CHOOSE_OBJECT_SET_CALLBACK(object_type)( \
-	Widget text_choose_object_widget,struct Callback_data *new_callback) \
-/***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
-\
-DESCRIPTION : \
-Changes the callback item of the text_choose_object_widget. \
-============================================================================*/
-
-#if defined (FULL_NAMES)
-#define TEXT_CHOOSE_OBJECT_SET_OBJECT_( object_type ) \
-	text_choose_object_set_object_ ## object_type
-#else
-#define TEXT_CHOOSE_OBJECT_SET_OBJECT_( object_type ) coso ## object_type
-#endif
-#define TEXT_CHOOSE_OBJECT_SET_OBJECT( object_type ) \
-	TEXT_CHOOSE_OBJECT_SET_OBJECT_(object_type)
-
-#define PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_OBJECT_FUNCTION( object_type ) \
-int TEXT_CHOOSE_OBJECT_SET_OBJECT(object_type)( \
-	Widget text_choose_object_widget,struct object_type *new_object) \
-/***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
-\
-DESCRIPTION : \
-Changes the chosen object in the text_choose_object_widget. \
 ============================================================================*/
 
 #if defined (FULL_NAMES)
@@ -111,6 +74,25 @@ Returns a pointer to the callback item of the text_choose_object_widget. \
 ============================================================================*/
 
 #if defined (FULL_NAMES)
+#define TEXT_CHOOSE_OBJECT_SET_CALLBACK_( object_type ) \
+	text_choose_object_set_callback_ ## object_type
+#else
+#define TEXT_CHOOSE_OBJECT_SET_CALLBACK_( object_type ) cosc ## object_type
+#endif
+#define TEXT_CHOOSE_OBJECT_SET_CALLBACK( object_type ) \
+	TEXT_CHOOSE_OBJECT_SET_CALLBACK_(object_type)
+
+#define PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION( object_type ) \
+int TEXT_CHOOSE_OBJECT_SET_CALLBACK(object_type)( \
+	Widget text_choose_object_widget,struct Callback_data *new_callback) \
+/***************************************************************************** \
+LAST MODIFIED : 18 August 1998 \
+\
+DESCRIPTION : \
+Changes the callback item of the text_choose_object_widget. \
+============================================================================*/
+
+#if defined (FULL_NAMES)
 #define TEXT_CHOOSE_OBJECT_GET_OBJECT_( object_type ) \
 	text_choose_object_get_object_ ## object_type
 #else
@@ -129,11 +111,55 @@ DESCRIPTION : \
 Returns the currently chosen object in the text_choose_object_widget. \
 ============================================================================*/
 
+#if defined (FULL_NAMES)
+#define TEXT_CHOOSE_OBJECT_SET_OBJECT_( object_type ) \
+	text_choose_object_set_object_ ## object_type
+#else
+#define TEXT_CHOOSE_OBJECT_SET_OBJECT_( object_type ) coso ## object_type
+#endif
+#define TEXT_CHOOSE_OBJECT_SET_OBJECT( object_type ) \
+	TEXT_CHOOSE_OBJECT_SET_OBJECT_(object_type)
+
+#define PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_OBJECT_FUNCTION( object_type ) \
+int TEXT_CHOOSE_OBJECT_SET_OBJECT(object_type)( \
+	Widget text_choose_object_widget,struct object_type *new_object) \
+/***************************************************************************** \
+LAST MODIFIED : 18 August 1998 \
+\
+DESCRIPTION : \
+Changes the chosen object in the text_choose_object_widget. \
+============================================================================*/
+
+#if defined (FULL_NAMES)
+#define TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_( object_type ) \
+	text_choose_object_change_conditional_function_ ## object_type
+#else
+#define TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_( object_type ) \
+	tcoccf ## object_type
+#endif
+#define TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION( object_type ) \
+	TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_(object_type)
+
+#define PROTOTYPE_TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION( \
+	object_type ) \
+int TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type)( \
+	Widget text_choose_object_widget, \
+	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
+	void *conditional_function_user_data,struct object_type *new_object) \
+/***************************************************************************** \
+LAST MODIFIED : 9 June 2000 \
+\
+DESCRIPTION : \
+Changes the conditional_function and user_data limiting the available \
+selection of objects. Also allows new_object to be set simultaneously. \
+============================================================================*/
+
 #define PROTOTYPE_TEXT_CHOOSE_OBJECT_GLOBAL_FUNCTIONS( object_type) \
 PROTOTYPE_CREATE_TEXT_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type); \
-PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type); \
-PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type); \
 PROTOTYPE_TEXT_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type); \
-PROTOTYPE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type)
+PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type); \
+PROTOTYPE_TEXT_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type); \
+PROTOTYPE_TEXT_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type); \
+PROTOTYPE_TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type)
 
 #endif /* !defined (TEXT_CHOOSE_OBJECT_H) */
