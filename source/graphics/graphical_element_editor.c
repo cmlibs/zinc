@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 11 December 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -11,6 +11,7 @@ Provides the widgets to manipulate graphical element group settings.
 #include <Xm/Xm.h>
 #include <Xm/XmP.h>
 #include <Xm/FormP.h>
+#include <Xm/PushB.h>
 #include <Xm/PushBG.h>
 #include <Xm/ToggleB.h>
 #include <Xm/ToggleBG.h>
@@ -72,7 +73,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Settings_item);
 
 struct Graphical_element_editor
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -107,6 +108,7 @@ Contains all the information carried by the graphical element editor widget.
 		delete_button,up_button,down_button,settings_form,settings_widget,
 		cylinders_button;
 	Widget *widget_address,widget,widget_parent;
+	Pixel select_background_color, select_foreground_color;
 }; /* Graphical_element_editor */
 
 /*
@@ -331,11 +333,58 @@ gt_element_group currently being edited.
 	return (return_code);
 } /* graphical_element_editor_update */
 
+int Graphical_element_editor_set_object_highlight(
+	struct Graphical_element_editor *gelem_editor,
+	struct GT_element_settings *settings, int state)
+/*******************************************************************************
+LAST MODIFIED : 22 January 2002
+
+DESCRIPTION :
+Function adds/removes highlighting of selected object by inverting colours.
+==============================================================================*/
+{
+	int return_code;
+	struct Settings_item *settings_item;
+
+	ENTER(Graphical_element_editor_set_object_highlight);
+	if (gelem_editor && settings)
+	{
+		if (settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
+			settings, gelem_editor->settings_item_list))
+		{
+			if (state)
+			{
+				XtVaSetValues(settings_item->select_button, XmNbackground,
+					gelem_editor->select_foreground_color, NULL);
+				XtVaSetValues(settings_item->select_button, XmNforeground,
+					gelem_editor->select_background_color, NULL);
+			}
+			else
+			{
+				XtVaSetValues(settings_item->select_button, XmNbackground,
+					gelem_editor->select_background_color, NULL);
+				XtVaSetValues(settings_item->select_button, XmNforeground,
+					gelem_editor->select_foreground_color, NULL);
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_element_editor_set_object_highlight.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_element_editor_set_object_highlight */
+
 static int Graphical_element_editor_set_current_settings(
 	struct Graphical_element_editor *gelem_editor,
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
@@ -343,7 +392,6 @@ Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
 {
 	enum GT_element_settings_type settings_type;
 	int have_settings, return_code;
-	struct Settings_item *settings_item;
 
 	ENTER(Graphical_element_editor_set_current_settings);
 	if (gelem_editor)
@@ -352,23 +400,15 @@ Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
 		{
 			if (gelem_editor->current_settings)
 			{
-				if (settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
-					gelem_editor->current_settings, gelem_editor->settings_item_list))
-				{
-					XmToggleButtonSetState(settings_item->select_button,
-						/*state*/FALSE, /*notify*/FALSE);
-				}
+				Graphical_element_editor_set_object_highlight(gelem_editor,
+					gelem_editor->current_settings, /*state*/FALSE);
 			}
 			REACCESS(GT_element_settings)(&(gelem_editor->current_settings),
 				settings);
 			if (settings)
 			{
-				if (settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
-					settings, gelem_editor->settings_item_list))
-				{
-					XmToggleButtonSetState(settings_item->select_button,
-						/*state*/TRUE, /*notify*/FALSE);
-				}
+				Graphical_element_editor_set_object_highlight(gelem_editor,
+					settings, /*state*/TRUE);
 				/* if settings_type changed, select it in settings_type option menu */
 				settings_type = GT_element_settings_get_settings_type(settings);
 				if (settings_type != gelem_editor->current_settings_type)
@@ -537,7 +577,7 @@ Called when a settings visibility toggle button is selected.
 static void graphical_element_editor_settings_select_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Called when a settings select toggle button is selected.
@@ -549,13 +589,6 @@ Called when a settings select toggle button is selected.
 	USE_PARAMETER(call_data);
 	if (widget && (settings_item = (struct Settings_item *)client_data))
 	{
-		if (settings_item->settings ==
-			settings_item->gelem_editor->current_settings)
-		{
-			/* make sure the object is highlighted properly */
-			XmToggleButtonSetState(settings_item->select_button,
-				/*state*/TRUE, /*notify*/FALSE);
-		}
 		Graphical_element_editor_set_current_settings(settings_item->gelem_editor,
 			settings_item->settings);
 	}
@@ -572,7 +605,7 @@ static int Graphical_element_editor_update_Settings_item(
 	struct GT_element_settings *settings,
 	Widget *previous_widget_address)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Tries to find by name a Settings_item in <settings_item_list> that
@@ -662,13 +695,15 @@ that are not are removed.
 					num_args++;
 					XtSetArg(args[num_args], XmNtopAttachment, XmATTACH_FORM);
 					num_args++;
-					XtSetArg(args[num_args], XmNbottomAttachment, XmATTACH_FORM);
-					num_args++;
 					XtSetArg(args[num_args], XmNset, visible);
 					num_args++;
 					XtSetArg(args[num_args], XmNindicatorOn, TRUE);
 					num_args++;
 					XtSetArg(args[num_args], XmNindicatorSize, 16);
+					num_args++;
+					XtSetArg(args[num_args], XmNmarginWidth, 0);
+					num_args++;
+					XtSetArg(args[num_args], XmNmarginHeight, 0);
 					num_args++;
 					XtSetArg(args[num_args], XmNspacing, 0);
 					num_args++;
@@ -691,26 +726,34 @@ that are not are removed.
 					num_args = 0;
 					XtSetArg(args[num_args], XmNtopAttachment, XmATTACH_FORM);
 					num_args++;
-					XtSetArg(args[num_args], XmNbottomAttachment, XmATTACH_FORM);
-					num_args++;
 					XtSetArg(args[num_args], XmNleftAttachment, XmATTACH_WIDGET);
 					num_args++;
 					XtSetArg(args[num_args], XmNleftWidget,
 						settings_item->visibility_button);
 					num_args++;
-					XtSetArg(args[num_args], XmNindicatorOn, FALSE);
+					XtSetArg(args[num_args], XmNshadowThickness, 0);
 					num_args++;
-					XtSetArg(args[num_args], XmNindicatorType, XmN_OF_MANY);
+					XtSetArg(args[num_args], XmNborderWidth, 0);
 					num_args++;
-					XtSetArg(args[num_args], XmNshadowThickness, 1);
+					XtSetArg(args[num_args], XmNmarginHeight, 2);
 					num_args++;
+					XtSetArg(args[num_args], XmNmarginWidth, 2);
+					num_args++;
+					XtSetArg(args[num_args], XmNbackground,
+						gelem_editor->select_background_color);
+					num_args++;
+					XtSetArg(args[num_args], XmNforeground,
+						gelem_editor->select_foreground_color);
+					num_args++;
+						XtSetArg(args[num_args], XmNmarginWidth, 2);
+						num_args++;
 					XtSetArg(args[num_args], XmNfontList,
 						(XtPointer)gelem_editor->user_interface->normal_fontlist);
 					num_args++;
-					settings_item->select_button = XmCreateToggleButton(
+					settings_item->select_button = XmCreatePushButton(
 						settings_item->form, settings_string, args, num_args);
 					XtAddCallback(settings_item->select_button,
-						XmNvalueChangedCallback,
+						XmNactivateCallback,
 						graphical_element_editor_settings_select_CB,
 						(XtPointer)settings_item);
 					XtManageChild(settings_item->select_button);
@@ -830,16 +873,6 @@ of the type gelem_editor->settings_type.
 
 		REMOVE_OBJECTS_FROM_LIST_THAT(Settings_item)(
 			Settings_item_not_in_use, (void *)NULL, gelem_editor->settings_item_list);
-
-#if defined (NEW_CODE)
-		/* if current_object is invalid, choose another one */
-		if ((!scene_editor->current_object) ||
-			(1 == scene_editor->current_object->access_count))
-		{
-			Scene_editor_set_current_object(scene_editor,
-				Scene_editor_get_first_object(scene_editor));
-		}
-#endif /* defined (NEW_CODE) */
 	}
 	else
 	{
@@ -1760,7 +1793,7 @@ Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Creates a graphical_element_editor widget.
@@ -1970,6 +2003,13 @@ Creates a graphical_element_editor widget.
 								XtVaGetValues(gelem_editor->settings_scroll,
 									XmNclipWindow, &clip_window, NULL);
 								XtVaSetValues(clip_window, XmNbackground, pixel, NULL);
+
+								/* get foreground/background colours for inverting to highlight
+									 currently selected object */
+								XtVaGetValues(gelem_editor->settings_list_form, XmNbackground,
+									&(gelem_editor->select_background_color),NULL);
+								XtVaGetValues(gelem_editor->settings_list_form, XmNforeground,
+									&(gelem_editor->select_foreground_color),NULL);
 
 								/* turn on callbacks for choosers */
 								callback.data=(void *)gelem_editor;

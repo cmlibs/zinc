@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_editor.c
 
-LAST MODIFIED : 5 December 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Widgets for editing scene, esp. changing visibility of members.
@@ -77,7 +77,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_editor_object);
 
 struct Scene_editor
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -103,6 +103,7 @@ DESCRIPTION :
 	Widget child_button, child_form, content_form, content_frame, content_rowcolumn,
 		graphical_element_editor, transformation_button, transformation_editor,
 		transformation_form;
+	Pixel select_background_color, select_foreground_color;
 }; /* struct Scene_editor */
 
 struct Scene_editor_update_data
@@ -873,10 +874,51 @@ Responds to changes in the GT_element_groups for the current_object.
 	return (return_code);
 } /* Scene_editor_graphical_element_change */
 
+int Scene_editor_set_object_highlight(struct Scene_editor *scene_editor,
+	struct Scene_editor_object *scene_editor_object, int state)
+/*******************************************************************************
+LAST MODIFIED : 22 January 2002
+
+DESCRIPTION :
+Function adds/removes highlighting of selected object by inverting colours.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_editor_set_object_highlight);
+	if (scene_editor && scene_editor_object)
+	{
+		if (state)
+		{
+			XtVaSetValues(scene_editor_object->select_button, XmNbackground,
+				scene_editor->select_foreground_color, NULL);
+			XtVaSetValues(scene_editor_object->select_button, XmNforeground,
+				scene_editor->select_background_color, NULL);
+		}
+		else
+		{
+			XtVaSetValues(scene_editor_object->select_button, XmNbackground,
+				scene_editor->select_background_color, NULL);
+			XtVaSetValues(scene_editor_object->select_button, XmNforeground,
+				scene_editor->select_foreground_color, NULL);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_editor_set_object_highlight.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_editor_set_object_highlight */
+
 static int Scene_editor_set_current_object(struct Scene_editor *scene_editor,
 	struct Scene_editor_object *scene_editor_object)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Sets the current_object in the <scene_editor> for editing. Updates widgets.
@@ -896,8 +938,8 @@ Sets the current_object in the <scene_editor> for editing. Updates widgets.
 		{
 			if (scene_editor->current_object)
 			{
-				XmToggleButtonSetState(scene_editor->current_object->select_button,
-					/*state*/FALSE, /*notify*/FALSE);
+				Scene_editor_set_object_highlight(scene_editor,
+					scene_editor->current_object, /*state*/FALSE);
 				if (scene_editor->current_object->scene_object)
 				{
 					Scene_object_remove_transformation_callback(
@@ -924,9 +966,8 @@ Sets the current_object in the <scene_editor> for editing. Updates widgets.
 			{
 				scene_editor->current_object =
 					ACCESS(Scene_editor_object)(scene_editor_object);
-
-				XmToggleButtonSetState(scene_editor_object->select_button,
-					/*state*/TRUE, /*notify*/FALSE);
+				Scene_editor_set_object_highlight(scene_editor,
+					scene_editor_object, /*state*/TRUE);
 				label_string = XmStringCreateSimple(scene_editor_object->name);
 				XtVaSetValues(scene_editor->object_label,
 					XmNlabelString, label_string, NULL);
@@ -1114,7 +1155,7 @@ Callback for when the expand toggle button state changes.
 static void Scene_editor_object_select_callback(Widget widget,
 	XtPointer scene_editor_object_void, XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Callback for when the name toggle button state changes.
@@ -1128,13 +1169,6 @@ Callback for when the name toggle button state changes.
 		(struct Scene_editor_object *)scene_editor_object_void) &&
 		scene_editor_object->scene_editor)
 	{
- 		if (scene_editor_object ==
-			scene_editor_object->scene_editor->current_object)
-		{
-			/* make sure the object is highlighted properly */
-			XmToggleButtonSetState(scene_editor_object->select_button,
-				/*state*/TRUE, /*notify*/FALSE);
-		}
 		Scene_editor_set_current_object(scene_editor_object->scene_editor,
 			scene_editor_object);
 	}
@@ -1488,7 +1522,7 @@ static int Scene_editor_object_update(struct Scene_editor *scene_editor,
 	Widget parent_form, Widget *previous_widget_address,
 	int update_attachments_only)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Tries to find by name a Scene_editor_object in <scene_editor_objects> that
@@ -1666,18 +1700,6 @@ to the previous widget, but its widgets and child widgets are not updated.
 								XtSetArg(args[num_args], XmNleftAttachment, XmATTACH_FORM);
 								num_args++;
 							}
-#if defined (OLD_CODE)
-							XtSetArg(args[num_args], XmNset, scene_editor_object->expanded);
-							num_args++;
-							XtSetArg(args[num_args], XmNindicatorOn, FALSE);
-							num_args++;
-							XtSetArg(args[num_args], XmNindicatorType, XmONE_OF_MANY);
-							num_args++;
-							XtSetArg(args[num_args], XmNtopOffset, 2);
-							num_args++;
-							XtSetArg(args[num_args], XmNleftOffset, 2);
-							num_args++;
-#endif /* defined (OLD_CODE) */
 							XtSetArg(args[num_args], XmNshadowThickness, 1);
 							num_args++;
 							XtSetArg(args[num_args], XmNborderWidth, 0);
@@ -1686,12 +1708,6 @@ to the previous widget, but its widgets and child widgets are not updated.
 							num_args++;
 							XtSetArg(args[num_args], XmNmarginWidth, 3);
 							num_args++;
-#if defined (OLD_CODE)
-							XtSetArg(args[num_args], XmNheight, 21);
-							num_args++;
-							XtSetArg(args[num_args], XmNwidth, 21);
-							num_args++;
-#endif /* defined (OLD_CODE) */
 							XtSetArg(args[num_args], XmNfontList,
 								(XtPointer)scene_editor->user_interface->normal_fontlist);
 							num_args++;
@@ -1732,25 +1748,31 @@ to the previous widget, but its widgets and child widgets are not updated.
 								scene_editor_object->visibility_button);
 						}
 						num_args++;
-						XtSetArg(args[num_args], XmNindicatorOn, FALSE);
-						num_args++;
-						XtSetArg(args[num_args], XmNindicatorType, XmN_OF_MANY);
-						num_args++;
 						XtSetArg(args[num_args], XmNshadowThickness, 0);
+						num_args++;
+						XtSetArg(args[num_args], XmNborderWidth, 0);
+						num_args++;
+						XtSetArg(args[num_args], XmNmarginHeight, 2);
+						num_args++;
+						XtSetArg(args[num_args], XmNmarginWidth, 2);
+						num_args++;
+						XtSetArg(args[num_args], XmNbackground,
+							scene_editor->select_background_color);
+						num_args++;
+						XtSetArg(args[num_args], XmNforeground,
+							scene_editor->select_foreground_color);
+						num_args++;
+						XtSetArg(args[num_args], XmNmarginWidth, 2);
 						num_args++;
 						XtSetArg(args[num_args], XmNfontList,
 							(XtPointer)scene_editor->user_interface->normal_fontlist);
 						num_args++;
-						scene_editor_object->select_button = XmCreateToggleButton(
+						scene_editor_object->select_button = XmCreatePushButton(
 							scene_editor_object->form, name, args, num_args);
 						XtAddCallback(scene_editor_object->select_button,
-							XmNvalueChangedCallback,
+							XmNactivateCallback,
 							Scene_editor_object_select_callback,
 							(XtPointer)scene_editor_object);
-						/*XtAddCallback(scene_editor_object->select_button,
-							XmNarmCallback,
-							Scene_editor_object_select_callback,
-							(XtPointer)scene_editor_object);*/
 						XtManageChild(scene_editor_object->select_button);
 					}
 
@@ -1878,7 +1900,7 @@ struct Scene_editor *CREATE(Scene_editor)(
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Note on successful return the dialog is put at <*scene_editor_address>.
@@ -2231,6 +2253,13 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XtVaGetValues(scene_editor->list_form, XmNbackground, &pixel, NULL);
 				XtVaGetValues(scrolled_window, XmNclipWindow, &clip_window, NULL);
 				XtVaSetValues(clip_window, XmNbackground, pixel, NULL);
+
+				/* get foreground/background colours for inverting to highlight
+					 currently selected object */
+				XtVaGetValues(scene_editor->scene_label, XmNbackground,
+					&(scene_editor->select_background_color),NULL);
+				XtVaGetValues(scene_editor->scene_label, XmNforeground,
+					&(scene_editor->select_foreground_color),NULL);
 
 				/* make the widgets for this scene */
 				Scene_editor_Scene_update_Scene_editor_objects(scene_editor, scene,
