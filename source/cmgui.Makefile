@@ -209,25 +209,10 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
 #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
-   ifeq ($(SYSNAME),Linux)
-      ifneq ($(wildcard /usr/local/Mesa/include),)
-         GRAPHICS_INC += -I/usr/local/Mesa/include
-      endif
-      GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard /usr/local/Mesa/lib /usr/X11R6/lib)))
+   ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
+      GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
    endif
-   ifeq ($(SYSNAME:IRIX%=),)
-      ifneq ($(wildcard /usr/local/Mesa/include),)
-         GRAPHICS_INC += -I/usr/local/Mesa/include
-      endif
-      ifeq ($(ABI),64)
-         GRAPHICS_LIB += $(patsubst %,-L%,$(wildcard /usr/local/Mesa/lib64))
-      else # ABI == 64
-         GRAPHICS_LIB += $(patsubst %,-L%,$(wildcard /usr/local/Mesa/lib32))
-      endif # ABI == 64
-   endif # SYSNAME == IRIX%=
-   ifeq ($(SYSNAME),win32)
-      GRAPHICS_LIB += -L/usr/X11R6/lib
-   endif # $(SYSNAME) == win32
+   GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) /usr/X11R6/lib)))
    ifeq ($(SYSNAME),win32)
       GRAPHICS_LIB += -lopengl32 -lglu32
    else # $(SYSNAME) == win32
@@ -459,8 +444,8 @@ USER_INTERFACE_INC =
 USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
-      ifneq ($(wildcard /usr/local/Mesa/include),)
-         USER_INTERFACE_INC += -I/usr/local/Mesa/include
+      ifneq ($(wildcard $(CMISS_ROOT)/mesa/$(LIB_ARCH_DIR)/include),)
+         USER_INTERFACE_INC += -I$(CMISS_ROOT)/mesa/$(LIB_ARCH_DIR)/include
       endif
       USER_INTERFACE_INC += -I/usr/X11R6/include
       X_LIB = /usr/X11R6/lib
@@ -512,11 +497,11 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
          ifneq ($(STATIC_LINK),true)
             USER_INTERFACE_LIB += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --libs)
          else # $(STATIC_LINK) != true
-            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L/usr/local/Mesa/lib -lGLU -lGL
+            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-         USER_INTERFACE_LIB +=  -lgtkgl -L/usr/local/Mesa/lib -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
+         USER_INTERFACE_LIB +=  -lgtkgl -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
       endif # $(USE_GTK2) == true
    else # $(SYSNAME) != win32
       # SAB It seems that ld currently requires (version 2.13.90 20021005) the 
