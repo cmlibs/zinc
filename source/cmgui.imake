@@ -56,10 +56,7 @@ PRODUCT_PATH=.
 #define MIRAGE
 #define UNEMAP
 #define XVG
-/* ???DB.  Temporary.  Need xml libraries for other than n32 */
-#if !defined(O64)
 #define CELL
-#endif /* !defined(O64) */
 #endif /* ! defined (LITEWEIGHT) */
 
 #define SharedObjectVersion 1.0
