@@ -1230,12 +1230,12 @@ that it is all in one place.
 						 if (visual_info->visualid == 
 							graphics_buffer_package->override_visual_id)
 						 {
-							if (class == GRAPHICS_BUFFER_ONSCREEN_CLASS)
+							if (class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
 							{
 							  /* Try a shared buffer first */
 							  Graphics_buffer_create_from_fb_config_sgi(buffer,
 								 graphics_buffer_package,
-								 GRAPHICS_BUFFER_ONSCREEN_SHARED_CLASS,
+								 GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS,
 								 x3d_parent_widget,
 								 width, height, buffer->config_list[config_index]);
 							}
