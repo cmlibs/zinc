@@ -37,6 +37,7 @@ Contains all information necessary for a file descriptor handler.
 	struct Event_dispatcher_file_descriptor_handler *self;	
 	int access_count;
 	int file_descriptor;
+	int pending;
 	Event_dispatcher_handler_function *handler_function;
 	void *user_data;
 #if defined (USE_XTAPP_CONTEXT)
@@ -139,6 +140,7 @@ Create a single object that belongs to a specific file descriptor.
 		handler->self = handler;
 		handler->file_descriptor = file_descriptor;
 		handler->handler_function = handler_function;
+		handler->pending = 0;
 		handler->user_data = user_data;
 		handler->access_count = 0;
 	}
@@ -218,40 +220,72 @@ Adds the <handler>'s file descriptor to the <read_set> for the select call.
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 
 #if ! defined (USE_XTAPP_CONTEXT)
-static int Event_dispatcher_file_descriptor_handler_call_handler_if_in_read_set(
+static int Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set(
 	struct Event_dispatcher_file_descriptor_handler *handler, void *read_set_void)
 /*******************************************************************************
-LAST MODIFIED : 4 March 2002
+LAST MODIFIED : 14 June 2002
 
 DESCRIPTION :
-If the <handler>'s file descriptor is still set then call the appropriate
-callback.
+If the <handler>'s file descriptor is still set then set the pending flag so
+that we know to call it.
 ==============================================================================*/
 {
 	fd_set *read_set;
 	int return_code;
 
-	ENTER(Event_dispatcher_file_descriptor_handler_call_handler_if_in_read_set);
+	ENTER(Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set);
 
 	if (handler && (read_set = (fd_set *)read_set_void))
 	{
 		if (FD_ISSET(handler->file_descriptor, read_set))
 		{
-			(*handler->handler_function)(handler->file_descriptor, handler->user_data);
+			handler->pending = 1;
 		}
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_file_descriptor_handler_call_handler_if_in_read_set.  "
+			"Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set.  "
 			"Invalid arguments.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Event_dispatcher_file_descriptor_handler_call_handler_if_in_read_set */
+} /* Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set */
+#endif /* ! defined (USE_XTAPP_CONTEXT) */
+
+#if ! defined (USE_XTAPP_CONTEXT)
+static int Event_dispatcher_file_descriptor_handler_is_pending(
+	struct Event_dispatcher_file_descriptor_handler *handler, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2002
+
+DESCRIPTION :
+If the <handler>'s file descriptor is still set then set the pending flag so
+that we know to call it.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Event_dispatcher_file_descriptor_handler_is_pending);
+	USE_PARAMETER(user_data);
+	if (handler)
+	{	
+		return_code=handler->pending;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_file_descriptor_handler_is_pending.  "
+			"Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_file_descriptor_handler_is_pending */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Event_dispatcher_file_descriptor_handler, \
@@ -1168,6 +1202,7 @@ DESCRIPTION :
 	fd_set read_set;
 	struct timeval timeofday, timeout, *timeout_ptr;
 	struct timezone timeofdayzone;
+	struct Event_dispatcher_file_descriptor_handler *file_descriptor_callback;
 	struct Event_dispatcher_idle_callback *idle_callback;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
@@ -1237,17 +1272,33 @@ DESCRIPTION :
 		}
 		if (!dont_select)
 		{
-			if (0 < (select_code = select(100, &read_set, NULL, NULL, timeout_ptr)))
+			select_code = 0;
+			if (!(file_descriptor_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_file_descriptor_handler)
+				(Event_dispatcher_file_descriptor_handler_is_pending,
+				(void *)NULL, event_dispatcher->handler_list)))
+			{
+				if (0 < (select_code = select(100, &read_set, NULL, NULL, timeout_ptr)))
+				{
+					/* The select leaves only those descriptors that are pending in the read set,
+					 we set the pending flag and then work through them one by one.  This makes sure
+					 that each file handler that is waiting gets an equal chance and we don't just
+					 call them directly from the iterator as any of the events could modify the list */
+					FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
+						(Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set,
+						&read_set, event_dispatcher->handler_list);
+				}
+			}
+			if (file_descriptor_callback)
 			{
 				if (!idle_callback && event_dispatcher->special_idle_callback)
 				{
 					ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
 						(event_dispatcher->special_idle_callback, event_dispatcher->idle_list);
 				}
-				/* The select leaves only those descriptors that are pending in the read set */
-				FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
-					(Event_dispatcher_file_descriptor_handler_call_handler_if_in_read_set,
-					&read_set, event_dispatcher->handler_list);
+				/* Call the file handler then */
+				(*file_descriptor_callback->handler_function)(file_descriptor_callback->file_descriptor,
+					file_descriptor_callback->user_data);
+				file_descriptor_callback->pending = 0;
 			}
 			else
 			{
