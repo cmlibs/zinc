@@ -478,7 +478,12 @@ GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS
 GRAPHICS_LIB = -lGL -lGLU
 #elif defined(WIN32) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+#if defined (GTK_USER_INTERFACE)
+	/* Comes from USER_INTERFACE_LIB) */
+GRAPHICS_LIB =
+#else /* defined (GTK_USER_INTERFACE) */
 GRAPHICS_LIB = -L/usr/X11R6/lib -lopengl32 -lglu32
+#endif /* defined (GTK_USER_INTERFACE) */
 #endif /* switch OperatingSystem */
 #if defined (OLD_CODE)
 XCOMM GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -lmovieplay -lGL -lGLU -delay_load -ldmedia
@@ -593,7 +598,7 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-64/libperlinterpreter-opt.a
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-32/libperlinterpreter-opt.a
 #endif /* defined (O64) */
 #elif defined(WIN32) /* switch OperatingSystem */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/win32/perl_interpreter.o $(INTERPRETER_PATH)/generated/win32/Perl_cmiss.a $(INTERPRETER_PATH)/generated/win32/libperl56.a
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/win32/libperlinterpreter-opt.a $(INTERPRETER_PATH)/lib/win32/libPerl_cmiss.a $(INTERPRETER_PATH)/lib/win32/libperl56.a
 XCOMM INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/CYGWIN_NT-5.0-32/libperlinterpreter-debug.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
@@ -893,7 +898,7 @@ USER_INTERFACE_INC = `pkg-config gtkgl-2.0 gtk+-2.0 --cflags`
 USER_INTERFACE_LIB = -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 /home/blackett/lib/libGLU.a /usr/lib/libGL.so
 #else /* defined (USE_GTK2) */
 USER_INTERFACE_INC =  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-USER_INTERFACE_LIB =  -lgtkgl -lgtk -lgdk -lGLU -lGL
+USER_INTERFACE_LIB =  -lgtkgl -lgtk -lgdk -L/usr/X11R6/lib -lGLU -lGL
 #endif /* defined (USE_GTK2) */
 #elif 1 /* switch (USER_INTERFACE) */
 USER_INTERFACE_INC = 
@@ -923,10 +928,10 @@ USER_INTERFACE_LIB =
 LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 #elif defined(WIN32) /* switch OperatingSystem */
 #if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
-USER_INTERFACE_PATH = /tmp
+USER_INTERFACE_PATH = /home/blackett/cross-tools/gtk2
 /* USER_INTERFACE_PATH = c: */
-USER_INTERFACE_INC = -I$(USER_INTERFACE_PATH)/dev/gtk2/include/gtk-2.0 -I$(USER_INTERFACE_PATH)/dev/gtk2/include/pango-1.0 -I$(USER_INTERFACE_PATH)/dev/gtk2/include/glib-2.0/ -I$(USER_INTERFACE_PATH)/dev/gtk2/include/atk-1.0 -I$(USER_INTERFACE_PATH)/dev/gtk2/include/gtkgl-2.0/ -I$(USER_INTERFACE_PATH)/dev/gtk2/lib/glib-2.0/include -I$(USER_INTERFACE_PATH)/dev/gtk2/lib/gtk-2.0/include
-USER_INTERFACE_LIB = $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgtkgl-2.0.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgtk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgdk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libatk-1.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgdk_pixbuf-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libpangowin32-1.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libpango-1.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgobject-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libgmodule-2.0.dll.a $(USER_INTERFACE_PATH)/dev/gtk2/lib/libglib-2.0.dll.a
+USER_INTERFACE_INC = -I$(USER_INTERFACE_PATH)/include/gtk-2.0 -I$(USER_INTERFACE_PATH)/include/pango-1.0 -I$(USER_INTERFACE_PATH)/include/glib-2.0/ -I$(USER_INTERFACE_PATH)/include/atk-1.0 -I$(USER_INTERFACE_PATH)/include/gtkgl-2.0/ -I$(USER_INTERFACE_PATH)/lib/glib-2.0/include -I$(USER_INTERFACE_PATH)/lib/gtk-2.0/include
+USER_INTERFACE_LIB = $(USER_INTERFACE_PATH)/lib/libgtkgl-2.0.a $(USER_INTERFACE_PATH)/lib/libgtk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libgdk-win32-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libatk-1.0.dll.a $(USER_INTERFACE_PATH)/lib/libgdk_pixbuf-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libpangowin32-1.0.dll.a $(USER_INTERFACE_PATH)/lib/libpango-1.0.dll.a $(USER_INTERFACE_PATH)/lib/libgobject-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libgmodule-2.0.dll.a $(USER_INTERFACE_PATH)/lib/libglib-2.0.dll.a -lopengl32 -lglu32
 /* USER_INTERFACE_INC = -L"c:\perl\5.6.1\lib\MSWin32-x86\CORE" -L"c:\dev\gcc\lib" -Ic:/dev/gtk2/include/gtk-2.0 -Ic:/dev/gtk2/include/pango-1.0 -Ic:/dev/gtk2/include/glib-2.0/ -Ic:/dev/gtk2/include/atk-1.0 -Ic:/dev/gtk2/include/gtkgl-2.0/ -Ic:/dev/gtk2/lib/glib-2.0/include -Ic:/dev/gtk2/lib/gtk-2.0/include
 USER_INTERFACE_LIB = -L"c:\dev\gtk2\lib" -lgtkgl-2.0 -lgtk-win32-2.0 -lgdk-win32-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangowin32-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 */
 #elif 1 /* switch (USER_INTERFACE) */
