@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.h
 
-LAST MODIFIED : 6 April 2001
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -56,11 +56,11 @@ Returns the norm/length/magnitude of vector <v>.
 
 double normalize3(double *v);
 /*******************************************************************************
-LAST MODIFIED : 26 November 1997
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
-Normalizes vector v - of dimension 3 - and returns its length. If its length
-is zero, v is converted to unit vector [1,0,0].
+Normalizes vector v - of dimension 3 - and returns its length.
+Zero vectors are returned unchanged.
 ==============================================================================*/
 
 int normalize_float3(float vector[3]);
@@ -71,17 +71,7 @@ DESCRIPTION :
 Normalizes the given <vector>.
 ==============================================================================*/
 
-int normalized_crossproduct_float3(float vector_1[3],float vector_2[3],
-	float result[3]);
-/*******************************************************************************
-LAST MODIFIED : 28 December 1995
-
-DESCRIPTION :
-Calculates the normalized cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-==============================================================================*/
-
-int crossproduct_float3(float vector_1[3],float vector_2[3],
+int cross_product_float3(float vector_1[3],float vector_2[3],
 	float result[3]);
 /*******************************************************************************
 LAST MODIFIED : 22 September 1999
