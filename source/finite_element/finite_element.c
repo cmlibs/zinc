@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 26 July 2002
+LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -18116,7 +18116,7 @@ fe_field is found.  The fe_field found is returned as fe_field_void.
 
 int merge_FE_node(struct FE_node *destination,struct FE_node *source)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
 Merges the fields in <destination> with those from <source>, leaving the
@@ -18231,11 +18231,15 @@ usage these will actually be the values most recently read in.
 										place_nodal_values,(void *)(&place_data),
 										destination_info->node_field_list))
 									{
-										DEACCESS(FE_node_field_info)(&destination_info);
-										destination_info=
-											ACCESS(FE_node_field_info)(destination->fields);
+										/* clean up existing values_storage */
+										FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+											FE_node_field_free_values_storage_arrays,
+											(void *)destination, destination_info->node_field_list);
 										DEALLOCATE(destination->values_storage);
-										destination->values_storage=new_value;
+										DEACCESS(FE_node_field_info)(&destination_info);
+										/* use new values_storage */
+										ACCESS(FE_node_field_info)(destination->fields);
+										destination->values_storage = new_value;
 									}
 									else
 									{
