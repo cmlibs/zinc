@@ -84,7 +84,7 @@ VOID AddToMessageLog(LPTSTR lpszMsg)
 	}
 	else
 	{
-	    TCHAR   szMsg[256];
+/*	    TCHAR   szMsg[256];*/
 		HANDLE  hEventSource;
 		LPTSTR  lpszStrings[2];
 
