@@ -38,7 +38,6 @@ Creation & Callback code for Motif texture window
 #include "graphics/light_model.h"
 #include "io_devices/input_module.h"
 #include "three_d_drawing/ThreeDDraw.h"
-#include "transformation/transformation_editor_dialog.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "view/coord.h"
@@ -1278,10 +1277,11 @@ printf("vt_select_mat_create called\n");
 
 } /* vt_select_mat_create */
 
+#if defined (OLD_CODE)
 static void transformation_editor_callback(Widget w,void *user_data,
 	void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 25 September 1996
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Called when the transformation changes.
@@ -1377,21 +1377,28 @@ printf("(%p) %lf %lf %lf %lf %lf %lf\n", texture_window,
 	}
 	LEAVE;
 } /* transformation_editor_callback */
+#endif /* defined (OLD_CODE) */
 
 static void open_transformation_editor(Widget widget,XtPointer texture_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 	struct Callback_data callback_data;
 	struct Texture_window *window;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(open_transformation_editor);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
+	USE_PARAMETER(texture_window);
+	display_message(WARNING_MESSAGE,
+		"open_transformation_editor.  Transformation editor is not available");
+#if defined (OLD_CODE)
 	if (window=(struct Texture_window *)texture_window)
 	{
 		bring_up_transformation_editor_dialog(window->transformation_editor_address,
@@ -1408,6 +1415,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"open_transformation_editor.  Missing texture_window");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 } /* open_transformation_editor */
 
@@ -5100,7 +5108,7 @@ struct Texture_window *create_texture_edit_window(
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager,
 	struct MANAGER(Texture) *texture_manager,Widget *material_editor_address,
-	Widget *transformation_editor_address,struct User_interface *user_interface)
+	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 27 July 1998
 
@@ -5172,7 +5180,7 @@ Create the structures and retrieve the texture window from the uil file.
 	ENTER(create_texture_edit_window);
 	/* check arguments */
 	if (user_interface&&graphical_material_manager&&environment_map_manager&&
-		texture_manager&&material_editor_address&&transformation_editor_address&&
+		texture_manager&&material_editor_address&&
 		default_graphical_material)
 	{
 		if (MrmOpenHierarchy_base64_string(volume_texture_editor_uidh,
@@ -5191,8 +5199,6 @@ Create the structures and retrieve the texture window from the uil file.
 				texture_window->create_finite_elements_dialog=
 					(struct Create_finite_elements_dialog *)NULL;
 				texture_window->material_editor_address=material_editor_address;
-				texture_window->transformation_editor_address=
-					transformation_editor_address;
 				texture_window->texture_window_shell=(Widget)NULL;
 				texture_window->texture_window_widget=(Widget)NULL;
 				texture_window->prompt_text_field=(Widget)NULL;

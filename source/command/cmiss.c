@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 5 December 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -115,7 +115,6 @@ Functions for executing cmiss commands.
 #include "three_d_drawing/ThreeDDraw.h"
 #include "time/time_editor_dialog.h"
 #include "time/time_keeper.h"
-#include "transformation/transformation_editor_dialog.h"
 #if defined (UNEMAP)
 #include "unemap/system_window.h"
 #include "unemap/unemap_package.h"
@@ -9006,7 +9005,6 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 					command_data->graphical_material_manager,
 					command_data->environment_map_manager,command_data->texture_manager,
 					&(command_data->material_editor_dialog),
-					&(command_data->transformation_editor_dialog),
 					command_data->user_interface);
 				return_code=1;
 			}
@@ -12086,133 +12084,6 @@ Executes a GFX DRAW command.
 	return (return_code);
 } /* execute_command_gfx_draw */
 
-struct Edit_graphics_object_data
-{
-	char *graphics_object_name;
-	struct Scene *scene;
-	struct Scene_object *scene_object;
-}; /* struct Edit_graphics_object_data */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static void edit_graphics_object(Widget widget,void *user_data,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Callback from transformation editor dialog when transformation changes.
-==============================================================================*/
-{
-	gtMatrix transformation_matrix;
-	struct Cmgui_coordinate *new_transformation;
-	struct Edit_graphics_object_data *edit_graphics_object_data;
-	struct Scene_object *scene_object;
-
-	ENTER(edit_graphics_object);
-	USE_PARAMETER(widget);
-	if ((edit_graphics_object_data=
-		(struct Edit_graphics_object_data *)user_data)&&
-		(scene_object=edit_graphics_object_data->scene_object)&&
-		(new_transformation=(struct Cmgui_coordinate *)call_data))
-	{
-#if defined (DEBUG)
-		/*???debug */
-		printf("%s\n",new_transformation->name);
-		printf("position : %g %g %g\n",
-			((new_transformation->origin).position.data)[0],
-			((new_transformation->origin).position.data)[1],
-			((new_transformation->origin).position.data)[2]);
-		printf("direction : %g %g %g\n",
-			((new_transformation->origin).direction.data)[0],
-			((new_transformation->origin).direction.data)[1],
-			((new_transformation->origin).direction.data)[2]);
-#endif /* defined (DEBUG) */
-#if defined (GL_API)
-		loadmatrix(identity_transform_matrix);
-		translate(((new_transformation->origin).position.data)[0],
-			((new_transformation->origin).position.data)[1],
-			((new_transformation->origin).position.data)[2]);
-#if defined (OLD_CODE)
-/*???GMH.  Testing out transformations */
-		rot(-((new_transformation->origin).direction.data)[2],'z');
-		rot(((new_transformation->origin).direction.data)[1],'x');
-		rot(-((new_transformation->origin).direction.data)[0],'y');
-#endif /* defined (OLD_CODE) */
-		rot(((new_transformation->origin).direction.data)[0],'z');
-		rot(((new_transformation->origin).direction.data)[1],'y');
-		rot(((new_transformation->origin).direction.data)[2],'x');
-		getmatrix(transformation_matrix);
-#endif /* defined (GL_API) */
-#if defined (OPENGL_API)
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glTranslatef(((new_transformation->origin).position.data)[0],
-			((new_transformation->origin).position.data)[1],
-			((new_transformation->origin).position.data)[2]);
-#if defined (OLD_CODE)
-/*???GMH.  Testing out transformations */
-		glRotatef(-((new_transformation->origin).direction.data)[2],0.,0.,1.);
-		glRotatef(((new_transformation->origin).direction.data)[1],1.,0.,0.);
-		glRotatef(-((new_transformation->origin).direction.data)[0],0.,1.,0.);
-#endif /* defined (OLD_CODE) */
-		glRotatef(((new_transformation->origin).direction.data)[0],0.,0.,1.);
-		glRotatef(((new_transformation->origin).direction.data)[1],0.,1.,0.);
-		glRotatef(((new_transformation->origin).direction.data)[2],1.,0.,0.);
-		wrapperReadMatrix(GL_MODELVIEW_MATRIX,&(transformation_matrix));
-#endif /* defined (OPENGL_API) */
-		Scene_object_set_transformation(scene_object, &transformation_matrix);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"edit_graphics_object.  Invalid argument(s)");
-#if defined (DEBUG)
-		/*???debug */
-		printf("user_data=%p call_data=%p\n",user_data,call_data);
-		edit_graphics_object_data=
-			(struct Edit_graphics_object_data *)user_data;
-		printf("gra=%p\n",edit_graphics_object_data->scene_object);
-#endif /* defined (DEBUG) */
-	}
-	LEAVE;
-} /* edit_graphics_object */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static void end_edit_graphics_object(Widget widget,void *user_data,
-	void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Callback for when transformation editor for gfx edit graphics_object is closed.
-Cleans up <user_data> == edit_graphics_object_data.
-==============================================================================*/
-{
-	struct Edit_graphics_object_data *edit_graphics_object_data;
-
-	ENTER(end_edit_graphics_object);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if ((edit_graphics_object_data=
-		(struct Edit_graphics_object_data *)user_data))
-	{
-		if (edit_graphics_object_data->graphics_object_name)
-		{
-			DEALLOCATE(edit_graphics_object_data->graphics_object_name);
-		}
-		/* deaccess graphics object and scene - see gfx_edit_graphics_object */
-		DEACCESS(Scene_object)(&edit_graphics_object_data->scene_object);
-		DEACCESS(Scene)(&edit_graphics_object_data->scene);
-		DEALLOCATE(edit_graphics_object_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"end_edit_graphics_object.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* end_edit_graphics_object */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
 struct Apply_transformation_data
 {
 	gtMatrix *transformation;
@@ -12306,7 +12177,7 @@ transformation in the transformation data.
 static int gfx_edit_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 5 December 2001
 
 DESCRIPTION :
 Executes a GFX EDIT GRAPHICS_OBJECT command.
@@ -12314,10 +12185,7 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 {
 	char apply_flag,*graphics_object_name;
 	int return_code;
-	struct Callback_data callback,*callback_data;
 	struct Cmiss_command_data *command_data;
-	struct Cmgui_coordinate initial_transformation;
-	struct Edit_graphics_object_data *edit_graphics_object_data;
 	struct Scene_object *scene_object;
 	struct Scene *scene;
 	static struct Modifier_entry option_table[]=
@@ -12413,60 +12281,9 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 					}
 					else
 					{
-						initial_transformation.name=graphics_object_name;
-						initial_transformation.access_count=1;
-						/*???DB.  Temp.  Need to be able to convert between gtMatrix and
-						  position/direction */
-						(initial_transformation.origin.position.data)[0]=0;
-						(initial_transformation.origin.position.data)[1]=0;
-						(initial_transformation.origin.position.data)[2]=0;
-						(initial_transformation.origin.direction.data)[0]=0;
-						(initial_transformation.origin.direction.data)[1]=0;
-						(initial_transformation.origin.direction.data)[2]=0;
-						bring_up_transformation_editor_dialog(
-							&(command_data->transformation_editor_dialog),
-							&initial_transformation,command_data->user_interface);
-						edit_graphics_object_data=(struct Edit_graphics_object_data *)NULL;
-						if ((callback_data=(struct Callback_data *)
-							transformation_editor_dialog_get_data(
-								command_data->transformation_editor_dialog,
-								TRANSFORMATION_EDITOR_DIALOG_DESTROY_CB))&&
-							(edit_graphics_object_data=
-								(struct Edit_graphics_object_data *)callback_data->data))
-						{
-							/* deaccess graphics object and scene for existing editor */
-							DEACCESS(Scene_object)(&edit_graphics_object_data->scene_object);
-							DEACCESS(Scene)(&edit_graphics_object_data->scene);
-						}
-						/* create data to be passed to transformation editor callbacks */
-						if (edit_graphics_object_data||ALLOCATE(edit_graphics_object_data,
-							struct Edit_graphics_object_data,1))
-						{
-							/* access graphics object and scene in case either destroyed while
-								editing tranformation */
-							edit_graphics_object_data->scene_object=
-								ACCESS(Scene_object)(scene_object);
-							edit_graphics_object_data->scene=ACCESS(Scene)(scene);
-							edit_graphics_object_data->graphics_object_name =
-								graphics_object_name;
-							/* set callback for when transformation changes */
-							callback.data=(void *)edit_graphics_object_data;
-							callback.procedure=edit_graphics_object;
-							transformation_editor_dialog_set_data(
-								command_data->transformation_editor_dialog,
-								TRANSFORMATION_EDITOR_DIALOG_UPDATE_CB,&callback);
-							/* set callback for when transformation editor is closed */
-							callback.procedure=end_edit_graphics_object;
-							transformation_editor_dialog_set_data(
-								command_data->transformation_editor_dialog,
-								TRANSFORMATION_EDITOR_DIALOG_DESTROY_CB,&callback);
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-								"No callbacks from transformation editor");
-							return_code=0;
-						}
+						display_message(WARNING_MESSAGE,
+							"gfx edit graphics_object:  Must specify 'apply_transformation'");
+						return_code = 0;
 					}
 				}
 				else
