@@ -17,7 +17,7 @@ else # CMISS_ROOT
    CMISS_ROOT = $(CMGUI_DEV_ROOT)
 endif # CMISS_ROOT
 
-MAKEFILE := cmgui.Makefile
+MAKEFILE := cmgui.make
 MAKEFILE_FOUND = $(wildcard source/$(MAKEFILE))
 ifdef CMISS_ROOT_DEFINED
    ifeq ($(MAKEFILE_FOUND),)
@@ -63,10 +63,10 @@ update : update_sources
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
-		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) && \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST)' && \
-		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmguiMakefile $(HPC1_BUILD_LIST) ;  ' && \
-		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui-gtk ; /home/blackett/bin/cross-make -f cmguiMakefile cmgui-gtk' && \
+		$(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) && \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
+		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f  $(MAKEFILE) $(HPC1_BUILD_LIST) ;  ' && \
+		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) cmgui-gtk ; /home/blackett/bin/cross-make -f $(MAKEFILE) cmgui-gtk' && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
@@ -77,10 +77,10 @@ depend: update_sources
 	if [ "$(USER)" = "cmiss" ]; then \
 		CMGUI_DEV_ROOT=$(PWD) ; \
 		export CMGUI_DEV_ROOT ; \
-		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) TARGET=depend ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST) TARGET=depend ; ' ; \
-		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmguiMakefile $(HPC1_BUILD_LIST) TARGET=depend ;  ' ; \
-		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui-gtk TARGET=depend && /home/blackett/bin/cross-make -f cmguiMakefile cmgui-gtk TARGET=depend' ; \
+		$(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) TARGET=depend ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend ; ' ; \
+		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend ;  ' ; \
+		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) cmgui-gtk TARGET=depend && /home/blackett/bin/cross-make -f $(MAKEFILE) cmgui-gtk TARGET=depend' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
@@ -100,13 +100,13 @@ cronjob:
 		cd $(PRODUCT_PATH); \
 		cvs update ; \
 		echo -n > $(MAILFILE_PATH)/programmer.mail ; \
-		if ! $(MAKE) -f cmguiMakefile depend; then \
+		if ! $(MAKE) -f $(MAKEFILE) depend; then \
 			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
-		if ! $(MAKE) -f cmguiMakefile update; then \
+		if ! $(MAKE) -f $(MAKEFILE) update; then \
 			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
-		if ! $(MAKE) -f cmguiMakefile run_tests; then \
+		if ! $(MAKE) -f $(MAKEFILE) run_tests; then \
 			cat $(MAILFILE_PATH)/testfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
 		fi ; \
 		if [ -s $(TEST_PATH)/all.mail ]; then \
