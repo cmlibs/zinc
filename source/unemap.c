@@ -17,6 +17,9 @@ Main program for unemap.  Based on cmgui.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "general/error_handler.h"
+#if defined (IMAGEMAGICK)
+#include "general/image_utilities.h"
+#endif /* defined (IMAGEMAGICK) */
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
@@ -642,6 +645,11 @@ Main program for unemap
 		}
 #endif /* defined (OLD_CODE) */
 #endif /* !defined (NOT_ACQUISITION_ONLY) */
+
+#if defined (IMAGEMAGICK)
+	Open_image_environment(*argv);
+#endif /* defined (IMAGEMAGICK) */
+
 		/* create the main window */
 #if defined (NOT_ACQUISITION_ONLY)
 		time_keeper=ACCESS(Time_keeper)(
