@@ -974,40 +974,6 @@ Main program for the CMISS Graphical User Interface
 			command_data.computed_field_package);
 	}
 
-	/* scene manager */
-		/*???RC.   LOTS of managers need to be created before this */
-	if (command_data.scene_manager=CREATE(MANAGER(Scene))())
-	{
-		if (command_data.default_scene=CREATE(Scene)("default"))
-		{
-			Scene_enable_graphics(command_data.default_scene,command_data.glyph_list,
-				command_data.graphical_material_manager,
-				command_data.default_graphical_material,command_data.light_manager,
-				command_data.spectrum_manager,command_data.default_spectrum,
-				command_data.texture_manager);
-			Scene_set_graphical_element_mode(command_data.default_scene,
-				GRAPHICAL_ELEMENT_LINES,
-				Computed_field_package_get_computed_field_manager(
-				command_data.computed_field_package),command_data.element_manager,
-				command_data.element_group_manager,command_data.fe_field_manager,
-				command_data.node_manager,command_data.node_group_manager,
-				command_data.data_manager,command_data.data_group_manager,
-				command_data.element_point_ranges_selection,
-				command_data.element_selection,command_data.node_selection,
-				command_data.data_selection,command_data.user_interface);
-			/*???RC.  May want to use functions to modify default_scene here */
-			/* eg. to add model lights, etc. */
-			/* ACCESS default so can never be destroyed */
-			/*???RC.  Should be able to change: eg. gfx set default scene NAME */
-			/*???DB.  Include default as part of manager ? */
-			ACCESS(Scene)(command_data.default_scene);
-			if (!ADD_OBJECT_TO_MANAGER(Scene)(command_data.default_scene,
-				command_data.scene_manager))
-			{
-				DEACCESS(Scene)(&(command_data.default_scene));
-			}
-		}
-	}
 #if defined (MIRAGE)
 /*	command_data.digitiser_window_manager=CREATE(MANAGER(Digitiser_window))();*/
 #endif /* defined (MIRAGE) */
@@ -1088,6 +1054,43 @@ Main program for the CMISS Graphical User Interface
 			return_code=0;
 		}
 	}
+
+	/* scene manager */
+	/*???RC & SAB.   LOTS of managers need to be created before this 
+	 and the User_interface too */
+	if (command_data.scene_manager=CREATE(MANAGER(Scene))())
+	{
+		if (command_data.default_scene=CREATE(Scene)("default"))
+		{
+			Scene_enable_graphics(command_data.default_scene,command_data.glyph_list,
+				command_data.graphical_material_manager,
+				command_data.default_graphical_material,command_data.light_manager,
+				command_data.spectrum_manager,command_data.default_spectrum,
+				command_data.texture_manager);
+			Scene_set_graphical_element_mode(command_data.default_scene,
+				GRAPHICAL_ELEMENT_LINES,
+				Computed_field_package_get_computed_field_manager(
+				command_data.computed_field_package),command_data.element_manager,
+				command_data.element_group_manager,command_data.fe_field_manager,
+				command_data.node_manager,command_data.node_group_manager,
+				command_data.data_manager,command_data.data_group_manager,
+				command_data.element_point_ranges_selection,
+				command_data.element_selection,command_data.node_selection,
+				command_data.data_selection,command_data.user_interface);
+			/*???RC.  May want to use functions to modify default_scene here */
+			/* eg. to add model lights, etc. */
+			/* ACCESS default so can never be destroyed */
+			/*???RC.  Should be able to change: eg. gfx set default scene NAME */
+			/*???DB.  Include default as part of manager ? */
+			ACCESS(Scene)(command_data.default_scene);
+			if (!ADD_OBJECT_TO_MANAGER(Scene)(command_data.default_scene,
+				command_data.scene_manager))
+			{
+				DEACCESS(Scene)(&(command_data.default_scene));
+			}
+		}
+	}
+
 	if (return_code)
 	{
 		/* the name of the comfile to be run on startup */
