@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 5 August 2001
+LAST MODIFIED : 6 August 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -24544,9 +24544,9 @@ field information structure.  Note that the arguments are duplicated.
 	if ((((0==values_storage_size)&&!values_storage)||
 		((0<values_storage_size)&&values_storage))&&
 		(((0==number_of_nodes)&&!nodes)||((0<number_of_nodes)&&nodes))&&
-		((0==number_of_scale_factor_sets) || ((0<number_of_scale_factor_sets)&&
-			scale_factor_set_identifiers&&numbers_in_scale_factor_sets&&
-			(0<number_of_scale_factors)&&scale_factors))&&field_info)
+		((0==number_of_scale_factor_sets)||((0<number_of_scale_factor_sets)&&
+		scale_factor_set_identifiers&&numbers_in_scale_factor_sets&&
+		(0<number_of_scale_factors)&&scale_factors))&&field_info)
 	{
 		/* check the grid based fields */
 		check_grid_data.check_sum=0;
@@ -24572,14 +24572,14 @@ field information structure.  Note that the arguments are duplicated.
 				if (ALLOCATE(node_scale_field_info,
 					struct FE_element_node_scale_field_info,1)&&
 					(!values_storage||ALLOCATE(temp_values_storage,Value_storage,
-						values_storage_size))&&
+					values_storage_size))&&
 					(!nodes||ALLOCATE(node,struct FE_node *,number_of_nodes))&&
 					((0==number_of_scale_factor_sets)||
 					(ALLOCATE(scale_factor_set_identifier,void *,
-					   number_of_scale_factor_sets)&&
-						ALLOCATE(number_in_scale_factor_set,int,
-							number_of_scale_factor_sets)&&
-						ALLOCATE(scale_factor,FE_value,number_of_scale_factors))))
+					number_of_scale_factor_sets)&&
+					ALLOCATE(number_in_scale_factor_set,int,
+					number_of_scale_factor_sets)&&
+					ALLOCATE(scale_factor,FE_value,number_of_scale_factors))))
 				{
 					node_scale_field_info->values_storage_size=values_storage_size;
 					node_scale_field_info->values_storage=temp_values_storage;
@@ -26439,7 +26439,7 @@ Frees the memory for the element, sets <*element_address> to NULL.
 			}
 			DEALLOCATE(element->faces);
 			(void)DEACCESS(FE_element_shape)(&(element->shape));
-			/*???DB.  element->parent_list should be NULL otherwise access_count>1 ?*/
+			/* parent_list should be an empty list */
 			(void)DESTROY_LIST(FE_element_parent)(&(element->parent_list));
 			(void)DESTROY(FE_element_node_scale_field_info)(
 				&(element->information));
@@ -39711,7 +39711,7 @@ DESCRIPTION :
 int smooth_field_over_element(struct FE_element *element,
 	void *void_smooth_field_over_element_data)
 /*******************************************************************************
-LAST MODIFIED : 10 February 1999
+LAST MODIFIED : 6 August 2001
 
 DESCRIPTION :
 ???DB.  Needs to be extended to use get_nodal_value, but what about scale
@@ -39761,7 +39761,7 @@ DESCRIPTION :
 			}
 			if (field=smooth_field_over_element_data->field)
 			{
-				if(field->value_type==FE_VALUE_VALUE)
+				if (field->value_type==FE_VALUE_VALUE)
 				{
 					number_of_components=field->number_of_components;
 					if (!(smooth_field_over_element_data->node_lists))
@@ -39796,11 +39796,8 @@ DESCRIPTION :
 					if (node_lists=smooth_field_over_element_data->node_lists)
 					{						
 						element_field=(struct FE_element_field *)NULL;
-
-				
 						element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
 							field,element->information->fields->element_field_list);
-		
 						if (element_field)
 						{
 							return_code=1;
@@ -39815,7 +39812,7 @@ DESCRIPTION :
 									{
 										if ((STANDARD_NODE_TO_ELEMENT_MAP==element_field_component->
 											type)&&(2==(element_field_component->map).
-												standard_node_based.number_of_nodes))
+											standard_node_based.number_of_nodes))
 										{
 											node_1=CREATE(FE_node)(0,(struct FE_node *)NULL);
 											node_2=CREATE(FE_node)(0,(struct FE_node *)NULL);
@@ -39823,44 +39820,46 @@ DESCRIPTION :
 											{
 												node_1_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[0])->node_index];
+													node_to_element_maps)[0])->node_index];
 												node_2_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[1])->node_index];
-												if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-													node_1,node_1_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_2,node_2_managed))
+													node_to_element_maps)[1])->node_index];
+												if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_1,node_1_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_2,node_2_managed))
 												{
 													node_field_1=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_1->fields->node_field_list);
+														node_1->fields->node_field_list);
 													node_field_2=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_2->fields->node_field_list);										 					 
+														node_2->fields->node_field_list);
 													if ((1==((node_field_1->components)[i]).
 														number_of_derivatives)&&
 														(1==((node_field_2->components)[i]).
-															number_of_derivatives))
+														number_of_derivatives))
 													{
 														node_1_values=(FE_value *)((node_1->values_storage)+
-															(((node_field_1->components)[i]).value));									
+															(((node_field_1->components)[i]).value));
 														node_2_values=(FE_value *)((node_2->values_storage)+
 															(((node_field_2->components)[i]).value));
-														if (add_node_to_smoothed_node_lists(node_1_managed,i,
-															node_1_values+1,smooth_field_over_element_data)&&
+														if (add_node_to_smoothed_node_lists(node_1_managed,
+															i,node_1_values+1,
+															smooth_field_over_element_data)&&
 															add_node_to_smoothed_node_lists(node_2_managed,i,
-																node_2_values+1,smooth_field_over_element_data))
+															node_2_values+1,smooth_field_over_element_data))
 														{
 															if (element_field_component->modify)
 															{
-																/* Need to use this function so go through the FE_calculate */
-																xi = 0.0;
-																calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																	element, &xi, &value1);
-																xi = 1.0;
-																calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																	element, &xi, &value2);
+																/* need to use this function so go through the
+																	FE_calculate */
+																xi=0.0;
+																calculate_FE_field(field,i,
+																	(struct FE_node *)NULL,element,&xi,&value1);
+																xi=1.0;
+																calculate_FE_field(field,i,
+																	(struct FE_node *)NULL,element,&xi,&value2);
 																node_1_values[1] += value2-value1;
 																node_2_values[1] += value2-value1;
 															}
@@ -39871,18 +39870,19 @@ DESCRIPTION :
 																node_2_values[1] +=
 																	node_2_values[0]-node_1_values[0];
 															}
-															MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-																node_1_managed,node_1,
+															MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+																cm_node_identifier)(node_1_managed,node_1,
 																smooth_field_over_element_data->node_manager);
-															MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-																node_2_managed,node_2,
+															MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+																cm_node_identifier)(node_2_managed,node_2,
 																smooth_field_over_element_data->node_manager);
 														}
 													}
 													else
 													{
 														display_message(ERROR_MESSAGE,
-															"smooth_field_over_element.  Invalid node field component");
+															"smooth_field_over_element.  "
+															"Invalid node field component");
 														return_code=0;
 													}
 												}
@@ -39905,7 +39905,8 @@ DESCRIPTION :
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"smooth_field_over_element.  Invalid element_field_component");
+												"smooth_field_over_element.  "
+												"Invalid element_field_component");
 											return_code=0;
 										}
 									} break;
@@ -39913,7 +39914,7 @@ DESCRIPTION :
 									{
 										if ((STANDARD_NODE_TO_ELEMENT_MAP==element_field_component->
 											type)&&(8==(element_field_component->map).
-												standard_node_based.number_of_nodes))
+											standard_node_based.number_of_nodes))
 										{
 											node_1=CREATE(FE_node)(0,(struct FE_node *)NULL);
 											node_2=CREATE(FE_node)(0,(struct FE_node *)NULL);
@@ -39923,99 +39924,97 @@ DESCRIPTION :
 											node_6=CREATE(FE_node)(0,(struct FE_node *)NULL);
 											node_7=CREATE(FE_node)(0,(struct FE_node *)NULL);
 											node_8=CREATE(FE_node)(0,(struct FE_node *)NULL);
-											if (node_1&&node_2&&node_3&&node_4&&node_5&&node_6&&node_7&&
-												node_8)
+											if (node_1&&node_2&&node_3&&node_4&&node_5&&node_6&&
+												node_7&&node_8)
 											{
 												node_1_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[0])->node_index];
+													node_to_element_maps)[0])->node_index];
 												node_2_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[1])->node_index];
+													node_to_element_maps)[1])->node_index];
 												node_3_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[2])->node_index];
+													node_to_element_maps)[2])->node_index];
 												node_4_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[3])->node_index];
+													node_to_element_maps)[3])->node_index];
 												node_5_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[4])->node_index];
+													node_to_element_maps)[4])->node_index];
 												node_6_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[5])->node_index];
+													node_to_element_maps)[5])->node_index];
 												node_7_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[6])->node_index];
+													node_to_element_maps)[6])->node_index];
 												node_8_managed=(element->information->nodes)[
 													((element_field_component->map.standard_node_based.
-														node_to_element_maps)[7])->node_index];
-												if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-													node_1,node_1_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_2,node_2_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_3,node_3_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_4,node_4_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_5,node_5_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_6,node_6_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_7,node_7_managed)&&
-													MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(
-														node_8,node_8_managed))
+													node_to_element_maps)[7])->node_index];
+												if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_1,node_1_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_2,node_2_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_3,node_3_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_4,node_4_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_5,node_5_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_6,node_6_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_7,node_7_managed)&&
+													MANAGER_COPY_WITH_IDENTIFIER(FE_node,
+													cm_node_identifier)(node_8,node_8_managed))
 												{
 											
 													node_field_1=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_1->fields->node_field_list);
+														node_1->fields->node_field_list);
 													node_field_2=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_2->fields->node_field_list);
+														node_2->fields->node_field_list);
 													node_field_3=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_3->fields->node_field_list);
+														node_3->fields->node_field_list);
 													node_field_4=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_4->fields->node_field_list);
+														node_4->fields->node_field_list);
 													node_field_5=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_5->fields->node_field_list);
+														node_5->fields->node_field_list);
 													node_field_6=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_6->fields->node_field_list);
+														node_6->fields->node_field_list);
 													node_field_7=FIND_BY_IDENTIFIER_IN_LIST(
 														FE_node_field,field)(field,
-															node_7->fields->node_field_list);
-													node_field_8=FIND_BY_IDENTIFIER_IN_LIST(
-														FE_node_field,field)(field,
-															node_8->fields->node_field_list);
-										
+														node_7->fields->node_field_list);
+													node_field_8=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,
+														field)(field,node_8->fields->node_field_list);
 													if ((3==((node_field_1->components)[i]).
 														number_of_derivatives)&&
 														(3==((node_field_2->components)[i]).
-															number_of_derivatives)&&
+														number_of_derivatives)&&
 														(3==((node_field_3->components)[i]).
-															number_of_derivatives)&&
+														number_of_derivatives)&&
 														(3==((node_field_4->components)[i]).
-															number_of_derivatives)&&
+														number_of_derivatives)&&
 														(3==((node_field_5->components)[i]).
-															number_of_derivatives)&&
+														number_of_derivatives)&&
 														(3==((node_field_6->components)[i]).
-															number_of_derivatives)&&
+														number_of_derivatives)&&
 														(3==((node_field_7->components)[i]).
-															number_of_derivatives)&&
+														number_of_derivatives)&&
 														(3==((node_field_8->components)[i]).
-															number_of_derivatives))
+														number_of_derivatives))
 													{
 														node_1_values=(FE_value *)((node_1->values_storage)+
 															(((node_field_1->components)[i]).value));
 														node_2_values=(FE_value *)((node_2->values_storage)+
 															(((node_field_2->components)[i]).value));
-														node_3_values=(FE_value *)((node_3->values_storage)
-															+(((node_field_3->components)[i]).value));
+														node_3_values=(FE_value *)((node_3->values_storage)+
+															(((node_field_3->components)[i]).value));
 														node_4_values=(FE_value *)((node_4->values_storage)+
 															(((node_field_4->components)[i]).value));
 														node_5_values=(FE_value *)((node_5->values_storage)+
@@ -40130,50 +40129,50 @@ DESCRIPTION :
 															ADD_OBJECT_TO_LIST(FE_node)(node_8_managed,
 																node_list);
 														}
-
 														if (element_field_component->modify)
 														{
-															/* Need to use this function so go through the FE_calculate */
-															xivector[0] = 0.0;
-															xivector[1] = 0.0;
-															xivector[2] = 0.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
+															/* need to use this function so go through the
+																FE_calculate */
+															xivector[0]=0.0;
+															xivector[1]=0.0;
+															xivector[2]=0.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
 																element, xivector, &value1);
-															xivector[0] = 1.0;
-															xivector[1] = 0.0;
-															xivector[2] = 0.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																element, xivector, &value2);
-															xivector[0] = 0.0;
-															xivector[1] = 1.0;
-															xivector[2] = 0.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																element, xivector, &value3);
-															xivector[0] = 1.0;
-															xivector[1] = 1.0;
-															xivector[2] = 0.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																element, xivector, &value4);
-															xivector[0] = 0.0;
-															xivector[1] = 0.0;
-															xivector[2] = 1.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																element, xivector, &value5);
-															xivector[0] = 1.0;
-															xivector[1] = 0.0;
-															xivector[2] = 1.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																element, xivector, &value6);
-															xivector[0] = 0.0;
-															xivector[1] = 1.0;
-															xivector[2] = 1.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																element, xivector, &value7);
-															xivector[0] = 1.0;
-															xivector[1] = 1.0;
-															xivector[2] = 1.0;
-															calculate_FE_field(field, i, (struct FE_node *)NULL, 
-																element, xivector, &value8);
+															xivector[0]=1.0;
+															xivector[1]=0.0;
+															xivector[2]=0.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
+																element,xivector,&value2);
+															xivector[0]=0.0;
+															xivector[1]=1.0;
+															xivector[2]=0.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
+																element,xivector,&value3);
+															xivector[0]=1.0;
+															xivector[1]=1.0;
+															xivector[2]=0.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
+																element,xivector,&value4);
+															xivector[0]=0.0;
+															xivector[1]=0.0;
+															xivector[2]=1.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
+																element,xivector,&value5);
+															xivector[0]=1.0;
+															xivector[1]=0.0;
+															xivector[2]=1.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
+																element,xivector,&value6);
+															xivector[0]=0.0;
+															xivector[1]=1.0;
+															xivector[2]=1.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
+																element,xivector,&value7);
+															xivector[0]=1.0;
+															xivector[1]=1.0;
+															xivector[2]=1.0;
+															calculate_FE_field(field,i,(struct FE_node *)NULL,
+																element,xivector,&value8);
 															node_1_values[1] += value2-value1;
 															node_1_values[2] += value3-value1;
 															node_2_values[1] += value2-value1;
@@ -40193,53 +40192,69 @@ DESCRIPTION :
 														}
 														else
 														{
-															node_1_values[1] += node_2_values[0]-node_1_values[0];
-															node_1_values[2] += node_3_values[0]-node_1_values[0];
-															node_2_values[1] += node_2_values[0]-node_1_values[0];
-															node_2_values[2] += node_4_values[0]-node_2_values[0];
-															node_3_values[1] += node_4_values[0]-node_3_values[0];
-															node_3_values[2] += node_3_values[0]-node_1_values[0];
-															node_4_values[1] += node_4_values[0]-node_3_values[0];
-															node_4_values[2] += node_4_values[0]-node_2_values[0];
-															node_5_values[1] += node_6_values[0]-node_5_values[0];
-															node_5_values[2] += node_7_values[0]-node_5_values[0];
-															node_6_values[1] += node_6_values[0]-node_5_values[0];
-															node_6_values[2] += node_8_values[0]-node_6_values[0];
-															node_7_values[1] += node_8_values[0]-node_7_values[0];
-															node_7_values[2] += node_7_values[0]-node_5_values[0];
-															node_8_values[1] += node_8_values[0]-node_7_values[0];
-															node_8_values[2] += node_8_values[0]-node_6_values[0];
+															node_1_values[1] +=
+																node_2_values[0]-node_1_values[0];
+															node_1_values[2] +=
+																node_3_values[0]-node_1_values[0];
+															node_2_values[1] +=
+																node_2_values[0]-node_1_values[0];
+															node_2_values[2] +=
+																node_4_values[0]-node_2_values[0];
+															node_3_values[1] +=
+																node_4_values[0]-node_3_values[0];
+															node_3_values[2] +=
+																node_3_values[0]-node_1_values[0];
+															node_4_values[1] +=
+																node_4_values[0]-node_3_values[0];
+															node_4_values[2] +=
+																node_4_values[0]-node_2_values[0];
+															node_5_values[1] +=
+																node_6_values[0]-node_5_values[0];
+															node_5_values[2] +=
+																node_7_values[0]-node_5_values[0];
+															node_6_values[1] +=
+																node_6_values[0]-node_5_values[0];
+															node_6_values[2] +=
+																node_8_values[0]-node_6_values[0];
+															node_7_values[1] +=
+																node_8_values[0]-node_7_values[0];
+															node_7_values[2] +=
+																node_7_values[0]-node_5_values[0];
+															node_8_values[1] +=
+																node_8_values[0]-node_7_values[0];
+															node_8_values[2] +=
+																node_8_values[0]-node_6_values[0];
 														}
-
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_1_managed,node_1,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_1_managed,node_1,
 															smooth_field_over_element_data->node_manager);
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_2_managed,node_2,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_2_managed,node_2,
 															smooth_field_over_element_data->node_manager);
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_3_managed,node_3,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_3_managed,node_3,
 															smooth_field_over_element_data->node_manager);
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_4_managed,node_4,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_4_managed,node_4,
 															smooth_field_over_element_data->node_manager);
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_5_managed,node_5,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_5_managed,node_5,
 															smooth_field_over_element_data->node_manager);
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_6_managed,node_6,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_6_managed,node_6,
 															smooth_field_over_element_data->node_manager);
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_7_managed,node_7,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_7_managed,node_7,
 															smooth_field_over_element_data->node_manager);
-														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-															node_8_managed,node_8,
+														MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
+															cm_node_identifier)(node_8_managed,node_8,
 															smooth_field_over_element_data->node_manager);
 													}
 													else
 													{
 														display_message(ERROR_MESSAGE,
-															"smooth_field_over_element.  Invalid node field component");
+															"smooth_field_over_element.  "
+															"Invalid node field component");
 														return_code=0;
 													}
 												}
@@ -40253,7 +40268,8 @@ DESCRIPTION :
 											else
 											{
 												display_message(ERROR_MESSAGE,
-													"smooth_field_over_element.  Could not create nodes");
+													"smooth_field_over_element.  "
+													"Could not create nodes");
 												return_code=0;
 											}
 											DESTROY(FE_node)(&node_1);
@@ -40268,7 +40284,8 @@ DESCRIPTION :
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"smooth_field_over_element.  Invalid element_field_component");
+												"smooth_field_over_element.  "
+												"Invalid element_field_component");
 											return_code=0;
 										}
 									} break;
@@ -40277,58 +40294,83 @@ DESCRIPTION :
 							}
 							if (return_code)
 							{
-								element_copy=CREATE(FE_element)(element->identifier,
-									(struct FE_element *)NULL);
-								if (element_copy&&MANAGER_COPY_WITH_IDENTIFIER(FE_element,
-									identifier)(element_copy,element)&&
-									(element_copy->information)&&
-									(scale_factors=element_copy->information->scale_factors))
+								if (element_copy=CREATE(FE_element)(element->identifier,
+									(struct FE_element *)NULL))
 								{
-									/* set scale factors to implement "smoothing" */
-									/*???DB.  Very specific */
-									node_to_element_map=(((element_field->components)[0])->map).
-										standard_node_based.node_to_element_maps;
-									smoothing=smooth_field_over_element_data->smoothing;
-									switch (element_dimension)
+									if (MANAGER_COPY_WITH_IDENTIFIER(FE_element,identifier)(
+										element_copy,element)&&(element_copy->information)&&
+										(scale_factors=element_copy->information->scale_factors))
 									{
-										case 1:
+										/* set scale factors to implement "smoothing" */
+										/*???DB.  Very specific */
+										node_to_element_map=(((element_field->components)[0])->map).
+											standard_node_based.node_to_element_maps;
+										smoothing=smooth_field_over_element_data->smoothing;
+										switch (element_dimension)
 										{
-											for (i=2;i>0;i--)
+											case 1:
 											{
-												index=(*node_to_element_map)->scale_factor_indices;
-												scale_factors[*index]=1;
-												index++;
-												scale_factors[*index]=smoothing;
-												node_to_element_map++;
-											}
-										} break;
-										case 3:
-										{
-											for (i=8;i>0;i--)
+												for (i=2;i>0;i--)
+												{
+													index=(*node_to_element_map)->scale_factor_indices;
+													if (0<= *index)
+													{
+														scale_factors[*index]=1;
+													}
+													index++;
+													if (0<= *index)
+													{
+														scale_factors[*index]=smoothing;
+													}
+													node_to_element_map++;
+												}
+											} break;
+											case 3:
 											{
-												index=(*node_to_element_map)->scale_factor_indices;
-												scale_factors[*index]=1;
-												index++;
-												scale_factors[*index]=smoothing;
-												index++;
-												scale_factors[*index]=smoothing;
-												index++;
-												scale_factors[*index]=smoothing*smoothing;
-												node_to_element_map++;
-											}
-										} break;
+												for (i=8;i>0;i--)
+												{
+													index=(*node_to_element_map)->scale_factor_indices;
+													if (0<= *index)
+													{
+														scale_factors[*index]=1;
+													}
+													index++;
+													if (0<= *index)
+													{
+														scale_factors[*index]=smoothing;
+													}
+													index++;
+													if (0<= *index)
+													{
+														scale_factors[*index]=smoothing;
+													}
+													index++;
+													if (0<= *index)
+													{
+														scale_factors[*index]=smoothing*smoothing;
+													}
+													node_to_element_map++;
+												}
+											} break;
+										}
+										MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
+											element,element_copy,
+											smooth_field_over_element_data->element_manager);
 									}
-									MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
-										element,element_copy,
-										smooth_field_over_element_data->element_manager);
+									else
+									{
+										display_message(ERROR_MESSAGE,"smooth_field_over_element.  "
+											"Could not copy into element_copy");
+										return_code=0;
+									}
+									DESTROY(FE_element)(&element_copy);
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,
-										"smooth_field_over_element.  Could not make element_copy");
+									display_message(ERROR_MESSAGE, "smooth_field_over_element.  "
+										"Could not create element_copy");
 									return_code=0;
 								}
-								DESTROY(FE_element)(&element_copy);
 							}
 						}
 						else
