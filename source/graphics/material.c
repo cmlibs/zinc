@@ -382,24 +382,24 @@ be shared by multiple materials using the same program.
 								"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
 								"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
 
-								"ADD lightVec, eyeLightPos, -eyeVertex;\n"
+								"SUB lightVec, eyeLightPos, eyeVertex;\n"
 								
-								"DP4 objectLight.x, c3[0], lightVec;\n"
-								"DP4 objectLight.y, c3[1], lightVec;\n"
-								"DP4 objectLight.z, c3[2], lightVec;\n"
+								"DP3 objectLight.x, c3[0], lightVec;\n"
+								"DP3 objectLight.y, c3[1], lightVec;\n"
+								"DP3 objectLight.z, c3[2], lightVec;\n"
 
-								"DP3 result.texcoord[1].x, tangent.xyzx, objectLight.xyzx;\n"
-								"DP3 result.texcoord[1].y, binormal.xyzx, objectLight.xyzx;\n"
-								"DP3 result.texcoord[1].z, normal.xyzx, objectLight.xyzx;\n"
+								"DP3 result.texcoord[1].x, tangent, objectLight;\n"
+								"DP3 result.texcoord[1].y, binormal, objectLight;\n"
+								"DP3 result.texcoord[1].z, normal, objectLight;\n"
 
-								"ADD cameraVec, eyeCameraPos, -eyeVertex;\n"
-								"DP4 objectCamera.x, c3[0], cameraVec;\n"
-								"DP4 objectCamera.y, c3[1], cameraVec;\n"
-								"DP4 objectCamera.z, c3[2], cameraVec;\n"
+								"SUB cameraVec, eyeCameraPos, eyeVertex;\n"
+								"DP3 objectCamera.x, c3[0], cameraVec;\n"
+								"DP3 objectCamera.y, c3[1], cameraVec;\n"
+								"DP3 objectCamera.z, c3[2], cameraVec;\n"
 
-								"DP3 result.texcoord[2].x, tangent.xyzx, objectCamera.xyzx;\n"
-								"DP3 result.texcoord[2].y, binormal.xyzx, objectCamera.xyzx;\n"
-								"DP3 result.texcoord[2].z, normal.xyzx, objectCamera.xyzx;\n"
+								"DP3 result.texcoord[2].x, tangent, objectCamera;\n"
+								"DP3 result.texcoord[2].y, binormal, objectCamera;\n"
+								"DP3 result.texcoord[2].z, normal, objectCamera;\n"
 								, &error);
 						}
 						else
