@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : delaunay.c
 
-LAST MODIFIED : 20 April 2004
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 Specialized implementations of Delaunay triangulation for a cylinder and a
@@ -2129,7 +2129,7 @@ Calculates the Delaunay triangulation of the <vertices> on a plane.
 int plane_delaunay(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address)
 /*******************************************************************************
-LAST MODIFIED : 20 April 2004
+LAST MODIFIED : 21 April 2004
 
 DESCRIPTION :
 Calculates the Delaunay triangulation of the <vertices> on a plane.
@@ -2145,9 +2145,8 @@ Calculates the Delaunay triangulation of the <vertices> on a plane.
 	float *adjacent_angle,*adjacent_angles,*adjacent_xy,*adjacent_xys,angle,
 		*vertex,x_maximum,x_minimum,x_temp,y_maximum,y_minimum,y_temp;
 	int *adjacent_vertex,*adjacent_vertices,i,j,k,l,m,n,
-		maximum_number_of_triangles,number_of_adjacent_vertices,
-		number_of_returned_triangles,number_of_triangles,return_code,
-		*returned_triangles,vertex_number;
+		number_of_adjacent_vertices,number_of_returned_triangles,
+		number_of_triangles,return_code,*returned_triangles,vertex_number;
 	struct Delaunay_triangle **temp_triangles,*triangle,**triangles;
 
 	ENTER(plane_delaunay);
@@ -2213,7 +2212,6 @@ Calculates the Delaunay triangulation of the <vertices> on a plane.
 		}
 		/* create initial triangulation */
 		number_of_triangles=2;
-		maximum_number_of_triangles=2;
 		if (ALLOCATE(triangles,struct Delaunay_triangle *,number_of_triangles))
 		{
 			i=number_of_triangles;
