@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 5 August 2003
+# LAST MODIFIED : 8 September 2003
 #
 # DESCRIPTION :
 #
@@ -531,9 +531,9 @@ ifeq ($(SYSNAME),Linux)
    ifneq ($(STATIC_LINK),true)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
-      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a
+      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
    else # $(STATIC_LINK) != true
-      LIB = -lg2c -lm -ldl -lpthread -lcrypt
+      LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
    endif # $(STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
@@ -581,7 +581,9 @@ API_SRCS = \
 	api/cmiss_variable_coordinates.c \
 	api/cmiss_variable_derivative.c \
 	api/cmiss_variable_finite_element.c \
-	api/cmiss_variable_identity.c
+	api/cmiss_variable_identity.c \
+	api/cmiss_variable_new.cpp \
+	api/cmiss_variable_new_basic.cpp
 API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \
@@ -651,7 +653,9 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_variable_derivative.c \
 	computed_variable/computed_variable_finite_element.c \
 	computed_variable/computed_variable_identity.c \
-	computed_variable/computed_variable_standard_operations.c
+	computed_variable/computed_variable_standard_operations.c \
+	computed_variable/variable.cpp \
+	computed_variable/variable_basic.cpp
 CURVE_SRCS = \
 	curve/control_curve.c
 CURVE_INTERFACE_SRCS = \
@@ -854,8 +858,8 @@ SRCS_1 = \
 	$(API_SRCS) \
 	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
-	$(COMPUTED_FIELD_SRCS) \
 	$(COMPUTED_VARIABLE_SRCS) \
+	$(COMPUTED_FIELD_SRCS) \
 	$(CURVE_SRCS) \
 	$(ELEMENT_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
@@ -1234,6 +1238,8 @@ SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
 SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
 SO_LIB_COMPUTED_VARIABLE_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
 LIB_COMPUTED_VARIABLE_SRCS = \
+	api/cmiss_variable_new.cpp \
+	api/cmiss_variable_new_basic.cpp \
 	$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS)) \
 	$(MATRIX_SRCS)
 LIB_COMPUTED_VARIABLE_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_SRCS)))

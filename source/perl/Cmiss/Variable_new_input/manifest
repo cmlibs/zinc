@@ -1,0 +1,8 @@
+Makefile.PL
+manifest
+readme
+typemap
+typemap.h
+t/1.t
+Variable_new_input.pm
+Variable_new_input.xs
