@@ -482,15 +482,6 @@ DESCRIPTION : Implement image filtering with Gabor filter.
 					}
 				}
 			}
-
-			for (i = 0; i < storage_size / image->depth; i++)
-			{
-				for (k = 0; k < image->depth; k++)
-				{
-					result_index[k] = result_index[0];
-				}
-				result_index += image->depth;
-			}
 			
 			if (return_code)
 			{
