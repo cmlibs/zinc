@@ -12,7 +12,7 @@ viewer/mouse input and other devices, but many more will follow and change the
 content of the global selections and objects with text input.
 ==============================================================================*/
 #include "general/debug.h"
-#include "general/indexed_list_private.h"
+#include "general/list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "interaction/interactive_tool.h"
@@ -42,15 +42,13 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 	int access_count;
 }; /* struct Interactive_tool */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Interactive_tool);
+FULL_DECLARE_LIST_TYPE(Interactive_tool);
 FULL_DECLARE_MANAGER_TYPE(Interactive_tool);
 
 /*
 Module functions
 ----------------
 */
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Interactive_tool,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Interactive_tool)
 
@@ -158,8 +156,8 @@ Destroys the Interactive_tool.
 
 DECLARE_OBJECT_FUNCTIONS(Interactive_tool)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Interactive_tool)
-DECLARE_INDEXED_LIST_FUNCTIONS(Interactive_tool)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Interactive_tool, \
+DECLARE_LIST_FUNCTIONS(Interactive_tool)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_tool, \
 	name,char *,strcmp)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Interactive_tool,name)
@@ -386,3 +384,118 @@ callback receiving value changes from the toggle_button.
 
 	return (widget);
 } /* Interactive_tool_make_button */
+
+int Interactive_tool_name_to_array(
+	struct Interactive_tool *interactive_tool,void *tool_name_address_void)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Allocates a copy of the name of <interactive_tool>, puts a pointer to it at
+<**tool_name> and increments <*tool_name>.
+==============================================================================*/
+{
+	char ***tool_name_address;
+	int return_code;
+
+	ENTER(Interactive_tool_name_to_array);
+	if (interactive_tool&&(tool_name_address=(char ***)tool_name_address_void)&&
+		(*tool_name_address))
+	{
+		if (GET_NAME(Interactive_tool)(interactive_tool,*tool_name_address))
+		{
+			(*tool_name_address)++;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Interactive_tool_name_to_array.  Not enough memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_name_to_array.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Interactive_tool_name_to_array */
+
+char **interactive_tool_manager_get_tool_names(
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	int *number_of_tools,struct Interactive_tool *current_interactive_tool,
+	char **current_tool_name)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Returns an array of strings containing the names of the tools - suitable for
+choosing in a text command. On success, also returns <*number_of_tools>,
+and in <current_tool_name> the pointer to the tool_names
+string for <current_interactive_tool>, or the first one if it is not found.
+Up to calling function to deallocate the returned array AND the strings in it.
+==============================================================================*/
+{
+	char **tool_names,**tool_name;
+	int i;
+
+	ENTER(interactive_tool_manager_get_tool_names);
+	tool_names=(char **)NULL;
+	if (interactive_tool_manager&&number_of_tools&&current_tool_name)
+	{
+		*number_of_tools=
+			NUMBER_IN_MANAGER(Interactive_tool)(interactive_tool_manager);
+		if (ALLOCATE(tool_names,char *,*number_of_tools))
+		{
+			for (i=0;i< *number_of_tools;i++)
+			{
+				tool_names[i]=(char *)NULL;
+			}
+			tool_name=tool_names;
+			if (FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
+				Interactive_tool_name_to_array,(void *)&tool_name,
+				interactive_tool_manager))
+			{
+				*current_tool_name = tool_names[0];
+				for (i=1;i<(*number_of_tools);i++)
+				{
+					if (FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(tool_names[i],
+						interactive_tool_manager) == current_interactive_tool)
+					{
+						*current_tool_name = tool_names[i];
+					}
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"interactive_tool_manager_get_tool_names.  Failed");
+				for (i=0;i<(*number_of_tools);i++)
+				{
+					if (tool_name[i])
+					{
+						DEALLOCATE(tool_names[i]);
+					}
+					DEALLOCATE(tool_names);
+				}
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,
+				"interactive_tool_manager_get_tool_names.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"interactive_tool_manager_get_tool_names.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (tool_names);
+} /* interactive_tool_manager_get_tool_names */

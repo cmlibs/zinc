@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_tool.h
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Active CMGUI tools should create a wrapper Interactive_tool that supplies a
@@ -113,6 +113,21 @@ DESCRIPTION :
 Makes and returns a toggle_button widget representing <interactive_tool> as a
 child of <parent>. <parent> is expected to be a RowColumn widget with an entry
 callback receiving value changes from the toggle_button.
+==============================================================================*/
+
+char **interactive_tool_manager_get_tool_names(
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	int *number_of_tools,struct Interactive_tool *current_interactive_tool,
+	char **current_tool_name);
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Returns an array of strings containing the names of the tools - suitable for
+choosing in a text command. On success, also returns <*number_of_tools>,
+and in <current_tool_name> the pointer to the tool_names
+string for <current_interactive_tool>, or the first one if it is not found.
+Up to calling function to deallocate the returned array AND the strings in it.
 ==============================================================================*/
 
 #endif /* !defined (INTERACTIVE_TOOL_H) */
