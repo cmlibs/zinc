@@ -3053,7 +3053,7 @@ pointed to by <time_void>.
 
 int execute_GT_object(struct GT_object *graphics_object_list,void *time_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
@@ -3071,7 +3071,7 @@ graphics object, starting at zero for the first
 		return_code=1;
 		if (graphics_object_list->nextobject)
 		{
-			glPushName(-1);
+			glPushName(0);
 		}
 		graphics_object_no=0;
 		for (graphics_object=graphics_object_list;graphics_object != NULL;
@@ -3079,7 +3079,7 @@ graphics object, starting at zero for the first
 		{
 			if (0<graphics_object_no)
 			{
-				glLoadName(graphics_object_no);
+				glLoadName((GLuint)graphics_object_no);
 			}
 			graphics_object_no++;
 			if (graphics_object->display_list_current)

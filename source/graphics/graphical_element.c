@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 6 June 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2308,7 +2308,7 @@ The object is compiled at the time pointed to by <time_void>.
 int execute_GT_element_group(struct GT_element_group *gt_element_group,
 	float time)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2324,7 +2324,7 @@ DESCRIPTION :
 			the GT_element_group objects, adding the position as names for
 			OpenGL picking */
 		/* push initial name to make space for subobject names */
-		glPushName(-1);
+		glPushName(0);
 		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 			GT_element_settings_execute_visible_settings,
 			(void *)&time,gt_element_group->list_of_settings);

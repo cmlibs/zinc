@@ -1,11 +1,12 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
 ==============================================================================*/
+#include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 #include "command/parser.h"
@@ -24,36 +25,13 @@ The functions for creating graphical objects from finite elements.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
-/*
-Module constants
-----------------
-*/
-/*???DB.  Get rid of */
-#define MAX_ELEM 10
+/* following used for encoding a CM_element_information as an integer */
+#define HALF_INT_MAX (INT_MAX/2)
 
 /*
 Module types
 ------------
 */
-#if defined (OLD_CODE)
-struct Element_to_point_data
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-Used with the iterators for creating points from elements.
-==============================================================================*/
-{
-	MANAGER_CONDITIONAL_FUNCTION(FE_element) *conditional_function;
-	void *conditional_function_data;
-	char **text;
-	int n_data_components;
-	GTDATA *data;
-	struct FE_field *coordinate_field;
-	struct FE_field_scalar *field_scalar;
-	Triple *point;
-}; /* struct Element_to_point_data */
-#endif /* defined (OLD_CODE) */
 
 struct Computed_fields_of_node
 /*******************************************************************************
@@ -68,41 +46,6 @@ For checking fields of a node.
 	struct Computed_field **required_fields;
 	struct FE_node *field_node;
 }; /* struct Computed_fields_of_node */
-
-#if defined (OLD_CODE)
-struct Fields_of_node
-/*******************************************************************************
-LAST MODIFIED : 30 October 1998
-
-DESCRIPTION :
-For checking fields of a node.
-???GMH. To generalise, we should add general component checking.
-==============================================================================*/
-{
-	int num_required_fields,number_of_nodes,num_coordinate,num_anatomical,
-		num_field;
-	struct FE_field **required_fields;
-	struct FE_node *field_node;
-}; /* struct Fields_of_node */
-
-struct Node_to_point_data
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
-
-DESCRIPTION :
-Used with the iterators for creating points from nodes.
-==============================================================================*/
-{
-	char calculate_derivatives,**text,text_type;
-	GTDATA *data;
-	int number_of_points;
-	struct FE_field *coordinate_field;
-	struct FE_field_scalar *field_scalar;
-	/* following is offset into integer names array */
-	int *name_address;
-	Triple *point;
-}; /* struct Node_to_point_data */
-#endif /* defined (OLD_CODE) */
 
 struct Node_to_glyph_set_data
 /*******************************************************************************
@@ -125,71 +68,6 @@ Used with iterators for building glyph sets from nodes.
 Module functions
 ----------------
 */
-
-#if defined (OLD_CODE)
-struct Fields_of_node *CREATE(Fields_of_node)(void)
-/*******************************************************************************
-LAST MODIFIED : 30 October 1998
-
-DESCRIPTION :
-Initialises the fields.  Does not allocate memory for components of the
-structure - assumes they will be statically allocated by the calling procedure.
-???GMH.  This procedure is here so that if any speedup twiddles are added to the
-FE_node_count_if_fields_defined procedure, they will all be initialised correctly.
-==============================================================================*/
-{
-	struct Fields_of_node *fields_of_node;
-
-	ENTER(CREATE(Fields_of_node));
-	if (ALLOCATE(fields_of_node,struct Fields_of_node,1))
-	{
-		fields_of_node->num_required_fields=0;
-		fields_of_node->number_of_nodes=0;
-		fields_of_node->num_coordinate=0;
-		fields_of_node->num_anatomical=0;
-		fields_of_node->num_field=0;
-		fields_of_node->required_fields=(struct FE_field **)NULL;
-		fields_of_node->field_node=(struct FE_node *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Fields_of_node).  Could not allocate structure");
-		fields_of_node=(struct Fields_of_node *)NULL;
-	}
-	LEAVE;
-
-	return (fields_of_node);
-} /* CREATE(Fields_of_node) */
-
-int DESTROY(Fields_of_node)(struct Fields_of_node **fields_of_node)
-/*******************************************************************************
-LAST MODIFIED : 27 December 1995
-
-DESCRIPTION :
-Destroys the structure.  DOES NOT DESTROY THE FIELDS!!!
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(DESTROY(Fields_of_node));
-	/* check the arguments */
-	if (fields_of_node)
-	{
-		DEALLOCATE(*fields_of_node);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Fields_of_node).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Fields_of_node) */
-#endif /* defined (OLD_CODE) */
 
 struct Computed_fields_of_node *CREATE(Computed_fields_of_node)(void)
 /*******************************************************************************
@@ -349,585 +227,6 @@ computed_fields_of_node->number_of_nodes++.
 
 	return (return_code);
 } /* FE_node_count_if_computed_fields_defined */
-
-#if defined (OLD_CODE)
-static int FE_node_fields_defined(struct FE_node *node,int num_of_fields,
-	struct FE_field **current_field_address)
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
-
-DESCRIPTION :
-function for checking that a node has the fields in current_field_address defined.
-==============================================================================*/
-{
-	int fields_all_defined,i;
-	struct FE_field *current_field;
-
-	ENTER(FE_node_fields_defined);
-	/* check arguments */	
-	if(node&&current_field_address)
-	{
-		fields_all_defined=1;
-		i=num_of_fields;
-
-		while (fields_all_defined&&(i>0))
-		{
-			if (current_field= *current_field_address)
-			{
-				if (!FE_field_is_defined_at_node(current_field,node))
-				{
-					fields_all_defined=0;
-				}
-			}
-			else
-			{			
-				if (!get_FE_node_default_coordinate_field(node))
-				{
-					fields_all_defined=0;
-				}
-			}	
-			i--;
-			current_field_address++;
-		}
-	}
-	else
-	{		
-		display_message(ERROR_MESSAGE,"FE_node_fields_defined.  Invalid arguments");
-		fields_all_defined=0;
-	}
-	LEAVE;
-
-	return (fields_all_defined);
-} /* FE_node_fields_defined */
-
-static int FE_node_count_if_fields_defined(struct FE_node *node,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
-
-DESCRIPTION :
-Iterator function for counting how many of the supplied fields are defined at 
-a node. Count returned in fields_of_node->number_of_nodes++.
-
-==============================================================================*/
-{
-	int fields_all_defined,return_code;
-	struct FE_field **current_field_address;
-	struct Fields_of_node *fields_of_node;
-
-	ENTER(FE_node_count_if_fields_defined);
-	/* check arguments */
-	if (node&&(fields_of_node=(struct Fields_of_node *)user_data))
-	{
-		return_code=1;
-		/* a match here means that fields_of_node->field_node has already been
-			 checked */
-		if (!equivalent_FE_fields_at_nodes(node,fields_of_node->field_node))
-		{
-			/* check for specific fields */
-			current_field_address=fields_of_node->required_fields;
-
-			fields_all_defined =FE_node_fields_defined(node,
-				fields_of_node->num_required_fields,current_field_address);
-		}
-		else
-		{
-			fields_all_defined =1;
-		}
-		if (fields_all_defined)
-		{
-			fields_of_node->number_of_nodes++;
-			/* remember this info for the next one */
-			fields_of_node->field_node=node;
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_count_if_fields_defined */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-static int element_to_point(struct FE_element *element,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 1 July 1999
-
-DESCRIPTION :
-Iterator function for creating the GT_point for an element.
-???DB.  Picks up the first version.
-==============================================================================*/
-{
-	char data_string[21],**text;
-	struct Coordinate_system *coordinate_system;
-	FE_value coordinates[3],*field_values,scalar_value,xi[3];
-	GTDATA *data;
-	int element_number,field_component_number,number_of_coordinate_components,
-		return_code;
-	struct Element_to_point_data *element_to_point_data;
-	struct FE_element_field_values element_coordinate_values,element_field_values;
-	struct FE_field_scalar *field_scalar;
-	Triple *point;
-
-	ENTER(element_to_point);
-	/* check arguments */
-	if (element&&element->shape&&
-		(element_to_point_data=(struct Element_to_point_data *)user_data)&&
-		(point=element_to_point_data->point)&&(text=element_to_point_data->text)&&
-		(!(field_scalar=element_to_point_data->field_scalar)||
-		(data=element_to_point_data->data)))
-	{
-		return_code=1;
-		/* check whether this element is required */
-		if (!(element_to_point_data->conditional_function)||
-			(element_to_point_data->conditional_function)(element,
-				element_to_point_data->conditional_function_data))
-		{
-			/* determine if the coordinate field is defined over the element */
-			if (calculate_FE_element_field_values(element,
-				element_to_point_data->coordinate_field,0,&element_coordinate_values,
-				/*top_level_element*/(struct FE_element *)NULL)&&
-				(0<(number_of_coordinate_components=
-					element_coordinate_values.number_of_components))&&
-				(number_of_coordinate_components<=3))
-			{
-				coordinate_system =	get_FE_field_coordinate_system(
-					 element_coordinate_values.field);
-				field_values=(FE_value *)NULL;
-				if (field_scalar)
-				{
-					field_component_number=
-						FE_field_scalar_get_component_number(field_scalar);
-					if (calculate_FE_element_field_values(element,
-						FE_field_scalar_get_field(field_scalar),0,&element_field_values,
-						/*top_level_element*/(struct FE_element *)NULL))
-					{
-						/* get enough space to hold all the components to be calculated */
-						field_values=FE_field_scalar_allocate_values(field_scalar);
-					}
-				}
-				if ((!field_scalar)||field_values)
-				{
-					xi[0]=0.5;
-					xi[1]=0.5;
-					xi[2]=0.5;
-					coordinates[0]=0;
-					coordinates[1]=0;
-					coordinates[2]=0;
-					if (calculate_FE_element_field(-1,&element_coordinate_values,xi,
-						coordinates,(FE_value *)NULL))
-					{
-						/* transform point to cartesian coordinates */
-						switch (coordinate_system->type)
-						{
-							case CYLINDRICAL_POLAR:
-							{
-								cylindrical_polar_to_cartesian(coordinates[0],coordinates[1],
-									coordinates[2],&((*point)[0]),&((*point)[1]),
-									&((*point)[2]),(float *)NULL);
-							} break;
-							case SPHERICAL_POLAR:
-							{
-								spherical_polar_to_cartesian(coordinates[0],coordinates[1],
-									coordinates[2],&((*point)[0]),&((*point)[1]),
-									&((*point)[2]),(float *)NULL);
-							} break;
-							case PROLATE_SPHEROIDAL:
-							{
-								prolate_spheroidal_to_cartesian(coordinates[0],coordinates[1],
-									coordinates[2],coordinate_system->parameters.focus,
-									&((*point)[0]),&((*point)[1]),&((*point)[2]),(float *)NULL);
-							} break;
-							case OBLATE_SPHEROIDAL:
-							{
-								oblate_spheroidal_to_cartesian(coordinates[0],coordinates[1],
-									coordinates[2],coordinate_system->parameters.focus,
-									&((*point)[0]),&((*point)[1]),&((*point)[2]),(float *)NULL);
-							} break;
-							default:
-							{
-								(*point)[0]=coordinates[0];
-								(*point)[1]=coordinates[1];
-								(*point)[2]=coordinates[2];
-							} break;
-						}
-						(element_to_point_data->point)++;
-						/* data field scalar */
-						if (field_scalar)
-						{
-							if (calculate_FE_element_field(field_component_number,
-								&element_field_values,xi,field_values,(FE_value *)NULL))
-							{
-								FE_field_scalar_evaluate(field_scalar,field_values,
-									&scalar_value,0,(FE_value *)NULL,(FE_value *)NULL);
-								*data=(GTDATA)scalar_value;
-								(element_to_point_data->data)++;
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						/* element number labels. Use element_number for top-level elements
-							 otherwise face_number for 2-D, line_number for 1-D */
-						element_number=element->cm.number;
-						
-						sprintf(data_string,"%d",element_number);
-						if (ALLOCATE(*text,char,strlen(data_string)+1))
-						{
-							strcpy(*text,data_string);
-							(element_to_point_data->text)++;
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-					else
-					{
-						return_code=0;
-					}
-					if (field_scalar)
-					{
-						clear_FE_element_field_values(&element_field_values);
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-				if (!return_code)
-				{
-					display_message(ERROR_MESSAGE,
-						"element_to_point.  Error determining point");
-				}
-				if (field_values)
-				{
-					DEALLOCATE(field_values);
-				}
-				clear_FE_element_field_values(&element_coordinate_values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"element_to_point.  Invalid coordinate_field");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"element_to_point.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_to_point */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-static int node_to_point(struct FE_node *node,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 14 May 1999
-
-DESCRIPTION :
-Iterator function for adding a node point to a GT_pointset.
-???DB.  Picks up the first version.
-==============================================================================*/
-{
-	char calculate_derivatives,calculate_derivatives_1,calculate_derivatives_2,
-		calculate_derivatives_3,data_string[21],**text,text_type;
-	FE_value *components,coordinate_1,coordinate_2,coordinate_3,derivative_11,
-		derivative_12,derivative_13,derivative_21,derivative_22,derivative_23,
-		derivative_31,derivative_32,derivative_33,jacobian[9],scalar_value;
-	GTDATA *data;
-	int component_num,return_code,i;
-	int number_of_coordinate_components,num_of_fields;
-	struct FE_field **current_field_address,*required_fields[2];
-	struct FE_field_scalar *field_scalar;
-	struct FE_field_component field_component;
-	struct Node_to_point_data *node_to_point_data;
-	Triple *point;
-
-	ENTER(node_to_point);
-	/* check arguments */
-	if (node&&(node_to_point_data=(struct Node_to_point_data *)user_data)&&
-		(point=node_to_point_data->point)&&
-		(!(field_scalar=node_to_point_data->field_scalar)||
-		(data=node_to_point_data->data))&&
-		(!(text_type=node_to_point_data->text_type)||
-		(text=node_to_point_data->text)))
-	{
-		return_code=1;
-		/* set up the node_to_point_data fields in a format for FE_node_fields_defined */
-		num_of_fields = 0;	
-		required_fields[num_of_fields]=node_to_point_data->coordinate_field;
-		num_of_fields++;			
-		if (field_scalar)
-		{
-			required_fields[num_of_fields]=FE_field_scalar_get_field(field_scalar);
-			num_of_fields++;
-		}		
-		current_field_address = required_fields;		
-		/* if there's no node coordinate field, do nothing, but no error */
-		if(FE_node_fields_defined(node,num_of_fields,current_field_address)) 
-		{	
-			if (calculate_derivatives=node_to_point_data->calculate_derivatives)
-			{
-				field_component.field=FE_node_get_position_cartesian(node,
-					node_to_point_data->coordinate_field,&coordinate_1,&coordinate_2,
-					&coordinate_3,jacobian);
-			}
-			else
-			{
-				field_component.field=FE_node_get_position_cartesian(node,
-					node_to_point_data->coordinate_field,&coordinate_1,&coordinate_2,
-					&coordinate_3,(FE_value *)NULL);
-			}
-			if (field_component.field)
-			{
-				(*point)[0]=coordinate_1;
-				(*point)[1]=coordinate_2;
-				(*point)[2]=coordinate_3;
-				(node_to_point_data->point)++;
-				if (calculate_derivatives)
-				{
-					field_component.number=0;
-					if (get_FE_nodal_FE_value_value(node,&field_component,0,FE_NODAL_D_DS1,
-						&derivative_11))
-					{
-						calculate_derivatives_1=1;
-					}
-					else
-					{
-						calculate_derivatives_1=0;
-					}
-					if (get_FE_nodal_FE_value_value(node,&field_component,0,FE_NODAL_D_DS2,
-						&derivative_12))
-					{
-						calculate_derivatives_2=1;
-					}
-					else
-					{
-						calculate_derivatives_2=0;
-					}
-					if (get_FE_nodal_FE_value_value(node,&field_component,0,FE_NODAL_D_DS3,
-						&derivative_13))
-					{
-						calculate_derivatives_3=1;
-					}
-					else
-					{
-						calculate_derivatives_3=0;
-					}
-					if (1<(number_of_coordinate_components=
-						get_FE_field_number_of_components(field_component.field)))
-					{
-						(field_component.number)++;
-						if (calculate_derivatives_1&&!get_FE_nodal_FE_value_value(node,
-							&field_component,0,FE_NODAL_D_DS1,&derivative_21))
-						{
-							calculate_derivatives_1=0;
-						}
-						if (calculate_derivatives_2&&!get_FE_nodal_FE_value_value(node,
-							&field_component,0,FE_NODAL_D_DS2,&derivative_22))
-						{
-							calculate_derivatives_2=0;
-						}
-						if (calculate_derivatives_3&&!get_FE_nodal_FE_value_value(node,
-							&field_component,0,FE_NODAL_D_DS3,&derivative_23))
-						{
-							calculate_derivatives_3=0;
-						}
-						if (2<number_of_coordinate_components)
-						{
-							(field_component.number)++;
-							if (calculate_derivatives_1&&!get_FE_nodal_FE_value_value(node,
-								&field_component,0,FE_NODAL_D_DS1,&derivative_31))
-							{
-								calculate_derivatives_1=0;
-							}
-							if (calculate_derivatives_2&&!get_FE_nodal_FE_value_value(node,
-								&field_component,0,FE_NODAL_D_DS2,&derivative_32))
-							{
-								calculate_derivatives_2=0;
-							}
-							if (calculate_derivatives_3&&!get_FE_nodal_FE_value_value(node,
-								&field_component,0,FE_NODAL_D_DS3,&derivative_33))
-							{
-								calculate_derivatives_3=0;
-							}
-						}
-						else
-						{
-							derivative_31=0;
-							derivative_32=0;
-							derivative_33=0;
-						}
-					}
-					else
-					{
-						derivative_21=0;
-						derivative_22=0;
-						derivative_23=0;
-						derivative_31=0;
-						derivative_32=0;
-						derivative_33=0;
-					}
-					point++;
-					if (calculate_derivatives_1)
-					{
-						(*point)[0]=coordinate_1+(jacobian[0]*derivative_11+
-							jacobian[1]*derivative_21+jacobian[2]*derivative_31);
-						(*point)[1]=coordinate_2+(jacobian[3]*derivative_11+
-							jacobian[4]*derivative_21+jacobian[5]*derivative_31);
-						(*point)[2]=coordinate_3+(jacobian[6]*derivative_11+
-							jacobian[7]*derivative_21+jacobian[8]*derivative_31);
-					}
-					else
-					{
-						(*point)[0]=coordinate_1;
-						(*point)[1]=coordinate_2;
-						(*point)[2]=coordinate_3;
-					}
-					point++;
-					if (calculate_derivatives_2)
-					{
-						(*point)[0]=coordinate_1+(jacobian[0]*derivative_12+
-							jacobian[1]*derivative_22+jacobian[2]*derivative_32);
-						(*point)[1]=coordinate_2+(jacobian[3]*derivative_12+
-							jacobian[4]*derivative_22+jacobian[5]*derivative_32);
-						(*point)[2]=coordinate_3+(jacobian[6]*derivative_12+
-							jacobian[7]*derivative_22+jacobian[8]*derivative_32);
-					}
-					else
-					{
-						(*point)[0]=coordinate_1;
-						(*point)[1]=coordinate_2;
-						(*point)[2]=coordinate_3;
-					}
-					point++;
-					if (calculate_derivatives_3)
-					{
-						(*point)[0]=coordinate_1+(jacobian[0]*derivative_13+
-							jacobian[1]*derivative_23+jacobian[2]*derivative_33);
-						(*point)[1]=coordinate_2+(jacobian[3]*derivative_13+
-							jacobian[4]*derivative_23+jacobian[5]*derivative_33);
-						(*point)[2]=coordinate_3+(jacobian[6]*derivative_13+
-							jacobian[7]*derivative_23+jacobian[8]*derivative_33);
-					}
-					else
-					{
-						(*point)[0]=coordinate_1;
-						(*point)[1]=coordinate_2;
-						(*point)[2]=coordinate_3;
-					}
-					node_to_point_data->point += 3;
-				}
-				if (node_to_point_data->name_address)
-				{
-					/* record the node number as the object's name for picking */
-					*(node_to_point_data->name_address)=
-						get_FE_node_cm_node_identifier(node);
-					(node_to_point_data->name_address)++;
-				}
-				if (field_scalar=node_to_point_data->field_scalar)
-				{		
-#if defined (OLD_CODE)	
-					component_num = FE_field_scalar_get_component_number(field_scalar);
-					number_of_components=FE_node_get_field_components(node,
-						FE_field_scalar_get_field(field_scalar),component_num,&components);
-#else				
-					struct FE_field_component the_field_comp;			
-					int num_of_comps;
-
-					component_num = FE_field_scalar_get_component_number(field_scalar);							
-					if(component_num <0) /*get all component values */
-					{		
-						the_field_comp.field =FE_field_scalar_get_field(field_scalar);				
-						num_of_comps =  get_FE_field_number_of_components(the_field_comp.field);
-						if(ALLOCATE(components,FE_value,1))
-						{					
-							for(i=0;i<num_of_comps;i++)
-							{
-								the_field_comp.number = i;					
-								get_FE_nodal_FE_value_value(node,&the_field_comp,0,FE_NODAL_VALUE,components);
-								components++;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"node_to_point.  Insufficient memory for all these components");
-							return_code=0;
-						}
-					}
-					else /*get just the specified component value */
-					{							
-						if(ALLOCATE(components,FE_value,1))
-						{
-							the_field_comp.number = 	component_num;
-							the_field_comp.field = FE_field_scalar_get_field(field_scalar);
-							get_FE_nodal_FE_value_value(node,&the_field_comp,0,FE_NODAL_VALUE,components);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"node_to_point.  Insufficient memory for components");
-							return_code=0;
-						}
-					}
-#endif		
-					FE_field_scalar_evaluate(field_scalar,components,&scalar_value,0,
-						(FE_value *)NULL,(FE_value *)NULL);
-					*data=(GTDATA)scalar_value;
-					(node_to_point_data->data)++;
-					DEALLOCATE(components);
-				}
-				if (text_type)
-				{
-					if ('v'==text_type)
-					{
-						sprintf(data_string,"%g",*data);
-					}
-					else
-					{
-						sprintf(data_string,"%d",get_FE_node_cm_node_identifier(node));
-					}
-					if (ALLOCATE(*text,char,strlen(data_string)+1))
-					{
-						strcpy(*text,data_string);
-						(node_to_point_data->text)++;
-						(node_to_point_data->number_of_points++);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"node_to_point.  Insufficient memory for name string");
-						return_code=0;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"node_to_point.  Could not calculate coordinate field");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* node_to_point */
-#endif /* defined (OLD_CODE) */
 
 static int node_to_glyph_set(struct FE_node *node,
 	void *node_to_glyph_set_data_void)
@@ -1398,396 +697,133 @@ the given the <use_element_type> and <element_number>.
 	return (element);
 } /* FE_element_group_get_element_with_Use_element_type */
 
-#if defined (OLD_CODE)
-struct FE_element_conditional_count_data
-{
-	MANAGER_CONDITIONAL_FUNCTION(FE_element) *conditional_function;
-	void *conditional_function_data;
-	int count;
-};
-
-static int FE_element_conditional_count(struct FE_element *element,
-	void *count_data_void)
+int CM_element_information_to_graphics_name(struct CM_element_information *cm)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1998
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
-Increments count if the <conditional_function> is either NULL or returns true
-for the <element>.
-???RC.  Move to finite_element.c?
+Encodes <cm> as a single integer that can be converted back to the element with
+CM_element_information_from_graphics_name. cm->number must be non-negative,
+and for CM_ELEMENT and CM_FACE must be less than INT_MAX/2, since they share the
+positive integers. Note: keeps element numbers contiguous for a CM_type.
+Used for selection and highlighting of elements.
 ==============================================================================*/
 {
-	int return_code;
-	struct FE_element_conditional_count_data *count_data;
+	int graphics_name;
 
-	ENTER(FE_element_conditional_count);
-	if (element&&
-		(count_data=(struct FE_element_conditional_count_data *)count_data_void))
+	ENTER(CM_element_information_to_graphics_name);
+	if (cm)
 	{
-		if (!(count_data->conditional_function)||
-			(count_data->conditional_function)(element,
-				count_data->conditional_function_data))
+		switch (cm->type)
 		{
-			(count_data->count)++;
+			case CM_ELEMENT:
+			{
+				if ((0 <= cm->number)&&(cm->number <= HALF_INT_MAX))
+				{
+					graphics_name = cm->number;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CM_element_information_to_graphics_name.  "
+						"CM_ELEMENT number must be from 0 to %d",HALF_INT_MAX);
+					graphics_name = 0;
+				}
+			} break;
+			case CM_FACE:
+			{
+				if ((0 <= cm->number)&&(cm->number <= HALF_INT_MAX))
+				{
+					graphics_name = HALF_INT_MAX + 1 + cm->number;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CM_element_information_to_graphics_name.  "
+						"CM_FACE number must be from 0 to %d",HALF_INT_MAX);
+					graphics_name = HALF_INT_MAX + 1;
+				}
+			} break;
+			case CM_LINE:
+			{
+				/* allow twice as many line numbers as tend to have more of them */
+				if ((0 <= cm->number)&&(cm->number <= INT_MAX))
+				{
+					graphics_name = INT_MIN + cm->number;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CM_element_information_to_graphics_name.  "
+						"CM_LINE number must be from 0 to %d",INT_MAX);
+					graphics_name = INT_MIN;
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"CM_element_information_to_graphics_name.  Invalid CM_type");
+				graphics_name = 0;
+			} break;
 		}
-		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_conditional_count.  Invalid argument(s)");
+			"CM_element_information_to_graphics_name.  Invalid argument(s)");
+		graphics_name = 0;
+	}
+	LEAVE;
+
+	return (graphics_name);
+} /* CM_element_information_to_graphics_name */
+
+int CM_element_information_from_graphics_name(struct CM_element_information *cm,
+	int graphics_name)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Fills <cm> with the CM_type and number determined from the the integer
+<graphics_name>, encoded with CM_element_information_to_graphics_name.
+Used for selection and highlighting of elements.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(CM_element_information_from_graphics_name);
+	if (cm)
+	{
+		return_code=1;
+		if (0 > graphics_name)
+		{
+			/* line number */
+			cm->type = CM_LINE;
+			cm->number = graphics_name - INT_MIN;
+		}
+		else if (HALF_INT_MAX < graphics_name)
+		{
+			/* face number */
+			cm->type = CM_FACE;
+			cm->number = graphics_name - HALF_INT_MAX - 1;
+		}
+		else
+		{
+			/* element number */
+			cm->type = CM_ELEMENT;
+			cm->number = graphics_name;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CM_element_information_from_graphics_name.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_conditional_count */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-struct GT_pointset *create_GT_pointset_from_FE_element_group(
-	struct GROUP(FE_element) *element_group,
-	struct MANAGER(FE_element) *element_manager,struct FE_field *coordinate_field,
-	MANAGER_CONDITIONAL_FUNCTION(FE_element) *conditional_function,
-	void *conditional_function_data,struct FE_field_scalar *field_scalar,
-	float point_size)
-/*******************************************************************************
-LAST MODIFIED : 26 November 1998
-
-DESCRIPTION :
-Creates a <GT_pointset> containing points of the given <point_size> at the
-centres of all elements satisfying the <conditional_function> with
-<conditional_function_data> in <element_group>, or <element_manager> if no
-group is specified. Uses the first available coordinate field if
-<coordinate_field> not specified. If the <conditional_function> is NULL, then
-all elements are used. Element numbers (ie. cmiss.element_number for top-level
-elements, face_number for 2-D, line_number for 1-D) are written beside the
-points. If specified, the <field_scalar> is calculated at each element point.
-==============================================================================*/
-{
-	char **text;
-	GTDATA *data;
-	gtDataType data_type;
-	int i,number_of_points,return_code;
-	struct Element_to_point_data element_to_point_data;
-	struct FE_element_conditional_count_data count_data;
-	struct GT_pointset *point_set;
-	Triple *point;
-
-	ENTER(create_GT_pointset_from_FE_element_group);
-	if (element_group||element_manager)
-	{
-		/* count the number of element points to be created */
-		count_data.conditional_function=conditional_function;
-		count_data.conditional_function_data=conditional_function_data;
-		count_data.count=0;
-		if (element_group)
-		{
-			FOR_EACH_OBJECT_IN_GROUP(FE_element)(FE_element_conditional_count,
-				(void *)&count_data,element_group);
-		}
-		else
-		{
-			FOR_EACH_OBJECT_IN_MANAGER(FE_element)(FE_element_conditional_count,
-				(void *)&count_data,element_manager);
-		}
-		number_of_points=count_data.count;
-		point_set=(struct GT_pointset *)NULL;
-		if (0<number_of_points)
-		{
-			point=(Triple *)NULL;
-			text=(char **)NULL;
-			data_type=g_NO_DATA;
-			data=(GTDATA *)NULL;
-			if (field_scalar)
-			{
-				data_type=g_SCALAR;
-				ALLOCATE(data,GTDATA,number_of_points);
-			}
-			if ((g_NO_DATA==data_type)||data)
-			{
-				if (ALLOCATE(point,Triple,number_of_points)&&
-					ALLOCATE(text,char *,number_of_points))
-				{
-					/* text pointers must start as NULL so DESTROY(GT_pointset) works */
-					for (i=0;i<number_of_points;i++)
-					{
-						text[i]=(char *)NULL;
-					}
-					point_set=CREATE(GT_pointset)(number_of_points,point,text,
-						g_PLUS_MARKER,point_size,data_type,data,(int *)NULL);
-				}
-			}
-			if (point_set)
-			{
-				/* calculate the points in the specified coordinate system */
-				element_to_point_data.coordinate_field=coordinate_field;
-				element_to_point_data.conditional_function=conditional_function;
-				element_to_point_data.conditional_function_data=
-					conditional_function_data;
-				element_to_point_data.point=point;
-				element_to_point_data.text=text;
-				element_to_point_data.field_scalar=field_scalar;
-				element_to_point_data.data=data;
-				if (element_group)
-				{
-					return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(element_to_point,
-						(void *)(&element_to_point_data),element_group);
-				}
-				else
-				{
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(element_to_point,
-						(void *)(&element_to_point_data),element_manager);
-				}
-				if (!return_code)
-				{
-					display_message(ERROR_MESSAGE,
-						"create_GT_pointset_from_FE_element_group.  "
-						"Could not get points");
-					DESTROY(GT_pointset)(&point_set);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"create_GT_pointset_from_FE_element_group.  "
-					"Could not create GT_pointset");
-				DEALLOCATE(point);
-				DEALLOCATE(data);
-				DEALLOCATE(text);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_element_group.  Invalid argument(s)");
-		point_set=(struct GT_pointset *)NULL;
-	}
-	LEAVE;
-
-	return (point_set);
-} /* create_GT_pointset_from_FE_element_group */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-struct GT_pointset *create_GT_pointset_from_FE_node_group(
-	struct GROUP(FE_node) *node_group,struct MANAGER(FE_node) *node_manager,
-	struct FE_field *coordinate_field,struct FE_field_scalar *field_scalar,
-	char text_type,char show_derivatives,float point_size)
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
-
-DESCRIPTION :
-Creates a <GT_pointset> from the <coordinate_field> for the <node_group> with
-the specified <point_size>.  The value of the specified <field_scalar> is
-calculated for each point along the line.  If <text_type> is specified then the
-node numbers or <field> values are written by the points.
-==============================================================================*/
-{
-	char **text;
-	int count,i,*names,number_of_nodes,number_of_points,return_code;
-	GTDATA *data;
-	gtDataType data_type;
-	gtMarkerType marker_type;
-	struct GT_pointset *point_set;
-	struct FE_field *required_fields[2];
-	struct Fields_of_node *fields_of_node;
-	struct Node_to_point_data node_to_point_data;
-	Triple *point;
-
-	ENTER(create_GT_pointset_from_FE_node_group);
-	/* check the arguments */
-	if ((node_group||node_manager)&&(field_scalar||(text_type!='v')))
-	{
-		/* count the number of points and check that the coordinate and data fields
-			are defined for each node */
-		if (fields_of_node=CREATE(Fields_of_node)())
-		{
-			count=0;
-			fields_of_node->num_coordinate=1;
-			fields_of_node->required_fields=required_fields;
-			required_fields[count]=coordinate_field;
-			count++;
-			if (field_scalar)
-			{
-				required_fields[count]=FE_field_scalar_get_field(field_scalar);
-				count++;
-			}
-			fields_of_node->num_required_fields=count;
-			if (node_group)
-			{
-				 return_code= FOR_EACH_OBJECT_IN_GROUP(FE_node)(FE_node_count_if_fields_defined,
-					(void *)fields_of_node,node_group);
-				number_of_nodes = NUMBER_IN_GROUP(FE_node)(node_group);
-			}
-			else
-			{
-				 return_code= FOR_EACH_OBJECT_IN_MANAGER(FE_node)(FE_node_count_if_fields_defined,
-					(void *)fields_of_node,node_manager);
-				number_of_nodes = NUMBER_IN_MANAGER(FE_node)(node_manager);
-			}
-			if(number_of_nodes>fields_of_node->number_of_nodes)
-			{
-				display_message(WARNING_MESSAGE,"create_GT_pointset_from_FE_node_group. "
-				 " %d nodes have no coordinate system, and so haven't been drawn"
-					,number_of_nodes-fields_of_node->number_of_nodes);
-			}		
-			if (return_code)
-			{
-				number_of_points=fields_of_node->number_of_nodes;
-				if (0 >= number_of_points)
-				{
-					/* no nodes = no pointset */
-					point_set=(struct GT_pointset *)NULL;
-				}
-				else
-				{
-					/* allocate memory for the point set */
-					if (show_derivatives)
-					{
-						marker_type=g_DERIVATIVE_MARKER;
-						ALLOCATE(point,Triple,4*number_of_points);
-					}
-					else
-					{
-						marker_type=g_PLUS_MARKER;
-						ALLOCATE(point,Triple,number_of_points);
-					}
-					if (point)
-					{
-						if (ALLOCATE(names,int,number_of_points))
-						{
-							if (text_type)
-							{
-								ALLOCATE(text,char *,number_of_points);
-								/* clear the text so it is not corrupt when put in pointset */
-								for (i=0;i<number_of_points;i++)
-								{
-									text[i]=(char *)NULL;
-								}
-							}
-							else
-							{
-								text=(char **)NULL;
-							}
-							if (!text_type||text)
-							{
-								if (field_scalar)
-								{
-									ALLOCATE(data,GTDATA,number_of_points);
-									data_type=g_SCALAR;
-								}
-								else
-								{
-									data=(GTDATA *)NULL;
-									data_type=g_NO_DATA;
-								}
-								if (!field_scalar||data)
-								{
-									if (point_set=CREATE(GT_pointset)(number_of_points,point,text,
-										marker_type,point_size,data_type,data,names))
-									{
-										/* calculate the points in the specified coordinate system,
-											 the data and the text */
-										node_to_point_data.coordinate_field=coordinate_field;
-										node_to_point_data.field_scalar=field_scalar;
-										node_to_point_data.point=point;
-										node_to_point_data.data=data;
-										node_to_point_data.text=text;
-										node_to_point_data.text_type=text_type;
-										node_to_point_data.number_of_points=0;
-										node_to_point_data.name_address=names;
-										node_to_point_data.calculate_derivatives=show_derivatives;									
-										if (node_group)
-										{
-											return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-												node_to_point,(void *)(&node_to_point_data),node_group);
-										}
-										else
-										{
-											return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-												node_to_point,(void *)(&node_to_point_data),
-												node_manager);
-										}
-										if (!return_code)
-										{
-										display_message(ERROR_MESSAGE,
-							"create_GT_pointset_from_FE_node_group.  Error filling pointset");
-											DESTROY(GT_pointset)(&point_set);
-										}
-									}
-									else
-									{
-										DEALLOCATE(point);
-										DEALLOCATE(names);
-										DEALLOCATE(text);
-										DEALLOCATE(data);
-										display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_node_group.  Could not create GT_pointset");
-									}
-								}
-								else
-								{
-									DEALLOCATE(point);
-									DEALLOCATE(names);
-									DEALLOCATE(text);
-									display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_node_group.  Insufficient memory for data");
-									point_set=(struct GT_pointset *)NULL;
-								}
-							}
-							else
-							{
-								DEALLOCATE(point);
-								DEALLOCATE(names);
-								display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_node_group.  Insufficient memory for text");
-								point_set=(struct GT_pointset *)NULL;
-							}
-						}
-						else
-						{
-							DEALLOCATE(point);
-							display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_node_group.  Insufficient memory for names");
-							point_set=(struct GT_pointset *)NULL;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_node_group.  Insufficient memory for points");
-						point_set=(struct GT_pointset *)NULL;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-	"create_GT_pointset_from_FE_node_group.  Field(s) not defined for all nodes");
-				point_set=(struct GT_pointset *)NULL;
-			}
-			DESTROY(Fields_of_node)(&fields_of_node);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_node_group.  Could not create fields_of_node");
-			point_set=(struct GT_pointset *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_GT_pointset_from_FE_node_group.  Invalid argument(s)");
-		point_set=(struct GT_pointset *)NULL;
-	}
-	LEAVE;
-
-	return (point_set);
-} /* create_GT_pointset_from_FE_node_group */
-#endif /* defined (OLD_CODE) */
+} /* CM_element_information_from_graphics_name */
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
 	struct GROUP(FE_node) *node_group,struct MANAGER(FE_node) *node_manager,
@@ -2067,7 +1103,7 @@ struct GT_polyline *create_GT_polyline_from_FE_element(
 	struct Computed_field *data_field,int number_of_segments,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
 Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite <element>
@@ -2113,8 +1149,9 @@ Notes:
 			(polyline=CREATE(GT_polyline)(g_PLAIN,number_of_segments+1,
 				points,/* normalpoints */NULL,n_data_components,data)))
 		{
-			/* for selective editing of GT_object primitives, record element no. */
-			polyline->object_name=element->cm.number;
+			/* for selective editing of GT_object primitives, record element ID */
+			polyline->object_name=
+				CM_element_information_to_graphics_name(element->identifier);
 			point=points;
 			distance=(FE_value)number_of_segments;
 			i=0;
@@ -2243,9 +1280,9 @@ Notes:
 				number_of_segments_around+1,number_of_segments_along+1,
 				points,normalpoints,texturepoints,n_data_components,data)))
 		{
-			/* for selective editing of GT_object primitives, record element no. */
-			surface->object_name=element->cm.number;
-
+			/* for selective editing of GT_object primitives, record element ID */
+			surface->object_name=
+				CM_element_information_to_graphics_name(element->identifier);
 			point=points;
 			derivative=normalpoints;
 			/* Calculate the points and radius and data at the each point */
@@ -2549,269 +1586,6 @@ Notes:
 					}
 				}
 			}
-#if defined (OLD_CODE)
-			for (i=0;(i<=number_of_segments_along)&&surface;i++)
-			{
-				xi=(float)i/(float)number_of_segments_along;
-				/* evaluate the fields */
-				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
-					top_level_element,coordinates,derivative_xi)&&
-					((!data_field)||Computed_field_evaluate_in_element(
-						data_field,element,&xi,top_level_element,data,(FE_value *)NULL))&&
-					((!radius_field)||Computed_field_evaluate_in_element(radius_field,
-						element,&xi,top_level_element,&radius_value,&radius_derivative)))
-				{
-					/* store the coordinates in the point */
-					(*point)[0]=coordinates[0];
-					(*point)[1]=coordinates[1];
-					(*point)[2]=coordinates[2];
-					if (radius_field)
-					{
-						radius_value=constant_radius+scale_factor*radius_value;
-						radius_derivative *= scale_factor;
-					}
-					else
-					{
-						radius_value=constant_radius;
-						radius_derivative=0.0;
-					}
-					if (data_field)
-					{
-						datum=data;
-						for (j=number_of_segments_around;j>=0;j--)
-						{
-							for (k=0;k<n_data_components;k++)
-							{
-								data[k] = datum[k];
-							}
-							data+=n_data_components;
-						}
-					}
-					/* normalize the line direction (derivative) */
-					/* keep dS/dxi for converting derivatives later */
-					dS_dxi=sqrt(derivative_xi[0]*derivative_xi[0]+
-						derivative_xi[1]*derivative_xi[1]+
-						derivative_xi[2]*derivative_xi[2]);
-					if (0.0<dS_dxi)
-					{
-						derivative_xi[0] /= dS_dxi;
-						derivative_xi[1] /= dS_dxi;
-						derivative_xi[2] /= dS_dxi;
-						/* get any vector not aligned with derivative */
-						jacobian[0]=0.0;
-						jacobian[1]=0.0;
-						jacobian[2]=0.0;
-						/* make jacobian have 1.0 in the component with the least absolute
-							 value in derivative_xi */
-						if (fabs(derivative_xi[0]) < fabs(derivative_xi[1]))
-						{
-							if (fabs(derivative_xi[2]) < fabs(derivative_xi[0]))
-							{
-								jacobian[2]=1.0;
-							}
-							else
-							{
-								jacobian[0]=1.0;
-							}
-						}
-						else
-						{
-							if (fabs(derivative_xi[2]) < fabs(derivative_xi[1]))
-							{
-								jacobian[2]=1.0;
-							}
-							else
-							{
-								jacobian[1]=1.0;
-							}
-						}
-						/* get cross product of the derivative and this vector
-							 = vector normal to derivative */
-						jacobian[3]=
-							derivative_xi[1]*jacobian[2]-derivative_xi[2]*jacobian[1];
-						jacobian[4]=
-							derivative_xi[2]*jacobian[0]-derivative_xi[0]*jacobian[2];
-						jacobian[5]=
-							derivative_xi[0]*jacobian[1]-derivative_xi[1]*jacobian[0];
-						/* make normal into a unit vector */
-						if (0.0<(length=sqrt(jacobian[3]*jacobian[3]+
-							jacobian[4]*jacobian[4]+jacobian[5]*jacobian[5])))
-						{
-							jacobian[3] /= length;
-							jacobian[4] /= length;
-							jacobian[5] /= length;
-						}
-						/* take cross product again to second unit normal */
-						jacobian[0]=
-							jacobian[4]*derivative_xi[2]-jacobian[5]*derivative_xi[1];
-						jacobian[1]=
-							jacobian[5]*derivative_xi[0]-jacobian[3]*derivative_xi[2];
-						jacobian[2]=
-							jacobian[3]*derivative_xi[1]-jacobian[4]*derivative_xi[0];
-					}
-					else
-					{
-						jacobian[0]=0.;
-						jacobian[1]=0.;
-						jacobian[2]=0.;
-						jacobian[3]=0.;
-						jacobian[4]=0.;
-						jacobian[5]=0.;
-					}
-					minimum_offset=0;
-					if (0<i)
-					{
-						coordinate_1=(*(point-number_of_segments_around-1))[0]-last_point_1;
-						coordinate_2=(*(point-number_of_segments_around-1))[1]-last_point_2;
-						coordinate_3=(*(point-number_of_segments_around-1))[2]-last_point_3;
-						if (0.0<(length=sqrt(coordinate_1*coordinate_1+
-							coordinate_2*coordinate_2+coordinate_3*coordinate_3)))
-						{
-							coordinate_1 /= length;
-							coordinate_2 /= length;
-							coordinate_3 /= length;
-						}
-						/* rotate from the previous plane to the current plane */
-						cos_theta=last_direction_1*derivative_xi[0]+
-							last_direction_2*derivative_xi[1]+
-							last_direction_3*derivative_xi[2];
-						rotate[6]=last_direction_2*derivative_xi[2]-
-							last_direction_3*derivative_xi[1];
-						rotate[7]=last_direction_3*derivative_xi[0]-
-							last_direction_1*derivative_xi[2];
-						rotate[8]=last_direction_1*derivative_xi[1]-
-							last_direction_2*derivative_xi[0];
-						sin_theta=rotate[6]*rotate[6]+rotate[7]*rotate[7]+
-							rotate[8]*rotate[8];
-						if (1.e-12<sin_theta)
-						{
-							sin_theta=sqrt(sin_theta);
-							rotate[6] /= sin_theta;
-							rotate[7] /= sin_theta;
-							rotate[8] /= sin_theta;
-							rotate[0]=last_direction_1;
-							rotate[1]=last_direction_2;
-							rotate[2]=last_direction_3;
-							rotate[3]=rotate[7]*rotate[2]-rotate[8]*rotate[1];
-							rotate[4]=rotate[8]*rotate[0]-rotate[6]*rotate[2];
-							rotate[5]=rotate[6]*rotate[1]-rotate[7]*rotate[0];
-							normal_1=rotate[0]*coordinate_1+rotate[1]*coordinate_2+
-								rotate[2]*coordinate_3;
-							normal_2=rotate[3]*coordinate_1+rotate[4]*coordinate_2+
-								rotate[5]*coordinate_3;
-							normal_3=rotate[6]*coordinate_1+rotate[7]*coordinate_2+
-								rotate[8]*coordinate_3;
-							coordinate_1=cos_theta*normal_1-sin_theta*normal_2;
-							coordinate_2=sin_theta*normal_1+cos_theta*normal_2;
-							coordinate_3=normal_3;
-							normal_1=rotate[0]*coordinate_1+rotate[3]*coordinate_2+
-								rotate[6]*coordinate_3;
-							normal_2=rotate[1]*coordinate_1+rotate[4]*coordinate_2+
-								rotate[7]*coordinate_3;
-							normal_3=rotate[2]*coordinate_1+rotate[5]*coordinate_2+
-								rotate[8]*coordinate_3;
-						}
-						else
-						{
-							normal_1=coordinate_1;
-							normal_2=coordinate_2;
-							normal_3=coordinate_3;
-						}
-						coordinate_1=(point[0])[0]+radius_value*normal_1;
-						coordinate_2=(point[0])[1]+radius_value*normal_2;
-						coordinate_3=(point[0])[2]+radius_value*normal_3;
-						normal_1=(point[0])[0]+radius_value*jacobian[0];
-						normal_2=(point[0])[1]+radius_value*jacobian[1];
-						normal_3=(point[0])[2]+radius_value*jacobian[2];
-						minimum_distance=
-							(coordinate_1-normal_1)*(coordinate_1-normal_1)+
-							(coordinate_2-normal_2)*(coordinate_2-normal_2)+
-							(coordinate_3-normal_3)*(coordinate_3-normal_3);
-					}
-					/*???DB.  To be done */
-					last_point_1=(point[0])[0];
-					last_point_2=(point[0])[1];
-					last_point_3=(point[0])[2];
-					for (j=number_of_segments_around;0<j;j--)
-					{
-						theta=PI*2.*(float)j/(float)number_of_segments_around;
-						cos_theta=cos(theta);
-						sin_theta=sin(theta);
-						(normal[j])[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-						(normal[j])[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-						(normal[j])[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-						(point[j])[0]=(point[0])[0]+radius_value*(normal[j])[0];
-						(point[j])[1]=(point[0])[1]+radius_value*(normal[j])[1];
-						(point[j])[2]=(point[0])[2]+radius_value*(normal[j])[2];
-						if (0<dS_dxi)
-						{
-							(normal[j])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
-							(normal[j])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
-							(normal[j])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
-						}
-						if (i>0)
-						{
-							distance=
-								((point[j])[0]-coordinate_1)*((point[j])[0]-coordinate_1)+
-								((point[j])[1]-coordinate_2)*((point[j])[1]-coordinate_2)+
-								((point[j])[2]-coordinate_3)*((point[j])[2]-coordinate_3);
-							if (distance<minimum_distance)
-							{
-								minimum_distance=distance;
-								minimum_offset=j;
-							}
-						}
-					}
-					if (0==minimum_offset)
-					{
-						(normal[0])[0]=jacobian[0];
-						(normal[0])[1]=jacobian[1];
-						(normal[0])[2]=jacobian[2];
-						(point[0])[0]=(point[0])[0]+radius_value*(normal[0])[0];
-						(point[0])[1]=(point[0])[1]+radius_value*(normal[0])[1];
-						(point[0])[2]=(point[0])[2]+radius_value*(normal[0])[2];
-						if (0<dS_dxi)
-						{
-							(normal[0])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
-							(normal[0])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
-							(normal[0])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
-						}
-					}
-					else
-					{
-						for (j=number_of_segments_around;j>=0;j--)
-						{
-							theta=PI*2.*(float)(j+minimum_offset)/
-								(float)number_of_segments_around;
-							cos_theta=cos(theta);
-							sin_theta=sin(theta);
-							(normal[j])[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-							(normal[j])[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-							(normal[j])[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-							(point[j])[0]=(point[0])[0]+radius_value*(normal[j])[0];
-							(point[j])[1]=(point[0])[1]+radius_value*(normal[j])[1];
-							(point[j])[2]=(point[0])[2]+radius_value*(normal[j])[2];
-							if (0<dS_dxi)
-							{
-								(normal[j])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
-								(normal[j])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
-								(normal[j])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
-							}
-						}
-					}
-					last_direction_1=derivative_xi[0];
-					last_direction_2=derivative_xi[1];
-					last_direction_3=derivative_xi[2];
-					point += number_of_segments_around+1;
-					normal += number_of_segments_around+1;
-				}
-				else
-				{
-					/* error evaluating fields */
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-#endif /* defined (OLD_CODE) */
 			DEALLOCATE(radius_array);
 			if (surface)
 			{
@@ -2948,11 +1722,6 @@ to say which parent element they should be evaluated on as necessary.
 		tknotcount, scontrolcount, tcontrolcount, texture_coordinate_components;
 
 	ENTER(create_GT_nurb_from_FE_element);
-#if defined (DEBUG)
-	printf("enter create_GT_nurb_from_FE_element %d %d %d\n",
-		element->cmiss.element_number,element->cmiss.face_number,
-		element->cmiss.line_number);
-#endif /* defined (DEBUG) */
 	/* check the arguments */
 	if (element&&(element->shape)&&(2==element->shape->dimension)
 		&&(3>=Computed_field_get_number_of_components(coordinate_field)))
@@ -3036,8 +1805,9 @@ to say which parent element they should be evaluated on as necessary.
 		{
 			if (nurbs=CREATE(GT_nurbs)())
 			{
-				/* for selective editing of GT_object primitives, record element no. */
-				nurbs->object_name=element->cm.number;
+				/* for selective editing of GT_object primitives, record element ID */
+				nurbs->object_name=
+					CM_element_information_to_graphics_name(element->identifier);
 				if (GT_nurbs_set_surface(nurbs, sorder, torder,
 					sknotcount, tknotcount, sknots, tknots, 
 					scontrolcount, tcontrolcount, control_points))
@@ -3706,8 +2476,9 @@ Notes:
 				number_of_points_in_xi1,number_of_points_in_xi2, points,
 				normalpoints, texturepoints, n_data_components,data))))
 		{
-			/* for selective editing of GT_object primitives, record element no. */
-			surface->object_name=element->cm.number;
+			/* for selective editing of GT_object primitives, record element ID */
+			surface->object_name=
+				CM_element_information_to_graphics_name(element->identifier);
 			/* calculate the xi coordinates and store in "normals" */
 			point_a=normalpoints;
 			point_b=point_a;
@@ -4458,8 +3229,10 @@ faces.
 							if (voltex)
 							{
 								/* for selective editing of GT_object primitives,
-									record element no. */
-								voltex->object_name=element->cm.number;
+									 record element ID */
+								voltex->object_name=
+									CM_element_information_to_graphics_name(element->identifier);
+
 								/*???Mark.  THIS CODE NEEDS TO BE DOCTORED.  begin */
 								/* copy volume texture values into triangle_list */
 								/* acceptable triangle index */
@@ -7007,7 +5780,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	enum Graphics_select_mode select_mode,struct Multi_range *selected_ranges,
 	int *point_numbers)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -7112,7 +5885,6 @@ Note:
 			{
 				ALLOCATE(names,int,points_to_draw);
 			}
-			/* no identifiers for individual points yet */
 			/* store element number as object_name for editing GT_object primitives */
 			if ((data||(!n_data_components))&&((!label_field)||labels)&&
 				((GRAPHICS_NO_SELECT==select_mode)||names)&&
@@ -7122,7 +5894,8 @@ Note:
 				ALLOCATE(axis3_list,Triple,points_to_draw)&&
 				(glyph_set=CREATE(GT_glyph_set)(points_to_draw,point_list,
 					axis1_list,axis2_list,axis3_list,glyph,labels,
-					n_data_components,data,/*object_name*/element->cm.number,names)))
+					n_data_components,data,
+					CM_element_information_to_graphics_name(element->identifier),names)))
 			{
 				/* get values from Triple arrays to FE_values for speed */
 				base_size1=(FE_value)glyph_size[0];
@@ -7522,12 +6295,6 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 	struct GT_voltex *voltex;
 
 	ENTER(generate_clipped_GT_voltex_from_FE_element);
-#if defined (DEBUG)
-	/*???debug */
-	printf("enter generate_clipped_GT_voltex_from_FE_element (%d %d %d)\n",
-		(element->cmiss).line_number,(element->cmiss).face_number,
-		(element->cmiss).element_number);
-#endif /* defined (DEBUG) */
 	if (texture)
 	{
 		if (!(texture->disable_volume_functions))
@@ -8817,12 +7584,6 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 		number_in_xi&&(0<number_in_xi[0])&&(0<number_in_xi[1])&&(0<number_in_xi[2])
 		&&scalar_field&&(1==Computed_field_get_number_of_components(scalar_field)))
 	{
-#if defined (DEBUG)
-		/*???debug */
-		printf("enter create_iso_surfaces_from_FE_element (%d %d %d)\n",
-			element->cmiss.line_number,element->cmiss.face_number,
-			element->cmiss.element_number);
-#endif /* defined (DEBUG) */
 		/* create the volume texture */
 		if (volume_texture=CREATE(VT_volume_texture)((char *)NULL))
 		{

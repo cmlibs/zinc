@@ -304,6 +304,29 @@ the logic for getting the most appropriate element from <element_group> with
 the given the <use_element_type> and <element_number>.
 ==============================================================================*/
 
+int CM_element_information_to_graphics_name(struct CM_element_information *cm);
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Encodes <cm> as a single integer that can be converted back to the element with
+CM_element_information_from_graphics_name. cm->number must be non-negative,
+and for CM_ELEMENT and CM_FACE must be less than INT_MAX/2, since they share the
+positive integers. Note: keeps element numbers contiguous for a CM_type.
+Used for selection and highlighting of elements.
+==============================================================================*/
+
+int CM_element_information_from_graphics_name(struct CM_element_information *cm,
+	int graphics_name);
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Fills <cm> with the CM_type and number determined from the the integer
+<graphics_name>, encoded with CM_element_information_to_graphics_name.
+Used for selection and highlighting of elements.
+==============================================================================*/
+
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element,struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,

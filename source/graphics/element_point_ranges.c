@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -934,7 +934,7 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 int set_Element_point_ranges(struct Parse_state *state,
 	void *element_point_ranges_address_void,void *element_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Modifier function to set an element_point_ranges. <element_point_ranges_address>
@@ -944,6 +944,7 @@ returned in this location, for the calling function to use or destroy.
 ==============================================================================*/
 {
 	char *current_token,**valid_strings,*xi_discretization_mode_string;
+	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int dimension,i,number_of_xi_points,number_of_valid_strings,return_code,start,
 		stop;
 	struct CM_element_information cm;
@@ -959,6 +960,14 @@ returned in this location, for the calling function to use or destroy.
 		((struct Element_point_ranges *)NULL == *element_point_ranges_address)&&
 		(element_manager=(struct MANAGER(FE_element) *)element_manager_void))
 	{
+		element_point_ranges_identifier.element=(struct FE_element *)NULL;
+		element_point_ranges_identifier.top_level_element=(struct FE_element *)NULL;
+		element_point_ranges_identifier.xi_discretization_mode=
+			XI_DISCRETIZATION_EXACT_XI;
+		for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+		{
+			element_point_ranges_identifier.exact_xi[i]=xi[i]=0.5;
+		}
 		return_code=1;
 		if (current_token=state->current_token)
 		{
@@ -1002,8 +1011,9 @@ returned in this location, for the calling function to use or destroy.
 							}
 							else
 							{
-								display_message(WARNING_MESSAGE,"Unknown element: %s %d",
+								display_message(ERROR_MESSAGE,"Unknown element: %s %d",
 									CM_element_type_string(cm.type),cm.number);
+								display_parse_state_location(state);
 								return_code=0;
 							}
 						}
@@ -1015,20 +1025,82 @@ returned in this location, for the calling function to use or destroy.
 					}
 					else
 					{
-						display_message(WARNING_MESSAGE,"Missing %s number",
-							CM_element_type_string(cm.type));
+						display_message(ERROR_MESSAGE,"Missing element number");
 						display_parse_state_location(state);
 						return_code=0;
+					}
+				}
+				/* top_level_element number */
+				if (return_code)
+				{
+					if ((current_token=state->current_token)&&
+						fuzzy_string_compare(current_token,"top_level_element"))
+					{
+						cm.type=CM_ELEMENT;
+						shift_Parse_state(state,1);
+						if (current_token=state->current_token)
+						{
+							if (strcmp(PARSER_HELP_STRING,current_token)&&
+								strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+							{
+								cm.number=atoi(current_token);
+								shift_Parse_state(state,1);
+								if (element_point_ranges_identifier.top_level_element=
+									FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(&cm,
+										element_manager))
+								{
+									if (!FE_element_is_top_level_parent_of_element(
+										element_point_ranges_identifier.top_level_element,
+										(void *)element_point_ranges_identifier.element))
+									{
+										display_message(ERROR_MESSAGE,
+											"Invalid top_level_element: %d",cm.number);
+										return_code=0;
+									}
+								}
+								else
+								{
+									display_message(WARNING_MESSAGE,
+										"Unknown top_level_element: %d",cm.number);
+									display_parse_state_location(state);
+									return_code=0;
+								}
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE," NUMBER");
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Missing top_level_element number");
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						if (!(element_point_ranges_identifier.top_level_element=
+							FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
+								FE_element_is_top_level_parent_of_element,
+								(void *)element_point_ranges_identifier.element,
+								element_manager)))
+						{
+							display_message(ERROR_MESSAGE,"No top_level_element");
+							return_code=0;
+						}
 					}
 				}
 				/* xi_discretization_mode */
 				if (return_code)
 				{
 					option_table=CREATE(Option_table)();
-					xi_discretization_mode_string=
-						Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
+					xi_discretization_mode_string=Xi_discretization_mode_string(
+						element_point_ranges_identifier.xi_discretization_mode);
 					valid_strings=
-						Xi_discretization_mode_get_valid_strings(&number_of_valid_strings);
+						Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
+							&number_of_valid_strings);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&xi_discretization_mode_string);
 					DEALLOCATE(valid_strings);
@@ -1039,64 +1111,104 @@ returned in this location, for the calling function to use or destroy.
 					}
 					DESTROY(Option_table)(&option_table);
 				}
-				/* number_in_xi */
 				if (return_code)
 				{
 					dimension=
 						get_FE_element_dimension(element_point_ranges_identifier.element);
 					for (i=0;i<dimension;i++)
 					{
-						element_point_ranges_identifier.number_in_xi[0]=1;
+						element_point_ranges_identifier.number_in_xi[i]=1;
 					}
-					if (return_code=set_int_vector(state,
-						(void *)element_point_ranges_identifier.number_in_xi,
-						(void *)&dimension))
+					switch (element_point_ranges_identifier.xi_discretization_mode)
 					{
-						/* check number_in_xi are all > 0 */
-						if (1>(number_of_xi_points=
-							Xi_discretization_mode_get_number_of_xi_points(
-								element_point_ranges_identifier.xi_discretization_mode,
-								dimension,element_point_ranges_identifier.number_in_xi)))
+						case XI_DISCRETIZATION_CELL_CORNERS:
+						case XI_DISCRETIZATION_CELL_CENTRES:
 						{
-							display_message(WARNING_MESSAGE,"Invalid number in xi");
-							display_parse_state_location(state);
+							/* number_in_xi */
+							if (return_code=set_int_vector(state,
+								(void *)element_point_ranges_identifier.number_in_xi,
+								(void *)&dimension))
+							{
+								/* check number_in_xi are all > 0 */
+								if (1>(number_of_xi_points=
+									Xi_discretization_mode_get_number_of_xi_points(
+										element_point_ranges_identifier.xi_discretization_mode,
+										dimension,element_point_ranges_identifier.number_in_xi)))
+								{
+									display_message(WARNING_MESSAGE,"Invalid number in xi");
+									display_parse_state_location(state);
+									return_code=0;
+								}
+							}
+						} break;
+						case XI_DISCRETIZATION_EXACT_XI:
+						{
+							/* xi */
+							return_code=set_float_vector(state,(void *)xi,(void *)&dimension);
+							for (i=0;i<dimension;i++)
+							{
+								element_point_ranges_identifier.exact_xi[i]=xi[i];
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"set_Element_point_ranges.  Invalid xi_discretization_mode");
 							return_code=0;
 						}
 					}
 				}
-				/* ranges */
 				if (return_code)
 				{
 					/* create the element_point_ranges */
 					if (element_point_ranges=CREATE(Element_point_ranges)(
 						&element_point_ranges_identifier))
 					{
-						if (set_Multi_range(state,(void *)(element_point_ranges->ranges),
-							(void *)NULL))
+						switch (element_point_ranges_identifier.xi_discretization_mode)
 						{
-							if ((0<Multi_range_get_number_of_ranges(
-								element_point_ranges->ranges))&&
-								(!Multi_range_get_last_start_value(
-									element_point_ranges->ranges,0,&start))&&
-								(!Multi_range_get_next_stop_value(
-									element_point_ranges->ranges,number_of_xi_points-1,&stop)))
+							case XI_DISCRETIZATION_CELL_CORNERS:
+							case XI_DISCRETIZATION_CELL_CENTRES:
 							{
-								*element_point_ranges_address=element_point_ranges;
-							}
-							else
+								/* ranges */
+								if (set_Multi_range(state,
+									(void *)(element_point_ranges->ranges),(void *)NULL))
+								{
+									if (!((0<Multi_range_get_number_of_ranges(
+										element_point_ranges->ranges))&&
+										(!Multi_range_get_last_start_value(
+											element_point_ranges->ranges,0,&start))&&
+										(!Multi_range_get_next_stop_value(
+											element_point_ranges->ranges,number_of_xi_points-1,
+											&stop))))
+									{
+										display_message(WARNING_MESSAGE,"Invalid ranges");
+										display_parse_state_location(state);
+										DESTROY(Element_point_ranges)(&element_point_ranges);
+										return_code=0;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"set_Element_point_ranges.  Could not build ranges");
+									DESTROY(Element_point_ranges)(&element_point_ranges);
+									return_code=0;
+								}
+							} break;
+							case XI_DISCRETIZATION_EXACT_XI:
 							{
-								display_message(WARNING_MESSAGE,"Invalid ranges");
-								display_parse_state_location(state);
-								DESTROY(Element_point_ranges)(&element_point_ranges);
-								return_code=0;
-							}
+								if (!Multi_range_add_range(element_point_ranges->ranges,0,0))
+								{
+									display_message(ERROR_MESSAGE,
+										"set_Element_point_ranges.  Could not add exact_xi point");
+									DESTROY(Element_point_ranges)(&element_point_ranges);
+									return_code=0;
+								}
+							} break;
 						}
-						else
+						if (element_point_ranges)
 						{
-							display_message(ERROR_MESSAGE,
-								"set_Element_point_ranges.  Could not build ranges");
-							DESTROY(Element_point_ranges)(&element_point_ranges);
-							return_code=0;
+							*element_point_ranges_address=element_point_ranges;
 						}
 					}
 					else
@@ -1109,9 +1221,9 @@ returned in this location, for the calling function to use or destroy.
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE," element|face|line #"
-					" cell_centres|cell_corners #xi1 #xi2.. #xiN "
-					"[#|#..#[,#|#..#[,etc.]]]");
+				display_message(INFORMATION_MESSAGE," element|face|line # {"
+					"cell_centres|cell_corners #xi1 #xi2.. #xiN #,#..#,# etc. | "
+					"exact_xi xi1 xi2...}");
 				return_code=0;
 			}
 		}

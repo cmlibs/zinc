@@ -88,7 +88,7 @@ are drawn, otherwise only those names not there are drawn. A NULL pointer for
 				if (name=names)
 				{
 					/* make space for picking name on name stack */
-					glPushName(-1);
+					glPushName(0);
 				}
 				label=labels;
 				/* try to draw points and lines faster */
@@ -117,7 +117,7 @@ are drawn, otherwise only those names not there are drawn. A NULL pointer for
 								z=(*point)[2];
 								if (names)
 								{
-									glLoadName(*name);
+									glLoadName((GLuint)(*name));
 								}
 								glBegin(GL_POINTS);
 								glVertex3f(x,y,z);
@@ -189,7 +189,7 @@ are drawn, otherwise only those names not there are drawn. A NULL pointer for
 								}
 								if (names)
 								{
-									glLoadName(*name);
+									glLoadName((GLuint)(*name));
 								}
 								x=(*point)[0];
 								y=(*point)[1];
@@ -274,7 +274,7 @@ are drawn, otherwise only those names not there are drawn. A NULL pointer for
 								}
 								if (names)
 								{
-									glLoadName(*name);
+									glLoadName((GLuint)(*name));
 								}
 								x=(*point)[0];
 								y=(*point)[1];
@@ -394,7 +394,7 @@ are drawn, otherwise only those names not there are drawn. A NULL pointer for
 						{
 							if (names)
 							{
-								glLoadName(*name);
+								glLoadName((GLuint)(*name));
 							}
 							/* store the current modelview matrix */
 							glPushMatrix();
@@ -462,7 +462,7 @@ are drawn, otherwise only those names not there are drawn. A NULL pointer for
 							{
 								if (names)
 								{
-									glLoadName(*name);
+									glLoadName((GLuint)(*name));
 								}
 								x=(*point)[0];
 								y=(*point)[1];
@@ -697,7 +697,7 @@ simultaneously.
 				point=point_list;
 				datum=data;
 				/* make a first name to load over with each name */
-				glPushName(-1);
+				glPushName(0);
 				switch (marker_type)
 				{
 					case g_POINT_MARKER:
@@ -715,7 +715,7 @@ simultaneously.
 								spectrum_renderGL_value(spectrum,material,render_data,datum);
 								datum+=number_of_data_components;
 							}
-							glLoadName(*name);
+							glLoadName((GLuint)(*name));
 							glBegin(GL_POINTS);
 							glVertex3f(x,y,z);
 							glEnd();
@@ -749,7 +749,7 @@ simultaneously.
 								datum+=number_of_data_components;
 							}
 							/* output names */
-							glLoadName(*name);
+							glLoadName((GLuint)(*name));
 							glBegin(GL_POINTS);
 							glVertex3f(x,y,z);
 							glEnd();

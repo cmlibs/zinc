@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -542,7 +542,7 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 		if (g_VISIBLE==scene_object->visibility)
 		{
 			/* put out the name (position) of the scene_object: */
-			glLoadName(scene_object->position);
+			glLoadName((GLuint)scene_object->position);
 
 			/* save a matrix multiply when identity transformation */
 			if(scene_object->transformation)
@@ -1823,7 +1823,7 @@ static int Scene_picked_object_get_nearest_element_point(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_point_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, the "nearest" value is
@@ -1836,7 +1836,6 @@ created to store the nearest point; it is up to the calling function to manage
 and destroy it once returned.
 ==============================================================================*/
 {
-	enum Xi_discretization_mode xi_discretization_mode;
 	int element_point_number,face_number,i,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct CM_element_information cm;
@@ -1883,23 +1882,10 @@ and destroy it once returned.
 				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
 					GT_element_settings_get_settings_type(settings)))
 			{
-				cm.number=Scene_picked_object_get_subobject(scene_picked_object,1);
-				xi_discretization_mode=
-					GT_element_settings_get_xi_discretization_mode(settings);
-				if (XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)
-				{
-					/* cell_corners always calculated on top_level_element */
-					cm.type=CM_ELEMENT;
-					element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
-						element_group);
-				}
-				else
-				{
-					element=FE_element_group_get_element_with_Use_element_type(
-						element_group,GT_element_settings_get_use_element_type(settings),
-						cm.number);
-				}
-				if (element)
+				if (CM_element_information_from_graphics_name(&cm,
+					Scene_picked_object_get_subobject(scene_picked_object,1))&&
+					(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
+						element_group)))
 				{
 					/* determine discretization of element for graphic */
 					top_level_element=(struct FE_element *)NULL;
@@ -1918,8 +1904,9 @@ and destroy it once returned.
 						element_point_ranges_identifier.element=element;
 						element_point_ranges_identifier.top_level_element=top_level_element;
 						element_point_ranges_identifier.xi_discretization_mode=
-							xi_discretization_mode;
-						if (XI_DISCRETIZATION_EXACT_XI==xi_discretization_mode)
+							GT_element_settings_get_xi_discretization_mode(settings);
+						if (XI_DISCRETIZATION_EXACT_XI==
+							element_point_ranges_identifier.xi_discretization_mode)
 						{
 							for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 							{
@@ -1982,7 +1969,8 @@ and destroy it once returned.
 				else
 				{
 					display_message(WARNING_MESSAGE,
-						"Scene_picked_object_get_nearest_element_point.  Invalid element");
+						"Scene_picked_object_get_nearest_element_point.  "
+						"Invalid element %s %d",CM_element_type_string(cm.type),cm.number);
 					return_code=0;
 				}
 			}
@@ -2003,14 +1991,13 @@ static int Scene_picked_object_get_picked_element_points(
 	struct Scene_picked_object *scene_picked_object,
 	void *picked_element_points_list_void)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, it is converted into
 an Element_point_ranges and added to the <picked_element_points_list>.
 ==============================================================================*/
 {
-	enum Xi_discretization_mode xi_discretization_mode;
 	int element_point_number,face_number,i,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct CM_element_information cm;
@@ -2044,23 +2031,10 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
 				GT_element_settings_get_settings_type(settings)))
 		{
-			cm.number=Scene_picked_object_get_subobject(scene_picked_object,1);
-			xi_discretization_mode=
-				GT_element_settings_get_xi_discretization_mode(settings);
-			if (XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)
-			{
-				/* cell_corners always calculated on top_level_element */
-				cm.type=CM_ELEMENT;
-				element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
-					element_group);
-			}
-			else
-			{
-				element=FE_element_group_get_element_with_Use_element_type(
-					element_group,GT_element_settings_get_use_element_type(settings),
-					cm.number);
-			}
-			if (element)
+			if (CM_element_information_from_graphics_name(&cm,
+				Scene_picked_object_get_subobject(scene_picked_object,1))&&
+				(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
+					element_group)))
 			{
 				/* determine discretization of element for graphic */
 				top_level_element=(struct FE_element *)NULL;
@@ -2079,7 +2053,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 					element_point_ranges_identifier.element=element;
 					element_point_ranges_identifier.top_level_element=top_level_element;
 					element_point_ranges_identifier.xi_discretization_mode=
-						xi_discretization_mode;
+						GT_element_settings_get_xi_discretization_mode(settings);
 					if (XI_DISCRETIZATION_EXACT_XI==
 						element_point_ranges_identifier.xi_discretization_mode)
 					{
@@ -5938,7 +5912,7 @@ most common task will be to call execute_Light.
 
 int compile_Scene(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 20 July 1998
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Assembles the display list containing the whole scene. Before that, however, it
@@ -5995,7 +5969,7 @@ Note that lights are not included in the scene and must be handled separately!
 					glInitNames();
 					/* push a dummy name to be overloaded with scene_object
 						identifiers */
-					glPushName(-1);
+					glPushName(0);
 					FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
 						(void *)scene,scene->scene_object_list);
 					glPopName();

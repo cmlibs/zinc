@@ -244,8 +244,10 @@ graphics_object.
 						if (ranges=CREATE(Multi_range)())
 						{
 							if (Multi_range_copy(ranges,Element_point_ranges_get_ranges(
-								element_point_ranges))&&GT_object_select_graphic(
-									settings->graphics_object,element->cm.number,ranges))
+								element_point_ranges))&&
+								GT_object_select_graphic(settings->graphics_object,
+									CM_element_information_to_graphics_name(element->identifier),
+									ranges))
 							{
 								return_code=1;
 							}
@@ -300,7 +302,7 @@ graphics_object.
 static int FE_element_select_dimension_1(struct FE_element *element,
 	void *graphics_object_void)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 If <element> is 1-dimensional, it is selected in the <graphics_object>.
@@ -315,7 +317,8 @@ If <element> is 1-dimensional, it is selected in the <graphics_object>.
 		if (1==get_FE_element_dimension(element))
 		{
 			return_code=GT_object_select_graphic(graphics_object,
-				element->cm.number,(struct Multi_range *)NULL);
+				CM_element_information_to_graphics_name(element->identifier),
+				(struct Multi_range *)NULL);
 		}
 		else
 		{
@@ -336,7 +339,7 @@ If <element> is 1-dimensional, it is selected in the <graphics_object>.
 static int FE_element_select_dimension_2(struct FE_element *element,
 	void *graphics_object_void)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 If <element> is 2-dimensional, it is selected in the <graphics_object>.
@@ -351,7 +354,8 @@ If <element> is 2-dimensional, it is selected in the <graphics_object>.
 		if (2==get_FE_element_dimension(element))
 		{
 			return_code=GT_object_select_graphic(graphics_object,
-				element->cm.number,(struct Multi_range *)NULL);
+				CM_element_information_to_graphics_name(element->identifier),
+				(struct Multi_range *)NULL);
 		}
 		else
 		{
@@ -4308,7 +4312,8 @@ Converts a finite element into a graphics object with the supplied settings.
 						if (edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
-								settings->graphics_object,time,element->cm.number);
+								settings->graphics_object,time,
+								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
 						{
@@ -4334,7 +4339,8 @@ Converts a finite element into a graphics object with the supplied settings.
 						if (edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
-								settings->graphics_object,time,element->cm.number);
+								settings->graphics_object,time,
+								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
 						{
@@ -4363,7 +4369,8 @@ Converts a finite element into a graphics object with the supplied settings.
 						if (edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
-								settings->graphics_object,time,element->cm.number);
+								settings->graphics_object,time,
+								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
 						{
@@ -4397,7 +4404,9 @@ Converts a finite element into a graphics object with the supplied settings.
 									if (edit_mode)
 									{
 										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
-											settings->graphics_object,time,element->cm.number);
+											settings->graphics_object,time,
+											CM_element_information_to_graphics_name(
+												element->identifier));
 									}
 									if (draw_element)
 									{
@@ -4426,7 +4435,9 @@ Converts a finite element into a graphics object with the supplied settings.
 									if (edit_mode)
 									{
 										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
-											settings->graphics_object,time,element->cm.number);
+											settings->graphics_object,time,
+											CM_element_information_to_graphics_name(
+												element->identifier));
 									}
 									if (draw_element)
 									{
@@ -4513,15 +4524,19 @@ Converts a finite element into a graphics object with the supplied settings.
 							if (edit_mode)
 							{
 								if (!FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
-									use_element->cm.number,
+									CM_element_information_to_graphics_name(
+										use_element->identifier),
 									settings_to_object_data->removed_primitives))
 								{
 									struct Selected_graphic *removed_primitive;
 
 									GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_glyph_set)(
-										settings->graphics_object,time,use_element->cm.number);
-									removed_primitive=
-										CREATE(Selected_graphic)(use_element->cm.number);
+										settings->graphics_object,time,
+										CM_element_information_to_graphics_name(
+											use_element->identifier));
+									removed_primitive=CREATE(Selected_graphic)(
+										CM_element_information_to_graphics_name(
+											use_element->identifier));
 									if (!ADD_OBJECT_TO_LIST(Selected_graphic)(removed_primitive,
 										settings_to_object_data->removed_primitives))
 									{
@@ -4580,7 +4595,8 @@ Converts a finite element into a graphics object with the supplied settings.
 						if (edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
-								settings->graphics_object,time,element->cm.number);
+								settings->graphics_object,time,
+								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
 						{
@@ -5471,7 +5487,7 @@ is put out as a name to identify the object in OpenGL picking.
 		if (settings->graphics_object && settings->visibility)
 		{
 			/* use position in list as name for GL picking */
-			glLoadName(settings->position);
+			glLoadName((GLuint)settings->position);
 			return_code=execute_GT_object(settings->graphics_object, time_void);
 		}
 		else

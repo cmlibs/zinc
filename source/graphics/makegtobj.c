@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -22,7 +22,7 @@ Call graphics routines in the API.
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -117,7 +117,7 @@ un-selected graphics are drawn.
 						glEnable(GL_NORMALIZE);
 						/* push dummy name to make space for identifier for each glyph_set
 							 on picking name stack */
-						glPushName(-1);
+						glPushName(0);
 #endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
@@ -127,8 +127,8 @@ un-selected graphics are drawn.
 								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
 									glyph_set,glyph_set_2))
 								{
-									/* put out name for picking */
-									glLoadName(interpolate_glyph_set->object_name);
+									/* put out name for picking - cast to GLuint */
+									glLoadName((GLuint)interpolate_glyph_set->object_name);
 									/* work out if subobjects selected */
 									selected_name_ranges=(struct Multi_range *)NULL;
 									name_selected=GT_object_is_graphic_selected(object,
@@ -155,8 +155,8 @@ un-selected graphics are drawn.
 						{
 							while (glyph_set)
 							{
-								/* put out name for picking */
-								glLoadName(glyph_set->object_name);
+								/* put out name for picking - cast to GLuint */
+								glLoadName((GLuint)glyph_set->object_name);
 								/* work out if subobjects selected */
 								selected_name_ranges=(struct Multi_range *)NULL;
 								name_selected=GT_object_is_graphic_selected(object,

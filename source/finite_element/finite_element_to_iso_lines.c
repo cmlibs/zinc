@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_iso_lines.c
 
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Functions for computing, sorting and storing polylines of constant scalar field
@@ -868,7 +868,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
 	struct GT_object *graphics_object,float time)
 /*******************************************************************************
-LAST MODIFIED : 7 April 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
@@ -1026,7 +1026,8 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 			{
 				Contour_lines_link_ends(contour_lines);
 				if (!Contour_lines_add_to_graphics_object(contour_lines,
-					graphics_object,time,element->cm.number))
+					graphics_object,time,
+					CM_element_information_to_graphics_name(element->identifier)))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
 						"Could not add lines to graphics object");
