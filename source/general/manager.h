@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager.h
 
-LAST MODIFIED : 16 May 1997
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -51,6 +51,13 @@ struct MANAGER(object_type)
 #define MANAGER_CHANGE_( object_type )  mc ## object_type
 #endif
 #define MANAGER_CHANGE( object_type )  MANAGER_CHANGE_(object_type)
+
+#if defined (FULL_NAMES)
+#define MANAGER_CHANGE_NONE_( object_type )  manager_change_none_ ## object_type
+#else
+#define MANAGER_CHANGE_NONE_( object_type )  mcn ## object_type
+#endif
+#define MANAGER_CHANGE_NONE( object_type )  MANAGER_CHANGE_NONE_(object_type)
 
 #if defined (FULL_NAMES)
 #define MANAGER_CHANGE_ALL_( object_type )  manager_change_all_ ## object_type
@@ -105,23 +112,25 @@ struct MANAGER(object_type)
 #define DECLARE_MANAGER_CHANGE_TYPE( object_type ) \
 enum MANAGER_CHANGE(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 27 September 1995 \
+LAST MODIFIED : 22 June 2000 \
 \
 DESCRIPTION : \
 The message type sent to clients. \
 ============================================================================*/ \
 { \
+	/* indicates that no changes have been made; no message sent */ \
+	MANAGER_CHANGE_NONE(object_type), \
 	/* sent if a multitude of changes have been made */ \
 	MANAGER_CHANGE_ALL(object_type), \
-	/* sent if there was delete */ \
+	/* sent if there was a single delete */ \
 	MANAGER_CHANGE_DELETE(object_type), \
-	/* sent if there was add */ \
+	/* sent if there was a single add */ \
 	MANAGER_CHANGE_ADD(object_type), \
-	/* sent if only the identifier was modified */ \
+	/* sent if only the identifier was modified in one object */ \
 	MANAGER_CHANGE_IDENTIFIER(object_type), \
-	/* if one whole object was modified (may include identifier) */ \
+	/* if just one whole object was modified (may include identifier) */ \
 	MANAGER_CHANGE_OBJECT(object_type), \
-	/* if just the data changed */ \
+	/* if just the data changed in one object */ \
 	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) \
 } /* enum MANAGER_CHANGE(object_type) */
 
