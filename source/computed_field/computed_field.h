@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 13 October 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -49,7 +49,7 @@ Global types
 
 enum Computed_field_type
 /******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 13 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -69,7 +69,6 @@ DESCRIPTION :
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
 	COMPUTED_FIELD_XI_TEXTURE_COORDINATES, /* continuous coordinates based on xi */
-	COMPUTED_FIELD_2D_STRAIN,          /* wrinkling strain calculation */
 	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
 };
 
@@ -735,36 +734,6 @@ The number of components controls how the field is interpreted:
     from cross product);
 9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
     normal).
-==============================================================================*/
-
-int Computed_field_get_type_2D_strain(struct Computed_field *field,
-	struct Computed_field **deformed_coordinate_field,
-	struct Computed_field **undeformed_coordinate_field,
-	struct Computed_field **fibre_angle_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_2D_STRAIN, the undeformed and deformed
-coordinate fields and the fibre angle field used by it are returned 
-- otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_2D_strain(struct Computed_field *field,
-	struct Computed_field *deformed_coordinate_field,
-	struct Computed_field *undeformed_coordinate_field,
-	struct Computed_field *fibre_angle_field);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_2D_STRAIN, combining a 
-deformed_coordinate_field, undeformed_coordinate_field and
-fibre_angle_field.  Sets the number of components to 4.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-The <coordinate_field>s must have no more than 3 components.
 ==============================================================================*/
 
 int Computed_field_get_type_component(struct Computed_field *field,
