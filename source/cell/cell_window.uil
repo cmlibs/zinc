@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : cell_window.uil
 !
-! LAST MODIFIED : 17 September 1999
+! LAST MODIFIED : 15 June 2000
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the Cell window.
@@ -15,8 +15,14 @@ procedure
 	apply_button_callback;
 	reset_button_callback;
 	identify_export_button;
-	identify_node_chooser_form;
-	identify_node_chooser_label;
+	!identify_node_chooser_form;
+	!identify_node_chooser_label;
+	identify_element_form;
+	identify_point_number_text;
+	point_number_text_CB;
+	grid_value_text_CB;
+	identify_grid_field_form;
+	identify_grid_value_text;
 	identify_description_label;
 	identify_apply_button;
 	identify_reset_button;
@@ -174,7 +180,8 @@ object
 		controls
 			{
 			XmToggleButtonGadget edit_distributed_toggle;
-			XmRowColumn node_chooser_rowcol;
+			!XmRowColumn node_chooser_rowcol;
+			XmRowColumn element_point_chooser_rowcol;
 			XmLabelGadget description_label;
 			XmForm button_form;
 			};
@@ -196,7 +203,49 @@ object
 				};
 			};
 		};
-	node_chooser_rowcol: XmRowColumn
+!	node_chooser_rowcol: XmRowColumn
+!		{
+!		arguments
+!			{
+!			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+!			XmNpacking = XmPACK_TIGHT;
+!			XmNorientation = XmHORIZONTAL;
+!			XmNnumColumns = 1;
+!			};
+!		controls
+!			{
+!			XmLabelGadget node_chooser_label;
+!			XmForm node_chooser_form;
+!			};
+!		};
+!	node_chooser_label: XmLabelGadget
+!		{
+!		arguments
+!			{
+!			XmNsensitive = false;
+!			XmNlabelString = compound_string("Node:");
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_node_chooser_label(
+!					cell_window_structure);
+!				};
+!			};
+!		};
+!	node_chooser_form: XmForm
+!		{
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_node_chooser_form(
+!					cell_window_structure);
+!				};
+!			};
+!		};
+	element_point_chooser_rowcol: XmRowColumn
 		{
 		arguments
 			{
@@ -207,35 +256,104 @@ object
 			};
 		controls
 			{
-			XmLabelGadget node_chooser_label;
-			XmForm node_chooser_form;
+			XmLabelGadget element_chooser_label;
+			XmForm element_chooser_form;
+			XmLabelGadget point_number_label;
+			XmTextField point_number_text;
+			XmLabelGadget grid_field_chooser_label;
+			XmForm grid_field_chooser_form;
+			XmLabelGadget grid_value_label;
+			XmTextField grid_value_text;
 			};
 		};
-	node_chooser_label: XmLabelGadget
+	element_chooser_label: XmLabelGadget
 		{
 		arguments
 			{
-			XmNsensitive = false;
-			XmNlabelString = compound_string("Node:");
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_node_chooser_label(
-					cell_window_structure);
-				};
+			XmNlabelString = compound_string("Element:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
 			};
 		};
-	node_chooser_form: XmForm
+	element_chooser_form: XmForm
 		{
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_node_chooser_form(
+				identify_element_form(
 					cell_window_structure);
 				};
+			};
+		};
+	point_number_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Point:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	point_number_text: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNcolumns = 12;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				identify_point_number_text(
+					cell_window_structure);
+			XmNactivateCallback = procedure
+				point_number_text_CB(cell_window_structure);
+			XmNlosingFocusCallback = procedure
+				point_number_text_CB(cell_window_structure);
+			};
+		};
+	grid_field_chooser_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Grid field:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	grid_field_chooser_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_grid_field_form(
+					cell_window_structure);
+				};
+			};
+		};
+	grid_value_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Grid value:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	grid_value_text: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNcolumns = 12;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				identify_grid_value_text(
+					cell_window_structure);
+			XmNactivateCallback = procedure
+				grid_value_text_CB(cell_window_structure);
+			XmNlosingFocusCallback = procedure
+				grid_value_text_CB(cell_window_structure);
 			};
 		};
 	description_label: XmLabelGadget
@@ -244,7 +362,7 @@ object
 			{
 			XmNsensitive = false;
 			XmNlabelString = compound_string(
-			"No node selected");
+			"No grid point");
 			};
 		callbacks
 			{
@@ -271,7 +389,8 @@ object
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Apply to node");
+			XmNlabelString = 
+				compound_string("Apply to grid point");
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNleftAttachment = XmATTACH_POSITION;
@@ -298,7 +417,7 @@ object
 		arguments
 			{
 			XmNlabelString = compound_string(
-				"Revert to node values");
+				"Revert to grid point values");
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNleftAttachment = XmATTACH_POSITION;
@@ -539,7 +658,8 @@ object
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Export control curves");
+			XmNlabelString = 
+				compound_string("Export control curves");
 			};
 		callbacks 
 			{

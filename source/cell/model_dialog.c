@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : model_dialog.c
 
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 08 June 2000
 
 DESCRIPTION :
 Functions and structures for using the model dialog box.
@@ -284,7 +284,9 @@ from the model's uri. Also sets cell->current_model_id from the model name.
             /* update from node, if required */
             if ((cell->distributed).edit)
             {
+#if defined (CELL_USE_NODES)
               update_cell_window_from_node(cell);
+#endif /* defined (CELL_USE_NODES) */
             }
           }
           else

@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : export_dialog.uil
 !
-! LAST MODIFIED : 17 September 1999
+! LAST MODIFIED : 09 June 2000
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the export dialog.
@@ -10,9 +10,9 @@ module Export_Dialog
 	names = case_sensitive
 
 procedure
-	identify_offset_textfield;
 	verify_text_field_modification;
 	identify_group_chooser_form;
+	id_grid_field_chooser_form;
 	identify_ipcell_file_label;
 	identify_ipmatc_file_label;
 	ipcell_browse_callback;
@@ -26,7 +26,6 @@ identifier
 	window_height;
 	default_ipcell_file_name;
 	default_ipmatc_file_name;
-	default_offset_value;
 ! Standard CMGUI values
 	button_font;
 	heading_font;
@@ -90,23 +89,13 @@ object
 			};
 		controls
 			{
-			XmLabelGadget export_label;
-			XmRowColumn chooser_rowcol;
+			XmRowColumn group_chooser_rowcol;
+			XmRowColumn grid_field_chooser_rowcol;
 			XmRowColumn ipcell_file_rowcol;
 			XmRowColumn ipmatc_file_rowcol;
-			XmRowColumn offset_rowcol;
 			};
 		};
-	export_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string(
-				"Choose the node group to export and the ipcell and ipmatc file names");
-			XmNfontList = heading_font;
-			};
-		};
-	chooser_rowcol: XmRowColumn
+	group_chooser_rowcol: XmRowColumn
 		{
 		arguments
 			{
@@ -125,7 +114,8 @@ object
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Group:");
+			XmNlabelString = 
+				compound_string("Element group to export:");
 			XmNfontList = heading_font;
 			};
 		};
@@ -136,6 +126,41 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_group_chooser_form(
+					cell_window_structure);
+				};
+			};
+		};
+	grid_field_chooser_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNentryAlignment = XmALIGNMENT_BEGINNING;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmHORIZONTAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmLabelGadget grid_field_chooser_label;
+			XmForm grid_field_chooser_form;
+			};
+		};
+	grid_field_chooser_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+				compound_string("Grid point numbers field:");
+			XmNfontList = heading_font;
+			};
+		};
+	grid_field_chooser_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_grid_field_chooser_form(
 					cell_window_structure);
 				};
 			};
@@ -245,49 +270,6 @@ object
 			XmNactivateCallback = procedures
 				{
 				ipmatc_browse_callback(cell_window_structure);
-				};
-			};
-		};
-	offset_rowcol: XmRowColumn
-		{
-		arguments
-			{
-			XmNentryAlignment = XmALIGNMENT_BEGINNING;
-			XmNpacking = XmPACK_TIGHT;
-			XmNorientation = XmHORIZONTAL;
-			XmNnumColumns = 1;
-			};
-		controls
-			{
-			XmLabelGadget offset_label;
-			XmTextField offset_textfield;
-			};
-		};
-	offset_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Node number offset: ");
-			XmNfontList = heading_font;
-			};
-		};
-	offset_textfield: XmTextField
-		{
-		arguments
-			{
-			XmNvalue = default_offset_value;
-			XmNeditable = true;
-			XmNcolumns = 15;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_offset_textfield(cell_window_structure);
-				};
-			XmNmodifyVerifyCallback = procedures
-				{
-				verify_text_field_modification();
 				};
 			};
 		};

@@ -1,21 +1,29 @@
 /*******************************************************************************
 FILE : output.c
 
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Functions for handling all file output for CELL.
 ==============================================================================*/
 #include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#if defined (MOTIF)
+#include <Xm/Xm.h>
+#endif /* if defined (MOTIF) */
 #include "cell/cell_window.h"
 #include "cell/cell_parameter.h"
 #include "cell/cell_variable.h"
 #include "cell/calculate.h"
 #include "cell/cmgui_connection.h"
 #include "curve/control_curve.h"
+#include "finite_element/finite_element.h"
 
 #define CELL_SPATIALLY_VARYING  "* \0"
 #define CELL_SPATIALLY_CONSTANT " \0"
+#define CELL_MAX_GROUP_LINE_LENGTH 30
+#define CELL_ZERO_TOLERANCE 1.0e-7
 
 /*
 Local types
@@ -55,23 +63,477 @@ Stores the information required to write the ipcell files
 
 struct Output_data
 /*******************************************************************************
-LAST MODIFIED : 22 September 1999
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
-Callback structure for the node group iterator function write_FE_node_variants
+Callback structure for the element group iterator function
+write_FE_element_point_variants
 ==============================================================================*/
 {
 	FILE *file;
 	struct Cell_window *cell;
-	int offset;
 	int number;
 	struct FE_field *field;
+	struct FE_field *grid_field;
+};
+
+struct Sorting_data
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Used to store a value and a grid point number when sorting by the value.
+==============================================================================*/
+{
+  enum Array_value_type type;
+  int grid_point_number;
+  union
+  {
+    int integer_value;
+    FE_value real_value;
+  } value;
+};
+
+struct Group_data
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Used when getting the data sorted and grouped by grid point number
+==============================================================================*/
+{
+  char *value;
+  char groups[1000]; /* this needs to be sorted out!!! */
+  int number_of_group_strings;
 };
 
 /*
 Local functions
 ===============
 */
+static int get_group_from_Sorting_data(struct Sorting_data *sorting,
+  int start,char *group,int length)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Searches the <sorting> array from the <start> postion, and returns in <group>
+the first group found. <length> is the number of entries in the <sorting>
+array. Returns the start postion for the next group.
+==============================================================================*/
+{
+  int end,cont,group_start,group_end;
+  
+  ENTER(get_group_from_Sorting_array);
+  cont = 1;
+  end = start;
+  group_start = sorting[start].grid_point_number;
+  group_end = sorting[start].grid_point_number;
+  while (cont)
+  {
+    /* check for a repeating grid point numbers as well!! */
+    if ((sorting[end+1].grid_point_number == group_end+1) ||
+      (sorting[end+1].grid_point_number == group_end))
+    {
+      group_end = sorting[end+1].grid_point_number;
+      /* check if the end of the array has been reached */
+      if (end == length)
+      {
+        cont = 0;
+      }
+      else
+      {
+        end++;
+      }
+    }
+    else
+    {
+      cont = 0;
+    }
+  }
+  if (group_start < group_end)
+  {
+    sprintf(group,"%d..%d\0",group_start,group_end);
+  }
+  else
+  {
+    sprintf(group,"%d\0",group_start);
+  }
+  end++;
+  LEAVE;
+  return(end);
+} /* get_group_from_Sorting_data() */
+
+static int compare_Sorting_data(const void *aa,const void *bb)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Compare function used to sort an array of Sorting_data structures. No error
+checking is done - assume it all works fine!!!
+==============================================================================*/
+{
+  struct Sorting_data *a,*b;
+  int return_code;
+
+  a = (struct Sorting_data *)aa;
+  b = (struct Sorting_data *)bb;
+  if (a->type == ARRAY_VALUE_INTEGER)
+  {
+    if (a->value.integer_value < b->value.integer_value)
+    {
+      return_code = -1;
+    }
+    else if (a->value.integer_value == b->value.integer_value)
+    {
+      return_code = 0;
+    }
+    else
+    {
+      return_code = 1;
+    }
+  }
+  else
+  {
+    if (a->value.real_value < b->value.real_value)
+    {
+      return_code = -1;
+    }
+    else if (a->value.real_value == b->value.real_value)
+    {
+      return_code = 0;
+    }
+    else
+    {
+      return_code = 1;
+    }
+  }
+  return(return_code);
+} /* compare_Sorting_data() */
+
+static int compare_Sorting_data_grid_points(const void *aa,const void *bb)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Compare function used to sort an array of Sorting_data structures by grid point
+numbers. No error checking is done - assume it all works fine!!!
+==============================================================================*/
+{
+  struct Sorting_data *a,*b;
+  int return_code;
+
+  a = (struct Sorting_data *)aa;
+  b = (struct Sorting_data *)bb;
+  if (a->grid_point_number < b->grid_point_number)
+  {
+    return_code = -1;
+  }
+  else if (a->grid_point_number == b->grid_point_number)
+  {
+    return_code = 0;
+  }
+  else
+  {
+    return_code = 1;
+  }
+  return(return_code);
+} /* compare_Sorting_data_grid_points() */
+
+static struct Group_data *create_Group_data_from_Sorting_data(
+  struct Sorting_data *sorting,int sorting_data_length,int *group_data_length)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Takes the <sorting> data which has been sorted by value, and returns an array
+of group data structures, with the grid point numbers appropriately grouped.
+==============================================================================*/
+{
+  struct Group_data *groups = (struct Group_data *)NULL;
+  struct Sorting_data *sort = (struct Sorting_data *)NULL;
+  int i,int_value,length,j,pos;
+  FE_value fe_value;
+  char current_group[30];
+  
+	ENTER(create_Group_data_from_Sorting_data);
+  if ((sorting != (struct Sorting_data *)NULL) && (sorting_data_length > 0))
+  {
+    *group_data_length = 0;
+    i = 0;
+    if (sorting[0].type == ARRAY_VALUE_INTEGER)
+    {
+      /* integer values */
+      while (i<sorting_data_length)
+      {
+        length = 0;
+        int_value = sorting[i].value.integer_value;
+        while (int_value == sorting[i].value.integer_value)
+        {
+          length++;
+          /* add the current grid point to the array */
+          if (length > 1)
+          {
+            REALLOCATE(sort,sort,struct Sorting_data,length);
+          }
+          else
+          {
+            ALLOCATE(sort,struct Sorting_data,length);
+          }
+          if (sort)
+          {
+            sort[length-1].value.integer_value = int_value;
+            sort[length-1].grid_point_number = sorting[i].grid_point_number;
+          }
+          i++;
+        } /* while (int_value == sorting_data[i].value.integer_value) */
+        if (sort)
+        {
+          (*group_data_length)++;
+          /* sort by grid point */
+          qsort((void *)sort,length,sizeof(struct Sorting_data),
+            compare_Sorting_data_grid_points);
+          /* now create the group data */
+          if (*group_data_length > 0)
+          {
+            REALLOCATE(groups,groups,struct Group_data,*group_data_length);
+          }
+          else
+          {
+            ALLOCATE(groups,struct Group_data,*group_data_length);
+          }
+          if (groups)
+          {
+            /* set the value string */
+            if (ALLOCATE(groups[(*group_data_length)-1].value,char,15))
+            {
+              sprintf(groups[(*group_data_length)-1].value,"%10d\0",int_value);
+            }
+            /* now set the grid point groups */
+            pos = 0;
+            j = 0;
+            while (pos < length)
+            {
+              pos = get_group_from_Sorting_data(sort,pos,current_group,length);
+              sprintf(groups[(*group_data_length)-1].groups+j,"%s,\0",
+                current_group);
+              j = strlen(groups[(*group_data_length)-1].groups);
+            } /* while (pos < length) */
+            groups[(*group_data_length)-1].groups[
+              strlen(groups[(*group_data_length)-1].groups)-1] = '\0';
+          }
+          else
+          {
+            (*group_data_length)--;
+          }
+          DEALLOCATE(sort);
+          sort = (struct Sorting_data *)NULL;
+        } /* if (sort) */
+      } /* while (i<sorting_data_length) */
+    }
+    else
+    {
+      /* real values */
+      while (i<sorting_data_length)
+      {
+        length = 0;
+        fe_value = sorting[i].value.real_value;
+        while (fabs((fe_value-sorting[i].value.real_value)) <
+          CELL_ZERO_TOLERANCE)
+        {
+          length++;
+          /* add the current grid point to the array */
+          if (length > 1)
+          {
+            REALLOCATE(sort,sort,struct Sorting_data,length);
+          }
+          else
+          {
+            ALLOCATE(sort,struct Sorting_data,length);
+          }
+          if (sort)
+          {
+            sort[length-1].value.real_value = fe_value;
+            sort[length-1].grid_point_number = sorting[i].grid_point_number;
+          }
+          i++;
+        } /* while (fe_value == sorting_data[i].value.real_value) */
+        if (sort)
+        {
+          (*group_data_length)++;
+          /* sort by grid point */
+          qsort((void *)sort,length,sizeof(struct Sorting_data),
+            compare_Sorting_data_grid_points);
+          /* now create the group data */
+          if (*group_data_length > 0)
+          {
+            REALLOCATE(groups,groups,struct Group_data,*group_data_length);
+          }
+          else
+          {
+            ALLOCATE(groups,struct Group_data,*group_data_length);
+          }
+          if (groups)
+          {
+            /* set the value string */
+            if (ALLOCATE(groups[(*group_data_length)-1].value,char,15))
+            {
+              sprintf(groups[(*group_data_length)-1].value,"%f\0",fe_value);
+            }
+            /* now set the grid point groups */
+            pos = 0;
+            j = 0;
+            while (pos < length)
+            {
+              pos = get_group_from_Sorting_data(sort,pos,current_group,length);
+              sprintf(groups[(*group_data_length)-1].groups+j,"%s,\0",
+                current_group);
+              j = strlen(groups[(*group_data_length)-1].groups);
+            } /* while (pos < length) */
+            groups[(*group_data_length)-1].groups[
+              strlen(groups[(*group_data_length)-1].groups)-1] = '\0';
+          }
+          else
+          {
+            (*group_data_length)--;
+          }
+          DEALLOCATE(sort);
+          sort = (struct Sorting_data *)NULL;
+        } /* if (sort) */
+      } /* while (i<sorting_data_length) */
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"create_Group_data_from_Sorting_data. "
+      "Invalid argument(s)");
+    groups = (struct Group_data *)NULL;
+  }
+  LEAVE;
+  return(groups);
+} /* create_Group_data_from_Sorting_data() */
+
+static int write_FE_element_point_variants(struct FE_element *element,
+  void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Iterator function for writing out the variant of each element point in the
+<element>. Only works on top level elements.
+==============================================================================*/
+{
+	int return_code = 0;
+	struct Output_data *output_data;
+	struct FE_field *field;
+	int *variants,*grid_point_numbers,i,number_of_grid_values;
+  struct Sorting_data *sorting;
+  struct Group_data *groups;
+  int number_of_values;
+
+	ENTER(write_FE_element_point_variants);
+	if (element && (output_data = (struct Output_data *)data_void))
+	{
+		/* get the cell_type (variant number) field and make sure that it is
+     * the right type of field. Also check that the element is a top level
+     * element (so we don't try and write out stuf for all the lines,
+     * faces, etc...) */
+		if ((CM_ELEMENT == element->cm.type) &&
+      (field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)("cell_type",
+        (output_data->cell->cell_3d).fe_field_manager)) &&
+      (INT_VALUE == get_FE_field_value_type(field)) &&
+      FE_element_field_is_grid_based(element,field))
+    {
+      /* check the grid point number field */
+      if ((INT_VALUE == get_FE_field_value_type(output_data->grid_field)) &&
+        FE_element_field_is_grid_based(element,output_data->grid_field))
+      {
+        /* get the variant numbers and grid point numbers for all the
+         * element points in the element */ 
+        if (get_FE_element_field_component_grid_int_values(element,
+          field,/*component_number*/0,&variants) &&
+          get_FE_element_field_component_grid_int_values(element,
+            output_data->grid_field,/*component_number*/0,&grid_point_numbers))
+        {
+          number_of_grid_values=
+            get_FE_element_field_number_of_grid_values(element,field);
+          /* create the array to store the grid point numbers and their cell
+           * type for sorting */
+          if (ALLOCATE(sorting,struct Sorting_data,number_of_grid_values))
+          {
+            /* now assign the values */
+            for (i=0;i<number_of_grid_values;i++)
+            {
+              sorting[i].type = ARRAY_VALUE_INTEGER;
+              sorting[i].grid_point_number = grid_point_numbers[i];
+              sorting[i].value.integer_value = variants[i];
+            }
+            /* and sort the data */
+            qsort((void *)sorting,number_of_grid_values,
+              sizeof(struct Sorting_data),compare_Sorting_data);
+            /* and now group the grid points */
+            groups = create_Group_data_from_Sorting_data(sorting,
+              number_of_grid_values,&number_of_values);
+            if (groups)
+            {
+              for (i=0;i<number_of_values;i++)
+              {
+                fprintf(output_data->file," Enter collocation point "
+                  "#s/name [EXIT]: ");
+                fprintf(output_data->file,"%s\n",groups[i].groups);
+                fprintf(output_data->file," The cell variant number is "
+                  "[1]: %s\n",groups[i].value);
+              }
+            }
+            else
+            {
+              display_message(ERROR_MESSAGE,"write_FE_element_point_variants. "
+                "Group the grid point numbers");
+              return_code = 0;
+            }
+            return_code = 1;
+            DEALLOCATE(sorting);
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,"write_FE_element_point_variants. "
+              "Unable to allocate memory for sorting the variants");
+            return_code = 0;
+          }
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"write_FE_element_point_variants. "
+            "Unable to get the cell type values or the grid point numbers");
+          return_code = 0;
+        }
+      }
+      else
+      {
+        /*display_message(INFORMATION_MESSAGE,
+          "write_FE_element_point_variants. "
+          "The cell_type field is not grid based in this element\n");*/
+        return_code = 1;
+      }
+		}
+		else
+		{
+			/*display_message(INFORMATION_MESSAGE,"write_FE_element_point_variants. "
+				"No cell_type field in this element\n");*/
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_FE_element_point_variants. "
+			"Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
+} /* END write_FE_element_point_variants() */
+
+#if defined (CELL_USE_NODES)
 static int write_FE_node_variants(struct FE_node *node,void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 22 September 1999
@@ -122,7 +584,9 @@ Iterator function for writing out the variant of each node.
 	LEAVE;
 	return(return_code);
 } /* END write_FE_node_variants() */
+#endif /* defined (CELL_USE_NODES) */
 
+#if defined (CELL_USE_NODES)
 static int write_FE_node_spatially_varying(struct FE_node *node,
 	void *data_void)
 /*******************************************************************************
@@ -163,6 +627,230 @@ node in the group.
 	LEAVE;
 	return(return_code);
 } /* END write_FE_node_spatially_varying() */
+#endif /* defined (CELL_USE_NODES) */
+
+static int write_FE_element_spatially_varying(struct FE_element *element,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 September 1999
+
+DESCRIPTION :
+Iterator function for writing out the spatially varying parameters at each
+element point in all the elements
+==============================================================================*/
+{
+	int return_code = 0;
+	struct Output_data *output_data;
+  int *grid_point_numbers,i,number_of_grid_values,number_of_values;
+  FE_value *fe_values;
+  int *int_values;
+  struct Sorting_data *sorting;
+  struct Group_data *groups;
+
+	ENTER(write_FE_element_spatially_varying);
+	if (element && (output_data = (struct Output_data *)data_void))
+	{
+    /* make sure that the field is
+     * the right type of field. Also check that the element is a top level
+     * element (so we don't try and write out stuf for all the lines,
+     * faces, etc...) */
+    if ((CM_ELEMENT == element->cm.type) &&
+      FE_element_field_is_grid_based(element,output_data->field))
+    {
+      if ((FE_VALUE_VALUE == get_FE_field_value_type(output_data->field)))
+      {
+        /* real fields */
+        
+        /* check the grid point number field */
+        if ((INT_VALUE == get_FE_field_value_type(output_data->grid_field)) &&
+          FE_element_field_is_grid_based(element,output_data->grid_field))
+        {
+          /* ????????????????????????????????
+           * Is this the best way to do this?? Maybe should be getting the
+           * values as strings to avoid the int/real difference, but you need
+           * to do that at Xi locations, so not suitable for looping through
+           * all element points ??
+           * ????????????????????????????????
+           */
+        
+          /* get the variant numbers and grid point numbers for all the
+           * element points in the element */
+          if (get_FE_element_field_component_grid_FE_value_values(element,
+            output_data->field,/*component_number*/0,&fe_values) &&
+            get_FE_element_field_component_grid_int_values(element,
+              output_data->grid_field,/*component_number*/0,
+              &grid_point_numbers))
+          {
+            number_of_grid_values=
+              get_FE_element_field_number_of_grid_values(element,
+                output_data->field);
+            /* create the array to store the grid point numbers and their cell
+             * type for sorting */
+            if (ALLOCATE(sorting,struct Sorting_data,number_of_grid_values))
+            {
+              /* now assign the values */
+              for (i=0;i<number_of_grid_values;i++)
+              {
+                sorting[i].type = ARRAY_VALUE_REAL;
+                sorting[i].grid_point_number = grid_point_numbers[i];
+                sorting[i].value.real_value = fe_values[i];
+              }
+              /* and sort the data */
+              qsort((void *)sorting,number_of_grid_values,
+                sizeof(struct Sorting_data),compare_Sorting_data);
+              /* and now group the grid points */
+              groups = create_Group_data_from_Sorting_data(sorting,
+                number_of_grid_values,&number_of_values);
+              if (groups)
+              {
+                for (i=0;i<number_of_values;i++)
+                {
+                  fprintf(output_data->file," Enter collocation point "
+                    "#s/name [EXIT]: ");
+                  fprintf(output_data->file,"%s\n",groups[i].groups);
+                  fprintf(output_data->file," The value for parameter %d is "
+                    "[ 0.00000D+00]: ",output_data->number);
+                  fprintf(output_data->file,"%s\n",groups[i].value);
+                }
+              }
+              else
+              {
+                display_message(ERROR_MESSAGE,
+                  "write_FE_element_spatially_varying. "
+                  "Unable to group the grid point numbers");
+                return_code = 0;
+              }
+#if 0
+              for (i=0;i<number_of_grid_values;i++)
+              {
+                fprintf(output_data->file," Enter collocation point "
+                  "#s/name [EXIT]: %d\n",sorting[i].grid_point_number);
+                fprintf(output_data->file," The value for parameter %d is "
+                  "[ 0.00000D+00]: ",output_data->number);
+                fprintf(output_data->file,"%f\n",sorting[i].value.real_value);
+              }
+#endif
+              return_code = 1;
+              DEALLOCATE(sorting);
+            }
+            else
+            {
+              display_message(ERROR_MESSAGE,
+                "write_FE_element_spatially_varying. "
+                "Unable to allocate memory for sorting the values");
+              return_code = 0;
+            }
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,"write_FE_element_spatially_varying. "
+              "Unable to get the cell type values or the grid point numbers");
+            return_code = 0;
+          }
+        }
+        else
+        {
+          /*display_message(INFORMATION_MESSAGE,
+            "write_FE_element_point_variants. "
+            "The cell_type field is not grid based in this element\n");*/
+          return_code = 1;
+        }
+      }
+      else if ((INT_VALUE == get_FE_field_value_type(output_data->field)))
+      {
+        /* integer fields */
+        
+        /* check the grid point number field */
+        if ((INT_VALUE == get_FE_field_value_type(output_data->grid_field)) &&
+          FE_element_field_is_grid_based(element,output_data->grid_field))
+        {
+          /* ????????????????????????????????
+           * Is this the best way to do this?? Maybe should be getting the
+           * values as strings to avoid the int/real difference, but you need
+           * to do that at Xi locations, so not suitable for looping through
+           * all element points ??
+           * ????????????????????????????????
+           */
+        
+          /* get the variant numbers and grid point numbers for all the
+           * element points in the element */
+          if (get_FE_element_field_component_grid_int_values(element,
+            output_data->field,/*component_number*/0,&int_values) &&
+            get_FE_element_field_component_grid_int_values(element,
+              output_data->grid_field,/*component_number*/0,
+              &grid_point_numbers))
+          {
+            number_of_grid_values=
+              get_FE_element_field_number_of_grid_values(element,
+                output_data->field);
+            /* create the array to store the grid point numbers and their cell
+             * type for sorting */
+            if (ALLOCATE(sorting,struct Sorting_data,number_of_grid_values))
+            {
+              /* now assign the values */
+              for (i=0;i<number_of_grid_values;i++)
+              {
+                sorting[i].type = ARRAY_VALUE_INTEGER;
+                sorting[i].grid_point_number = grid_point_numbers[i];
+                sorting[i].value.integer_value = int_values[i];
+              }
+              /* and sort the data */
+              qsort((void *)sorting,number_of_grid_values,
+                sizeof(struct Sorting_data),compare_Sorting_data);
+#if defined (DO_THIS_ONE_DAY)
+              /* and now group the grid points */
+              groups = create_Group_data_from_Sorting_data(sorting);
+#endif /* defined (DO_THIS_ONE_DAY) */
+              for (i=0;i<number_of_grid_values;i++)
+              {
+                fprintf(output_data->file," Enter collocation point "
+                  "#s/name [EXIT]: %d\n",sorting[i].grid_point_number);
+                fprintf(output_data->file," The value for parameter %d is "
+                  "[ 0.00000D+00]: ",output_data->number);
+                fprintf(output_data->file,"%d\n",
+                  sorting[i].value.integer_value);
+              }
+              return_code = 1;
+              DEALLOCATE(sorting);
+            }
+            else
+            {
+              display_message(ERROR_MESSAGE,
+                "write_FE_element_spatially_varying. "
+                "Unable to allocate memory for sorting the variants");
+              return_code = 0;
+            }
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,"write_FE_element_spatially_varying. "
+              "Unable to get the cell type values or the grid point numbers");
+            return_code = 0;
+          }
+        }
+        else
+        {
+          /*display_message(INFORMATION_MESSAGE,
+            "write_FE_element_point_variants. "
+            "The cell_type field is not grid based in this element\n");*/
+          return_code = 1;
+        }
+      }
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_FE_element_spatially_varying. "
+			"Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
+} /* END write_FE_element_spatially_varying() */
 
 static void write_real_array_information_using_FE_fields(
 	struct Cell_array_information *array,struct Cell_window *cell,
@@ -231,6 +919,70 @@ Writes out the ipcell information from the array and using field information.
 
 static void write_array_information_spatially_varying(
 	struct Cell_array_information *array,struct Cell_window *cell,
+	int number_of_parameters,FILE *file,struct GROUP(FE_element) *element_group,
+	struct FE_field *grid_field)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Writes out all parameters in the <array> which are spatially varying. <type>
+should be 1 for real and 2 for integer.
+==============================================================================*/
+{
+	int i;
+	struct Cell_array_information *current =
+    (struct Cell_array_information *)NULL;
+	struct FE_field *field;
+	struct Output_data output_data;
+
+	ENTER(write_array_information_saptially_varying);
+	if ((number_of_parameters > 0) && cell && grid_field && element_group)
+	{
+		current = array;
+		for (i=0;i<number_of_parameters;i++)
+		{
+			/* if the parameter is spatially varying, write out its value
+			 at each node */
+			if (field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(current->label,
+				(cell->cell_3d).fe_field_manager))
+			{
+				if ((current->spatial[0] == '*') && 
+					get_FE_field_FE_field_type(field) == GENERAL_FE_FIELD)
+				{
+					fprintf(file,"\n");
+					fprintf(file," Parameter number %d is [2]:\n",current->number);
+					fprintf(file,"   (1) Piecewise constant (defined by elements)\n");
+					fprintf(file,"   (2) Piecewise linear (defined by nodes)\n");
+					fprintf(file,"   (3) Defined by grid points\n");
+					fprintf(file,"    3\n");
+					/* write out the nodal values */
+					output_data.file = file;
+					output_data.cell = cell;
+					output_data.number = current->number;
+					output_data.field = field;
+          output_data.grid_field = grid_field;
+					FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						write_FE_element_spatially_varying,(void *)(&output_data),
+						element_group);
+					/* end the parameter data */
+					fprintf(file," Enter collocation point #s/name [EXIT]: 0\n");
+				}
+			}
+			current = current->next;
+		} /* for (i) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_array_information_spatially_varying. "
+			"Invalid arguments");
+	}
+	LEAVE;
+} /* END write_array_information_spatially_varying() */
+
+#if defined (CELL_USE_NODES)
+static void write_array_information_spatially_varying(
+	struct Cell_array_information *array,struct Cell_window *cell,
 	int number_of_parameters,FILE *file,struct GROUP(FE_node) *node_group,
 	int offset)
 /*******************************************************************************
@@ -291,6 +1043,7 @@ should be 1 for real and 2 for integer.
 	}
 	LEAVE;
 } /* END write_array_information_spatially_varying() */
+#endif /* defined (CELL_USE_NODES) */
 
 static void write_integer_array_information_using_FE_fields(
 	struct Cell_array_information *array,struct Cell_window *cell,
@@ -1025,6 +1778,7 @@ non-spatially varying parameters, regardless of their actual state!
   return(return_code);
 } /* END write_to_cmiss_file() */
 
+#if defined (CELL_DECENT_IPTIME_FILES)
 static int write_control_curve_to_file(struct Control_curve *variable,
   FILE *file,char *name)
 /*******************************************************************************
@@ -1171,6 +1925,101 @@ Write the given <variable> to the specified <file>.
   LEAVE;
   return (return_code);
 } /* END write_control_curve_to_file() */
+#endif /* defined (CELL_DECENT_IPTIME_FILES) */
+
+static int write_control_curve_to_iptime(struct Control_curve *variable,
+  FILE *file)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Write the given <variable> to the specified <file>.
+==============================================================================*/
+{
+  int return_code = 0;
+  FE_value *times,*values,*tmp1,*tmp2;
+  int element_no,node_no;
+  int number_of_elements,nodes_per_element;
+  int i,end = 0;
+  
+  ENTER(write_control_curve_to_iptime);
+  /* check arguments */
+  if (variable && file)
+  {
+    display_message(WARNING_MESSAGE,"write_control_curve_to_iptime. "
+      "Assuming single component curves!!");
+    return_code = 1;
+    values = (FE_value *)NULL;
+    times = (FE_value *)NULL;
+    number_of_elements = Control_curve_get_number_of_elements(variable);
+    nodes_per_element = Control_curve_get_nodes_per_element(variable);
+    /* allocate memory for storing the values and times - add a bit more
+       so that don't run into trouble if there is actually more than one
+       component */
+    if (ALLOCATE(values,FE_value,(number_of_elements*nodes_per_element)+20) &&
+      ALLOCATE(times,FE_value,(number_of_elements*nodes_per_element)+20))
+    {
+      tmp1 = values;
+      tmp2 = times;
+      end = 1;
+      for (element_no=1;return_code&&(element_no<=number_of_elements);
+           element_no++)
+      {
+        end--;
+        for (node_no=0;return_code&&(node_no<nodes_per_element);node_no++)
+        {
+					if (Control_curve_get_node_values(variable,element_no,node_no,
+						values)&&
+						Control_curve_get_parameter(variable,element_no,node_no,
+              times))
+					{
+            values++;
+            times++;
+            end++;
+					}
+					else
+					{
+						return_code = 0;
+						display_message(ERROR_MESSAGE,"write_control_curve_to_iptime. "
+							"can not get node coords or time");
+					}
+        }/* for (node_no) */
+        values--;
+        times--;
+      }/* for (element_no) */
+      values = tmp1;
+      times = tmp2;
+      fprintf(file," Enter the number of time points to be set [2]: %d\n",end);
+      fprintf(file," Enter the time variable value before time point 1 [0.0]: "
+        "%g\n",(float)values[0]);
+      for (i=0;i<end;i++)
+      {
+        fprintf(file," Enter the time for time point %d [0.0]: %g\n",
+          i+1,(float)times[i]);
+        fprintf(file," Enter the time variable value at time point %d [0.0]: "
+          "%g\n",i+1,(float)values[i]);
+      }
+      fprintf(file," Enter the time variable value after time point %d [0.0]: "
+        "%g\n",end,(float)values[end-1]);
+      DEALLOCATE(values);
+      DEALLOCATE(times);
+    }
+    else
+    {
+      return_code = 0;
+      display_message(ERROR_MESSAGE,"write_control_curve_to_iptime.  "
+        "Not enough memory");
+    }
+  }
+  else
+  {
+    return_code = 0;
+    display_message(ERROR_MESSAGE,"write_control_curve_to_iptime. "
+      "Invalid argument");
+  }
+  LEAVE;
+  return (return_code);
+} /* END write_control_curve_to_iptime() */
 
 /*
 Global functions
@@ -1292,6 +2141,7 @@ dialog box, file -> write -> cmiss file.
   return(return_code);
 } /* END write_cmiss_file() */
 
+#if defined (CELL_DECENT_IPTIME_FILES)
 int write_control_curve_file(char *filename,XtPointer cell_window)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1999
@@ -1351,7 +2201,195 @@ dialog box, file -> write -> time variables file.
   LEAVE;
   return(return_code);
 } /* END write_control_curve_file() */
+#endif /* defined (CELL_DECENT_IPTIME_FILES) */
 
+int export_to_ipcell(char *filename,struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 09 June 2000
+
+DESCRIPTION :
+Exports parameter and variable fields to the ipcell file given by <filename>.
+==============================================================================*/
+{
+  int return_code = 0;
+	int num_state,num_parameters,num_protocol,num_ari,num_aro,num_aio,num_aii,
+		num_model,num_control,num_derived;
+  struct Cell_array_information *state = (struct Cell_array_information *)NULL;
+  struct Cell_array_information *derived =
+    (struct Cell_array_information *)NULL;
+  struct Cell_array_information *model = (struct Cell_array_information *)NULL;
+  struct Cell_array_information *control =
+    (struct Cell_array_information *)NULL;
+  struct Cell_array_information *parameter =
+    (struct Cell_array_information *)NULL;
+  struct Cell_array_information *protocol =
+    (struct Cell_array_information *)NULL;
+  struct Cell_array_information *aii = (struct Cell_array_information *)NULL;
+  struct Cell_array_information *aio = (struct Cell_array_information *)NULL;
+  struct Cell_array_information *ari = (struct Cell_array_information *)NULL;
+  struct Cell_array_information *aro = (struct Cell_array_information *)NULL;
+  FILE *file;
+	struct FE_field_component field_component;
+	int number_of_variants = 0;
+
+  ENTER(export_to_ipcell);
+  USE_PARAMETER(aro);
+  USE_PARAMETER(aio);
+  USE_PARAMETER(derived);
+  if (cell && filename && (file = fopen(filename,"w")))
+  {
+    /* This should probably go back in sometime!! 
+     * if (check_model_id(cell,node))
+     */
+		{
+			/* find an indexed field, and get its number of values - this will
+				 always give the number of variants ??? */
+			if (field_component.field = FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(
+				check_field_type,(void *)INDEXED_FE_FIELD,
+				(cell->cell_3d).fe_field_manager))
+			{
+				number_of_variants = 
+					get_FE_field_number_of_values(field_component.field);
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,"export_to_ipcell. "
+					"Unable to find an indexed field, assuming 1 variant");
+				number_of_variants = 1;
+			}
+			if (number_of_variants > 0)
+			{
+				/* now sort the parameters into their arrays */
+				num_state = 0;
+				num_derived = 0;
+				num_model = 0;
+				num_control = 0;
+				num_parameters = 0;
+				num_protocol = 0;
+				num_aii = 0;
+				num_aio = 0;
+				num_ari = 0;
+				num_aro = 0;
+				/* assume all variables are the only state variables ?? */
+				state = add_variables_to_array_information(state,cell->variables,
+					ARRAY_STATE,ARRAY_VALUE_REAL,&num_state);
+				/* assume parameters always fall into these categories ?? */
+				parameter = add_parameters_to_array_information(parameter,
+					cell->parameters,ARRAY_PARAMETERS,ARRAY_VALUE_REAL,&num_parameters);
+				protocol = add_parameters_to_array_information(protocol,
+					cell->parameters,ARRAY_PROTOCOL,ARRAY_VALUE_REAL,&num_protocol);
+				model = add_parameters_to_array_information(model,cell->parameters,
+					ARRAY_MODEL,ARRAY_VALUE_INTEGER,&num_model);
+				control = add_parameters_to_array_information(control,cell->parameters,
+					ARRAY_CONTROL,ARRAY_VALUE_INTEGER,&num_control);
+				aii = add_parameters_to_array_information(aii,cell->parameters,
+					ARRAY_AII,ARRAY_VALUE_INTEGER,&num_aii);
+				ari = add_parameters_to_array_information(ari,cell->parameters,
+					ARRAY_ARI,ARRAY_VALUE_REAL,&num_ari);
+				/* now write out the file */
+				/* write out file heading etc.. */
+				fprintf(file," CMISS Version 1.21 ipcell File Version 1\n");
+				fprintf(file," Heading: ipcell file generated by CELL for the %s model"
+					"\n\n",cell->current_model);
+				fprintf(file," The number of cell model variants is: %d\n",
+					number_of_variants);
+				fprintf(file," The number of state variables is: %d\n",num_state);
+				fprintf(file," The number of ODE variables is: %d\n",num_state);
+				fprintf(file," The number of derived variables is: %d\n",num_derived);
+				fprintf(file," The number of cell model parameters is: %d\n",num_model);
+				fprintf(file," The number of cell control parameters is: %d\n",
+					num_control);
+				fprintf(file," The number of cell material parameters is: %d\n",
+					num_parameters);
+				fprintf(file," The number of cell protocol parameters is: %d\n",
+					num_protocol);
+				fprintf(file," The number of additional integer input parameters "
+					"is: %d\n",num_aii);
+				fprintf(file," The number of additional integer output parameters "
+					"is: %d\n",num_aio);
+				fprintf(file," The number of additional real input parameters is: %d\n",
+					num_ari);
+				fprintf(file," The number of additional real output parameters "
+					"is: %d\n",num_aro);
+				if (num_state > 0)
+				{
+					fprintf(file,"\n");
+					fprintf(file," State variables:\n");
+					write_real_array_information_using_FE_fields(state,cell,
+						number_of_variants,num_state,file);
+				}
+				if (num_model > 0)
+				{
+					fprintf(file,"\n");
+					fprintf(file," Model variables:\n");
+					write_integer_array_information_using_FE_fields(model,cell,
+						number_of_variants,num_model,file);
+				}
+				if (num_control > 0)
+				{
+					fprintf(file,"\n");
+					fprintf(file," Control variables:\n");
+					write_integer_array_information_using_FE_fields(control,cell,
+						number_of_variants,num_control,file);
+				}
+				if (num_parameters > 0)
+				{
+					fprintf(file,"\n");
+					fprintf(file," Parameter variables:\n");
+					write_real_array_information_using_FE_fields(parameter,cell,
+						number_of_variants,num_parameters,file);
+				}
+				if (num_protocol > 0)
+				{
+					fprintf(file,"\n");
+					fprintf(file," Protocol variables:\n");
+					write_real_array_information_using_FE_fields(protocol,cell,
+						number_of_variants,num_protocol,file);
+				}
+				if (num_aii > 0)
+				{
+					fprintf(file,"\n");
+					fprintf(file," Additional integer input variables:\n");
+					write_integer_array_information_using_FE_fields(aii,cell,
+						number_of_variants,num_aii,file);
+				}
+				if (num_ari > 0)
+				{
+					fprintf(file,"\n");
+					fprintf(file," Additional real input variables:\n");
+					write_real_array_information_using_FE_fields(ari,cell,
+						number_of_variants,num_ari,file);
+				}
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"export_to_ipcell. "
+					"Can not get the number of variants.");
+				return_code = 0;
+			}
+		}
+    /* This needs to go back in sometime!!
+     * else
+     * {
+     * 	display_message(ERROR_MESSAGE,"export_to_ipcell. "
+     *		"Model ID's do not match.");
+     *	return_code = 0;
+     * }
+     */
+		fclose(file);
+  }
+  else
+  {
+		display_message(ERROR_MESSAGE,"export_to_ipcell. "
+			"Invalid arguments");
+		return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* END export_to_ipcell() */
+
+#if defined (CELL_USE_NODES)
 int export_FE_node_to_ipcell(char *filename,struct FE_node *node,
   struct Cell_window *cell)
 /*******************************************************************************
@@ -1535,7 +2573,9 @@ by <filename>.
   LEAVE;
   return(return_code);
 } /* END export_FE_node_to_ipcell() */
+#endif /* defined (CELL_USE_NODES) */
 
+#if defined (CELL_USE_NODES)
 int export_FE_node_group_to_ipmatc(char *filename,
 	struct GROUP(FE_node) *node_group,struct Cell_window *cell,
 	struct FE_node *first_node,int offset)
@@ -1667,6 +2707,154 @@ Exports the spatially varying parameters to a ipmatc file, from the node group.
 				"Model ID's do not match.");
 			return_code = 0;
 		}
+		fclose(file);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"export_FE_node_group_to_ipmatc. "
+			"Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
+} /* END export_FE_node_group_to_ipmatc() */
+#endif /* defined (CELL_USE_NODES) */
+
+int export_to_ipmatc(char *filename,struct GROUP(FE_element) *element_group,
+  struct FE_field *grid_field,struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Exports the spatially varying parameters to a ipmatc file, from element based
+fields found in the element group. <grid_field> is used as the grid point
+number field.
+==============================================================================*/
+{
+	int return_code = 0,num_parameters;
+	FILE *file;
+	struct Output_data output_data;
+  struct Cell_array_information *array_information = 
+		(struct Cell_array_information *)NULL;
+
+	ENTER(export_to_ipmatc);
+	if (cell && filename && element_group && grid_field &&
+		(file = fopen(filename,"w")))
+  {
+		/* need to put this back in sometime!!
+     * if (check_model_id(cell,first_node))
+     * {
+     */
+			/* write out the header, etc.. */
+			fprintf(file," CMISS Version 1.21 ipmatc File Version 2\n");
+			fprintf(file," Heading: ipmatc file generated by CELL\n");
+			fprintf(file,"\n");
+			fprintf(file," Enter the cell variant for each collocation point:\n");
+			/* write out the variant for each node in the group */
+			output_data.cell = cell;
+			output_data.file = file;
+      output_data.grid_field = grid_field;
+			FOR_EACH_OBJECT_IN_GROUP(FE_element)(write_FE_element_point_variants,
+				(void *)(&output_data),element_group);
+			/* end the variant data */
+			fprintf(file," Enter collocation point #s/name [EXIT]: 0\n");
+			fprintf(file,"\n");
+			/* now loop through each of the arrays and write out the spatially
+				 parameters */
+			fprintf(file," State variables:\n");
+			num_parameters = 0;
+			array_information = add_variables_to_array_information(array_information,
+				cell->variables,ARRAY_STATE,ARRAY_VALUE_REAL,&num_parameters);
+			if (num_parameters > 0)
+			{
+				write_array_information_spatially_varying(array_information,cell,
+					num_parameters,file,element_group,grid_field);
+			}
+			DEALLOCATE(array_information);
+			array_information = (struct Cell_array_information *)NULL;
+			num_parameters = 0;
+			fprintf(file,"\n");
+			fprintf(file," Model variables:\n");
+			array_information = add_parameters_to_array_information(array_information,
+				cell->parameters,ARRAY_MODEL,ARRAY_VALUE_INTEGER,&num_parameters);
+			if (num_parameters > 0)
+			{
+				write_array_information_spatially_varying(array_information,cell,
+					num_parameters,file,element_group,grid_field);
+			}
+			DEALLOCATE(array_information);
+			array_information = (struct Cell_array_information *)NULL;
+			num_parameters = 0;			
+			fprintf(file,"\n");
+			fprintf(file," Control variables:\n");
+			array_information = add_parameters_to_array_information(array_information,
+				cell->parameters,ARRAY_CONTROL,ARRAY_VALUE_INTEGER,&num_parameters);
+			if (num_parameters > 0)
+			{
+				write_array_information_spatially_varying(array_information,cell,
+					num_parameters,file,element_group,grid_field);
+			}
+			DEALLOCATE(array_information);
+			array_information = (struct Cell_array_information *)NULL;
+			num_parameters = 0;			
+			fprintf(file,"\n");
+			fprintf(file," Parameter variables:\n");
+			array_information = add_parameters_to_array_information(array_information,
+				cell->parameters,ARRAY_PARAMETERS,ARRAY_VALUE_REAL,&num_parameters);
+			if (num_parameters > 0)
+			{
+				write_array_information_spatially_varying(array_information,cell,
+					num_parameters,file,element_group,grid_field);
+			}
+			DEALLOCATE(array_information);
+			array_information = (struct Cell_array_information *)NULL;
+			num_parameters = 0;			
+			fprintf(file,"\n");
+			fprintf(file," Protocol variables:\n");
+			array_information = add_parameters_to_array_information(array_information,
+				cell->parameters,ARRAY_PROTOCOL,ARRAY_VALUE_REAL,&num_parameters);
+			if (num_parameters > 0)
+			{
+				write_array_information_spatially_varying(array_information,cell,
+					num_parameters,file,element_group,grid_field);
+			}
+			DEALLOCATE(array_information);
+			array_information = (struct Cell_array_information *)NULL;
+			num_parameters = 0;			
+			fprintf(file,"\n");
+			fprintf(file," Additional integer input variables:\n");
+			array_information = add_parameters_to_array_information(array_information,
+				cell->parameters,ARRAY_AII,ARRAY_VALUE_INTEGER,&num_parameters);
+			if (num_parameters > 0)
+			{
+				write_array_information_spatially_varying(array_information,cell,
+					num_parameters,file,element_group,grid_field);
+			}
+			DEALLOCATE(array_information);
+			array_information = (struct Cell_array_information *)NULL;
+			num_parameters = 0;			
+			fprintf(file,"\n");
+			fprintf(file," Additional real input variables:\n");
+			array_information = add_parameters_to_array_information(array_information,
+				cell->parameters,ARRAY_ARI,ARRAY_VALUE_REAL,&num_parameters);
+			if (num_parameters > 0)
+			{
+				write_array_information_spatially_varying(array_information,cell,
+					num_parameters,file,element_group,grid_field);
+			}
+			DEALLOCATE(array_information);
+			array_information = (struct Cell_array_information *)NULL;
+			num_parameters = 0;
+			return_code = 1;
+    /* need to put this back in sometime!!
+     * }
+     * else
+     * {
+     *   display_message(ERROR_MESSAGE,"export_FE_node_group_to_ipmatc. "
+     *     "Model ID's do not match.");
+     *   return_code = 0;
+     * }
+     */
 		fclose(file);
 	}
 	else
@@ -2123,3 +3311,79 @@ Writes out an ipexpo file for a single cell calculation.
 	}
 	LEAVE;
 } /* END write_ipexpo_file() */
+
+void export_control_curves_to_file(struct Export_control_curve_dialog *dialog)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Exports all the control curves selected in the export dialog to a single iptime
+file.
+==============================================================================*/
+{
+  FILE *file;
+  int i;
+  Boolean state;
+  XmString str;
+  char *name;
+  struct Control_curve *curve;
+  
+  ENTER(export_control_curves);
+  if (dialog)
+  {
+    if (file = fopen(dialog->file_name,"w"))
+    {
+      /* write out the header information */
+      fprintf(file," CMISS Version 1.21 iptime File Version 3\n");
+      fprintf(file," Heading: iptime file exported by CELL\n");
+      fprintf(file,"\n");
+      /* and all the control curves */
+      for (i=0;i<dialog->number_of_curves;i++)
+      {
+        XtVaGetValues(dialog->curve_toggles[i],
+          XmNset,&state,
+          XmNlabelString,&str,
+          NULL);
+        if (state)
+        {
+          XmStringGetLtoR(str,XmSTRING_DEFAULT_CHARSET,&name);
+          if (curve = FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
+            name,dialog->control_curve_manager))
+          {
+            fprintf(file," Enter the name of the time variable [EXIT]: %s\n",
+              name);
+            fprintf(file,"\n");
+            write_control_curve_to_iptime(curve,file);
+            fprintf(file,"\n");
+            /* finish off the control curve - always assume linear
+               Lagrange (because iptime files are now really dumb!!) */
+            fprintf(file," The type of interpolation is [2]:\n");
+            fprintf(file,"   (1) Constant\n");
+            fprintf(file,"   (2) Linear Lagrange\n");
+            fprintf(file,"  *(3) Quadratic Lagrange\n");
+            fprintf(file,"  *(4) Cubic Lagrange\n");
+            fprintf(file,"  *(5) Cubic Hermite\n");
+            fprintf(file,"    2\n");
+          }
+          DEALLOCATE(name);
+        }
+        XmStringFree(str);
+      }
+      /* and finish off the file */
+      fprintf(file," Enter the name of the time variable [EXIT]: EXIT\n");
+      fclose(file);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"export_control_curves. "
+        "Unable to open %s for writing",dialog->file_name);
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"export_control_curves. "
+      "Invalid arguments");
+  }
+  LEAVE;
+} /* export_control_curves() */
+

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui_connection.c
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Functions for talking between Cell and Cmgui.
@@ -22,6 +22,7 @@ Functions for talking between Cell and Cmgui.
 #include "cell/input.h"
 #include "cell/export_dialog.uidh"
 #include "choose/choose_element_group.h"
+#include "choose/choose_computed_field.h"
 #include "finite_element/import_finite_element.h"
 #include "user_interface/filedir.h"
 
@@ -43,31 +44,6 @@ static MrmHierarchy export_dialog_hierarchy;
 Local functions
 ===============
 */
-static void identify_offset_textfield(Widget widget,
-  XtPointer cell_window,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Identifies the text field widget for the offset value.
-==============================================================================*/
-{
-  struct Cell_window *cell = (struct Cell_window *)NULL;
-  
-  ENTER(identify_offset_textfield);
-  USE_PARAMETER(call_data);
-  if (cell = (struct Cell_window *)cell_window)
-  {
-    cell->export_dialog->offset_textfield = widget;
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,"identify_offset_textfield. "
-      "Missing cell window");
-  }
-  LEAVE;
-} /* END identify_offset_textfield() */
-
 static void identify_group_chooser_form(Widget widget,
   XtPointer cell_window,XtPointer call_data)
 /*******************************************************************************
@@ -92,6 +68,31 @@ Identifies the form for the group chooser widget to use.
   }
   LEAVE;
 } /* END identify_group_chooser_form() */
+
+static void identify_grid_field_chooser_form(Widget widget,
+  XtPointer cell_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 09 June 2000
+
+DESCRIPTION :
+Identifies the form for the grid field chooser widget to use.
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  
+  ENTER(identify_grid_field_chooser_form);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    cell->export_dialog->grid_field_chooser_form = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_grid_field_chooser_form. "
+      "Missing cell window");
+  }
+  LEAVE;
+} /* END identify_grid_field_chooser_form() */
 
 static void identify_ipcell_file_label(Widget widget,
   XtPointer cell_window,XtPointer call_data)
@@ -210,18 +211,20 @@ Callback for the browse button for the ipmatc file.
 static void ok_button_callback(Widget widget,
   XtPointer cell_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 09 June 2000
 
 DESCRIPTION :
 Callback for the OK button in the export dialog.
 ==============================================================================*/
 {
   struct Cell_window *cell = (struct Cell_window *)NULL;
+#if defined (CELL_USE_NODES)
   struct FE_node *node = (struct FE_node *)NULL;
-  struct GROUP(FE_element) *element_group;
   struct GROUP(FE_node) *node_group;
-  char *name,*offset_value;
-	int offset;
+#endif /* defined (CELL_USE_NODES) */
+  struct GROUP(FE_element) *element_group;
+  struct Computed_field *grid_field;
+  struct FE_field *grid_fe_field;
   
   ENTER(ok_button_callback);
   USE_PARAMETER(widget);
@@ -231,73 +234,32 @@ Callback for the OK button in the export dialog.
     if (cell->export_dialog && cell->export_dialog->shell)
     {
       XtPopdown(cell->export_dialog->shell);
-			/* get the current offset value */
-			if (cell->export_dialog->offset_textfield)
-			{
-				XtVaGetValues(cell->export_dialog->offset_textfield,
-					XmNvalue,&offset_value,
-					NULL);
-				sscanf(offset_value,"%d",&offset);
-			}
-			else
-			{
-				offset = 0;
-			}
-      /* get the current node group - first get the name of the selected 
-				 element group */
-      if (element_group = CHOOSE_OBJECT_GET_OBJECT(GROUP(FE_element))(
-				cell->export_dialog->group_chooser_widget))
+      /* get the current element group and the grid field*/
+      if ((element_group = CHOOSE_OBJECT_GET_OBJECT(GROUP(FE_element))(
+				cell->export_dialog->group_chooser_widget)) &&
+        (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					cell->export_dialog->grid_field_chooser_widget))&&
+        Computed_field_get_type_finite_element(grid_field,&grid_fe_field))
       {
-				if (GET_NAME(GROUP(FE_element))(element_group,&name))
-				{
-					/* now find the node group with the same name */
-					if (node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						name,(cell->cell_3d).node_group_manager))
-					{
-						/* now get the first node in the group to export to an ipcell 
-							 file */
-						if (node = FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-							(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-							node_group))
-						{
-							if (export_FE_node_to_ipcell(
-								cell->export_dialog->ipcell_file_name,node,cell))
-							{
-								if (export_FE_node_group_to_ipmatc(
-									cell->export_dialog->ipmatc_file_name,node_group,cell,node,
-									offset))
-								{
-									display_message(INFORMATION_MESSAGE,"Done.");
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"ok_button_callback. "
-										"Unable to export the node group to an ipmatc file");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"ok_button_callback. "
-                  "Unable to export the node to an ipcell file");
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"ok_button_callback. "
-                "Unable to get the first node in the group");
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"ok_button_callback. "
-              "Unable to get the node group");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"ok_button_callback. "
-						"Unable to get the element group name");
-				}
+        if (export_to_ipcell(
+          cell->export_dialog->ipcell_file_name,cell))
+        {
+          if (export_to_ipmatc(cell->export_dialog->ipmatc_file_name,
+            element_group,grid_fe_field,cell))
+          {
+            /*display_message(INFORMATION_MESSAGE,"Done.\n");*/
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,"ok_button_callback. "
+              "Unable to export the node group to an ipmatc file");
+          }
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"ok_button_callback. "
+            "Unable to export the node to an ipcell file");
+        }
       }
       else
       {
@@ -395,7 +357,7 @@ Callback for when the export dialog is destroy via the window manager menu ??
 
 static int create_export_dialog(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 09 June 2000
 
 DESCRIPTION :
 Create a new export dialog.
@@ -406,6 +368,8 @@ Create a new export dialog.
   MrmType export_dialog_class;
   static MrmRegisterArg callback_list[] = {
     {"identify_group_chooser_form",(XtPointer)identify_group_chooser_form},
+    {"id_grid_field_chooser_form",
+     (XtPointer)identify_grid_field_chooser_form},
     {"identify_ipcell_file_label",(XtPointer)identify_ipcell_file_label},
     {"identify_ipmatc_file_label",(XtPointer)identify_ipmatc_file_label},
     {"ipcell_browse_callback",(XtPointer)ipcell_browse_callback},
@@ -413,19 +377,18 @@ Create a new export dialog.
     {"ok_button_callback",(XtPointer)ok_button_callback},
     {"cancel_button_callback",(XtPointer)cancel_button_callback},
 		{"verify_text_field_modification",
-		 (XtPointer)verify_text_field_modification},
-		{"identify_offset_textfield",(XtPointer)identify_offset_textfield}
+		 (XtPointer)verify_text_field_modification}
   }; /* callback_list */
   static MrmRegisterArg identifier_list[] = {
     {"cell_window_structure",(XtPointer)NULL},
     {"window_width",(XtPointer)NULL},
     {"window_height",(XtPointer)NULL},
     {"default_ipcell_file_name",(XtPointer)NULL},
-    {"default_ipmatc_file_name",(XtPointer)NULL},
-		{"default_offset_value",(XtPointer)NULL},
+    {"default_ipmatc_file_name",(XtPointer)NULL}
   }; /* identifier_list */
   unsigned int width,height;
-	char offset_value[6];
+  struct MANAGER(Computed_field) *computed_field_manager;
+	struct Computed_field *grid_field;
   
   ENTER(create_export_dialog);
   if (cell != (struct Cell_window *)NULL)
@@ -450,7 +413,6 @@ Create a new export dialog.
 				cell->export_dialog->ipcell_file_name = (char *)NULL;
 				cell->export_dialog->ipmatc_file_label = (Widget)NULL;
 				cell->export_dialog->ipmatc_file_name = (char *)NULL;
-				cell->export_dialog->offset_textfield = (Widget)NULL;
 				/* set the default file names */
 				if (ALLOCATE(cell->export_dialog->ipcell_file_name,char,
 					strlen("cell.ipcell")) && 
@@ -488,7 +450,6 @@ Create a new export dialog.
             /* set the identifier's values */
             width = cell->user_interface->screen_width/2;
             height = cell->user_interface->screen_height/5;
-						sprintf(offset_value,"10000\0");
             identifier_list[0].value = (XtPointer)cell;
             identifier_list[1].value = (XtPointer)width;
             identifier_list[2].value = (XtPointer)height;
@@ -496,7 +457,6 @@ Create a new export dialog.
 							(XmStringCreateSimple(cell->export_dialog->ipcell_file_name));
 						identifier_list[4].value = (XtPointer)
 							(XmStringCreateSimple(cell->export_dialog->ipmatc_file_name));
-						identifier_list[5].value = (XtPointer)offset_value;
             /* register the identifiers */
             if (MrmSUCCESS ==
               MrmRegisterNamesInHierarchy(export_dialog_hierarchy,
@@ -507,6 +467,7 @@ Create a new export dialog.
                 "export_dialog",cell->export_dialog->shell,
                 &(cell->export_dialog->window),&export_dialog_class))
               {
+                /* create the element group chooser */
                 if (cell->export_dialog->group_chooser_widget =
                   CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_element))(
                     cell->export_dialog->group_chooser_form,
@@ -515,9 +476,56 @@ Create a new export dialog.
                     (MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
 										(void *)NULL))
 								{
-                  XtManageChild(cell->export_dialog->window);
-                  XtRealizeWidget(cell->export_dialog->shell);
-                  return_code = 1;
+                  /* create the grid field chooser - used to set the field
+                   * which will be used as the grid point number field
+                   * when exporting the ipmatc file.
+                   * First set the initial grid field to use for selecting
+                   * element points - if a grid_point_number field exists
+                   * use that, otherwise just take the first on which is
+                   * suitable
+                   */
+                  if ((cell->distributed).element_copy)
+                  {
+                    computed_field_manager =
+                      Computed_field_package_get_computed_field_manager(
+                        cell->computed_field_package);
+                    if (!(grid_field=
+                      FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+                        "grid_point_number",computed_field_manager)))
+                    {
+                      grid_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+                        Computed_field_is_scalar_integer_grid_in_element,
+                        (void *)(cell->distributed).element_copy,
+                        computed_field_manager);
+                    }
+                    if (cell->export_dialog->grid_field_chooser_widget=
+                      CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+                        cell->export_dialog->grid_field_chooser_form,grid_field,
+                        computed_field_manager,
+                        Computed_field_is_scalar_integer_grid_in_element,
+                        (void *)(cell->distributed).element_copy))
+                    {
+                      XtManageChild(cell->export_dialog->window);
+                      XtRealizeWidget(cell->export_dialog->shell);
+                      return_code = 1;
+                    }
+                    else
+                    {
+                      display_message(ERROR_MESSAGE,"create_export_dialog. "
+                        "Unable to create the grid field chooser widget");
+                      DEALLOCATE(cell->export_dialog);
+                      cell->export_dialog = (struct Export_dialog *)NULL;
+                      return_code = 0;
+                    }
+                  }
+                  else
+                  {
+                    display_message(ERROR_MESSAGE,"create_export_dialog. "
+                      "No elements defined ????");
+                    DEALLOCATE(cell->export_dialog);
+                    cell->export_dialog = (struct Export_dialog *)NULL;
+                    return_code = 0;
+                  }
                 }
                 else
                 {
@@ -638,6 +646,291 @@ three time variables, and then uses the value of each time variable at this
 	LEAVE;
 	return(return_value);
 } /* END calculate_field_value_from_control_curves() */
+
+static void update_element_point_field(char *field_name,int int_value,
+  FE_value value,
+  struct Element_point_ranges_identifier *element_point_identifier,
+  int element_point_number,
+  struct MANAGER(Computed_field) *computed_field_manager,
+  struct MANAGER(FE_field) *fe_field_manager)
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Updates the value of all the fields at the element point.
+==============================================================================*/
+{
+	FE_value *values;
+	int component_number,dimension,i,*int_values,index,
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],number_of_grid_values,
+    number_of_values;
+ 	struct Computed_field *field;
+	struct FE_element *element;
+	struct FE_field *fe_field,*indexer_field,*temp_field;
+  enum FE_field_type field_type;
+  
+  ENTER(update_element_point_field);
+  if (field_name && element_point_identifier &&computed_field_manager &&
+    (element=element_point_identifier->element))
+  {
+    component_number = 0;
+    if (field =
+      FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+        field_name,computed_field_manager))
+    {
+      if ((XI_DISCRETIZATION_CELL_CORNERS ==
+        element_point_identifier->xi_discretization_mode)&&
+        Computed_field_get_native_discretization_in_element(field,element,
+          number_in_xi))
+      {
+        /* get the number of values that are stored in the grid */
+        dimension=get_FE_element_dimension(element);
+        number_of_grid_values=1;
+        for (i=0;i<dimension;i++)
+        {
+          number_of_grid_values *= (number_in_xi[i]+1);
+        }
+        /* check the element_point_number is valid */
+        if ((0<=element_point_number)&&
+          (element_point_number<number_of_grid_values))
+        {
+          if ((COMPUTED_FIELD_FINITE_ELEMENT ==
+            Computed_field_get_type(field))&&
+            Computed_field_get_type_finite_element(field,&fe_field)&&
+            (INT_VALUE==get_FE_field_value_type(fe_field)))
+          {
+            /* handle integer value_type separately to avoid inaccuracies of
+               real->integer conversion */
+            if (get_FE_element_field_component_grid_int_values(element,
+              fe_field,component_number,&int_values))
+            {
+              /* change the value for this component */
+              int_values[component_number*number_of_grid_values+
+                element_point_number]=int_value;
+              set_FE_element_field_component_grid_int_values(
+                element,fe_field,component_number,int_values);
+              DEALLOCATE(int_values);
+            }
+          }
+          else
+          {
+            /* Real fields - ???? what about string fields ??? */
+            if (Computed_field_get_values_in_element(field,element,
+              number_in_xi,&values))
+            {
+              /* change the value for this component */
+              values[component_number*number_of_grid_values+
+                element_point_number]=value;
+              Computed_field_set_values_in_element(
+                field,element,number_in_xi,values);
+              DEALLOCATE(values);
+            }
+            /* note must clear cache so correct values are shown */
+            Computed_field_clear_cache(field);
+          }
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"update_element_point_field. "
+            "element point number out of range");
+        }
+      }
+      else
+      {
+        /* non grid based fields, need to modify the underlying FE_field ?? */
+        if ((COMPUTED_FIELD_FINITE_ELEMENT ==
+          Computed_field_get_type(field))&&
+          Computed_field_get_type_finite_element(field,&fe_field))
+        {
+          field_type = get_FE_field_FE_field_type(fe_field);
+          switch (field_type)
+          {
+            case GENERAL_FE_FIELD:
+            {
+              /* these should have been picked up as grid based fields
+                 so do nothing */
+            } break;
+            case CONSTANT_FE_FIELD:
+            {
+              /* constant field - need to set the field value */
+              if (temp_field = CREATE(FE_field)())
+              {
+                /* Shouldn't have to do this here */
+                set_FE_field_name(temp_field,get_FE_field_name(fe_field));
+                MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name)(temp_field,
+                  fe_field);
+                /*display_message(INFORMATION_MESSAGE,"Updating the value "
+                  "of constant field %s\n",field_name);*/
+                /* ?? always assume single component fields ?? */
+                if (!set_FE_field_FE_value_value(temp_field,0,value))
+                {
+                  display_message(WARNING_MESSAGE,"update_element_point_field. "
+                    "Unable to set the value for the constant FE field: %s",
+                    field_name);
+                }
+                MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name)(
+                  fe_field,temp_field,fe_field_manager);
+                DESTROY(FE_field)(&temp_field);
+              }
+              else
+              {
+                display_message(WARNING_MESSAGE,"update_element_point_field. "
+                  "Unable to create a copy of the field");
+              }
+            } break;
+            case INDEXED_FE_FIELD:
+            {
+              /* need to set the field value, based on the indexing field */
+              if (temp_field = CREATE(FE_field)())
+              {
+                /* Shouldn't have to do this here */
+                set_FE_field_name(temp_field,get_FE_field_name(fe_field));
+                MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name)(temp_field,
+                  fe_field);
+                if (get_FE_field_type_indexed(temp_field,
+                  &indexer_field,&number_of_values))
+                {
+                  /* check the element_point_number is valid */
+                  get_FE_element_field_grid_map_number_in_xi(element,
+                    indexer_field,number_in_xi);
+                  dimension=get_FE_element_dimension(element);
+                  number_of_grid_values=1;
+                  for (i=0;i<dimension;i++)
+                  {
+                    number_of_grid_values *= (number_in_xi[i]+1);
+                  }
+                  if ((0<=element_point_number)&&
+                    (element_point_number<number_of_grid_values))
+                  {
+                    /* get the index value */
+                    if (get_FE_element_field_component_grid_int_values(element,
+                      indexer_field,component_number,&int_values))
+                    {
+                      index = int_values[component_number*number_of_grid_values+
+                        element_point_number];
+                      DEALLOCATE(int_values);
+                      /*display_message(INFORMATION_MESSAGE,"Updatingthe value "
+                        "of indexed field %s for cell type %d\n",field_name,
+                        index);*/
+                      /* ?? always assume single component fields ?? */
+                      if (!set_FE_field_FE_value_value(temp_field,
+                        index-1,value))
+                      {
+                        display_message(WARNING_MESSAGE,
+                          "update_element_point_field. "
+                          "Unable to set the value for the indexed "
+                          "FE field: %s",field_name);
+                      }
+                      MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name)(
+                        fe_field,temp_field,fe_field_manager);
+                    }
+                    else
+                    {
+                      display_message(WARNING_MESSAGE,
+                        "update_element_point_field. "
+                        "Unable to get the index for the indexed FE field: "
+                        "%s",field_name);
+                    }
+                  }
+                  else
+                  {
+                    display_message(ERROR_MESSAGE,"update_element_point_field. "
+                      "element point number out of range");
+                  }
+                }
+                else
+                {
+                  display_message(WARNING_MESSAGE,"update_element_point_field. "
+                    "Unable to get the indexer field for the indexed FE field: "
+                    "%s",field_name);
+                }
+                DESTROY(FE_field)(&temp_field);
+              }
+              else
+              {
+                display_message(WARNING_MESSAGE,"update_element_point_field. "
+                  "Unable to create a copy of the field");
+              }
+            } break;
+            default:
+            {
+              /* ??? do nothing ??? */
+            } break;
+          } /* switch (field_type) */
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"update_element_point_field. "
+            "Unable to get the FE_field for %s",field_name);
+        }
+      }
+    }
+    else
+    {
+      display_message(WARNING_MESSAGE,"update_element_point_field. "
+        "Can't find a field for %s",field_name);
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"update_element_point_field. "
+      "Invalid argument(s)");
+  }
+  LEAVE;
+} /* update_element_point_field() */
+
+static int update_element_point_fields(
+  struct Element_point_ranges_identifier *element_point_identifier,
+  int element_point_number,struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Updates all the appropriate fields at the specified element point from the
+values in the cell window.
+==============================================================================*/
+{
+  int return_code = 0;
+  struct Cell_parameter *parameter = (struct Cell_parameter *)NULL;
+  struct Cell_variable *variable = (struct Cell_variable *)NULL;
+
+  ENTER(update_element_point_fields);
+  if (cell)
+	{
+    /* ??? store up all field changes and send them all through after
+       all changes have been made ??? */
+    MANAGER_BEGIN_CACHE(FE_field)((cell->cell_3d).fe_field_manager);
+    /* loop through all variables, updating the nodal fields */
+    variable = cell->variables;
+    while ((variable != (struct Cell_variable *)NULL))
+    {
+      update_element_point_field(variable->spatial_label,0,
+        (FE_value)variable->value,element_point_identifier,element_point_number,
+        Computed_field_package_get_computed_field_manager(
+          cell->computed_field_package),(cell->cell_3d).fe_field_manager);
+      variable = variable->next;
+    } /* while (variable != (struct Cell_variable *)NULL) */
+    parameter = cell->parameters;
+    while ((parameter != (struct Cell_parameter *)NULL))
+    {
+      update_element_point_field(parameter->spatial_label,0,
+        (FE_value)parameter->value,element_point_identifier,
+        element_point_number,Computed_field_package_get_computed_field_manager(
+          cell->computed_field_package),(cell->cell_3d).fe_field_manager);
+      parameter = parameter->next;
+    } /* while (parameter != (struct Cell_parameter *)NULL) */
+    MANAGER_END_CACHE(FE_field)((cell->cell_3d).fe_field_manager);
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"update_element_point_fields. "
+      "Invalid arguments");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* update_element_point_fields() */
 
 /*
 Global functions
@@ -818,6 +1111,7 @@ Callback for the file selection dialog for the ipmatc file in the export dialog.
   return(return_code);
 } /* END file_open_ipmatc_callback() */
 
+#if defined (CELL_USE_NODES)
 int FE_node_to_Cell_window(struct Cell_window *cell,struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 14 September 1999
@@ -946,7 +1240,265 @@ Extracts values from a FE_node and sets up the cell window.
   LEAVE;
   return(return_code);
 } /* END FE_node_to_Cell_window() */
+#endif /* defined (CELL_USE_NODES) */
 
+int element_point_to_Cell_window(
+  struct Computed_field_package *computed_field_package,int component_number,
+  struct FE_element *element,FE_value *xi,struct FE_element *top_level_element,
+  struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2000
+
+DESCRIPTION :
+Extracts values from the specified element point and sets up the cell window.
+==============================================================================*/
+{
+  int return_code = 0;
+  struct Cell_parameter *parameter = (struct Cell_parameter *)NULL;
+  struct Cell_variable *variable = (struct Cell_variable *)NULL;
+  struct Computed_field *field;
+  struct FE_field *fe_field;
+  char *value_string;
+  
+  ENTER(element_point_to_Cell_window);
+  if (cell && computed_field_package && element && xi && top_level_element)
+  {
+    /* get the model name for the node, and if it is not the current model,
+			 need define the model defaults (i.e. read in the default file for that
+			 model) */
+    
+    /* To start with, just check the current model for a matching ID, and
+			 if it isn't, prompt the user to read it in */
+    /* THIS should go back in sometime
+     * if (check_model_id(cell,node))
+     * {
+     */
+    
+      /* now loop through all fields getting the values from the node and
+				 setting the value in the cell window */
+      /* first the variables */
+      variable = cell->variables;
+      while (variable != (struct Cell_variable *)NULL)
+      {
+        if (field =
+          FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+            variable->spatial_label,
+            Computed_field_package_get_computed_field_manager(
+              computed_field_package)))
+        {
+          if (value_string =
+            Computed_field_evaluate_component_as_string_in_element(field,
+              component_number,element,xi,top_level_element))
+          {
+            /* !!!!
+             * Need to extend this to do both integer and real variables
+             */
+            /* set the current variable's value */
+            sscanf(value_string,"%f",&(variable->value));
+            DEALLOCATE(value_string);
+            /* all variables are defined at nodes, but are not spatially
+							 varying */
+          }
+          else
+          {
+            display_message(WARNING_MESSAGE,"element_point_to_Cell_window. "
+              "Unable to get a value for the field: %s",
+              variable->spatial_label);
+          }
+        }
+        else
+        {
+          /* do nothing */
+        }
+        variable = variable->next;
+      } /* while (variable)  */
+      /* update the dialog boxes */
+      reset_variable_values(cell->variables);
+      /* now do the parameters */
+      parameter = cell->parameters;
+      while (parameter != (struct Cell_parameter *)NULL)
+      {
+        if (field =
+          FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+            parameter->spatial_label,
+            Computed_field_package_get_computed_field_manager(
+              computed_field_package)))
+        {
+          if (value_string =
+            Computed_field_evaluate_component_as_string_in_element(field,
+              component_number,element,xi,top_level_element))
+          {
+            /* !!!!
+             * Need to extend this to do both integer and real variables
+             */
+            /* set the current variable's value */
+            sscanf(value_string,"%f",&(parameter->value));
+            DEALLOCATE(value_string);
+            /* check if the field if grid based (i.e. spatially varying) or
+             * not (i.e. constant or indexed)
+             */
+            if (Computed_field_get_type_finite_element(field,&fe_field) &&
+              FE_element_field_is_grid_based(element,fe_field))
+            {
+              parameter->spatial_switch = 1;
+              parameter->control_curve_allowed = 1;
+            }
+            else
+            {
+              parameter->spatial_switch = 0;
+              parameter->control_curve_allowed = 0;
+            }
+          }
+          else
+          {
+            display_message(WARNING_MESSAGE,"element_point_to_Cell_window. "
+              "Unable to get a value for the field: %s",
+              parameter->spatial_label);
+          }
+        }
+        else
+        {
+          /* do nothing */
+        }
+        parameter = parameter->next;
+      } /* while (parameter)  */
+      /* update the dialog boxes */
+      update_parameter_dialog_boxes(cell);
+      return_code = 1;
+      /* THIS should go back in sometime
+       * }
+       * else
+       * {
+       *   display_message(INFORMATION_MESSAGE,"FE_node_to_Cell_window. "
+       *     "Need to change the current cell model!!\n");
+       *   return_code = 1;
+       * }
+       */
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"element_point_to_Cell_window. "
+      "Invalid arguments");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* END element_point_to_Cell_window() */
+
+int Cell_window_to_element_point(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Sets the field values at the currently selected element point from the values
+in the cell window.
+==============================================================================*/
+{
+  int return_code = 0;
+  int i,number_of_faces,temp_element_point_number;
+	struct Element_point_ranges_identifier temp_element_point_identifier;
+	struct FE_element *element,*face_element;
+
+  ENTER(Cell_window_to_element_point);
+  if (cell != (struct Cell_window *)NULL)
+  {
+    /* first we need to create a copy of the current element_point_identifier */
+    REACCESS(FE_element)(&((cell->distributed).element_copy),
+			(struct FE_element *)NULL);
+		temp_element_point_number=(cell->distributed).element_point_number;
+		COPY(Element_point_ranges_identifier)(&temp_element_point_identifier,
+			&((cell->distributed).element_point_identifier));
+		if (temp_element_point_identifier.element)
+		{
+			if (Element_point_ranges_identifier_is_valid(
+				&temp_element_point_identifier))
+			{
+				Element_point_make_top_level(&temp_element_point_identifier,
+					&temp_element_point_number);
+			}
+			/* copy the element - now guaranteed to be top-level */
+			if ((cell->distributed).element_copy=ACCESS(FE_element)(
+				CREATE(FE_element)(temp_element_point_identifier.element->identifier,
+					temp_element_point_identifier.element)))
+			{
+				/* clear the faces of element_copy as messes up exterior calculations
+					 for graphics created from them */
+				number_of_faces=
+					(cell->distributed).element_copy->shape->number_of_faces;
+				for (i=0;i<number_of_faces;i++)
+				{
+					set_FE_element_face((cell->distributed).element_copy,i,
+						(struct FE_element *)NULL);
+				}
+			}
+		}
+		/* pass identifier with copy_element to update element point */
+		temp_element_point_identifier.element=(cell->distributed).element_copy;
+    return_code = update_element_point_fields(&temp_element_point_identifier,
+      temp_element_point_number,cell);
+    if (return_code)
+    {
+      /* now make the changes to the element copy global */
+      if ((element=(cell->distributed).element_point_identifier.element) &&
+        (cell->distributed).element_copy)
+      {
+        /* get faces from global element and put in element_copy so not lost */
+        number_of_faces=element->shape->number_of_faces;
+        for (i=0;i<number_of_faces;i++)
+        {
+          if (get_FE_element_face(element,i,&face_element))
+          {
+            set_FE_element_face((cell->distributed).element_copy,i,
+              face_element);
+          }
+        }
+        if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
+          (cell->distributed).element_point_identifier.element,
+          (cell->distributed).element_copy,
+          (cell->cell_3d).element_manager))
+        {
+          /* refresh the text fields as fields may have been changed */
+          reset_variable_values(cell->variables);
+          update_parameter_dialog_boxes(cell);
+          return_code=1;
+        }
+        else
+        {
+          display_message(WARNING_MESSAGE,"Cell_window_to_element_point. "
+            "Failed");
+          return_code=0;
+        }
+        /* clear the faces of element_copy as messes up exterior calculations
+				 for graphics created from them */
+        for (i=0;i<number_of_faces;i++)
+        {
+          set_FE_element_face((cell->distributed).element_copy,i,
+            (struct FE_element *)NULL);
+        }
+      }
+      else
+      {
+        return_code=1;
+      }
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_window_to_element_point. "
+        "Unable to update field values");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_window_to_element_point. "
+      "Missing cell window");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_window_to_element_point() */
+
+#if defined (CELL_USE_NODES)
 int Cell_window_to_FE_node(struct Cell_window *cell,
   struct FE_node *node_to_be_modified)
 /*******************************************************************************
@@ -1227,10 +1779,11 @@ Re-sets the <node> values from the Cell window.
   LEAVE;
   return(return_code);
 } /* END Cell_window_to_FE_node() */
+#endif /* defined (CELL_USE_NODES) */
 
 int bring_up_export_window(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 09 June 2000
 
 DESCRIPTION :
 If a export window exists, pop it up, otherwise create it.

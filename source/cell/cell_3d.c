@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_3d.c
 
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Functions for Cell 3d.
@@ -335,6 +335,7 @@ properties. If <filename> is NULL, then a simple arrow is used.
             (cell->cell_3d).graphical_material_manager;
           obj_data->time = 0.0;
           obj_data->graphics_object_name = type;
+          obj_data->render_type = RENDER_TYPE_SHADED;
           return_code = file_read_voltex_graphics_object_from_obj(filename,
             (void *)obj_data);
           if (return_code)

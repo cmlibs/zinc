@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_window.c
 
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Functions for using the Cell_window structure.
@@ -16,6 +16,7 @@ Functions for using the Cell_window structure.
 #include <Xm/List.h>
 #include <Xm/Protocols.h>
 #include <Xm/Text.h>
+#include <Xm/TextF.h>
 #endif /* if defined (MOTIF) */
 #include "cell/model_dialog.h"
 #include "cell/calculate.h"
@@ -28,7 +29,9 @@ Functions for using the Cell_window structure.
 #include "cell/cell_3d.h"
 #include "cell/cell_variable.h"
 #include "cell/cmgui_connection.h"
-#include "choose/text_choose_fe_node.h"
+#include "choose/choose_enumerator.h"
+#include "choose/text_choose_fe_element.h"
+#include "choose/choose_computed_field.h"
 #include "command/command.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/user_interface.h"
@@ -167,6 +170,7 @@ Stores the id of the message areas.
   LEAVE;
 } /* END identify_output_pane() */
 
+#if defined (CELL_USE_NODES)
 static void identify_node_chooser_label(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
@@ -191,6 +195,107 @@ Stores the id of the node chooser label.
   }
   LEAVE;
 } /* END identify_node_chooser_label() */
+#endif /* defined (CELL_USE_NODES) */
+
+static void identify_element_form(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Stores the id of the element chooser form.
+==============================================================================*/
+{
+  struct Cell_window *cell;
+  
+  ENTER(identify_element_form);
+	USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    (cell->distributed).element_form = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_element_form. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END identify_element_form() */
+
+static void identify_point_number_text(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Stores the id of the element point number text field.
+==============================================================================*/
+{
+  struct Cell_window *cell;
+  
+  ENTER(identify_point_number_text);
+	USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    (cell->distributed).point_number_text = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_point_number_text. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END identify_point_number_text() */
+
+static void identify_grid_field_form(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Stores the id of the grid field chooser form.
+==============================================================================*/
+{
+  struct Cell_window *cell;
+  
+  ENTER(identify_grid_field_form);
+	USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    (cell->distributed).grid_field_form = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_grid_field_form. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END identify_grid_field_form() */
+
+static void identify_grid_value_text(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Stores the id of the grid field value text field.
+==============================================================================*/
+{
+  struct Cell_window *cell;
+  
+  ENTER(identify_grid_value_text);
+	USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    (cell->distributed).grid_value_text = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_grid_value_text. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END identify_grid_value_text() */
 
 static void identify_export_button(Widget widget,XtPointer cell_window,
   XtPointer call_data)
@@ -217,6 +322,7 @@ Stores the id of the export button in the file -> write menu.
   LEAVE;
 } /* END identify_export_button() */
 
+#if defined (CELL_USE_NODES)
 static void identify_node_chooser_form(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
@@ -241,6 +347,7 @@ Stores the id of the node chooser.
   }
   LEAVE;
 } /* END identify_node_chooser_form() */
+#endif /* defined (CELL_USE_NODES) */
 
 static void identify_description_label(Widget widget,XtPointer cell_window,
   XtPointer call_data)
@@ -403,6 +510,7 @@ Callback for when the state of the save toggle changes.
   LEAVE;
 } /* END save_toggle_changed_callback() */
 
+#if defined (CELL_USE_NODES)
 static void cell_window_update_node(Widget widget,
 	void *cell_window,void *node_void)
 /*******************************************************************************
@@ -468,6 +576,72 @@ Callback for change of node from text_choose_fe_node.
 	}
 	LEAVE;
 } /* cell_window_update_node */
+#endif /* defined (CELL_USE_NODES) */
+
+static void Cell_window_update_from_element_point(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2000
+
+DESCRIPTION :
+Called whenever the cell window needs to be updated from the element point
+currently selected.
+==============================================================================*/
+{
+  char *value_string,description[100];
+  XmString str;
+  struct Computed_field *field;
+  FE_value *xi;
+  int comp_no;
+  struct FE_element *element,*top_level_element;
+
+	ENTER(Cell_window_update_from_element_point);
+  if (cell &&
+    (element=(cell->distributed).element_point_identifier.element)&&
+		(top_level_element=
+			(cell->distributed).element_point_identifier.top_level_element)&&
+		(xi=(cell->distributed).xi))
+  {
+    comp_no = 0;
+    /* get the cell_type field if possible */
+    if (field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)("cell_type",
+      Computed_field_package_get_computed_field_manager(
+				cell->computed_field_package)))
+    {
+      if (value_string = Computed_field_evaluate_component_as_string_in_element(
+        field,comp_no,element,xi,top_level_element))
+      {
+        sprintf(description,"Currently editing a grid point with cell type: "
+          "%s\0",value_string);
+        DEALLOCATE(value_string);
+      }
+    }
+    else
+    {
+      sprintf(description,"Can't get the cell type for this grid point");
+    }
+    str = XmStringCreateSimple(description);
+    if ((cell->distributed).description_label != (Widget)NULL)
+    {
+      XtVaSetValues((cell->distributed).description_label,
+        XmNlabelString,str,
+        NULL);
+    }
+    XmStringFree(str);
+    /* put element point into cell window */
+    if (!element_point_to_Cell_window(cell->computed_field_package,comp_no,
+      element,xi,top_level_element,cell))
+    {
+      display_message(ERROR_MESSAGE,"Cell_window_update_from_element_point. "
+        "Unable to update the cell window from the element point");
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_update_from_element_point.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cell_window_update_from_element_point */
 
 static void edit_dist_changed_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
@@ -479,7 +653,9 @@ Callback for when the state of the edit distributed toggle changes
 ==============================================================================*/
 {
   struct Cell_window *cell = (struct Cell_window *)NULL;
+#if defined (CELL_USE_NODES)
   struct FE_node *node = (struct FE_node *)NULL;
+#endif /* defined (CELL_USE_NODES) */
   Boolean state;
 
   ENTER(edit_dist_changed_callback);
@@ -492,23 +668,25 @@ Callback for when the state of the edit distributed toggle changes
     if (state)
     {
       (cell->distributed).edit = 1;
-      /* update from the node */
-      if (node=TEXT_CHOOSE_OBJECT_GET_OBJECT(FE_node)(
-        (cell->distributed).node_chooser_widget))
-      {
-        cell_window_update_node((Widget)NULL,(void *)cell,(void *)node);
-      }
+      /* update from the current selected element point */
+      Cell_window_update_from_element_point(cell);
     }
     else
     {
       (cell->distributed).edit = 0;      
     }
-    XtSetSensitive((cell->distributed).node_chooser_label,state);
-    XtSetSensitive((cell->distributed).node_chooser_widget,state);
     XtSetSensitive((cell->distributed).description_label,state);
+    XtSetSensitive((cell->distributed).element_widget,state);
+    XtSetSensitive((cell->distributed).point_number_text,state);
+    XtSetSensitive((cell->distributed).grid_field_widget,state);
+    XtSetSensitive((cell->distributed).grid_value_text,state);
     XtSetSensitive((cell->distributed).apply_button,state);
     XtSetSensitive((cell->distributed).reset_button,state);
 		XtSetSensitive((cell->distributed).export_menu_button,state);
+#if defined (CELL_USE_NODES)
+    XtSetSensitive((cell->distributed).node_chooser_label,state);
+    XtSetSensitive((cell->distributed).node_chooser_widget,state);
+#endif /* defined (CELL_USE_NODES) */
   }
   else
   {
@@ -518,6 +696,7 @@ Callback for when the state of the edit distributed toggle changes
   LEAVE;
 } /* END edit_dist_changed_callback() */
 
+#if defined (CELL_USE_NODES)
 static void cell_node_group_change(
   struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *cell_window)
 /*******************************************************************************
@@ -571,6 +750,7 @@ group to the node chooser in Cell.
   }
   LEAVE;
 } /* END cell_node_group_change() */
+#endif /* defined (CELL_USE_NODES) */
 
 static void input_mode_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
@@ -1391,6 +1571,7 @@ Set-up the scene viewer for Cell 3D.
     (cell->cell_3d).graphical_material_manager;
   obj_data->time = 0.0;
   obj_data->graphics_object_name = "membrane";
+  obj_data->render_type = RENDER_TYPE_SHADED;
   sprintf(file_name,"/usr/people/nickerso/3d_cell/membrane.obj\0");
   file_read_voltex_graphics_object_from_obj(file_name,(void *)obj_data);
   DEALLOCATE(obj_data);
@@ -1473,6 +1654,7 @@ Initialise the scene viewer for Cell 3D.
   LEAVE;
 } /* END intialise_cell_3d_scene() */
 
+#if defined (CELL_USE_NODES)
 static void apply_button_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
@@ -1508,7 +1690,41 @@ specified node.
   }
   LEAVE;
 } /* END apply_button_callback() */
+#endif /* defined (CELL_USE_NODES) */
 
+static void apply_button_callback(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Callback function for the apply button, used to update the element point
+fields for the currently selected element point, from the values in the cell
+window.
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  
+  ENTER(apply_button_callback);
+  USE_PARAMETER(widget);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    if (!Cell_window_to_element_point(cell))
+    {
+      display_message(ERROR_MESSAGE,"apply_button_callback. "
+        "Unable to set the element point values");
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"apply_button_callback. "
+      "Missing cell window");
+  }
+  LEAVE;
+} /* END apply_button_callback() */
+
+#if defined (CELL_USE_NODES)
 static void reset_button_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
@@ -1530,8 +1746,38 @@ Callback function for the reset button, used to revert back to the nodal values
     if (node = TEXT_CHOOSE_OBJECT_GET_OBJECT(FE_node)(
       (cell->distributed).node_chooser_widget))
     {
+      XXXXXXXXXX
       cell_window_update_node((Widget)NULL,(void *)cell,(void *)node);
     }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"reset_button_callback. "
+      "Missing cell window");
+  }
+  LEAVE;
+} /* END reset_button_callback() */
+#endif /* defined (CELL_USE_NODES) */
+
+static void reset_button_callback(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Callback function for the reset button, used to revert back to the element
+point values from the currently selected element point.
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  
+  ENTER(reset_button_callback);
+  USE_PARAMETER(widget);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    /* re-update the cell window from the element point */
+    Cell_window_update_from_element_point(cell);
   }
   else
   {
@@ -1544,7 +1790,7 @@ Callback function for the reset button, used to revert back to the nodal values
 static void export_to_cmiss_files(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 08 June 2000
 
 DESCRIPTION :
 Callback for File | Write | Export to CMISS files
@@ -1593,6 +1839,578 @@ Callback for File | Write | Export time variables
   LEAVE;
 } /* END export_control_curves() */
 
+static int Cell_window_calculate_xi(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Ensures xi is correct for the currently selected element point, if any.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *element;
+
+	ENTER(Cell_window_calculate_xi);
+	if (cell)
+	{
+		if (element=(cell->distributed).element_point_identifier.element)
+		{
+			return_code=Xi_discretization_mode_get_element_point_xi(
+				(cell->distributed).element_point_identifier.xi_discretization_mode,
+				get_FE_element_dimension(element),
+				(cell->distributed).element_point_identifier.number_in_xi,
+				(cell->distributed).element_point_identifier.exact_xi,
+				(cell->distributed).element_point_number,
+				(cell->distributed).xi);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_calculate_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_calculate_xi */
+
+static int Cell_window_refresh_element(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Updates the element shown in the chooser to match that for the current point.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *element;
+ 
+	ENTER(Cell_window_refresh_element);
+	if (cell)
+	{
+		return_code=1;
+		if (element=(cell->distributed).element_point_identifier.element)
+		{
+			TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+				(cell->distributed).element_widget,element);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_refresh_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_refresh_element */
+
+static int Cell_window_refresh_point_number_text(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Updates the point_number text field. If there is a current element point,
+writes its number, otherwise N/A.
+==============================================================================*/
+{
+	char temp_string[20];
+	int return_code,is_sensitive;
+ 
+	ENTER(Cell_window_refresh_point_number_text);
+	if (cell)
+	{
+		return_code=1;
+		if ((cell->distributed).element_point_identifier.element)
+		{
+			sprintf(temp_string,"%d",(cell->distributed).element_point_number);
+			XmTextFieldSetString((cell->distributed).point_number_text,temp_string);
+			is_sensitive=True;
+		}
+		else
+		{
+			XmTextFieldSetString((cell->distributed).point_number_text,"N/A");
+			is_sensitive=False;
+		}
+		XtSetSensitive((cell->distributed).point_number_text,is_sensitive);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_refresh_point_number_text.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_refresh_point_number_text */
+
+static int Cell_window_refresh_grid_value_text(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Updates the grid_value text field. If there is a current element point, writes
+the field value, otherwise N/A.
+==============================================================================*/
+{
+	char *value_string;
+	int is_sensitive,return_code;
+	struct Computed_field *grid_field;
+	struct FE_element *top_level_element;
+ 
+	ENTER(Cell_window_refresh_grid_value_text);
+	if (cell)
+	{
+		return_code=1;
+		top_level_element=(struct FE_element *)NULL;
+		if (((cell->distributed).element_point_identifier.element)&&
+			(grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				(cell->distributed).grid_field_widget)))
+		{
+			if (value_string=Computed_field_evaluate_as_string_in_element(
+				grid_field,(cell->distributed).element_point_identifier.element,
+				(cell->distributed).xi,top_level_element))
+			{
+				XmTextFieldSetString((cell->distributed).grid_value_text,
+					value_string);
+				DEALLOCATE(value_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cell_window_refresh_grid_value_text.  "
+					"Could not evaluate field");
+				XmTextFieldSetString((cell->distributed).grid_value_text,"ERROR");
+			}
+			Computed_field_clear_cache(grid_field);
+			is_sensitive=True;
+		}
+		else
+		{
+			XmTextFieldSetString((cell->distributed).grid_value_text,"N/A");
+			is_sensitive=False;
+		}
+		XtSetSensitive((cell->distributed).grid_value_text,is_sensitive);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_refresh_grid_value_text.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_refresh_grid_value_text */
+
+static int Cell_window_refresh_chooser_widgets(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Fills the widgets for choosing the element point with the current values.
+==============================================================================*/
+{
+	int return_code;
+ 
+	ENTER(Cell_window_refresh_chooser_widgets);
+	if (cell)
+	{
+		return_code=1;
+		Cell_window_refresh_element(cell);
+		Cell_window_refresh_point_number_text(cell);
+		Cell_window_refresh_grid_value_text(cell);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_refresh_chooser_widgets.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_refresh_chooser_widgets */
+
+static void Cell_window_element_point_ranges_selection_change(
+	struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct Element_point_ranges_selection_changes *changes,
+	void *cell_window_void)
+/*******************************************************************************
+LAST MODIFIED : 14 June 2000
+
+DESCRIPTION :
+Callback for change in the global element_point selection.
+==============================================================================*/
+{
+	int start,stop;
+	struct Element_point_ranges *element_point_ranges;
+	struct Cell_window *cell;
+	struct Multi_range *ranges;
+
+	ENTER(Cell_window_element_point_ranges_selection_change);
+	if (element_point_ranges_selection&&changes&&(cell=
+		(struct Cell_window *)cell_window_void))
+	{
+		/* get the last selected element_point and put it in the cell window */
+		if ((element_point_ranges=
+			FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
+				(LIST_CONDITIONAL_FUNCTION(Element_point_ranges) *)NULL,(void *)NULL,
+				changes->newly_selected_element_point_ranges_list))||
+			(element_point_ranges=
+				FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(
+					&((cell->distributed).element_point_identifier),
+					Element_point_ranges_selection_get_element_point_ranges_list(
+						element_point_ranges_selection)))||
+			(element_point_ranges=
+				FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
+					(LIST_CONDITIONAL_FUNCTION(Element_point_ranges) *)NULL,(void *)NULL,
+					Element_point_ranges_selection_get_element_point_ranges_list(
+						element_point_ranges_selection))))
+		{
+			Element_point_ranges_get_identifier(element_point_ranges,
+				&((cell->distributed).element_point_identifier));
+			if ((ranges=Element_point_ranges_get_ranges(element_point_ranges))&&
+				Multi_range_get_range(ranges,0,&start,&stop))
+			{
+				(cell->distributed).element_point_number=start;
+			}
+			else
+			{
+				(cell->distributed).element_point_number=0;
+			}
+      Cell_window_calculate_xi(cell);
+			Cell_window_refresh_chooser_widgets(cell);
+      Cell_window_update_from_element_point(cell);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_element_point_ranges_selection_change.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cell_window_element_point_ranges_selection_change */
+
+static void Cell_window_update_grid_field(Widget widget,
+	void *cell_window_void,void *grid_field_void)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Callback for change of grid field.
+==============================================================================*/
+{
+	struct Cell_window *cell;
+
+	ENTER(Cell_window_update_grid_field);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(grid_field_void);
+	if (cell = (struct Cell_window *)cell_window_void)
+	{
+		Cell_window_refresh_grid_value_text(cell);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_update_grid_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cell_window_update_grid_field */
+
+static int Cell_window_get_grid(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+If there is a grid field defined for the element, gets its discretization and
+sets the Xi_discretization_mode to XI_DISCRETIZATION_CELL_CORNERS, otherwise
+leaves the current discretization/mode intact.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *grid_field;
+	struct FE_element *element;
+	struct FE_field *grid_fe_field;
+
+	ENTER(Cell_window_get_grid);
+	if (cell)
+	{
+		return_code=1;
+		element=(cell->distributed).element_point_identifier.element;
+		if (element&&(grid_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_is_scalar_integer_grid_in_element,(void *)element,
+			Computed_field_package_get_computed_field_manager(
+				cell->computed_field_package)))&&
+			Computed_field_get_type_finite_element(grid_field,&grid_fe_field)&&
+			FE_element_field_is_grid_based(element,grid_fe_field))
+		{
+			get_FE_element_field_grid_map_number_in_xi(element,grid_fe_field,
+				(cell->distributed).element_point_identifier.number_in_xi);
+			(cell->distributed).element_point_identifier.xi_discretization_mode=
+				XI_DISCRETIZATION_CELL_CORNERS;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_get_grid.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_get_grid */
+
+static int Cell_window_select_current_point(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Makes the currently described element point the only one in the global
+selection. Does nothing if no current element point.
+==============================================================================*/
+{
+	int return_code;
+ 	struct Element_point_ranges *element_point_ranges;
+
+	ENTER(Cell_window_select_current_point);
+	if (cell)
+	{
+		if ((cell->distributed).element_point_identifier.element)
+		{
+			if (element_point_ranges=CREATE(Element_point_ranges)(
+				&((cell->distributed).element_point_identifier)))
+			{
+				Element_point_ranges_add_range(element_point_ranges,
+					(cell->distributed).element_point_number,
+					(cell->distributed).element_point_number);
+				Element_point_ranges_selection_begin_cache(
+					cell->element_point_ranges_selection);
+				Element_point_ranges_selection_clear(
+					cell->element_point_ranges_selection);
+				return_code=
+					Element_point_ranges_selection_select_element_point_ranges(
+						cell->element_point_ranges_selection,
+						element_point_ranges);
+				Element_point_ranges_selection_end_cache(
+					cell->element_point_ranges_selection);
+				DESTROY(Element_point_ranges)(&element_point_ranges);
+			}
+			else
+			{
+				return_code=0;
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"Cell_window_select_current_point.  Failed");
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_select_current_point.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cell_window_select_current_point */
+
+static void Cell_window_update_element(Widget widget,
+	void *cell_window_void,void *element_void)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Callback for change of element.
+==============================================================================*/
+{
+	struct Cell_window *cell;
+
+	ENTER(Cell_window_update_element);
+	USE_PARAMETER(widget);
+	if (cell = (struct Cell_window *)cell_window_void)
+	{
+		(cell->distributed).element_point_identifier.element=
+			(struct FE_element *)element_void;
+		if ((cell->distributed).element_point_identifier.element)
+		{
+			if (XI_DISCRETIZATION_CELL_CORNERS==
+				(cell->distributed).element_point_identifier.xi_discretization_mode)
+			{
+				Cell_window_get_grid(cell);
+			}
+			Cell_window_calculate_xi(cell);
+			Cell_window_select_current_point(cell);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_update_element.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cell_window_update_element */
+
+static void Cell_window_point_number_text_CB(Widget widget,
+	void *cell_window_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2000
+
+DESCRIPTION :
+Called when entry is made into the point_number_text field.
+==============================================================================*/
+{
+	char *value_string;
+	int element_point_number;
+	struct Cell_window *cell;
+	XmAnyCallbackStruct *any_callback;
+
+	ENTER(Cell_window_point_number_text_CB);
+	USE_PARAMETER(widget);
+	if ((cell = (struct Cell_window *)cell_window_void)&&
+		(any_callback = (XmAnyCallbackStruct *)call_data))
+	{
+		if (XmCR_ACTIVATE == any_callback->reason)
+		{
+			/* Get the text string */
+			if (value_string =
+				XmTextFieldGetString((cell->distributed).point_number_text))
+			{
+				if ((1==sscanf(value_string,"%d",&element_point_number))&&
+					Element_point_ranges_identifier_element_point_number_is_valid(
+						&((cell->distributed).element_point_identifier),
+						element_point_number))
+				{
+					(cell->distributed).element_point_number=element_point_number;
+					Cell_window_select_current_point(cell);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Cell_window_point_number_text_CB.  Invalid point number");
+				}
+				XtFree(value_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cell_window_point_number_text_CB.  Missing text");
+			}
+		}
+		/* always restore point_number_text to actual value stored */
+		Cell_window_refresh_point_number_text(cell);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_point_number_text_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cell_window_point_number_text_CB */
+
+static void Cell_window_grid_value_text_CB(Widget widget,
+	void *cell_window_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Called when entry is made into the grid_value_text field.
+==============================================================================*/
+{
+	char *value_string;
+	int grid_value;
+	struct Computed_field *grid_field;
+	struct Cell_window *cell;
+	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
+	struct FE_field *grid_fe_field;
+	XmAnyCallbackStruct *any_callback;
+
+	ENTER(Cell_window_grid_value_text_CB);
+	USE_PARAMETER(widget);
+	if ((cell = (struct Cell_window *)cell_window_void)&&
+		(any_callback=(XmAnyCallbackStruct *)call_data))
+	{
+		if (XmCR_ACTIVATE == any_callback->reason)
+		{
+			/* Get the text string */
+			if (value_string=
+				XmTextFieldGetString((cell->distributed).grid_value_text))
+			{
+				if ((grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					(cell->distributed).grid_field_widget))&&
+					Computed_field_get_type_finite_element(grid_field,&grid_fe_field))
+				{
+					if (1==sscanf(value_string,"%d",&grid_value))
+					{
+						if ((grid_to_list_data.grid_value_ranges=CREATE(Multi_range)())&&
+							Multi_range_add_range(grid_to_list_data.grid_value_ranges,
+								grid_value,grid_value))
+						{
+							if (grid_to_list_data.element_point_ranges_list=
+								CREATE(LIST(Element_point_ranges))())
+							{
+								grid_to_list_data.grid_fe_field=grid_fe_field;
+								/* inefficient: go through every element in manager */
+								FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+									FE_element_grid_to_Element_point_ranges_list,
+									(void *)&grid_to_list_data,
+									(cell->cell_3d).element_manager);
+								if (0<NUMBER_IN_LIST(Element_point_ranges)(
+									grid_to_list_data.element_point_ranges_list))
+								{
+									Element_point_ranges_selection_begin_cache(
+										cell->element_point_ranges_selection);
+									Element_point_ranges_selection_clear(
+										cell->element_point_ranges_selection);
+									FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+										Element_point_ranges_select,
+										(void *)cell->element_point_ranges_selection,
+										grid_to_list_data.element_point_ranges_list);
+									Element_point_ranges_selection_end_cache(
+										cell->element_point_ranges_selection);
+								}
+								DESTROY(LIST(Element_point_ranges))(
+									&(grid_to_list_data.element_point_ranges_list));
+							}
+							DESTROY(Multi_range)(&(grid_to_list_data.grid_value_ranges));
+						}
+					}
+				}
+				XtFree(value_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cell_window_grid_value_text_CB.  Missing text");
+			}
+		}
+		/* always restore grid_value_text to actual value stored */
+		Cell_window_refresh_grid_value_text(cell);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cell_window_grid_value_text_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Cell_window_grid_value_text_CB */
+
 /*
 Global functions
 ================
@@ -1614,6 +2432,8 @@ struct Cell_window *create_Cell_window(struct User_interface *user_interface,
   struct MANAGER(GROUP(FE_node)) *data_group_manager,
   struct Graphical_material *default_graphical_material,
   struct MANAGER(Spectrum) *spectrum_manager,struct Spectrum *default_spectrum,
+  struct Computed_field_package *computed_field_package,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
   struct Execute_command *execute_command)
 /*******************************************************************************
 LAST MODIFIED : 9 June 2000
@@ -1634,13 +2454,21 @@ specifies a file to print messages to, if non-NULL.
   int init_widgets = 0;
 	MrmType cell_window_class;
   static MrmRegisterArg callback_list[] = {
-    {"export_to_cmiss_files",(XtPointer)export_to_cmiss_files},
     {"export_control_curves",(XtPointer)export_control_curves},
+    {"identify_export_button",(XtPointer)identify_export_button},
+    {"export_to_cmiss_files",(XtPointer)export_to_cmiss_files},
     {"apply_button_callback",(XtPointer)apply_button_callback},
     {"reset_button_callback",(XtPointer)reset_button_callback},
-    {"identify_export_button",(XtPointer)identify_export_button},
+#if defined (CELL_USE_NODES)
     {"identify_node_chooser_form",(XtPointer)identify_node_chooser_form},
     {"identify_node_chooser_label",(XtPointer)identify_node_chooser_label},
+#endif /* defined (CELL_USE_NODES) */
+    {"identify_element_form",(XtPointer)identify_element_form},
+    {"identify_point_number_text",(XtPointer)identify_point_number_text},
+    {"point_number_text_CB",(XtPointer)Cell_window_point_number_text_CB},
+    {"grid_value_text_CB",(XtPointer)Cell_window_grid_value_text_CB},
+    {"identify_grid_field_form",(XtPointer)identify_grid_field_form},
+    {"identify_grid_value_text",(XtPointer)identify_grid_value_text},
     {"identify_description_label",(XtPointer)identify_description_label},
     {"identify_apply_button",(XtPointer)identify_apply_button},
     {"identify_reset_button",(XtPointer)identify_reset_button},
@@ -1842,7 +2670,14 @@ specifies a file to print messages to, if non-NULL.
   }; /* resources */
 #endif /* if defined (MOTIF) */
   unsigned int width,height;
+#if defined (CELL_USE_NODES)
   struct FE_node *node = (struct FE_node *)NULL;
+#endif /* defined (CELL_USE_NODES) */
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct Element_point_ranges *element_point_ranges;
+	struct Computed_field *grid_field;
+	struct Multi_range *ranges;
+  int i,number_of_faces,start,stop;
   
   ENTER(create_Cell_window);
   USE_PARAMETER(init_widgets);
@@ -1865,9 +2700,11 @@ specifies a file to print messages to, if non-NULL.
           cell->output_file = (FILE *)NULL;
         }
         cell->user_interface = user_interface;
-		  cell->single_cell = 0;
-		  cell->execute_command = execute_command;
-		  (cell->unemap).package = package;
+        cell->single_cell = 0;
+        cell->execute_command = execute_command;
+        cell->computed_field_package = computed_field_package;
+        cell->element_point_ranges_selection = element_point_ranges_selection;
+        (cell->unemap).package = package;
 #if defined(MOTIF)
         cell->default_values = 0;
         cell->current_model = (char *)NULL;
@@ -1965,11 +2802,38 @@ specifies a file to print messages to, if non-NULL.
             "Unable to create a new scene, using default");
           (cell->cell_3d).scene = default_scene;
         }
-        /* initialise distributed widgets */
+        /* initialise distributed widgets/structures */
+#if defined (CELL_USE_NODES)
         (cell->distributed).edit = 0; /* always start with false */
         (cell->distributed).node_chooser_label = (Widget)NULL;
         (cell->distributed).node_chooser_form = (Widget)NULL;
         (cell->distributed).node_chooser_widget = (Widget)NULL;
+        (cell->distributed).description_label = (Widget)NULL;
+        (cell->distributed).apply_button = (Widget)NULL;
+        (cell->distributed).reset_button = (Widget)NULL;
+#endif /* defined (CELL_USE_NODES) */
+        (cell->distributed).export_menu_button = (Widget)NULL;
+        (cell->distributed).element_point_identifier.element=
+					(struct FE_element *)NULL;
+        (cell->distributed).element_point_identifier.top_level_element=
+					(struct FE_element *)NULL;
+				(cell->distributed).element_copy=(struct FE_element *)NULL;
+				(cell->distributed).element_point_identifier.xi_discretization_mode=
+					XI_DISCRETIZATION_EXACT_XI;
+				for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+				{
+					(cell->distributed).element_point_identifier.number_in_xi[i]=1;
+					(cell->distributed).xi[i]=
+						(cell->distributed).element_point_identifier.exact_xi[i]=0.5;
+				}
+				(cell->distributed).element_point_number=0;
+        (cell->distributed).element_form=(Widget)NULL;
+				(cell->distributed).element_widget=(Widget)NULL;
+				(cell->distributed).point_number_text=(Widget)NULL;
+				(cell->distributed).grid_field_form=(Widget)NULL;
+				(cell->distributed).grid_field_widget=(Widget)NULL;
+				(cell->distributed).grid_value_text=(Widget)NULL;
+        (cell->distributed).edit = 0; /* always start with false */
         (cell->distributed).description_label = (Widget)NULL;
         (cell->distributed).apply_button = (Widget)NULL;
         (cell->distributed).reset_button = (Widget)NULL;
@@ -2096,6 +2960,7 @@ specifies a file to print messages to, if non-NULL.
                 "cell_window",cell->shell,&(cell->window),&cell_window_class))
               {
                 init_widgets=1;
+#if defined (CELL_USE_NODES)
                 if ((cell->distributed).node_chooser_widget=
                   CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_node)(
                     (cell->distributed).node_chooser_form,
@@ -2103,7 +2968,6 @@ specifies a file to print messages to, if non-NULL.
                     (MANAGER_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
                     GET_NAME(FE_node),node_string_to_FE_node))
                 {
-                  XtSetSensitive((cell->distributed).node_chooser_widget,False);
 									callback.data=(void *)cell;
 									callback.procedure=cell_window_update_node;
 									TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_node)(
@@ -2121,11 +2985,154 @@ specifies a file to print messages to, if non-NULL.
 									TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_node)(
 										(cell->distributed).node_chooser_widget,node);
 #endif /* defined (NEW_CODE) */
+#endif /* defined (CELL_USE_NODES) */
+
+                  /* New Stuff - From element/element_point_viewer.c
+                   *
+                   * Create the widgets/structures for selecting element (grid)
+                   * points.
+                   */
+                  if (element_point_ranges=
+                    FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)
+                    ((LIST_CONDITIONAL_FUNCTION(Element_point_ranges) *)NULL,
+                      (void *)NULL,
+                      Element_point_ranges_selection_get_element_point_ranges_list(
+                        element_point_ranges_selection)))
+                  {
+                    Element_point_ranges_get_identifier(element_point_ranges,
+                      &((cell->distributed).element_point_identifier));
+                    if ((ranges=Element_point_ranges_get_ranges(
+                      element_point_ranges))&&Multi_range_get_range(ranges,0,
+                        &start,&stop))
+                    {
+                      (cell->distributed).element_point_number=start;
+                    }
+                  }
+                  else
+                  {
+                    /* try to get any point in the first top-level element
+										 * we can find.
+										 */
+										if ((cell->distributed).element_point_identifier.element=
+											FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
+												FE_element_is_top_level,(void *)NULL,element_manager))
+										{
+											(cell->distributed).element_point_identifier.top_level_element=
+												(cell->distributed).element_point_identifier.element;
+										}
+										else
+										{
+											(cell->distributed).element_point_identifier.top_level_element=
+												(struct FE_element *)NULL;
+										}
+										/* try to get a grid point, if possible */
+										Cell_window_get_grid(cell);
+                    /* make the element point the only one in the global
+                     * selection
+                     */
+                    Cell_window_select_current_point(cell);
+                  }
+                  Cell_window_calculate_xi(cell);
+                  if ((cell->distributed).element_point_identifier.top_level_element)
+                  {
+                    if ((cell->distributed).element_copy=ACCESS(FE_element)(
+                      CREATE(FE_element)((cell->distributed).
+                        element_point_identifier.top_level_element->identifier,
+                        (cell->distributed).
+												element_point_identifier.top_level_element)))
+										{
+											/* clear the faces of element_copy as messes up exterior
+												 calculations for graphics created from them */
+											number_of_faces=
+												(cell->distributed).element_copy->shape->number_of_faces;
+											for (i=0;i<number_of_faces;i++)
+											{
+												set_FE_element_face((cell->distributed).element_copy,i,
+													(struct FE_element *)NULL);
+											}
+										}
+                  }
+                  else
+                  {
+                    (cell->distributed).element_copy=(struct FE_element *)NULL;
+                  }
+                  /* get callbacks from global element_point selection */
+                  Element_point_ranges_selection_add_callback(
+                    element_point_ranges_selection,
+                    Cell_window_element_point_ranges_selection_change,
+                    (void *)cell);
+                  /* create the element chooser */
+                  if (!((cell->distributed).element_widget=
+                    CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
+                      (cell->distributed).element_form,
+                      (cell->distributed).element_point_identifier.element,
+                      element_manager,
+                      (MANAGER_CONDITIONAL_FUNCTION(FE_element) *)NULL,
+                      (void *)NULL,
+                      FE_element_to_any_element_string,
+                      any_element_string_to_FE_element)))
+                  {
+                    init_widgets=0;
+                  }
+                  /* set the initial grid field to use for selecting
+                   * element points - if a grid_point_number field exists
+                   * use that, otherwise just take the first one which is
+                   * suitable
+                   */
+                  computed_field_manager =
+                    Computed_field_package_get_computed_field_manager(
+                      computed_field_package);
+                  if (!(grid_field=
+                    FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+                      "grid_point_number",computed_field_manager)))
+                  {
+                    grid_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+                      Computed_field_is_scalar_integer,(void *)NULL,
+                      computed_field_manager);
+                  }
+                  /* create the grid field chooser for setting the field
+                   * used to select element points
+                   */
+                  if (!((cell->distributed).grid_field_widget=
+                    CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+                      (cell->distributed).grid_field_form,grid_field,
+                      computed_field_manager,Computed_field_is_scalar_integer,
+                      (void *)(cell->distributed).element_copy)))
+                  {
+                    init_widgets=0;
+                  }
+                  if (init_widgets)
+                  {
+                    /* set the callback for changing the grid field */
+                    callback.data=(void *)cell;
+                    callback.procedure=Cell_window_update_grid_field;
+                    CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+                      (cell->distributed).grid_field_widget,&callback);
+                    /* set the callback for changing the element */
+                    callback.procedure=Cell_window_update_element;
+                    TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+                      (cell->distributed).element_widget,&callback);
+                    /* update the widgets ?? */
+                    Cell_window_refresh_chooser_widgets(cell);
+                    XtSetSensitive((cell->distributed).point_number_text,False);
+                    XtSetSensitive((cell->distributed).grid_value_text,False);
+                    XtSetSensitive((cell->distributed).element_widget,False);
+                    XtSetSensitive((cell->distributed).grid_field_widget,False);
+                  }
+                  else
+                  {
+                    display_message(ERROR_MESSAGE,
+                      "create_Cell_window.  Could not init widgets");
+                    DEALLOCATE(cell);
+                    cell = (struct Cell_window *)NULL;
+                  }
+#if defined (CELL_USE_NODES)
                 }
                 else
                 {
                   init_widgets=0;
                 }
+#endif /* defined (CELL_USE_NODES) */
                 /* retrieve settings */
                 if (ALLOCATE(cell->user_settings,User_settings,1))
                 {
@@ -2146,10 +3153,12 @@ specifies a file to print messages to, if non-NULL.
                   {
                     /* set-up the scene */
                     initialise_cell_3d_scene(cell);
+#if defined (CELL_USE_NODES)
                     /* ?? add the callback for the node groups ?? */
                     (cell->cell_3d).node_group_callback_id=
                       MANAGER_REGISTER(GROUP(FE_node))(cell_node_group_change,
                         (void *)cell,(cell->cell_3d).node_group_manager);
+#endif /* defined (CELL_USE_NODES) */
                     /* add the callback for the object picking */
                     scene_input_callback.procedure = cell_3d_picking_callback;
                     scene_input_callback.data = (void *)cell;
@@ -2157,7 +3166,7 @@ specifies a file to print messages to, if non-NULL.
                       &scene_input_callback);
 #if defined (NEW_CODE)
                     /* if I ever destroy the cell window need to remove the
-                    callback */
+                       callback */
                     scene_input_callback.procedure =
                       (Scene_input_callback_procedure *)NULL;
                     scene_input_callback.data = (void *)NULL;
@@ -2266,6 +3275,7 @@ Writes the <message> to the <cell> window.
   return(return_code);
 } /* END write_cell_window() */
 
+#if defined (CELL_USE_NODES)
 void update_cell_window_from_node(struct Cell_window *cell)
 /*******************************************************************************
 LAST MODIFIED : 15 September 1999
@@ -2282,6 +3292,7 @@ Updates the cell window from a node, if a node exists in the node chooser
     if (node=TEXT_CHOOSE_OBJECT_GET_OBJECT(FE_node)(
       (cell->distributed).node_chooser_widget))
     {
+      ???XXXXXXXXXX????
       cell_window_update_node((Widget)NULL,(void *)cell,(void *)node);
     }
   }
@@ -2292,3 +3303,43 @@ Updates the cell window from a node, if a node exists in the node chooser
   }
   LEAVE;
 } /* END update_cell_window_from_node() */
+#endif /* defined (CELL_USE_NODES) */
+
+int Cell_read_model(char *filename,struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Wrapper function used to execute the CELL READ MODEL command. If a file name
+is specified the file is parsed, otherwise, the models dialog is popped-up.
+==============================================================================*/
+{
+  int return_code = 0;
+  
+  ENTER(Cell_read_model);
+  if (cell)
+  {
+    if (filename)
+    {
+      display_message(INFORMATION_MESSAGE,"Cell_read_model. "
+        "This don't work yet!!\n"
+        "  Need to do something like \"cell read/define models\" to define "
+        "the models from the default \n    file given in the resource file.\n"
+        "  Then can do a \"cell read model <filename>\" or maybe "
+        "\"cell read model <name>\", where \n    name is defined by the "
+        "models file already read in!!??????\n");
+    }
+    else
+    {
+      return_code = bring_up_model_dialog(cell);
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_read_model. "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_read_model */

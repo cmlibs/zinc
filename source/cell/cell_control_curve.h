@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_control_curve.h
 
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Functions for CELL to interact with CMGUI time variables.
@@ -17,7 +17,7 @@ Global types
 */
 struct Export_control_curve_dialog
 /*******************************************************************************
-LAST MODIFIED : 29 September 1999
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Used to store the information and widgets used to export time variables to 
@@ -29,6 +29,9 @@ iptime files.
 	Widget variables_rowcol;
   Widget file_label;
   char *file_name;
+  Widget *curve_toggles;
+  int number_of_curves;
+  struct MANAGER(Control_curve) *control_curve_manager;
 }; /* Export_control_curve_dialog */
 
 /*

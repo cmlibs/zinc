@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_control_curve.c
 
-LAST MODIFIED : 17 November 1999
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Functions for CELL to interact with CMGUI control_curves.
@@ -20,6 +20,7 @@ Functions for CELL to interact with CMGUI control_curves.
 #include "cell/cell_variable.h"
 #include "cell/cell_control_curve.h"
 #include "cell/export_control_curves_dialog.uidh"
+#include "cell/output.h"
 #include "user_interface/filedir.h"
 /*
 Local types
@@ -230,9 +231,10 @@ Callback for the OK button in the export time variable dialog.
   ENTER(ok_button_callback);
   USE_PARAMETER(widget);
   USE_PARAMETER(call_data);
-  USE_PARAMETER(cell);
   if (cell = (struct Cell_window *)cell_window)
   {
+    /* write out all the selected control curves */
+    export_control_curves_to_file(cell->export_control_curve_dialog);
 		/* destroy the dialog */
 		export_control_curves_dialog_destroy_callback((Widget)NULL,
 			(XtPointer)cell,(XtPointer)NULL);
@@ -274,27 +276,47 @@ Callback for the cancel button in the export time variable dialog.
 } /* END cancel_button_callback() */
 
 static int create_control_curve_toggle(struct Control_curve *variable,
-	void *parent_void)
+	void *dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 1 July 1999
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-control_curve iterator function for writing out the names of variables.
+control_curve iterator function for creating all the time variable toggles.
 ==============================================================================*/
 {
 	int return_code;
-	Widget parent;
 	char *name;
+  struct Export_control_curve_dialog *dialog;
 	
 	ENTER(create_control_curve_toggle);
-	if (parent = (Widget)parent_void)
+	if ((dialog = (struct Export_control_curve_dialog *)dialog_void) &&
+    dialog->variables_rowcol)
 	{
 		GET_NAME(Control_curve)(variable,&name);
-		XtVaCreateManagedWidget("cell_control_curve_toggle",
-			xmToggleButtonWidgetClass,parent,
-			XmNlabelString,XmStringCreateSimple(name),
-			NULL);
-		return_code = 1;
+    dialog->number_of_curves++;
+    if (dialog->number_of_curves == 1)
+    {
+      ALLOCATE(dialog->curve_toggles,Widget,dialog->number_of_curves);
+    }
+    else
+    {
+      REALLOCATE(dialog->curve_toggles,dialog->curve_toggles,Widget,
+        dialog->number_of_curves);
+    }
+    if (dialog->curve_toggles)
+    {
+      dialog->curve_toggles[dialog->number_of_curves-1] =
+        XtVaCreateManagedWidget("cell_control_curve_toggle",
+          xmToggleButtonWidgetClass,dialog->variables_rowcol,
+          XmNlabelString,XmStringCreateSimple(name),
+          NULL);
+      return_code = 1;
+    }
+    else
+    {
+      dialog->number_of_curves--;
+      return_code = 0;
+    }
 	}
 	else
 	{
@@ -304,10 +326,11 @@ control_curve iterator function for writing out the names of variables.
 	return(return_code);
 } /* END create_control_curve_toggle() */
 
-static int create_variable_widgets(Widget parent,
+static int create_control_curve_toggles(
+  struct Export_control_curve_dialog *dialog,
 	struct MANAGER(Control_curve) *control_curve_manager)
 /*******************************************************************************
-LAST MODIFIED : 29 September 1999
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Creates the toggle button widgets for all of the currently managed time 
@@ -316,12 +339,12 @@ variables.
 {
 	int return_code = 0;
 
-	ENTER(create_variable_widgets);
+	ENTER(create_control_curve_toggles);
 	return_code = FOR_EACH_OBJECT_IN_MANAGER(Control_curve)(
-		create_control_curve_toggle,(void *)parent,control_curve_manager);
+		create_control_curve_toggle,(void *)dialog,control_curve_manager);
 	LEAVE;
 	return(return_code);
-} /* END create_variable_widgets() */
+} /* END create_control_curve_toggles() */
 
 static int create_export_control_curves_dialog(struct Cell_window *cell)
 /*******************************************************************************
@@ -372,6 +395,10 @@ Create a new export dialog.
 				cell->export_control_curve_dialog->variables_rowcol = (Widget)NULL;
 				cell->export_control_curve_dialog->file_label = (Widget)NULL;
 				cell->export_control_curve_dialog->file_name = (char *)NULL;
+        cell->export_control_curve_dialog->curve_toggles = (Widget *)NULL;
+        cell->export_control_curve_dialog->number_of_curves = 0;
+        cell->export_control_curve_dialog->control_curve_manager =
+          (cell->control_curve).control_curve_manager;
 				/* set the default file names */
 				if (ALLOCATE(cell->export_control_curve_dialog->file_name,char,
 					strlen("cell.iptime")))
@@ -430,8 +457,8 @@ Create a new export dialog.
                 &(cell->export_control_curve_dialog->window),
 								&export_control_curves_dialog_class))
               {
-								if (create_variable_widgets(
-									cell->export_control_curve_dialog->variables_rowcol,
+								if (create_control_curve_toggles(
+									cell->export_control_curve_dialog,
 									(cell->control_curve).control_curve_manager))
 								{
 									XtManageChild(cell->export_control_curve_dialog->window);

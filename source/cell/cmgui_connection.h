@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui_connection.h
 
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Functions for talking between Cell and Cmgui.
@@ -17,7 +17,7 @@ Global types
 */
 struct Export_dialog
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 09 June 2000
 
 DESCRIPTION :
 Used to store the information and widgets used to export ipcell and ipmatc
@@ -28,11 +28,12 @@ files from Cell.
   Widget window;
   Widget group_chooser_form;
   Widget group_chooser_widget;
+  Widget grid_field_chooser_form;
+  Widget grid_field_chooser_widget;
   Widget ipcell_file_label;
   char *ipcell_file_name;
   char *ipmatc_file_name;
   Widget ipmatc_file_label;
-	Widget offset_textfield;
 }; /* Export_dialog */
 
 /*
@@ -61,6 +62,7 @@ LAST MODIFIED : 21 September 1999
 DESCRIPTION :
 Callback for the file selection dialog for the ipmatc file in the export dialog.
 ==============================================================================*/
+#if defined (CELL_USE_NODES)
 int FE_node_to_Cell_window(struct Cell_window *cell,struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 14 September 1999
@@ -68,6 +70,26 @@ LAST MODIFIED : 14 September 1999
 DESCRIPTION :
 Extracts values from a FE_node and sets up the cell window.
 ==============================================================================*/
+#endif /* defined (CELL_USE_NODES) */
+int element_point_to_Cell_window(
+  struct Computed_field_package *computed_field_package,int component_number,
+  struct FE_element *element,FE_value *xi,struct FE_element *top_level_element,
+  struct Cell_window *cell);
+/*******************************************************************************
+LAST MODIFIED : 14 June 2000
+
+DESCRIPTION :
+Extracts values from the specified element point and sets up the cell window.
+==============================================================================*/
+int Cell_window_to_element_point(struct Cell_window *cell);
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Sets the field values at the currently selected element point from the values
+in the cell window.
+==============================================================================*/
+#if defined (CELL_USE_NODES)
 int Cell_window_to_FE_node(struct Cell_window *cell,
   struct FE_node *node_to_be_modified);
 /*******************************************************************************
@@ -76,6 +98,7 @@ LAST MODIFIED : 14 September 1999
 DESCRIPTION :
 Re-sets the <node> values from the Cell window.
 ==============================================================================*/
+#endif /* defined (CELL_USE_NODES) */
 int bring_up_export_window(struct Cell_window *cell);
 /*******************************************************************************
 LAST MODIFIED : 17 September 1999

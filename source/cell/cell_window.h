@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_window.h
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Functions for using the Cell structure.
@@ -75,6 +75,8 @@ Main structure containing all CELL data.
   struct XML_Tree tree;
   char *current_model,*current_model_id;
   struct User_interface *user_interface;
+  struct Computed_field_package *computed_field_package;
+	struct Element_point_ranges_selection *element_point_ranges_selection;
   struct Execute_command *execute_command;
   FILE *output_file;
   Widget window;
@@ -132,17 +134,35 @@ Main structure containing all CELL data.
     struct MANAGER(FE_field) *fe_field_manager;
     struct MANAGER(GROUP(FE_element)) *element_group_manager;
     struct MANAGER(FE_node) *node_manager;
-	 struct MANAGER(FE_element) *element_manager;
+    struct MANAGER(FE_element) *element_manager;
     struct MANAGER(GROUP(FE_node)) *node_group_manager;
     struct MANAGER(GROUP(FE_node)) *data_group_manager;
     struct MANAGER(Spectrum) *spectrum_manager;
     struct Spectrum *default_spectrum;
     void *node_group_callback_id;
   } cell_3d;
+#if defined (CELL_USE_NODES)
   struct /* distributed modelling stuff */
   {
     int edit;
     Widget node_chooser_label,node_chooser_form,node_chooser_widget;
+    Widget description_label;
+    Widget apply_button,reset_button;
+		Widget export_menu_button;
+  } distributed;
+#endif /* defined (CELL_USE_NODES) */
+  struct /* distributed modelling stuff */
+  {
+    /* information about the element point being edited; note element in
+       identifier is not accessed */
+    struct Element_point_ranges_identifier element_point_identifier;
+    int element_point_number;
+    /* accessed local copy of the element being edited */
+    struct FE_element *element_copy;
+    FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+    Widget element_form,element_widget,point_number_text,
+      grid_field_form,grid_field_widget,grid_value_text;
+    int edit;
     Widget description_label;
     Widget apply_button,reset_button;
 		Widget export_menu_button;
@@ -179,9 +199,11 @@ struct Cell_window *create_Cell_window(struct User_interface *user_interface,
   struct MANAGER(GROUP(FE_node)) *data_group_manager,
   struct Graphical_material *default_graphical_material,
   struct MANAGER(Spectrum) *spectrum_manager,struct Spectrum *default_spectrum,
+  struct Computed_field_package *computed_field_package,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
   struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1999
+LAST MODIFIED : 08 June 2000
 
 DESCRIPTION :
 Create the structures and retrieve the cell window from the uil file. <filename>
@@ -194,12 +216,21 @@ LAST MODIFIED : 03 February 1999
 DESCRIPTION :
 Writes the <message> to the <cell> window.
 ==============================================================================*/
+#if defined (CELL_USE_NODES)
 void update_cell_window_from_node(struct Cell_window *cell);
 /*******************************************************************************
 LAST MODIFIED : 15 September 1999
 
 DESCRIPTION :
 Updates the cell window from a node, if a node exists in the node chooser
+==============================================================================*/
+#endif /* defined (CELL_USE_NODES) */
+int Cell_read_model(char *filename,struct Cell_window *cell);
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Wrapper function used to execute the CELL READ MODEL command.
 ==============================================================================*/
 
 #endif /* if !defined (CELL_WINDOW_H) */

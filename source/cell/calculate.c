@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : calculate.c
 
-LAST MODIFIED : 17 November 1999
+LAST MODIFIED : 08 June 2000
 
 DESCRIPTION :
 Functions for calculating and displaying the model solutions.
@@ -127,62 +127,69 @@ assumes the range is to be scaled to fit the range <tstart> to <tend>.
 }/* END get_control_curve_values() */
 
 #if 0
-#if defined (IBM)
+# if defined (IBM)
 extern void hodgkin_huxley
-#endif
-#if defined (SGI)
+# endif
+# if defined (SGI)
 extern void hodgkin_huxley_
-#endif
-#if defined (GENERIC_PC)
+# endif
+# if defined (GENERIC_PC)
 extern void hodgkin_huxley__
-#endif
+# endif
   (double *RPARAM,int *NT_CURR,int *NT_DAT,int *NT_EQN,float *Y_FULL);
 #endif /* 0 */
-#if defined (IBM)
+
+#if defined (OLD_CODE)
+# if defined (IBM)
 extern void hodgkin_huxley(
-#endif
-#if defined (SGI)
+# endif
+# if defined (SGI)
 extern void hodgkin_huxley_(
-#endif
-#if defined (GENERIC_PC)
+# endif
+# if defined (GENERIC_PC)
 extern void hodgkin_huxley__(
-#endif
+# endif
   int *AII,int *AIO,int *CONTROL,int *ERROR_TYPE,int *IFAIL,int *IWORK,
   int *L_AII,int *L_AIO,int *L_ARI,int *L_ARO,int *L_CONTROL,int *L_IWORK,
   int *L_MODEL,int *L_PARAMETERS,int *L_WORK,int *MAX_ITERS,int *MAX_ORDER,
   int *MODEL,double *ABS_ERR,double *ARI,double *ARO,double *MAX_STEP,
   double *PARAMETERS,double *REL_ERR,double *WORK,float *Y_FULL,
   int *EXTEND_INTERVAL,int *STIFF_EQNS,int *USE_ROUND_CTRL,char *ERROR);
+#endif /* defined (OLD_CODE) */
 
-#if defined (IBM)
+#if defined (OLD_CODE)
+# if defined (IBM)
 extern void luo_rudy(
-#endif
-#if defined (SGI)
+# endif
+# if defined (SGI)
 extern void luo_rudy_(
-#endif
-#if defined (GENERIC_PC)
+# endif
+# if defined (GENERIC_PC)
 extern void luo_rudy__(
-#endif
+# endif
   int *AII,int *AIO,int *CONTROL,int *ERROR_TYPE,int *IFAIL,int *IWORK,
   int *L_AII,int *L_AIO,int *L_ARI,int *L_ARO,int *L_CONTROL,int *L_IWORK,
   int *L_MODEL,int *L_PARAMETERS,int *L_WORK,int *MAX_ITERS,int *MAX_ORDER,
   int *MODEL,double *ABS_ERR,double *ARI,double *ARO,double *MAX_STEP,
   double *PARAMETERS,double *REL_ERR,double *WORK,float *Y_FULL,
   int *EXTEND_INTERVAL,int *STIFF_EQNS,int *USE_ROUND_CTRL,char *ERROR);
+#endif /* defined (OLD_CODE) */
 
-#if defined (IBM)
+#if defined (OLD_CODE)
+# if defined (IBM)
 extern void coupled_system(
-#endif
-#if defined (SGI)
+# endif
+# if defined (SGI)
 extern void coupled_system_(
-#endif
-#if defined (GENERIC_PC)
+# endif
+# if defined (GENERIC_PC)
 extern void coupled_system__(
-#endif
+# endif
   int *MECH_IPARAM,int *MEM_IPARAM1,int*MEM_IPARAM2,int *MEM_LPARAM,
   double *MECH_RPARAM1,double *MECH_RPARAM2,double *MEM_RPARAM1,
   double *MEM_RPARAM2,double *MEM_RPARAM3,int *MODEL_DEFINITION,int *NT_DAT,
   float *Y_FULL,int *CURRENT_SWITCHES,float *EXTENSION_RATIO_VALUES);
+#endif /* defined (OLD_CODE) */
 
 static int calculate_cell_model(struct Cell_parameter *parameters,
   int number_of_outputs,int number_of_samples,float *signal_values,
@@ -394,37 +401,41 @@ Calculates the cell model.
             {
               if (model_id == 1)
               {
-#if defined (IBM)
+#if defined (OLD_CODE)
+# if defined (IBM)
                 hodgkin_huxley
-#endif
-#if defined (SGI)
+# endif
+# if defined (SGI)
                   hodgkin_huxley_
-#endif
-#if defined (GENERIC_PC)
+# endif
+# if defined (GENERIC_PC)
                   hodgkin_huxley__
-#endif
+# endif
                   (AII,AIO,CONTROL,&ERROR_TYPE,&IFAIL,IWORK,&L_AII,&L_AIO,&L_ARI,
                     &L_ARO,&L_CONTROL,&L_IWORK,&L_MODEL,&number_of_parameters,
                     &L_WORK,&MAX_ITERS,&MAX_ORDER,MODEL,&ABS_ERR,ARI,ARO,
                     &MAX_STEP,rparam,&REL_ERR,WORK,signal_values,
                     &EXTEND_INTERVAL,&STIFF_EQNS,&USE_ROUND_CTRL,ERROR);
+#endif /* defined (OLD_CODE) */
               } /* if (model_id == 1) */
               else if (model_id == 2)
               {
-#if defined (IBM)
+#if defined (OLD_CODE)
+# if defined (IBM)
                 luo_rudy
-#endif
-#if defined (SGI)
+# endif
+# if defined (SGI)
                   luo_rudy_
-#endif
-#if defined (GENERIC_PC)
+# endif
+# if defined (GENERIC_PC)
                   luo_rudy__
-#endif
+# endif
                   (AII,AIO,CONTROL,&ERROR_TYPE,&IFAIL,IWORK,&L_AII,&L_AIO,&L_ARI,
                     &L_ARO,&L_CONTROL,&L_IWORK,&L_MODEL,&number_of_parameters,
                     &L_WORK,&MAX_ITERS,&MAX_ORDER,MODEL,&ABS_ERR,ARI,ARO,
                     &MAX_STEP,rparam,&REL_ERR,WORK,signal_values,&EXTEND_INTERVAL,
                     &STIFF_EQNS,&USE_ROUND_CTRL,ERROR);
+#endif /* defined (OLD_CODE) */
               } /* if (model_id == 2) */
               return_code = 1;
             } /* if (return_code) */
@@ -476,19 +487,21 @@ Calculates the cell model.
         model_defn[0] = 4;
         model_defn[3] = 0;
         model_defn[4] = 0;
-#if defined (IBM)
+#if defined (OLD_CODE)
+# if defined (IBM)
         coupled_system
-#endif
-#if defined (SGI)
+# endif
+# if defined (SGI)
         coupled_system_
-#endif
-#if defined (GENERIC_PC)
+# endif
+# if defined (GENERIC_PC)
         coupled_system__
-#endif
+# endif
           (iparam_mech,iparam_1,iparam_2,lparam_2,rparam_mech,rparam_mech2,
             (double *)rparam_tmp,rparam_2,rparam_lr,model_defn,
             &number_of_samples,signal_values,current_switches,
             control_curve_values);
+#endif /* defined (OLD_CODE) */
       }
       else
       {
