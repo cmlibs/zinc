@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 29 August 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1132,7 +1132,7 @@ a single point in 3-D space with a text string drawn beside it.
 static int gfx_create_colour_bar(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Executes a GFX CREATE COLOUR_BAR command. Creates a colour bar graphics object
@@ -1241,30 +1241,35 @@ with tick marks and labels for showing the scale of a spectrum.
 					tick_divisions=100;
 				}
 				sprintf(number_format," %%+.%de",significant_figures-1);
-				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-					graphics_object_name,command_data->graphics_object_list))
+				/* try to find existing colour_bar for updating */
+				graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+					graphics_object_name,command_data->graphics_object_list);
+				if (create_Spectrum_colour_bar(&graphics_object,
+					graphics_object_name,spectrum,bar_centre,bar_axis,side_axis,
+					bar_length,bar_radius,extend_length,tick_divisions,tick_length,
+					number_format,number_string,material,label_material))
 				{
-					display_message(ERROR_MESSAGE,
-						"Graphics object named '%s' already exists",graphics_object_name);
-					return_code=0;
+					ACCESS(GT_object)(graphics_object);
+					if (IS_OBJECT_IN_LIST(GT_object)(graphics_object,
+						command_data->graphics_object_list) ||
+						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
+							command_data->graphics_object_list))
+					{
+						return_code=1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_colour_bar.  Could not add graphics object to list");
+						return_code=0;
+					}
+					DEACCESS(GT_object)(&graphics_object);
 				}
 				else
 				{
-					if (!((graphics_object=create_Spectrum_colour_bar(
-						graphics_object_name,spectrum,bar_centre,bar_axis,side_axis,
-						bar_length,bar_radius,extend_length,tick_divisions,tick_length,
-						number_format,number_string,material,label_material))&&
-						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-							command_data->graphics_object_list)))
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_colour_bar.  Could not create graphics object");
-						if (graphics_object)
-						{
-							DESTROY(GT_object)(&graphics_object);
-						}
-						return_code=0;
-					}
+					display_message(ERROR_MESSAGE,
+						"gfx_create_colour_bar.  Could not create colour bar");
+					return_code=0;
 				}
 			} /* parse error, help */
 			DESTROY(Option_table)(&option_table);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor.h
 
-LAST MODIFIED : 19 November 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -22,14 +22,14 @@ Global Functions
 ----------------
 */
 
-struct GT_object *create_Spectrum_colour_bar(char *name,
-	struct Spectrum *spectrum,Triple bar_centre,Triple bar_axis,Triple side_axis,
-	float bar_length,float bar_radius,float extend_length,int tick_divisions,
-	float tick_direction,char *number_format,char *number_string,
+int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
+	char *name,struct Spectrum *spectrum,Triple bar_centre,Triple bar_axis,
+	Triple side_axis,float bar_length,float bar_radius,float extend_length,
+	int tick_divisions,float tick_length,char *number_format,char *number_string,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material);
 /*******************************************************************************
-LAST MODIFIED : 19 November 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Creates a coloured bar with annotation for displaying the scale of <spectrum>.
@@ -46,6 +46,9 @@ Attached to the bar graphics_object are two graphics objects using the
 <tick_label_material>, one containing the ticks, the other the labels. The
 labels are written using the <number_format>, printed into the <number_string>
 which should be allocated large enough to hold it.
+On successful return a pointer to the bar_graphics_object is put at
+<*graphics_object_address>. If there is already a colour_bar at this address it
+is cleared and redefined.
 
 The side_axis is made to be orthogonal to the bar_axis, and both are made unit
 length by this function.
