@@ -37,6 +37,7 @@ all : oscheck
 #define WildCmn *.cmn
 #define WildC *.c
 #define WildH *.h
+#define WildInc *.inc
 #define WildF *.f
 #define WildMms *.mms
 #define WildXbm *.xbm
