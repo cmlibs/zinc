@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -3008,7 +3008,7 @@ int destroy_listed_nodes(struct LIST(FE_node) *node_list,
 	struct MANAGER(FE_element) *element_manager,
 	struct FE_node_selection *node_selection)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Destroys all the nodes in <node_list> that are not accessed outside
@@ -3075,28 +3075,28 @@ Upon return <node_list> contains all the nodes that could not be destroyed.
 			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,node_list)))
 		{
 			/* node cannot be destroyed while it is in a list */
-			if (REMOVE_OBJECT_FROM_LIST(FE_node)(node,node_list))
+			if (REMOVE_OBJECT_FROM_LIST(FE_node)(node, node_list))
 			{
-				if (FE_node_can_be_destroyed(node))
+				if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(node, node_manager))
 				{
-					if (REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager))
+					if (REMOVE_OBJECT_FROM_MANAGER(FE_node)(node, node_manager))
 					{
 						number_of_nodes_destroyed++;
 					}
 					else
 					{
-						return_code=0;
+						return_code = 0;
 					}
 				}
 				else
 				{
 					/* add it to not_destroyed_node_list for reporting */
-					ADD_OBJECT_TO_LIST(FE_node)(node,not_destroyed_node_list);
+					ADD_OBJECT_TO_LIST(FE_node)(node, not_destroyed_node_list);
 				}
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		MANAGER_END_CACHE(FE_node)(node_manager);

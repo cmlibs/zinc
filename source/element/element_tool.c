@@ -1104,7 +1104,7 @@ elements with all parents also in the list?
 			/* element cannot be destroyed while it is in a list */
 			if (REMOVE_OBJECT_FROM_LIST(FE_element)(element, element_list))
 			{
-				if (FE_element_can_be_destroyed(element))
+				if (MANAGED_OBJECT_NOT_IN_USE(FE_element)(element, element_manager))
 				{
 					if (return_code =
 						remove_FE_element_and_faces_from_manager(element, element_manager))

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -3759,7 +3759,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -4043,11 +4043,13 @@ Executes a GFX CREATE ISO_SURFACES command.
 
 					/* Remove all the current data from the group */
 					while(return_code&&(data_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-						((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, surface_data_group)))
+						((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
+							surface_data_group)))
 					{
 						return_code = REMOVE_OBJECT_FROM_GROUP(FE_node)(
 							data_to_destroy, surface_data_group);
-						if (FE_node_can_be_destroyed(data_to_destroy))
+						if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(data_to_destroy,
+							command_data->data_manager))
 						{
 							return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(data_to_destroy,
 								command_data->data_manager);
@@ -9003,7 +9005,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED :  29 March 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
@@ -9220,11 +9222,13 @@ Executes a GFX CREATE VOLUMES command.
 
 					/* Remove all the current data from the group */
 					while(return_code&&(data_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-						((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, surface_data_group)))
+						((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
+							surface_data_group)))
 					{
 						return_code = REMOVE_OBJECT_FROM_GROUP(FE_node)(
 							data_to_destroy, surface_data_group);
-						if (FE_node_can_be_destroyed(data_to_destroy))
+						if (MANAGED_OBJECT_NOT_IN_USE(FE_node)(data_to_destroy,
+							command_data->data_manager))
 						{
 							return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(data_to_destroy,
 								command_data->data_manager);
@@ -11153,7 +11157,7 @@ Executes a GFX DESTROY ELEMENTS command.
 static int gfx_destroy_Computed_field(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Executes a GFX DESTROY FIELD command.
@@ -11180,7 +11184,8 @@ Executes a GFX DESTROY FIELD command.
 				if (computed_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 					current_token,computed_field_manager))
 				{
-					if (Computed_field_can_be_destroyed(computed_field))
+					if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
+						computed_field_manager))
 					{
 						/* also want to destroy wrapped FE_field */
 						fe_field=(struct FE_field *)NULL;

@@ -14071,7 +14071,7 @@ Frees the array of map contour GT_element_settings stored in the <map_3d_package
 
 int DESTROY(Map_3d_package)(struct Map_3d_package **map_3d_package_address)
 /*******************************************************************************
-LAST MODIFIED : 8 September 1999
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Frees the memory for the Map_3d_package and sets <*package_address>
@@ -14131,8 +14131,8 @@ to NULL.
 		{
 			GET_NAME(GROUP(FE_element))(temp_map_element_group,&group_name);
 			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
-			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)
-				(map_3d_package->mapped_torso_element_group))
+			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_element))(
+				map_3d_package->mapped_torso_element_group, element_group_manager))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))
 					(map_3d_package->mapped_torso_element_group,
@@ -14143,8 +14143,9 @@ to NULL.
 		if (temp_map_node_group)
 		{
 			DEACCESS(GROUP(FE_node))(&temp_map_node_group);
-			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)
-				(map_3d_package->mapped_torso_node_group))
+
+			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_node))(
+				map_3d_package->mapped_torso_node_group, node_group_manager))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))
 					(map_3d_package->mapped_torso_node_group,
@@ -14167,7 +14168,8 @@ to NULL.
 		if (group_name&&(data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
 			(group_name,data_group_manager)))
 		{							
-			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
+			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_node))(
+				data_group, data_group_manager))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(data_group,
 					data_group_manager);

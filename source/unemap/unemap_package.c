@@ -1826,7 +1826,7 @@ the rig.
 #if defined (UNEMAP_USE_3D)
 int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 4 May 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Frees the time related computed fields (used by the map electrode glyphs) 
@@ -1855,7 +1855,8 @@ stored in the unemap package. Also frees any associated fe_fields
 						(unemap_package,(struct Computed_field *)NULL);
 		if(computed_field)
 		{				
-			if (Computed_field_can_be_destroyed(computed_field))
+			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
+				computed_field_manager))
 			{			
 				/* also want to destroy any wrapped FE_field */
 				fe_field=(struct FE_field *)NULL;
@@ -1893,7 +1894,8 @@ stored in the unemap package. Also frees any associated fe_fields
 						(unemap_package,(struct Computed_field *)NULL);
 		if(computed_field)
 		{				
-			if (Computed_field_can_be_destroyed(computed_field))
+			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
+				computed_field_manager))
 			{			
 				/* also want to destroy any wrapped FE_field */
 				fe_field=(struct FE_field *)NULL;
@@ -1929,9 +1931,9 @@ stored in the unemap package. Also frees any associated fe_fields
 						(unemap_package,(struct Computed_field *)NULL);
 		if(computed_field)
 		{				
-			if (Computed_field_can_be_destroyed(computed_field))
+			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
+				computed_field_manager))
 			{			
-
 				/* also want to destroy any wrapped FE_field */
 				fe_field=(struct FE_field *)NULL;
 				if (Computed_field_is_type_finite_element(computed_field))
@@ -1967,8 +1969,8 @@ stored in the unemap package. Also frees any associated fe_fields
 						(unemap_package,(struct Computed_field *)NULL);
 		if(computed_field)
 		{	
-			if (Computed_field_can_be_destroyed
-				(computed_field))
+			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
+				computed_field_manager))
 			{
 				fe_field=(struct FE_field *)NULL;
 				if (Computed_field_is_type_finite_element(computed_field))
