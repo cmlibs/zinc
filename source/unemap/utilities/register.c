@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 12 October 1999
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -102,6 +102,8 @@ Macros
 Module constants
 ----------------
 */
+/*#define FLOAT_FORMAT "%10g"*/
+#define FLOAT_FORMAT "%10.3f"
 #define MAXIMUM_NUMBER_OF_NI_CARDS 7
 #define NUMBER_OF_CHANNELS_ON_NI_CARD 64
 #define CALIBRATE_AMPLITUDE_FACTOR ((float)0.75)
@@ -1113,7 +1115,7 @@ static void process_keyboard(
 								sample += number_of_channels;
 							}
 							mean[i] /= (float)number_of_samples;
-							printf("%2d %10g",i+1,mean[i]);
+							printf("%2d " FLOAT_FORMAT,i+1,mean[i]);
 							if (0==(i+1)%4)
 							{
 								printf("\n");
@@ -1137,7 +1139,7 @@ static void process_keyboard(
 							}
 							rms /= (float)number_of_samples;
 							rms=(float)sqrt((double)rms);
-							printf("%2d %10g",i+1,rms);
+							printf("%2d " FLOAT_FORMAT,i+1,rms);
 							if (0==(i+1)%4)
 							{
 								printf("\n");
@@ -1639,7 +1641,8 @@ static void process_keyboard(
 															}
 															else
 															{
-																fprintf(report," %10g",mean[temp_c_number+i]);
+																fprintf(report," " FLOAT_FORMAT,
+																	mean[temp_c_number+i]);
 																if (!((float)fabs((double)(mean[temp_c_number+
 																	i]-sorted_mean[number_of_settled_channels/
 																	2]))<tol_offset_spread))
@@ -1654,7 +1657,7 @@ static void process_keyboard(
 																		printf("Offset spread too large for :\n");
 																	}
 																	first++;
-																	printf("%2d %10g",temp_c_number+i+1,
+																	printf("%2d " FLOAT_FORMAT,temp_c_number+i+1,
 																		mean[temp_c_number+i]);
 																	if (0==first%4)
 																	{
@@ -1718,7 +1721,7 @@ static void process_keyboard(
 																}
 																rms /= (float)number_of_samples;
 																rms=(float)sqrt((double)rms);
-																fprintf(report," %10g",rms);
+																fprintf(report," " FLOAT_FORMAT,rms);
 																if (!((float)fabs((double)rms)<tol_rms))
 																{
 																	channel_check[temp_c_number+i] |=
@@ -1730,7 +1733,8 @@ static void process_keyboard(
 																		printf("RMS too large for :\n");
 																	}
 																	first++;
-																	printf("%2d %10g",temp_c_number+i+1,rms);
+																	printf("%2d " FLOAT_FORMAT,temp_c_number+i+1,
+																		rms);
 																	if (0==first%4)
 																	{
 																		printf("\n");
@@ -1816,8 +1820,8 @@ static void process_keyboard(
 														}
 														rms /= (float)number_of_samples;
 														rms=(float)sqrt((double)rms);
-														fprintf(report,"RMS: %10g",rms);
-														printf("RMS: %10g",rms);
+														fprintf(report,"RMS: " FLOAT_FORMAT,rms);
+														printf("RMS: " FLOAT_FORMAT,rms);
 														if ((float)fabs((double)rms)<tol_rms)
 														{
 															fprintf(report," OK");
@@ -2156,8 +2160,8 @@ static void process_keyboard(
 																	}
 																	else
 																	{
-																		fprintf(report," %10g",mean[temp_c_number+
-																			i]);
+																		fprintf(report," " FLOAT_FORMAT,
+																			mean[temp_c_number+i]);
 																		if (!((float)fabs((double)(mean[
 																			temp_c_number+i]-sorted_mean[
 																			number_of_settled_channels/2]))<
@@ -2175,7 +2179,8 @@ static void process_keyboard(
 																					temp_c_number+l);
 																			}
 																			first++;
-																			printf("%2d %10g",temp_c_number+i+1,
+																			printf("%2d " FLOAT_FORMAT,
+																				temp_c_number+i+1,
 																				mean[temp_c_number+i]);
 																			if (0==first%4)
 																			{
@@ -2247,15 +2252,11 @@ static void process_keyboard(
 																		}
 																		rms /= (float)number_of_samples;
 																		rms=(float)sqrt((double)rms);
-																		fprintf(report," %10g",rms);
+																		fprintf(report," " FLOAT_FORMAT,rms);
 																		if (!((float)fabs((double)rms)<tol_rms))
 																		{
 																			channel_check[temp_c_number+i] |=
 																				phase0_flag;
-																			/*???debug */
-																			printf("%d %d %x %x\n",temp_c_number,i,
-																				phase0_flag,
-																				channel_check[temp_c_number+i]);
 																			fprintf(report,
 																				" <<< CHECK too large >>>");
 																			total_checks++;
@@ -2266,7 +2267,8 @@ static void process_keyboard(
 																					temp_c_number+l);
 																			}
 																			first++;
-																			printf("%2d %10g",temp_c_number+i+1,rms);
+																			printf("%2d " FLOAT_FORMAT,
+																				temp_c_number+i+1,rms);
 																			if (0==first%4)
 																			{
 																				printf("\n");
@@ -2679,7 +2681,7 @@ static void process_keyboard(
 																}
 																else
 																{
-																	fprintf(report," %10g",
+																	fprintf(report," " FLOAT_FORMAT,
 																		mean[temp_c_number+i]);
 																	if (!((float)fabs((double)(mean[
 																		temp_c_number+i]-sorted_mean[
@@ -2699,7 +2701,7 @@ static void process_keyboard(
 																				k*NUMBER_OF_CHANNELS_ON_NI_CARD+l);
 																		}
 																		first++;
-																		printf("%2d %10g",
+																		printf("%2d " FLOAT_FORMAT,
 																			k*NUMBER_OF_CHANNELS_ON_NI_CARD+i+1,
 																			mean[temp_c_number+i]);
 																		if (0==first%4)
@@ -2772,7 +2774,7 @@ static void process_keyboard(
 																	}
 																	rms /= (float)number_of_samples;
 																	rms=(float)sqrt((double)rms);
-																	fprintf(report," %10g",rms);
+																	fprintf(report," " FLOAT_FORMAT,rms);
 																	if (!((float)fabs((double)rms)<tol_rms))
 																	{
 																		channel_check[
@@ -2787,7 +2789,7 @@ static void process_keyboard(
 																				k*NUMBER_OF_CHANNELS_ON_NI_CARD+l);
 																		}
 																		first++;
-																		printf("%2d %10g",
+																		printf("%2d " FLOAT_FORMAT,
 																			k*NUMBER_OF_CHANNELS_ON_NI_CARD+i+1,rms);
 																		if (0==first%4)
 																		{
@@ -3202,12 +3204,6 @@ static void process_keyboard(
 											pause_for_error();
 										}
 										unemap_stop_stimulating(0);
-										/*???debug */
-										printf("tester_card_1=%d, tester_card_2=%d\n",tester_card_1,
-											tester_card_2);
-										printf(
-											"calibrate_amplitude_1=%g, calibrate_amplitude_2=%g\n",
-											calibrate_amplitude_1,calibrate_amplitude_2);
 										if (unemap_start_voltage_stimulating(
 											(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1,
 											(float)0,&calibrate_amplitude_1)&&
@@ -3215,10 +3211,6 @@ static void process_keyboard(
 											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,1,
 											(float)0,&calibrate_amplitude_2))
 										{
-											/*???debug */
-											printf(
-												"calibrate_amplitude_1=%g, calibrate_amplitude_2=%g\n",
-												calibrate_amplitude_1,calibrate_amplitude_2);
 											unemap_start_sampling();
 											sleep(sampling_delay);
 											unemap_stop_sampling();
@@ -3296,7 +3288,7 @@ static void process_keyboard(
 																			k*NUMBER_OF_CHANNELS_ON_NI_CARD+i+1,count,
 																			number_of_samples);
 																		fprintf(report,
-																			".  %d out of %lu valid <<< CHECK >>>\n",
+																			".  %d out of %lu valid <<< CHECK >>>",
 																			count,number_of_samples);
 																		first++;
 																		total_checks++;
@@ -3354,13 +3346,12 @@ static void process_keyboard(
 																		first++;
 																		total_checks++;
 																	}
-																	fprintf(report,"\n");
 																}
 																else
 																{
 																	printf(".  No valid data\n");
 																	fprintf(report,
-																		".  No valid data <<< CHECK >>>\n");
+																		".  No valid data <<< CHECK >>>");
 																	channel_check[
 																		k*NUMBER_OF_CHANNELS_ON_NI_CARD+i] |=
 																		phase_flag;
@@ -3368,6 +3359,7 @@ static void process_keyboard(
 																	total_checks++;
 																}
 															}
+															fprintf(report,"\n");
 														}
 													}
 													if (0==first)
@@ -4932,7 +4924,8 @@ static void process_keyboard(
 															}
 															else
 															{
-																fprintf(report," %10g",mean[temp_c_number+i]);
+																fprintf(report," " FLOAT_FORMAT,
+																	mean[temp_c_number+i]);
 																if (!((float)fabs((double)(
 																	mean[temp_c_number+i]-sorted_mean[
 																	number_of_settled_channels/2]))<
@@ -4946,7 +4939,7 @@ static void process_keyboard(
 																		printf("Offset spread too large for :\n");
 																	}
 																	first++;
-																	printf("%2d %10g",temp_c_number+i+1,
+																	printf("%2d " FLOAT_FORMAT,temp_c_number+i+1,
 																		mean[temp_c_number+i]);
 																	if (0==first%4)
 																	{
@@ -5000,7 +4993,8 @@ static void process_keyboard(
 															}
 															rms /= (float)number_of_samples;
 															rms=(float)sqrt((double)rms);
-															fprintf(report,"%2d %10g",temp_c_number+i+1,rms);
+															fprintf(report,"%2d " FLOAT_FORMAT,
+																temp_c_number+i+1,rms);
 															if (!(fabs(rms)<tol_rms))
 															{
 																channel_check[temp_c_number+i] |= phase_flag;
@@ -5011,7 +5005,8 @@ static void process_keyboard(
 																	printf("RMS too large for :\n");
 																}
 																first++;
-																printf("%2d %10g",temp_c_number+i+1,rms);
+																printf("%2d " FLOAT_FORMAT,temp_c_number+i+1,
+																	rms);
 																if (0==first%4)
 																{
 																	printf("\n");
@@ -5091,8 +5086,8 @@ static void process_keyboard(
 														}
 														rms /= (float)number_of_samples;
 														rms=(float)sqrt((double)rms);
-														fprintf(report,"RMS: %10g",rms);
-														printf("RMS: %10g",rms);
+														fprintf(report,"RMS: " FLOAT_FORMAT,rms);
+														printf("RMS: " FLOAT_FORMAT,rms);
 														if ((float)fabs((double)rms)<tol_rms)
 														{
 															fprintf(report," OK");
