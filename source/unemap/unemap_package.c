@@ -80,6 +80,10 @@ The fields are filed in with set_unemap_package_fields()
 			package->channel_gain_field=(struct FE_field *)NULL;
 			package->channel_offset_field=(struct FE_field *)NULL;
 			package->signal_value_at_time_field=(struct Computed_field *)NULL;
+			package->offset_signal_value_at_time_field=
+				(struct Computed_field *)NULL;
+			package->scaled_offset_signal_value_at_time_field=
+				(struct Computed_field *)NULL;
 			package->time_field=(struct Computed_field *)NULL;
 			package->access_count=0;
 		}
@@ -131,6 +135,8 @@ to NULL.
 		DEACCESS(FE_field)(&(package->signal_status_field));
 		DEACCESS(FE_field)(&(package->channel_gain_field));
 		DEACCESS(FE_field)(&(package->channel_offset_field));	
+		DEACCESS(Computed_field)(&(package->scaled_offset_signal_value_at_time_field));
+		DEACCESS(Computed_field)(&(package->offset_signal_value_at_time_field));
 		DEACCESS(Computed_field)(&(package->signal_value_at_time_field));
 		DEACCESS(Computed_field)(&(package->time_field));		
 		DEALLOCATE(*package_address);		
@@ -798,6 +804,121 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_signal_value_at_time_field */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+
+#if defined (UNEMAP_USE_3D)
+struct Computed_field *get_unemap_package_offset_signal_value_at_time_field(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+{
+	struct Computed_field *offset_signal_value_at_time_field;
+	ENTER(get_unemap_package_offset_signal_value_at_time_field);
+	if(package)
+	{
+		offset_signal_value_at_time_field=package->offset_signal_value_at_time_field; 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_offset_signal_value_at_time_field."
+				" invalid arguments");
+		offset_signal_value_at_time_field = (struct Computed_field *)NULL;
+	}
+	LEAVE;
+	return (offset_signal_value_at_time_field);
+} /* get_unemap_package_offset_signal_value_at_time_field */
+
+int set_unemap_package_offset_signal_value_at_time_field(struct Unemap_package *package,
+	struct Computed_field *offset_signal_value_at_time_field)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_offset_signal_value_at_time_field);
+	if(package)
+	{
+		return_code =1;	
+		REACCESS(Computed_field)(&(package->offset_signal_value_at_time_field),
+			offset_signal_value_at_time_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_offset_signal_value_at_time_field."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_offset_signal_value_at_time_field */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct Computed_field *get_unemap_package_scaled_offset_signal_value_at_time_field(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+{
+	struct Computed_field *scaled_offset_signal_value_at_time_field;
+	ENTER(get_unemap_package_scaled_offset_signal_value_at_time_field);
+	if(package)
+	{
+		scaled_offset_signal_value_at_time_field=
+			package->scaled_offset_signal_value_at_time_field; 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_unemap_package_scaled_offset_signal_value_at_time_field."
+				" invalid arguments");
+		scaled_offset_signal_value_at_time_field = (struct Computed_field *)NULL;
+	}
+	LEAVE;
+	return (scaled_offset_signal_value_at_time_field);
+} /* get_unemap_package_scaled_offset_signal_value_at_time_field */
+
+int set_unemap_package_scaled_offset_signal_value_at_time_field(
+	struct Unemap_package *package,
+	struct Computed_field *scaled_offset_signal_value_at_time_field)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_scaled_offset_signal_value_at_time_field);
+	if(package)
+	{
+		return_code =1;	
+		REACCESS(Computed_field)(&(package->scaled_offset_signal_value_at_time_field),
+			scaled_offset_signal_value_at_time_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_unemap_package_scaled_offset_signal_value_at_time_field."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_scaled_offset_signal_value_at_time_field */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
@@ -1521,6 +1642,80 @@ stored in the unemap package. Also frees any associated fe_fields
 		fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 		return_code=1;
 		computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
+		computed_field=get_unemap_package_scaled_offset_signal_value_at_time_field(
+			unemap_package);
+		/* following does deaccess*/
+		set_unemap_package_scaled_offset_signal_value_at_time_field
+						(unemap_package,(struct Computed_field *)NULL);
+		if(computed_field)
+		{				
+			if (Computed_field_can_be_destroyed(computed_field))
+			{			
+				/* also want to destroy any wrapped FE_field */
+				fe_field=(struct FE_field *)NULL;
+				if (Computed_field_is_type_finite_element(computed_field))
+				{
+				  Computed_field_get_type_finite_element(computed_field,
+					 &fe_field);
+				}
+				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
+					(computed_field,computed_field_manager))
+				{
+					if (fe_field)
+					{
+						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
+							fe_field,fe_field_manager);
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+						" Couldn't remove scaled_offset_signal_value_at_time_field from manager");
+				}
+				
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+					"Couldn't destroy scaled_offset_signal_value_at_time_field");
+			}				
+		}/* if(computed_field) */
+		computed_field=get_unemap_package_offset_signal_value_at_time_field(unemap_package);
+		/* following does deaccess*/
+		set_unemap_package_offset_signal_value_at_time_field
+						(unemap_package,(struct Computed_field *)NULL);
+		if(computed_field)
+		{				
+			if (Computed_field_can_be_destroyed(computed_field))
+			{			
+				/* also want to destroy any wrapped FE_field */
+				fe_field=(struct FE_field *)NULL;
+				if (Computed_field_is_type_finite_element(computed_field))
+				{
+				  Computed_field_get_type_finite_element(computed_field,
+					 &fe_field);
+				}
+				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
+					(computed_field,computed_field_manager))
+				{
+					if (fe_field)
+					{
+						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
+							fe_field,fe_field_manager);
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+						" Couldn't remove offset_signal_value_at_time_field from manager");
+				}				
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+					"Couldn't destroy offset_signal_value_at_time_field");
+			}				
+		}/* if(computed_field) */
 		computed_field=get_unemap_package_signal_value_at_time_field(unemap_package);
 		/* following does deaccess*/
 		set_unemap_package_signal_value_at_time_field
@@ -1559,7 +1754,6 @@ stored in the unemap package. Also frees any associated fe_fields
 					"Couldn't destroy signal_value_at_time_field");
 			}				
 		}/* if(computed_field) */
-
 		computed_field=get_unemap_package_time_field(unemap_package);	
 		/* following does deaccess */
 		set_unemap_package_time_field

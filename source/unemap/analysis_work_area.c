@@ -10430,7 +10430,7 @@ c.f. analysis_set_range.
 ==============================================================================*/
 {	
 
-	float channel_gain,channel_offset,maximum,minimum;	
+	float maximum,minimum;	
 	struct Analysis_work_area *analysis;	
 	struct FE_node *rig_node;
 	struct FE_field *channel_gain_field,*channel_offset_field,
@@ -10467,21 +10467,12 @@ c.f. analysis_set_range.
 			signal_drawing_package);
 		signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
 			signal_drawing_package);			
-		rig_node=analysis->highlight_rig_node;
-		/*get the channel gain and offset */
-		component.number=0;
-		component.field=channel_gain_field;
-		get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-			&channel_gain);
-		component.field=channel_offset_field;
-		get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-			&channel_offset);
+		rig_node=analysis->highlight_rig_node;		
 		/*get the signal min,max for this node */			
 		get_rig_node_signal_min_max(rig_node,signal_field,display_start_time_field,
-			display_end_time_field,(struct FE_field *)NULL,&minimum,&maximum,
-			(enum Event_signal_status *)NULL,1/*time_range*/);
-		minimum=channel_gain*(minimum-channel_offset);
-		maximum=channel_gain*(maximum-channel_offset);
+			display_end_time_field,(struct FE_field *)NULL,channel_gain_field,
+			channel_offset_field,&minimum,&maximum,(enum Event_signal_status *)NULL,
+			1/*time_range*/);
 		/* set the new signal_minimum,signal_maximum*/
 		component.field = signal_minimum_field;												
 		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
@@ -10801,6 +10792,8 @@ then sets all signals to this range.
 					display_start_time_field);
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
 					display_end_time_field);			
+				set_Min_max_iterator_channel_gain_field(min_max_iterator,channel_gain_field);
+				set_Min_max_iterator_channel_offset_field(min_max_iterator,channel_offset_field);
 				/* run through all the nodes to get accepted,undecided signal's min, max */
 				FOR_EACH_OBJECT_IN_GROUP(FE_node)
 					(iterative_get_rig_node_accepted_undecided_signal_min_max,
@@ -10876,10 +10869,12 @@ then sets all signals to this range.
 					(((*device)->signal->status==ACCEPTED)||
 						((*device)->signal->status==UNDECIDED)))
 				{
-					/* get the minimum,maximum */
-					/*??JW do we need to take account of offset, with min=min-channel_offset,*/
-					/* max=max-channel_offset? cf analysis_set_range */
+					/* get the minimum,maximum */					
 					Signal_get_min_max((*device)->signal,&minimum,&maximum,1/*time_range*/);
+					channel_gain=(*device)->channel->gain;
+					channel_offset=(*device)->channel->offset;
+					minimum=channel_gain*((float)(minimum)-channel_offset);
+					maximum=channel_gain*((float)(maximum)-channel_offset);	
 					if(!started)
 					{
 						/*initialise the all_signals_min,all_signals_max*/

@@ -60,8 +60,9 @@ element,nodes, fields when they are no longer required.
 	struct FE_field *signal_minimum_field;
 	struct FE_field *signal_maximum_field;
 	struct FE_field *signal_status_field;
-
 	struct Computed_field *signal_value_at_time_field;
+	struct Computed_field *offset_signal_value_at_time_field;
+	struct Computed_field *scaled_offset_signal_value_at_time_field;
 	struct Computed_field *time_field;
 	int access_count;
 }; /* struct Unemap_package */
@@ -542,6 +543,51 @@ gets the field of the unemap package.
 #if defined (UNEMAP_USE_3D)
 int set_unemap_package_signal_value_at_time_field(struct Unemap_package *package,
 	struct Computed_field *signal_value_at_time_field);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct Computed_field *get_unemap_package_offset_signal_value_at_time_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+int set_unemap_package_offset_signal_value_at_time_field(struct Unemap_package *package,
+	struct Computed_field *offset_signal_value_at_time_field);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct Computed_field *get_unemap_package_scaled_offset_signal_value_at_time_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+int set_unemap_package_scaled_offset_signal_value_at_time_field(
+	struct Unemap_package *package,
+	struct Computed_field *scaled_offset_signal_value_at_time_field);
 /*******************************************************************************
 LAST MODIFIED : 3 May 2000
 

@@ -837,9 +837,10 @@ DESCRIPTION :
 int get_rig_node_signal_min_max(struct FE_node *node,
 	struct FE_field *signal_field,struct FE_field *display_start_time_field,
 	struct FE_field *display_end_time_field,struct FE_field *signal_status_field,
+	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
 	FE_value *min,FE_value *max,enum Event_signal_status *status,int time_range);
 /*******************************************************************************
-LAST MODIFIED : 7 August 2000
+LAST MODIFIED : 20 September 2000
 
 DESCRIPTION : Determines and returns <min> and <max the minimum and maximum
 value of <signal_field> at <node>. If <time_range> >0 AND <display_start_time_field>,
@@ -877,10 +878,11 @@ This function is called iteratively by analysis_set_range
 
 #if defined (UNEMAP_USE_3D)
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
-	struct FE_field *signal_field,struct FE_field *signal_status_field,FE_value time,
-	FE_value *min,FE_value *max);
+	struct FE_field *signal_field,struct FE_field *signal_status_field,
+	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
+	FE_value time,FE_value *min,FE_value *max);
 /*******************************************************************************
-LAST MODIFIED : 6 October 1999
+LAST MODIFIED :  20 September 2000
 
 DESCRIPTION :
 Returns the <min> and <max>  signal values at the rig nodes in the rig_node_group

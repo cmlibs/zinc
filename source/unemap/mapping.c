@@ -22,6 +22,8 @@ DESCRIPTION :
 #if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_component_operations.h"
+#include "computed_field/computed_field_vector_operations.h"
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "graphics/element_group_settings.h"
@@ -4483,20 +4485,36 @@ Sets the <time> of the time field.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *signal_value_at_time_field,*time_field;		
-	struct FE_field *signal_field;
+	struct Computed_field *computed_gain_field,*computed_offset_field,
+		*offset_signal_value_at_time_field,*scaled_offset_signal_value_at_time_field,
+		*signal_value_at_time_field,*time_field;		
+	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	
 	ENTER(map_set_electrode_colour_from_time);	
 	signal_value_at_time_field=(struct Computed_field *)NULL;
-	time_field=(struct Computed_field *)NULL;	
+	time_field=(struct Computed_field *)NULL;
+	computed_gain_field=(struct Computed_field *)NULL;
+	computed_offset_field=(struct Computed_field *)NULL;
+	offset_signal_value_at_time_field=(struct Computed_field *)NULL;
+	scaled_offset_signal_value_at_time_field=(struct Computed_field *)NULL;
 	signal_field=(struct FE_field *)NULL;
+	channel_gain_field=(struct FE_field *)NULL;
+	channel_offset_field=(struct FE_field *)NULL;
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 	if(package&&spectrum&&settings&&(computed_field_manager=
 		get_unemap_package_Computed_field_manager(package))&&
-		(signal_field=get_unemap_package_signal_field(package)))
+		(signal_field=get_unemap_package_signal_field(package))
+		&&(channel_gain_field=get_unemap_package_channel_gain_field(package))
+		&&(channel_offset_field=get_unemap_package_channel_offset_field(package)))
 	{		
 		return_code=1;
+		computed_gain_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_is_read_only_with_fe_field,(void *)(channel_gain_field),
+			computed_field_manager);
+		computed_offset_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_is_read_only_with_fe_field,(void *)(channel_offset_field),
+			computed_field_manager);
 		/* set up signal_value_at_time_field for spectrum according to signal values and time */
 		/* ??JW will eventually want to tie this computed field to the time manager */
 		/* ??JW do as a constant field for now*/
@@ -4515,6 +4533,7 @@ Sets the <time> of the time field.
 			}
 		}	
 		/* create new data_field,using time_field*/
+		/*signal value at time*/
 		if(!(signal_value_at_time_field=get_unemap_package_signal_value_at_time_field
 			(package)))
 		{
@@ -4524,15 +4543,51 @@ Sets the <time> of the time field.
 					signal_value_at_time_field,signal_field,FE_NODAL_VALUE,0,time_field))&&
 					(ADD_OBJECT_TO_MANAGER(Computed_field)(signal_value_at_time_field,
 						computed_field_manager))&&
+
 					set_unemap_package_signal_value_at_time_field(package,signal_value_at_time_field)))
 				{
 					DESTROY(Computed_field)(&signal_value_at_time_field);
 				}
 			}
 		}	
+		/*offset the signal value*/
+		if(!(offset_signal_value_at_time_field=get_unemap_package_offset_signal_value_at_time_field
+			(package)))
+		{
+			if(offset_signal_value_at_time_field=CREATE(Computed_field)("offset_signal_value_at_time"))
+			{
+				if(!((Computed_field_set_type_add(offset_signal_value_at_time_field,
+					signal_value_at_time_field,1,computed_offset_field,-1))&&
+					(ADD_OBJECT_TO_MANAGER(Computed_field)(offset_signal_value_at_time_field,
+						computed_field_manager))&&
+					set_unemap_package_offset_signal_value_at_time_field(package,
+						offset_signal_value_at_time_field)))
+				{
+					DESTROY(Computed_field)(&offset_signal_value_at_time_field);
+				}
+			}
+		}
+		/* scale the signal value by the gain */	
+		if(!(scaled_offset_signal_value_at_time_field=
+			get_unemap_package_scaled_offset_signal_value_at_time_field(package)))
+		{
+			if(scaled_offset_signal_value_at_time_field=CREATE(Computed_field)
+				("scaled_offset_signal_value_at_time"))
+			{
+				if(!((Computed_field_set_type_dot_product(scaled_offset_signal_value_at_time_field,
+					offset_signal_value_at_time_field,computed_gain_field))&&
+					(ADD_OBJECT_TO_MANAGER(Computed_field)(scaled_offset_signal_value_at_time_field,
+						computed_field_manager))&&
+					set_unemap_package_scaled_offset_signal_value_at_time_field(package,
+						scaled_offset_signal_value_at_time_field)))
+				{
+					DESTROY(Computed_field)(&scaled_offset_signal_value_at_time_field);
+				}
+			}
+		}							
 		/* alter the spectrum settings with the data */
-		GT_element_settings_set_data_spectrum_parameters(settings,signal_value_at_time_field,
-			spectrum);
+		GT_element_settings_set_data_spectrum_parameters(settings,
+			scaled_offset_signal_value_at_time_field,spectrum);
 	}
 	else
 	{
@@ -4644,8 +4699,10 @@ Construct the settings and build the graphics objects for the glyphs.
 					computed_coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_read_only_with_fe_field,(void *)
 						(map_electrode_position_field),computed_field_manager);
-					GT_element_settings_set_coordinate_field(unselected_settings,computed_coordinate_field);
-					GT_element_settings_set_coordinate_field(selected_settings,computed_coordinate_field);
+					GT_element_settings_set_coordinate_field(unselected_settings,
+						computed_coordinate_field);
+					GT_element_settings_set_coordinate_field(selected_settings,
+						computed_coordinate_field);
 					GT_element_settings_set_glyph_parameters(unselected_settings,glyph,
 						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);
 					GT_element_settings_set_glyph_parameters(selected_settings,glyph,
@@ -4659,8 +4716,9 @@ Construct the settings and build the graphics objects for the glyphs.
 					switch(map->electrodes_option)
 					{
 						case SHOW_ELECTRODE_VALUES:
-						{						
-							label_field=get_unemap_package_signal_value_at_time_field(package);
+						{												
+							label_field=get_unemap_package_scaled_offset_signal_value_at_time_field
+								(package);
 						}break;
 						case SHOW_ELECTRODE_NAMES:
 						{							
@@ -5366,6 +5424,8 @@ Removes 3d drawing for non-current region(s).
 							get_Rig_all_devices_rig_node_group(rig),								
 							get_unemap_package_signal_field(unemap_package),
 							get_unemap_package_signal_status_field(unemap_package),
+							get_unemap_package_channel_gain_field(unemap_package),
+							get_unemap_package_channel_offset_field(unemap_package),
 							time,&minimum,&maximum);
 						range_set=1;
 					}
