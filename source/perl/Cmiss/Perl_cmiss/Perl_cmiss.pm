@@ -40,8 +40,15 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-require XSLoader;
-XSLoader::load('Cmiss::Perl_cmiss', $VERSION);
+#Not using XSLoader as we want to ensure the symbols are global
+sub locate_this_module
+{
+  my $modlibname = (caller())[1];
+  $modlibname =~ s,/Cmiss/Perl_cmiss.pm$,,;
+  return $modlibname;
+}
+my $modlibname = locate_this_module();
+Cmiss::require_library("$modlibname/auto/Cmiss/Perl_cmiss/Perl_cmiss.so");
 
 package Perl_cmiss;
 

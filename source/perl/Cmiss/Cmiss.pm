@@ -65,13 +65,6 @@ sub require_library_actual
   }
 }
 
-sub locate_this_module
-{
-  my $modlibname = (caller())[1];
-  $modlibname =~ s,/Cmiss.pm$,,;
-  return $modlibname;
-}
-
 
 
 {
@@ -83,15 +76,13 @@ sub locate_this_module
   }
   else
   {
+	 #This pointer must be initialised before requiring any of the 
+	 #libraries further down as they depend on it.
 	 *require_library = \&require_library_actual;
-	 my $tmp_command_data;
-    my $modlibname = locate_this_module();
-	 require_library("$modlibname/auto/Cmiss/Perl_cmiss/Perl_cmiss.so");
-#Need to require this module after loading the Perl_cmiss.so as we want the Perl_cmiss.so to have global dlopen so that it can be seen from cmgui.
 	 require Cmiss::Perl_cmiss;
 	 require_library("cmgui");
     require Cmiss::cmgui_command_data;
-	 $tmp_command_data = new Cmiss::cmgui_command_data("cmgui", "-console") or 
+	 my $tmp_command_data = new Cmiss::cmgui_command_data("cmgui", "-console") or 
 		croak("Unable to initialise cmgui");
 	 #Bless this into some undefined class so that no destructor will be called.
 	 #$Cmiss::cmgui_command_data is set as a side effect of creating the 
