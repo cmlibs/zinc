@@ -1,4 +1,3 @@
-cmiss::command_data T_PTROBJ
 Cmiss::FE_element T_PTROBJ
 Cmiss::FE_element * T_PTROBJ
 Cmiss::FE_field T_PTROBJ

@@ -1,6 +1,6 @@
 package Cmiss::Value::Matrix;
 
-use 5.008;
+use 5.006;
 use strict;
 use warnings;
 use Carp;
@@ -134,6 +134,9 @@ sub sub_matrix
 		$objref=get_sub_matrix($self);
 	}
 }
+
+use Cmiss;
+Cmiss::require_library('cmgui');
 
 require XSLoader;
 XSLoader::load('Cmiss::Value::Matrix', $VERSION);

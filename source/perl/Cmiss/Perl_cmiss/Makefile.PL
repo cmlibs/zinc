@@ -11,7 +11,7 @@ use ExtUtils::MakeMaker;
 # To find local
 #   setenv PERLLIB /dosD/cmiss/cmgui/perl/lib/perl5/site_perl/5.8.0/i686-linux/
 # To test without installing
-#   perl -Mblib -MCmiss::Value::Element_xi -e '$bob=new Cmiss::Value::Element_xi'
+#   perl -Mblib -MCmiss::Value -e 'Cmiss::Value::create'
 
 #Recursively look up from here for typemap files.
 my $typemap_file = "typemap";
@@ -25,16 +25,15 @@ while ( -f $typemap_file )
   }
 
 #
-# Problems with "Manifying" in a FAT32 filesystem because
-#   Cmiss::Value::Element_xi.3 is not a valid file name
+# Problems with "Manifying" in a FAT32 filesystem because Cmiss::Value.3 is not
+#   a valid file name
 WriteMakefile(
-    'NAME'    => 'Cmiss::Value::Element_xi',
+    'NAME'    => 'Cmiss::Perl_cmiss',
   #          
-    'VERSION_FROM'  => 'Element_xi.pm', # finds $VERSION
+    'VERSION_FROM'  => 'Perl_cmiss.pm', # finds $VERSION
     'PREREQ_PM'    => {}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => 'Element_xi.pm', # retrieve abstract from module
-       AUTHOR     => '"David Bullivant <d.bullivant@auckland.ac.nz>"') : ()),
+      (AUTHOR     => '"Shane Blackett <s.blackett@auckland.ac.nz>"') : ()),
     'LIBS'    => [''], # e.g., '-lm'
     'DEFINE'    => '-DFULL_NAMES', # e.g., '-DHAVE_SOMETHING'
   # Insert -I. if you add *.h files later:

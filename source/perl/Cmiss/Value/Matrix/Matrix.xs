@@ -12,7 +12,9 @@ MODULE = Cmiss::Value::Matrix		PACKAGE = Cmiss::Value::Matrix		PREFIX = Cmiss_va
 PROTOTYPES: DISABLE
 
 Cmiss::Value
-create(int number_of_columns,AV *values_array)
+create(number_of_columns,values_array)
+   int number_of_columns
+	AV *values_array
 	CODE:
 		/* the result, in Perl, is a reference to a stash (which is a pointer to the
 			Cmiss_value structure).  This means that don't need to worry about

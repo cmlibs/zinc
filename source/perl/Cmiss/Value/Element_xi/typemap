@@ -1,5 +1,0 @@
-Cmiss::Value T_PTROBJ
-Cmiss::Value * T_PTROBJ
-FE_value T_FLOAT
-Cmiss::FE_element T_PTROBJ
-Cmiss::FE_element * T_PTROBJ

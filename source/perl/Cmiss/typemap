@@ -1,0 +1,28 @@
+Cmiss::FE_element T_PTROBJ
+Cmiss::FE_element * T_PTROBJ
+Cmiss::cmgui_command_data T_PTROBJ
+
+# SAB These typemaps are wrong in perl versions before 5.8.0 so I have defined
+# the correct typemaps here so that they override.
+#############################################################################
+INPUT
+T_SVREF
+        if (SvROK($arg))
+            $var = (SV*)SvRV($arg);
+        else
+            Perl_croak(aTHX_ \"$var is not a reference\")
+T_AVREF
+        if (SvROK($arg) && SvTYPE(SvRV($arg))==SVt_PVAV)
+            $var = (AV*)SvRV($arg);
+        else
+            Perl_croak(aTHX_ \"$var is not an array reference\")
+T_HVREF
+        if (SvROK($arg) && SvTYPE(SvRV($arg))==SVt_PVHV)
+            $var = (HV*)SvRV($arg);
+        else
+            Perl_croak(aTHX_ \"$var is not a hash reference\")
+T_CVREF
+        if (SvROK($arg) && SvTYPE(SvRV($arg))==SVt_PVCV)
+            $var = (CV*)SvRV($arg);
+        else
+            Perl_croak(aTHX_ \"$var is not a code reference\")

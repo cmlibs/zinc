@@ -1,21 +1,20 @@
-package Cmiss::Value::FE_value_matrix;
+package Cmiss::cmgui_command_data;
 
 use 5.006;
 use strict;
 use warnings;
 use Carp;
 
-require Cmiss::Value;
 require Exporter;
 use AutoLoader;
 
-our @ISA = qw(Cmiss::Value Exporter);
+our @ISA = qw(Exporter);
 
 # Items to export into callers namespace by default. Note: do not export
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::Value::FE_value_matrix ':all';
+# This allows declaration	use Cmiss::Value ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -37,7 +36,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Value::FE_value_matrix::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::cmgui_command_data::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -53,57 +52,32 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-# Without named argument
-#sub new
-#{
-#	my ($class, @fe_values_array) = @_;
-#	my $objref=create(\@fe_values_array);
-#	bless $objref,$class;
-#}
-
-# Named argument
 sub new
 {
-	my ($class, %arg) = @_;
-	my ($n_columns,$objref,$values);
+	my ($class, @arguments) = @_;
+	my $objref;
 
-	$values=$arg{values};
-	if ($values)
+	if (! @arguments)
 	{
-		$n_columns=$arg{n_columns};
-		if ($n_columns)
-		{
-			$objref=create($n_columns, $values);
-		}
-		else
-		{
-			$objref=create(1, $values);
-		}
-		if ($objref)
-		{
-			bless $objref,$class;
-		}
-		else
-		{
-			croak "Could not create $class";
-		}
+	  @arguments = ("");
+	}
+
+	$objref=create(\@arguments);
+	if ($objref)
+	{
+		bless $objref,$class;
 	}
 	else
 	{
-		croak "Missing values";
+		croak "Could not create $class";
 	}
 }
 
-# Overload string and numerical conversion
-use overload '""' => \&string_convert, fallback => 1;
-
-sub string_convert
-{
-	get_type(shift);
-}
+use Cmiss;
+Cmiss::require_library('cmgui');
 
 require XSLoader;
-XSLoader::load('Cmiss::Value::FE_value_matrix', $VERSION);
+XSLoader::load('Cmiss::cmgui_command_data', $VERSION);
 
 # Preloaded methods go here.
 
@@ -115,24 +89,25 @@ __END__
 
 =head1 NAME
 
-Cmiss::Value::FE_value_matrix - Perl extension for Cmiss FE value matrices
+Cmiss::cmgui_command_data - Perl extension for Cmiss values
 
 =head1 SYNOPSIS
 
-  use Cmiss::Value::FE_value_matrix;
+  use Cmiss::cmgui_command_data;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::Value::FE_value_matrix.
+  This should be the abstract for Cmiss::cmgui_command_data.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::Value::FE_value_matrix, created by h2xs. It looks like
-the author of the extension was negligent enough to leave the stub
+Stub documentation for Cmiss::cmgui_command_data, created by h2xs. It looks like the
+author of the extension was negligent enough to leave the stub
 unedited.
+
 
 =head2 EXPORT
 
@@ -144,7 +119,7 @@ None by default.
 
 =head1 AUTHOR
 
-David Bullivant, <d.bullivant@auckland.ac.nz>
+Shane Blackett, <s.blackett@auckland.ac.nz>
 
 =head1 COPYRIGHT AND LICENSE
 

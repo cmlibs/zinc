@@ -1,6 +1,6 @@
 package Cmiss::Region;
 
-use 5.008;
+use 5.006;
 use strict;
 use warnings;
 use Carp;
@@ -79,17 +79,26 @@ sub new
 
 sub get_cmiss_root_region
 {
-	my $objref;
+  my (%args) = @_;
+  my $cmgui_command_data = $args{cmgui_command_data};
+  my $objref;
 
-	$objref=command_data_get_root_region($cmiss::cmiss_command_data);
-	if ($objref)
-	{
+  if (defined $cmgui_command_data)
+  {
+	 $objref=command_data_get_root_region($cmgui_command_data);
+	 if ($objref)
+	 {
 		$objref;
-	}
-	else
-	{
-		croak "Could not get";
-	}
+	 }
+	 else
+	 {
+		croak "Could not get root region.";
+	 }
+  }
+  else
+  {
+	 croak "Missing cmgui_command_data.";
+  }
 }
 
 sub get_element

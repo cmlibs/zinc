@@ -1,4 +1,2 @@
 Cmiss::Variable T_PTROBJ
 Cmiss::Variable * T_PTROBJ
-Cmiss::Value T_PTROBJ
-Cmiss::Value * T_PTROBJ

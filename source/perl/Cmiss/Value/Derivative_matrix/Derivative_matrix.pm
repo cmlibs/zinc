@@ -1,6 +1,6 @@
 package Cmiss::Value::Derivative_matrix;
 
-use 5.008;
+use 5.006;
 use strict;
 use warnings;
 use Carp;
@@ -153,6 +153,9 @@ sub matrix
 		croak "Missing independent";
 	}
 }
+
+use Cmiss;
+Cmiss::require_library('cmgui');
 
 require XSLoader;
 XSLoader::load('Cmiss::Value::Derivative_matrix', $VERSION);

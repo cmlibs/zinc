@@ -51,9 +51,9 @@ DESTROY(Cmiss::Region region)
 		RETVAL
 
 Cmiss::Region
-command_data_get_root_region(cmiss::command_data command_data)
+command_data_get_root_region(Cmiss::cmgui_command_data cmgui_command_data)
 	CODE:
-		if (RETVAL=Cmiss_command_data_get_root_region(command_data))
+		if (RETVAL=Cmiss_command_data_get_root_region(cmgui_command_data))
 		{
 			ACCESS(Cmiss_region)(RETVAL);
 		}

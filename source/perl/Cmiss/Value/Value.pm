@@ -1,6 +1,6 @@
 package Cmiss::Value;
 
-use 5.008;
+use 5.006;
 use strict;
 use warnings;
 use Carp;
@@ -66,6 +66,9 @@ sub new
 		croak "Could not create $class";
 	}
 }
+
+use Cmiss;
+Cmiss::require_library('cmgui');
 
 require XSLoader;
 XSLoader::load('Cmiss::Value', $VERSION);
