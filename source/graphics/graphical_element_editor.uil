@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : graphical_element_editor.uil
 !
-! LAST MODIFIED : 22 March 1999
+! LAST MODIFIED : 20 November 2001
 !
 ! DESCRIPTION :
 ! The widgets for the graphical element group editor widget.
@@ -19,40 +19,25 @@ procedure
 	gelem_ed_id_circle_disc_text;
 	gelem_ed_id_native_disc_btn;
 	gelem_ed_id_native_disc_form;
-	gelem_ed_id_dimension_0_btn;
-	gelem_ed_id_dimension_1_btn;
-	gelem_ed_id_dimension_2_btn;
-	gelem_ed_id_dimension_3_btn;
-	gelem_ed_id_dimension_all_btn;
 	gelem_ed_id_settings_type_form;
 	gelem_ed_id_add_btn;
 	gelem_ed_id_delete_btn;
 	gelem_ed_id_up_btn;
 	gelem_ed_id_down_btn;
 	gelem_ed_id_settings_scr;
-	gelem_ed_id_settings_rc;
+	gelem_ed_id_settings_list_form;
 	gelem_ed_id_settings_form;
 	gelem_ed_general_btn_CB;
 	gelem_ed_element_disc_text_CB;
 	gelem_ed_circle_disc_text_CB;
 	gelem_ed_native_disc_btn_CB;
-	gelem_ed_dimension_CB;
-	gelem_ed_settings_visibility_CB;
-	gelem_ed_settings_select_CB;
-	gelem_ed_modify_CB;
+	gelem_ed_add_btn_CB;
+	gelem_ed_delete_btn_CB;
+	gelem_ed_up_btn_CB;
+	gelem_ed_down_btn_CB;
 
 value
 	sash_width : 50;
-!	shadow_size         :   2;
-!	form_space_out      :   2;
-!	form_space_in       :   4;
-!	gelem_ed_3d_space   :   3;
-!	gelem_ed_3d_height  : 200;
-
-value
-	gelem_ed_font        : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
-	gelem_ed_font_large  : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
-	gelem_ed_font_bold   : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
 
 identifier
 	!The gap between widgets
@@ -61,44 +46,24 @@ identifier
 	gelem_ed_structure;
 	!fonts here
 	normal_font;
-	button_font;
-	list_font;
 
 ! The gelem_ed widget
 object
-	gelem_ed_widget: XmFrame
+	gelem_ed_widget: XmForm
 		{
 		arguments
 			{
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_FORM;
 			XmNuserData = gelem_ed_structure;
 			};
-		controls
-			{
-!			XmRowColumn gelem_ed_main_rowcol;
-			XmForm gelem_ed_main_form;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure gelem_ed_destroy_CB(gelem_ed_structure);
-			};
-		};
-	gelem_ed_main_form: XmForm
-		{
-!		arguments
-!			{
-!			XmNorientation = XmVERTICAL;
-!			XmNpacking = XmPACK_TIGHT;
-!			XmNnumColumns = 1;
-!			};
 		controls
 			{
 			XmForm gelem_ed_general_set_form;
 			XmSeparatorGadget gelem_ed_separator;
 			XmForm gelem_ed_specific_set_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure gelem_ed_destroy_CB(gelem_ed_structure);
 			};
 		};
 	gelem_ed_general_set_form: XmForm
@@ -106,13 +71,13 @@ object
 		arguments
 			{
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
 			{
-			XmToggleButtonGadget gelem_ed_general_btn;
+			XmForm gelem_ed_general_btn_form;
 			XmRowColumn gelem_ed_general_rc;
 			};
 		};
@@ -155,16 +120,15 @@ object
 			};
 		controls
 			{
-			XmForm gelem_ed_settings_list_form;
+			XmForm gelem_ed_sett_type_list_form;
 			XmForm gelem_ed_settings_form;
 			};
 		};
-	gelem_ed_settings_list_form: XmForm
+	gelem_ed_sett_type_list_form: XmForm
 		{
 		controls
 			{
-			XmRowColumn gelem_ed_dimension;
-			XmRowColumn gelem_ed_type_modify_rc;
+			XmForm gelem_ed_type_modify_form;
 			XmScrolledWindow gelem_ed_settings_scroll;
 			};
 		};
@@ -177,17 +141,13 @@ object
 			};
 		};
 !*******************************************************************************
-	gelem_ed_dimension: XmRowColumn
+	gelem_ed_type_modify_form: XmForm
 		{
 		arguments
 			{
-!			XmNspacing = 20;
-!			XmNmarginWidth = 20;
-			XmNorientation = XmHORIZONTAL;
-			XmNnumColumns = 1;
-			XmNpacking = XmPACK_COLUMN;
-			XmNentryAlignment = XmALIGNMENT_CENTER;
-			XmNradioBehavior = true;
+!Uncomment the following to reduce size of rowcolumn.
+!			XmNmarginHeight = 0;
+!			XmNmarginWidth = 0;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -195,39 +155,11 @@ object
 			};
 		controls
 			{
-			XmToggleButton gelem_ed_dimension_all_btn;
-			XmToggleButton gelem_ed_dimension_0_btn;
-			XmToggleButton gelem_ed_dimension_1_btn;
-			XmToggleButton gelem_ed_dimension_2_btn;
-			XmToggleButton gelem_ed_dimension_3_btn;
-			};
-		callbacks
-			{
-			XmNentryCallback = procedure
-				gelem_ed_dimension_CB(gelem_ed_structure);
-			};
-		};
-	gelem_ed_type_modify_rc: XmRowColumn
-		{
-		arguments
-			{
-!Uncomment the following to reduce size of rowcolumn.
-			XmNmarginHeight = 0;
-			XmNmarginWidth = 0;
-			XmNspacing = 0;
-			XmNorientation = XmHORIZONTAL;
-			XmNpacking = XmPACK_TIGHT;
-			XmNentryAlignment = XmALIGNMENT_CENTER;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = gelem_ed_dimension;
-			XmNbottomAttachment = XmATTACH_NONE;
-			};
-		controls
-			{
 			XmForm gelem_ed_settings_type_form;
-			XmRowColumn gelem_ed_modify;
+			XmPushButtonGadget gelem_ed_add_btn;
+			XmPushButtonGadget gelem_ed_delete_btn;
+			XmPushButtonGadget gelem_ed_up_btn;
+			XmPushButtonGadget gelem_ed_down_btn;
 			};
 		};
 	gelem_ed_settings_scroll: XmScrolledWindow
@@ -235,17 +167,17 @@ object
 		arguments
 			{
 			XmNheight = 186;
+			XmNwidth = 300;
 			XmNscrollingPolicy = XmAUTOMATIC;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = gelem_ed_type_modify_rc;
-			XmNbottomAttachment = XmATTACH_WIDGET;
-			XmNbottomWidget = gelem_ed_settings_form;
+			XmNtopWidget = gelem_ed_type_modify_form;
+			XmNbottomAttachment = XmATTACH_FORM;
 			};
 		controls
 			{
-			XmRowColumn gelem_ed_settings_rowcol;
+			XmForm gelem_ed_settings_list_form;
 			};
 		callbacks
 			{
@@ -253,26 +185,60 @@ object
 				gelem_ed_id_settings_scr(gelem_ed_structure);
 			};
 		};
+	gelem_ed_settings_list_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gelem_ed_id_settings_list_form(gelem_ed_structure);
+			};
+		};
 !*******************************************************************************
-	gelem_ed_general_btn: XmToggleButtonGadget
+	gelem_ed_general_btn_form: XmForm
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("View general settings");
-!      XmNfontList = gelem_ed_font_large;
-			XmNfontList = button_font;
-			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPushButton gelem_ed_general_btn;
+			XmLabel gelem_ed_general_label;
+			};
+		};
+	gelem_ed_general_btn: XmPushButton
+		{
+		arguments
+			{
+			XmNshadowThickness = 1;
+			XmNborderWidth = 0;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 3;
+			XmNlabelString = compound_string("+");
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure
 				gelem_ed_id_general_btn(gelem_ed_structure);
-			XmNvalueChangedCallback = procedure
+			XmNactivateCallback = procedure
 				gelem_ed_general_btn_CB(gelem_ed_structure);
+			};
+		};
+	gelem_ed_general_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("General settings:");
+			XmNfontList = normal_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = gelem_ed_general_btn;
+			XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+			XmNbottomWidget = gelem_ed_general_btn;
 			};
 		};
 	gelem_ed_general_rc: XmRowColumn
@@ -327,7 +293,7 @@ object
 			{
 			XmNlabelString = compound_string("Default coordinate field:");
 			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			};
 		};
 	gelem_ed_def_coord_form: XmForm
@@ -352,7 +318,7 @@ object
 			{
 			XmNlabelString = compound_string("Element discretization:");
 			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -366,6 +332,8 @@ object
 			{
 !      XmNcolumns = 8;
 			XmNvalue = "";
+			XmNmarginHeight = 2;
+			XmNmarginWidth = 2;
 			XmNfontList = normal_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = gelem_ed_element_disc_label;
@@ -398,7 +366,7 @@ object
 			{
 			XmNlabelString = compound_string("Circle discretization:");
 			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -412,6 +380,8 @@ object
 			{
 !      XmNcolumns = 8;
 			XmNvalue = "";
+			XmNmarginHeight = 2;
+			XmNmarginWidth = 2;
 			XmNfontList = normal_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = gelem_ed_circle_disc_label;
@@ -452,7 +422,7 @@ object
 			{
 			XmNlabelString = compound_string("Native discretization field:");
 			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			};
 		callbacks
 			{
@@ -471,243 +441,92 @@ object
 			};
 		};
 !*******************************************************************************
-	gelem_ed_dimension_all_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("ALL");
-			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			XmNuserData = gelem_ed_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				gelem_ed_id_dimension_all_btn(gelem_ed_structure);
-			};
-		};
-	gelem_ed_dimension_0_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("     0-D     ");
-			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			XmNuserData = gelem_ed_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				gelem_ed_id_dimension_0_btn(gelem_ed_structure);
-			};
-		};
-	gelem_ed_dimension_1_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("1-D");
-			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			XmNuserData = gelem_ed_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				gelem_ed_id_dimension_1_btn(gelem_ed_structure);
-			};
-		};
-	gelem_ed_dimension_2_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("2-D");
-			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			XmNuserData = gelem_ed_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				gelem_ed_id_dimension_2_btn(gelem_ed_structure);
-			};
-		};
-	gelem_ed_dimension_3_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("3-D");
-			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			XmNuserData = gelem_ed_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				gelem_ed_id_dimension_3_btn(gelem_ed_structure);
-			};
-		};
-!*******************************************************************************
-	gelem_ed_settings_rowcol: XmRowColumn
-		{
-		arguments
-			{
-			XmNorientation = XmVERTICAL;
-			XmNpacking = XmPACK_COLUMN;
-			XmNnumColumns = 1;
-!			XmNradioBehavior = true;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure
-				gelem_ed_id_settings_rc(gelem_ed_structure);
-!			XmNentryCallback = procedure
-!				gelem_ed_settings_item_CB(gelem_ed_structure);
-			};
-!    controls
-!      {
-!        XmToggleButtonGadget gelem_ed_settings_item;
-!      };
-		};
-	gelem_ed_settings_item_form: XmForm
-		{
-		arguments
-			{
-!User data is set by program to equal settings referred to by form.
-			};
-    controls
-      {
-        XmToggleButtonGadget gelem_ed_settings_visibility;
-        XmToggleButton gelem_ed_settings_select;
-      };
-		};
-	gelem_ed_settings_visibility: XmToggleButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("");
-			XmNspacing = 0;
-			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNindicatorOn = true;
-			XmNfontList = list_font;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_FORM;
-			};
-		callbacks
-			{
-			XmNvalueChangedCallback = procedure
-				gelem_ed_settings_visibility_CB(gelem_ed_structure);
-			};
-		};
-	gelem_ed_settings_select: XmToggleButton
-		{
-		arguments
-			{
-			XmNshadowThickness = 1;
-			XmNlabelString = compound_string("Place holder");
-			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNindicatorOn = false;
-			XmNindicatorType = XmONE_OF_MANY;
-			XmNfontList = list_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = gelem_ed_settings_visibility;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNbottomAttachment = XmATTACH_FORM;
-			};
-		callbacks
-			{
-			XmNvalueChangedCallback = procedure
-				gelem_ed_settings_select_CB(gelem_ed_structure);
-			};
-		};
-!	gelem_ed_settings_item: XmToggleButtonGadget
-!		{
-!		arguments
-!			{
-!			XmNlabelString = compound_string("Place holder");
-!			XmNalignment = XmALIGNMENT_BEGINNING;
-!			XmNindicatorOn = false;
-!			XmNfontList = button_font;
-!			};
-!		};
-!*******************************************************************************
 	gelem_ed_settings_type_form: XmForm
 		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNleftOffset = 2;
+			XmNtopOffset = 2;
+			XmNbottomOffset = 2;
+!			XmNrightOffset = 2;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure
 				gelem_ed_id_settings_type_form(gelem_ed_structure);
 			};
 		};
-	gelem_ed_modify: XmRowColumn
-		{
-		arguments
-			{
-!			XmNspacing = 0;
-			XmNorientation = XmHORIZONTAL;
-			XmNpacking = XmPACK_COLUMN;
-			XmNentryAlignment = XmALIGNMENT_CENTER;
-			};
-		controls
-			{
-			XmPushButtonGadget gelem_ed_add_btn;
-			XmPushButtonGadget gelem_ed_delete_btn;
-			XmPushButtonGadget gelem_ed_up_btn;
-			XmPushButtonGadget gelem_ed_down_btn;
-			};
-		callbacks
-			{
-			XmNentryCallback = procedure gelem_ed_modify_CB(gelem_ed_structure);
-			};
-		};
 	gelem_ed_add_btn: XmPushButtonGadget
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightWidget = gelem_ed_delete_btn;
+			XmNtopAttachment = XmATTACH_FORM;
 			XmNlabelString = compound_string("Add");
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure gelem_ed_id_add_btn(gelem_ed_structure);
+			XmNactivateCallback = procedure gelem_ed_add_btn_CB(gelem_ed_structure);
 			};
 		};
 	gelem_ed_delete_btn: XmPushButtonGadget
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightWidget = gelem_ed_up_btn;
+			XmNtopAttachment = XmATTACH_FORM;
 			XmNlabelString = compound_string("Del");
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure gelem_ed_id_delete_btn(gelem_ed_structure);
+			XmNactivateCallback =
+				procedure gelem_ed_delete_btn_CB(gelem_ed_structure);
 			};
 		};
 	gelem_ed_up_btn: XmPushButtonGadget
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightWidget = gelem_ed_down_btn;
+			XmNtopAttachment = XmATTACH_FORM;
 			XmNlabelString =compound_string("Up");
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure gelem_ed_id_up_btn(gelem_ed_structure);
+			XmNactivateCallback = procedure gelem_ed_up_btn_CB(gelem_ed_structure);
 			};
 		};
 	gelem_ed_down_btn: XmPushButtonGadget
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
 			XmNlabelString =compound_string("Dn");
-			XmNfontList = button_font;
+			XmNfontList = normal_font;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure gelem_ed_id_down_btn(gelem_ed_structure);
+			XmNactivateCallback = procedure gelem_ed_down_btn_CB(gelem_ed_structure);
 			};
 		};
 !*******************************************************************************

@@ -1,13 +1,16 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
 ==============================================================================*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <Xm/Xm.h>
+#include <Xm/XmP.h>
+#include <Xm/FormP.h>
 #include <Xm/PushBG.h>
 #include <Xm/ToggleB.h>
 #include <Xm/ToggleBG.h>
@@ -15,7 +18,10 @@ Provides the widgets to manipulate graphical element group settings.
 #include "choose/choose_enumerator.h"
 #include "choose/choose_fe_field.h"
 #include "command/parser.h"
+#include "general/compare.h"
 #include "general/debug.h"
+#include "general/indexed_list_private.h"
+#include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphical_element_editor.h"
 #include "graphics/graphical_element_editor.uidh"
@@ -34,9 +40,39 @@ static int gelem_editor_hierarchy_open=0;
 static MrmHierarchy gelem_editor_hierarchy;
 #endif /* defined (MOTIF) */
 
-struct Graphical_element_editor_struct
+struct Graphical_element_editor;
+
+struct Settings_item
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct GT_element_settings *settings;
+	/* cache current settings string so only updated if changed */
+	char *settings_string;
+	struct Graphical_element_editor *gelem_editor;
+	int visible;
+	Widget form, parent_form, previous_widget, select_button, visibility_button;
+	int in_use;
+	int access_count;
+};
+
+PROTOTYPE_OBJECT_FUNCTIONS(Settings_item);
+
+DECLARE_LIST_TYPES(Settings_item);
+
+PROTOTYPE_LIST_FUNCTIONS(Settings_item);
+
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Settings_item, settings, \
+	struct GT_element_settings *);
+
+FULL_DECLARE_INDEXED_LIST_TYPE(Settings_item);
+
+struct Graphical_element_editor
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -58,398 +94,209 @@ Contains all the information carried by the graphical element editor widget.
 	void *volume_texture_manager_callback_id;
 	struct User_interface *user_interface;
 	enum GT_element_settings_type current_settings_type;
-	int current_dimension;
 	struct GT_element_settings *current_settings;
 	struct Callback_data update_callback;
+	int general_settings_expanded;
+	struct LIST(Settings_item) *settings_item_list;
 	Widget general_button,general_rowcol,default_coordinate_field_form,
 		default_coordinate_field_widget,element_disc_text,
 		circle_disc_text,native_discretization_button,
 		native_discretization_field_form,native_discretization_field_widget,
-		dimension_0_button,dimension_1_button,dimension_2_button,
-		dimension_3_button,dimension_all_button,settings_type_form,
-		settings_type_widget,settings_scroll,settings_rowcol,add_button,
+		settings_type_form,
+		settings_type_widget, settings_scroll, settings_list_form, add_button,
 		delete_button,up_button,down_button,settings_form,settings_widget,
 		cylinders_button;
 	Widget *widget_address,widget,widget_parent;
-}; /* Graphical_element_editor_struct */
+}; /* Graphical_element_editor */
 
 /*
 Module functions
 ----------------
 */
-static int make_edit_gt_element_group(
-	struct Graphical_element_editor_struct *gelem_editor,
-	struct GT_element_group *gt_element_group)
+
+static void XmForm_resize(Widget form)
 /*******************************************************************************
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 14 November 2001
 
 DESCRIPTION :
-Destroys the edit_gt_element_group member of <gelem_editor> and rebuilds it as
-a complete copy of <gt_element_group>.
+Calls a private function of the <form> to force a resize of the widget.
+???RC Can't find any other way of getting this to work properly!
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(make_edit_gt_element_group);
-	/* check arguments */
-	if (gelem_editor&&gt_element_group)
+	ENTER(XmForm_resize);
+	if (form && XmIsForm(form))
 	{
-		/* destroy current edit_gt_element_group */
-		if (gelem_editor->edit_gt_element_group)
-		{
-			DESTROY(GT_element_group)(&(gelem_editor->edit_gt_element_group));
-		}
-		/* copy GT_element_group without graphics objects */
-		if (gelem_editor->edit_gt_element_group=
-			create_editor_copy_GT_element_group(gt_element_group))
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"make_edit_gt_element_group.  Could not make copy of gt_element_group");
-			return_code=0;
-		}
+		(((XmFormWidgetClass)(form->core.widget_class))->composite_class.change_managed)(form);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"make_edit_gt_element_group.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "XmForm_resize.  Missing or invalid form");
 	}
 	LEAVE;
+} /* XmForm_resize */
 
-	return (return_code);
-} /* make_edit_gt_element_group */
-
-static int create_settings_item_widget(struct GT_element_settings *settings,
-	void *gelem_editor_void)
-/*******************************************************************************
-LAST MODIFIED : 14 September 1998
-
-DESCRIPTION :
-Clears then fills the settings list RowCol with descriptions of the settings
-of the type gelem_editor->settings_type.
-==============================================================================*/
-{
-	int num_children,return_code;
-	struct Graphical_element_editor_struct *gelem_editor;
-	char *settings_string;
-	XmString new_string;
-	Arg override_arg;
-	MrmType settings_item_class;
-	Widget temp_widget;
-	Widget *child_list;
-
-	ENTER(create_settings_item_widget);
-	/* check arguments */
-	if (settings&&(gelem_editor=
-		(struct Graphical_element_editor_struct *)gelem_editor_void))
-	{
-		if (gelem_editor_hierarchy_open)
-		{
-			if (GT_element_settings_uses_dimension(settings,
-				(void *)&gelem_editor->current_dimension))
-			{
-				if (settings_string=GT_element_settings_string(settings,
-					SETTINGS_STRING_COMPLETE_PLUS))
-				{
-					XtSetArg(override_arg,XmNuserData,settings);
-					temp_widget=(Widget)NULL;
-					if (MrmSUCCESS==MrmFetchWidgetOverride(gelem_editor_hierarchy,
-						"gelem_ed_settings_item_form",gelem_editor->settings_rowcol,NULL,
-						&override_arg,1,&temp_widget,&settings_item_class))
-					{
-						XtManageChild(temp_widget);
-						/* get the children = visibility and select toggle buttons */
-						XtVaGetValues(temp_widget,XmNnumChildren,&num_children,
-							XmNchildren,&child_list,NULL);
-						if (2==num_children)
-						{
-							/* set the visibility toggle button */
-							if (GT_element_settings_get_visibility(settings))
-							{
-								XtVaSetValues(child_list[0],XmNset,True,NULL);
-							}
-							else
-							{
-								XtVaSetValues(child_list[0],XmNset,False,NULL);
-							}
-							/* make the settings_string the name of this item */
-							new_string=XmStringCreateSimple(settings_string);
-							XtVaSetValues(child_list[1],XmNlabelString,new_string,NULL);
-							XmStringFree(new_string);
-							/* check current settings */
-							if (settings==gelem_editor->current_settings)
-							{
-								XtVaSetValues(child_list[1],XmNset,True,NULL);
-							}
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"create_settings_item_widget.  Could not fetch widget");
-						return_code=0;
-					}
-					DEALLOCATE(settings_string);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"create_settings_item_widget.  Could not get settings string");
-					return_code=0;
-				}
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_settings_item_widget.  Hierarchy not open");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_settings_item_widget.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* create_settings_item_widget */
-
-static int gelem_editor_make_settings_list(
-	struct Graphical_element_editor_struct *gelem_editor)
-/*******************************************************************************
-LAST MODIFIED : 9 June 1998
-
-DESCRIPTION :
-Clears then fills the settings list RowColumn with descriptions of the settings
-of the type gelem_editor->settings_type.
-==============================================================================*/
-{
-	Arg override_arg;
-	int return_code;
-	MrmType settings_rowcol_class;
-	Widget temp_widget;
-
-	ENTER(gelem_editor_make_settings_list);
-	/* check arguments */
-	if (gelem_editor)
-	{
-		if (gelem_editor_hierarchy_open)
-		{
-			/* delete the rowcol and all the items it contains */
-			if (gelem_editor->settings_rowcol)
-			{
-				XtDestroyWidget(gelem_editor->settings_rowcol);
-			}
-			/* recreate the rowcol */
-			XtSetArg(override_arg,XmNuserData,gelem_editor);
-			temp_widget=(Widget)NULL;
-			if (MrmSUCCESS==MrmFetchWidgetOverride(gelem_editor_hierarchy,
-				"gelem_ed_settings_rowcol",gelem_editor->settings_scroll,NULL,
-				&override_arg,1,&temp_widget,&settings_rowcol_class))
-			{
-				/* now insert the new items/widgets */
-				for_each_settings_in_GT_element_group(
-					gelem_editor->edit_gt_element_group,
-					create_settings_item_widget,(void *)gelem_editor);
-				XtManageChild(temp_widget);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"gelem_editor_make_settings_list.  Could not fetch rowcol");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gelem_editor_make_settings_list.  Hierarchy not open");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gelem_editor_make_settings_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gelem_editor_make_settings_list */
-
-static int gelem_editor_select_settings_item(
-	struct Graphical_element_editor_struct *gelem_editor)
-/*******************************************************************************
-LAST MODIFIED : 20 March 2001
-
-DESCRIPTION :
-Checks if current_settings is in the settings_rowcol; if not (or it was NULL)
-the first item in this list becomes the current_settings, or NULL if empty.
-The line/settings editors for the previous settings are then Unmanaged, and that
-for the new settings Managed and filled with the new values.
-If current_settings is NULL, no editing fields are displayed.
-==============================================================================*/
-{
-	enum GT_element_settings_type settings_type;
-	int have_settings, i, num_children, num_toggles, return_code;
-	struct GT_element_settings *temp_settings;
-	WidgetList child_list, toggle_list;
-
-	ENTER(gelem_editor_select_settings_item);
-	if (gelem_editor)
-	{
-		if (gelem_editor->current_settings &&
-			(!GT_element_settings_uses_dimension(gelem_editor->current_settings,
-				(void *)&(gelem_editor->current_dimension))))
-		{
-			gelem_editor->current_settings = (struct GT_element_settings *)NULL;
-		}
-		settings_type = gelem_editor->current_settings_type;
-		/* get list of settings items */
-		XtVaGetValues(gelem_editor->settings_rowcol,XmNnumChildren,&num_children,
-			XmNchildren,&child_list,NULL);
-		if (0 < num_children)
-		{
-			for (i = 0; i < num_children; i++)
-			{
-				XtVaGetValues(child_list[i], XmNuserData, &temp_settings,
-					XmNnumChildren, &num_toggles, XmNchildren, &toggle_list, NULL);
-				if ((2 == num_toggles) && GT_element_settings_uses_dimension(
-					temp_settings, (void *)&gelem_editor->current_dimension))
-				{
-					if ((!gelem_editor->current_settings) &&
-						((!GT_element_settings_type_uses_dimension(
-							gelem_editor->current_settings_type,
-							gelem_editor->current_dimension)) ||
-							(GT_element_settings_get_settings_type(temp_settings) ==
-								gelem_editor->current_settings_type)))
-					{
-						gelem_editor->current_settings = temp_settings;
-					}
-					if (temp_settings == gelem_editor->current_settings)
-					{
-						XtVaSetValues(toggle_list[1], XmNset, True, NULL);
-						settings_type =
-							GT_element_settings_get_settings_type(temp_settings);
-					}
-					else
-					{
-						XtVaSetValues(toggle_list[1], XmNset, False, NULL);
-					}
-				}
-			}
-		}
-		else
-		{
-			gelem_editor->current_settings = (struct GT_element_settings *)NULL;
-		}
-		have_settings =
-			((struct GT_element_settings *)NULL != gelem_editor->current_settings);
-		/* Grey delete and move buttons if no current_settings */
-		XtSetSensitive(gelem_editor->delete_button, have_settings);
-		XtSetSensitive(gelem_editor->up_button, have_settings);
-		XtSetSensitive(gelem_editor->down_button, have_settings);
-		/* make sure settings_type is valid */
-		if (!GT_element_settings_type_uses_dimension(settings_type,
-			gelem_editor->current_dimension))
-		{
-			settings_type = (enum GT_element_settings_type)0;
-			while ((!GT_element_settings_type_uses_dimension(settings_type,
-				gelem_editor->current_dimension)) &&
-				ENUMERATOR_STRING(GT_element_settings_type)(settings_type))
-			{
-				settings_type++;
-			}
-		}
-		/* if settings_type changed select it on the settings_type option menu */
-		if (settings_type != gelem_editor->current_settings_type)
-		{
-			gelem_editor->current_settings_type=settings_type;
-			choose_enumerator_set_string(gelem_editor->settings_type_widget,
-				ENUMERATOR_STRING(GT_element_settings_type)(settings_type));
-		}
-		/* send selected object to settings editor */
-		return_code=settings_editor_set_settings(gelem_editor->settings_widget,
-			gelem_editor->current_settings);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gelem_editor_select_settings_item.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gelem_editor_select_settings_item */
-
-static int gelem_editor_update_settings_item(
-	struct Graphical_element_editor_struct *gelem_editor,
+struct Settings_item *CREATE(Settings_item)(
+	struct Graphical_element_editor *gelem_editor,
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
-Updates the label on item <settings> to match its contents.
+Creates a Settings_item object for the <settings>.
+Note the Settings_item_update function is responsible for
+creating and updating widgets.
 ==============================================================================*/
 {
-	char *settings_string;
-	int i,num_children,num_toggles,return_code;
-	struct GT_element_settings *temp_settings;
-	WidgetList child_list,toggle_list;
-	XmString new_string;
+	struct Settings_item *settings_item;
 
-	ENTER(gelem_editor_update_settings_item);
-	return_code=0;
-	if (gelem_editor&&settings)
+	ENTER(CREATE(Settings_item));
+	settings_item = (struct Settings_item *)NULL;
+	if (gelem_editor && settings)
 	{
-		XtVaGetValues(gelem_editor->settings_rowcol,XmNnumChildren,&num_children,
-			XmNchildren,&child_list,NULL);
-		for (i=0;i<num_children;i++)
+		if (ALLOCATE(settings_item, struct Settings_item, 1))
 		{
-			XtVaGetValues(child_list[i],XmNuserData,&temp_settings,
-				XmNnumChildren,&num_toggles,XmNchildren,&toggle_list,NULL);
-			if ((2==num_toggles)&&(temp_settings==settings))
-			{
-				if (settings_string=GT_element_settings_string(settings,
-					SETTINGS_STRING_COMPLETE_PLUS))
-				{
-					/* make the settings_string the name of this item */
-					new_string=XmStringCreateSimple(settings_string);
-					XtVaSetValues(toggle_list[1],XmNlabelString,new_string,NULL);
-					XmStringFree(new_string);
-					DEALLOCATE(settings_string);
-					return_code=1;
-				}
-			}
+			settings_item->settings = ACCESS(GT_element_settings)(settings);
+			settings_item->settings_string = (char *)NULL;
+			settings_item->gelem_editor = gelem_editor;
+			settings_item->visible = GT_element_settings_get_visibility(settings);
+			settings_item->in_use = 0;
+			settings_item->access_count = 0;
+
+			settings_item->form = (Widget)NULL;
+			settings_item->select_button = (Widget)NULL;
+			settings_item->previous_widget = (Widget)NULL;
+			settings_item->visibility_button = (Widget)NULL;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "CREATE(Settings_item).  Failed");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gelem_editor_update_settings_item.  Invalid argument(s)");
+			"CREATE(Settings_item).  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (settings_item);
+} /* CREATE(Settings_item) */
+
+int DESTROY(Settings_item)(struct Settings_item **settings_item_address)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Settings_item *settings_item;
+	int return_code;
+
+	ENTER(DESTROY(Settings_item));
+	if (settings_item_address && (settings_item = *settings_item_address))
+	{
+		if (0 == settings_item->access_count)
+		{
+			DEACCESS(GT_element_settings)(&(settings_item->settings));
+			if (settings_item->settings_string)
+			{
+				DEALLOCATE(settings_item->settings_string);
+			}
+			if (settings_item->form)
+			{
+				XtDestroyWidget(settings_item->form);
+			}
+			DEALLOCATE(*settings_item_address);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Settings_item).  Non-zero access_count");
+			return_code = 0;
+		}
+		*settings_item_address = (struct Settings_item *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Settings_item).  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* gelem_editor_update_settings_item */
+} /* DESTROY(Settings_item) */
+
+DECLARE_OBJECT_FUNCTIONS(Settings_item)
+
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Settings_item, settings, \
+	struct GT_element_settings *, compare_pointer)
+
+DECLARE_INDEXED_LIST_FUNCTIONS(Settings_item)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Settings_item, settings, \
+	struct GT_element_settings *, compare_pointer)
+
+static int Settings_item_clear_in_use(struct Settings_item *settings_item,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Clears settings_item->in_use flag to zero.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Settings_item_clear_in_use);
+	USE_PARAMETER(dummy_void);
+	if (settings_item)
+	{
+		settings_item->in_use = 0;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Settings_item_clear_in_use.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Settings_item_clear_in_use */
+
+static int Settings_item_not_in_use(struct Settings_item *settings_item,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Returns true if settings_item->in_use is not set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Settings_item_not_in_use);
+	USE_PARAMETER(dummy_void);
+	if (settings_item)
+	{
+		return_code = !(settings_item->in_use);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Settings_item_not_in_use.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Settings_item_not_in_use */
 
 static int graphical_element_editor_update(
-	struct Graphical_element_editor_struct *gelem_editor)
+	struct Graphical_element_editor *gelem_editor)
 /*******************************************************************************
 LAST MODIFIED : 4 March 1999
 
@@ -483,67 +330,584 @@ gt_element_group currently being edited.
 	return (return_code);
 } /* graphical_element_editor_update */
 
+static int Graphical_element_editor_set_current_settings(
+	struct Graphical_element_editor *gelem_editor,
+	struct GT_element_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
+==============================================================================*/
+{
+	enum GT_element_settings_type settings_type;
+	int have_settings, return_code;
+	struct Settings_item *settings_item;
+
+	ENTER(Graphical_element_editor_set_current_settings);
+	if (gelem_editor)
+	{
+		if (settings != gelem_editor->current_settings)
+		{
+			if (gelem_editor->current_settings)
+			{
+				if (settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
+					gelem_editor->current_settings, gelem_editor->settings_item_list))
+				{
+					XmToggleButtonSetState(settings_item->select_button,
+						/*state*/FALSE, /*notify*/FALSE);
+				}
+			}
+			REACCESS(GT_element_settings)(&(gelem_editor->current_settings),
+				settings);
+			if (settings)
+			{
+				if (settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
+					settings, gelem_editor->settings_item_list))
+				{
+					XmToggleButtonSetState(settings_item->select_button,
+						/*state*/TRUE, /*notify*/FALSE);
+				}
+				/* if settings_type changed, select it in settings_type option menu */
+				settings_type = GT_element_settings_get_settings_type(settings);
+				if (settings_type != gelem_editor->current_settings_type)
+				{
+					gelem_editor->current_settings_type = settings_type;
+					choose_enumerator_set_string(gelem_editor->settings_type_widget,
+						ENUMERATOR_STRING(GT_element_settings_type)(settings_type));
+					XmForm_resize(gelem_editor->settings_type_form);
+				}
+			}
+			have_settings =
+				((struct GT_element_settings *)NULL != gelem_editor->current_settings);
+			/* Grey delete and move buttons if no current_settings */
+			XtSetSensitive(gelem_editor->delete_button, have_settings);
+			XtSetSensitive(gelem_editor->up_button, have_settings);
+			XtSetSensitive(gelem_editor->down_button, have_settings);
+			/* send selected object to settings editor */
+			settings_editor_set_settings(gelem_editor->settings_widget,
+				gelem_editor->current_settings);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_element_editor_set_current_settings.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* Graphical_element_editor_set_current_settings */
+
+static int Graphical_element_editor_set_current_settings_from_position(
+	struct Graphical_element_editor *gelem_editor, int position)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
+==============================================================================*/
+{
+	int max_position, return_code;
+	struct GT_element_settings *settings;
+
+	ENTER(Graphical_element_editor_set_current_settings_from_position);
+	if (gelem_editor)
+	{
+		settings = (struct GT_element_settings *)NULL;
+		if (gelem_editor->edit_gt_element_group)
+		{
+			max_position = GT_element_group_get_number_of_settings(
+				gelem_editor->edit_gt_element_group);
+			if ((1 > position) || (max_position < position))
+			{
+				position = max_position;
+			}
+			settings = get_settings_at_position_in_GT_element_group(
+				gelem_editor->edit_gt_element_group, position);
+		}
+		return_code =
+			Graphical_element_editor_set_current_settings(gelem_editor, settings);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_element_editor_set_current_settings_from_position.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* Graphical_element_editor_set_current_settings_from_position */
+
+static int Graphical_element_editor_set_current_settings_from_type(
+	struct Graphical_element_editor *gelem_editor)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2001
+
+DESCRIPTION :
+Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_settings *settings;
+
+	ENTER(Graphical_element_editor_set_current_settings_from_type);
+	if (gelem_editor)
+	{
+		settings = (struct GT_element_settings *)NULL;
+		if (gelem_editor->edit_gt_element_group)
+		{
+			settings = first_settings_in_GT_element_group_that(
+				gelem_editor->edit_gt_element_group,
+				GT_element_settings_type_matches,
+				(void *)gelem_editor->current_settings_type);
+		}
+		return_code =
+			Graphical_element_editor_set_current_settings(gelem_editor, settings);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_element_editor_set_current_settings_from_type.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* Graphical_element_editor_set_current_settings_from_type */
+
+static int Graphical_element_editor_update_Settings_item(
+	struct Graphical_element_editor *gelem_editor,
+	struct GT_element_settings *settings,
+	Widget *previous_widget_address);
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Tries to find by name a Settings_item in <settings_item_list> that
+matches the string for <settings>. If there is none, one is created and added
+to the settings_item_list. Then goes through each widget in the settings_item
+and makes sure it is created and displaying the values from the settings and has
+the correct previous widget. Marks the object as "in_use" so that those
+that are not are removed.
+Prototype.
+==============================================================================*/
+
+static void graphical_element_editor_settings_visibility_CB(Widget widget,
+	XtPointer client_data, XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Called when a settings visibility toggle button is selected.
+==============================================================================*/
+{
+	struct Settings_item *settings_item;
+	Widget previous_widget;
+
+	ENTER(graphical_element_editor_settings_visibility_CB);
+	USE_PARAMETER(call_data);
+	if (widget && (settings_item = (struct Settings_item *)client_data))
+	{
+		GT_element_settings_set_visibility(settings_item->settings,
+			XmToggleButtonGetState(widget));
+		previous_widget = settings_item->previous_widget;
+		Graphical_element_editor_update_Settings_item(settings_item->gelem_editor,
+			settings_item->settings, &previous_widget);
+		/* ensure this settings is the currently selected one */
+		Graphical_element_editor_set_current_settings(settings_item->gelem_editor,
+			settings_item->settings);
+		/* inform the client of the changes */
+		graphical_element_editor_update(settings_item->gelem_editor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_settings_visibility_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphical_element_editor_settings_visibility_CB */
+
+static void graphical_element_editor_settings_select_CB(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Called when a settings select toggle button is selected.
+==============================================================================*/
+{
+	struct Settings_item *settings_item;
+
+	ENTER(graphical_element_editor_settings_select_CB);
+	USE_PARAMETER(call_data);
+	if (widget && (settings_item = (struct Settings_item *)client_data))
+	{
+		if (settings_item->settings ==
+			settings_item->gelem_editor->current_settings)
+		{
+			/* make sure the object is highlighted properly */
+			XmToggleButtonSetState(settings_item->select_button,
+				/*state*/TRUE, /*notify*/FALSE);
+		}
+		Graphical_element_editor_set_current_settings(settings_item->gelem_editor,
+			settings_item->settings);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_settings_select_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphical_element_editor_settings_select_CB */
+
+static int Graphical_element_editor_update_Settings_item(
+	struct Graphical_element_editor *gelem_editor,
+	struct GT_element_settings *settings,
+	Widget *previous_widget_address)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2001
+
+DESCRIPTION :
+Tries to find by name a Settings_item in <settings_item_list> that
+matches the string for <settings>. If there is none, one is created and added
+to the settings_item_list. Then goes through each widget in the settings_item
+and makes sure it is created and displaying the values from the settings and has
+the correct previous widget. Marks the object as "in_use" so that those
+that are not are removed.
+==============================================================================*/
+{
+	Arg args[12];
+	char *settings_string;
+	int num_args, return_code, visible;
+	struct Settings_item *settings_item;
+	XmString label_string;
+
+	ENTER(Graphical_element_editor_update_Settings_item);
+	if (gelem_editor && settings &&	previous_widget_address)
+	{
+		return_code = 1;
+		if (settings_string = GT_element_settings_string(settings,
+			SETTINGS_STRING_COMPLETE_PLUS))
+		{
+			if (!(settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
+				settings, gelem_editor->settings_item_list)))
+			{
+				settings_item = CREATE(Settings_item)(gelem_editor, settings);
+				if (!ADD_OBJECT_TO_LIST(Settings_item)(settings_item,
+					gelem_editor->settings_item_list))
+				{
+					DESTROY(Settings_item)(&settings_item);
+					settings_item = (struct Settings_item *)NULL;
+				}
+			}
+			if (settings_item)
+			{
+				/* create/update the widgets */
+
+				/* form widget */
+				if ((!(settings_item->form)) ||
+					(settings_item->previous_widget != *previous_widget_address))
+				{
+					num_args = 0;
+					if (*previous_widget_address)
+					{
+						XtSetArg(args[num_args], XmNtopAttachment, XmATTACH_WIDGET);
+						num_args++;
+						XtSetArg(args[num_args], XmNtopWidget,
+							(XtPointer)(*previous_widget_address));
+						num_args++;
+					}
+					else
+					{
+						XtSetArg(args[num_args], XmNtopAttachment, XmATTACH_FORM);
+						num_args++;
+					}
+					if (settings_item->form)
+					{
+						XtSetValues(settings_item->form, args, num_args);
+					}
+					else
+					{
+						XtSetArg(args[num_args], XmNleftAttachment, XmATTACH_FORM);
+						num_args++;
+						settings_item->form = XmCreateForm(
+							gelem_editor->settings_list_form, "form", args, num_args);
+						XtManageChild(settings_item->form);
+					}
+					settings_item->previous_widget = *previous_widget_address;
+				}
+				*previous_widget_address = settings_item->form;
+
+				/* visibility_button */
+				visible = GT_element_settings_get_visibility(settings);
+				if (settings_item->visibility_button)
+				{
+					if (visible != settings_item->visible)
+					{
+						XmToggleButtonSetState(settings_item->visibility_button,
+							/*state*/visible, /*notify*/FALSE);
+					}
+				}
+				else
+				{
+					num_args = 0;
+					XtSetArg(args[num_args], XmNleftAttachment, XmATTACH_FORM);
+					num_args++;
+					XtSetArg(args[num_args], XmNtopAttachment, XmATTACH_FORM);
+					num_args++;
+					XtSetArg(args[num_args], XmNbottomAttachment, XmATTACH_FORM);
+					num_args++;
+					XtSetArg(args[num_args], XmNset, visible);
+					num_args++;
+					XtSetArg(args[num_args], XmNindicatorOn, TRUE);
+					num_args++;
+					XtSetArg(args[num_args], XmNindicatorSize, 16);
+					num_args++;
+					XtSetArg(args[num_args], XmNspacing, 0);
+					num_args++;
+					XtSetArg(args[num_args], XmNfontList,
+						(XtPointer)gelem_editor->user_interface->normal_fontlist);
+					num_args++;
+					settings_item->visibility_button = XmCreateToggleButton(
+						settings_item->form, "", args, num_args);
+					XtAddCallback(settings_item->visibility_button,
+						XmNvalueChangedCallback,
+						graphical_element_editor_settings_visibility_CB,
+						(XtPointer)settings_item);
+					XtManageChild(settings_item->visibility_button);
+				}
+				settings_item->visible = visible;
+
+				/* select_button */
+				if (!(settings_item->select_button))
+				{
+					num_args = 0;
+					XtSetArg(args[num_args], XmNtopAttachment, XmATTACH_FORM);
+					num_args++;
+					XtSetArg(args[num_args], XmNbottomAttachment, XmATTACH_FORM);
+					num_args++;
+					XtSetArg(args[num_args], XmNleftAttachment, XmATTACH_WIDGET);
+					num_args++;
+					XtSetArg(args[num_args], XmNleftWidget,
+						settings_item->visibility_button);
+					num_args++;
+					XtSetArg(args[num_args], XmNindicatorOn, FALSE);
+					num_args++;
+					XtSetArg(args[num_args], XmNindicatorType, XmN_OF_MANY);
+					num_args++;
+					XtSetArg(args[num_args], XmNshadowThickness, 1);
+					num_args++;
+					XtSetArg(args[num_args], XmNfontList,
+						(XtPointer)gelem_editor->user_interface->normal_fontlist);
+					num_args++;
+					settings_item->select_button = XmCreateToggleButton(
+						settings_item->form, settings_string, args, num_args);
+					XtAddCallback(settings_item->select_button,
+						XmNvalueChangedCallback,
+						graphical_element_editor_settings_select_CB,
+						(XtPointer)settings_item);
+					XtManageChild(settings_item->select_button);
+				}
+				else
+				{
+					if (strcmp(settings_string, settings_item->settings_string))
+					{
+						label_string = XmStringCreateSimple(settings_string);
+						XtVaSetValues(settings_item->select_button,
+							XmNlabelString, label_string, NULL);
+						XmStringFree(label_string);
+					}
+					DEALLOCATE(settings_item->settings_string);
+				}
+				settings_item->settings_string = settings_string;
+
+				settings_item->in_use = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Settings_item_update.  "
+					"Could not find or create settings_item");
+				return_code = 0;
+				DEALLOCATE(settings_string);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphical_element_editor_update_Settings_item.  "
+				"Could not get settings_string");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_element_editor_update_Settings_item.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_element_editor_update_Settings_item */
+
+struct GT_element_settings_update_Settings_item_data
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Data for function GT_element_settings_update_Settings_item.
+==============================================================================*/
+{
+	struct Graphical_element_editor *gelem_editor;
+	Widget previous_widget;
+};
+
+static int GT_element_settings_update_Settings_item(
+	struct GT_element_settings *settings, void *update_data_void)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Iterator function for Graphical_element_editor_update_Settings_item.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_settings_update_Settings_item_data *update_data;
+
+	ENTER(GT_element_settings_update_Settings_item);
+	if (settings && (update_data =
+		(struct GT_element_settings_update_Settings_item_data *)update_data_void))
+	{
+		return_code = Graphical_element_editor_update_Settings_item(
+			update_data->gelem_editor, settings, &(update_data->previous_widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_update_Settings_item.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_update_Settings_item */
+
+static int Graphical_element_editor_update_settings_list(
+	struct Graphical_element_editor *gelem_editor)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Clears then fills the settings list RowColumn with descriptions of the settings
+of the type gelem_editor->settings_type.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_settings_update_Settings_item_data update_data;
+
+	ENTER(Graphical_element_editor_update_settings_list);
+	if (gelem_editor && gelem_editor->edit_gt_element_group &&
+		gelem_editor->settings_list_form)
+	{
+		return_code = 1;
+
+		/* clear in-use flags so we know which ones are used later */
+		FOR_EACH_OBJECT_IN_LIST(Settings_item)(Settings_item_clear_in_use,
+			(void *)NULL, gelem_editor->settings_item_list);
+
+		update_data.gelem_editor = gelem_editor;
+		update_data.previous_widget = (Widget)NULL;
+
+		for_each_settings_in_GT_element_group(gelem_editor->edit_gt_element_group,
+			GT_element_settings_update_Settings_item, (void *)&update_data);
+
+		REMOVE_OBJECTS_FROM_LIST_THAT(Settings_item)(
+			Settings_item_not_in_use, (void *)NULL, gelem_editor->settings_item_list);
+
+#if defined (NEW_CODE)
+		/* if current_object is invalid, choose another one */
+		if ((!scene_editor->current_object) ||
+			(1 == scene_editor->current_object->access_count))
+		{
+			Scene_editor_set_current_object(scene_editor,
+				Scene_editor_get_first_object(scene_editor));
+		}
+#endif /* defined (NEW_CODE) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_element_editor_update_settings_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_element_editor_update_settings_list */
+
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,general_button)
+	Graphical_element_editor,general_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,general_rowcol)
+	Graphical_element_editor,general_rowcol)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,default_coordinate_field_form)
+	Graphical_element_editor,default_coordinate_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,element_disc_text)
+	Graphical_element_editor,element_disc_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,circle_disc_text)
+	Graphical_element_editor,circle_disc_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,native_discretization_button)
+	Graphical_element_editor,native_discretization_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,native_discretization_field_form)
+	Graphical_element_editor,native_discretization_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,dimension_0_button)
+	Graphical_element_editor,settings_type_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,dimension_1_button)
+	Graphical_element_editor,add_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,dimension_2_button)
+	Graphical_element_editor,delete_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,dimension_3_button)
+	Graphical_element_editor,up_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,dimension_all_button)
+	Graphical_element_editor,down_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,settings_type_form)
+	Graphical_element_editor,settings_scroll)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,add_button)
+	Graphical_element_editor,settings_list_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,delete_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,up_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,down_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,settings_scroll)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,settings_rowcol)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor, \
-	Graphical_element_editor_struct,settings_form)
+	Graphical_element_editor,settings_form)
 
 static void graphical_element_editor_destroy_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
-Callback for the gelem_editor dialog - tidies up all details - mem etc
+Callback for the gelem_editor dialog - tidies up all details - memory etc.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_destroy_CB);
 	USE_PARAMETER(call_data);
 	if (widget&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data))
+		(gelem_editor=(struct Graphical_element_editor *)client_data))
 	{
+		if (gelem_editor->current_settings)
+		{
+			DEACCESS(GT_element_settings)(&(gelem_editor->current_settings));
+		}
+		DESTROY(LIST(Settings_item))(&(gelem_editor->settings_item_list));
+
 		/* destroy edit_gt_element_group */
 		if (gelem_editor->edit_gt_element_group)
 		{
-			DESTROY(GT_element_group)(
+			DEACCESS(GT_element_group)(
 				&(gelem_editor->edit_gt_element_group));
 		}
 		/* deregister material manager callbacks */
@@ -574,7 +938,7 @@ Callback for the gelem_editor dialog - tidies up all details - mem etc
 } /* graphical_element_editor_destroy_CB */
 
 static int gelem_editor_set_general_settings(
-	struct Graphical_element_editor_struct *gelem_editor)
+	struct Graphical_element_editor *gelem_editor)
 /*******************************************************************************
 LAST MODIFIED : 4 March 1999
 
@@ -637,27 +1001,36 @@ controls graying out widgets not currently in use.
 static void graphical_element_editor_general_button_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 2 June 1998
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 Toggle for switching the general settings forms on and off.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
+	XmString label_string;
 
 	ENTER(graphical_element_editor_general_button_CB);
 	USE_PARAMETER(call_data);
 	if (widget&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data))
+		(gelem_editor=(struct Graphical_element_editor *)client_data))
 	{
-		if (XmToggleButtonGetState(widget))
+		if (gelem_editor->general_settings_expanded)
 		{
-			XtManageChild(gelem_editor->general_rowcol);
+			gelem_editor->general_settings_expanded = 0;
+			label_string = XmStringCreateSimple("+");
+			XtUnmanageChild(gelem_editor->general_rowcol);
 		}
 		else
 		{
-			XtUnmanageChild(gelem_editor->general_rowcol);
+			gelem_editor->general_settings_expanded = 1;
+			label_string = XmStringCreateSimple("-");
+			XtManageChild(gelem_editor->general_rowcol);
 		}
+		XmForm_resize(gelem_editor->widget);
+		XtVaSetValues(gelem_editor->general_button,
+			XmNlabelString, label_string, NULL);
+		XmStringFree(label_string);
 	}
 	else
 	{
@@ -676,12 +1049,12 @@ DESCRIPTION :
 Callback for change of default coordinate field.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_update_default_coordinate_field);
 	USE_PARAMETER(widget);
 	if (default_coordinate_field_void&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)gelem_editor_void))
+		(gelem_editor=(struct Graphical_element_editor *)gelem_editor_void))
 	{
 		GT_element_group_set_default_coordinate_field(
 			gelem_editor->edit_gt_element_group,
@@ -708,14 +1081,14 @@ Called when entry is made into the element discretization text field.
 ==============================================================================*/
 {
 	char *disc_text;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 	struct Parse_state *temp_state;
 	struct Element_discretization element_discretization;
 
 	ENTER(graphical_element_editor_element_disc_text_CB);
 	USE_PARAMETER(call_data);
 	if (widget&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data))
+		(gelem_editor=(struct Graphical_element_editor *)client_data))
 	{
 		/* Get the pointer to the text */
 		XtVaGetValues(widget,XmNvalue,&disc_text,NULL);
@@ -731,7 +1104,6 @@ Called when entry is made into the element discretization text field.
 						gelem_editor->edit_gt_element_group,
 						&element_discretization,gelem_editor->user_interface))
 				{
-					/*gelem_editor_make_settings_list(gelem_editor);*/
 					/* inform the client of the changes */
 					graphical_element_editor_update(gelem_editor);
 				}
@@ -771,13 +1143,13 @@ Called when entry is made into the circle discretization text field.
 ==============================================================================*/
 {
 	char *disc_text;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_circle_disc_text_CB);
 	USE_PARAMETER(call_data);
 	/* check arguments */
 	if (widget&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data))
+		(gelem_editor=(struct Graphical_element_editor *)client_data))
 	{
 		/* Get the pointer to the text */
 		XtVaGetValues(widget,XmNvalue,&disc_text,NULL);
@@ -787,7 +1159,6 @@ Called when entry is made into the circle discretization text field.
 				gelem_editor->edit_gt_element_group,atoi(disc_text),
 				gelem_editor->user_interface))
 			{
-				/* gelem_editor_make_settings_list(gelem_editor); */
 				/* inform the client of the changes */
 				graphical_element_editor_update(gelem_editor);
 			}
@@ -819,13 +1190,13 @@ Called when the native_discretization toggle button value changes.
 ==============================================================================*/
 {
 	struct FE_field *native_discretization_field;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 	struct GT_element_group *gt_element_group;
 
 	ENTER(graphical_element_editor_native_discretization_button_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if ((gelem_editor=(struct Graphical_element_editor_struct *)gelem_editor_void)
+	if ((gelem_editor=(struct Graphical_element_editor *)gelem_editor_void)
 		&&(gt_element_group=gelem_editor->edit_gt_element_group))
 	{
 		if (GT_element_group_get_native_discretization_field(gt_element_group))
@@ -866,11 +1237,11 @@ DESCRIPTION :
 Callback for change of default native_discretization field.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_update_native_discretization_field);
 	USE_PARAMETER(widget);
-	if (gelem_editor=(struct Graphical_element_editor_struct *)gelem_editor_void)
+	if (gelem_editor=(struct Graphical_element_editor *)gelem_editor_void)
 	{
 		/* only select it if we currently have a native_discretization field */
 		if (GT_element_group_get_native_discretization_field(
@@ -892,123 +1263,31 @@ Callback for change of default native_discretization field.
 	LEAVE;
 } /* graphical_element_editor_update_native_discretization_field */
 
-static void graphical_element_editor_dimension_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 March 2001
-
-DESCRIPTION :
-Called when switching between ALL/0-D/1-D/2-D/3-D.
-==============================================================================*/
-{
-	char **valid_strings;
-	int dimension, number_of_valid_strings;
-	struct Graphical_element_editor_struct *gelem_editor;
-	Widget button_widget;
-
-	ENTER(graphical_element_editor_dimension_CB);
-	if (widget &&
-		(gelem_editor = (struct Graphical_element_editor_struct *)client_data) &&
-		(button_widget = ((XmRowColumnCallbackStruct *)call_data)->widget))
-	{
-		if (XmToggleButtonGetState(button_widget))
-		{
-			dimension = gelem_editor->current_dimension;
-			if (button_widget == gelem_editor->dimension_all_button)
-			{
-				dimension = -1;
-			}
-			else if (button_widget == gelem_editor->dimension_0_button)
-			{
-				dimension = 0;
-			}
-			else if (button_widget == gelem_editor->dimension_1_button)
-			{
-				dimension = 1;
-			}
-			else if (button_widget == gelem_editor->dimension_2_button)
-			{
-				dimension = 2;
-			}
-			else if (button_widget == gelem_editor->dimension_3_button)
-			{
-				dimension = 3;
-			}
-			/* check if not already looking at new settings type */
-			if (dimension != gelem_editor->current_dimension)
-			{
-				gelem_editor->current_dimension = dimension;
-				/* work out current_settings_type for changed dimension */
-				if (!GT_element_settings_type_uses_dimension(
-					gelem_editor->current_settings_type, dimension))
-				{
-					if (gelem_editor->current_settings =
-						first_settings_in_GT_element_group_that(
-							gelem_editor->edit_gt_element_group,
-							GT_element_settings_uses_dimension, (void *)&dimension))
-					{
-						gelem_editor->current_settings_type =
-							GT_element_settings_get_settings_type(
-								gelem_editor->current_settings);
-					}
-				}
-				/* remake the settings_type choose_enumerator */
-				if (valid_strings =
-					ENUMERATOR_GET_VALID_STRINGS(GT_element_settings_type)(
-						&number_of_valid_strings,
-						GT_element_settings_type_uses_dimension_conditional,
-						(void *)&dimension))
-				{
-					if (!GT_element_settings_type_uses_dimension(
-						gelem_editor->current_settings_type, dimension))
-					{
-						STRING_TO_ENUMERATOR(GT_element_settings_type)(valid_strings[0],
-							&(gelem_editor->current_settings_type));
-					}
-					choose_enumerator_set_valid_strings(
-						gelem_editor->settings_type_widget,number_of_valid_strings,
-						valid_strings,ENUMERATOR_STRING(GT_element_settings_type)(
-							gelem_editor->current_settings_type));
-					DEALLOCATE(valid_strings);
-				}
-				gelem_editor_make_settings_list(gelem_editor);
-				gelem_editor_select_settings_item(gelem_editor);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphical_element_editor_dimension_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* graphical_element_editor_dimension_CB */
-
 static void graphical_element_editor_update_settings_type(Widget widget,
-	XtPointer client_data,XtPointer call_data)
+	XtPointer client_data, XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
 Called when switching between Points/Lines/Surfaces/Iso-surfaces etc.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 	enum GT_element_settings_type settings_type;
 
 	ENTER(graphical_element_editor_update_settings_type);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
-	if (gelem_editor=(struct Graphical_element_editor_struct *)client_data)
+	if (gelem_editor = (struct Graphical_element_editor *)client_data)
 	{
 		if (STRING_TO_ENUMERATOR(GT_element_settings_type)(
 			choose_enumerator_get_string(gelem_editor->settings_type_widget),
 			&settings_type) &&
 			(settings_type != gelem_editor->current_settings_type))
 		{
-			gelem_editor->current_settings_type=settings_type;
-			gelem_editor->current_settings=(struct GT_element_settings *)NULL;
-			gelem_editor_select_settings_item(gelem_editor);
+			gelem_editor->current_settings_type = settings_type;
+			XmForm_resize(gelem_editor->settings_type_form);
+			Graphical_element_editor_set_current_settings_from_type(gelem_editor);
 		}
 	}
 	else
@@ -1019,395 +1298,361 @@ Called when switching between Points/Lines/Surfaces/Iso-surfaces etc.
 	LEAVE;
 } /* graphical_element_editor_update_settings_type */
 
-static void graphical_element_editor_settings_visibility_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
+static void graphical_element_editor_add_button_CB(Widget widget,
+	XtPointer client_data, XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 13 November 2001
 
 DESCRIPTION :
-Called when a settings visibility toggle button is selected.
-==============================================================================*/
-{
-	struct Graphical_element_editor_struct *gelem_editor;
-	struct GT_element_settings *settings;
-	Widget settings_form;
-
-	ENTER(graphical_element_editor_settings_visibility_CB);
-	USE_PARAMETER(call_data);
-	if (widget&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data))
-	{
-		/* the settings is kept as XmNuserData with the parent settings form */
-		if (settings_form=XtParent(widget))
-		{
-			settings=(struct GT_element_settings *)NULL;
-			/* Get the settings this menu visibility represents */
-			XtVaGetValues(settings_form,XmNuserData,&settings,NULL);
-			GT_element_settings_set_visibility(settings,
-				XmToggleButtonGetState(widget));
-			gelem_editor_update_settings_item(gelem_editor,settings);
-			/* ensure this settings is the currently selected one */
-			if (settings != gelem_editor->current_settings)
-			{
-				gelem_editor->current_settings=settings;
-				gelem_editor_select_settings_item(gelem_editor);
-			}
-			/* inform the client of the changes */
-			graphical_element_editor_update(gelem_editor);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"graphical_element_editor_settings_visibility_CB.  "
-				"Missing parent settings form");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphical_element_editor_settings_visibility_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* graphical_element_editor_settings_visibility_CB */
-
-static void graphical_element_editor_settings_select_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 10 July 2000
-
-DESCRIPTION :
-Called when a settings select toggle button is selected.
-==============================================================================*/
-{
-	struct Graphical_element_editor_struct *gelem_editor;
-	struct GT_element_settings *settings;
-	Widget settings_form;
-
-	ENTER(graphical_element_editor_settings_select_CB);
-	USE_PARAMETER(call_data);
-	if (widget&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data))
-	{
-		/* the settings is kept as XmNuserData with the parent settings form */
-		if (settings_form=XtParent(widget))
-		{
-			settings=(struct GT_element_settings *)NULL;
-			/* Get the settings this menu select represents and make it current */
-			XtVaGetValues(settings_form,XmNuserData,&settings,NULL);
-			if (settings != gelem_editor->current_settings)
-			{
-				gelem_editor->current_settings=settings;
-				gelem_editor_select_settings_item(gelem_editor);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"graphical_element_editor_settings_select_CB.  "
-				"Missing parent settings form");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphical_element_editor_settings_select_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* graphical_element_editor_settings_select_CB */
-
-static void graphical_element_editor_modify_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 20 March 2001
-
-DESCRIPTION :
-Called when a modify button - add, delete, up, down - is activated.
+Add button press: create new settings of the current type.
 ==============================================================================*/
 {
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Streamline_type streamline_type;
 	float streamline_length,streamline_width;
-	int list_changed, position, return_code, reverse_track;
+	int return_code, reverse_track;
 	struct Computed_field *default_coordinate_field,*element_xi_coordinate_field,
 		*iso_scalar_field,*orientation_scale_field,*stream_vector_field,
 		*variable_scale_field;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 	struct GROUP(FE_node) *data_group;
 	struct GT_object *glyph, *old_glyph;
 	struct GT_element_settings *settings;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct VT_volume_texture *volume_texture;
-	Widget modify_button;
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 
-	ENTER(graphical_element_editor_modify_CB);
-	if (widget&&(modify_button=((XmRowColumnCallbackStruct *)call_data)->widget)&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data)&&
-		gelem_editor->edit_gt_element_group&&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
+	ENTER(graphical_element_editor_add_button_CB);
+	USE_PARAMETER(call_data);
+	if (widget &&
+		(gelem_editor=(struct Graphical_element_editor *)client_data) &&
+		gelem_editor->edit_gt_element_group &&
+		(computed_field_manager = Computed_field_package_get_computed_field_manager(
 			gelem_editor->computed_field_package)))
 	{
-		list_changed=0;
-		if (modify_button==gelem_editor->add_button)
+		if (settings =
+			CREATE(GT_element_settings)(gelem_editor->current_settings_type))
 		{
-			if (settings=CREATE(GT_element_settings)(
-				gelem_editor->current_settings_type))
+			return_code = 1;
+			if (gelem_editor->current_settings)
 			{
-				return_code=1;
-				if (gelem_editor->current_settings)
+				/* copy current settings into new settings */
+				return_code=COPY(GT_element_settings)(settings,
+					gelem_editor->current_settings);
+				/* make sure new settings is visible */
+				GT_element_settings_set_visibility(settings,1);
+			}
+			else
+			{
+				/* set materials for all settings */
+				GT_element_settings_set_material(settings,
+					gelem_editor->default_material);
+				GT_element_settings_set_selected_material(settings,
+					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+						"default_selected",gelem_editor->graphical_material_manager));
+				/* for data_points, ensure either there are points with
+					 default_coordinate defined at them. If not, and any have
+					 the element_xi_coordinate field defined over them, use that */
+				if (GT_ELEMENT_SETTINGS_DATA_POINTS==
+					gelem_editor->current_settings_type)
 				{
-					/* copy current settings into new settings */
-					return_code=COPY(GT_element_settings)(settings,
-						gelem_editor->current_settings);
-					/* make sure new settings is visible */
-					GT_element_settings_set_visibility(settings,1);
-				}
-				else
-				{
-					/* set materials for all settings */
-					GT_element_settings_set_material(settings,
-						gelem_editor->default_material);
-					GT_element_settings_set_selected_material(settings,
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-							"default_selected",gelem_editor->graphical_material_manager));
-					/* for data_points, ensure either there are points with
-						 default_coordinate defined at them. If not, and any have
-						 the element_xi_coordinate field defined over them, use that */
-					if (GT_ELEMENT_SETTINGS_DATA_POINTS==
-						gelem_editor->current_settings_type)
-					{
-						data_group=GT_element_group_get_data_group(
+					data_group=GT_element_group_get_data_group(
+						gelem_editor->edit_gt_element_group);
+					default_coordinate_field=
+						GT_element_group_get_default_coordinate_field(
 							gelem_editor->edit_gt_element_group);
-						default_coordinate_field=
-							GT_element_group_get_default_coordinate_field(
-								gelem_editor->edit_gt_element_group);
-						if (!FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-							FE_node_has_Computed_field_defined,
-							(void *)default_coordinate_field,data_group))
+					if (!FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+						FE_node_has_Computed_field_defined,
+						(void *)default_coordinate_field,data_group))
+					{
+						if ((element_xi_coordinate_field=
+							FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+								"element_xi_coordinate",computed_field_manager))&&
+							FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+								FE_node_has_Computed_field_defined,
+								(void *)element_xi_coordinate_field,data_group))
 						{
-							if ((element_xi_coordinate_field=
-								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-									"element_xi_coordinate",computed_field_manager))&&
-								FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-									FE_node_has_Computed_field_defined,
-									(void *)element_xi_coordinate_field,data_group))
-							{
-								GT_element_settings_set_coordinate_field(settings,
-									element_xi_coordinate_field);
-							}
+							GT_element_settings_set_coordinate_field(settings,
+								element_xi_coordinate_field);
 						}
 					}
-					/* set iso_scalar_field for iso_surfaces */
-					if (GT_ELEMENT_SETTINGS_ISO_SURFACES==
-						gelem_editor->current_settings_type)
+				}
+				/* set iso_scalar_field for iso_surfaces */
+				if (GT_ELEMENT_SETTINGS_ISO_SURFACES==
+					gelem_editor->current_settings_type)
+				{
+					if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+						Computed_field_is_scalar,(void *)NULL,computed_field_manager))
 					{
-						if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-							Computed_field_is_scalar,(void *)NULL,computed_field_manager))
+						if (!GT_element_settings_set_iso_surface_parameters(
+							settings,iso_scalar_field,0.0))
 						{
-							if (!GT_element_settings_set_iso_surface_parameters(
-								settings,iso_scalar_field,0.0))
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,"No scalar fields defined");
 							return_code=0;
 						}
 					}
-					/* set initial glyph for settings types that use them */
-					if ((GT_ELEMENT_SETTINGS_NODE_POINTS==
+					else
+					{
+						display_message(WARNING_MESSAGE,"No scalar fields defined");
+						return_code=0;
+					}
+				}
+				/* set initial glyph for settings types that use them */
+				if ((GT_ELEMENT_SETTINGS_NODE_POINTS==
+					gelem_editor->current_settings_type)||
+					(GT_ELEMENT_SETTINGS_DATA_POINTS==
 						gelem_editor->current_settings_type)||
-						(GT_ELEMENT_SETTINGS_DATA_POINTS==
-							gelem_editor->current_settings_type)||
-						(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
-							gelem_editor->current_settings_type))
+					(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
+						gelem_editor->current_settings_type))
+				{
+					/* default to point glyph for fastest possible display */
+					glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+						gelem_editor->glyph_list);
+					if (!(GT_element_settings_get_glyph_parameters(settings,
+						&old_glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field) &&
+						GT_element_settings_set_glyph_parameters(settings,glyph,
+							glyph_scaling_mode, glyph_centre, glyph_size,
+							orientation_scale_field, glyph_scale_factors,
+							variable_scale_field)))
 					{
-						/* default to point glyph for fastest possible display */
-						glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-							gelem_editor->glyph_list);
-						if (!(GT_element_settings_get_glyph_parameters(settings,
-							&old_glyph, &glyph_scaling_mode ,glyph_centre, glyph_size,
-							&orientation_scale_field, glyph_scale_factors,
-							&variable_scale_field) &&
-							GT_element_settings_set_glyph_parameters(settings,glyph,
-								glyph_scaling_mode, glyph_centre, glyph_size,
-								orientation_scale_field, glyph_scale_factors,
-								variable_scale_field)))
+						display_message(WARNING_MESSAGE,"No glyphs defined");
+						return_code=0;
+					}
+				}
+				if (GT_ELEMENT_SETTINGS_VOLUMES==gelem_editor->current_settings_type)
+				{
+					/* must have a volume texture */
+					if (volume_texture=FIRST_OBJECT_IN_MANAGER_THAT(VT_volume_texture)(
+						(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
+						(void *)NULL,gelem_editor->volume_texture_manager))
+					{
+						if (!GT_element_settings_set_volume_texture(settings,
+							volume_texture))
 						{
-							display_message(WARNING_MESSAGE,"No glyphs defined");
 							return_code=0;
 						}
 					}
-					if (GT_ELEMENT_SETTINGS_VOLUMES==gelem_editor->current_settings_type)
+					else
 					{
-						/* must have a volume texture */
-						if (volume_texture=FIRST_OBJECT_IN_MANAGER_THAT(VT_volume_texture)(
-							(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
-							(void *)NULL,gelem_editor->volume_texture_manager))
-						{
-							if (!GT_element_settings_set_volume_texture(settings,
-								volume_texture))
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,"No volume textures defined");
-							return_code=0;
-						}
+						display_message(WARNING_MESSAGE,"No volume textures defined");
+						return_code=0;
 					}
-					/* set stream_vector_field for STREAMLINES */
-					if (GT_ELEMENT_SETTINGS_STREAMLINES==
-						gelem_editor->current_settings_type)
-					{
-						GT_element_settings_get_streamline_parameters(
-							settings,&streamline_type,&stream_vector_field,&reverse_track,
-							&streamline_length,&streamline_width);
-						if (stream_vector_field=
-							FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				}
+				/* set stream_vector_field for STREAMLINES */
+				if (GT_ELEMENT_SETTINGS_STREAMLINES==
+					gelem_editor->current_settings_type)
+				{
+					GT_element_settings_get_streamline_parameters(
+						settings,&streamline_type,&stream_vector_field,&reverse_track,
+						&streamline_length,&streamline_width);
+					if (stream_vector_field=
+						FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 							Computed_field_is_stream_vector_capable,(void *)NULL,
 							computed_field_manager))
+					{
+						if (!GT_element_settings_set_streamline_parameters(
+							settings,streamline_type,stream_vector_field,reverse_track,
+							streamline_length,streamline_width))
 						{
-							if (!GT_element_settings_set_streamline_parameters(
-								settings,streamline_type,stream_vector_field,reverse_track,
-								streamline_length,streamline_width))
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,"No vector fields defined");
 							return_code=0;
 						}
 					}
-				}
-				/* make sure new settings uses current dimension if not ALL */
-				if (return_code&&(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
-					gelem_editor->current_settings_type))
-				{
-					if (1==gelem_editor->current_dimension)
+					else
 					{
-						GT_element_settings_set_use_element_type(settings,USE_LINES);
+						display_message(WARNING_MESSAGE,"No vector fields defined");
+						return_code=0;
 					}
-					else if (2==gelem_editor->current_dimension)
-					{
-						GT_element_settings_set_use_element_type(settings,USE_FACES);
-					}
-					else if (3==gelem_editor->current_dimension)
-					{
-						GT_element_settings_set_use_element_type(settings,USE_ELEMENTS);
-					}
-				}
-				if (return_code&&GT_element_group_add_settings(
-					gelem_editor->edit_gt_element_group,settings,0))
-				{
-					list_changed=1;
-					gelem_editor->current_settings=settings;
-				}
-				else
-				{
-					DESTROY(GT_element_settings)(&settings);
 				}
 			}
-		}
-		else if (modify_button == gelem_editor->delete_button)
-		{
-			list_changed = GT_element_group_remove_settings(
-				gelem_editor->edit_gt_element_group,gelem_editor->current_settings);
-			gelem_editor->current_settings = (struct GT_element_settings *)NULL;
-		}
-		else if (modify_button==gelem_editor->up_button)
-		{
-			/* increase position of current_settings by 1 */
-			if (1<(position=GT_element_group_get_settings_position(
-				gelem_editor->edit_gt_element_group,gelem_editor->current_settings)))
+			/* set use_element_type for element_points */
+			if (return_code && (GT_ELEMENT_SETTINGS_ELEMENT_POINTS ==
+				gelem_editor->current_settings_type))
 			{
-				list_changed=1;
-				settings=gelem_editor->current_settings;
-				ACCESS(GT_element_settings)(settings);
-				GT_element_group_remove_settings(gelem_editor->edit_gt_element_group,
-					gelem_editor->current_settings);
-				GT_element_group_add_settings(gelem_editor->edit_gt_element_group,
-					gelem_editor->current_settings,position-1);
-				DEACCESS(GT_element_settings)(&settings);
+				GT_element_settings_set_use_element_type(settings,USE_ELEMENTS);
 			}
-		}
-		else if (modify_button==gelem_editor->down_button)
-		{
-			/* decrease position of current_settings by 1 */
-			if (position=GT_element_group_get_settings_position(
-				gelem_editor->edit_gt_element_group,gelem_editor->current_settings))
+			if (return_code && GT_element_group_add_settings(
+				gelem_editor->edit_gt_element_group, settings, 0))
 			{
-				list_changed=1;
-				settings=gelem_editor->current_settings;
-				ACCESS(GT_element_settings)(settings);
-				GT_element_group_remove_settings(gelem_editor->edit_gt_element_group,
-					gelem_editor->current_settings);
-				GT_element_group_add_settings(gelem_editor->edit_gt_element_group,
-					gelem_editor->current_settings,position+1);
-				DEACCESS(GT_element_settings)(&settings);
+				Graphical_element_editor_update_settings_list(gelem_editor);
+				Graphical_element_editor_set_current_settings(gelem_editor, settings);
+				/* inform the client of the changes */
+				graphical_element_editor_update(gelem_editor);
+			}
+			if (!return_code)
+			{
+				DESTROY(GT_element_settings)(&settings);
 			}
 		}
-		if (list_changed)
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_add_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphical_element_editor_add_button_CB */
+
+static void graphical_element_editor_delete_button_CB(Widget widget,
+	XtPointer client_data, XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Delete button press: delete current_settings.
+==============================================================================*/
+{
+	int position;
+	struct Graphical_element_editor *gelem_editor;
+
+	ENTER(graphical_element_editor_delete_button_CB);
+	USE_PARAMETER(call_data);
+	if (widget &&
+		(gelem_editor=(struct Graphical_element_editor *)client_data) &&
+		gelem_editor->edit_gt_element_group)
+	{
+		position = GT_element_group_get_settings_position(
+			gelem_editor->edit_gt_element_group, gelem_editor->current_settings);
+		GT_element_group_remove_settings(
+			gelem_editor->edit_gt_element_group, gelem_editor->current_settings);
+		Graphical_element_editor_update_settings_list(gelem_editor);
+		Graphical_element_editor_set_current_settings_from_position(gelem_editor,
+			position);
+		/* inform the client of the changes */
+		graphical_element_editor_update(gelem_editor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_delete_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphical_element_editor_delete_button_CB */
+
+static void graphical_element_editor_up_button_CB(Widget widget,
+	XtPointer client_data, XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2001
+
+DESCRIPTION :
+Up button press: decrease position of current_settings by 1.
+==============================================================================*/
+{
+	int position;
+	struct Graphical_element_editor *gelem_editor;
+	struct GT_element_settings *settings;
+
+	ENTER(graphical_element_editor_up_button_CB);
+	USE_PARAMETER(call_data);
+	if (widget &&
+		(gelem_editor=(struct Graphical_element_editor *)client_data) &&
+		gelem_editor->edit_gt_element_group)
+	{
+		if (1 < (position = GT_element_group_get_settings_position(
+			gelem_editor->edit_gt_element_group, gelem_editor->current_settings)))
 		{
-			gelem_editor_make_settings_list(gelem_editor);
-			gelem_editor_select_settings_item(gelem_editor);
-			/* inform the client of the changes */
+			settings = gelem_editor->current_settings;
+			ACCESS(GT_element_settings)(settings);
+			GT_element_group_remove_settings(gelem_editor->edit_gt_element_group,
+				gelem_editor->current_settings);
+			GT_element_group_add_settings(gelem_editor->edit_gt_element_group,
+				gelem_editor->current_settings, position - 1);
+			DEACCESS(GT_element_settings)(&settings);
+			Graphical_element_editor_update_settings_list(gelem_editor);
+			/* inform the client of the change */
 			graphical_element_editor_update(gelem_editor);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"graphical_element_editor_modify_CB.  Invalid argument(s)");
+			"graphical_element_editor_up_button_CB.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* graphical_element_editor_modify_CB */
+} /* graphical_element_editor_up_button_CB */
+
+static void graphical_element_editor_down_button_CB(Widget widget,
+	XtPointer client_data, XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Down button press: increase position of current_settings by 1.
+==============================================================================*/
+{
+	int position;
+	struct Graphical_element_editor *gelem_editor;
+	struct GT_element_settings *settings;
+
+	ENTER(graphical_element_editor_down_button_CB);
+	USE_PARAMETER(call_data);
+	if (widget &&
+		(gelem_editor=(struct Graphical_element_editor *)client_data) &&
+		gelem_editor->edit_gt_element_group)
+	{
+		if (GT_element_group_get_number_of_settings(
+			gelem_editor->edit_gt_element_group) >
+			(position = GT_element_group_get_settings_position(
+				gelem_editor->edit_gt_element_group, gelem_editor->current_settings)))
+		{
+			settings = gelem_editor->current_settings;
+			ACCESS(GT_element_settings)(settings);
+			GT_element_group_remove_settings(gelem_editor->edit_gt_element_group,
+				gelem_editor->current_settings);
+			GT_element_group_add_settings(gelem_editor->edit_gt_element_group,
+				gelem_editor->current_settings, position + 1);
+			DEACCESS(GT_element_settings)(&settings);
+			Graphical_element_editor_update_settings_list(gelem_editor);
+			/* inform the client of the change */
+			graphical_element_editor_update(gelem_editor);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_down_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphical_element_editor_down_button_CB */
 
 static void graphical_element_editor_update_settings(
 	Widget surface_settings_editor_widget,
 	void *gelem_editor_void,void *settings_void)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
 Callback for when changes are made in the settings editor.
 ==============================================================================*/
 {
 	int visibility;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 	struct GT_element_settings *settings;
+	struct Settings_item *settings_item;
+	Widget previous_widget;
 
 	ENTER(graphical_element_editor_update_settings);
 	USE_PARAMETER(surface_settings_editor_widget);
 	if ((gelem_editor=
-			(struct Graphical_element_editor_struct *)gelem_editor_void)
+			(struct Graphical_element_editor *)gelem_editor_void)
 		&&(settings=(struct GT_element_settings *)settings_void))
 	{
-#if defined (OLD_CODE)
-		/* only modify if the settings have changed */
-		if (GT_element_settings_is_changed(settings))
+		/* keep visibility of current_settings */
+		visibility=
+			GT_element_settings_get_visibility(gelem_editor->current_settings);
+		GT_element_group_modify_settings(gelem_editor->edit_gt_element_group,
+			gelem_editor->current_settings,settings);
+		GT_element_settings_set_visibility(gelem_editor->current_settings,
+			visibility);
+		if (settings_item = FIND_BY_IDENTIFIER_IN_LIST(Settings_item, settings)(
+			settings, gelem_editor->settings_item_list))
 		{
-#endif /* defined (OLD_CODE) */
-		/* only modify if the settings have changed */
-			/* keep visibility of current_settings */
-			visibility=
-				GT_element_settings_get_visibility(gelem_editor->current_settings);
-			GT_element_group_modify_settings(gelem_editor->edit_gt_element_group,
-				gelem_editor->current_settings,settings);
-			GT_element_settings_set_visibility(gelem_editor->current_settings,
-				visibility);
-			gelem_editor_update_settings_item(gelem_editor,
-				gelem_editor->current_settings);
-			/* inform the client of the changes */
-			graphical_element_editor_update(gelem_editor);
-#if defined (OLD_CODE)
+			previous_widget = settings_item->previous_widget;
+			Graphical_element_editor_update_Settings_item(settings_item->gelem_editor,
+				settings_item->settings, &previous_widget);
 		}
-#endif /* defined (OLD_CODE) */
+		/* inform the client of the changes */
+		graphical_element_editor_update(gelem_editor);
 	}
 	else
 	{
@@ -1420,25 +1665,25 @@ Callback for when changes are made in the settings editor.
 static void graphical_element_editor_material_manager_message(
 	struct MANAGER_MESSAGE(Graphical_material) *message,void *data)
 /*******************************************************************************
-LAST MODIFIED : 28 May 2001
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
 Something has changed globally in the material manager. If the event has
 changed the name of a material, must remake the menu.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_material_manager_message);
 	/* checking arguments */
-	if (message&&(gelem_editor=(struct Graphical_element_editor_struct *)data))
+	if (message&&(gelem_editor=(struct Graphical_element_editor *)data))
 	{
 		switch (message->change)
 		{
 			case MANAGER_CHANGE_IDENTIFIER(Graphical_material):
 			case MANAGER_CHANGE_OBJECT(Graphical_material):
 			{
-				gelem_editor_make_settings_list(gelem_editor);
+				Graphical_element_editor_update_settings_list(gelem_editor);
 			} break;
 			case MANAGER_CHANGE_ADD(Graphical_material):
 			case MANAGER_CHANGE_REMOVE(Graphical_material):
@@ -1460,25 +1705,25 @@ changed the name of a material, must remake the menu.
 static void graphical_element_editor_spectrum_manager_message(
 	struct MANAGER_MESSAGE(Spectrum) *message,void *data)
 /*******************************************************************************
-LAST MODIFIED : 28 May 2001
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
 Something has changed globally in the spectrum manager. If the event has
 changed the name of a spectrum, must remake the menu.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_spectrum_manager_message);
 	/* checking arguments */
-	if (message&&(gelem_editor=(struct Graphical_element_editor_struct *)data))
+	if (message&&(gelem_editor=(struct Graphical_element_editor *)data))
 	{
 		switch (message->change)
 		{
 			case MANAGER_CHANGE_IDENTIFIER(Spectrum):
 			case MANAGER_CHANGE_OBJECT(Spectrum):
 			{
-				gelem_editor_make_settings_list(gelem_editor);
+				Graphical_element_editor_update_settings_list(gelem_editor);
 			} break;
 			case MANAGER_CHANGE_ADD(Spectrum):
 			case MANAGER_CHANGE_REMOVE(Spectrum):
@@ -1514,7 +1759,7 @@ Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 19 November 2001
 
 DESCRIPTION :
 Creates a graphical_element_editor widget.
@@ -1524,7 +1769,7 @@ Creates a graphical_element_editor widget.
 	int init_widgets,number_of_valid_strings;
 	MrmType graphical_element_editor_dialog_class;
 	struct Callback_data callback;
-	struct Graphical_element_editor_struct *gelem_editor=NULL;
+	struct Graphical_element_editor *gelem_editor=NULL;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	static MrmRegisterArg callback_list[]=
 	{
@@ -1544,16 +1789,6 @@ Creates a graphical_element_editor widget.
 		{"gelem_ed_id_native_disc_form",(XtPointer)
 			DIALOG_IDENTIFY(graphical_element_editor,
 				native_discretization_field_form)},
-		{"gelem_ed_id_dimension_0_btn",(XtPointer)
-			DIALOG_IDENTIFY(graphical_element_editor,dimension_0_button)},
-		{"gelem_ed_id_dimension_1_btn",(XtPointer)
-			DIALOG_IDENTIFY(graphical_element_editor,dimension_1_button)},
-		{"gelem_ed_id_dimension_2_btn",(XtPointer)
-			DIALOG_IDENTIFY(graphical_element_editor,dimension_2_button)},
-		{"gelem_ed_id_dimension_3_btn",(XtPointer)
-			DIALOG_IDENTIFY(graphical_element_editor,dimension_3_button)},
-		{"gelem_ed_id_dimension_all_btn",(XtPointer)
-			DIALOG_IDENTIFY(graphical_element_editor,dimension_all_button)},
 		{"gelem_ed_id_settings_type_form",(XtPointer)
 			DIALOG_IDENTIFY(graphical_element_editor,settings_type_form)},
 		{"gelem_ed_id_add_btn",(XtPointer)
@@ -1566,8 +1801,8 @@ Creates a graphical_element_editor widget.
 			DIALOG_IDENTIFY(graphical_element_editor,down_button)},
 		{"gelem_ed_id_settings_scr",(XtPointer)
 			DIALOG_IDENTIFY(graphical_element_editor,settings_scroll)},
-		{"gelem_ed_id_settings_rc",(XtPointer)
-			DIALOG_IDENTIFY(graphical_element_editor,settings_rowcol)},
+		{"gelem_ed_id_settings_list_form",(XtPointer)
+			DIALOG_IDENTIFY(graphical_element_editor,settings_list_form)},
 		{"gelem_ed_id_settings_form",(XtPointer)
 			DIALOG_IDENTIFY(graphical_element_editor,settings_form)},
 		{"gelem_ed_general_btn_CB",(XtPointer)
@@ -1578,14 +1813,18 @@ Creates a graphical_element_editor widget.
 			graphical_element_editor_circle_disc_text_CB},
 		{"gelem_ed_native_disc_btn_CB",(XtPointer)
 			graphical_element_editor_native_discretization_button_CB},
-		{"gelem_ed_dimension_CB",(XtPointer)
-			graphical_element_editor_dimension_CB},
 		{"gelem_ed_settings_visibility_CB",(XtPointer)
 			graphical_element_editor_settings_visibility_CB},
 		{"gelem_ed_settings_select_CB",(XtPointer)
 			graphical_element_editor_settings_select_CB},
-		{"gelem_ed_modify_CB",(XtPointer)
-			graphical_element_editor_modify_CB}
+		{"gelem_ed_add_btn_CB",(XtPointer)
+			graphical_element_editor_add_button_CB},
+		{"gelem_ed_delete_btn_CB",(XtPointer)
+			graphical_element_editor_delete_button_CB},
+		{"gelem_ed_up_btn_CB",(XtPointer)
+			graphical_element_editor_up_button_CB},
+		{"gelem_ed_down_btn_CB",(XtPointer)
+			graphical_element_editor_down_button_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -1605,7 +1844,8 @@ Creates a graphical_element_editor widget.
 			&gelem_editor_hierarchy,&gelem_editor_hierarchy_open))
 		{
 			/* allocate memory */
-			if (ALLOCATE(gelem_editor,struct Graphical_element_editor_struct,1))
+			if (ALLOCATE(gelem_editor, struct Graphical_element_editor, 1) &&
+				(gelem_editor->settings_item_list = CREATE(LIST(Settings_item))()))
 			{
 				/* initialise the structure */
 				gelem_editor->edit_gt_element_group=(struct GT_element_group *)NULL;
@@ -1624,10 +1864,10 @@ Creates a graphical_element_editor widget.
 				gelem_editor->user_interface=user_interface;
 				gelem_editor->widget_parent=parent;
 				gelem_editor->widget_address=gelem_editor_widget;
-				gelem_editor->current_dimension = -1;
 				gelem_editor->current_settings_type = GT_ELEMENT_SETTINGS_LINES;
 				gelem_editor->current_settings = (struct GT_element_settings *)NULL;
 				gelem_editor->settings_type_widget=(Widget)NULL;
+				gelem_editor->general_settings_expanded = 0;
 				/* initialize widgets */
 				gelem_editor->widget=(Widget)NULL;
 				gelem_editor->general_button=(Widget)NULL;
@@ -1639,18 +1879,13 @@ Creates a graphical_element_editor widget.
 				gelem_editor->native_discretization_button=(Widget)NULL;
 				gelem_editor->native_discretization_field_form=(Widget)NULL;
 				gelem_editor->native_discretization_field_widget=(Widget)NULL;
-				gelem_editor->dimension_0_button=(Widget)NULL;
-				gelem_editor->dimension_1_button=(Widget)NULL;
-				gelem_editor->dimension_2_button=(Widget)NULL;
-				gelem_editor->dimension_3_button=(Widget)NULL;
-				gelem_editor->dimension_all_button=(Widget)NULL;
 				gelem_editor->settings_type_form=(Widget)NULL;
 				gelem_editor->add_button=(Widget)NULL;
 				gelem_editor->delete_button=(Widget)NULL;
 				gelem_editor->up_button=(Widget)NULL;
 				gelem_editor->down_button=(Widget)NULL;
 				gelem_editor->settings_scroll=(Widget)NULL;
-				gelem_editor->settings_rowcol=(Widget)NULL;
+				gelem_editor->settings_list_form=(Widget)NULL;
 				gelem_editor->settings_form=(Widget)NULL;
 				gelem_editor->settings_widget=(Widget)NULL;
 				gelem_editor->update_callback.procedure=(Callback_procedure *)NULL;
@@ -1679,7 +1914,8 @@ Creates a graphical_element_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								gelem_editor->default_coordinate_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_up_to_3_numerical_components,(void *)NULL)))
+								Computed_field_has_up_to_3_numerical_components, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -1688,22 +1924,22 @@ Creates a graphical_element_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
 								gelem_editor->native_discretization_field_form,
 								(struct FE_field *)NULL,fe_field_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
 							/* create chooser for settings_type enumeration */
 							valid_strings =
 								ENUMERATOR_GET_VALID_STRINGS(GT_element_settings_type)(
-									&number_of_valid_strings,
-									GT_element_settings_type_uses_dimension_conditional,
-									(void *)&(gelem_editor->current_dimension));
+									&number_of_valid_strings, (ENUMERATOR_CONDITIONAL_FUNCTION(
+										GT_element_settings_type) *)NULL, (void *)NULL);
 							if (!(gelem_editor->settings_type_widget=
 								create_choose_enumerator_widget(
 									gelem_editor->settings_type_form,
 									number_of_valid_strings,valid_strings,
 									ENUMERATOR_STRING(GT_element_settings_type)(
-										GT_ELEMENT_SETTINGS_LINES))))
+										GT_ELEMENT_SETTINGS_LINES), user_interface)))
 							{
 								init_widgets = 0;
 							}
@@ -1724,6 +1960,16 @@ Creates a graphical_element_editor widget.
 							}
 							if (init_widgets)
 							{
+								Pixel pixel;
+								Widget clip_window = (Widget)NULL;
+
+								/* copy background from settings_rowcol into settings_scroll */
+								XtVaGetValues(gelem_editor->settings_list_form,
+									XmNbackground, &pixel, NULL);
+								XtVaGetValues(gelem_editor->settings_scroll,
+									XmNclipWindow, &clip_window, NULL);
+								XtVaSetValues(clip_window, XmNbackground, pixel, NULL);
+
 								/* turn on callbacks for choosers */
 								callback.data=(void *)gelem_editor;
 								callback.procedure=
@@ -1738,9 +1984,6 @@ Creates a graphical_element_editor widget.
 									graphical_element_editor_update_settings_type;
 								choose_enumerator_set_callback(
 									gelem_editor->settings_type_widget,&callback);
-								/* select all dimensions to be displayed */
-								XtVaSetValues(gelem_editor->dimension_all_button,
-									XmNset,True,NULL);
 								if (gt_element_group)
 								{
 									graphical_element_editor_set_gt_element_group(
@@ -1782,6 +2025,7 @@ Creates a graphical_element_editor widget.
 				display_message(ERROR_MESSAGE,
 					"create_graphical_element_editor_widget.  "
 					"Could not allocate graphical_element_editor widget structure");
+				DEALLOCATE(gelem_editor);
 			}
 		}
 		else
@@ -1812,7 +2056,7 @@ graphical_element_editor_widget.
 ==============================================================================*/
 {
 	struct Callback_data *return_address;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_get_callback);
 	/* check arguments */
@@ -1854,7 +2098,7 @@ will be called when the gt_element_group changes in any way.
 ==============================================================================*/
 {
 	int return_code;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_set_callback);
 	/* check arguments */
@@ -1897,7 +2141,7 @@ Returns the gt_element_group currently being edited.
 ==============================================================================*/
 {
 	struct GT_element_group *return_address;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_get_gt_element_group);
 	/* check arguments */
@@ -1932,7 +2176,7 @@ int graphical_element_editor_set_gt_element_group(
 	Widget graphical_element_editor_widget,
 	struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 4 March 1999
+LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
 Sets the gt_element_group to be edited by the graphical_element_editor widget.
@@ -1940,10 +2184,10 @@ Sets the gt_element_group to be edited by the graphical_element_editor widget.
 {
 	int return_code;
 	struct Callback_data callback;
-	struct Graphical_element_editor_struct *gelem_editor;
+	struct Graphical_element_editor *gelem_editor;
+	struct GT_element_group *edit_gt_element_group;
 
 	ENTER(graphical_element_editor_set_gt_element_group);
-	/* check arguments */
 	if (graphical_element_editor_widget)
 	{
 		/* Get the pointer to the data for the graphical_element_editor_widget */
@@ -1951,49 +2195,61 @@ Sets the gt_element_group to be edited by the graphical_element_editor widget.
 			NULL);
 		if (gelem_editor)
 		{
+			return_code = 1;
 			if (gt_element_group)
 			{
-				if (make_edit_gt_element_group(gelem_editor,gt_element_group))
+				edit_gt_element_group =
+					create_editor_copy_GT_element_group(gt_element_group);
+				if (!edit_gt_element_group)
 				{
-					gelem_editor_set_general_settings(gelem_editor);
-					/* continue with the current_settings_type */
-					gelem_editor_make_settings_list(gelem_editor);
-					XtManageChild(gelem_editor->widget);
-					/* select the first settings item in the list (if any) */
-					gelem_editor->current_settings=(struct GT_element_settings *)NULL;
-					gelem_editor_select_settings_item(gelem_editor);
-					/* turn on callbacks from settings editor */
-					callback.procedure=graphical_element_editor_update_settings;
-					callback.data=(void *)gelem_editor;
-					settings_editor_set_callback(gelem_editor->settings_widget,&callback);
-					/* register for any material changes */
-					if (!gelem_editor->material_manager_callback_id)
-					{
-						gelem_editor->material_manager_callback_id=
-							MANAGER_REGISTER(Graphical_material)(
-							graphical_element_editor_material_manager_message,
-							(void *)gelem_editor,gelem_editor->graphical_material_manager);
-					}
-					/* register for any material changes */
-					if (!gelem_editor->spectrum_manager_callback_id)
-					{
-						gelem_editor->spectrum_manager_callback_id=
-							MANAGER_REGISTER(Spectrum)(
-							graphical_element_editor_spectrum_manager_message,
-							(void *)gelem_editor,gelem_editor->spectrum_manager);
-					}
-				}
-				else
-				{
-					gt_element_group=(struct GT_element_group *)NULL;
+					display_message(ERROR_MESSAGE,
+						"graphical_element_editor_set_gt_element_group.  "
+						"Could not copy graphical element");
+					return_code = 0;
 				}
 			}
-			if (!gt_element_group)
+			else
+			{
+				edit_gt_element_group = (struct GT_element_group *)NULL;
+			}
+			REACCESS(GT_element_group)(&(gelem_editor->edit_gt_element_group),
+				edit_gt_element_group);
+
+			if (edit_gt_element_group)
+			{
+				gelem_editor_set_general_settings(gelem_editor);
+				Graphical_element_editor_update_settings_list(gelem_editor);
+				/* select the first settings item in the list of the current type */
+				Graphical_element_editor_set_current_settings_from_type(
+					gelem_editor);
+				XtManageChild(gelem_editor->widget);
+
+				/* turn on callbacks from settings editor */
+				callback.procedure = graphical_element_editor_update_settings;
+				callback.data = (void *)gelem_editor;
+				settings_editor_set_callback(gelem_editor->settings_widget, &callback);
+				/* register for any material changes */
+				if (!gelem_editor->material_manager_callback_id)
+				{
+					gelem_editor->material_manager_callback_id =
+						MANAGER_REGISTER(Graphical_material)(
+							graphical_element_editor_material_manager_message,
+							(void *)gelem_editor, gelem_editor->graphical_material_manager);
+				}
+				/* register for any material changes */
+				if (!gelem_editor->spectrum_manager_callback_id)
+				{
+					gelem_editor->spectrum_manager_callback_id =
+						MANAGER_REGISTER(Spectrum)(
+							graphical_element_editor_spectrum_manager_message,
+							(void *)gelem_editor, gelem_editor->spectrum_manager);
+				}
+			}
+			else
 			{
 				/* turn off settings editor by passing NULL settings */
-				gelem_editor->current_settings=(struct GT_element_settings *)NULL;
-				settings_editor_set_settings(gelem_editor->settings_widget,
-					gelem_editor->current_settings);
+				Graphical_element_editor_set_current_settings(gelem_editor,
+					(struct GT_element_settings *)NULL);
 				XtUnmanageChild(gelem_editor->widget);
 				/* deregister material manager callbacks */
 				if (gelem_editor->material_manager_callback_id)
@@ -2001,7 +2257,7 @@ Sets the gt_element_group to be edited by the graphical_element_editor widget.
 					MANAGER_DEREGISTER(Graphical_material)(
 						gelem_editor->material_manager_callback_id,
 						gelem_editor->graphical_material_manager);
-					gelem_editor->material_manager_callback_id=(void *)NULL;
+					gelem_editor->material_manager_callback_id = (void *)NULL;
 				}
 				/* deregister spectrum manager callbacks */
 				if (gelem_editor->spectrum_manager_callback_id)
@@ -2009,32 +2265,27 @@ Sets the gt_element_group to be edited by the graphical_element_editor widget.
 					MANAGER_DEREGISTER(Spectrum)(
 						gelem_editor->spectrum_manager_callback_id,
 						gelem_editor->spectrum_manager);
-					gelem_editor->spectrum_manager_callback_id=(void *)NULL;
+					gelem_editor->spectrum_manager_callback_id = (void *)NULL;
 				}
 				/* turn off callbacks from settings editors */
-				callback.procedure=(Callback_procedure *)NULL;
-				callback.data=(void *)NULL;
-				settings_editor_set_callback(gelem_editor->settings_widget,&callback);
-				if (gelem_editor->edit_gt_element_group)
-				{
-					DESTROY(GT_element_group)(&(gelem_editor->edit_gt_element_group));
-				}
+				callback.procedure = (Callback_procedure *)NULL;
+				callback.data = (void *)NULL;
+				settings_editor_set_callback(gelem_editor->settings_widget, &callback);
 			}
-			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"graphical_element_editor_set_gt_element_group.  "
 				"Missing graphical_element_editor struct");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"graphical_element_editor_set_gt_element_group.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
