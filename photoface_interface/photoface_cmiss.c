@@ -2204,7 +2204,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 										photoface_remote_path);
 									fprintf(setup_comfile, "$PHOTOFACE_BIN = \"%sbin\"\n",
 										photoface_remote_path);
-									fprintf(setup_comfile, "$LFX_MODELER_CMISS = \"%s../lfx_modeler/cmiss\"\n",
+									fprintf(setup_comfile, "$ANTHRO_FITTING_CMISS = \"%s../anthro_fitting/cmiss\"\n",
 										photoface_remote_path);
 									fprintf(setup_comfile, "$PHOTOFACE_MODEL = \"%s\"\n",
 										model_name);
