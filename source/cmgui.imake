@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 27 March 2000
+XCOMM LAST MODIFIED : 8 May 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -703,7 +703,8 @@ DOF3_SRCS = \
 	dof3/dof3_control.c \
 	dof3/dof3_input.c 
 ELEMENT_SRCS = \
-	element/graphical_element_creator.c
+	element/element_creator.c \
+	element/element_point_tool.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/computed_field.c \
 	finite_element/export_finite_element.c \
@@ -780,6 +781,11 @@ GRAPHICS_SRCS = \
 	graphics/volume_texture_editor.c \
 	graphics/volume_texture_editor_dialog.c \
 	graphics/write_to_video.c 
+INTERACTION_SRCS = \
+	interaction/interaction_volume.c \
+	interaction/interactive_tool.c \
+	interaction/interactive_toolbar_widget.c \
+	interaction/interactive_event.c
 IO_DEVICES_SRCS = \
 	io_devices/conversion.c \
 	io_devices/haptic_input_module.cpp \
@@ -795,12 +801,12 @@ MATERIAL_SRCS = \
 MENU_SRCS = \
 	menu/menu_window.c
 NODE_SRCS = \
-	node/graphical_node_editor.c \
 	node/interactive_node_editor.c \
 	node/interactive_node_editor_dialog.c \
-	node/node_editor.c \
-	node/node_editor_dialog.c \
-	node/node_field_editor.c
+	node/node_field_viewer_widget.c \
+	node/node_tool.c \
+	node/node_viewer.c \
+	node/node_viewer_widget.c
 PROJECTION_SRCS = \
 	projection/projection.c \
 	projection/projection_dialog.c \
@@ -864,6 +870,7 @@ SRCS_1 = \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
 	$(HELP_SRCS) \
+	$(INTERACTION_SRCS) \
 	$(IO_DEVICES_SRCS) \
 	$(LINK_SRCS) \
 	$(MATERIAL_SRCS) \

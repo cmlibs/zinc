@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -26,7 +26,8 @@ DESCRIPTION :
 #include "command/cmiss.h"
 #include "command/command_window.h"
 #if !defined (WINDOWS_DEV_FLAG)
-#include "element/graphical_element_creator.h"
+#include "element/element_creator.h"
+#include "element/element_point_tool.h"
 #include "finite_element/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_streamlines.h"
@@ -45,8 +46,10 @@ DESCRIPTION :
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
+#include "interaction/interactive_tool.h"
 #include "io_devices/conversion.h"
-#include "node/graphical_node_editor.h"
+#include "node/node_tool.h"
+#include "node/node_viewer.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
@@ -376,7 +379,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -675,7 +678,6 @@ Main program for the CMISS Graphical User Interface
 	}
 #if !defined (WINDOWS_DEV_FLAG)
 	command_data.control_curve_editor_dialog=(Widget)NULL;
-	command_data.data_editor_dialog=(Widget)NULL;
 	command_data.data_grabber_dialog=(Widget)NULL;
 	command_data.sync_2d_3d_dialog=(Widget)NULL;
 	command_data.emoter_slider_dialog=(Widget)NULL;
@@ -686,7 +688,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.interactive_streamlines_dialog=(Widget)NULL;
 	command_data.material_editor_dialog=(Widget)NULL;
 	command_data.node_group_slider_dialog=(Widget)NULL;
-	command_data.node_editor_dialog=(Widget)NULL;
+	command_data.data_viewer=(struct Node_viewer *)NULL;
+	command_data.node_viewer=(struct Node_viewer *)NULL;
 	command_data.transformation_editor_dialog=(Widget)NULL;
 	command_data.prompt_window=(struct Prompt_window *)NULL;
 	command_data.projection_window=(struct Projection_window *)NULL;
@@ -716,7 +719,7 @@ Main program for the CMISS Graphical User Interface
 	/* create the managers */
 	/* light manager */
 	command_data.default_light=(struct Light *)NULL;
-	if (command_data.light_manager=CREATE_MANAGER(Light)())
+	if (command_data.light_manager=CREATE(MANAGER(Light))())
 	{
 		if (command_data.default_light=CREATE(Light)("default"))
 		{
@@ -737,7 +740,7 @@ Main program for the CMISS Graphical User Interface
 		}
 	}
 	command_data.default_light_model=(struct Light_model *)NULL;
-	if (command_data.light_model_manager=CREATE_MANAGER(Light_model)())
+	if (command_data.light_model_manager=CREATE(MANAGER(Light_model))())
 	{
 		if (command_data.default_light_model=CREATE(Light_model)("default"))
 		{
@@ -745,7 +748,8 @@ Main program for the CMISS Graphical User Interface
 			ambient_colour.green=0.2;
 			ambient_colour.blue=0.2;
 			Light_model_set_ambient(command_data.default_light_model,&ambient_colour);
-			Light_model_set_side_mode(command_data.default_light_model,LIGHT_MODEL_TWO_SIDED);
+			Light_model_set_side_mode(command_data.default_light_model,
+				LIGHT_MODEL_TWO_SIDED);
 			/*???DB.  Include default as part of manager ? */
 			ACCESS(Light_model)(command_data.default_light_model);
 			if (!ADD_OBJECT_TO_MANAGER(Light_model)(
@@ -756,15 +760,15 @@ Main program for the CMISS Graphical User Interface
 		}
 	}
 	/* environment map manager */
-	command_data.environment_map_manager=CREATE_MANAGER(Environment_map)();
+	command_data.environment_map_manager=CREATE(MANAGER(Environment_map))();
 	/* texture manager */
-	command_data.texture_manager=CREATE_MANAGER(Texture)();
+	command_data.texture_manager=CREATE(MANAGER(Texture))();
 	/* volume texture manager */
-	command_data.volume_texture_manager=CREATE_MANAGER(VT_volume_texture)();
+	command_data.volume_texture_manager=CREATE(MANAGER(VT_volume_texture))();
 	/* graphical material manager */
 	command_data.default_graphical_material=(struct Graphical_material *)NULL;
 	if (command_data.graphical_material_manager=
-		CREATE_MANAGER(Graphical_material)())
+		CREATE(MANAGER(Graphical_material))())
 	{
 		struct Colour colour;
 
@@ -802,7 +806,7 @@ Main program for the CMISS Graphical User Interface
 	}
 	/* spectrum manager */
 	command_data.default_spectrum=(struct Spectrum *)NULL;
-	if (command_data.spectrum_manager=CREATE_MANAGER(Spectrum)())
+	if (command_data.spectrum_manager=CREATE(MANAGER(Spectrum))())
 	{
 		if (command_data.default_spectrum=CREATE(Spectrum)("default"))
 		{
@@ -820,20 +824,20 @@ Main program for the CMISS Graphical User Interface
 	}
 	/* FE_element_field_info manager */
 		/*???DB.  To be done */
-	all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
+	all_FE_element_field_info=CREATE(LIST(FE_element_field_info))();
 	/* FE_element_shape manager */
 		/*???DB.  To be done */
-	all_FE_element_shape=CREATE_LIST(FE_element_shape)();
+	all_FE_element_shape=CREATE(LIST(FE_element_shape))();
 	/* FE_field manager */
-	command_data.fe_field_manager=CREATE_MANAGER(FE_field)();
+	command_data.fe_field_manager=CREATE(MANAGER(FE_field))();
 #if defined (OLD_CODE)
 	/*???RC.  all_FE_field is gone, replaced by above manager */
-	all_FE_field=CREATE_LIST(FE_field)();
+	all_FE_field=CREATE(LIST(FE_field))();
 #endif /* defined (OLD_CODE) */
 	/* FE_element manager */
 #if defined (OLD_CODE)
 		/*???DB.  In transistion */
-	all_FE_element=CREATE_LIST(FE_element)();
+	all_FE_element=CREATE(LIST(FE_element))();
 #endif /* defined (OLD_CODE) */
 	/* computed field manager and default computed fields zero, xi,
 		 default_coordinate, etc. */
@@ -841,19 +845,19 @@ Main program for the CMISS Graphical User Interface
 		CREATE(Computed_field_package)? */
 	rect_coord_system.type = RECTANGULAR_CARTESIAN;
 
-	command_data.control_curve_manager=CREATE_MANAGER(Control_curve)();
+	command_data.control_curve_manager=CREATE(MANAGER(Control_curve))();
 
-	command_data.basis_manager=CREATE_MANAGER(FE_basis)();
-	command_data.element_manager=CREATE_MANAGER(FE_element)();
+	command_data.basis_manager=CREATE(MANAGER(FE_basis))();
+	command_data.element_manager=CREATE(MANAGER(FE_element))();
 		/*???DB.  Also manages faces and lines */
-	command_data.element_group_manager=CREATE_MANAGER(GROUP(FE_element))();
-	command_data.node_manager=CREATE_MANAGER(FE_node)();
-	command_data.node_group_manager=CREATE_MANAGER(GROUP(FE_node))();
-	command_data.data_manager=CREATE_MANAGER(FE_node)();
-	command_data.data_group_manager=CREATE_MANAGER(GROUP(FE_node))();
+	command_data.element_group_manager=CREATE(MANAGER(GROUP(FE_element)))();
+	command_data.node_manager=CREATE(MANAGER(FE_node))();
+	command_data.node_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
+	command_data.data_manager=CREATE(MANAGER(FE_node))();
+	command_data.data_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
 
 	command_data.interactive_streamline_manager=
-		CREATE_MANAGER(Interactive_streamline)();
+		CREATE(MANAGER(Interactive_streamline))();
 
 	command_data.streampoint_list=(struct Streampoint *)NULL;
 	/* create graphics object list */
@@ -966,12 +970,16 @@ Main program for the CMISS Graphical User Interface
 	command_data.element_point_ranges_selection=
 		CREATE(Element_point_ranges_selection)();
 	command_data.element_selection=CREATE(FE_element_selection)();
+	command_data.data_selection=CREATE(FE_node_selection)();
 	command_data.node_selection=CREATE(FE_node_selection)();
+
+	/* interactive_tool manager */
+	command_data.interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
 
 	/* scene manager */
 		/*???RC.   LOTS of managers need to be created before this */
 	command_data.default_scene=(struct Scene *)NULL;
-	if (command_data.scene_manager=CREATE_MANAGER(Scene)())
+	if (command_data.scene_manager=CREATE(MANAGER(Scene))())
 	{
 		if (command_data.default_scene=CREATE(Scene)("default"))
 		{
@@ -990,7 +998,7 @@ Main program for the CMISS Graphical User Interface
 				command_data.data_manager,command_data.data_group_manager,
 				command_data.element_point_ranges_selection,
 				command_data.element_selection,command_data.node_selection,
-				command_data.user_interface);
+				command_data.data_selection,command_data.user_interface);
 			/*???RC.  May want to use functions to modify default_scene here */
 			/* eg. to add model lights, etc. */
 			/* ACCESS default so can never be destroyed */
@@ -1005,7 +1013,7 @@ Main program for the CMISS Graphical User Interface
 		}
 	}
 	/* graphics window manager.  Note there is no default window. */
-	command_data.graphics_window_manager=CREATE_MANAGER(Graphics_window)();
+	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 #if defined (UNEMAP)	
 	command_data.unemap_package = CREATE(Unemap_package)(
 		command_data.fe_field_manager,command_data.element_group_manager,
@@ -1013,8 +1021,10 @@ Main program for the CMISS Graphical User Interface
 		command_data.node_group_manager,command_data.basis_manager,
 		command_data.element_manager,command_data.element_point_ranges_selection,
 		command_data.element_selection,command_data.node_selection,
+		command_data.data_selection,
 		computed_field_manager,command_data.graphics_window_manager,
-		command_data.texture_manager,command_data.scene_manager,
+		command_data.texture_manager,command_data.interactive_tool_manager,
+		command_data.scene_manager,
 		command_data.light_model_manager,command_data.light_manager,
 		command_data.spectrum_manager,command_data.graphical_material_manager,
 		command_data.data_manager,command_data.glyph_list);	
@@ -1031,7 +1041,7 @@ Main program for the CMISS Graphical User Interface
 		command_data.computed_field_package);
 #endif /* defined (UNEMAP) */
 #if defined (MIRAGE)
-/*	command_data.digitiser_window_manager=CREATE_MANAGER(Digitiser_window)();*/
+/*	command_data.digitiser_window_manager=CREATE(MANAGER(Digitiser_window))();*/
 #endif /* defined (MIRAGE) */
 	/* now set up the conversion routines */
 		/*???DB.  Can this be put elsewhere ? */
@@ -1090,22 +1100,23 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
+	command_data.data_tool=CREATE(Node_tool)(
+		command_data.interactive_tool_manager,
+		command_data.data_manager,/*data_manager*/1,
+		command_data.data_selection,
+		command_data.computed_field_package);
+	command_data.node_tool=CREATE(Node_tool)(
+		command_data.interactive_tool_manager,
+		command_data.node_manager,/*data_manager*/0,
+		command_data.node_selection,
+		command_data.computed_field_package);
+	command_data.element_point_tool=CREATE(Element_point_tool)(
+		command_data.interactive_tool_manager,
+		command_data.element_point_ranges_selection);
+	command_data.element_creator=(struct Element_creator *)NULL;
+
 	if (return_code)
 	{
-		if (command_data.default_scene)
-		{
-			command_data.graphical_node_editor=CREATE(Graphical_node_editor)(
-				command_data.default_scene,command_data.node_manager,
-				command_data.node_selection);
-		}
-		else
-		{
-			command_data.graphical_node_editor=(struct Graphical_node_editor *)NULL;
-		}
-		command_data.graphical_element_creator=CREATE(Graphical_element_creator)(
-			command_data.basis_manager,command_data.element_manager,
-			command_data.fe_field_manager,command_data.node_manager,
-			command_data.element_selection,command_data.node_selection);
 		if (command_list)
 		{
 #if defined (MOTIF)
@@ -1741,14 +1752,38 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(MANAGER(Movie_graphics))(&command_data.movie_graphics_manager);
 #endif /* defined (SGI_MOVIE_FILE) */
 
-				DESTROY(MANAGER(Graphics_window))(&command_data.graphics_window_manager);
+#if defined (UNEMAP)
+				DESTROY(Unemap_package)(&command_data.unemap_package); 
+#endif /* defined (UNEMAP) */
 
-				DESTROY(Graphical_element_creator)(&command_data.graphical_element_creator);
-				DESTROY(Graphical_node_editor)(&command_data.graphical_node_editor);
+				/* viewers */
+				if (command_data.data_viewer)
+				{
+					DESTROY(Node_viewer)(&(command_data.data_viewer));
+				}
+				if (command_data.node_viewer)
+				{
+					DESTROY(Node_viewer)(&(command_data.node_viewer));
+				}
+
+				DESTROY(MANAGER(Graphics_window))(
+					&command_data.graphics_window_manager);
+
+				if (command_data.element_creator)
+				{
+					DESTROY(Element_creator)(&command_data.element_creator);
+				}
+				/* destroy Interactive_tools and manager */
+				DESTROY(Element_point_tool)(&command_data.element_point_tool);
+				DESTROY(Node_tool)(&command_data.node_tool);
+				DESTROY(Node_tool)(&command_data.data_tool);
+				DESTROY(MANAGER(Interactive_tool))(
+					&(command_data.interactive_tool_manager));
 
 				DEACCESS(Scene)(&(command_data.default_scene));
 				DESTROY(MANAGER(Scene))(&command_data.scene_manager);
 
+				DESTROY(FE_node_selection)(&(command_data.data_selection));
 				DESTROY(FE_node_selection)(&(command_data.node_selection));
 				DESTROY(FE_element_selection)(&(command_data.element_selection));
 				DESTROY(Element_point_ranges_selection)(
@@ -1803,9 +1838,7 @@ Main program for the CMISS Graphical User Interface
 
 				coord_widget_finish();
 				destroy_assign_variable_list();
-#if defined (UNEMAP)
-				DESTROY(Unemap_package)(&command_data.unemap_package); 
-#endif /* defined (UNEMAP) */
+
 				DESTROY(Execute_command)(&execute_command);
 				DESTROY(Execute_command)(&set_command);
 
