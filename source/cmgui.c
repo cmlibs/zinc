@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 1 August 2002
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -321,10 +321,129 @@ Executes the comfile specified on the command line.
 	return (return_code);
 } /* cmgui_execute_comfile */
 
+#if !defined (WIN32_USER_INTERFACE)
+struct Cmgui_command_line_options
+/*******************************************************************************
+LAST MODIFIED : 1 August 2002
+
+DESCRIPTION :
+Command line options to be parsed by read_cmgui_command_line_options.
+==============================================================================*/
+{
+	char batch_mode_flag;
+	char cm_start_flag;
+	char *cm_epath_directory_name;
+	char *cm_parameters_file_name;
+	char command_list_flag;
+	char console_mode_flag;
+	char *epath_directory_name;
+	char *example_file_name;
+	char *execute_string;
+	char write_help_flag;
+	char *id_name;
+	char mycm_start_flag;
+	char no_display_flag;
+	int random_number_seed;
+	int visual_id_number;
+	/* default option; no token */
+	char *command_file_name;
+};
+
+static int read_cmgui_command_line_options(struct Parse_state *state,
+	void *dummy_to_be_modified, void *cmgui_command_line_options_void)
+/*******************************************************************************
+LAST MODIFIED : 1 August 2002
+
+DESCRIPTION :
+Parses command line options from <state>.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmgui_command_line_options *command_line_options;
+	struct Option_table *option_table;
+
+	ENTER(read_cmgui_command_line_options);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_line_options =
+		(struct Cmgui_command_line_options *)cmgui_command_line_options_void))
+	{
+		option_table = CREATE(Option_table)();
+		/* -batch */
+		Option_table_add_entry(option_table, "-batch",
+			&(command_line_options->batch_mode_flag), NULL, set_char_flag);
+		/* -cm */
+		Option_table_add_entry(option_table, "-cm",
+			&(command_line_options->cm_start_flag), NULL, set_char_flag);
+		/* -cm_epath */
+		Option_table_add_entry(option_table, "-cm_epath",
+			&(command_line_options->cm_epath_directory_name),
+			(void *)" PATH_TO_EXAMPLES_DIRECTORY", set_string);
+		/* -cm_parameters */
+		Option_table_add_entry(option_table, "-cm_parameters",
+			&(command_line_options->cm_parameters_file_name),
+			(void *)" PARAMETER_FILE_NAME", set_string);
+		/* -command_list */
+		Option_table_add_entry(option_table, "-command_list",
+			&(command_line_options->command_list_flag), NULL, set_char_flag);
+		/* -console */
+		Option_table_add_entry(option_table, "-console",
+			&(command_line_options->console_mode_flag), NULL, set_char_flag);
+		/* -epath */
+		Option_table_add_entry(option_table, "-epath",
+			&(command_line_options->epath_directory_name),
+			(void *)" PATH_TO_EXAMPLES_DIRECTORY", set_string);
+		/* -example */
+		Option_table_add_entry(option_table, "-example",
+			&(command_line_options->example_file_name),
+			(void *)" EXAMPLE_ID", set_string);
+		/* -execute */
+		Option_table_add_entry(option_table, "-execute",
+			&(command_line_options->execute_string),
+			(void *)" EXECUTE_STRING", set_string);
+		/* -h */
+		Option_table_add_entry(option_table, "-h",
+			&(command_line_options->write_help_flag), NULL, set_char_flag);
+		/* -id */
+		Option_table_add_entry(option_table, "-id",
+			&(command_line_options->id_name), (void *)" ID", set_string);
+		/* -mycm */
+		Option_table_add_entry(option_table, "-mycm",
+			&(command_line_options->mycm_start_flag), NULL, set_char_flag);
+		/* -no_display */
+		Option_table_add_entry(option_table, "-no_display",
+			&(command_line_options->no_display_flag), NULL, set_char_flag);
+		/* -random */
+		Option_table_add_entry(option_table, "-random",
+			&(command_line_options->random_number_seed),
+			(void *)" NUMBER_SEED", set_int_with_description);
+		/* -visual */
+		Option_table_add_entry(option_table, "-visual",
+			&(command_line_options->visual_id_number),
+			(void *)" NUMBER", set_int_with_description);
+		/* [default option == command_file_name] */
+		Option_table_add_entry(option_table, (char *)NULL,
+			&(command_line_options->command_file_name),
+			(void *)"COMMAND_FILE_NAME", set_string);
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"read_cmgui_command_line_options.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* read_cmgui_command_line_options */
+#endif /* !defined (WIN32_USER_INTERFACE) */
+
 /*
 Main program
 ------------
 */
+
 #if !defined (WIN32_USER_INTERFACE)
 int main(int argc,char *argv[])
 #else /* !defined (WIN32_USER_INTERFACE) */
@@ -338,7 +457,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 1 August 2002
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -349,14 +468,13 @@ Main program for the CMISS Graphical User Interface
 		version_id_string[100],*version_ptr,version_temp[20];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int return_code;
-	int batch_mode, console_mode, command_list,no_display,non_random,start_cm,start_mycm;
+	int batch_mode, console_mode, command_list, no_display, non_random,
+		start_cm, start_mycm, visual_id, write_help;
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 	int status;
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 #if defined (MOTIF)
-	char *arg;
 	Display *display;
-	int i;
 #define XmNbackgroundColour "backgroundColour"
 #define XmCBackgroundColour "BackgroundColour"
 #define XmNforegroundColour "foregroundColour"
@@ -436,6 +554,9 @@ Main program for the CMISS Graphical User Interface
 		{"open_file_and_write",(XtPointer)open_file_and_write}
 	};
 #endif /* defined (MOTIF) */
+#if !defined (WIN32_USER_INTERFACE)
+	struct Cmgui_command_line_options command_line_options;
+#endif /* !defined (WIN32_USER_INTERFACE) */
 	struct Cmiss_command_data command_data;
 	struct Colour ambient_colour,default_colour;
 	struct Computed_field *computed_field;
@@ -452,6 +573,8 @@ Main program for the CMISS Graphical User Interface
 		{CMGUI_EXAMPLE_DIRECTORY_SYMBOL,NULL,NULL,set_file_name},
 		{NULL,NULL,NULL,set_file_name}
 	};
+	struct Option_table *option_table;
+	struct Parse_state *state;
 	User_settings user_settings;
 
 #if defined (MOTIF)
@@ -464,7 +587,7 @@ Main program for the CMISS Graphical User Interface
 #if defined (WIN32_USER_INTERFACE)
 	ENTER(WinMain);
 #endif /* defined (WIN32_USER_INTERFACE) */
-	return_code=1;
+	return_code = 1;
 
 	/* initialize application specific global variables */
 	execute_command = CREATE(Execute_command)();
@@ -577,39 +700,202 @@ Main program for the CMISS Graphical User Interface
 	command_data.foreground_colour.green=(float)1;
 	command_data.foreground_colour.blue=(float)1;
 #endif /* defined (MOTIF) */
-	command_data.examples_directory=(char *)NULL;
 	command_data.help_directory=(char *)NULL;
 	command_data.help_url=(char *)NULL;
 
 	/* display the version */
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
 
-	/* check for command_list (needed because don't CREATE(User_interface) for
-		command_list) */
-	command_list=0;
+	/* set default values for command-line modifiable options */
+
+	/* Note User_interface will not be created if command_list selected */
 	batch_mode = 0;
+	command_list = 0;
 	console_mode = 0;
 	no_display = 0;
+	visual_id = 0;
+	write_help = 0;
+	/* flag to say randomise */
+	non_random = -1;
+	/* flag for starting cm */
+	start_cm = 0;
+	/* flag for starting mycm */
+	start_mycm = 0;
+	/* to over-ride all other example directory settings */
+	examples_directory = (char *)NULL;
+	/* back-end examples directory */
+	cm_examples_directory = (char *)NULL;
+	/* back-end parameters file */
+	cm_parameters_file_name = (char *)NULL;
+	/* the comfile is in the examples directory */
+	example_id = (char *)NULL;
+	/* a string executed by the interpreter before loading any comfiles */
+	execute_string = (char *)NULL;
+	/* set no command id supplied */
+	version_command_id = (char *)NULL;
+	/* the name of the comfile to be run on startup */
+	comfile_name = (char *)NULL;
+
+	user_settings.examples_directory = (char *)NULL;
+	user_settings.help_directory = (char *)NULL;
+	user_settings.help_url = (char *)NULL;
+	user_settings.startup_comfile = (char *)NULL;
+
+	/* parse commmand line options */
+
+#if !defined (WIN32_USER_INTERFACE)
+	/* put command line options into structure for parsing & extract below */
+	command_line_options.batch_mode_flag = (char)batch_mode;
+	command_line_options.cm_start_flag = (char)start_cm;
+	command_line_options.cm_epath_directory_name = cm_examples_directory;
+	command_line_options.cm_parameters_file_name = cm_parameters_file_name;
+	command_line_options.command_list_flag = (char)command_list;
+	command_line_options.console_mode_flag = (char)console_mode;
+	command_line_options.epath_directory_name = examples_directory;
+	command_line_options.example_file_name = example_id;
+	command_line_options.execute_string = execute_string;
+	command_line_options.write_help_flag = (char)write_help;
+	command_line_options.id_name = version_command_id;
+	command_line_options.mycm_start_flag = (char)start_mycm;
+	command_line_options.no_display_flag = (char)no_display;
+	command_line_options.random_number_seed = non_random;
+	command_line_options.visual_id_number = visual_id;
+	command_line_options.command_file_name = comfile_name;
+	
+	if (state = create_Parse_state_from_tokens(argc, argv))
+	{
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, argv[0], NULL,
+			(void *)&command_line_options, read_cmgui_command_line_options);
+		if (!Option_table_parse(option_table, state))
+		{
+			write_help = 1;
+			return_code = 0;
+		}
+		DESTROY(Option_table)(&option_table);
+		destroy_Parse_state(&state);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	/* copy command line options to local vars for use and easy clean-up */
+	batch_mode = (int)command_line_options.batch_mode_flag;
+	start_cm = command_line_options.cm_start_flag;
+	cm_examples_directory = command_line_options.cm_epath_directory_name;
+	cm_parameters_file_name = command_line_options.cm_parameters_file_name;
+	command_list = command_line_options.command_list_flag;
+	console_mode = command_line_options.console_mode_flag;
+	examples_directory = command_line_options.epath_directory_name;
+	example_id = command_line_options.example_file_name;
+	execute_string = command_line_options.execute_string;
+	write_help = command_line_options.write_help_flag;
+	version_command_id = command_line_options.id_name;
+	start_mycm = command_line_options.mycm_start_flag;
+	no_display = command_line_options.no_display_flag;
+	non_random = command_line_options.random_number_seed;
+	visual_id = command_line_options.visual_id_number;
+	comfile_name = command_line_options.command_file_name;
+	if (write_help)
+	{
+		char *double_question_mark = "??";
+
+		/* write question mark help for command line options */
+		state = create_Parse_state_from_tokens(1, &double_question_mark);
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, argv[0], NULL,
+			(void *)&command_line_options, read_cmgui_command_line_options);
+		Option_table_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		destroy_Parse_state(&state);
+	}
+#endif /* !defined (WIN32_USER_INTERFACE) */
+
+	if ((!command_list) && (!write_help))
+	{
+		if (command_data.event_dispatcher = CREATE(Event_dispatcher)())
+		{
+			if (!no_display)
+			{
+#if defined (UNIX) /* switch (Operating_System) */
+				if (!(command_data.user_interface = CREATE(User_interface)
+					(&argc, argv, command_data.event_dispatcher, "Cmgui",
+					"cmgui")))
+				{
+					display_message(ERROR_MESSAGE,"Could not create User interface");
+					return_code=0;
+				}
+#elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
+				if (!(command_data.user_interface = CREATE(User_interface)
+					(current_instance, previous_instance, command_line,
+					 initial_main_window_state, command_data.event_dispatcher)))
+				{
+					display_message(ERROR_MESSAGE,"Could not create User interface");
+					return_code=0;
+				}
+#endif  /* switch (Operating_System) */
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Could not create Event dispatcher.");
+			return_code = 0;
+		}
+	}
+
 #if defined (MOTIF)
-	i=1;
-	while ((i<argc)&&strcmp("-command_list",argv[i]))
+	if (command_data.user_interface)
 	{
-		i++;
-	}
-	if (i<argc)
-	{
-		command_list=1;
-	}
-	i=1;
-	while ((i<argc)&&strncmp("-no_display",argv[i],4))
-	{
-		i++;
-	}
-	if (i<argc)
-	{
-		no_display = 1;
+		/* retrieve application specific constants */
+		display = User_interface_get_display(command_data.user_interface);
+		XtVaGetApplicationResources(User_interface_get_application_shell(
+			command_data.user_interface),&user_settings,resources,XtNumber(resources),NULL);
+		/*???DB.  User settings should be divided among tools */
+		/* retrieve the background rgb settings */
+		rgb.pixel=user_settings.background_colour;
+		XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
+		/*???DB.  Get rid of 65535 ? */
+		command_data.background_colour.red=(float)(rgb.red)/(float)65535;
+		command_data.background_colour.green=(float)(rgb.green)/(float)65535;
+		command_data.background_colour.blue=(float)(rgb.blue)/(float)65535;
+		/* retrieve the foreground rgb settings */
+		rgb.pixel=user_settings.foreground_colour;
+		XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
+		/*???DB.  Get rid of 65535 ? */
+		command_data.foreground_colour.red=(float)(rgb.red)/(float)65535;
+		command_data.foreground_colour.green=(float)(rgb.green)/(float)65535;
+		command_data.foreground_colour.blue=(float)(rgb.blue)/(float)65535;
+		if ((command_data.foreground_colour.red ==
+			command_data.background_colour.red) &&
+			(command_data.foreground_colour.green ==
+				command_data.background_colour.green) &&
+			(command_data.foreground_colour.blue ==
+				command_data.background_colour.blue))
+		{
+			command_data.foreground_colour.red =
+				1 - command_data.background_colour.red;
+			command_data.foreground_colour.green =
+				1 - command_data.background_colour.green;
+			command_data.foreground_colour.blue =
+				1 - command_data.background_colour.blue;
+		}
 	}
 #endif /* defined (MOTIF) */
+
+	/* use command line options in preference to defaults read from XResources */
+
+	if (examples_directory)
+	{
+		command_data.examples_directory = examples_directory;
+	}
+	else
+	{
+		command_data.examples_directory = user_settings.examples_directory;
+	}
+	command_data.cm_examples_directory = cm_examples_directory;
+	command_data.cm_parameters_file_name = cm_parameters_file_name;
+	command_data.help_directory = user_settings.help_directory;
+	command_data.help_url = user_settings.help_url;
 
 	/* create the managers */
 
@@ -673,6 +959,12 @@ Main program for the CMISS Graphical User Interface
 		if (command_data.default_graphical_material=
 			CREATE(Graphical_material)("default"))
 		{
+			Graphical_material_set_ambient(command_data.default_graphical_material,
+				&(command_data.foreground_colour));
+			Graphical_material_set_diffuse(command_data.default_graphical_material,
+				&(command_data.foreground_colour));
+			Graphical_material_set_alpha(command_data.default_graphical_material,
+				1.0);
 			/* ACCESS so can never be destroyed */
 			ACCESS(Graphical_material)(command_data.default_graphical_material);
 			if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(
@@ -895,74 +1187,8 @@ Main program for the CMISS Graphical User Interface
 	coord_widget_init();
 #endif /* defined (MOTIF) */
 #if defined (SGI_MOVIE_FILE)
-	command_data.movie_graphics_manager=CREATE(MANAGER(Movie_graphics))();
+	command_data.movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) */
-	/* parse the command line */
-		/*???DB.  Is this the right place for this ? */
-		/*???DB.  Can this be done with command_parser ? */
-		/*???GMH.  We need to change to REAL argument parsing */
-	/* flag to say randomise */
-	non_random= -1;
-	/* flag for starting cm */
-	start_cm=0;
-	/* flag for starting mycm */
-	start_mycm=0;
-	/* to over-ride all other example directory settings */
-	examples_directory=(char *)NULL;
-	/* back-end examples directory */
-	cm_examples_directory=(char *)NULL;
-	/* back-end parameters file */
-	cm_parameters_file_name=(char *)NULL;
-	/* the comfile is in the examples directory */
-	example_id=(char *)NULL;
-	/* a string executed by the interpreter before loading any comfiles */
-	execute_string=(char *)NULL;
-	/* set no command id supplied */
-	version_command_id=(char *)NULL;
-
-	if (!command_list)
-	{
-		if (command_data.event_dispatcher = CREATE(Event_dispatcher)())
-		{
-			if (no_display)
-			{
-				return_code = 1;
-			}
-			else
-			{
-#if defined (UNIX) /* switch (Operating_System) */
-				if (command_data.user_interface = CREATE(User_interface)
-					(&argc, argv, command_data.event_dispatcher, "Cmgui",
-					"cmgui"))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Could not create User interface");
-					return_code=0;
-				}
-#elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
-				if (command_data.user_interface = CREATE(User_interface)
-					(current_instance, previous_instance, command_line,
-					 initial_main_window_state, command_data.event_dispatcher))
-				{
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Could not create User interface");
-					return_code=0;
-				}
-#endif  /* switch (Operating_System) */
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Could not create Event dispatcher.");
-			return_code=0;
-		}
-	}
 
 	/* scene manager */
 	/*???RC & SAB.   LOTS of managers need to be created before this 
@@ -1000,940 +1226,596 @@ Main program for the CMISS Graphical User Interface
 		}
 	}
 
-	if (return_code)
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+	create_interpreter(argc, argv, comfile_name, &status);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
+
+	if (command_data.user_interface)
 	{
-		/* the name of the comfile to be run on startup */
-		comfile_name=(char *)NULL;
-		if (command_list)
+#if defined (MOTIF)
+		if (visual_id)
 		{
-#if defined (MOTIF)
-			command_data.examples_directory=(char *)NULL;
-			command_data.cm_examples_directory=(char *)NULL;
-			command_data.cm_parameters_file_name=(char *)NULL;
-#endif /* defined (MOTIF) */
-#if defined (MOTIF)
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-			create_interpreter(argc, argv, comfile_name, &status);
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
-			cmiss_execute_command("??",(void *)(&command_data));
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-			destroy_interpreter(&status);
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
-#endif /* defined (MOTIF) */
+			User_interface_set_specified_visual_id(
+				command_data.user_interface, visual_id);
 		}
-		else
-		{
-#if defined (MOTIF)
-			i=1;
-			while (return_code&&(i<argc))
-			{
-				arg=argv[i];
-				if ('-'==arg[0])
-				{
-					switch (arg[1])
-					{
-						case 'c':
-						{
-							switch (arg[2])
-							{
-								case 'o':
-								{
-									switch (arg[3])
-									{
-										case 'm':
-										{
-											/* command_list has already been set */
-										} break;
-										case 'n':
-										{
-											console_mode = 1;
-										} break;
-										default:
-										{
-											return_code=0;
-										} break;
-									}
-								} break;
-								case 'm':
-								{
-									switch (arg[3])
-									{
-										case '\0':
-										{
-											start_cm=1;
-										} break;
-										case '_':
-										{
-											switch (arg[4])
-											{
-												case 'e':
-												{
-													/* back-end examples directory path */
-													i++;
-													if (i<argc)
-													{
-														if (cm_examples_directory)
-														{
-															DEALLOCATE(cm_examples_directory);
-														}
-														if (ALLOCATE(cm_examples_directory,char,
-															strlen(argv[i])+1))
-														{
-															strcpy(cm_examples_directory,argv[i]);
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"main.  Insufficient memory for back-end examples directory path");
-															return_code=0;
-														}
-													}
-													else
-													{
-														return_code=0;
-													}
-												} break;
-												case 'p':
-												{
-													/* cm parameters file name */
-													i++;
-													if (i<argc)
-													{
-														if (cm_parameters_file_name)
-														{
-															DEALLOCATE(cm_parameters_file_name);
-														}
-														if (ALLOCATE(cm_parameters_file_name,char,
-															strlen(argv[i])+1))
-														{
-															strcpy(cm_parameters_file_name,argv[i]);
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"main.  Insufficient memory for parameters file name");
-															return_code=0;
-														}
-													}
-													else
-													{
-														return_code=0;
-													}
-												} break;
-												default:
-												{
-													return_code=0;
-												} break;
-											}
-										} break;
-										default:
-										{
-											return_code=0;
-										} break;
-									}
-								} break;
-								default:
-								{
-									return_code=0;
-								} break;
-							}
-						} break;
-						case 'd':
-						{
-							/* skip the display name */
-							i++;
-						} break;
-						case 'v':
-						{
-							/* read in the specified visual */
-							i++;
-							User_interface_set_specified_visual_id(command_data.user_interface,
-								atoi(argv[i]));
-						} break;
-						case 'e':
-						{
-							switch (arg[2])
-							{
-								case 'p':
-								{
-									/* examples directory path */
-									i++;
-									if (i<argc)
-									{
-										if (examples_directory)
-										{
-											DEALLOCATE(examples_directory);
-										}
-										if (ALLOCATE(examples_directory,char,strlen(argv[i])+1))
-										{
-											strcpy(examples_directory,argv[i]);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"main.  Insufficient memory for examples directory path");
-											return_code=0;
-										}
-									}
-									else
-									{
-										return_code=0;
-									}
-								} break;
-								case 'x':
-								{
-									switch (arg[3])
-									{
-										case 'a':
-										case '\0':
-										{
-											/* example id */
-											i++;
-											if (i<argc)
-											{
-												if (example_id)
-												{
-													DEALLOCATE(example_id);
-												}
-												if (ALLOCATE(example_id,char,strlen(argv[i])+1))
-												{
-													strcpy(example_id,argv[i]);
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"main.  Insufficient memory for example_id");
-													return_code=0;
-												}
-											}
-											else
-											{
-												return_code=0;
-											}
-										} break;
-										case 'e':
-										{
-											/* execute */
-											i++;
-											if (i<argc)
-											{
-												if (execute_string)
-												{
-													DEALLOCATE(execute_string);
-												}
-												if (ALLOCATE(execute_string,char,strlen(argv[i])+1))
-												{
-													strcpy(execute_string,argv[i]);
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"main.  Insufficient memory for example_id");
-													return_code=0;
-												}
-											}
-											else
-											{
-												return_code=0;
-											}
-										} break;
-									}
-								} break;
-							}
-						} break;
-						case 'm':
-						{
-							start_mycm=1;
-						} break;
-						case 'r':
-						{
-							/* set a flag to say don't randomise */
-							i++;
-							if (i<argc)
-							{
-								non_random=atoi(argv[i]);
-							}
-							else
-							{
-								return_code=0;
-							}
-						} break;
-						case 'i':
-						{
-							i++;
-							if (i<argc)
-							{
-								version_command_id=argv[i];
-							}
-							else
-							{
-								return_code=0;
-							}
-						} break;
-						case 'b':
-						{
-							batch_mode=1;
-						} break;
-						case 'n':
-						{
-							/* no_display has already been set */
-						} break;
-						default:
-						{
-							return_code=0;
-						} break;
-					}
-				}
-				else
-				{
-					if (comfile_name)
-					{
-						DEALLOCATE(comfile_name);
-					}
-					if (ALLOCATE(comfile_name,char,strlen(argv[i])+1))
-					{
-						strcpy(comfile_name,argv[i]);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"main.  Insufficient memory for comfile name");
-						return_code=0;
-					}
-				}
-				i++;
-			}
 #endif /* defined (MOTIF) */
-
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-			create_interpreter(argc, argv, comfile_name, &status);
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
-
-			/* set up image library */
+		/* set up image library */
 #if defined (UNIX) /* switch (Operating_System) */
-			Open_image_environment(*argv);
+		Open_image_environment(*argv);
 #elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
-			/* SAB Passing a string to this function so that it
-				starts up, should get the correct thing from
-				the windows system */
-			Open_image_environment("cmgui");
+		/* SAB Passing a string to this function so that it
+			 starts up, should get the correct thing from
+			 the windows system */
+		Open_image_environment("cmgui");
 #endif /* switch (Operating_System) */
 
-			command_data.default_time_keeper=ACCESS(Time_keeper)(
-				CREATE(Time_keeper)("default", command_data.event_dispatcher,
+		command_data.default_time_keeper=ACCESS(Time_keeper)(
+			CREATE(Time_keeper)("default", command_data.event_dispatcher,
 				command_data.user_interface));
-			if(command_data.default_scene)
-			{
-				Scene_enable_time_behaviour(command_data.default_scene,
-					command_data.default_time_keeper);
-			}
+		if(command_data.default_scene)
+		{
+			Scene_enable_time_behaviour(command_data.default_scene,
+				command_data.default_time_keeper);
+		}
 #if defined (MOTIF)
-			if (command_data.user_interface)
-			{
-				command_data.transform_tool=create_Interactive_tool_transform(
-					command_data.user_interface);
-				ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data.transform_tool,
-					command_data.interactive_tool_manager);
-				command_data.node_tool=CREATE(Node_tool)(
-					command_data.interactive_tool_manager,
-					command_data.node_manager,/*use_data*/0,
-					command_data.node_group_manager,
-					command_data.element_manager,
-					command_data.node_selection,
-					command_data.computed_field_package,
-					command_data.default_graphical_material,
-					command_data.user_interface,
-					command_data.default_time_keeper,
-					command_data.execute_command);
-				command_data.element_tool=CREATE(Element_tool)(
-					command_data.interactive_tool_manager,
-					command_data.element_manager,
-					command_data.element_group_manager,
-					command_data.element_selection,
-					command_data.element_point_ranges_selection,
-					command_data.computed_field_package,
-					command_data.default_graphical_material,
-					command_data.user_interface,
-					command_data.default_time_keeper,
-					command_data.execute_command);
-				command_data.data_tool=CREATE(Node_tool)(
-					command_data.interactive_tool_manager,
-					command_data.data_manager,/*use_data*/1,
-					command_data.data_group_manager,
-					(struct MANAGER(FE_element) *)NULL,
-					command_data.data_selection,
-					command_data.computed_field_package,
-					command_data.default_graphical_material,
-					command_data.user_interface,
-					command_data.default_time_keeper,
-					command_data.execute_command);
-				command_data.element_point_tool=CREATE(Element_point_tool)(
-					command_data.interactive_tool_manager,
-					command_data.element_point_ranges_selection,
-					command_data.computed_field_package,
-					command_data.default_graphical_material,
-					command_data.user_interface,
-					command_data.default_time_keeper,
-					command_data.execute_command);
-				command_data.select_tool=CREATE(Select_tool)(
-					command_data.interactive_tool_manager,
-					command_data.any_object_selection,
-					command_data.default_graphical_material,
-					command_data.user_interface);
-			}
+		command_data.transform_tool=create_Interactive_tool_transform(
+			command_data.user_interface);
+		ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data.transform_tool,
+			command_data.interactive_tool_manager);
+		command_data.node_tool=CREATE(Node_tool)(
+			command_data.interactive_tool_manager,
+			command_data.node_manager,/*use_data*/0,
+			command_data.node_group_manager,
+			command_data.element_manager,
+			command_data.node_selection,
+			command_data.computed_field_package,
+			command_data.default_graphical_material,
+			command_data.user_interface,
+			command_data.default_time_keeper,
+			command_data.execute_command);
+		command_data.element_tool=CREATE(Element_tool)(
+			command_data.interactive_tool_manager,
+			command_data.element_manager,
+			command_data.element_group_manager,
+			command_data.element_selection,
+			command_data.element_point_ranges_selection,
+			command_data.computed_field_package,
+			command_data.default_graphical_material,
+			command_data.user_interface,
+			command_data.default_time_keeper,
+			command_data.execute_command);
+		command_data.data_tool=CREATE(Node_tool)(
+			command_data.interactive_tool_manager,
+			command_data.data_manager,/*use_data*/1,
+			command_data.data_group_manager,
+			(struct MANAGER(FE_element) *)NULL,
+			command_data.data_selection,
+			command_data.computed_field_package,
+			command_data.default_graphical_material,
+			command_data.user_interface,
+			command_data.default_time_keeper,
+			command_data.execute_command);
+		command_data.element_point_tool=CREATE(Element_point_tool)(
+			command_data.interactive_tool_manager,
+			command_data.element_point_ranges_selection,
+			command_data.computed_field_package,
+			command_data.default_graphical_material,
+			command_data.user_interface,
+			command_data.default_time_keeper,
+			command_data.execute_command);
+		command_data.select_tool=CREATE(Select_tool)(
+			command_data.interactive_tool_manager,
+			command_data.any_object_selection,
+			command_data.default_graphical_material,
+			command_data.user_interface);
 #endif /* defined (MOTIF) */
+	}
 
 #if defined (UNEMAP)
-			command_data.unemap_command_data =
-				CREATE(Unemap_command_data)(
-					command_data.event_dispatcher,
-					command_data.execute_command,
-					command_data.user_interface,
+	command_data.unemap_command_data =
+		CREATE(Unemap_command_data)(
+			command_data.event_dispatcher,
+			command_data.execute_command,
+			command_data.user_interface,
 #if defined (UNEMAP_USE_3D)
 #if defined (MOTIF)
-					command_data.node_tool,
-					command_data.transform_tool,
+			command_data.node_tool,
+			command_data.transform_tool,
 #endif /* defined (MOTIF) */
-					command_data.glyph_list,
-					command_data.fe_time,
-					command_data.computed_field_package,
-					command_data.basis_manager,
-					command_data.element_manager,
-					command_data.fe_field_manager,
-					command_data.data_manager,
-					command_data.node_manager,
-					command_data.graphical_material_manager,
-					command_data.default_graphical_material,
-					command_data.element_group_manager,
-					command_data.data_group_manager,
-					command_data.node_group_manager,
-					command_data.interactive_tool_manager,
-					command_data.light_manager,
-					command_data.default_light,
-					command_data.light_model_manager,
-					command_data.default_light_model,
-					command_data.texture_manager,
-					command_data.scene_manager,
-					command_data.spectrum_manager,
-					command_data.element_point_ranges_selection,
-					command_data.element_selection,
-					command_data.data_selection,
-					command_data.node_selection,
+			command_data.glyph_list,
+			command_data.fe_time,
+			command_data.computed_field_package,
+			command_data.basis_manager,
+			command_data.element_manager,
+			command_data.fe_field_manager,
+			command_data.data_manager,
+			command_data.node_manager,
+			command_data.graphical_material_manager,
+			command_data.default_graphical_material,
+			command_data.element_group_manager,
+			command_data.data_group_manager,
+			command_data.node_group_manager,
+			command_data.interactive_tool_manager,
+			command_data.light_manager,
+			command_data.default_light,
+			command_data.light_model_manager,
+			command_data.default_light_model,
+			command_data.texture_manager,
+			command_data.scene_manager,
+			command_data.spectrum_manager,
+			command_data.element_point_ranges_selection,
+			command_data.element_selection,
+			command_data.data_selection,
+			command_data.node_selection,
 #endif /* defined (UNEMAP_USE_3D) */
-					(struct System_window *)NULL,
-					command_data.default_time_keeper
-					);
+			(struct System_window *)NULL,
+			command_data.default_time_keeper
+			);
 #endif /* defined (UNEMAP) */
-		
-			if (return_code)
+
+	/* properly set up the Execute_command objects */
+	Execute_command_set_command_function(execute_command,
+		cmiss_execute_command, (void *)(&command_data));
+	Execute_command_set_command_function(set_command,
+		cmiss_execute_command, (void *)(&command_data));
+
+	/* initialize random number generator */
+	if (-1 == non_random)
+	{
+		/* randomise */
+		srand(time(NULL));
+		/*???DB.  time is not ANSI */
+	}
+	else
+	{
+		/* randomise using given seed */
+		srand(non_random);
+	}
+
+	if (return_code && (!command_list) && (!write_help))
+	{
+#if defined (MOTIF)
+		if (!no_display)
+		{
+			/* register the callbacks in the global name table */
+			if (MrmSUCCESS==MrmRegisterNames(callbacks,XtNumber(callbacks)))
 			{
-				/* initialize random number generator */
-				if (-1==non_random)
-				{
-					/* randomise */
-					srand(time(NULL));
-					/*???DB.  time is not ANSI */
-				}
-				else
-				{
-					/* randomise using given seed */
-					srand(non_random);
-				}
-				user_settings.startup_comfile = (char *)NULL;
-				if (no_display)
-				{
-#if defined (MOTIF)
-					command_data.background_colour.red=0.0;
-					command_data.background_colour.green=0.0;
-					command_data.background_colour.blue=0.0;
-					command_data.foreground_colour.red=1.0;
-					command_data.foreground_colour.green=1.0;
-					command_data.foreground_colour.blue=1.0;
 #endif /* defined (MOTIF) */
-				}
-				else
+				/* create the main window */
+				/* construct the version ID string which is exported in the command
+					 windows version atom */
+				strcpy(version_id_string,"cmiss*");
+				/* version number */
+				if (version_ptr=strstr(VERSION,"version "))
 				{
-					/* retrieve application specific constants */
-#if defined (MOTIF)
-					display = User_interface_get_display(command_data.user_interface);
-					XtVaGetApplicationResources(User_interface_get_application_shell(
-						command_data.user_interface),&user_settings,resources,XtNumber(resources),NULL);
-					/*???DB.  User settings should be divided among tools */
-					/* retrieve the background rgb settings */
-					rgb.pixel=user_settings.background_colour;
-					XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
-					/*???DB.  Get rid of 65535 ? */
-					command_data.background_colour.red=(float)(rgb.red)/(float)65535;
-					command_data.background_colour.green=(float)(rgb.green)/(float)65535;
-					command_data.background_colour.blue=(float)(rgb.blue)/(float)65535;
-					/* retrieve the foreground rgb settings */
-					rgb.pixel=user_settings.foreground_colour;
-					XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
-					/*???DB.  Get rid of 65535 ? */
-					command_data.foreground_colour.red=(float)(rgb.red)/(float)65535;
-					command_data.foreground_colour.green=(float)(rgb.green)/(float)65535;
-					command_data.foreground_colour.blue=(float)(rgb.blue)/(float)65535;
-					if ((command_data.foreground_colour.red==
-						command_data.background_colour.red)&&
-						(command_data.foreground_colour.green==
-							command_data.background_colour.green)&&
-						(command_data.foreground_colour.blue==
-							command_data.background_colour.blue))
+					strncpy(version_temp,version_ptr+8,11);
+					version_temp[11] = 0;
+					strcat(version_id_string,version_temp);
+				}
+				strcat(version_id_string,"*");
+				/* id from runtime */
+				if (version_command_id)
+				{
+					strcat(version_id_string,version_command_id);
+				}
+				strcat(version_id_string,"*");
+				/* link and runtime options */
+				if (start_mycm)
+				{
+					strcat(version_id_string, "mycm ");
+				}
+				else 
+				{
+					if (start_cm)
 					{
-						command_data.foreground_colour.red=
-							1-command_data.background_colour.red;
-						command_data.foreground_colour.green=
-							1-command_data.background_colour.green;
-						command_data.foreground_colour.blue=
-							1-command_data.background_colour.blue;
+						strcat(version_id_string, "cm ");
 					}
 				}
-				/*???DB.  Temporary */
-				sprintf(global_temp_string,
-					"gfx modify material default alpha 1 ambient %g %g %g diffuse %g %g %g",
-					command_data.foreground_colour.red,
-					command_data.foreground_colour.green,
-					command_data.foreground_colour.blue,
-					command_data.foreground_colour.red,
-					command_data.foreground_colour.green,
-					command_data.foreground_colour.blue);
-				cmiss_execute_command(global_temp_string,(void *)(&command_data));
-				if (no_display || examples_directory)
-				{
-					command_data.examples_directory=examples_directory;
-				}
-				else
-				{
-					command_data.examples_directory=user_settings.examples_directory;
-				}
-				command_data.cm_examples_directory=cm_examples_directory;
-				command_data.cm_parameters_file_name=cm_parameters_file_name;
-				if(no_display)
-				{
-					command_data.help_directory=(char *)NULL;
-					command_data.help_url=(char *)NULL;
-				}
-				else
-				{
-					command_data.help_directory=user_settings.help_directory;
-					command_data.help_url=user_settings.help_url;
-				}
-#endif /* defined (MOTIF) */
-#if defined (MOTIF)
-				if (no_display)
-				{
-					return_code = 1;
-				}
-				else
-				{
-					/* register the callbacks in the global name table */
-					if (MrmSUCCESS==MrmRegisterNames(callbacks,XtNumber(callbacks)))
-					{
-#endif /* defined (MOTIF) */
-						/* create the main window */
-						/* construct the version ID string which is exported in the command
-							windows version atom */
-						strcpy(version_id_string,"cmiss*");
-						/* version number */
-						if (version_ptr=strstr(VERSION,"version "))
-						{
-							strncpy(version_temp,version_ptr+8,11);
-							version_temp[11] = 0;
-							strcat(version_id_string,version_temp);
-						}
-						strcat(version_id_string,"*");
-						/* id from runtime */
-						if (version_command_id)
-						{
-							strcat(version_id_string,version_command_id);
-						}
-						strcat(version_id_string,"*");
-						/* link and runtime options */
-						if ( start_mycm )
-						{
-							strcat(version_id_string, "mycm ");
-						}
-						else 
-						{
-							if (start_cm)
-							{
-								strcat(version_id_string, "cm ");
-							}
-						}
 #if defined (UNEMAP)
-						strcat(version_id_string,"unemap ");
+				strcat(version_id_string,"unemap ");
 #endif /* defined (UNEMAP) */
 #if defined (MIRAGE)
-						strcat(version_id_string,"mirage ");
+				strcat(version_id_string,"mirage ");
 #endif /* defined (MIRAGE) */
-#if defined (INCLUDE_XVG)
-						strcat(version_id_string,"xvg ");
-#endif /* defined (INCLUDE_XVG) */
 
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
-						if (console_mode)
-						{
+				if (console_mode)
+				{
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
-							if (!(command_data.command_console = CREATE(Console)(
-								command_data.execute_command,
-								command_data.event_dispatcher, /*stdin*/0)))
-							{
-								display_message(ERROR_MESSAGE,"main.  "
-									"Unable to create console.");
-							}
+					if (!(command_data.command_console = CREATE(Console)(
+						command_data.execute_command,
+						command_data.event_dispatcher, /*stdin*/0)))
+					{
+						display_message(ERROR_MESSAGE,"main.  "
+							"Unable to create console.");
+					}
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
-						}
-						else
+				}
+				else
+				{
+					if (command_window=CREATE(Command_window)(execute_command,
+						command_data.user_interface,version_id_string))
+					{
+						command_data.command_window=command_window;
+						if (!batch_mode)
 						{
-							if (command_window=CREATE(Command_window)(execute_command,
-								command_data.user_interface,version_id_string))
-							{
-								command_data.command_window=command_window;
-								if (!batch_mode)
-								{
-									/* set up messages */
-									set_display_message_function(ERROR_MESSAGE,
-										display_error_message,command_window);
-									set_display_message_function(INFORMATION_MESSAGE,
-										display_information_message,command_window);
-									set_display_message_function(WARNING_MESSAGE,
-										display_warning_message,command_window);
+							/* set up messages */
+							set_display_message_function(ERROR_MESSAGE,
+								display_error_message,command_window);
+							set_display_message_function(INFORMATION_MESSAGE,
+								display_information_message,command_window);
+							set_display_message_function(WARNING_MESSAGE,
+								display_warning_message,command_window);
 #if defined (PERL_INTERPRETER)
-									redirect_interpreter_output(&return_code);
+							redirect_interpreter_output(&return_code);
 #endif /* defined (PERL_INTERPRETER) */
-								}
-
-#if defined (MOTIF)
-								XSetErrorHandler(x_error_handler);
-#endif /* defined (MOTIF) */
-								return_code = 1;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"Unable to create command window");
-								return_code=0;
-							}
 						}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
+						XSetErrorHandler(x_error_handler);
+#endif /* defined (MOTIF) */
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Unable to register callbacks");
+						display_message(ERROR_MESSAGE,"Unable to create command window");
 						return_code=0;
 					}
-#endif /* defined (MOTIF) */
 				}
-				/*???RC Not sure if this is the best place to put this */
-				Execute_command_set_command_function(execute_command,
-					cmiss_execute_command, (void *)(&command_data));
-				Execute_command_set_command_function(set_command,
-					cmiss_execute_command, (void *)(&command_data));
-				if(return_code)
-				{
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
-					if (start_cm||start_mycm)
-					{
-						sprintf(global_temp_string,"create cm");
-						if (start_mycm)
-						{
-							strcat(global_temp_string," mycm");
-						}
-						if (cm_parameters_file_name)
-						{
-							strcat(global_temp_string," parameters ");
-							strcat(global_temp_string,cm_parameters_file_name);
-						}
-						if (cm_examples_directory)
-						{
-							strcat(global_temp_string," examples_directory ");
-							strcat(global_temp_string,cm_examples_directory);
-						}
-						/* start the back-end */
-						cmiss_execute_command(global_temp_string,
-							(void *)(&command_data));
-					}
-					if (execute_string)
-					{
-						cmiss_execute_command(execute_string,(void *)(&command_data));
-					}
-					if (user_settings.startup_comfile)
-					{
-						/* Can't get the startupComfile name without X at the moment */
-						cmgui_execute_comfile(user_settings.startup_comfile, NULL,
-							NULL, NULL, (char **)NULL, execute_command);
-					}
-					if (example_id||comfile_name)
-					{
-						/* open the command line comfile */
-						cmgui_execute_comfile(comfile_name,example_id,
-							command_data.examples_directory,
-							CMGUI_EXAMPLE_DIRECTORY_SYMBOL, &command_data.example_comfile,
-							execute_command);
-						DEALLOCATE(comfile_name);
-						DEALLOCATE(example_id);
-					}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Unable to register callbacks");
+				return_code=0;
+			}
 #endif /* defined (MOTIF) */
-					/*							START_ERROR_HANDLING;*/
-					switch (signal_code)
-					{
+		}
+	}	
+
 #if defined (MOTIF)
-						/*???DB.  SIGBUS is not POSIX */
-						case SIGBUS:
-						{
-							printf("Bus error occurred\n");
-							display_message(ERROR_MESSAGE,"Bus error occurred");
-						} break;
+	if (return_code && (!command_list) && (!write_help))
+	{
+		if (start_cm||start_mycm)
+		{
+			sprintf(global_temp_string,"create cm");
+			if (start_mycm)
+			{
+				strcat(global_temp_string," mycm");
+			}
+			if (cm_parameters_file_name)
+			{
+				strcat(global_temp_string," parameters ");
+				strcat(global_temp_string,cm_parameters_file_name);
+			}
+			if (cm_examples_directory)
+			{
+				strcat(global_temp_string," examples_directory ");
+				strcat(global_temp_string,cm_examples_directory);
+			}
+			/* start the back-end */
+			cmiss_execute_command(global_temp_string,
+				(void *)(&command_data));
+		}
+		if (execute_string)
+		{
+			cmiss_execute_command(execute_string,(void *)(&command_data));
+		}
+		if (user_settings.startup_comfile)
+		{
+			/* Can't get the startupComfile name without X at the moment */
+			cmgui_execute_comfile(user_settings.startup_comfile, NULL,
+				NULL, NULL, (char **)NULL, execute_command);
+		}
+		if (example_id||comfile_name)
+		{
+			/* open the command line comfile */
+			cmgui_execute_comfile(comfile_name,example_id,
+				command_data.examples_directory,
+				CMGUI_EXAMPLE_DIRECTORY_SYMBOL, &command_data.example_comfile,
+				execute_command);
+		}
+	}
 #endif /* defined (MOTIF) */
-						case SIGFPE:
-						{
-							printf("Floating point exception occurred\n");
-							display_message(ERROR_MESSAGE,
-								"Floating point exception occurred");
-						} break;
-						case SIGILL:
-						{
-							printf("Illegal instruction occurred\n");
-							display_message(ERROR_MESSAGE,
-								"Illegal instruction occurred");
-						} break;
-						case SIGSEGV:
-						{
-							printf("Invalid memory reference occurred\n");
-							display_message(ERROR_MESSAGE,
-								"Invalid memory reference occurred");
-						} break;
-					}
-					if(!batch_mode)
-					{
-						/* user interface loop */						
-						return_code=Event_dispatcher_main_loop(command_data.event_dispatcher);
-						/*???RC.  Need clean up routines, eg.
-						  X3dThreeDDrawingCleanUp(display); */
-					}
-				}
+
+	if ((!command_list) && (!write_help))
+	{
+		/* START_ERROR_HANDLING;*/
+		switch (signal_code)
+		{
+#if defined (MOTIF)
+			/*???DB.  SIGBUS is not POSIX */
+			case SIGBUS:
+			{
+				printf("Bus error occurred\n");
+				display_message(ERROR_MESSAGE,"Bus error occurred");
+			} break;
+#endif /* defined (MOTIF) */
+			case SIGFPE:
+			{
+				printf("Floating point exception occurred\n");
+				display_message(ERROR_MESSAGE,
+					"Floating point exception occurred");
+			} break;
+			case SIGILL:
+			{
+				printf("Illegal instruction occurred\n");
+				display_message(ERROR_MESSAGE,
+					"Illegal instruction occurred");
+			} break;
+			case SIGSEGV:
+			{
+				printf("Invalid memory reference occurred\n");
+				display_message(ERROR_MESSAGE,
+					"Invalid memory reference occurred");
+			} break;
+		}
+	}
+
+	/* main processing / loop */
+
+	if (return_code)
+	{
+		if (command_list)
+		{
+			cmiss_execute_command("??", (void *)(&command_data));
+		}
+		if ((!command_list) && (!write_help) && (!batch_mode))
+		{
+			/* user interface loop */						
+			return_code=Event_dispatcher_main_loop(command_data.event_dispatcher);
+		}
+	}
+
+	/* clean-up memory */
 
 #if defined (SGI_MOVIE_FILE)
-				DESTROY(MANAGER(Movie_graphics))(&command_data.movie_graphics_manager);
+	DESTROY(MANAGER(Movie_graphics))(&command_data.movie_graphics_manager);
 #endif /* defined (SGI_MOVIE_FILE) */
 
 #if defined (CELL)
-				/*created in execute_command_cell_open in command/cmiss.c */
-				if (command_data.cell_interface)
-				{
-					DESTROY(Cell_interface)(&command_data.cell_interface);
-				}
+	/*created in execute_command_cell_open in command/cmiss.c */
+	if (command_data.cell_interface)
+	{
+		DESTROY(Cell_interface)(&command_data.cell_interface);
+	}
 #endif /* defined (CELL) */
 #if defined (UNEMAP)
-				if (command_data.unemap_command_data)
-				{
-					DESTROY(Unemap_command_data)(&command_data.unemap_command_data);
-				}
+	if (command_data.unemap_command_data)
+	{
+		DESTROY(Unemap_command_data)(&command_data.unemap_command_data);
+	}
 #endif /* defined (UNEMAP) */
 #if defined (MOTIF)
-				/* viewers */
-				if (command_data.data_viewer)
-				{
-					DESTROY(Node_viewer)(&(command_data.data_viewer));
-				}
-				if (command_data.node_viewer)
-				{
-					DESTROY(Node_viewer)(&(command_data.node_viewer));
-				}
-				if (command_data.element_point_viewer)
-				{
-					DESTROY(Element_point_viewer)(&(command_data.element_point_viewer));
-				}
-				if (command_data.scene_editor)
-				{
-					DESTROY(Scene_editor)(&(command_data.scene_editor));
-				}
+	/* viewers */
+	if (command_data.data_viewer)
+	{
+		DESTROY(Node_viewer)(&(command_data.data_viewer));
+	}
+	if (command_data.node_viewer)
+	{
+		DESTROY(Node_viewer)(&(command_data.node_viewer));
+	}
+	if (command_data.element_point_viewer)
+	{
+		DESTROY(Element_point_viewer)(&(command_data.element_point_viewer));
+	}
+	if (command_data.scene_editor)
+	{
+		DESTROY(Scene_editor)(&(command_data.scene_editor));
+	}
 
-				DESTROY(MANAGER(Graphics_window))(
-					&command_data.graphics_window_manager);
+	DESTROY(MANAGER(Graphics_window))(
+		&command_data.graphics_window_manager);
 #endif /* defined (MOTIF) */
 
-				if (computed_field_finite_element_package)
-				{
-					Computed_field_deregister_types_finite_element(
-						computed_field_finite_element_package);
-				}
+	if (computed_field_finite_element_package)
+	{
+		Computed_field_deregister_types_finite_element(
+			computed_field_finite_element_package);
+	}
 
 #if defined (MOTIF)
-				if (command_data.element_creator)
-				{
-					DESTROY(Element_creator)(&command_data.element_creator);
-				}
-				/* destroy Interactive_tools and manager */
-				if (command_data.select_tool)
-				{
-					DESTROY(Select_tool)(&command_data.select_tool);
-				}
-				if (command_data.element_point_tool)
-				{
-					DESTROY(Element_point_tool)(&command_data.element_point_tool);
-				}
-				if (command_data.data_tool)
-				{
-					DESTROY(Node_tool)(&command_data.data_tool);
-				}
-				if (command_data.element_tool)
-				{
-					DESTROY(Element_tool)(&command_data.element_tool);
-				}
-				if (command_data.node_tool)
-				{
-					DESTROY(Node_tool)(&command_data.node_tool);
-				}
-				DESTROY(MANAGER(Interactive_tool))(
-					&(command_data.interactive_tool_manager));
+	if (command_data.element_creator)
+	{
+		DESTROY(Element_creator)(&command_data.element_creator);
+	}
+	/* destroy Interactive_tools and manager */
+	if (command_data.select_tool)
+	{
+		DESTROY(Select_tool)(&command_data.select_tool);
+	}
+	if (command_data.element_point_tool)
+	{
+		DESTROY(Element_point_tool)(&command_data.element_point_tool);
+	}
+	if (command_data.data_tool)
+	{
+		DESTROY(Node_tool)(&command_data.data_tool);
+	}
+	if (command_data.element_tool)
+	{
+		DESTROY(Element_tool)(&command_data.element_tool);
+	}
+	if (command_data.node_tool)
+	{
+		DESTROY(Node_tool)(&command_data.node_tool);
+	}
+	DESTROY(MANAGER(Interactive_tool))(
+		&(command_data.interactive_tool_manager));
 #endif /* defined (MOTIF) */
 
-				DEACCESS(Scene)(&(command_data.default_scene));
-				DESTROY(MANAGER(Scene))(&command_data.scene_manager);
+	DEACCESS(Scene)(&(command_data.default_scene));
+	DESTROY(MANAGER(Scene))(&command_data.scene_manager);
 
-				if(!no_display)
-				{
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
-					if (console_mode)
-					{
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
-						if (command_data.command_console)
-						{
-							DESTROY(Console)(&command_data.command_console);
-						}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
-					}
-					else
-					{
-						DESTROY(Command_window)(&command_data.command_window);
-					}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
-					/* reset up messages */
-					set_display_message_function(ERROR_MESSAGE,
-					  (Display_message_function *)NULL, NULL);
-					set_display_message_function(INFORMATION_MESSAGE,
-					  (Display_message_function *)NULL, NULL);
-					set_display_message_function(WARNING_MESSAGE,
-					  (Display_message_function *)NULL, NULL);
-					/* close the user interface */
-					DESTROY(User_interface)(&(command_data.user_interface));
-				}
+	DEACCESS(Time_keeper)(&command_data.default_time_keeper);
 
-				DEACCESS(Time_keeper)(&command_data.default_time_keeper);
+	DESTROY(Computed_field_package)(&command_data.computed_field_package);
 
-				DESTROY(Computed_field_package)(&command_data.computed_field_package);
-
-				DESTROY(Any_object_selection)(&(command_data.any_object_selection));
-				DESTROY(FE_node_selection)(&(command_data.data_selection));
-				DESTROY(FE_node_selection)(&(command_data.node_selection));
-				DESTROY(FE_element_selection)(&(command_data.element_selection));
-				DESTROY(Element_point_ranges_selection)(
-					&(command_data.element_point_ranges_selection));
+	DESTROY(Any_object_selection)(&(command_data.any_object_selection));
+	DESTROY(FE_node_selection)(&(command_data.data_selection));
+	DESTROY(FE_node_selection)(&(command_data.node_selection));
+	DESTROY(FE_element_selection)(&(command_data.element_selection));
+	DESTROY(Element_point_ranges_selection)(
+		&(command_data.element_point_ranges_selection));
 
 #if defined (SELECT_DESCRIPTORS)
-				DESTROY(LIST(Io_device))(&command_data.device_list);
+	DESTROY(LIST(Io_device))(&command_data.device_list);
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-				DESTROY(LIST(GT_object))(&command_data.graphics_object_list);
-				DESTROY(LIST(GT_object))(&command_data.glyph_list);
+	DESTROY(LIST(GT_object))(&command_data.graphics_object_list);
+	DESTROY(LIST(GT_object))(&command_data.glyph_list);
 
-				DESTROY(MANAGER(FE_field))(&command_data.fe_field_manager);
+	DESTROY(MANAGER(FE_field))(&command_data.fe_field_manager);
 
-				DESTROY(MANAGER(Control_curve))(&command_data.control_curve_manager);
+	DESTROY(MANAGER(Control_curve))(&command_data.control_curve_manager);
 
-				DESTROY(MANAGER(GROUP(FE_element)))(&command_data.element_group_manager);
-				DESTROY(MANAGER(FE_element))(&command_data.element_manager);
-				DESTROY(MANAGER(GROUP(FE_node)))(&command_data.node_group_manager);
-				DESTROY(MANAGER(FE_node))(&command_data.node_manager);
-				DESTROY(MANAGER(GROUP(FE_node)))(&command_data.data_group_manager);
-				DESTROY(MANAGER(FE_node))(&command_data.data_manager);
-				DESTROY(MANAGER(FE_basis))(&command_data.basis_manager);
+	DESTROY(MANAGER(GROUP(FE_element)))(&command_data.element_group_manager);
+	DESTROY(MANAGER(FE_element))(&command_data.element_manager);
+	DESTROY(MANAGER(GROUP(FE_node)))(&command_data.node_group_manager);
+	DESTROY(MANAGER(FE_node))(&command_data.node_manager);
+	DESTROY(MANAGER(GROUP(FE_node)))(&command_data.data_group_manager);
+	DESTROY(MANAGER(FE_node))(&command_data.data_manager);
+	DESTROY(MANAGER(FE_basis))(&command_data.basis_manager);
 
-				/* check if there are any objects in all lists; if so, do not destroy
-					 them since this will cause memory addresses to be deallocated twice
-					 as DEACCESS will also request the objects be removed from the list.
-					 Do, however, send out an error message */
-				if (0 == NUMBER_IN_LIST(FE_element_field_info)(
-					all_FE_element_field_info))
-				{
-					DESTROY(LIST(FE_element_field_info))(&all_FE_element_field_info);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"%d element field information object(s) still in use",
-						NUMBER_IN_LIST(FE_element_field_info)(all_FE_element_field_info));
-				}
-				if (0 == NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape))
-				{
-					DESTROY(LIST(FE_element_shape))(&all_FE_element_shape);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
-						NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape));
-				}
+	/* check if there are any objects in all lists; if so, do not destroy
+		 them since this will cause memory addresses to be deallocated twice
+		 as DEACCESS will also request the objects be removed from the list.
+		 Do, however, send out an error message */
+	if (0 == NUMBER_IN_LIST(FE_element_field_info)(
+		all_FE_element_field_info))
+	{
+		DESTROY(LIST(FE_element_field_info))(&all_FE_element_field_info);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"%d element field information object(s) still in use",
+			NUMBER_IN_LIST(FE_element_field_info)(all_FE_element_field_info));
+	}
+	if (0 == NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape))
+	{
+		DESTROY(LIST(FE_element_shape))(&all_FE_element_shape);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
+			NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape));
+	}
 
-				DEACCESS(Spectrum)(&(command_data.default_spectrum));
-				DESTROY(MANAGER(Spectrum))(&command_data.spectrum_manager);
-				DEACCESS(Graphical_material)(&(command_data.default_graphical_material));			
-				DEACCESS(Graphical_material)(&(default_selected_material));			
-				DESTROY(MANAGER(Graphical_material))(&command_data.graphical_material_manager);
+	DEACCESS(Spectrum)(&(command_data.default_spectrum));
+	DESTROY(MANAGER(Spectrum))(&command_data.spectrum_manager);
+	DEACCESS(Graphical_material)(&(command_data.default_graphical_material));			
+	DEACCESS(Graphical_material)(&(default_selected_material));			
+	DESTROY(MANAGER(Graphical_material))(&command_data.graphical_material_manager);
 
-				DESTROY(MANAGER(VT_volume_texture))(&command_data.volume_texture_manager);
-				DESTROY(MANAGER(Texture))(&command_data.texture_manager);
-				DESTROY(MANAGER(Environment_map))(&command_data.environment_map_manager);				
-				DEACCESS(Light_model)(&(command_data.default_light_model));
-				DESTROY(MANAGER(Light_model))(&command_data.light_model_manager);
-				DEACCESS(Light)(&(command_data.default_light));
-				DESTROY(MANAGER(Light))(&command_data.light_manager);
+	DESTROY(MANAGER(VT_volume_texture))(&command_data.volume_texture_manager);
+	DESTROY(MANAGER(Texture))(&command_data.texture_manager);
+	DESTROY(MANAGER(Environment_map))(&command_data.environment_map_manager);				
+	DEACCESS(Light_model)(&(command_data.default_light_model));
+	DESTROY(MANAGER(Light_model))(&command_data.light_model_manager);
+	DEACCESS(Light)(&(command_data.default_light));
+	DESTROY(MANAGER(Light))(&command_data.light_manager);
 #if defined (MOTIF)
-				DESTROY(MANAGER(Comfile_window))(&command_data.comfile_window_manager);
+	DESTROY(MANAGER(Comfile_window))(&command_data.comfile_window_manager);
 #endif /* defined (MOTIF) */
 
-				DEACCESS(FE_time)(&(command_data.fe_time));
+	DEACCESS(FE_time)(&(command_data.fe_time));
 
-				if (examples_directory)
-				{
-					DEALLOCATE(examples_directory);
-				}
-				if (command_data.example_directory)
-				{
-					DEALLOCATE(command_data.example_directory);
-				}
-				if (command_data.example_comfile)
-				{
-					DEALLOCATE(command_data.example_comfile);
-				}
-				if (execute_string)
-				{
-					DEALLOCATE(execute_string);
-				}
+	if (command_data.example_directory)
+	{
+		DEALLOCATE(command_data.example_directory);
+	}
+	if (command_data.example_comfile)
+	{
+		DEALLOCATE(command_data.example_comfile);
+	}
 
 #if defined (MOTIF)
-				coord_widget_finish();
+	coord_widget_finish();
 #endif /* defined (MOTIF) */
 
-				DESTROY(Execute_command)(&execute_command);
-				DESTROY(Execute_command)(&set_command);
+	DESTROY(Execute_command)(&execute_command);
+	DESTROY(Execute_command)(&set_command);
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-				destroy_interpreter(&status);
+	destroy_interpreter(&status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
-				if (command_data.event_dispatcher)
-				{
-					DESTROY(Event_dispatcher)(&command_data.event_dispatcher);
-				}		
-
-				/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
-					on.  When MEMORY_CHECKING is off this function does nothing */
-				list_memory(/*count_number*/1, /*show_pointers*/0, /*increment_counter*/0, /*show_structures*/1);
+	if (command_data.user_interface)
+	{
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+		if (console_mode)
+		{
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+			if (command_data.command_console)
+			{
+				DESTROY(Console)(&command_data.command_console);
+			}
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+		}
+		else
+		{
+			if (command_data.command_window)
+			{
+				DESTROY(Command_window)(&command_data.command_window);
 			}
 		}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+		/* reset up messages */
+		set_display_message_function(ERROR_MESSAGE,
+			(Display_message_function *)NULL, NULL);
+		set_display_message_function(INFORMATION_MESSAGE,
+			(Display_message_function *)NULL, NULL);
+		set_display_message_function(WARNING_MESSAGE,
+			(Display_message_function *)NULL, NULL);
+		/* close the user interface */
+		DESTROY(User_interface)(&(command_data.user_interface));
 	}
-	if (!return_code)
+
+	if (command_data.event_dispatcher)
+	{
+		DESTROY(Event_dispatcher)(&command_data.event_dispatcher);
+	}		
+
+	/* clean up command-line options */
+
+	if (cm_examples_directory)
+	{
+		DEALLOCATE(cm_examples_directory);
+	}
+	if (cm_parameters_file_name)
+	{
+		DEALLOCATE(cm_parameters_file_name);
+	}
+	if (examples_directory)
+	{
+		DEALLOCATE(examples_directory);
+	}
+	if (example_id)
+	{
+		DEALLOCATE(example_id);
+	}
+	if (execute_string)
+	{
+		DEALLOCATE(execute_string);
+	}
+	if (version_command_id)
+	{
+		DEALLOCATE(version_command_id);
+	}
+	if (comfile_name)
+	{
+		DEALLOCATE(comfile_name);
+	}
+
+	/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
+		 on.  When MEMORY_CHECKING is off this function does nothing */
+	list_memory(/*count_number*/1, /*show_pointers*/0, /*increment_counter*/0,
+		/*show_structures*/1);
+
+#if defined (OLD_CODE)
+	/*???RC Note need to get descriptive text output with new help */
+	if (write_help)
 	{
 		display_message(INFORMATION_MESSAGE,
 			"Usage :\n");
@@ -1968,12 +1850,12 @@ Main program for the CMISS Graphical User Interface
 		display_message(INFORMATION_MESSAGE,
 			"    <-random NUMBER>                        random number seed (else random)\n");
 		display_message(INFORMATION_MESSAGE,
-			"    <-visual NUMBER>                        specify a particular OpenGl visual id\n");
+			"    <-visual NUMBER>                        specify a particular OpenGL visual id\n");
 		display_message(INFORMATION_MESSAGE,
 			"    <COMMAND_FILE_NAME>                     execute the command file\n");
 		return_code=0;
 	}
-
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
