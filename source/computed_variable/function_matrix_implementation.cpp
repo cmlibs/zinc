@@ -373,11 +373,11 @@ bool Function_matrix<Value_type>::evaluate_derivative(Scalar&,
 	return (false);
 }
 
+#if !defined (__GNUC__)
 EXPORT template<>
 bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
-#if defined (OLD_CODE)
 //******************************************************************************
 // LAST MODIFIED : 13 August 2004
 //
@@ -412,9 +412,7 @@ bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 
 	return (result);
 }
-#else // defined (OLD_CODE)
-;
-#endif // defined (OLD_CODE)
+#endif // !defined (__GNUC__)
 
 EXPORT template<typename Value_type>
 bool Function_matrix<Value_type>::set_value(
