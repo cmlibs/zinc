@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 23 January 2004
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -55,13 +55,16 @@ Module types
 */
 enum Material_program_type
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 28 November 2003
 
 DESCRIPTION :
 Enumerates the main different types of vertex/fragment program for materials
 ==============================================================================*/
 {
-	MATERIAL_PROGRAM_PER_PIXEL_LIGHTING
+	MATERIAL_PROGRAM_PER_PIXEL_LIGHTING = 1,
+	MATERIAL_PROGRAM_PER_PIXEL_TEXTURING = 2,
+	MATERIAL_PROGRAM_BUMP_MAPPING = 3,
+	MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING = 4
 }; /* enum Material_program_type */
 
 struct Material_program
@@ -101,7 +104,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Material_program);
 
 struct Graphical_material
 /*******************************************************************************
-LAST MODIFIED : 13 March 2002
+LAST MODIFIED : 23 January 2004
 
 DESCRIPTION :
 The properties of a material.
@@ -136,6 +139,8 @@ The properties of a material.
 	enum Graphics_compile_status compile_status;
 	/* the texture for this material */
 	struct Texture *texture;
+	/* the texture for this material */
+	struct Texture *bump_texture;	
 	/* the shared information for Graphical Materials, allowing them to share
 	   Material_programs */
 	struct Material_package *package;
@@ -275,9 +280,11 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program, type,
 
 static int Material_program_compile(struct Material_program *material_program)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 23 January 2004
 
 DESCRIPTION :
+Compiles the material program objects.  These are separate objects so they can
+be shared by multiple materials using the same program.
 ==============================================================================*/
 {
 	int return_code;
@@ -287,16 +294,540 @@ DESCRIPTION :
 	{
 #if defined (OPENGL_API)
 		return_code = 1;
+/* #define TESTING_PROGRAM_STRINGS */
+#if defined (TESTING_PROGRAM_STRINGS)
+		/* If testing always recompile */
+		material_program->compiled = 0;
+#endif /* defined (TESTING_PROGRAM_STRINGS) */
 		if (!material_program->compiled)
 		{
 			switch (material_program->type)
 			{
 				case MATERIAL_PROGRAM_PER_PIXEL_LIGHTING:
+				case MATERIAL_PROGRAM_PER_PIXEL_TEXTURING:
+				case MATERIAL_PROGRAM_BUMP_MAPPING:
+				case MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING:
 				{
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 					if (query_gl_extension("GL_ARB_vertex_program") &&
 						 query_gl_extension("GL_ARB_fragment_program"))
 					{
+#if ! defined (TESTING_PROGRAM_STRINGS)
+						char *fragment_program_string, *vertex_program_string;
+						int error;
+						
+						error = 0;
+						
+						vertex_program_string = duplicate_string("!!ARBvp1.0\n");
+						append_string(&vertex_program_string, 
+							"ATTRIB normal = vertex.normal;\n"
+							"ATTRIB position = vertex.position;\n"
+							, &error);
+						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
+						{
+							append_string(&vertex_program_string, 
+								"ATTRIB tangent = vertex.texcoord[1];\n"
+								, &error);
+						}
+						append_string(&vertex_program_string, 
+							"PARAM c0[4] = { state.matrix.mvp };\n"
+							"PARAM c1[4] = { state.matrix.modelview };\n"
+							"PARAM eyeCameraPos = {0, 0, 0, 0};\n"
+							"PARAM eyeLightPos = state.light[0].position;\n"
+
+							"TEMP eyeVertex;\n"
+							, &error);
+						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
+						{
+							append_string(&vertex_program_string, 
+								"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
+								"TEMP lightVec;\n"
+								"TEMP objectLight;\n"
+								"TEMP cameraVec;\n"
+								"TEMP objectCamera;\n"
+								"TEMP binormal;\n"
+								, &error);
+						}
+						else
+						{
+							append_string(&vertex_program_string, 
+								"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+								"TEMP eyeNormal;\n"
+								, &error);
+						}
+
+						append_string(&vertex_program_string, 
+							"#Vertex position in eyespace\n"
+							"DP4 eyeVertex.x, c1[0], position;\n"
+							"DP4 eyeVertex.y, c1[1], position;\n"
+							"DP4 eyeVertex.z, c1[2], position;\n"
+							, &error);								
+
+						if ((MATERIAL_PROGRAM_PER_PIXEL_TEXTURING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
+						{
+							append_string(&vertex_program_string, 
+								"MOV result.texcoord[0], vertex.texcoord[0];\n"
+								, &error);								
+						}
+
+						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
+						{
+							append_string(&vertex_program_string, 
+								"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
+								"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
+
+								"ADD lightVec, eyeLightPos, -eyeVertex;\n"
+								
+								"DP4 objectLight.x, c3[0], lightVec;\n"
+								"DP4 objectLight.y, c3[1], lightVec;\n"
+								"DP4 objectLight.z, c3[2], lightVec;\n"
+
+								"DP3 result.texcoord[1].x, tangent.xyzx, objectLight.xyzx;\n"
+								"DP3 result.texcoord[1].y, binormal.xyzx, objectLight.xyzx;\n"
+								"DP3 result.texcoord[1].z, normal.xyzx, objectLight.xyzx;\n"
+
+								"ADD cameraVec, eyeCameraPos, -eyeVertex;\n"
+								"DP4 objectCamera.x, c3[0], cameraVec;\n"
+								"DP4 objectCamera.y, c3[1], cameraVec;\n"
+								"DP4 objectCamera.z, c3[2], cameraVec;\n"
+
+								"DP3 result.texcoord[2].x, tangent.xyzx, objectCamera.xyzx;\n"
+								"DP3 result.texcoord[2].y, binormal.xyzx, objectCamera.xyzx;\n"
+								"DP3 result.texcoord[2].z, normal.xyzx, objectCamera.xyzx;\n"
+								, &error);
+						}
+						else
+						{
+							append_string(&vertex_program_string, 
+								"DP4 eyeNormal.x, c2[0], normal;\n"
+								"DP4 eyeNormal.y, c2[1], normal;\n"
+								"DP4 eyeNormal.z, c2[2], normal;\n"
+								"DP3 eyeNormal.w, eyeNormal, eyeNormal;\n"
+								"RSQ eyeNormal.w, eyeNormal.w;\n"
+								"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
+
+								"SUB result.texcoord[1], eyeLightPos, eyeVertex;\n"
+								"SUB result.texcoord[2], eyeCameraPos, eyeVertex;\n"
+								"MOV result.texcoord[3], eyeNormal;\n"
+								, &error);
+						}
+
+						append_string(&vertex_program_string, 
+							"MOV result.color, vertex.color;\n"
+							"MOV result.color.back, vertex.color;\n"
+							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
+							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
+							"DP4 result.position.x, c0[0], position;\n"
+							"DP4 result.position.y, c0[1], position;\n"
+							"DP4 result.position.z, c0[2], position;\n"
+							"DP4 result.position.w, c0[3], position;\n"
+
+							"END\n"
+							, &error);
+								
+						fragment_program_string = duplicate_string("!!ARBfp1.0\n");
+						append_string(&fragment_program_string, 
+							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
+							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
+							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+
+							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+
+							"#Set up reverse vector based on secondary colour\n"
+							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
+							, &error);
+
+						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
+						{
+							/* Normal comes from second texture but still uses primary texture coordinates*/
+							append_string(&fragment_program_string, 
+								"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
+
+								"#Expand the range of the normal texture\n"
+								"MAD      normal, two, tex2, m_one;\n"
+
+								"#Reverse the texture normal direction component if required\n"
+								"MUL      normal.z, reverse.z, normal.z;\n"
+								, &error);
+						}
+						else
+						{
+							/* Normal is stored in texcoord[3] */
+							append_string(&fragment_program_string, 
+								"#Normalize the normal.\n"
+								"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
+								"RSQ		normal.w, normal.w;\n"
+								"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
+
+								"#Reverse the normal if required\n"
+								"MUL      normal, reverse, normal;\n"
+								, &error);
+						}
+						append_string(&fragment_program_string, 
+							"#Normalize lightvec and viewvec.\n"
+							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+							"RSQ		lightVec.w, Len.w;\n"
+							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
+
+							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
+							"RSQ		viewVec.w, viewVec.w;\n"
+							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
+
+							"#Calculate attenuation.\n"
+							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
+							"RCP		Len, lightVec.w;\n"
+							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
+							"RCP		attenuation.x, attenuation.x;\n"
+
+							"#Diffuse\n"
+							"DP3_SAT	   lightContrib.x, normal, lightVec;\n"
+							"\n"
+							"#Specular\n"
+							"# Phong:\n"
+							"DP3		reflVec, lightVec, normal;\n"
+							"MUL		reflVec, reflVec, two;\n"
+							"MAD		reflVec, reflVec, normal, -lightVec;\n"
+							"\n"
+							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
+
+							"MOV		lightContrib.w, state.material.shininess.x;\n"
+
+							"#Accelerates lighting computations\n"
+							"LIT	lightContrib, lightContrib;\n"
+
+							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
+							, &error);
+
+
+						if ((MATERIAL_PROGRAM_PER_PIXEL_TEXTURING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
+						{
+							append_string(&fragment_program_string, 
+								"MUL		finalCol, finalCol, tex;\n"
+								, &error);
+						}
+
+						append_string(&fragment_program_string, 
+							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+							"MOV     result.color.xyz, finalCol;\n"
+							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
+							"MOV		result.color.w, state.material.diffuse.w;\n"
+							"END"
+							, &error);
+
+						if (!material_program->vertex_program)
+						{
+							glGenProgramsARB(1, &material_program->vertex_program);
+							glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+							glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+								strlen(vertex_program_string), vertex_program_string);
+						}
+
+						if (!material_program->fragment_program)
+						{
+							glGenProgramsARB(1, &material_program->fragment_program);
+							glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+							glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+								strlen(fragment_program_string), fragment_program_string);
+						}
+
+#else /* ! defined (TESTING_PROGRAM_STRINGS) */
+#define MAX_PROGRAM (20000)
+						char vertex_program_string[MAX_PROGRAM], fragment_program_string[MAX_PROGRAM];
+						{
+							FILE *program_file;
+							int count;
+
+							if (program_file = fopen("test.vp", "r"))
+							{
+								count = fread(vertex_program_string, 1, MAX_PROGRAM - 1, program_file);
+ 								vertex_program_string[count] = 0;
+								if (count > MAX_PROGRAM - 2)
+								{
+									display_message(ERROR_MESSAGE, "Material_program_compile.  "
+										"Short read on test.vp, need to increase MAX_PROGRAM.");
+								}
+								fclose (program_file);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "Material_program_compile.  "
+									"Unable to open file test.vp.");
+							}
+
+							if (program_file = fopen("test.fp", "r"))
+							{
+								count = fread(fragment_program_string, 1, MAX_PROGRAM - 1, program_file);
+ 								fragment_program_string[count] = 0;
+								if (count > MAX_PROGRAM - 2)
+								{
+									display_message(ERROR_MESSAGE, "Material_program_compile.  "
+										"Short read on test.fp, need to increase MAX_PROGRAM.");
+								}
+								fclose (program_file);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "Material_program_compile.  "
+									"Unable to open file test.fp.");
+							}
+						}
+
+						if (!material_program->vertex_program)
+						{
+							glGenProgramsARB(1, &material_program->vertex_program);
+						}
+
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+							strlen(vertex_program_string), vertex_program_string);
+
+						if (!material_program->fragment_program)
+						{
+							glGenProgramsARB(1, &material_program->fragment_program);
+						}
+
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+							strlen(fragment_program_string), fragment_program_string);
+
+						material_program->compiled = 1;
+
+#endif /* ! defined (TESTING_PROGRAM_STRINGS) */
+
+						if (!material_program->display_list)
+						{
+							material_program->display_list = glGenLists(/*number_of_lists*/1);
+						}
+
+						glNewList(material_program->display_list, GL_COMPILE);
+
+						glEnable(GL_VERTEX_PROGRAM_ARB);
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
+							material_program->vertex_program);
+					
+						glEnable(GL_FRAGMENT_PROGRAM_ARB);
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
+							material_program->fragment_program);
+
+						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+
+						glEndList();
+
+						material_program->compiled = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
+							"bump mapping requires the "
+							"GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
+							"which are not available in this OpenGL implementation.");
+					}
+#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+					display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
+						"bump mapping requires the "
+						"GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
+						"which were not compiled into this version.");
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE, "Material_program_compile.  "
+						"Unknown material program type.");
+				} break;			
+			}
+		}
+#else /* defined (OPENGL_API) */
+		display_message(ERROR_MESSAGE,
+			"Material_program_compile.  Not defined for this graphics API.");
+		return_code=0;
+#endif /* defined (OPENGL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_program_compile.  Missing material_program");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Material_program_compile */
+
+
+#if defined (OLD_CODE)
+/* SAB Just want to commit all the other bits of code that I used while gettting this
+	going into CVS at least once. */
+				case MATERIAL_PROGRAM_PER_PIXEL_BUMP_MAPPING:
+				{
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+					if (query_gl_extension("GL_ARB_vertex_program") &&
+						 query_gl_extension("GL_ARB_fragment_program"))
+					{
+						char vertex_program_string[] =
+							"!!ARBvp1.0\n"
+							"ATTRIB normal = vertex.normal;\n"
+							"ATTRIB position = vertex.position;\n"
+							"ATTRIB tangent = vertex.texcoord[1];\n"
+							"PARAM c0[4] = { state.matrix.mvp };\n"
+							"PARAM c1[4] = { state.matrix.modelview };\n"
+							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+							"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
+							"PARAM eyeCameraPos = {0, 0, 100, 0};\n"
+							"PARAM eyeLightPos = state.light[0].position;\n"
+							"TEMP eyeVertex;\n"
+							"TEMP binormal;\n"
+							"TEMP lightVec;\n"
+							"TEMP objectLight;\n"
+							"TEMP cameraVec;\n"
+							"TEMP objectCamera;\n"
+							"\n"
+							"#Vertex position in eyespace\n"
+							"DP4 eyeVertex.x, c1[0], position;\n"
+							"DP4 eyeVertex.y, c1[1], position;\n"
+							"DP4 eyeVertex.z, c1[2], position;\n"
+							"\n"
+							"ADD lightVec, eyeLightPos, -eyeVertex;\n"
+							"DP4 objectLight.x, c3[0], lightVec;\n"
+							"DP4 objectLight.y, c3[1], lightVec;\n"
+							"DP4 objectLight.z, c3[2], lightVec;\n"
+							"#\n"
+							"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
+							"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
+							"\n"
+							"DP3 result.texcoord[1].x, tangent.xyzx, objectLight.xyzx;\n"
+							"DP3 result.texcoord[1].y, binormal.xyzx, objectLight.xyzx;\n"
+							"DP3 result.texcoord[1].z, normal.xyzx, objectLight.xyzx;\n"
+							"\n"
+							"ADD cameraVec, eyeCameraPos, -eyeVertex;\n"
+							"DP4 objectCamera.x, c3[0], cameraVec;\n"
+							"DP4 objectCamera.y, c3[1], cameraVec;\n"
+							"DP4 objectCamera.z, c3[2], cameraVec;\n"
+							"\n"
+							"DP3 result.texcoord[2].x, tangent.xyzx, objectCamera.xyzx;\n"
+							"DP3 result.texcoord[2].y, binormal.xyzx, objectCamera.xyzx;\n"
+							"DP3 result.texcoord[2].z, normal.xyzx, objectCamera.xyzx;\n"
+							"\n"
+							"MOV result.texcoord[0], vertex.texcoord[0];\n"
+							"MOV result.texcoord[3], tangent;\n"
+							"MOV result.color, vertex.color;\n"
+							"MOV result.color.back, vertex.color;\n"
+							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
+							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
+							"DP4 result.position.x, c0[0], position;\n"
+							"DP4 result.position.y, c0[1], position;\n"
+							"DP4 result.position.z, c0[2], position;\n"
+							"DP4 result.position.w, c0[3], position;\n"
+							"\n"
+							"END\n";
+						char fragment_program_string[] =
+							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
+							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
+							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+							"\n"
+							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+							"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
+							"\n"
+							"#Normalize normal, lightvec and viewvec.\n"
+							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+							"RSQ		lightVec.w, Len.w;\n"
+							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
+							"\n"
+							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
+							"RSQ		viewVec.w, viewVec.w;\n"
+							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
+							"\n"
+							"#Reverse the normal for the back faces based on the secondary colour\n"
+							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
+							"#MUL      normal, reverse, normal;\n"
+							"\n"
+							"#Calculate attenuation.\n"
+							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
+							"RCP		Len, lightVec.w;\n"
+							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
+							"RCP		attenuation.x, attenuation.x;\n"
+							"\n"
+							"#Expand the range of the normal texture\n"
+							"MAD      tex2, two, tex2, m_one;\n"
+							"\n"
+							"#Reverse the texture normal direction component\n"
+							"MUL      tex2.z, reverse.z, tex2.z;\n"
+							"\n"
+							"#Diffuse\n"
+							"DP3_SAT	   lightContrib.x, tex2, lightVec;\n"
+							"\n"
+							"#Specular\n"
+							"# Phong:\n"
+							"DP3		reflVec, lightVec, tex2;\n"
+							"MUL		reflVec, reflVec, two;\n"
+							"MAD		reflVec, reflVec, tex2, -lightVec;\n"
+							"\n"
+							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
+							"\n"
+							"# Blinn:\n"
+							"#	ADD		reflVec, lightVec, viewVec;	# reflVec == Half-angle.\n"
+							"#	DP3		reflVec.w, reflVec, reflVec;\n"
+							"#	RSQ		reflVec.w, reflVec.w;\n"
+							"#	MUL		reflVec.xyz, reflVec, reflVec.w;\n"
+							"#	DP3		lightContrib.y, reflVec, normal;\n"
+							"\n"
+							"MOV		lightContrib.w, state.material.shininess.x;\n"
+							"\n"
+							"#Accelerates lighting computations\n"
+							"LIT	lightContrib, lightContrib;\n"
+							"\n"
+							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
+							"\n"
+							"# Enable this line for textured models\n"
+							"MUL		finalCol, finalCol, tex;	# Texture?\n"
+							"\n"
+							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+							"#MOV      finalCol, fragment.color.secondary;\n"
+							"#MOV      finalCol, fragment.color;\n"
+							"#MOV      finalCol, normal;\n"
+							"MOV      result.color.xyz, finalCol;\n"
+							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
+							"MOV		result.color.w, state.material.diffuse.w;\n"
+							"END\n"
+
+							if (!material_program->display_list)
+							{
+								material_program->display_list = glGenLists(/*number_of_lists*/1);
+							}
+
+						glNewList(material_program->display_list, GL_COMPILE);
+
+						glEnable(GL_VERTEX_PROGRAM_ARB);
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
+							material_program->vertex_program);
+					
+						glEnable(GL_FRAGMENT_PROGRAM_ARB);
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
+							material_program->fragment_program);
+
+						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+
+						glEndList();
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Material_program_compile.  "
+							"Support for PER_PIXEL_LIGHTING with bump mapping requires the "
+							"GL_ARB_vertex_program and GL_ARB_fragment_program extensions.");
+					}
+#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+					display_message(ERROR_MESSAGE, "Material_program_compile.  "
+						"Support for PER_PIXEL_LIGHTING with bump mapping was not compiled into this executable.");
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+				} break;
 						char vertex_program_string[] =
 							"!!ARBvp1.0\n"
 							"ATTRIB normal = vertex.normal;\n"
@@ -338,11 +869,13 @@ DESCRIPTION :
 							"END\n";
 						char fragment_program_string[] =
 							"!!ARBfp1.0\n"
-							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex;\n"
+							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
 							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
 							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
 							"\n"
 							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+							"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
 							"\n"
 							"#Normalize normal, lightvec and viewvec.\n"
 							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
@@ -361,7 +894,17 @@ DESCRIPTION :
 							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
 							"MUL      normal, reverse, normal;\n"
 							"\n"
+							"MAD     tex2, two, tex2, m_one;\n"
+							"DP4     tex2.x, c2[0], tex2;\n"
+							"DP4     tex2.y, c2[1], tex2;\n"
+							"DP4     tex2.z, c2[2], tex2;\n"
+							"ADD     normal, tex2, normal;\n"
+							"DP3		normal.w, normal, normal;\n"
+							"RSQ		normal.w, normal.w;\n"
+							"MUL		normal.xyz, normal, normal.w;\n"
+							"\n"
 							"#Calculate attenuation.\n"
+							if (non_linear_attenuation)
 							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
 							"RCP		Len, lightVec.w;\n"
 							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
@@ -392,8 +935,120 @@ DESCRIPTION :
 							"\n"
 							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
 							"\n"
+							if (material_program->type == MATERIAL_PROGRAM_PER_PIXEL_TEXTURING)
+							{
+								"MUL		finalCol, finalCol, tex;\n"
+							}
+							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+							"#MOV      finalCol, fragment.color.secondary;\n"
+							"#MOV      finalCol, fragment.color;\n"
+							"MOV      result.color.xyz, finalCol;\n"
+							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
+							"MOV		result.color.w, state.material.diffuse.w;\n"
+							"END\n";
+
+							"!!ARBvp1.0\n"
+							"ATTRIB normal = vertex.normal;\n"
+							"ATTRIB position = vertex.position;\n"
+								"ATTRIB tangent = vertex.texcoord[1];\n"
+								"PARAM c0[4] = { state.matrix.mvp };\n"
+								"PARAM c1[4] = { state.matrix.modelview };\n"
+								"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+								"PARAM eyeCameraPos = {0, 0, 100, 0};\n"
+								"PARAM eyeLightPos = state.light[0].position;\n"
+								"TEMP eyeVertex;\n"
+								"TEMP eyeNormal;\n"
+								"TEMP binormal;\n"
+								"TEMP lightVec;\n"
+							"#Vertex position in eyespace\n"
+							"DP4 eyeVertex.x, c1[0], position;\n"
+							"DP4 eyeVertex.y, c1[1], position;\n"
+							"DP4 eyeVertex.z, c1[2], position;\n"
+							"\n"
+							"#Calculate binormal as crossproduct of normal and tangent and rotate the light vec\n"
+							"ADD lightVec, eyeLightPos, -eyeVertex;\n"
+							"DP3 result.texcoord[1].x, tangent.xyzx, lightVec.xyzx;\n"
+							"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
+							"MAD binormal.xyz, tangent.yzxy, normal.zxyz, -binormal.xyzx;\n"
+							"DP3 result.texcoord[1].y, binormal.xyzx, lightVec.xyzx;\n"
+							"DP3 result.texcoord[1].z, normal.xyzx, lightVec.xyzx;\n"
+							"\n"
+							"\n"
+							"MOV result.texcoord[0], vertex.texcoord[0];\n"
+							"SUB result.texcoord[2], eyeCameraPos, eyeVertex;\n"
+							"MOV result.color, vertex.color;\n"
+							"MOV result.color.back, vertex.color;\n"
+							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
+							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
+							"DP4 result.position.x, c0[0], position;\n"
+							"DP4 result.position.y, c0[1], position;\n"
+							"DP4 result.position.z, c0[2], position;\n"
+							"DP4 result.position.w, c0[3], position;\n"
+							"\n"
+							"END\n";
+						char fragment_program_string[] =
+							"!!ARBfp1.0\n"
+							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
+							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
+							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+							"\n"
+							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+							"TEX		tex2, fragment.texcoord[0], texture[1], 2D;\n"
+							"\n"
+							"#Normalize normal, lightvec and viewvec.\n"
+							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+							"RSQ		lightVec.w, Len.w;\n"
+							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
+							"\n"
+							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
+							"RSQ		viewVec.w, viewVec.w;\n"
+							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
+							"\n"
+							"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
+							"RSQ		normal.w, normal.w;\n"
+							"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
+							"\n"
+							"#Reverse the normal for the back faces based on the secondary colour\n"
+							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
+							"MUL      normal, reverse, normal;\n"
+							"\n"
+							"MAD     tex2, two, tex2, m_one;\n"
+							"\n"
+							"#Calculate attenuation.\n"
+							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
+							"RCP		Len, lightVec.w;\n"
+							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
+							"RCP		attenuation.x, attenuation.x;\n"
+							"\n"
+							"#Diffuse\n"
+							"DP3_SAT	   lightContrib.x, tex2, lightVec;\n"
+							"\n"
+							"#Specular\n"
+							"# Phong:\n"
+							"DP3		reflVec, lightVec, tex2;\n"
+							"MUL		reflVec, reflVec, two;\n"
+							"MAD		reflVec, reflVec, normal, -lightVec;\n"
+							"\n"
+							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
+							"\n"
+							"# Blinn:\n"
+							"#	ADD		reflVec, lightVec, viewVec;	# reflVec == Half-angle.\n"
+							"#	DP3		reflVec.w, reflVec, reflVec;\n"
+							"#	RSQ		reflVec.w, reflVec.w;\n"
+							"#	MUL		reflVec.xyz, reflVec, reflVec.w;\n"
+							"#	DP3		lightContrib.y, reflVec, normal;\n"
+							"\n"
+							"MOV		lightContrib.w, state.material.shininess.x;\n"
+							"\n"
+							"#Accelerates lighting computations\n"
+							"LIT	lightContrib, lightContrib;\n"
+							"\n"
+							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
+							"\n"
 							"# Enable this line for textured models\n"
-							"#	MUL		finalCol, finalCol, tex;	# Texture?\n"
+							"#MUL		finalCol, finalCol, tex;	# Texture?\n"
 							"\n"
 							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
 							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
@@ -404,44 +1059,6 @@ DESCRIPTION :
 							"MOV		result.color.w, state.material.diffuse.w;\n"
 							"END\n";
 
-						if (!material_program->vertex_program)
-						{
-							glGenProgramsARB(1, &material_program->vertex_program);
-							glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
-							glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-								strlen(vertex_program_string), vertex_program_string);
-						}
-
-						if (!material_program->fragment_program)
-						{
-							glGenProgramsARB(1, &material_program->fragment_program);
-							glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
-							glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-								strlen(fragment_program_string), fragment_program_string);
-						}
-
-						if (!material_program->display_list)
-						{
-							material_program->display_list = glGenLists(/*number_of_lists*/1);
-						}
-
-						glNewList(material_program->display_list, GL_COMPILE);
-
-						glEnable(GL_VERTEX_PROGRAM_ARB);
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
-							material_program->vertex_program);
-					
-						glEnable(GL_FRAGMENT_PROGRAM_ARB);
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
-							material_program->fragment_program);
-
-						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-
-						glEndList();
-					}
-					else
-					{
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 #if defined NEW_CODE && defined GL_NV_vertex_program && defined GL_NV_register_combiners2
 						static int cube_map_normal(int i, int cubesize, float *map)
 							{
@@ -717,38 +1334,8 @@ DESCRIPTION :
 								"(GL_ARB_vertex_program and GL_ARB_fragment_program) or "
 								"(GL_NV_vertex_program and GL_NV_register_combiners2) extensions.");
 						}
-#else /* defined GL_NV_vertex_program && defined GL_NV_register_combiners2 */
-						display_message(ERROR_MESSAGE, "Material_program_compile.  "
-							"Support for PER_PIXEL_LIGHTING was not compiled into this executable.");
 #endif /* defined GL_NV_vertex_program && defined GL_NV_register_combiners2 */
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-					}
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-				} break;
-				default:
-				{
-					/* Do nothing */
-				};
-			
-			}
-			material_program->compiled = 1;
-		}
-#else /* defined (OPENGL_API) */
-		display_message(ERROR_MESSAGE,
-			"Material_program_compile.  Not defined for this graphics API.");
-		return_code=0;
-#endif /* defined (OPENGL_API) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_program_compile.  Missing material_program");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Material_program_compile */
+#endif /* defined (OLD_CODE) */
 
 #if defined (OPENGL_API)
 static int Material_program_execute(struct Material_program *material_program)
@@ -847,6 +1434,23 @@ material results.
 		{
 			execute_Texture(material->texture);
 		}
+#if defined (GL_ARB_multitexture)
+		if (material->bump_texture)
+		{
+			glActiveTextureARB(GL_TEXTURE1_ARB);
+
+			execute_Texture(material->bump_texture);
+			
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+		else
+		{
+			glActiveTextureARB(GL_TEXTURE1_ARB);			
+			glDisable(GL_TEXTURE_2D);
+			glActiveTextureARB(GL_TEXTURE0_ARB);
+		}
+#endif /* defined (GL_ARB_multitexture) */
+
 		if (material->program)
 		{
 			Material_program_execute(material->program);
@@ -854,9 +1458,13 @@ material results.
 		else
 		{
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-			glDisable(GL_VERTEX_PROGRAM_ARB);
-			glDisable(GL_FRAGMENT_PROGRAM_ARB);
-			glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+			if (query_gl_extension("GL_ARB_vertex_program") &&
+				query_gl_extension("GL_ARB_fragment_program"))
+			{
+				glDisable(GL_VERTEX_PROGRAM_ARB);
+				glDisable(GL_FRAGMENT_PROGRAM_ARB);
+				glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+			}
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		}
 		return_code=1;
@@ -888,7 +1496,7 @@ Global functions
 
 struct Material_package *CREATE(Material_package)(struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
 Create a shared information container for Materials.
@@ -1236,6 +1844,7 @@ Allocates memory and assigns fields for a material.
 			(material->specular).blue=0;
 			material->shininess=0;
 			material->texture=(struct Texture *)NULL;
+			material->bump_texture=(struct Texture *)NULL;
 			material->spectrum_flag=0;
 			material->spectrum_flag_previous=0;
 			material->package = (struct Material_package *)NULL;
@@ -1291,6 +1900,10 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			if (material->texture)
 			{
 				DEACCESS(Texture)(&(material->texture));
+			}
+			if (material->bump_texture)
+			{
+				DEACCESS(Texture)(&(material->bump_texture));
 			}
 			if (material->program)
 			{
@@ -1421,6 +2034,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 			destination->program = (struct Material_program *)NULL;
 		}
 		REACCESS(Texture)(&(destination->texture), source->texture);
+		REACCESS(Texture)(&(destination->bump_texture), source->bump_texture);
 		/* flag destination display list as no longer current */
 		destination->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -2161,7 +2775,7 @@ If the material already exists, then behaves like gfx modify material.
 int modify_Graphical_material(struct Parse_state *state,void *material_void,
 	void *material_package_void)
 /*******************************************************************************
-LAST MODIFIED : 17 February 1997
+LAST MODIFIED : 23 January 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2276,6 +2890,10 @@ DESCRIPTION :
 					Option_table_add_entry(option_table, "ambient",
 						&(material_to_be_modified_copy->ambient), NULL,
 						set_Colour);
+					Option_table_add_entry(option_table, "bump_texture",
+						&(material_to_be_modified_copy->bump_texture), 
+						material_package->texture_manager,
+						set_Texture);
 					Option_table_add_entry(option_table, "diffuse",
 						&(material_to_be_modified_copy->diffuse), NULL,
 						set_Colour);
@@ -2304,6 +2922,24 @@ DESCRIPTION :
 						{
 							display_message(ERROR_MESSAGE,
 								"Specify only one of normal_mode/per_pixel_mode.");
+							return_code = 0;
+						}
+						if (material_to_be_modified_copy->bump_texture)
+						{
+#if defined (GL_ARB_multitexture)
+							if (!query_gl_extension("GL_ARB_multitexture"))
+							{
+								display_message(ERROR_MESSAGE,
+									"Bump mapping requires ARB_multitexture support which is "
+									"not available with this OpenGL implementation.");
+								return_code = 0;
+							}
+#else /* defined (GL_ARB_multitexture) */
+							display_message(ERROR_MESSAGE,
+								"Bump mapping requires ARB_multitexture support which was "
+								"not compiled into this executable.");
+							return_code = 0;
+#endif /* defined (GL_ARB_multitexture) */
 						}
 						if (normal_mode_flag)
 						{
@@ -2314,26 +2950,58 @@ DESCRIPTION :
 						}
 						else if (per_pixel_mode_flag)
 						{
+							enum Material_program_type type;
+
+							if (material_to_be_modified_copy->bump_texture)
+							{
+								if (material_to_be_modified_copy->texture)
+								{
+									type = MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING;
+								}
+								else
+								{
+									type = MATERIAL_PROGRAM_BUMP_MAPPING;
+								}
+							}
+							else
+							{
+								if (material_to_be_modified_copy->texture)
+								{
+									type = MATERIAL_PROGRAM_PER_PIXEL_TEXTURING;
+								}
+								else
+								{
+									type = MATERIAL_PROGRAM_PER_PIXEL_LIGHTING;
+								}
+							}
 							if (!(material_to_be_modified_copy->program = 
 								FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
-									MATERIAL_PROGRAM_PER_PIXEL_LIGHTING, material_package->material_program_list)))
+								type, material_package->material_program_list)))
 							{
-								material_to_be_modified_copy->program = CREATE(Material_program)
-									(MATERIAL_PROGRAM_PER_PIXEL_LIGHTING);
-								ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified_copy->program,
-									material_package->material_program_list);
+								if (material_to_be_modified_copy->program = CREATE(Material_program)(type))
+								{
+									ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified_copy->program,
+										material_package->material_program_list);
+								}
+								else
+								{
+									return_code = 0;
+								}
 							}
 						}
-						if (material_to_be_modified)
+						if (return_code)
 						{
-							MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
-								material_to_be_modified,material_to_be_modified_copy,
-								material_package->material_manager);
-							DESTROY(Graphical_material)(&material_to_be_modified_copy);
-						}
-						else
-						{
-							material_to_be_modified=material_to_be_modified_copy;
+							if (material_to_be_modified)
+							{
+								MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
+									material_to_be_modified,material_to_be_modified_copy,
+									material_package->material_manager);
+								DESTROY(Graphical_material)(&material_to_be_modified_copy);
+							}
+							else
+							{
+								material_to_be_modified=material_to_be_modified_copy;
+							}
 						}
 					}
 					DESTROY(Option_table)(&option_table);
@@ -2419,6 +3087,13 @@ Writes the properties of the <material> to the command window.
 			display_message(INFORMATION_MESSAGE,"\n");
 			DEALLOCATE(texture_name);
 		}
+		if (material->bump_texture&&GET_NAME(Texture)(material->bump_texture,&texture_name))
+		{
+			display_message(INFORMATION_MESSAGE,"  bump map normal texture : ");
+			display_message(INFORMATION_MESSAGE,texture_name);
+			display_message(INFORMATION_MESSAGE,"\n");
+			DEALLOCATE(texture_name);
+		}
 		return_code=1;
 	}
 	else
@@ -2481,6 +3156,13 @@ The command is started with the string pointed to by <command_prefix>.
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			display_message(INFORMATION_MESSAGE," texture %s",name);
+			DEALLOCATE(name);
+		}
+		if (material->bump_texture&&GET_NAME(Texture)(material->bump_texture,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			display_message(INFORMATION_MESSAGE," bump_texture %s",name);
 			DEALLOCATE(name);
 		}
 		display_message(INFORMATION_MESSAGE,";\n");
@@ -2602,6 +3284,10 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			if (material->texture)
 			{
 				compile_Texture(material->texture, NULL);
+			}
+			if (material->bump_texture)
+			{
+				compile_Texture(material->bump_texture, NULL);
 			}
 			if (material->program)
 			{
