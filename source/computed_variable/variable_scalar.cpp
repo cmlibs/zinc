@@ -46,18 +46,20 @@ class Variable_input_scalar_value : public Variable_input
 			return (1);
 		};
 		virtual bool operator==(const Variable_input& input)
-		try
 		{
+			try
 			{
-				const Variable_input_scalar_value& input_scalar_value=
-					dynamic_cast<const Variable_input_scalar_value&>(input);
+				{
+					const Variable_input_scalar_value& input_scalar_value=
+						dynamic_cast<const Variable_input_scalar_value&>(input);
 
-				return (variable_scalar==input_scalar_value.variable_scalar);
+					return (variable_scalar==input_scalar_value.variable_scalar);
+				}
 			}
 			catch (std::bad_cast)
 			{
 				return (false);
-			};
+			}
 		};
 	private:
 		Variable_scalar_handle variable_scalar;
