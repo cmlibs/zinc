@@ -62,6 +62,14 @@ Module types
 FULL_DECLARE_CALLBACK_TYPES(Scene_viewer_transform, \
 	struct Scene_viewer *, void *);
 
+enum Scene_viewer_drag_mode
+{
+	SV_DRAG_NOTHING,
+	SV_DRAG_TUMBLE,
+	SV_DRAG_TRANSLATE,
+	SV_DRAG_ZOOM
+};
+
 struct Scene_viewer
 /*******************************************************************************
 LAST MODIFIED : 12 July 2000
@@ -158,11 +166,18 @@ DESCRIPTION :
 	void *scene_manager_callback_id;
 	struct MANAGER(Texture) *texture_manager;
 	void *texture_manager_callback_id;
+	/* For interpreting mouse events */
+	enum Scene_viewer_drag_mode drag_mode;
+	int previous_pointer_x, previous_pointer_y;
 	/* interaction */
 	/* Note: interactive_tool is NOT accessed by Scene_viewer; up to dialog
 		 owning it to clear it if it is destroyed. This is usually ensured by having
 		 a tool chooser in the parent dialog */
 	struct Interactive_tool *interactive_tool;
+	/* kept tumble axis and angle for spinning scene viewer */
+	double tumble_axis[3], tumble_angle;
+	int tumble_active;
+	XtWorkProcId tumble_callback_id;
 	/* background */
 	struct Colour background_colour;
 	enum Scene_viewer_buffer_mode buffer_mode;
@@ -188,6 +203,13 @@ DESCRIPTION :
 Module variables
 ----------------
 */
+
+/*
+Module prototypes
+-----------------
+*/
+/* Need to prototype this function as these two functions call each other */
+static Boolean Scene_viewer_automatic_tumble_callback(XtPointer scene_viewer_void);
 
 /*
 Module functions
@@ -1387,6 +1409,19 @@ removed from WorkProc queue.
 		{
 			X3dThreeDDrawingSwapBuffers();
 		}
+		if (scene_viewer->tumble_active)
+		{
+			if(!scene_viewer->tumble_callback_id)
+			{
+				scene_viewer->tumble_callback_id=XtAppAddWorkProc(
+					scene_viewer->user_interface->application_context,
+					Scene_viewer_automatic_tumble_callback,scene_viewer);			
+			}
+		}
+		else
+		{
+			scene_viewer->tumble_angle = 0.0;
+		}
 	}
 	else
 	{
@@ -1433,6 +1468,81 @@ put in the queue, but the old one will update the window to the new state.
 
 	return (return_code);
 } /* Scene_viewer_redraw_in_idle_time */
+
+static Boolean Scene_viewer_automatic_tumble_callback(XtPointer scene_viewer_void)
+/*******************************************************************************
+LAST MODIFIED : 28 September 2000
+
+DESCRIPTION :
+A WorkProc that tumbles the scene_viewer, and then returns TRUE so that it is
+removed from WorkProc queue.
+==============================================================================*/
+{
+	double centre_x,centre_y,size_x,size_y,viewport_bottom,viewport_height,
+		viewport_left,viewport_width;
+	enum Interactive_event_type interactive_event_type;
+	struct Scene_viewer *scene_viewer;
+	GLint viewport[4];
+	struct Interactive_event *interactive_event;
+	struct Interaction_volume *interaction_volume;
+
+	ENTER(Scene_viewer_automatic_tumble_callback);
+	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	{
+		if (scene_viewer->tumble_active)
+		{
+			Scene_viewer_rotate_about_lookat_point(scene_viewer,
+				scene_viewer->tumble_axis,
+				scene_viewer->tumble_angle);
+			scene_viewer->fast_changing = 0;
+			Scene_viewer_redraw_in_idle_time(scene_viewer);
+			CALLBACK_LIST_CALL(Scene_viewer_transform)(
+				scene_viewer->sync_callback_list,scene_viewer,NULL);
+
+			if (scene_viewer->interactive_tool)
+			{
+				glGetIntegerv(GL_VIEWPORT,viewport);
+				viewport_left   = (double)(viewport[0]);
+				viewport_bottom = (double)(viewport[1]);
+				viewport_width  = (double)(viewport[2]);
+				viewport_height = (double)(viewport[3]);
+				
+				size_x = SCENE_VIEWER_PICK_SIZE;
+				size_y = SCENE_VIEWER_PICK_SIZE;
+				
+				centre_x=(double)(scene_viewer->previous_pointer_x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(scene_viewer->previous_pointer_y)-1.0;
+				
+				/* Update the interaction volume */
+				interactive_event_type=INTERACTIVE_EVENT_MOTION_NOTIFY;
+				interaction_volume=create_Interaction_volume_ray_frustum(
+					scene_viewer->modelview_matrix,scene_viewer->window_projection_matrix,
+					viewport_left,viewport_bottom,viewport_width,viewport_height,
+					centre_x,centre_y,size_x,size_y);
+				ACCESS(Interaction_volume)(interaction_volume);
+				interactive_event=CREATE(Interactive_event)(interactive_event_type,
+					/*button_number*/-1,/*input_modifier*/0,interaction_volume,
+					scene_viewer->scene);
+				ACCESS(Interactive_event)(interactive_event);
+				Interactive_tool_handle_interactive_event(
+					scene_viewer->interactive_tool,(void *)scene_viewer,interactive_event);
+				DEACCESS(Interactive_event)(&interactive_event);
+				DEACCESS(Interaction_volume)(&interaction_volume);
+			}
+
+		}
+		scene_viewer->tumble_callback_id = (XtWorkProcId)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_automatic_tumble_callback.  Missing scene_viewer");
+	}
+	LEAVE;
+
+	return (TRUE);
+} /* Scene_viewer_automatic_tumble_callback */
 
 static void Scene_viewer_initialize_callback(Widget scene_viewer_widget,
 	XtPointer scene_viewer_structure,XtPointer call_data)
@@ -1850,6 +1960,9 @@ scene_viewer.
 				/* flip y as x event has y=0 at top of window, increasing down */
 				centre_y=viewport_height-(double)(button_event->y)-1.0;
 				button_number=button_event->button;
+				/* Keep position for automatic tumbling update */
+				scene_viewer->previous_pointer_x = button_event->x;
+				scene_viewer->previous_pointer_y = button_event->y;
 				modifier_state=button_event->state;
 				mouse_event=1;
 			} break;
@@ -1861,6 +1974,9 @@ scene_viewer.
 				/* flip y as x event has y=0 at top of window, increasing down */
 				centre_y=viewport_height-(double)(motion_event->y)-1.0;
 				button_number=-1;
+				/* Keep position for automatic tumbling update */
+				scene_viewer->previous_pointer_x = button_event->x;
+				scene_viewer->previous_pointer_y = button_event->y;
 				modifier_state=motion_event->state;
 				mouse_event=1;
 			} break;
@@ -1957,14 +2073,6 @@ scene_viewer.
 	return (return_code);
 } /* Scene_viewer_input_select */
 
-enum Scene_viewer_drag_mode
-{
-	SV_DRAG_NOTHING,
-	SV_DRAG_TUMBLE,
-	SV_DRAG_TRANSLATE,
-	SV_DRAG_ZOOM
-};
-
 static int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	XEvent *event)
 /*******************************************************************************
@@ -1980,9 +2088,7 @@ Converts mouse button-press and motion events into viewing transformations in
 	double old_near_x,old_near_y,old_near_z,old_far_x,old_far_y,old_far_z;
 	double radius,fact,a[3],b[3],c[3],e[3],eye_distance,tangent_dist,d,phi,
 		axis[3],angle;
-	static enum Scene_viewer_drag_mode drag_mode=SV_DRAG_NOTHING;
 	int return_code,pointer_x,pointer_y,i,delta_x,delta_y,view_changed;
-	static int old_pointer_x,old_pointer_y;
 	XButtonEvent *button_event;
 	XKeyEvent *key_event;
 	XMotionEvent *motion_event;
@@ -2013,31 +2119,33 @@ Converts mouse button-press and motion events into viewing transformations in
 					{
 						case Button1:
 						{
+							scene_viewer->tumble_angle = 0;
+							scene_viewer->tumble_active = 0;
 							if (0.0 != scene_viewer->tumble_rate)
 							{
-								drag_mode=SV_DRAG_TUMBLE;
+								scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 							}
 						} break;
 						case Button2:
 						{
 							if (0.0 != scene_viewer->translate_rate)
 							{
-								drag_mode=SV_DRAG_TRANSLATE;
+								scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 							}
 						} break;
 						case Button3:
 						{
 							if (0.0 != scene_viewer->zoom_rate)
 							{
-								drag_mode=SV_DRAG_ZOOM;
+								scene_viewer->drag_mode=SV_DRAG_ZOOM;
 							}
 						} break;
 						default:
 						{
 						} break;
 					}
-					old_pointer_x=pointer_x;
-					old_pointer_y=pointer_y;
+					scene_viewer->previous_pointer_x=pointer_x;
+					scene_viewer->previous_pointer_y=pointer_y;
 				}
 			} break;
 			case MotionNotify:
@@ -2048,11 +2156,12 @@ Converts mouse button-press and motion events into viewing transformations in
 				/* printf("mouse move to %d %d\n",pointer_x,pointer_y); */
 				if (Scene_viewer_unproject(pointer_x,pointer_y,
 					&near_x,&near_y,&near_z,&far_x,&far_y,&far_z)&&
-					Scene_viewer_unproject(old_pointer_x,old_pointer_y,
-					&old_near_x,&old_near_y,&old_near_z,&old_far_x,&old_far_y,&old_far_z))
+					Scene_viewer_unproject(scene_viewer->previous_pointer_x,
+						scene_viewer->previous_pointer_y, &old_near_x,&old_near_y,
+						&old_near_z,&old_far_x,&old_far_y,&old_far_z))
 				{
 					view_changed=0;
-					switch (drag_mode)
+					switch (scene_viewer->drag_mode)
 					{
 						case SV_DRAG_NOTHING:
 						{
@@ -2074,8 +2183,8 @@ Converts mouse button-press and motion events into viewing transformations in
 							{
 								/* get the radius of the ball */
 								radius=0.25*(width+height);
-								delta_x=pointer_x-old_pointer_x;
-								delta_y=old_pointer_y-pointer_y;
+								delta_x=pointer_x-scene_viewer->previous_pointer_x;
+								delta_y=scene_viewer->previous_pointer_y-pointer_y;
 								if (0<(tangent_dist=sqrt(delta_x*delta_x+delta_y*delta_y)))
 								{
 									/* get unit vector dx,dy normal to drag line */
@@ -2126,6 +2235,21 @@ Converts mouse button-press and motion events into viewing transformations in
 									if (Scene_viewer_rotate_about_lookat_point(scene_viewer,axis,
 										-angle))
 									{
+										/* Store axis and angle so that we can make the
+											scene viewer spin if left alone. */
+										scene_viewer->tumble_axis[0] = axis[0];
+										scene_viewer->tumble_axis[1] = axis[1];
+										scene_viewer->tumble_axis[2] = axis[2];
+										scene_viewer->tumble_angle = -angle;
+										scene_viewer->tumble_active = 0;
+										if (!scene_viewer->tumble_callback_id)
+										{
+											/* Add this now, if we hold still it will stop the
+												rotate if not it will happen after the buttonrelease */
+											scene_viewer->tumble_callback_id=XtAppAddWorkProc(
+												scene_viewer->user_interface->application_context,
+												Scene_viewer_automatic_tumble_callback,scene_viewer);
+										}
 										view_changed=1;
 									}
 								}
@@ -2164,6 +2288,12 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->lookatx -= dx;
 							scene_viewer->lookaty -= dy;
 							scene_viewer->lookatz -= dz;
+							if (scene_viewer->tumble_active)
+							{
+								Scene_viewer_rotate_about_lookat_point(scene_viewer,
+									scene_viewer->tumble_axis,
+									scene_viewer->tumble_angle);
+							}
 							view_changed=1;
 						} break;
 						case SV_DRAG_ZOOM:
@@ -2174,12 +2304,12 @@ Converts mouse button-press and motion events into viewing transformations in
 							/* apply the zoom_rate to slow/hasten zoom */
 							fact=1.0 + 0.01*scene_viewer->zoom_rate;
 							i=pointer_y;
-							while (i>old_pointer_y)
+							while (i>scene_viewer->previous_pointer_y)
 							{
 								radius /= fact;
 								i--;
 							}
-							while (i<old_pointer_y)
+							while (i<scene_viewer->previous_pointer_y)
 							{
 								radius *= fact;
 								i++;
@@ -2188,6 +2318,12 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->right=radius;
 							scene_viewer->bottom=-radius;
 							scene_viewer->top=radius;
+							if (scene_viewer->tumble_active)
+							{
+								Scene_viewer_rotate_about_lookat_point(scene_viewer,
+									scene_viewer->tumble_axis,
+									scene_viewer->tumble_angle);
+							}
 							view_changed=1;
 						} break;
 						default:
@@ -2202,12 +2338,16 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->sync_callback_list,scene_viewer,NULL);
 						scene_viewer->transform_flag = 1;
 					}
-					old_pointer_x=pointer_x;
-					old_pointer_y=pointer_y;
+					scene_viewer->previous_pointer_x=pointer_x;
+					scene_viewer->previous_pointer_y=pointer_y;
 				}
 			} break;
 			case ButtonRelease:
 			{
+				if ((scene_viewer->drag_mode == SV_DRAG_TUMBLE) && scene_viewer->tumble_angle)
+				{
+					scene_viewer->tumble_active = 1;
+				}
 				button_event=&(event->xbutton);
 				/* printf("button %d release at %d %d\n",button_event->button,
 					button_event->x,button_event->y); */
@@ -2219,7 +2359,7 @@ Converts mouse button-press and motion events into viewing transformations in
 					/*printf("RELEASENear: %8.4f %8.4f %8.4f  Far: %8.4f %8.4f %8.4f\n",
 						near_x,near_y,near_z,far_x,far_y,far_z);*/
 				}
-				drag_mode=SV_DRAG_NOTHING;
+				scene_viewer->drag_mode=SV_DRAG_NOTHING;
 			} break;
 			case KeyPress:
 			{
@@ -2272,9 +2412,7 @@ transformations.
 ==============================================================================*/
 {
 	double dx,dy,zoom_ratio,fact;
-	static enum Scene_viewer_drag_mode drag_mode=SV_DRAG_NOTHING;
 	int return_code,pointer_x,pointer_y,i;
-	static int old_pointer_x,old_pointer_y;
 	XButtonEvent *button_event;
 	XKeyEvent *key_event;
 	XMotionEvent *motion_event;
@@ -2298,34 +2436,34 @@ transformations.
 				{
 					case Button2:
 					{
-						drag_mode=SV_DRAG_TRANSLATE;
+						scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 					} break;
 					case Button3:
 					{
-						drag_mode=SV_DRAG_ZOOM;
+						scene_viewer->drag_mode=SV_DRAG_ZOOM;
 					} break;
 					default:
 					{
 					} break;
 				}
-				old_pointer_x=pointer_x;
-				old_pointer_y=pointer_y;
+				scene_viewer->previous_pointer_x=pointer_x;
+				scene_viewer->previous_pointer_y=pointer_y;
 			} break;
 			case MotionNotify:
 			{
 				motion_event= &(event->xmotion);
 				pointer_x=motion_event->x;
 				pointer_y=motion_event->y;
-				switch (drag_mode)
+				switch (scene_viewer->drag_mode)
 				{
 					case SV_DRAG_NOTHING:
 					{
 					} break;
 					case SV_DRAG_TRANSLATE:
 					{
-						dx=(pointer_x-old_pointer_x)/
+						dx=(pointer_x-scene_viewer->previous_pointer_x)/
 							scene_viewer->viewport_pixels_per_unit_x;
-						dy=(old_pointer_y-pointer_y)/
+						dy=(scene_viewer->previous_pointer_y-pointer_y)/
 							scene_viewer->viewport_pixels_per_unit_y;
 						scene_viewer->viewport_left -= dx;
 						scene_viewer->viewport_top -= dy;
@@ -2337,12 +2475,12 @@ transformations.
 						zoom_ratio=1.0;
 						fact=1.01;
 						i=pointer_y;
-						while (i>old_pointer_y)
+						while (i>scene_viewer->previous_pointer_y)
 						{
 							zoom_ratio *= fact;
 							i--;
 						}
-						while (i<old_pointer_y)
+						while (i<scene_viewer->previous_pointer_y)
 						{
 							zoom_ratio /= fact;
 							i++;
@@ -2354,8 +2492,8 @@ transformations.
 					{
 					} break;
 				}
-				old_pointer_x=pointer_x;
-				old_pointer_y=pointer_y;
+				scene_viewer->previous_pointer_x=pointer_x;
+				scene_viewer->previous_pointer_y=pointer_y;
 			} break;
 			case ButtonRelease:
 			{
@@ -2364,7 +2502,7 @@ transformations.
 					button_event->x,button_event->y); */
 				pointer_x=button_event->x;
 				pointer_y=button_event->y;
-				drag_mode=SV_DRAG_NOTHING;
+				scene_viewer->drag_mode=SV_DRAG_NOTHING;
 			} break;
 			case KeyPress:
 			{
@@ -2969,6 +3107,16 @@ performed in idle time so that multiple redraws are avoided.
 					scene_viewer->bk_texture_left=0.0;
 					scene_viewer->bk_texture_width=1.0;
 					scene_viewer->bk_texture_height=1.0;
+					scene_viewer->drag_mode=SV_DRAG_NOTHING;
+					scene_viewer->previous_pointer_x = 0;
+					scene_viewer->previous_pointer_y = 0;
+					/* automatic tumble */
+					scene_viewer->tumble_axis[0] = 1.0;
+					scene_viewer->tumble_axis[1] = 0.0;
+					scene_viewer->tumble_axis[2] = 0.0;
+					scene_viewer->tumble_angle = 0;
+					scene_viewer->tumble_active = 0;
+					scene_viewer->tumble_callback_id = (XtIntervalId)NULL;
 					/* by default, use undistort stuff on textures */
 					scene_viewer->bk_texture_undistort_on=1;
 					scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
@@ -3130,6 +3278,12 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			DESTROY(LIST(CALLBACK_ITEM(Scene_viewer_transform)))(
 				&scene_viewer->transform_callback_list);
+		}
+		/* Remove Tumble callback */
+		if (scene_viewer->tumble_callback_id)
+		{
+			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id = (XtWorkProcId)NULL;
 		}
 		/* must destroy the widget */
 		XtDestroyWidget(scene_viewer->drawing_widget);				
@@ -4310,6 +4464,10 @@ Negative values reverse the effects of mouse movement.
 		scene_viewer->translate_rate=translate_rate;
 		scene_viewer->tumble_rate=tumble_rate;
 		scene_viewer->zoom_rate=zoom_rate;
+		if (!scene_viewer->tumble_rate)
+		{
+			scene_viewer->tumble_angle = 0;
+		}
 		return_code=1;
 	}
 	else
