@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 1 June 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -4615,17 +4615,17 @@ Zero turns antialiasing off.
 	return (return_code);
 } /* Scene_viewer_set_antialias_mode */
 
-int Scene_viewer_get_line_draw_mode(struct Scene_viewer *scene_viewer,
+int Scene_viewer_get_perturb_lines(struct Scene_viewer *scene_viewer,
 	int *perturb_lines)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Scene_viewer_get_line_draw_mode);
+	ENTER(Scene_viewer_get_perturb_lines);
 	if (scene_viewer&&perturb_lines)
 	{
 		*perturb_lines=scene_viewer->perturb_lines;
@@ -4634,18 +4634,18 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_line_draw_mode.  Invalid argument(s)");
+			"Scene_viewer_get_perturb_lines.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_get_line_draw_mode */
+} /* Scene_viewer_get_perturb_lines */
 
-int Scene_viewer_set_line_draw_mode(struct Scene_viewer *scene_viewer,
+int Scene_viewer_set_perturb_lines(struct Scene_viewer *scene_viewer,
 	int perturb_lines)
 /*******************************************************************************
-LAST MODIFIED : 28 August 1998
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 When the line draw mode is turned on (set to one) the lines are raised in the
@@ -4656,7 +4656,7 @@ surface in the same space.
 {
 	int return_code;
 
-	ENTER(Scene_viewer_set_line_draw_mode);
+	ENTER(Scene_viewer_set_perturb_lines);
 	if (scene_viewer)
 	{
 		if (perturb_lines)
@@ -4668,8 +4668,8 @@ surface in the same space.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-"Scene_viewer_set_line_draw_mode.  GL_EXT_polygon_offset extension not available on this display");
+				display_message(ERROR_MESSAGE,"Scene_viewer_set_perturb_lines.  "
+					"GL_EXT_polygon_offset extension not available on this display");
 				return_code=0;
 			}
 		}
@@ -4682,13 +4682,13 @@ surface in the same space.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_line_draw_mode.  Invalid argument(s)");
+			"Scene_viewer_set_perturb_lines.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_set_line_draw_mode */
+} /* Scene_viewer_set_perturb_lines */
 
 enum Scene_viewer_viewport_mode Scene_viewer_get_viewport_mode(
 	struct Scene_viewer *scene_viewer)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3537,7 +3537,7 @@ been embedded in the mapping Xwindow.
 				user_interface))
 			{
 				/*perturb the lines, so we can see the contours */
-				Graphics_window_set_line_draw_mode(window,1);
+				Graphics_window_set_perturb_lines(window,1);
 				set_unemap_package_window(unemap_package,window);
 				if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
 					graphics_window_manager))
@@ -4955,7 +4955,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 							(unemap_package))) 						
 						{
 							/* perturb the lines(for the contours) */
-							Scene_viewer_set_line_draw_mode(get_unemap_package_scene_viewer
+							Scene_viewer_set_perturb_lines(get_unemap_package_scene_viewer
 								(unemap_package),1);
 							set_unemap_package_viewed_scene(unemap_package,1);
 						}

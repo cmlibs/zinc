@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 11 April 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -340,18 +340,18 @@ DESCRIPTION :
 Sets the Scene_viewer light_model.
 ==============================================================================*/
 
-int Scene_viewer_get_line_draw_mode(struct Scene_viewer *scene_viewer,
+int Scene_viewer_get_perturb_lines(struct Scene_viewer *scene_viewer,
 	int *perturb_lines);
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
 
-int Scene_viewer_set_line_draw_mode(struct Scene_viewer *scene_viewer,
+int Scene_viewer_set_perturb_lines(struct Scene_viewer *scene_viewer,
 	int perturb_lines);
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 When the line draw mode is turned on (set to one) the lines are raised in the
