@@ -5588,8 +5588,7 @@ Clears 'valid' flag if fails.
 {
 	char *file_number_string, format[20], *pattern_position, *prefix,
 		*temp_file_name, **temp_file_names, *suffix;
-	int error, file_number, i, new_number_of_file_names, old_number_of_file_names,
-		pattern_width, return_code;
+	int error, file_number, i, new_number_of_file_names, pattern_width, return_code;
 
 	ENTER(Cmgui_image_information_set_file_name_series);
 	if (cmgui_image_information && file_name_template && file_number_pattern &&
@@ -5641,7 +5640,7 @@ Clears 'valid' flag if fails.
 				}
 				if (error)
 				{
-					for (i = i - 1; i >= old_number_of_file_names; i--)
+					for (i = i - 1; i >= 0; i--)
 					{
 						DEALLOCATE(temp_file_names[i]);
 					}
