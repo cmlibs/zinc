@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 26 May 2003
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 
@@ -136,8 +136,8 @@ Module constants
 ----------------
 */
 #define ARROWS_WIDTH 12
-/* needs to agree with unemap/unemap_hardware.c */
-#define NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL 4
+#define SCROLLING_BORDER_WIDTH 40
+#define SCROLLING_BORDER_HEIGHT 5
 
 /*
 Module types
@@ -157,7 +157,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 4 September 2002
+LAST MODIFIED : 4 June 2003
 
 DESCRIPTION :
 The page window object.
@@ -377,7 +377,8 @@ The page window object.
 #endif /* defined (WIN32_USER_INTERFACE) */
 	char *calibration_directory;
 	int unemap_hardware_version;
-	float initial_gain,sampling_frequency;
+	float initial_gain,sampling_frequency,scrolling_frequency,
+		scrolling_callback_frequency;
 #if defined (DEVICE_EXPRESSIONS)
 	float *real_signal_values;
 #else /* defined (DEVICE_EXPRESSIONS) */
@@ -389,7 +390,8 @@ The page window object.
 	int data_saved,display_device_number,hardware_initialized,
 		*last_scrolling_value_device,number_of_scrolling_channels,
 		*number_of_scrolling_channels_device,number_of_scrolling_devices,
-		number_of_stimulators,pointer_sensitivity,
+		number_of_scrolling_values_per_channel,number_of_stimulators,
+		pointer_sensitivity,
 #if defined (OLD_CODE)
 		*number_of_stimulating_channels,**stimulating_channel_numbers,
 		*stimulator_on,
@@ -398,6 +400,14 @@ The page window object.
 		*stimulate_device_numbers,stimulator_number,
 #endif /* defined (OLD_CODE) */
 		synchronization_card;
+#if defined (MOTIF)
+	int fill_left,fill_width;
+	XPoint scroll_line[2],*signal_line,x_axis[2];
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+	POINT scroll_line[2],*signal_line,x_axis[2];
+	RECT fill_rectangle;
+#endif /* defined (WIN32_USER_INTERFACE) */
 	struct Channel **scrolling_channels;
 	struct Device *display_device,**scrolling_devices;
 #if defined (OLD_CODE)
@@ -423,7 +433,8 @@ The page window object.
 typedef struct
 {
 	char *calibration_directory;
-	float initial_gain,sampling_frequency;
+	float initial_gain,sampling_frequency,scrolling_frequency,
+		scrolling_callback_frequency;
 	int number_of_samples,synchronization_card;
 #if defined (MOTIF)
 	Boolean restitution_time_pacing;
@@ -1411,35 +1422,16 @@ Finds the id of the page test checkbox.
 } /* identify_page_test_checkbox */
 #endif /* defined (MOTIF) */
 
-#define SCROLLING_BORDER_WIDTH 40
-#define SCROLLING_BORDER_HEIGHT 5
-
-#if defined (MOTIF)
-static int fill_left,fill_width;
-static XPoint scroll_line[2],x_axis[2];
-#if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
-static XPoint signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1];
-#endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-/*???DB.  Created in WM_CREATE of Page_window_scrolling_area_class_proc */
-/*???DB.  Created in WM_PAINT of Page_window_scrolling_area_class_proc */
-static POINT scroll_line[2],
-	signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1],x_axis[2];
-static RECT fill_rectangle;
-#endif /* defined (WIN32_USER_INTERFACE) */
-
 static int draw_scrolling_background(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 Clears the display and draws the axes for the scrolling area.
-???DB.  Needs changing to draw all the scrolling devices rather than just the
-current device
 ==============================================================================*/
 {
 	char *string,working_string[21];
+	float x_tick;
 	int height,i,length,number_of_scrolling_devices,return_code,x_offset,y_offset,
 		width;
 #if defined (MOTIF)
@@ -1448,17 +1440,20 @@ current device
 	int ascent,descent,direction;
 	XCharStruct bounds;
 	XFontStruct *font;
+	XPoint *scroll_line,*x_axis;
 	XWindowAttributes attributes;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 	HDC device_context;
 	HWND scrolling_area;
+	POINT *scroll_line,*x_axis;
 	SIZE bounds;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(draw_scrolling_background);
 	return_code=0;
-	if (page_window)
+	if (page_window&&(scroll_line=page_window->scroll_line)&&
+		(x_axis=page_window->x_axis))
 	{
 		return_code=1;
 		/* set up */
@@ -1476,9 +1471,9 @@ current device
 #else /* defined (GET_DC_ONCE) */
 		device_context=GetDC(scrolling_area);
 #endif /* defined (GET_DC_ONCE) */
-		GetClientRect(scrolling_area,&fill_rectangle);
-		width=(fill_rectangle.right)+1;
-		height=(fill_rectangle.bottom)+1;
+		GetClientRect(scrolling_area,&(page_window->fill_rectangle));
+		width=((page_window->fill_rectangle).right)+1;
+		height=((page_window->fill_rectangle).bottom)+1;
 #endif /* defined (WIN32_USER_INTERFACE) */
 		/* clear the window */
 #if defined (MOTIF)
@@ -1487,7 +1482,8 @@ current device
 			height);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-		FillRect(device_context,&fill_rectangle,page_window->fill_brush);
+		FillRect(device_context,&(page_window->fill_rectangle),
+			page_window->fill_brush);
 			/*???DB.  Seems to return a nonzero on success (not TRUE) */
 #endif /* defined (WIN32_USER_INTERFACE) */
 		/* draw the x tick marks */
@@ -1495,18 +1491,25 @@ current device
 		height -= SCROLLING_BORDER_HEIGHT;
 		scroll_line[0].y=height;
 		width -= SCROLLING_BORDER_WIDTH;
-		for (i=100;i<width;i += 100)
+		if (0<page_window->scrolling_frequency)
 		{
-			scroll_line[0].x=i;
-			scroll_line[1].x=i;
+			x_tick=page_window->scrolling_frequency;
+			i=(int)(x_tick+0.5);
+			while (i<width)
+			{
+				scroll_line[0].x=i;
+				scroll_line[1].x=i;
 #if defined (MOTIF)
-			XDrawLines(display,drawable,
-				(page_window->graphics_context).foreground_drawing_colour,scroll_line,2,
-				CoordModeOrigin);
+				XDrawLines(display,drawable,
+					(page_window->graphics_context).foreground_drawing_colour,scroll_line,
+					2,CoordModeOrigin);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-			Polyline(device_context,scroll_line,2);
+				Polyline(device_context,scroll_line,2);
 #endif /* defined (WIN32_USER_INTERFACE) */
+				x_tick += page_window->scrolling_frequency;
+				i=(int)(x_tick+0.5);
+			}
 		}
 		/* draw the x axis */
 		x_axis[0].x=0;
@@ -1529,18 +1532,23 @@ current device
 #endif /* defined (OLD_CODE) */
 		/* set up the scrolling cursor */
 #if defined (MOTIF)
-		fill_left=1;
-		fill_width=5;
+		page_window->fill_left=1;
+		page_window->fill_width=
+			1+(page_window->number_of_scrolling_values_per_channel);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-		fill_rectangle.left=1;
-		fill_rectangle.right=5;
-		fill_rectangle.bottom -= 4;
+		(page_window->fill_rectangle).left=1;
+		(page_window->fill_rectangle).right=
+			1+(page_window->number_of_scrolling_values_per_channel);
+		(page_window->fill_rectangle).bottom -= 4;
 #endif /* defined (WIN32_USER_INTERFACE) */
-		x_axis[1].x=4;
-		scroll_line[0].x=5;
+		x_axis[0].x=0;
+		x_axis[1].x=page_window->number_of_scrolling_values_per_channel;
+		scroll_line[0].x=
+			1+(page_window->number_of_scrolling_values_per_channel);
 		scroll_line[0].y=0;
-		scroll_line[1].x=5;
+		scroll_line[1].x=
+			1+(page_window->number_of_scrolling_values_per_channel);
 		scroll_line[1].y=height;
 		if (0<(number_of_scrolling_devices=page_window->
 			number_of_scrolling_devices))
@@ -1628,7 +1636,7 @@ static void scrolling_hardware_callback(int number_of_channels,
 	int *channel_numbers,int number_of_values_per_channel,short *signal_values,
 	void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2002
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 ???DB.  Used to be in WM_USER.
@@ -1636,9 +1644,9 @@ DESCRIPTION :
 {
 #if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
 	float device_maximum,device_minimum,gain,offset,post_filter_gain,
-		pre_filter_gain,signal_value,
-		temp_float[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL];
-	int i,j,k,height,number_of_channels_device,number_of_scrolling_devices,width;
+		pre_filter_gain,signal_value,*temp_float;
+	int break_index,i,j,k,height,number_of_channels_device,
+		number_of_scrolling_devices,width;
 	short int y_offset;
 	struct Channel **scrolling_channel;
 	struct Device **scrolling_device;
@@ -1653,11 +1661,13 @@ DESCRIPTION :
 #if defined (MOTIF)
 	Display *display;
 	Drawable drawable;
+	XPoint *scroll_line,*signal_line,*x_axis;
 	XWindowAttributes attributes;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 	HDC device_context;
 	HWND window;
+	POINT *scroll_line,*signal_line,*x_axis;
 	RECT drawing_rectangle;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
@@ -1667,8 +1677,11 @@ DESCRIPTION :
 	if ((page_window=(struct Page_window *)page_window_void)&&
 		(page_window->display_device)&&
 		(page_window->number_of_scrolling_channels==number_of_channels)&&
-		signal_values&&
-		(NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL==number_of_values_per_channel))
+		signal_values&&(page_window->number_of_scrolling_values_per_channel==
+		number_of_values_per_channel)&&(0<number_of_values_per_channel)&&
+		(signal_line=page_window->signal_line)&&
+		(scroll_line=page_window->scroll_line)&&(x_axis=page_window->x_axis)&&
+		ALLOCATE(temp_float,float,number_of_values_per_channel))
 	{
 		/* set up */
 #if !defined (NO_SCROLLING_WINDOW_UPDATE)
@@ -1694,21 +1707,55 @@ DESCRIPTION :
 		height -= SCROLLING_BORDER_HEIGHT;
 		width -= SCROLLING_BORDER_WIDTH;
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
-		for (i=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i>=0;i--)
+		/* may go off edge of window */
+		if (x_axis[1].x>width)
 		{
-			signal_line[i].x=x_axis[0].x+(NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-i);
+			break_index=width-(x_axis[0].x);
+		}
+		else
+		{
+			break_index=number_of_values_per_channel;
+		}
+		for (i=0;i<=break_index;i++)
+		{
+			signal_line[i].x=x_axis[0].x+i;
+		}
+		for (i=break_index+1;i<=number_of_values_per_channel;i++)
+		{
+			signal_line[i].x=i-break_index;
 		}
 #if !defined (NO_SCROLLING_WINDOW_UPDATE)
 #if defined (MOTIF)
 		XFillRectangle(display,drawable,
-			(page_window->graphics_context).background_drawing_colour,fill_left,0,
-			fill_width,height+1);
-		fill_left += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+			(page_window->graphics_context).background_drawing_colour,
+			page_window->fill_left,0,break_index+1,height+1);
+		if (break_index<number_of_values_per_channel)
+		{
+			page_window->fill_left=number_of_values_per_channel-break_index+1;
+			XFillRectangle(display,drawable,
+				(page_window->graphics_context).background_drawing_colour,
+				1,0,page_window->fill_left,height+1);
+		}
+		else
+		{
+			page_window->fill_left += number_of_values_per_channel;
+		}
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-		FillRect(device_context,&fill_rectangle,page_window->fill_brush);
-		fill_rectangle.left += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-		fill_rectangle.right += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+		(page_window->fill_rectangle).right=(page_window->fill_rectangle).left+
+			break_index;
+		FillRect(device_context,&page_window->fill_rectangle,
+			page_window->fill_brush);
+		if (break_index<number_of_values_per_channel)
+		{
+			(page_window->fill_rectangle).left=1;
+			(page_window->fill_rectangle).right=(page_window->fill_rectangle).left+
+				number_of_values_per_channel-break_index+1;
+			FillRect(device_context,&page_window->fill_rectangle,
+				page_window->fill_brush);
+		}
+		(page_window->fill_rectangle).left=(page_window->fill_rectangle).right;
+		(page_window->fill_rectangle).right += number_of_values_per_channel;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 #if !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE)
@@ -1739,7 +1786,7 @@ DESCRIPTION :
 				gain=((*scrolling_channel)->gain_correction)/
 					(pre_filter_gain*post_filter_gain);
 				offset=(*scrolling_channel)->offset;
-				for (j=0;j<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;j++)
+				for (j=0;j<number_of_values_per_channel;j++)
 				{
 					real_signal_value[j*number_of_channels_device]=
 						gain*((float)(*raw_signal_value)-offset);
@@ -1749,12 +1796,12 @@ DESCRIPTION :
 				scrolling_channel++;
 			}
 			real_signal_value=real_signal_values;
-			for (i=0;i<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i++)
+			for (i=0;i<number_of_values_per_channel;i++)
 			{
 				evaluate_device(*scrolling_device,&real_signal_value,temp_float+i);
 			}
 #else /* defined (DEVICE_EXPRESSIONS) */
-			for (i=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1;i>=0;i--)
+			for (i=number_of_values_per_channel-1;i>=0;i--)
 			{
 				temp_float[i]=(float)0;
 			}
@@ -1768,7 +1815,7 @@ DESCRIPTION :
 				gain=(*scrolling_coefficient)*((*scrolling_channel)->gain_correction)/
 					(pre_filter_gain*post_filter_gain);
 				offset=(*scrolling_channel)->offset;
-				for (i=0;i<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i++)
+				for (i=0;i<number_of_values_per_channel;i++)
 				{
 					temp_float[i] += gain*((float)signal_values[j]-offset);
 					j++;
@@ -1776,79 +1823,79 @@ DESCRIPTION :
 				scrolling_channel++;
 				scrolling_coefficient++;
 			}
-			j_start +=
-				NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*number_of_channels_device;
+			j_start += number_of_values_per_channel*number_of_channels_device;
 #endif /* defined (DEVICE_EXPRESSIONS) */
-			signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL].y=
-				(page_window->last_scrolling_value_device)[k];
-			for (i=0;i<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i++)
+			signal_line[0].y=(page_window->last_scrolling_value_device)[k];
+			for (i=1;i<=number_of_values_per_channel;i++)
 			{
-				signal_value=temp_float[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1-i];
+				signal_value=temp_float[i-1];
 				signal_line[i].y=y_offset+
 					(short)(((device_maximum-signal_value)*(float)height)/
 					(device_maximum-device_minimum));
 			}
-			(page_window->last_scrolling_value_device)[k]=signal_line[0].y;
+			(page_window->last_scrolling_value_device)[k]=
+				signal_line[number_of_values_per_channel].y;
 #if !defined (NO_SCROLLING_WINDOW_UPDATE)
-			if (x_axis[0].x>0)
+			if (0<signal_line[0].x)
 			{
 #if defined (MOTIF)
 				XDrawLines(display,drawable,
 					(page_window->graphics_context).foreground_drawing_colour,signal_line,
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1,CoordModeOrigin);
+					break_index+1,CoordModeOrigin);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-				Polyline(device_context,signal_line,
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1);
+				Polyline(device_context,signal_line,break_index+1);
 #endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			else
 			{
 #if defined (MOTIF)
 				XDrawLines(display,drawable,
-					(page_window->graphics_context).foreground_drawing_colour,signal_line,
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,CoordModeOrigin);
+					(page_window->graphics_context).foreground_drawing_colour,
+					signal_line+1,break_index,CoordModeOrigin);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-				Polyline(device_context,signal_line,
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+				Polyline(device_context,signal_line+1,break_index);
+#endif /* defined (WIN32_USER_INTERFACE) */
+			}
+			if (break_index+1<number_of_values_per_channel)
+			{
+#if defined (MOTIF)
+				XDrawLines(display,drawable,
+					(page_window->graphics_context).foreground_drawing_colour,
+					signal_line+break_index+1,number_of_values_per_channel-break_index,
+					CoordModeOrigin);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+				Polyline(device_context,signal_line+break_index+1,
+					number_of_values_per_channel-break_index);
 #endif /* defined (WIN32_USER_INTERFACE) */
 			}
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 			scrolling_device++;
 		}
 #endif /* !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE) */
-		x_axis[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-		x_axis[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-		if (x_axis[1].x>width)
-		{
 #if defined (MOTIF)
-			fill_left=1;
+		x_axis[0].x=page_window->fill_left;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-			fill_rectangle.left=1;
-			fill_rectangle.right=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
+		x_axis[0].x=(page_window->fill_rectangle).left;
 #endif /* defined (WIN32_USER_INTERFACE) */
-			x_axis[0].x=0;
-			x_axis[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-			scroll_line[0].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
-			scroll_line[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
-		}
-		else
-		{
+		scroll_line[0].x=x_axis[0].x;
+		scroll_line[1].x=x_axis[0].x;
+		(x_axis[0].x)--;
+		x_axis[1].x=x_axis[0].x+number_of_values_per_channel;
 #if !defined (NO_SCROLLING_WINDOW_UPDATE)
 #if defined (MOTIF)
-			XDrawLines(display,drawable,
-				(page_window->graphics_context).foreground_drawing_colour,scroll_line,2,
-				CoordModeOrigin);
+		XDrawLines(display,drawable,
+			(page_window->graphics_context).foreground_drawing_colour,scroll_line,2,
+			CoordModeOrigin);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-			Polyline(device_context,scroll_line,2);
+		Polyline(device_context,scroll_line,2);
 #endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
-			scroll_line[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-			scroll_line[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-		}
+		DEALLOCATE(temp_float);
 	}
 #else /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
 	USE_PARAMETER(number_of_channels);
@@ -1931,7 +1978,8 @@ DESCRIPTION :
 #if defined (DEVICE_EXPRESSIONS)
 			if (REALLOCATE(real_signal_values,page_window->real_signal_values,
 				float,((page_window->number_of_scrolling_channels)+
-				number_of_scrolling_channels)*NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL))
+				number_of_scrolling_channels)*
+				(page_window->number_of_scrolling_values_per_channel)))
 			{
 				page_window->real_signal_values=real_signal_values;
 			}
@@ -3001,7 +3049,8 @@ DESCRIPTION :
 			RECT drawing_rectangle;
 			short signal_value;
 			short *hardware_buffer;
-			unsigned long offset,number_of_channels,number_of_samples,sample_number;
+			unsigned long offset,number_of_channels,number_of_samples,
+				number_of_values_per_channel,sample_number;
 
 			if ((page_window=(struct Page_window *)GetWindowLong(window,0))&&
 				(page_window->display_device)&&
@@ -3013,19 +3062,21 @@ DESCRIPTION :
 				sample_number=(unsigned long)second_message;
 				number_of_samples=page_window->number_of_samples;
 				number_of_channels=page_window->number_of_channels;
+				number_of_values_per_channel=
+					page_window->number_of_scrolling_values_per_channel;
 				offset=number_of_channels*sample_number+
 					(page_window->display_device->signal->index);
 				{
 					averaging_length=10;
 					drawing_rectangle.bottom -= 5;
-					for (i=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i>=0;i--)
+					for (i=number_of_values_per_channel;i>=0;i--)
 					{
 						signal_line[i]=x_axis[0].x+
-							(NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-i);
+							(number_of_values_per_channel-i);
 					}
-					signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL].y=
+					signal_line[number_of_values_per_channel].y=
 						signal_line[0].y;
-					for (j=0;j<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;j++)
+					for (j=0;j<number_of_values_per_channel;j++)
 					{
 						sum=0;
 						for (i=averaging_length;i>0;i--)
@@ -3049,30 +3100,28 @@ DESCRIPTION :
 					FillRect(device_context,&fill_rectangle,fill_brush);
 					Polyline(device_context,x_axis,2);
 					Polyline(device_context,scroll_line,2);
-					fill_rectangle.left += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-					fill_rectangle.right += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-					scroll_line[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-					scroll_line[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					fill_rectangle.left += number_of_values_per_channel;
+					fill_rectangle.right += number_of_values_per_channel;
+					scroll_line[0].x += number_of_values_per_channel;
+					scroll_line[1].x += number_of_values_per_channel;
 					if (x_axis[0].x>0)
 					{
-						Polyline(device_context,signal_line,
-							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1);
+						Polyline(device_context,signal_line,number_of_values_per_channel+1);
 					}
 					else
 					{
-						Polyline(device_context,signal_line,
-							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+						Polyline(device_context,signal_line,number_of_values_per_channel);
 					}
-					x_axis[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-					x_axis[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					x_axis[0].x += number_of_values_per_channel;
+					x_axis[1].x += number_of_values_per_channel;
 					if (x_axis[1].x>drawing_rectangle.right)
 					{
 						x_axis[0].x=0;
-						x_axis[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-						scroll_line[0].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
-						scroll_line[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
+						x_axis[1].x=number_of_values_per_channel;
+						scroll_line[0].x=number_of_values_per_channel+1;
+						scroll_line[1].x=number_of_values_per_channel+1;
 						fill_rectangle.left=1;
-						fill_rectangle.right=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
+						fill_rectangle.right=number_of_values_per_channel+1;
 					}
 				}
 			}
@@ -5834,7 +5883,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2003
+LAST MODIFIED : 4 June 2003
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5864,6 +5913,12 @@ Called to start experiment on the <page_window>.
 	struct Auxiliary_properties *auxiliary_properties;
 	struct Device **electrodes;
 #endif /* !defined (DEVICE_EXPRESSIONS) */
+#if defined (MOTIF)
+	XPoint *signal_line;
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+	POINT *signal_line;
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(start_experiment);
 #if defined (DEBUG)
@@ -5912,7 +5967,9 @@ Called to start experiment on the <page_window>.
 #if defined (WIN32_USER_INTERFACE)
 					(HWND)NULL,(UINT)0,
 #endif /* defined (WIN32_USER_INTERFACE) */
-					scrolling_hardware_callback,(void *)page_window,(float)25,
+					scrolling_hardware_callback,(void *)page_window,
+					page_window->scrolling_frequency,
+					page_window->scrolling_callback_frequency,
 					page_window->synchronization_card))
 				{
 #if defined (DEBUG)
@@ -5922,6 +5979,10 @@ Called to start experiment on the <page_window>.
 					return_code=1;
 					unemap_get_sampling_frequency(
 						&(page_window->sampling_frequency));
+					unemap_get_scrolling_frequency(
+						&(page_window->scrolling_frequency));
+					unemap_get_scrolling_callback_frequency(
+						&(page_window->scrolling_callback_frequency));
 					unemap_get_maximum_number_of_samples(
 						&(page_window->number_of_samples));
 					if ((page_window->number_of_samples_to_save<=0)||
@@ -5930,6 +5991,29 @@ Called to start experiment on the <page_window>.
 					{
 						page_window->number_of_samples_to_save=
 							page_window->number_of_samples;
+					}
+					page_window->number_of_scrolling_values_per_channel=
+						(int)((page_window->scrolling_frequency)/
+						(page_window->scrolling_callback_frequency)+0.5);
+					if ((0<page_window->number_of_scrolling_values_per_channel)&&
+#if defined (MOTIF)
+						REALLOCATE(signal_line,page_window->signal_line,XPoint,
+						(page_window->number_of_scrolling_values_per_channel)+1)
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+						REALLOCATE(signal_line,page_window->signal_line,POINT,
+						(page_window->number_of_scrolling_values_per_channel)+1)
+#endif /* defined (WIN32_USER_INTERFACE) */
+						)
+					{
+						page_window->signal_line=signal_line;
+					}
+					else
+					{
+						if (page_window->signal_line)
+						{
+							DEALLOCATE(page_window->signal_line);
+						}
 					}
 					unemap_start_scrolling();
 					unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
@@ -6069,9 +6153,11 @@ Called to start experiment on the <page_window>.
 								device_address++;
 							}
 						}
+#if defined (MOTIF)
 						XtVaSetValues((page_window->electrode).value,
 							XmNcolumns,maximum_device_name_length,
 							NULL);
+#endif /* defined (MOTIF) */
 						if (page_window->display_device=display_device)
 						{
 							page_window->display_device_number=device_number;
@@ -10176,7 +10262,7 @@ Global functions
 */
 int destroy_Page_window(struct Page_window **page_window_address)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2002
+LAST MODIFIED : 4 June 2003
 
 DESCRIPTION :
 If the <address> field of the page window is not NULL, <*address> is set to
@@ -10244,6 +10330,7 @@ if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 		DEALLOCATE(page_window->scrolling_devices);
 		DEALLOCATE(page_window->number_of_scrolling_channels_device);
 		DEALLOCATE(page_window->last_scrolling_value_device);
+		DEALLOCATE(page_window->signal_line);
 #if defined (DEVICE_EXPRESSIONS)
 		DEALLOCATE(page_window->real_signal_values);
 #else /* defined (DEVICE_EXPRESSIONS) */
@@ -10355,7 +10442,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2002
+LAST MODIFIED : 5 June 2003
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -10484,6 +10571,10 @@ as a standalone application.
 #define XmCRestitutionTimePacing "RestitutionTimePacing"
 #define XmNsamplingFrequencyHz "samplingFrequencyHz"
 #define XmCSamplingFrequencyHz "SamplingFrequencyHz"
+#define XmNscrollingFrequencyHz "scrollingFrequencyHz"
+#define XmCScrollingFrequencyHz "ScrollingFrequencyHz"
+#define XmNscrollingCallbackFrequencyHz "scrollingCallbackFrequencyHz"
+#define XmCScrollingCallbackFrequencyHz "ScrollingCallbackFrequencyHz"
 #define XmNsynchronizationCard "synchronizationCard"
 #define XmCSynchronizationCard "SynchronizationCard"
 
@@ -10553,6 +10644,24 @@ as a standalone application.
 			"5000"
 		},
 		{
+			XmNscrollingFrequencyHz,
+			XmCScrollingFrequencyHz,
+			XmRFloat,
+			sizeof(float),
+			XtOffsetOf(Page_window_settings,scrolling_frequency),
+			XmRString,
+			"100"
+		},
+		{
+			XmNscrollingCallbackFrequencyHz,
+			XmCScrollingCallbackFrequencyHz,
+			XmRFloat,
+			sizeof(float),
+			XtOffsetOf(Page_window_settings,scrolling_callback_frequency),
+			XmRString,
+			"25"
+		},
+		{
 			XmNsynchronizationCard,
 			XmCSynchronizationCard,
 			XmRInt,
@@ -10605,6 +10714,7 @@ as a standalone application.
 				page_window->number_of_samples_to_save=0;
 				page_window->number_of_scrolling_devices=0;
 				page_window->number_of_scrolling_channels=0;
+				page_window->number_of_scrolling_values_per_channel=1;
 				page_window->pacing_window=(struct Pacing_window *)NULL;
 				page_window->scrolling_channels=(struct Channel **)NULL;
 				page_window->scrolling_devices=(struct Device **)NULL;
@@ -10759,6 +10869,7 @@ as a standalone application.
 				page_window->stimulator_checkbox=(Widget)NULL;
 				page_window->stop_all_stimulators_button=(Widget)NULL;
 				page_window->test_checkbox=(Widget)NULL;
+				page_window->signal_line=(XPoint *)NULL;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 				page_window->instance=User_interface_get_instance(user_interface);
@@ -10791,6 +10902,7 @@ as a standalone application.
 				page_window->stimulator_checkbox=(HWND)NULL;
 				page_window->stop_all_stimulators_button=(HWND)NULL;
 				page_window->test_checkbox=(HWND)NULL;
+				page_window->signal_line=(POINT *)NULL;
 #endif /* defined (WIN32_USER_INTERFACE) */
 				/* retrieve the settings */
 #if defined (MIRADA)
@@ -10799,6 +10911,8 @@ as a standalone application.
 					FILE_FLAG_DELETE_ON_CLOSE,0);
 				page_window->device_driver=device_driver;
 				settings.sampling_frequency=(float)1000.;
+				settings.scrolling_frequency=(float)100.;
+				settings.scrolling_callback_frequency=(float)25.;
 				settings.initial_gain=(float)1.;
 				settings.synchronization_card=1;
 				if (INVALID_HANDLE_VALUE!=device_driver)
@@ -10837,6 +10951,8 @@ as a standalone application.
 #if defined (WIN32_USER_INTERFACE)
 				settings.number_of_samples=5000;
 				settings.sampling_frequency=(float)5000.;
+				settings.scrolling_frequency=(float)100.;
+				settings.scrolling_callback_frequency=(float)25.;
 				settings.initial_gain=(float)1.;
 				settings.synchronization_card=1;
 				if (hardware_directory=getenv("UNEMAP_HARDWARE"))
@@ -10878,6 +10994,15 @@ as a standalone application.
 								if (1==fscanf(settings_file," initial_gain = %f ",
 									&(settings.initial_gain)))
 								{
+									if (1==fscanf(settings_file," scrolling_frequency = %f ",
+										&(settings.scrolling_frequency)))
+									{
+										if (1==fscanf(settings_file,
+											" scrolling_callback_frequency = %f ",
+											&(settings.scrolling_callback_frequency)))
+										{
+										}
+									}
 								}
 							}
 						}
@@ -10893,6 +11018,9 @@ as a standalone application.
 #endif /* defined (MIRADA) */
 				page_window->number_of_samples=settings.number_of_samples;
 				page_window->sampling_frequency=settings.sampling_frequency;
+				page_window->scrolling_frequency=settings.scrolling_frequency;
+				page_window->scrolling_callback_frequency=
+					settings.scrolling_callback_frequency;
 				page_window->synchronization_card=settings.synchronization_card;
 				page_window->initial_gain=settings.initial_gain;
 #if defined (OLD_CODE)
