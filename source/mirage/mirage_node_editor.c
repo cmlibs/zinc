@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mirage_node_editor.c
 
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Special graphical node editor for mirage digitiser windows.
@@ -48,7 +48,7 @@ Module functions
 int Texture_get_centre_of_mass(struct Texture *texture,int mx,int my,int radius,
 	int colour_index,double threshold,double *cmx,double *cmy)
 /*******************************************************************************
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Returns the byte values in the texture at x,y.
@@ -65,23 +65,26 @@ aspect_y = texture_height / height_texels
 The given <radius> is assumed to work in the direction with the highest aspect,
 and a separate radius is calculated in the other direction to make it the same
 size in physical space.
+???RC Only works for 2-D textures.
 ==============================================================================*/
 {
-	float aspect_x,aspect_y,texture_height,texture_width;
-	int return_code,*buffer,width_texels,height_texels,x,y,i,k,swap,
-		number_of_components,v,w,median_intensity,cutoff_intensity,radius_x,
+	float aspect_x, aspect_y, texture_depth, texture_height, texture_width;
+	int return_code, *buffer, width_texels, height_texels, depth_texels, x, y, i,
+		k,swap, number_of_components,v,w,median_intensity,cutoff_intensity,radius_x,
 		radius_y;
 	unsigned char values[4];
 
 	ENTER(Texture_get_centre_of_mass);
 	if (texture&&cmx&&cmy)
 	{
-		if (return_code=(
-			Texture_get_original_size(texture,&width_texels,&height_texels)&&
-			(0<width_texels)&&(0<height_texels)&&
-			Texture_get_physical_size(texture,&texture_width,&texture_height)&&
-			(0.0<texture_width)&&(0.0<texture_height)&&
-			(number_of_components=Texture_get_number_of_components(texture))))
+		if (return_code = (
+			Texture_get_original_size(texture,
+				&width_texels, &height_texels, &depth_texels) &&
+			(0 < width_texels) && (0 < height_texels) && (1 == depth_texels) &&
+			Texture_get_physical_size(texture,
+				&texture_width, &texture_height, &texture_depth) &&
+			(0.0 < texture_width) && (0.0 < texture_height) && (0.0 < texture_depth)&&
+			(number_of_components = Texture_get_number_of_components(texture))))
 		{
 			radius_x=radius_y=radius;
 			aspect_x = texture_width / (float)width_texels;
@@ -257,53 +260,67 @@ size in physical space.
 static int Mirage_movie_3d_to_texture_coordinates(struct Mirage_movie *movie,
 	int view_no,double position[3],double *texel_x,double *texel_y)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Converts 3-D <position> to texture [radially distorted] coordinates.
 ==============================================================================*/
 {
 	double corr_x,corr_y,pos2[2],dist_x,dist_y,image_left,image_bottom,
-		image_width,image_height;
-	int return_code,width_texels,height_texels;
+		image_width, image_height;
+	int return_code, width_texels, height_texels, depth_texels;
 	struct Mirage_view *view;
 
 	ENTER(Mirage_movie_3d_to_texture_coordinates);
+	return_code = 0;
 	if (movie&&movie->views&&(view=movie->views[view_no])&&texel_x&&texel_y)
 	{
-		if (return_code=(point_3d_to_2d_view(view->transformation43,position,pos2)&&
-			Texture_get_original_size(view->texture,&width_texels,&height_texels)))
+		if (point_3d_to_2d_view(view->transformation43, position, pos2))
 		{
-			corr_x=pos2[0];
-			corr_y=pos2[1];
-			return_code=get_radial_distortion_distorted_coordinates(corr_x,corr_y,
-				view->dist_centre_x,view->dist_centre_y,view->dist_factor_k1,
-				0.001/*tolerance*/,&dist_x,&dist_y);
-			if (0==(movie->image_frame_no % 2))
+			if (Texture_get_original_size(view->texture, &width_texels,
+				&height_texels, &depth_texels) && (1 == depth_texels))
 			{
-				/* even frame numbers */
-				image_left  =view->image0_left;
-				image_bottom=view->image0_bottom;
-				image_width =view->image0_width;
-				image_height=view->image0_height;
+				corr_x=pos2[0];
+				corr_y=pos2[1];
+				return_code=get_radial_distortion_distorted_coordinates(corr_x,corr_y,
+					view->dist_centre_x,view->dist_centre_y,view->dist_factor_k1,
+					0.001/*tolerance*/,&dist_x,&dist_y);
+				if (0==(movie->image_frame_no % 2))
+				{
+					/* even frame numbers */
+					image_left  =view->image0_left;
+					image_bottom=view->image0_bottom;
+					image_width =view->image0_width;
+					image_height=view->image0_height;
+				}
+				else
+				{
+					/* odd frame numbers */
+					image_left  =view->image1_left;
+					image_bottom=view->image1_bottom;
+					image_width =view->image1_width;
+					image_height=view->image1_height;
+				}
+				*texel_x=(dist_x-image_left)*width_texels/image_width;
+				*texel_y=(dist_y-image_bottom)*height_texels/image_height;
 			}
 			else
 			{
-				/* odd frame numbers */
-				image_left  =view->image1_left;
-				image_bottom=view->image1_bottom;
-				image_width =view->image1_width;
-				image_height=view->image1_height;
+				display_message(ERROR_MESSAGE,
+					"Mirage_movie_3d_to_texture_coordinates.  Invalid texture");
 			}
-			*texel_x=(dist_x-image_left)*width_texels/image_width;
-			*texel_y=(dist_y-image_bottom)*height_texels/image_height;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Mirage_movie_3d_to_texture_coordinates.  "
+				"Could not transform 3-D coordinates");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Mirage_movie_3d_to_texture_coordinates.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -313,7 +330,7 @@ Converts 3-D <position> to texture [radially distorted] coordinates.
 static int Mirage_movie_texture_to_3d_coordinates(struct Mirage_movie *movie,
 	int view_no,double texel_x,double texel_y,double fact,double position[3])
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Converts texture [radially distorted] coordinates to 3-D positions on the
@@ -322,13 +339,15 @@ near plane.
 {
 	double corr_x,corr_y,pos2[2],dist_x,dist_y,image_left,image_bottom,
 		image_width,image_height,near_pos[3],far_pos[3];
-	int return_code,width_texels,height_texels;
+	int return_code, width_texels, height_texels, depth_texels;
 	struct Mirage_view *view;
 
 	ENTER(Mirage_movie_texture_to_3d_coordinates);
+	return_code = 0;
 	if (movie&&movie->views&&(view=movie->views[view_no]))
 	{
-		if (Texture_get_original_size(view->texture,&width_texels,&height_texels))
+		if (Texture_get_original_size(view->texture, &width_texels, &height_texels,
+			&depth_texels) && (1 == depth_texels))
 		{
 			if (0==(movie->image_frame_no % 2))
 			{
@@ -365,12 +384,16 @@ near plane.
 				}
 			}
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Mirage_movie_texture_to_3d_coordinates.  Invalid texture");
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Mirage_movie_texture_to_3d_coordinates.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
