@@ -393,8 +393,10 @@ Perform a automatic thresholding operation on the image cache.
                              gray_img[i] = 0.0;
 			     for (k = 0; k < image->depth; k++)
 			     {
-			             gray_img[i] +=  *(data_index + k) / image->depth;
+			             gray_img[i] += *(data_index + k);
 			     }
+			     gray_img[i] /= (FE_value)image->depth;
+
 			     data_index += image->depth;
 			     result_index += image->depth;
 			}
