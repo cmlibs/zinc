@@ -382,6 +382,7 @@ GL_EXT_texture_object extension.
 } /* direct_render_Texture_environment */
 #endif /* defined (OPENGL_API) */
 
+#if defined (OPENGL_API)
 static int Texture_get_hardware_reduction(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 21 February 2002
@@ -492,7 +493,9 @@ The reduction factor applies equally in all texture dimensions.
 
 	return (reduction);
 } /* Texture_get_hardware_reduction */
+#endif /* defined (OPENGL_API)*/
 
+#if defined (OPENGL_API)
 static unsigned char *Texture_get_resized_image(struct Texture *texture,
 	int width_texels, int height_texels, int depth_texels,
 	enum Texture_resize_filter_mode resize_filter)
@@ -719,7 +722,9 @@ currently implemented for the expensive linear filter.
 
 	return (image);
 } /* Texture_get_resized_image */
+#endif /* defined (OPENGL_API) */
 
+#if defined (OPENGL_API)
 static int direct_render_Texture(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 14 March 2002
@@ -728,12 +733,13 @@ DESCRIPTION :
 Directly outputs the commands setting up the <texture>.
 ==============================================================================*/
 {
-	int number_of_components, reduced_depth_texels, reduced_height_texels,
-		reduced_width_texels, reduction, return_code;
-	unsigned char *reduced_image;
+	int  return_code;
 #if defined (OPENGL_API)
+	int number_of_components,reduced_depth_texels, reduced_height_texels,
+		reduced_width_texels,reduction;
 	GLenum format, texture_target, type;
 	GLfloat values[4];
+	unsigned char *reduced_image;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(direct_render_Texture);
@@ -1023,6 +1029,7 @@ Directly outputs the commands setting up the <texture>.
 
 	return (return_code);
 } /* direct_render_Texture */
+#endif /* defined (OPENGL_API) */
 
 int set_Texture_storage(struct Parse_state *state,void *enum_storage_void_ptr,
 	void *dummy_user_data)
@@ -3853,8 +3860,12 @@ execute_Texture should just call direct_render_Texture.
 	ENTER(compile_Texture);
 	if (texture && (!dummy_void))
 	{
-		if ((texture->display_list_current == 1) && texture->texture_id &&
-			glAreTexturesResident(1, &texture->texture_id, &resident))
+		if ((texture->display_list_current == 1) 
+#if defined (OPENGL_API)
+			&& texture->texture_id 
+			&&glAreTexturesResident(1, &texture->texture_id, &resident)
+#endif /* defined (OPENGL_API) */
+				)
 		{
 			return_code = 1;
 		}
