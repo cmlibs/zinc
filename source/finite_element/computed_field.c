@@ -16408,7 +16408,7 @@ FE_fields.
 	return (computed_field_package);
 } /* CREATE(Computed_field_package) */
 
-int DESTROY(computed_field_package)(
+int DESTROY(Computed_field_package)(
 	struct Computed_field_package **package_address)
 /*******************************************************************************
 LAST MODIFIED : 5 November 1999
@@ -16424,6 +16424,7 @@ Cancels any further messages from managers.
 	ENTER(DESTROY(Computed_field_package));
 	if (package_address&&(computed_field_package= *package_address))
 	{
+		DESTROY(MANAGER(Computed_field))(&computed_field_package->computed_field_manager);
 		MANAGER_DEREGISTER(FE_field)(
 			computed_field_package->fe_field_manager_callback_id,
 			computed_field_package->fe_field_manager);
