@@ -23,18 +23,19 @@ HISTORY :
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "graphics/scene_viewer.h"
+#include "user_interface/message.h"
 
 #include "graphics/order_independent_transparency.h"
 
-#if defined GL_NV_register_combiners && defined GL_NV_register_combiners2 \
-   && defined GL_NV_texture_rectangle && defined GL_NV_texture_shader \
-   && defined GL_SGIX_depth_texture && defined GL_SGIX_shadow
 static char *required_extensions[] = {"GL_NV_register_combiners",
 												  "GL_NV_register_combiners2",
 												  "GL_NV_texture_rectangle",
 												  "GL_NV_texture_shader",
 												  "GL_SGIX_depth_texture",
 												  "GL_SGIX_shadow"};
+#if defined GL_NV_register_combiners && defined GL_NV_register_combiners2 \
+   && defined GL_NV_texture_rectangle && defined GL_NV_texture_shader \
+   && defined GL_SGIX_depth_texture && defined GL_SGIX_shadow
 #define ORDER_INDEPENDENT_CAPABLE
 #endif
 
@@ -173,22 +174,34 @@ Initialises the order independent transparency extension.
 	glActiveTexture( GL_TEXTURE0 );
 	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
 	if(consistent == GL_FALSE)
-		printf("Shader stage 0 is inconsistent!\n");
+	{
+		display_message(WARNING_MESSAGE,
+			"verify_shader_config.  Shader stage 0 is inconsistent!\n");
+	}
 
 	glActiveTexture( GL_TEXTURE1 );
 	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
 	if(consistent == GL_FALSE)
-		printf("Shader stage 1 is inconsistent!\n");
+	{
+		display_message(WARNING_MESSAGE,
+			"verify_shader_config.  Shader stage 1 is inconsistent!\n");
+	}
 
 	glActiveTexture( GL_TEXTURE2 );
 	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
 	if(consistent == GL_FALSE)
-		printf("Shader stage 2 is inconsistent!\n");
+	{
+		display_message(WARNING_MESSAGE,
+			"verify_shader_config.  Shader stage 2 is inconsistent!\n");
+	}
 
 	glActiveTexture( GL_TEXTURE3 );
 	glGetTexEnviv(GL_TEXTURE_SHADER_NV, GL_SHADER_CONSISTENT_NV, &consistent);
 	if(consistent == GL_FALSE)
-		printf("Shader stage 3 is inconsistent!\n");
+	{
+		display_message(WARNING_MESSAGE,
+			"verify_shader_config.  Shader stage 3 is inconsistent!\n");
+	}
 
 	glActiveTexture( GL_TEXTURE0 );
 
@@ -751,9 +764,9 @@ Returns true if the current display is capable of order independent transparency
 {
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	int alpha_bits, depth_bits;
-	unsigned int i;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	int return_code;
+	unsigned int i;
 	ENTER(order_independent_capable);
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
@@ -778,19 +791,24 @@ Returns true if the current display is capable of order independent transparency
 	}
 	if (!return_code)
 	{
-		printf ("Order independent transparency not supported on this display\n"
+		display_message(ERROR_MESSAGE,
+			"Order independent transparency not supported on this display\n"
 			"It requries at least 8 alpha bits, 16 or 24 bit depth buffer and "
 			"these OpenGL extensions: ");
 		for (i = 0 ; (i < (sizeof(required_extensions) / sizeof (char *))) ; i++)
 		{
-			printf("%s ", required_extensions[i]);
+			display_message(ERROR_MESSAGE,"%s ", required_extensions[i]);
 		}
-		printf("\n");
 	}
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
-	printf ("Order independent transparency not compiled into this executable.\n"
+ 	display_message(ERROR_MESSAGE,
+		"Order independent transparency not compiled into this executable.  \n"
 		"It requries at least 8 alpha bits, 16 or 24 bit depth buffer and "
 		"these OpenGL extensions: ");
+	for (i = 0 ; (i < (sizeof(required_extensions) / sizeof (char *))) ; i++)
+	{
+		display_message(ERROR_MESSAGE,"%s ", required_extensions[i]);
+	}
 	return_code = 0;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 
@@ -857,14 +875,16 @@ Initialises the order independent transparency extension.
 			} break;
 			default:
 			{
-				printf("Unsupported depth format for order independent transparency\n");
+				display_message(ERROR_MESSAGE, "order_independent_initialise.  "
+					"Unsupported depth format for order independent transparency");
 				return_code = 0;
 			} break;
 		}
 
 		if (alpha_bits < 8)
 		{
-			printf("This extension requires alpha planes to work, alpha_bits = %d\n",
+			display_message(ERROR_MESSAGE, "order_independent_initialise.  "
+				"This extension requires alpha planes to work, alpha_bits = %d",
 				alpha_bits);
 			return_code = 0;
 		}
@@ -879,7 +899,8 @@ Initialises the order independent transparency extension.
 	}
 	else
 	{
-		printf("Unable to allocate data structure\n");
+		display_message(ERROR_MESSAGE, "order_independent_initialise.  "
+				"Unable to allocate data structure\n");
 		data = (struct Scene_viewer_order_independent_transparency_data *)NULL;
 	}
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
@@ -937,7 +958,8 @@ Initialises per rendering parts of this extension.
 		}
 		else
 		{
-			printf("Unable to allocate ztex buffer\n");
+			display_message(ERROR_MESSAGE, "order_independent_reshape.  "
+				"Unable to allocate ztex buffer\n");
 			return_code = 0;
 		}
 
@@ -955,7 +977,8 @@ Initialises per rendering parts of this extension.
 			}
 			else
 			{
-				printf("Unable to allocate rgba layer ids\n");
+				display_message(ERROR_MESSAGE, "order_independent_reshape.  "
+					"Unable to allocate rgba layer ids\n");
 				return_code = 0;
 			}
 		}
