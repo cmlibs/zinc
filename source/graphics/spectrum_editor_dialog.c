@@ -261,7 +261,8 @@ Finds the id of the buttons on the spectrum_editor_dialog widget.
 	if ((button_num==spectrum_editor_dialog_ok_ID)||
 		(button_num==spectrum_editor_dialog_cancel_ID))
 	{
-		XtDestroyWidget(spectrum_editor_dialog->dialog);
+		DESTROY(Spectrum_editor_dialog)(
+			spectrum_editor_dialog->spectrum_editor_dialog_address);
 	}
 	LEAVE;
 } /* spectrum_editor_dialog_control_CB */
@@ -803,10 +804,13 @@ Destroy the <*spectrum_editor_dialog_address> and sets
 		(spectrum_editor_dialog= *spectrum_editor_dialog_address))
 	{
 		return_code = 1;
-		destroy_Shell_list_item_from_shell(&spectrum_editor_dialog->dialog,
-			spectrum_editor_dialog->user_interface);
 		DESTROY(Spectrum_editor)(&(spectrum_editor_dialog->spectrum_editor));
-		XtDestroyWidget(spectrum_editor_dialog->dialog);
+		if (spectrum_editor_dialog->dialog)
+		{
+			destroy_Shell_list_item_from_shell(&spectrum_editor_dialog->dialog,
+				spectrum_editor_dialog->user_interface);
+			XtDestroyWidget(spectrum_editor_dialog->dialog);
+		}
 		DEALLOCATE(*spectrum_editor_dialog_address);
 		*spectrum_editor_dialog_address = (struct Spectrum_editor_dialog *)NULL;
 	}
