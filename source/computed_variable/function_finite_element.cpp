@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 3 September 2004
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -3475,7 +3475,7 @@ bool Function_finite_element::component_value(Function_size_type number,
 Function_handle Function_finite_element::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 3 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -3516,6 +3516,7 @@ Function_handle Function_finite_element::evaluate(
 			{
 				Matrix result_matrix(1,1);
 
+				components_private[local_component_number]=(Scalar)fe_value;
 				result_matrix(0,0)=(Scalar)fe_value;
 				result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 			}

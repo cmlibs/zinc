@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.cpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 3 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -828,7 +828,7 @@ Function_size_type Function_prolate_spheroidal_to_rectangular_cartesian::
 Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 3 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -852,20 +852,23 @@ Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 		{
 			case 1:
 			{
-				result_matrix(0,0)=(Scalar)((double)focus_private*
+				x_private=(Scalar)((double)focus_private*
 					cosh((double)lambda_private)*cos((double)mu_private));
+				result_matrix(0,0)=x_private;
 			} break;
 			case 2:
 			{
-				result_matrix(0,0)=(Scalar)((double)focus_private*
+				y_private=(Scalar)((double)focus_private*
 					sinh((double)lambda_private)*sin((double)mu_private)*
 					cos((double)theta_private));
+				result_matrix(0,0)=y_private;
 			} break;
 			case 3:
 			{
-				result_matrix(0,0)=(Scalar)((double)focus_private*
+				z_private=(Scalar)((double)focus_private*
 					sinh((double)lambda_private)*sin((double)mu_private)*
 					sin((double)theta_private));
+				result_matrix(0,0)=z_private;
 			} break;
 		}
 		result=Function_handle(new Function_matrix<Scalar>(result_matrix));
