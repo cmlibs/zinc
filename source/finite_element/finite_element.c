@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 14 September 2000
+LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -14221,7 +14221,7 @@ Used in command parsing to create a list of node groups.
 
 int list_group_FE_node(struct GROUP(FE_node) *node_group,void *list_nodes)
 /*******************************************************************************
-LAST MODIFIED : 28 January 1998
+LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 Outputs the information contained by the node group.
@@ -14229,19 +14229,35 @@ Outputs the information contained by the node group.
 {
 	char *group_name;
 	int return_code;
+	struct Multi_range *node_ranges;
 
 	ENTER(list_group_FE_node);
 	if (node_group)
 	{
 		if (return_code=GET_NAME(GROUP(FE_node))(node_group,&group_name))
 		{
-			display_message(INFORMATION_MESSAGE,"  %s\n",group_name);
-			DEALLOCATE(group_name);
 			if (list_nodes)
 			{
-				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(list_FE_node,(void *)NULL,
-					node_group);
+				display_message(INFORMATION_MESSAGE,"Node group %s:\n",group_name);
+				node_ranges=CREATE(Multi_range)();
+				if (FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+					add_FE_node_number_to_Multi_range,(void *)node_ranges,node_group))
+				{
+					return_code=Multi_range_display_ranges(node_ranges);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"list_group_FE_node.  Could not get node ranges");
+					return_code=0;
+				}
+				DESTROY(Multi_range)(&node_ranges);
 			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,"  %s\n",group_name);
+			}
+			DEALLOCATE(group_name);
 		}
 	}
 	else
