@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 4 September 2001
+LAST MODIFIED : 13 September 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -637,7 +637,7 @@ Convert fortran-style strings to C-style printf strings.
 } /* reformat_fortran_string */
 
 #define NUM_NODE_FIELD_INFO_DATA 4
-#define NUM_COMPONENT_DATA 3
+#define NUM_COMPONENT_DATA 2
 static int CMISS_connection_get_data(struct CMISS_connection *connection)
 /*******************************************************************************
 LAST MODIFIED : 3 September 2001
@@ -952,11 +952,10 @@ Receives any data from the output data wormhole.
 											/* get miscellaneous information */
 											wh_output_get_int(connection->data_output,
 												NUM_COMPONENT_DATA,component_data);
-											/*???DB.  Ignore value index */
 											/* get the number of derivatives */
-											components_number_of_derivatives[i]=component_data[1];
+											components_number_of_derivatives[i]=component_data[0];
 											/* get the number of versions */
-											components_number_of_versions[i]=component_data[2];
+											components_number_of_versions[i]=component_data[1];
 											/* value types */
 												/*???DB.  To be done */
 											components_nodal_value_types[i]=
@@ -1610,7 +1609,7 @@ Contains local information for this routine.
 static int CMISS_connection_send_node_field(struct FE_node *node,
 	struct FE_field *field,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 13 September 2001
 
 DESCRIPTION :
 Send out node_field information for this node_field.
@@ -1751,14 +1750,12 @@ Send out node_field information for this node_field.
 					display_message(ERROR_MESSAGE,"CMISS_connection_send_node_field.  "
 						"Could not get field component name");
 				}
-				/*???DB.  Ignore values */
-				int_data[0]=0;
-				int_data[1]=get_FE_node_field_component_number_of_derivatives(node,
+				int_data[0]=get_FE_node_field_component_number_of_derivatives(node,
 					field,component_number);
-				int_data[2]=get_FE_node_field_component_number_of_versions(node,field,
+				int_data[1]=get_FE_node_field_component_number_of_versions(node,field,
 					component_number);
 				/*???DB.  Nodal value types ? */
-				wh_input_add_int(send_node_struct->connection->data_input,3,int_data);
+				wh_input_add_int(send_node_struct->connection->data_input,2,int_data);
 			}
 		}
 	}
