@@ -11214,17 +11214,25 @@ Executes a GFX EXPORT IGES command.
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
-				if (!file_name)
+				if (!coordinate_field)
 				{
-					file_name = confirmation_get_write_filename(".igs",
-						command_data->user_interface);
+					display_message(WARNING_MESSAGE, "Must specify a coordinate field");
+					return_code = 0;
 				}
-				if (file_name)
+				if (return_code)
 				{
-					if (return_code = check_suffix(&file_name,".igs"))
+					if (!file_name)
 					{
-						return_code = export_to_iges(file_name, fe_region, region_path,
-							coordinate_field);
+						file_name = confirmation_get_write_filename(".igs",
+							command_data->user_interface);
+					}
+					if (file_name)
+					{
+						if (return_code = check_suffix(&file_name,".igs"))
+						{
+							return_code = export_to_iges(file_name, fe_region, region_path,
+								coordinate_field);
+						}
 					}
 				}
 			}
