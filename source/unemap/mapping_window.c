@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -48,6 +48,7 @@ DESCRIPTION :
 #include "unemap/rig_node.h"
 #include "unemap/unemap_package.h"
 #endif /* defined (UNEMAP_USE_3D) */
+#include "user_interface/confirmation.h"
 #include "unemap/setup_dialog.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
@@ -3898,14 +3899,15 @@ mapping_window.
 static int write_map_animation_files(char *file_name,void *mapping_window,
 	enum Image_file_format image_file_format)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 This function writes the rgb files for drawing the animation associated with the
 mapping_window.
 ==============================================================================*/
 {
-	char *temp_char1,*temp_char2,*temp_file_name;
+	char number_str[4],question_str[80],success_str[80],*temp_char1,*temp_char2,
+		*temp_file_name,warning_str[80];
 	Colormap colour_map;
 	Display *display;
 	float contour_maximum,contour_minimum,maximum_value,minimum_value;
@@ -3967,184 +3969,197 @@ mapping_window.
 					}
 				}
 			}
-		}
+		}			
 		number_of_digits=0;
-		i=number_of_frames;
-		do
-		{
-			i /= 10;
-			number_of_digits++;
-		} while (i>0);
-		if (ALLOCATE(temp_file_name,char,strlen(file_name)+number_of_digits+1))
-		{
-			strcpy(temp_file_name,file_name);
-			if (temp_char1=strchr(temp_file_name,'.'))
+		i=number_of_frames;	
+		/* Confirm (possibly lengthy) frame writing */
+		sprintf(number_str,"%d",number_of_frames-1);
+		strcpy(warning_str,"Writing ");			
+		strcat(warning_str,number_str);
+		strcat(warning_str," map frames.");
+			strcpy(question_str,"Could take some time. Do you want to do this? (A completion message will appear.)");
+		if(confirmation_question_yes_no(warning_str,question_str,
+#if defined (MOTIF)				
+			(Widget)(NULL),
+#endif /* defined (MOTIF) */
+			drawing_information->user_interface))
+		{			
+			do
 			{
-				temp_char2=strchr(file_name,'.');
-			}
-			else
+				i /= 10;
+				number_of_digits++;
+			} while (i>0);
+			if (ALLOCATE(temp_file_name,char,strlen(file_name)+number_of_digits+1))
 			{
-				temp_char1=temp_file_name+strlen(temp_file_name);
-				temp_char2=(char *)NULL;
-			}
-			for (frame_number=0;frame_number<number_of_frames-1;frame_number++)
-			{
-				if (SINGLE_ACTIVATION== *(map->type))
+				busy_cursor_on((Widget)NULL,drawing_information->user_interface);
+				strcpy(temp_file_name,file_name);
+				if (temp_char1=strchr(temp_file_name,'.'))
 				{
-					if (drawing_information->read_only_colour_map)
+					temp_char2=strchr(file_name,'.');
+				}
+				else
+				{
+					temp_char1=temp_file_name+strlen(temp_file_name);
+					temp_char2=(char *)NULL;
+				}
+				for (frame_number=0;frame_number<number_of_frames-1;frame_number++)
+				{
+					if (SINGLE_ACTIVATION== *(map->type))
 					{
-						update_mapping_drawing_area(mapping,0);
-						update_mapping_colour_or_auxili(mapping);
-					}
-					else
-					{
-						/* use background drawing colour for the whole spectrum */
-						colour.pixel=drawing_information->background_drawing_colour;
-						XQueryColor(display,colour_map,&colour);
-						for (i=0;i<number_of_spectrum_colours;i++)
+						if (drawing_information->read_only_colour_map)
 						{
+							update_mapping_drawing_area(mapping,0);
+							update_mapping_colour_or_auxili(mapping);
+						}
+						else
+						{
+							/* use background drawing colour for the whole spectrum */
+							colour.pixel=drawing_information->background_drawing_colour;
+							XQueryColor(display,colour_map,&colour);
+							for (i=0;i<number_of_spectrum_colours;i++)
+							{
+								spectrum_rgb[i].pixel=spectrum_pixels[i];
+								spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+								spectrum_rgb[i].red=colour.red;
+								spectrum_rgb[i].blue=colour.blue;
+								spectrum_rgb[i].green=colour.green;
+							}
+							if ((SHOW_CONTOURS==map->contours_option)&&
+								(VARIABLE_THICKNESS==map->contour_thickness))
+							{
+								colour.pixel=drawing_information->contour_colour;
+								XQueryColor(display,colour_map,&colour);
+								number_of_contours=map->number_of_contours;
+								maximum_value=map->maximum_value;
+								minimum_value=map->minimum_value;
+								contour_maximum=map->contour_maximum;
+								contour_minimum=map->contour_minimum;
+								number_of_contours=map->number_of_contours;
+								for (i=0;i<number_of_contours;i++)
+								{
+									cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
+										(float)(number_of_contours-1-i))/
+										(float)(number_of_contours-1)-minimum_value)/
+										(maximum_value-minimum_value)*
+										(float)(number_of_spectrum_colours-1)+0.5);
+									spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
+									spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
+									spectrum_rgb[cell_number].red=colour.red;
+									spectrum_rgb[cell_number].blue=colour.blue;
+									spectrum_rgb[cell_number].green=colour.green;
+								}
+							}
+							/* show the activation front */
+							colour.pixel=drawing_information->contour_colour;
+							XQueryColor(display,colour_map,&colour);
+							i=frame_number;
 							spectrum_rgb[i].pixel=spectrum_pixels[i];
 							spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
 							spectrum_rgb[i].red=colour.red;
 							spectrum_rgb[i].blue=colour.blue;
 							spectrum_rgb[i].green=colour.green;
+							XStoreColors(display,colour_map,spectrum_rgb,
+								number_of_spectrum_colours);
+							/* show the map boundary */
+							colour.pixel=drawing_information->boundary_colour;
+							colour.flags=DoRed|DoGreen|DoBlue;
+							XStoreColor(display,colour_map,&colour);
 						}
-						if ((SHOW_CONTOURS==map->contours_option)&&
-							(VARIABLE_THICKNESS==map->contour_thickness))
-						{
-							colour.pixel=drawing_information->contour_colour;
-							XQueryColor(display,colour_map,&colour);
-							number_of_contours=map->number_of_contours;
-							maximum_value=map->maximum_value;
-							minimum_value=map->minimum_value;
-							contour_maximum=map->contour_maximum;
-							contour_minimum=map->contour_minimum;
-							number_of_contours=map->number_of_contours;
-							for (i=0;i<number_of_contours;i++)
-							{
-								cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
-									(float)(number_of_contours-1-i))/
-									(float)(number_of_contours-1)-minimum_value)/
-									(maximum_value-minimum_value)*
-									(float)(number_of_spectrum_colours-1)+0.5);
-								spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
-								spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
-								spectrum_rgb[cell_number].red=colour.red;
-								spectrum_rgb[cell_number].blue=colour.blue;
-								spectrum_rgb[cell_number].green=colour.green;
-							}
-						}
-						/* show the activation front */
-						colour.pixel=drawing_information->contour_colour;
-						XQueryColor(display,colour_map,&colour);
-						i=frame_number;
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=colour.red;
-						spectrum_rgb[i].blue=colour.blue;
-						spectrum_rgb[i].green=colour.green;
-						XStoreColors(display,colour_map,spectrum_rgb,
-							number_of_spectrum_colours);
-						/* show the map boundary */
-						colour.pixel=drawing_information->boundary_colour;
-						colour.flags=DoRed|DoGreen|DoBlue;
-						XStoreColor(display,colour_map,&colour);
-					}
-					(map->activation_front)++;
-				}
-				else
-				{
-					if (MULTIPLE_ACTIVATION== *(map->type))
-					{
-						update_mapping_drawing_area(mapping,2);
-						update_mapping_colour_or_auxili(mapping);
-						/*???DB.  What about the trace window ? */
-						(*(map->datum))++;
+						(map->activation_front)++;
 					}
 					else
 					{
-						if (POTENTIAL== *(map->type))
+						if (MULTIPLE_ACTIVATION== *(map->type))
 						{
-							if (NO_INTERPOLATION==map->interpolation_type)
+							update_mapping_drawing_area(mapping,2);
+							update_mapping_colour_or_auxili(mapping);
+							/*???DB.  What about the trace window ? */
+							(*(map->datum))++;
+						}
+						else
+						{
+							if (POTENTIAL== *(map->type))
 							{
-								update_mapping_drawing_area(mapping,2);
-								update_mapping_colour_or_auxili(mapping);
-								/*???DB.  What about the trace window ? */
-								(*(map->potential_time))++;
-							}
-							else
-							{
-								update_mapping_drawing_area(mapping,0);
-								(map->frame_number)++;
+								if (NO_INTERPOLATION==map->interpolation_type)
+								{
+									update_mapping_drawing_area(mapping,2);
+									update_mapping_colour_or_auxili(mapping);
+									/*???DB.  What about the trace window ? */
+									(*(map->potential_time))++;
+								}
+								else
+								{
+									update_mapping_drawing_area(mapping,0);
+									(map->frame_number)++;
+								}
 							}
 						}
 					}
+					if (temp_char2)
+					{
+						sprintf(temp_char1,"%0*d%s",number_of_digits,frame_number+1,
+							temp_char2);
+					}
+					else
+					{
+						sprintf(temp_char1,"%0*d",number_of_digits,frame_number+1);
+					}
+					switch (image_file_format)
+					{
+						case POSTSCRIPT_FILE_FORMAT:
+						{
+							write_map_postscript_file(temp_file_name,mapping_window);
+						} break;
+						case RGB_FILE_FORMAT:
+						{
+							write_map_rgb_file(temp_file_name,mapping_window);
+						} break;
+						case TIFF_FILE_FORMAT:
+						{
+							write_map_tiff_file(temp_file_name,mapping_window);
+						} break;
+						case JPG_FILE_FORMAT:
+						{
+							write_map_jpg_file(temp_file_name,mapping_window);
+						} break;
+					}
 				}
-				if (temp_char2)
+				DEALLOCATE(temp_file_name);
+				busy_cursor_off((Widget)NULL,drawing_information->user_interface);
+				/* write success message */
+				strcpy(success_str," Successfully written ");			
+				strcat(success_str,number_str);
+				strcat(success_str," map frames.");	
+				confirmation_information_ok("Success!",success_str,
+#if defined (MOTIF)				
+					(Widget)(NULL),
+#endif /* defined (MOTIF) */
+					drawing_information->user_interface);	
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"write_map_animation_files.  Could not allocate file name");
+				return_code=0;
+			}
+			if (SINGLE_ACTIVATION== *(map->type))
+			{
+				map->activation_front= -1;
+				if (drawing_information->read_only_colour_map)
 				{
-					sprintf(temp_char1,"%0*d%s",number_of_digits,frame_number+1,
-						temp_char2);
+					update_mapping_drawing_area(mapping,0);
+					update_mapping_colour_or_auxili(mapping);
 				}
 				else
 				{
-					sprintf(temp_char1,"%0*d",number_of_digits,frame_number+1);
+					(void)update_colour_map_unemap(map,drawing);
 				}
-				switch (image_file_format)
-				{
-					case POSTSCRIPT_FILE_FORMAT:
-					{
-						write_map_postscript_file(temp_file_name,mapping_window);
-					} break;
-					case RGB_FILE_FORMAT:
-					{
-						write_map_rgb_file(temp_file_name,mapping_window);
-					} break;
-					case TIFF_FILE_FORMAT:
-					{
-						write_map_tiff_file(temp_file_name,mapping_window);
-					} break;
-					case JPG_FILE_FORMAT:
-					{
-						write_map_jpg_file(temp_file_name,mapping_window);
-					} break;
-				}
-			}
-			DEALLOCATE(temp_file_name);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_map_animation_files.  Could not allocate file name");
-			return_code=0;
-		}
-		if (SINGLE_ACTIVATION== *(map->type))
-		{
-			map->activation_front= -1;
-			if (drawing_information->read_only_colour_map)
-			{
-				update_mapping_drawing_area(mapping,0);
-				update_mapping_colour_or_auxili(mapping);
 			}
 			else
 			{
-				(void)update_colour_map_unemap(map,drawing);
-			}
-		}
-		else
-		{
-			if (MULTIPLE_ACTIVATION== *(map->type))
-			{
-				*(map->datum)=map->activation_front;
-				map->activation_front= -1;
-				update_mapping_drawing_area(mapping,2);
-				update_mapping_colour_or_auxili(mapping);
-				/*???DB.  What about the trace window ? */
-			}
-			else
-			{
-				if (POTENTIAL== *(map->type))
+				if (MULTIPLE_ACTIVATION== *(map->type))
 				{
-					*(map->potential_time)=map->activation_front;
+					*(map->datum)=map->activation_front;
 					map->activation_front= -1;
 					update_mapping_drawing_area(mapping,2);
 					update_mapping_colour_or_auxili(mapping);
@@ -4152,12 +4167,23 @@ mapping_window.
 				}
 				else
 				{
-					map->frame_number=map->activation_front;
-					map->activation_front= -1;
-					update_mapping_drawing_area(mapping,0);
+					if (POTENTIAL== *(map->type))
+					{
+						*(map->potential_time)=map->activation_front;
+						map->activation_front= -1;
+						update_mapping_drawing_area(mapping,2);
+						update_mapping_colour_or_auxili(mapping);
+						/*???DB.  What about the trace window ? */
+					}
+					else
+					{
+						map->frame_number=map->activation_front;
+						map->activation_front= -1;
+						update_mapping_drawing_area(mapping,0);
+					}
 				}
 			}
-		}
+		}/* if(confirmation_question_yes_no */
 	}
 	else
 	{
