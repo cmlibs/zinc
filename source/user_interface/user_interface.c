@@ -199,6 +199,7 @@ Module functions
 ----------------
 */
 
+#if defined (MOTIF)
 #if defined (BYTE_ORDER)
 #if (1234==BYTE_ORDER)
 static int glibc_version_greater_than_2_2_4(void)
@@ -250,8 +251,9 @@ swap the endianness of values going into a64l
 	
 	return (return_code);
 } /* get_glibc_version */
-#endif /* defined (BYTE_ORDER) */
 #endif /* (1234==BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
+#endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
