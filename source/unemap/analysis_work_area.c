@@ -14789,7 +14789,9 @@ Responds to update callbacks from the time object.
 													/* 3d map */
 													/* recalculate not used for 3d maps */
 													update_mapping_drawing_area(mapping,1/*recalculate*/);
-													update_mapping_colour_or_auxili(mapping);
+													update_mapping_colour_or_auxili(mapping);													
+													map->start_time=map_potential_time;
+													map->end_time=map->start_time;
 												}
 												else											
 												{													
