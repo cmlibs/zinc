@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 4 May 2001
+XCOMM LAST MODIFIED : 30 May 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -762,6 +762,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_component_operations.c \
 	computed_field/computed_field_composite.c \
 	computed_field/computed_field_coordinate.c \
+	computed_field/computed_field_control_curve.c \
 	computed_field/computed_field_deformation.c \
 	computed_field/computed_field_derivatives.c \
 	computed_field/computed_field_fibres.c \
@@ -804,7 +805,8 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
 	finite_element/grid_field_calculator.c \
-	finite_element/import_finite_element.c
+	finite_element/import_finite_element.c \
+	finite_element/snake.c
 GENERAL_SRCS = \
 	general/any_object.c \
 	general/callback.c \
@@ -842,7 +844,6 @@ GRAPHICS_SRCS = \
 	graphics/graphics_object.c \
 	graphics/graphics_window.c \
 	graphics/import_graphics_object.c \
-	graphics/interactive_streamlines_dialog.c \
 	graphics/iso_field_calculation.c \
 	graphics/laguer.c \
 	graphics/light.c \
@@ -916,7 +917,6 @@ SELECT_SRCS = \
 	select/select_environment_map.c \
 	select/select_finite_element.c \
 	select/select_graphical_material.c \
-	select/select_interactive_streamline.c \
 	select/select_private.c \
 	select/select_spectrum.c
 SELECTION_SRCS = \

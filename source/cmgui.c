@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 04 May 2001
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -33,6 +33,7 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_control_curve.h"
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -43,7 +44,6 @@ DESCRIPTION :
 #include "computed_field/computed_field_vector_operations.h"
 #include "computed_field/computed_field_window_projection.h"
 #include "finite_element/finite_element.h"
-#include "finite_element/finite_element_to_streamlines.h"
 #include "finite_element/grid_field_calculator.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "general/debug.h"
@@ -410,7 +410,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 21 May 2001
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -669,7 +669,6 @@ Main program for the CMISS Graphical User Interface
 	command_data.input_module_dialog=(Widget)NULL;
 	command_data.interactive_data_editor_dialog=(Widget)NULL;
 	command_data.interactive_node_editor_dialog=(Widget)NULL;
-	command_data.interactive_streamlines_dialog=(Widget)NULL;
 	command_data.material_editor_dialog=(Widget)NULL;
 	command_data.node_group_slider_dialog=(Widget)NULL;
 	command_data.data_viewer=(struct Node_viewer *)NULL;
@@ -722,7 +721,6 @@ Main program for the CMISS Graphical User Interface
 	command_data.node_group_manager=(struct MANAGER(GROUP(FE_node) *))NULL;
 	command_data.data_manager=(struct MANAGER(FE_node) *)NULL;
 	command_data.data_group_manager=(struct MANAGER(GROUP(FE_node) *))NULL;
-	command_data.interactive_streamline_manager=(struct MANAGER(Interactive_streamline) *)NULL;
 	command_data.streampoint_list=(struct Streampoint *)NULL;
 #if defined (SELECT_DESCRIPTORS)
 	command_data.device_list=(struct LIST(Io_device) *)NULL;
@@ -961,9 +959,6 @@ Main program for the CMISS Graphical User Interface
 	command_data.data_manager=CREATE(MANAGER(FE_node))();
 	command_data.data_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
 
-	command_data.interactive_streamline_manager=
-		CREATE(MANAGER(Interactive_streamline))();
-
 	/* create graphics object list */
 		/*???RC.  Eventually want graphics object manager */
 	command_data.graphics_object_list=CREATE(LIST(GT_object))();
@@ -1081,8 +1076,7 @@ Main program for the CMISS Graphical User Interface
 	/*???RC should the default computed fields be established in
 		CREATE(Computed_field_package)? */
 	command_data.computed_field_package=CREATE(Computed_field_package)(
-		command_data.fe_field_manager,command_data.element_manager,
-		command_data.control_curve_manager);
+		command_data.fe_field_manager, command_data.element_manager);
 	computed_field_manager=Computed_field_package_get_computed_field_manager(
 		command_data.computed_field_package);
 
@@ -1095,6 +1089,12 @@ Main program for the CMISS Graphical User Interface
 			command_data.computed_field_package);
 		Computed_field_register_types_composite(
 			command_data.computed_field_package);
+		if (command_data.control_curve_manager)
+		{
+			Computed_field_register_types_control_curve(
+				command_data.computed_field_package, 
+				command_data.control_curve_manager);
+		}
 		Computed_field_register_types_derivatives(
 			command_data.computed_field_package);
 		Computed_field_register_types_fibres(
@@ -1194,8 +1194,6 @@ Main program for the CMISS Graphical User Interface
 				command_data.default_graphical_material,command_data.light_manager,
 				command_data.spectrum_manager,command_data.default_spectrum,
 				command_data.texture_manager);
-			Scene_enable_interactive_streamlines(command_data.default_scene,
-				command_data.interactive_streamline_manager);
 			Scene_set_graphical_element_mode(command_data.default_scene,
 				GRAPHICAL_ELEMENT_LINES,
 				Computed_field_package_get_computed_field_manager(
@@ -2060,9 +2058,6 @@ Main program for the CMISS Graphical User Interface
 
 				DESTROY(LIST(GT_object))(&command_data.graphics_object_list);
 				DESTROY(LIST(GT_object))(&command_data.glyph_list);
-
-				DESTROY(MANAGER(Interactive_streamline))
-					(&command_data.interactive_streamline_manager);
 
 				DESTROY(MANAGER(FE_field))(&command_data.fe_field_manager);
 
