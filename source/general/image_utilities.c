@@ -3381,6 +3381,7 @@ the second the denominator.
 				printf("           1 = least to most significant\n\n");
 #endif /* defined (DEBUG) */
 				/* check file number */
+				/*???debug*/printf("__BYTE_ORDER = %d\n",__BYTE_ORDER);
 				if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 					tiff_file))
 				{
