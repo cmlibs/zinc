@@ -148,14 +148,15 @@ AR_FLAGS = -X64
 #endif /* defined (O64) */
 #elif defined(WIN32) /* switch OperatingSystem */
 UIL = uil
-CC = gcc -c -mno-cygwin -fnative-struct
+/* CC = gcc -c -mno-cygwin -fnative-struct */
+CC = gcc -c -mno-cygwin -mms-bitfields
 CPP = gcc -c
 FORTRAN = f77 -c
 CPREPROCESS = 
 #if defined (CONSOLE) || defined (GTK_USER_INTERFACE)
-LINK = gcc -mno-cygwin -fnative-struct -mconsole
+LINK = gcc -mconsole -mno-cygwin -fnative-struct -mms-bitfields
 #else /* defined (CONSOLE) || defined (GTK_USER_INTERFACE) */
-LINK = gcc -mwindows -mno-cygwin -fnative-struct
+LINK = gcc -mwindows -mno-cygwin -fnative-struct -mms-bitfields
 #endif /* defined (CONSOLE) */
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O2
