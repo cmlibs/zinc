@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -882,19 +882,22 @@ ranges and sets the view parameters so that everything can be seen.
 	LEAVE;
 } /* Graphics_window_view_all_button_CB */
 
-#if defined (IMAGEMAGICK)
 static void Graphics_window_print_button_CB(Widget caller,
-	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
+	XtPointer *graphics_window_void, XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
-Callback for when the print_button is pressed.  Finds the x, y and z
-ranges and sets the view parameters so that everything can be seen.
+Callback for when the print_button is pressed.
+Prompts the user for a file name, makes a Cmgui_image out of the pixels in the
+window and writes them to the filename. The image file format is determined
+wholly from the file name extension
 ==============================================================================*/
 {
 	char *file_name;
 	int force_onscreen, height, width;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
 	struct Graphics_window *graphics_window;
 
 	ENTER(Graphics_window_print_button_CB);
@@ -908,8 +911,17 @@ ranges and sets the view parameters so that everything can be seen.
 			force_onscreen = 0;
 			width = 0;
 			height = 0;
-			write_Graphics_window_to_file(file_name, graphics_window, force_onscreen,
-				width, height);
+			if (cmgui_image = Graphics_window_get_image(graphics_window,
+				force_onscreen, width, height))
+			{
+				cmgui_image_information = CREATE(Cmgui_image_information)();
+				Cmgui_image_information_add_file_name(cmgui_image_information,
+					file_name);
+				Cmgui_image_write(cmgui_image, cmgui_image_information);
+				DESTROY(Cmgui_image_information)(&cmgui_image_information);
+				DESTROY(Cmgui_image)(&cmgui_image);
+			}
+			DEALLOCATE(file_name);
 		}
 	}
 	else
@@ -919,53 +931,6 @@ ranges and sets the view parameters so that everything can be seen.
 	}
 	LEAVE;
 } /* Graphics_window_print_button_CB */
-#else /* defined (IMAGEMAGICK) */
-static void Graphics_window_print_button_CB(Widget caller,
-	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
-/*******************************************************************************
-LAST MODIFIED : 10 May 2001
-
-DESCRIPTION :
-Callback for when the print_button is pressed.  Finds the x, y and z
-ranges and sets the view parameters so that everything can be seen.
-==============================================================================*/
-{
-	char *file_name;
-	enum Image_file_format image_file_format;
-	int force_onscreen, height, width;
-	struct Graphics_window *graphics_window;
-
-	ENTER(Graphics_window_print_button_CB);
-	USE_PARAMETER(caller);
-	USE_PARAMETER(caller_data);
-	if (graphics_window = (struct Graphics_window *)graphics_window_void)
-	{
-		if (file_name = confirmation_get_write_filename((char *)NULL,
-			graphics_window->user_interface))
-		{
-			if (Image_file_format_from_file_name(file_name, &image_file_format))
-			{
-				force_onscreen = 0;
-				width = 0;
-				height = 0;
-				write_Graphics_window_to_file(file_name, graphics_window,
-					image_file_format, force_onscreen, width, height);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Print window:  Unknown image file format for file '%s'", file_name);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_print_button_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Graphics_window_print_button_CB */
-#endif /* defined (IMAGEMAGICK) */
 
 /*
 Manager Callback Module functions
@@ -1103,7 +1068,7 @@ orthographic axes.
 static int modify_Graphics_window_background(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Parser commands for modifying the background colours and textures of the
@@ -1113,7 +1078,8 @@ the changes are to be applied to all panes.
 {
 	char all_panes_flag,no_undistort_flag,undistort_flag;
 	double max_pixels_per_polygon,texture_placement[4];
-	int first_pane,i,last_pane,pane_no,pixelsx,pixelsy,return_code,undistort_on;
+	int first_pane, i, last_pane, pane_no, pixelsx, pixelsy, pixelsz, return_code,
+		undistort_on;
 	struct Colour background_colour;
 	struct Graphics_window *window;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
@@ -1246,7 +1212,7 @@ the changes are to be applied to all panes.
 								{
 									/* Get the default size from the texture itself */
 									Texture_get_original_size(background_texture,
-										&pixelsx, &pixelsy);
+										&pixelsx, &pixelsy, &pixelsz);
 									texture_placement[2] = pixelsx;
 									texture_placement[3] = pixelsy;
 									Scene_viewer_set_background_texture_info(scene_viewer,
@@ -4145,10 +4111,10 @@ the pixels out of the backbuffer before the frames are swapped.
 	return (return_code);
 } /* Graphics_window_update_now_without_swapbuffers */
 
-static int Graphics_window_read_pixels(char *frame_data, int width, int height,
-	enum Texture_storage_type storage)
+static int Graphics_window_read_pixels(unsigned char *frame_data,
+	int width, int height, enum Texture_storage_type storage)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1999
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Read pixels into <frame_data> of size <width> and <height> according to the 
@@ -4208,10 +4174,10 @@ storage type.
 } /* Graphics_window_read_pixels */
 
 int Graphics_window_get_frame_pixels(struct Graphics_window *window,
-	enum Texture_storage_type storage, int *width, int *height, char **frame_data,
-	int force_onscreen)
+	enum Texture_storage_type storage, int *width, int *height,
+	unsigned char **frame_data, int force_onscreen)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Returns the contents of the graphics window as pixels.  <width> and <height>
@@ -4221,7 +4187,7 @@ If <force_onscreen> is non zero then the pixels will always be grabbed from the
 graphics window on screen.
 ==============================================================================*/
 {
-	int components, return_code;
+	int number_of_components, return_code;
 	struct Dm_buffer *dmbuffer;
 
 	ENTER(Graphics_window_get_frame_pixels);
@@ -4302,8 +4268,10 @@ graphics window on screen.
 			}
 			if (return_code)
 			{
-				components=Texture_get_number_of_components_from_storage_type(storage);
-				if (ALLOCATE(*frame_data, char, components * *width * *height))
+				number_of_components =
+					Texture_storage_type_get_number_of_components(storage);
+				if (ALLOCATE(*frame_data, unsigned char,
+					number_of_components * (*width) * (*height)))
 				{
 					if (!(return_code=Graphics_window_read_pixels(*frame_data, *width,
 						*height, storage)))
@@ -4328,8 +4296,10 @@ graphics window on screen.
 			/* Always use the window size if grabbing from screen */
 			Graphics_window_get_viewing_area_size(window, width, height);
 			Graphics_window_update_now(window);
-			components = Texture_get_number_of_components_from_storage_type(storage);
-			if (ALLOCATE(*frame_data, char, components * *width * *height))
+			number_of_components =
+				Texture_storage_type_get_number_of_components(storage);
+			if (ALLOCATE(*frame_data, unsigned char,
+				number_of_components * (*width) * (*height)))
 			{
 				switch (window->layout_mode)
 				{
@@ -4387,6 +4357,66 @@ graphics window on screen.
 
 	return return_code;
 } /* Graphics_window_get_frame_pixels */
+
+struct Cmgui_image *Graphics_window_get_image(struct Graphics_window *window,
+	int force_onscreen, int preferred_width, int preferred_height)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Creates and returns a Cmgui_image from the image in <window>, usually for
+writing. The image has a single depth plane and is in RGBA format.
+Up to the calling function to DESTROY the returned Cmgui_image.
+If <force_onscreen> is set then the pixels are grabbed directly from the window
+display and the <preferred_width> and <preferred_height> are ignored.
+Currently limited to 1 byte per component -- may want to improve for HPC.
+==============================================================================*/
+{
+	unsigned char *frame_data;
+	enum Texture_storage_type storage;
+	int bytes_per_pixel, height, number_of_bytes_per_component,
+		number_of_components, width;
+	struct Cmgui_image *cmgui_image;
+
+	ENTER(Graphics_window_get_image);
+	cmgui_image = (struct Cmgui_image *)NULL;
+	if (window)
+	{
+		storage = TEXTURE_RGBA;
+		number_of_components =
+			Texture_storage_type_get_number_of_components(storage);
+		number_of_bytes_per_component = 1;
+		bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+		width = preferred_width;
+		height = preferred_height;
+		if (Graphics_window_get_frame_pixels(window, storage,
+			&width, &height, &frame_data, force_onscreen))
+		{
+			cmgui_image = Cmgui_image_constitute(width, height,
+				number_of_components, number_of_bytes_per_component,
+				width*bytes_per_pixel, frame_data);
+			if (!cmgui_image)
+			{
+				display_message(ERROR_MESSAGE,
+					"Graphics_window_get_image.  Could not constitute image");
+			}
+			DEALLOCATE(frame_data);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphics_window_get_image.  Could not get frame pixels");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_get_image.  Missing window");
+	}
+	LEAVE;
+
+	return (cmgui_image);
+} /* Graphics_window_get_image */
 
 int Graphics_window_view_all(struct Graphics_window *window)
 /*******************************************************************************
@@ -5552,150 +5582,6 @@ function, and DEACCESS any returned window.
 
 	return (return_code);
 } /* set_Graphics_window */
-
-#if defined (IMAGEMAGICK)
-int write_Graphics_window_to_file(char *file_name,
-	struct Graphics_window *window,
-	int force_onscreen, int preferred_width, int preferred_height)	  
-/*******************************************************************************
-LAST MODIFIED : 10 May 2001
-
-DESCRIPTION :
-This writes the first scene viewer of the graphics window to a file.
-When using IMAGEMAGICK the file format is determined according to the file
-extension or a filename prefix, i.e. sgi:bob.rgb writes an sgi formatted file
-with name bob.rgb.
-If <force_onscreen> is set then the pixels are grabbed directly from the window
-display and the <preferred_width> and <preferred_height> are ignored.
-==============================================================================*/
-{
-	char *frame_data;
-	int height, return_code, width;
-
-	ENTER(write_Graphics_window_to_file);
-	return_code=0;
-	/* check arguments */
-	if (file_name&&window&&(window->scene_viewer))
-	{
-		width = preferred_width;
-		height = preferred_height;
-		if (Graphics_window_get_frame_pixels(window, TEXTURE_RGBA,
-			&width, &height, &frame_data, force_onscreen))
-		{
-			return_code = write_image_file(file_name,/* number_of_components */4,
-				/* bytes_per_component */1, height, width, /*padding*/0, 
-				(unsigned long *)frame_data);
-			DEALLOCATE(frame_data);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"write_Graphics_window_to_file.  "
-				"Could not allocate array for frame_data");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_Graphics_window_to_file.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_Graphics_window_to_file */
-#else /* defined (IMAGEMAGICK) */
-int write_Graphics_window_to_file(char *file_name,
-	struct Graphics_window *window, 	enum Image_file_format image_file_format,
-	int force_onscreen, int preferred_width, int preferred_height)	  
-/*******************************************************************************
-LAST MODIFIED : 10 May 2001
-
-DESCRIPTION :
-This writes the first scene viewer of the graphics window to a file.
-When using IMAGEMAGICK the file format is determined according to the file
-extension or a filename prefix, i.e. sgi:bob.rgb writes an sgi formatted file
-with name bob.rgb.
-If <force_onscreen> is set then the pixels are grabbed directly from the window
-display and the <preferred_width> and <preferred_height> are ignored.
-==============================================================================*/
-{
-	char *frame_data;
-	enum Image_orientation image_orientation = PORTRAIT_ORIENTATION;
-	float pixel_aspect_ratio;
-	int height, return_code, width;
-	Screen *screen;
-	struct Printer printer;
-
-	ENTER(write_Graphics_window_to_file);
-	return_code=0;
-	/* check arguments */
-	if (file_name&&window&&(window->scene_viewer))
-	{
-		width = preferred_width;
-		height = preferred_height;
-		if (Graphics_window_get_frame_pixels(window, TEXTURE_RGBA,
-			&width, &height, &frame_data, force_onscreen))
-		{
-			switch (image_file_format)
-			{
-				case POSTSCRIPT_FILE_FORMAT:
-				{
-					if (return_code=open_printer(&printer,window->user_interface))
-					{
-						screen=DefaultScreenOfDisplay(window->user_interface->display);
-						pixel_aspect_ratio=
-							((float)HeightMMOfScreen(screen)/(float)HeightOfScreen(screen))/
-							((float)WidthMMOfScreen(screen)/(float)WidthOfScreen(screen));
-						return_code=write_postscript_image_file(file_name,4,
-							/* bytes_per_component */1, height,width, 0,
-							pixel_aspect_ratio,(unsigned long *)frame_data,
-							image_orientation,&printer);
-						close_printer(&printer);
-					}
-				} break;
-				case RGB_FILE_FORMAT:
-				{
-					return_code=write_rgb_image_file(file_name,4,
-						/* bytes_per_component */1, height,width, 0, 
-						(unsigned long *)frame_data);
-				} break;
-				case TIFF_FILE_FORMAT:
-				{
-					return_code=write_tiff_image_file(file_name,4,
-						/* bytes_per_component */1, height,width, 0,
-						TIFF_PACK_BITS_COMPRESSION, (unsigned long *)frame_data);
-				} break;
-				case YUV_FILE_FORMAT:
-				{
-					display_message(ERROR_MESSAGE,"Print graphics window: "
-						"Cannot write YUV file '%s'; file format not supported for writing",
-						file_name);
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,"Print graphics window: "
-						"Unknown image file format for '%s'",file_name);
-				} break;
-			}
-			DEALLOCATE(frame_data);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"write_Graphics_window_to_file.  "
-				"Could not allocate array for frame_data");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_Graphics_window_to_file.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_Graphics_window_to_file */
-#endif /* defined (IMAGEMAGICK) */
 
 char *Graphics_window_layout_mode_string(
 	enum Graphics_window_layout_mode layout_mode)

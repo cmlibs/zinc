@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.h
 
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Interface file for opening and closing and working a CMISS 3D display window.
@@ -14,6 +14,7 @@ interest and set scene_viewer values directly.
 #if !defined (GRAPHICS_WINDOW_H)
 #define GRAPHICS_WINDOW_H
 
+#include "general/image_utilities.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -77,25 +78,6 @@ Structure to pass to modify_Graphics_window.
 	struct MANAGER(Scene) *scene_manager;
 	struct MANAGER(Texture) *texture_manager;
 }; /* struct Modify_graphics_window_data */
-
-#if ! defined (IMAGEMAGICK)
-struct Write_graphics_window_data
-/*******************************************************************************
-LAST MODIFIED : 21 January 1998
-
-DESCRIPTION :
-Structure to pass to write_graphics_window_to_file.
-==============================================================================*/
-{
-	enum Image_file_format image_file_format;
-	enum Image_orientation image_orientation;
-	int force_onscreen; /* If this is non zero then the pixels are grabbed 
-								  directly off the screen */
-	int width;  /* The preferred size, if onscreen then these are ignored and */
-	int height; /* the window size used instead */
-	struct Graphics_window *window;
-}; /* struct Write_graphics_window_data */
-#endif /* ! defined (IMAGEMAGICK) */
 
 /*
 Global/Public functions
@@ -368,10 +350,10 @@ the pixels out of the backbuffer before the frames are swapped.
 ==============================================================================*/
 
 int Graphics_window_get_frame_pixels(struct Graphics_window *window,
-	enum Texture_storage_type storage, int *width, int *height, char **frame_data,
-	int force_onscreen);
+	enum Texture_storage_type storage, int *width, int *height,
+	unsigned char **frame_data, int force_onscreen);
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Returns the contents of the graphics window as pixels.  <width> and <height>
@@ -379,6 +361,20 @@ will be respected if the window is drawn offscreen and they are non zero,
 otherwise they are set in accordance with current size of the graphics window.
 If <force_onscreen> is non zero then the pixels will always be grabbed from the
 graphics window on screen.
+==============================================================================*/
+
+struct Cmgui_image *Graphics_window_get_image(struct Graphics_window *window,
+	int force_onscreen, int preferred_width, int preferred_height);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Creates and returns a Cmgui_image from the image in <window>, usually for
+writing. The image has a single depth plane and is in RGBA format.
+Up to the calling function to DESTROY the returned Cmgui_image.
+If <force_onscreen> is set then the pixels are grabbed directly from the window
+display and the <preferred_width> and <preferred_height> are ignored.
+Currently limited to 1 byte per component -- may want to improve for HPC.
 ==============================================================================*/
 
 int Graphics_window_view_all(struct Graphics_window *window);
@@ -460,27 +456,6 @@ DESCRIPTION :
 Modifier function to set the graphics window from a command.
 NOTE: Calling function must remember to ACCESS any window passed to this
 function, and DEACCESS any returned window.
-==============================================================================*/
-
-#if defined (IMAGEMAGICK)
-int write_Graphics_window_to_file(char *file_name,
-	struct Graphics_window *window,
-	int force_onscreen, int preferred_width, int preferred_height);
-#else /* defined (IMAGEMAGICK) */
-int write_Graphics_window_to_file(char *file_name,
-	struct Graphics_window *window, 	enum Image_file_format image_file_format,
-	int force_onscreen, int preferred_width, int preferred_height);
-#endif /* defined (IMAGEMAGICK) */
-/*******************************************************************************
-LAST MODIFIED : 10 May 2001
-
-DESCRIPTION :
-This writes the first scene viewer of the graphics window to a file.
-When using IMAGEMAGICK the file format is determined according to the file
-extension or a filename prefix, i.e. sgi:bob.rgb writes an sgi formatted file
-with name bob.rgb.
-If <force_onscreen> is set then the pixels are grabbed directly from the window
-display and the <preferred_width> and <preferred_height> are ignored.
 ==============================================================================*/
 
 char *Graphics_window_layout_mode_string(
