@@ -460,7 +460,6 @@ CELL_SWITCH = -DCELL -DCELL_CONTROL_CURVE
 CELL_SRCS = \
 	cell/calculate.c \
 	cell/cell_3d.c \
-	cell/cell_calculate.f \
 	cell/cell_component.c \
 	cell/cell_parameter.c \
 	cell/cell_control_curve.c \
@@ -539,7 +538,7 @@ XML_LIB = -L$(XML_PATH)/expat_lib/lib -lExpat_64
 XML_INC = -I$(XML_PATH)/expat_lib/include
 #else /* defined (O64) */
 XML_LIB = -B static -L$(XML_PATH)/expat_lib/lib -lExpat_n32 -B dynamic
-XML_INC = -I$(XML_PATH)//expat_lib/include
+XML_INC = -I$(XML_PATH)/expat_lib/include
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 XML_LIB = -static -L$(XML_PATH)/expat_lib/lib -lExpat_linux -shared
