@@ -75,7 +75,7 @@ TARGET_TYPE_DEFINES =
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 
-UIDTOUIDH = $(UTILITIES_PATH)/uid2uidh_linux
+UIDTOUIDH = uid2uidh_linux
 UIL = uil
 UIL64 = uil64  /* There is a test in the rule to see if this is available */
 CC = egcs -c
