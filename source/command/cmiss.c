@@ -15604,7 +15604,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 } /* execute_command_gfx_node_tool */
 #endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE)
 static int execute_command_gfx_print(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -19934,7 +19934,7 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "node_tool", /*data_tool*/(void *)0,
 				command_data_void, execute_command_gfx_node_tool);
 #endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE)
 			Option_table_add_entry(option_table, "print", NULL,
 				command_data_void, execute_command_gfx_print);
 #endif /* defined (MOTIF) */
