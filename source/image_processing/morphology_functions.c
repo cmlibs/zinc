@@ -463,7 +463,7 @@ int Spatial_mean_curvature(FE_value pixsize, int *h, FE_value *mean_curvature)
 	                {2,4,128},{8,1,64},{2,4,16},{8,1,32}};
 	FE_value c[13] = {0.045778, 0.045778, 0.045778, 0.036981, 0.036981, 0.036981,
 	                  0.036981, 0.036981, 0.036981, 0.035196, 0.035196, 0.035196, 0.035196};
-	FE_value delta01, delta02, delta12, s;
+	FE_value delta01, s;
 
 	int return_code;
 
@@ -473,7 +473,7 @@ int Spatial_mean_curvature(FE_value pixsize, int *h, FE_value *mean_curvature)
 	{
                 return_code = 1;
 			/* calculate mean curvature */
-		delta01 = delta02 = delta12 = sqrt(2.0 * pixsize * pixsize);
+		delta01 = sqrt(2.0 * pixsize * pixsize);
 		s = (3.0 * delta01) / 2.0;
 		a[0] = a[1] = a[2] = pixsize * pixsize;
 		a[3] = a[4] = a[5] = a[6] = a[7] = a[8] = pixsize * delta01;
@@ -1922,7 +1922,7 @@ int MIL_vector(FE_value *data_index, int number_of_dirs, FE_value dradius,
 	int i;
 	/*   Scan the image for each of the randomly selected rotations  */
 
-	int return_code;
+	int return_code = 1;
 
 	ENTER(MIL_vector);
 
