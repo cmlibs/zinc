@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : graphics_window.uil
 !
-!LAST MODIFIED : 28 June 2000
+!LAST MODIFIED : 6 July 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the 3-D graphics window
@@ -87,7 +87,7 @@ object
 			XmForm gwin_time_edit_form;
 			XmToggleButtonGadget gwin_perspective_btn;
 			XmSeparatorGadget {};
-			XmForm gwin_layout_mode_form;
+			XmForm gwin_layout_mode_entry;
 			XmRowColumn gwin_orthographic_form;
 			XmSeparatorGadget {};
 			XmForm gwin_interactive_tool_form;
@@ -273,8 +273,22 @@ object
 			};
 		};
 !*******************************************************************************
+	gwin_layout_mode_entry: XmForm
+		{
+		controls
+			{
+			XmForm gwin_layout_mode_form;
+			};
+		};
 	gwin_layout_mode_form: XmForm
 		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure gwin_id_layout_mode_form(gwin_structure);
