@@ -17,11 +17,12 @@ else # CMISS_ROOT
    CMISS_ROOT = $(CMGUI_DEV_ROOT)
 endif # CMISS_ROOT
 
-MAKEFILE := cmgui.make
-MAKEFILE_FOUND = $(wildcard source/$(MAKEFILE))
+MAKEFILE = cmgui.make
+SUBMAKEFILE := cmgui.Makefile
+SUBMAKEFILE_FOUND = $(wildcard source/$(SUBMAKEFILE))
 ifdef CMISS_ROOT_DEFINED
    ifeq ($(MAKEFILE_FOUND),)
-      MAKEFILE := $(CMISS_ROOT)/cmgui/source/$(MAKEFILE)
+      SUBMAKEFILE := $(CMISS_ROOT)/cmgui/source/$(SUBMAKEFILE)
    endif # $(MAKEFILE_FOUND) ==
 endif # CMISS_ROOT_DEFINED
 
@@ -41,7 +42,7 @@ utilities: TARGET=utilities
 
 cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
 	cd source ; \
-	$(MAKE) -f $(MAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DYNAMIC_GL_LINUX) $(DEBUG) $(MEMORYCHECK) ;
+	$(MAKE) -f $(SUBMAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DYNAMIC_GL_LINUX) $(DEBUG) $(MEMORYCHECK) ;
 
 update_sources :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
