@@ -176,8 +176,10 @@ DESCRIPTION :
 	if (ALLOCATE(material_program ,struct Material_program, 1))
 	{
 		material_program->type = type;
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 		material_program->vertex_program = 0;
 		material_program->fragment_program = 0;
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		material_program->display_list = 0;
 		material_program->compiled = 0;
 		material_program->access_count = 0;
