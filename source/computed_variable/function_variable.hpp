@@ -99,9 +99,9 @@ class Function_variable_iterator:
 		// decrement (postfix)
 		Function_variable_iterator operator--(int);
 		// equality
-		bool operator==(const Function_variable_iterator&);
+		bool operator==(const Function_variable_iterator&) const;
 		// inequality
-		bool operator!=(const Function_variable_iterator&);
+		bool operator!=(const Function_variable_iterator&) const;
 		// dereference
 		Function_variable_handle operator*() const;
 		// don't have a operator-> because its not needed and it would return a

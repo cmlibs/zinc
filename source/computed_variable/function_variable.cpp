@@ -331,7 +331,7 @@ Function_variable_iterator Function_variable_iterator::operator--(int)
 }
 
 bool Function_variable_iterator::operator==(
-	const Function_variable_iterator& iterator)
+	const Function_variable_iterator& iterator) const
 //******************************************************************************
 // LAST MODIFIED : 2 March 2004
 //
@@ -358,7 +358,7 @@ bool Function_variable_iterator::operator==(
 }
 
 bool Function_variable_iterator::operator!=(
-	const Function_variable_iterator& iterator)
+	const Function_variable_iterator& iterator) const
 //******************************************************************************
 // LAST MODIFIED : 2 March 2004
 //
