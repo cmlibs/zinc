@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 13 March 2002
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -27,6 +27,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "general/callback_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -117,7 +118,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
 
 struct Scene
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Stores the collections of objects that make up a 3-D graphical model.
@@ -131,25 +132,18 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* list of objects in the scene (plus visibility flag) */
 	struct LIST(Scene_object) *scene_object_list;
 	enum Scene_change_status change_status;
- 	/* need following managers for autocreation of graphical finite elements, */
+ 	/* need following info for autocreation of graphical finite elements, */
 	/* material/light changes, etc. */
 	enum Scene_graphical_element_mode graphical_element_mode;
-	/* fields and computed_fields */
+
+	/* computed_fields */
 	struct MANAGER(Computed_field) *computed_field_manager;
 	void *computed_field_manager_callback_id;
-	struct MANAGER(FE_field) *fe_field_manager;
-	/* elements and element groups: */
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	/* have callbacks from element_group_manager for automatic creating and
-		 destroying of GT_element_groups */
-	void *element_group_manager_callback_id;
-	/* nodes and node groups: */
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	/* data and data groups: */
-	struct MANAGER(FE_node) *data_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+
+	/*???RC temporary; have root_region and data_root_region until Scenes are
+		incorporated into the regions themselves */
+	struct Cmiss_region *root_region;
+	struct Cmiss_region *data_root_region;
 
 	/* global stores of selected objects */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -743,7 +737,7 @@ visible.
 static int build_Scene_object(struct Scene_object *scene_object,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 5 November 2001
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics_object in the
@@ -777,7 +771,8 @@ linked list contained in the scene_object.
 					{
 						time = 0.0;
 					}
-					build_GT_element_group(scene_object->gt_element_group, time);
+					build_GT_element_group(scene_object->gt_element_group, time,
+						scene_object->name);
 				} break;
 				case SCENE_OBJECT_SCENE:
 				{
@@ -1660,61 +1655,29 @@ does not restrict the ability to remove some objects as the public version does.
 	return (return_code);
 } /* Scene_remove_Scene_object_private */
 
-static int element_group_to_scene(struct GROUP(FE_element) *element_group,
-	void *scene_void)
+static int Scene_object_has_removed_Cmiss_region(
+	struct Scene_object *scene_object, void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 28 May 2001
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
-Iterator function for adding graphical element_groups to <scene>.
-First checks <element_group> not already in scene.
+Returns true if the <scene_object> contains a graphical element for a
+Cmiss region, or data Cmiss_region that no longer exists in the respective
+root region.
 ==============================================================================*/
 {
 	int return_code;
 	struct Scene *scene;
 
-	ENTER(element_group_to_scene);
-	if (element_group && (scene = (struct Scene *)scene_void))
+	ENTER(Scene_object_has_removed_Cmiss_region);
+	if (scene_object && (scene = (struct Scene *)scene_void))
 	{
-		if (!Scene_has_graphical_element_group(scene,element_group))
-		{
-			Scene_add_graphical_element_group(scene, element_group, /*position*/0,
-				(char *)NULL);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_group_to_scene.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_group_to_scene */
-
-static int Scene_object_has_element_group_in_list(
-	struct Scene_object *scene_object, void *element_group_list_void)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Returns true if the <scene_object> contains a graphical element for an element
-group in <element_group_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(GROUP(FE_element)) *element_group_list;
-
-	ENTER(Scene_object_has_element_group_in_list);
-	if (scene_object && (element_group_list =
-		(struct LIST(GROUP(FE_element)) *)element_group_list_void))
-	{
-		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type) &&
-			IS_OBJECT_IN_LIST(GROUP(FE_element))(
-				GT_element_group_get_element_group(scene_object->gt_element_group),
-				element_group_list))
+		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type) && (
+			(!Cmiss_region_contains_Cmiss_region(scene->root_region,
+				GT_element_group_get_Cmiss_region(scene_object->gt_element_group))) ||
+			(!Cmiss_region_contains_Cmiss_region(scene->data_root_region,
+				GT_element_group_get_data_Cmiss_region(
+					scene_object->gt_element_group)))))
 		{
 			return_code = 1;
 		}
@@ -1726,77 +1689,110 @@ group in <element_group_list>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_object_has_element_group_in_list.  Invalid argument(s)");
+			"Scene_object_has_removed_Cmiss_region.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_object_has_element_group_in_list */
+} /* Scene_object_has_removed_Cmiss_region */
 
-static void Scene_element_group_change(
-	struct MANAGER_MESSAGE(GROUP(FE_element)) *message,void *scene_void)
+int Scene_update_graphical_element_groups(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 28 May 2001
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
-Element group manager change callback. Adds/removes graphical element groups
-from <scene> in response to manager messages.
+Ensures there is a GT_element_group in <scene> for every Cmiss_region with
+associated data_Cmiss_region.
+==============================================================================*/
+{
+	char *child_region_name;
+	int i, number_of_child_regions, return_code;
+	struct Cmiss_region *child_region, *data_child_region;
+
+	ENTER(Scene_update_graphical_element_groups);
+	if (scene)
+	{
+		Scene_begin_cache(scene);
+		/* ensure we have a graphical element for each child region */
+		Cmiss_region_get_number_of_child_regions(scene->root_region,
+			&number_of_child_regions);
+		for (i = 0; i < number_of_child_regions; i++)
+		{
+			if (Cmiss_region_get_child_region(scene->root_region, /*child_number*/i,
+				&child_region) &&
+				Cmiss_region_get_child_region_name(scene->root_region,
+					/*child_number*/i, &child_region_name))
+			{
+				/* don't build until we have both child_region and data_child_region */
+				if ((!Scene_has_Cmiss_region(scene, child_region)) &&
+					(data_child_region = Cmiss_region_get_child_region_from_name(
+						scene->data_root_region, child_region_name)))
+				{
+					Scene_add_graphical_element_group(scene, child_region,
+						data_child_region, /*position*/0, child_region_name);
+				}
+				DEALLOCATE(child_region_name);
+			}
+		}
+		Scene_end_cache(scene);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_update_graphical_element_groups.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_update_graphical_element_groups */
+
+static void Scene_Cmiss_region_change(struct Cmiss_region *root_region,
+	struct Cmiss_region_changes *region_changes, void *scene_void)
+/*******************************************************************************
+LAST MODIFIED : 24 March 2003
+
+DESCRIPTION :
+Callback from <root_region> informing of <changes>.
+<scene> adds or removes graphical element groups to match.
 ==============================================================================*/
 {
 	int return_code;
 	struct Scene *scene;
 	struct Scene_object *scene_object;
 
-	ENTER(Scene_element_group_change);
-	if (message && (scene = (struct Scene *)scene_void))
+	ENTER(Scene_Cmiss_region_change);
+	if (root_region && region_changes && (scene = (struct Scene *)scene_void))
 	{
-		switch (message->change)
+		if (region_changes->children_changed)
 		{
-			case MANAGER_CHANGE_ADD(GROUP(FE_element)):
+			Scene_begin_cache(scene);
+			/* remove any graphical elements for regions that no longer exist */
+			return_code = 1;
+			while (return_code &&
+				(scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+					Scene_object_has_removed_Cmiss_region, scene_void,
+					scene->scene_object_list)))
 			{
-				if ((GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)&&
-					(GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode))
-				{
-					Scene_begin_cache(scene);
-					/* draw any new element_groups on window */
-					FOR_EACH_OBJECT_IN_LIST(GROUP(FE_element))(
-						element_group_to_scene, (void *)scene,
-						message->changed_object_list);
-					Scene_end_cache(scene);
-				}
-			} break;
-			case MANAGER_CHANGE_REMOVE(GROUP(FE_element)):
+				return_code =
+					Scene_remove_Scene_object_private(scene, scene_object);
+			}
+			if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
 			{
-				/* remove any graphical element group renditions for the deleted
-					 element_group from scene  */
-				return_code = 1;
-				Scene_begin_cache(scene);
-				while (return_code &&
-					(scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-						Scene_object_has_element_group_in_list,
-						(void *)message->changed_object_list, scene->scene_object_list)))
-				{
-					return_code =
-						Scene_remove_Scene_object_private(scene, scene_object);
-				}
-				Scene_end_cache(scene);
-			} break;
-			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
-			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_element)):
-			{
-				/* nothing: object changes are handled by graphical element itself  */
-			} break;
+				/* ensure we have a graphical element for each child region */
+				Scene_update_graphical_element_groups(scene);
+			}
+			Scene_end_cache(scene);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_element_group_change.  Invalid argument(s)");
+			"Scene_Cmiss_region_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Scene_element_group_change */
+} /* Scene_Cmiss_region_change */
 
 static int Scene_object_Graphical_material_change(
 	struct Scene_object *scene_object, void *changed_material_list_void)
@@ -2236,7 +2232,7 @@ struct Scene_picked_object_get_nearest_element_data
 	double nearest;
 	struct FE_element *nearest_element;
 	/* group that the element must be in, or any group if NULL */
-	struct GROUP(FE_element) *element_group;
+	struct Cmiss_region *cmiss_region;
 	/* information about the nearest element */
 	struct Scene_picked_object *scene_picked_object;
 	struct GT_element_group *gt_element_group;
@@ -2247,7 +2243,7 @@ static int Scene_picked_object_get_nearest_element(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element, the "nearest" value is
@@ -2260,7 +2256,8 @@ stored in the nearest_element_data.
 	int dimension,return_code;
 	struct CM_element_information cm;
 	struct FE_element *element;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
+	struct Cmiss_region *cmiss_region;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	struct Scene_object *scene_object;
@@ -2285,27 +2282,28 @@ stored in the nearest_element_data.
 				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
 					Scene_object_get_type(scene_object))&&(gt_element_group=
 						Scene_object_get_graphical_element_group(scene_object))&&
-				(element_group=GT_element_group_get_element_group(gt_element_group))&&
+				(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group))&&
 				(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 				(settings=get_settings_at_position_in_GT_element_group(gt_element_group,
 					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
 				(GT_element_settings_selects_elements(settings)))
 			{
 				if (CM_element_information_from_graphics_name(&cm,
-					Scene_picked_object_get_subobject(scene_picked_object,1))&&
-					(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-						&cm,element_group)))
+					Scene_picked_object_get_subobject(scene_picked_object,1)) &&
+					(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
+					(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
 				{
 					dimension = get_FE_element_dimension(element);
 					if (((nearest_element_data->select_elements_enabled &&
-						((CM_ELEMENT == element->cm.type) || (3 == dimension))) ||
+						((CM_ELEMENT == cm.type) || (3 == dimension))) ||
 						(nearest_element_data->select_faces_enabled &&
-							((CM_FACE == element->cm.type) || (2 == dimension))) ||
+							((CM_FACE == cm.type) || (2 == dimension))) ||
 						(nearest_element_data->select_lines_enabled &&
-							((CM_LINE == element->cm.type) || (1 == dimension))))&&
-						((!nearest_element_data->element_group)||
-							((struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
-								element,nearest_element_data->element_group))))
+							((CM_LINE == cm.type) || (1 == dimension))))&&
+						((!nearest_element_data->cmiss_region) ||
+							((fe_region = Cmiss_region_get_FE_region(
+								nearest_element_data->cmiss_region)) &&
+								FE_region_contains_FE_element(fe_region, element))))
 					{
 						nearest_element_data->nearest_element=element;
 						nearest_element_data->scene_picked_object=scene_picked_object;
@@ -2346,7 +2344,7 @@ static int Scene_picked_object_get_picked_elements(
 	struct Scene_picked_object *scene_picked_object,
 	void *picked_elements_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element, it is converted into
@@ -2355,8 +2353,9 @@ an FE_element and added to the <picked_elements_list>.
 {
 	int dimension,return_code;
 	struct CM_element_information cm;
+	struct Cmiss_region *cmiss_region;
 	struct FE_element *element;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	struct Scene_picked_object_get_picked_elements_data *picked_elements_data;
@@ -2375,7 +2374,7 @@ an FE_element and added to the <picked_elements_list>.
 			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
 				Scene_object_get_type(scene_object))&&(gt_element_group=
 					Scene_object_get_graphical_element_group(scene_object))&&
-			(element_group=GT_element_group_get_element_group(gt_element_group))&&
+			(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)) &&
 			(2<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 			(settings=get_settings_at_position_in_GT_element_group(
 				gt_element_group,
@@ -2384,16 +2383,16 @@ an FE_element and added to the <picked_elements_list>.
 		{
 			if (CM_element_information_from_graphics_name(&cm,
 				Scene_picked_object_get_subobject(scene_picked_object,1))&&
-				(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-					&cm,element_group)))
+				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
+				(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
 			{
 				dimension = get_FE_element_dimension(element);
 				if ((picked_elements_data->select_elements_enabled &&
-					((CM_ELEMENT == element->cm.type) || (3 == dimension))) ||
+					((CM_ELEMENT == cm.type) || (3 == dimension))) ||
 					(picked_elements_data->select_faces_enabled &&
-						((CM_FACE == element->cm.type) || (2 == dimension))) ||
+						((CM_FACE == cm.type) || (2 == dimension))) ||
 					(picked_elements_data->select_lines_enabled &&
-						((CM_LINE == element->cm.type) || (1 == dimension))))
+						((CM_LINE == cm.type) || (1 == dimension))))
 				{
 					return_code=ensure_FE_element_is_in_list(element,
 						(void *)picked_elements_data->picked_element_list);
@@ -2424,8 +2423,8 @@ struct Scene_picked_object_get_nearest_element_point_data
 	/* "nearest" value from Scene_picked_object for picked_element_point */
 	double nearest;
 	struct Element_point_ranges *nearest_element_point;
-	/* group that the element_point must be in, or any group if NULL */
-	struct GROUP(FE_element) *element_group;
+	/* region that the element_point must be in, or root_region if NULL */
+	struct Cmiss_region *cmiss_region;
 	/* information about the nearest element_point */
 	struct Scene_picked_object *scene_picked_object;
 	struct GT_element_group *gt_element_group;
@@ -2436,7 +2435,7 @@ static int Scene_picked_object_get_nearest_element_point(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_point_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, the "nearest" value is
@@ -2457,7 +2456,8 @@ and destroy it once returned.
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *element,*top_level_element;
 	struct FE_field *native_discretization_field;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
+	struct Cmiss_region *cmiss_region;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	struct Scene_object *scene_object;
@@ -2485,7 +2485,7 @@ and destroy it once returned.
 				&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
 					Scene_object_get_type(scene_object))&&(gt_element_group=
 						Scene_object_get_graphical_element_group(scene_object))&&
-				(element_group=GT_element_group_get_element_group(gt_element_group))&&
+				(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)) &&
 				(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 				(settings=get_settings_at_position_in_GT_element_group(
 					gt_element_group,
@@ -2495,12 +2495,12 @@ and destroy it once returned.
 			{
 				if (CM_element_information_from_graphics_name(&cm,
 					Scene_picked_object_get_subobject(scene_picked_object,1))&&
-					(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
-						element_group)))
+					(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
+					(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
 				{
-					if ((!nearest_element_point_data->element_group)||
-						((struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
-							element,nearest_element_point_data->element_group)))
+					if ((!nearest_element_point_data->cmiss_region) ||
+						FE_region_contains_FE_element(Cmiss_region_get_FE_region(
+							nearest_element_point_data->cmiss_region), element))
 					{
 						/* determine discretization of element for graphic */
 						top_level_element=(struct FE_element *)NULL;
@@ -2512,9 +2512,9 @@ and destroy it once returned.
 						GT_element_settings_get_face(settings,&face_number);
 						native_discretization_field=
 							GT_element_settings_get_native_discretization_field(settings);
-						if (get_FE_element_discretization(element,element_group,face_number,
-							native_discretization_field,top_level_number_in_xi,
-							&top_level_element,element_point_ranges_identifier.number_in_xi))
+						if (FE_region_get_FE_element_discretization(fe_region, element,
+							face_number, native_discretization_field, top_level_number_in_xi,
+							&top_level_element, element_point_ranges_identifier.number_in_xi))
 						{
 							element_point_ranges_identifier.element=element;
 							element_point_ranges_identifier.top_level_element=
@@ -2609,7 +2609,7 @@ static int Scene_picked_object_get_picked_element_points(
 	struct Scene_picked_object *scene_picked_object,
 	void *picked_element_points_list_void)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, it is converted into
@@ -2619,12 +2619,13 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 	int element_point_number,face_number,i,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct CM_element_information cm;
+	struct Cmiss_region *cmiss_region;
 	struct Element_discretization element_discretization;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *element,*top_level_element;
 	struct FE_field *native_discretization_field;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	struct Scene_object *scene_object;
@@ -2641,7 +2642,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 			&&(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
 				Scene_object_get_type(scene_object))&&(gt_element_group=
 					Scene_object_get_graphical_element_group(scene_object))&&
-			(element_group=GT_element_group_get_element_group(gt_element_group))&&
+			(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)) &&
 			(3<=Scene_picked_object_get_number_of_subobjects(scene_picked_object))&&
 			(settings=get_settings_at_position_in_GT_element_group(
 				gt_element_group,
@@ -2651,8 +2652,8 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 		{
 			if (CM_element_information_from_graphics_name(&cm,
 				Scene_picked_object_get_subobject(scene_picked_object,1))&&
-				(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
-					element_group)))
+				(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
+				(element = FE_region_get_FE_element_from_identifier(fe_region, &cm)))
 			{
 				/* determine discretization of element for graphic */
 				top_level_element=(struct FE_element *)NULL;
@@ -2664,9 +2665,9 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 				GT_element_settings_get_face(settings,&face_number);
 				native_discretization_field=
 					GT_element_settings_get_native_discretization_field(settings);
-				if (get_FE_element_discretization(element,element_group,face_number,
-					native_discretization_field,top_level_number_in_xi,
-					&top_level_element,element_point_ranges_identifier.number_in_xi))
+				if (FE_region_get_FE_element_discretization(fe_region, element,
+					face_number, native_discretization_field, top_level_number_in_xi,
+					&top_level_element, element_point_ranges_identifier.number_in_xi))
 				{
 					element_point_ranges_identifier.element=element;
 					element_point_ranges_identifier.top_level_element=top_level_element;
@@ -2747,8 +2748,8 @@ struct Scene_picked_object_get_nearest_node_data
 	struct FE_node *nearest_node;
 	/* flag set when searching for nearest data point rather than node */
 	int use_data;
-	/* group that the node must be in, or any group if NULL */
-	struct GROUP(FE_node) *node_group;
+	/* region that the node must be in, or any region if NULL */
+	struct Cmiss_region *cmiss_region;
 	/* information about the nearest node */
 	struct Scene_picked_object *scene_picked_object;
 	struct GT_element_group *gt_element_group;
@@ -2758,7 +2759,7 @@ struct Scene_picked_object_get_nearest_node_data
 static int Scene_picked_object_get_nearest_node(
 	struct Scene_picked_object *scene_picked_object,void *nearest_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 If the <scene_picked_object> refers to a node, the "nearest" value is compared
@@ -2770,9 +2771,10 @@ and its "nearest" value is stored in the nearest_node_data.
 	enum GT_element_settings_type settings_type;
 	int node_number,return_code;
 	struct FE_node *node;
+	struct FE_region *fe_region;
 	struct Scene_object *scene_object;
 	struct Scene_picked_object_get_nearest_node_data *nearest_node_data;
-	struct GROUP(FE_node) *node_group;
+	struct Cmiss_region *cmiss_region;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 
@@ -2800,19 +2802,20 @@ and its "nearest" value is stored in the nearest_node_data.
 					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
 				(((GT_ELEMENT_SETTINGS_NODE_POINTS==
 					(settings_type=GT_element_settings_get_settings_type(settings)))&&
-					(!(nearest_node_data->use_data))&&
-					(node_group=GT_element_group_get_node_group(gt_element_group)))||
-					((GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)&&
-						nearest_node_data->use_data&&
-					(node_group=GT_element_group_get_data_group(gt_element_group)))))
+					(!(nearest_node_data->use_data)) && (cmiss_region =
+						GT_element_group_get_Cmiss_region(gt_element_group))) ||
+					((GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) &&
+						nearest_node_data->use_data && (cmiss_region =
+							GT_element_group_get_data_Cmiss_region(gt_element_group)))))
 			{
 				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-				if (node=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-					node_number,node_group))
+				if ((fe_region = Cmiss_region_get_FE_region(cmiss_region)) && (node =
+					FE_region_get_FE_node_from_identifier(fe_region, node_number)))
 				{
-					/* is the node in the nearest_node_data->node_group, if supplied */
-					if ((!nearest_node_data->node_group)||((struct FE_node *)NULL !=
-						IS_OBJECT_IN_GROUP(FE_node)(node,nearest_node_data->node_group)))
+					/* is the node in the nearest_node_data->cmiss_region, if supplied */
+					if ((!nearest_node_data->cmiss_region) || ((fe_region =
+						Cmiss_region_get_FE_region(nearest_node_data->cmiss_region)) &&
+						FE_region_contains_FE_node(fe_region, node)))
 					{
 						nearest_node_data->nearest_node=node;
 						nearest_node_data->scene_picked_object=scene_picked_object;
@@ -2853,7 +2856,7 @@ struct Scene_picked_object_get_picked_nodes_data
 static int Scene_picked_object_get_picked_nodes(
 	struct Scene_picked_object *scene_picked_object,void *picked_nodes_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 If the <scene_picked_object> refers to a node and the node is in the given
@@ -2862,10 +2865,11 @@ manager, ensures it is in the list.
 {
 	enum GT_element_settings_type settings_type;
 	int node_number,return_code;
+	struct Cmiss_region *cmiss_region;
 	struct FE_node *node;
+	struct FE_region *fe_region;
 	struct Scene_object *scene_object;
 	struct Scene_picked_object_get_picked_nodes_data *picked_nodes_data;
-	struct GROUP(FE_node) *node_group;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 
@@ -2888,17 +2892,17 @@ manager, ensures it is in the list.
 				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
 			(((GT_ELEMENT_SETTINGS_NODE_POINTS==
 				(settings_type=GT_element_settings_get_settings_type(settings)))&&
-				(!(picked_nodes_data->use_data))&&
-				(node_group=GT_element_group_get_node_group(gt_element_group)))||
-				((GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)&&
-					picked_nodes_data->use_data&&
-					(node_group=GT_element_group_get_data_group(gt_element_group)))))
+				(!(picked_nodes_data->use_data)) && (cmiss_region =
+					GT_element_group_get_Cmiss_region(gt_element_group))) ||
+				((GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) &&
+					picked_nodes_data->use_data && (cmiss_region =
+						GT_element_group_get_data_Cmiss_region(gt_element_group)))))
 		{
 			node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-			if (node=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-				node_number,node_group))
+			if ((fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
+				(node = FE_region_get_FE_node_from_identifier(fe_region, node_number)))
 			{
-				return_code=ensure_FE_node_is_in_list(node,
+				return_code = ensure_FE_node_is_in_list(node,
 					(void *)(picked_nodes_data->node_list));
 			}
 			else
@@ -3707,117 +3711,80 @@ Returns the Scene_object_type of <scene_object>.
 	return (scene_object_type);
 } /* Scene_object_get_type */
 
-int Scene_object_has_data_group(struct Scene_object *scene_object,
-	void *data_group_void)
+int Scene_object_has_Cmiss_region(struct Scene_object *scene_object,
+	void *cmiss_region_void)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given data_group.
+graphical element group for the given <cmiss_region>.
 ==============================================================================*/
 {
 	int return_code;
-	struct GROUP(FE_node) *data_group;
+	struct Cmiss_region *cmiss_region;
 
-	ENTER(Scene_object_has_data_group);
-	if (scene_object&&(data_group=(struct GROUP(FE_node) *)data_group_void))
+	ENTER(Scene_object_has_Cmiss_region);
+	if (scene_object && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
 	{
-		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==scene_object->type)
+		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type)
 		{
-			return_code=(data_group==
-				GT_element_group_get_data_group(scene_object->gt_element_group));
+			return_code = (cmiss_region == 
+				GT_element_group_get_Cmiss_region(scene_object->gt_element_group));
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_object_has_data_group.  Invalid argument(s)");
-		return_code=0;
+			"Scene_object_has_Cmiss_region.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_object_has_data_group */
+} /* Scene_object_has_Cmiss_region */
 
-int Scene_object_has_element_group(struct Scene_object *scene_object,
-	void *element_group_void)
+int Scene_object_has_data_Cmiss_region(struct Scene_object *scene_object,
+	void *data_cmiss_region_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given element_group.
+g_ELEMENT_GROUP gt_object referencing the given <data_cmiss_region>.
 ==============================================================================*/
 {
 	int return_code;
-	struct GROUP(FE_element) *element_group;
+	struct Cmiss_region *data_cmiss_region;
 
-	ENTER(Scene_object_has_element_group);
-	if (scene_object&&(element_group=(struct GROUP(FE_element) *)
-		element_group_void))
+	ENTER(Scene_object_has_data_Cmiss_region);
+	if (scene_object &&
+		(data_cmiss_region = (struct Cmiss_region *)data_cmiss_region_void))
 	{
-		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==scene_object->type)
+		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type)
 		{
-			return_code=(GT_element_group_get_element_group(
-				scene_object->gt_element_group)==element_group);
+			return_code = (data_cmiss_region ==
+				GT_element_group_get_data_Cmiss_region(scene_object->gt_element_group));
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_object_has_element_group.  Invalid argument(s)");
-		return_code=0;
+			"Scene_object_has_data_Cmiss_region.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_object_has_element_group */
-
-int Scene_object_has_node_group(struct Scene_object *scene_object,
-	void *node_group_void)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2000
-
-DESCRIPTION :
-Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given node_group.
-==============================================================================*/
-{
-	int return_code;
-	struct GROUP(FE_node) *node_group;
-
-	ENTER(Scene_object_has_node_group);
-	if (scene_object&&(node_group=(struct GROUP(FE_node) *)node_group_void))
-	{
-		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==scene_object->type)
-		{
-			return_code=(node_group==
-				GT_element_group_get_node_group(scene_object->gt_element_group));
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_has_node_group.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_has_node_group */
+} /* Scene_object_has_data_Cmiss_region */
 
 int Scene_object_has_graphical_element_group(struct Scene_object *scene_object,
 	void *gt_element_group_void)
@@ -3890,52 +3857,6 @@ Returns the GT_element_group referenced by <scene_object>.
 
 	return (return_gt_element_group);
 } /* Scene_object_get_gt_element_group */
-
-int Scene_object_has_unmanaged_node_group(
-	struct Scene_object *scene_object,void *node_group_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 21 April 1999
-
-DESCRIPTION :
-Returns true if the <scene_object> contains a GFE for an element group no
-longer in <node_group_manager>.
-???RC Should be static?
-==============================================================================*/
-{
-	int return_code;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-
-	ENTER(Scene_object_has_unmanaged_node_group);
-	if (scene_object&&scene_object->gt_object&&(node_group_manager=
-		(struct MANAGER(GROUP(FE_node)) *)node_group_manager_void))
-	{
-		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==scene_object->type)
-		{
-			if (IS_MANAGED(GROUP(FE_node))(GT_element_group_get_node_group(
-				scene_object->gt_element_group),node_group_manager))
-			{
-				return_code=0;
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_has_unmanaged_node_group.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_has_unmanaged_node_group */
 
 int Scene_object_get_range(struct Scene_object *scene_object,
 	void *graphics_object_range_void)
@@ -4128,7 +4049,7 @@ ranges by those of the graphics_objects contained in the <scene_object>.
 
 int list_Scene_object(struct Scene_object *scene_object,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 26 April 1999
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Iterator function called by list_Scene. Writes the scene object position,
@@ -4136,7 +4057,7 @@ name, visibility and information about the object in it to the command window.
 ???RC list transformation? Have separate gfx list transformation commands.
 ==============================================================================*/
 {
-	char *gt_element_group_name, *time_object_name;
+	char *time_object_name;
 	int return_code;
 
 	ENTER(list_Scene_object);
@@ -4169,20 +4090,8 @@ name, visibility and information about the object in it to the command window.
 			} break;
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 			{
-				if(GET_NAME(GT_element_group)(scene_object->gt_element_group,
-					&gt_element_group_name))
-				{
-					display_message(INFORMATION_MESSAGE,
-						" = graphical finite element group %s",
-						gt_element_group_name);
-					DEALLOCATE(gt_element_group_name);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"list_Scene_object.  Unable to get graphical element group name");
-					return_code=0;
-				}
+				display_message(INFORMATION_MESSAGE,
+					" = graphical finite element group");
 			} break;
 			case SCENE_OBJECT_SCENE:
 			{
@@ -4325,7 +4234,7 @@ as a command, using the given <command_prefix>.
 
 struct Scene *CREATE(Scene)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Scene now has pointer to its scene_manager, and it uses manager modify
@@ -4351,14 +4260,12 @@ from the default versions of these functions.
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
 			/* fields, elements, nodes and data */
 			scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-			scene->fe_field_manager=(struct MANAGER(FE_field) *)NULL;
-			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
-			scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-			scene->element_group_manager_callback_id=(void *)NULL;
-			scene->node_manager=(struct MANAGER(FE_node) *)NULL;
-			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-			scene->data_manager=(struct MANAGER(FE_node) *)NULL;
-			scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+
+			/*???RC temporary; have root_region and data_root_region until Scenes are
+				incorporated into the regions themselves */
+			scene->root_region = (struct Cmiss_region *)NULL;
+			scene->data_root_region = (struct Cmiss_region *)NULL;
+
 			/* defaults to not adding GFEs - besides, need managers anyway */
 			scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
 			/* global stores of selected objects */
@@ -4421,7 +4328,7 @@ from the default versions of these functions.
 
 int DESTROY(Scene)(struct Scene **scene_address)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Closes the scene and disposes of the scene data structure.
@@ -4447,13 +4354,8 @@ Closes the scene and disposes of the scene data structure.
 			Scene_set_graphical_element_mode(scene,
 				GRAPHICAL_ELEMENT_NONE,
 				(struct MANAGER(Computed_field) *)NULL,
-				(struct MANAGER(FE_element) *)NULL,
-				(struct MANAGER(GROUP(FE_element)) *)NULL,
-				(struct MANAGER(FE_field) *)NULL,
-				(struct MANAGER(FE_node) *)NULL,
-				(struct MANAGER(GROUP(FE_node)) *)NULL,
-				(struct MANAGER(FE_node) *)NULL,
-				(struct MANAGER(GROUP(FE_node)) *)NULL,
+				(struct Cmiss_region *)NULL,
+				(struct Cmiss_region *)NULL,
 				(struct Element_point_ranges_selection *)NULL,
 				(struct FE_element_selection *)NULL,
 				(struct FE_node_selection *)NULL,
@@ -4816,20 +4718,15 @@ scene.
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct Cmiss_region *root_region,
+	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 6 November 2001
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -4843,11 +4740,10 @@ material and spectrum.
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_set_graphical_element_mode);
-	if (scene&&((GRAPHICAL_ELEMENT_NONE == graphical_element_mode)||(
-		computed_field_manager&&element_manager&&element_group_manager&&
-		fe_field_manager&&node_manager&&node_group_manager&&data_manager&&
-		data_group_manager&&element_point_ranges_selection&&element_selection&&
-		node_selection&&data_selection)))
+	if (scene && ((GRAPHICAL_ELEMENT_NONE == graphical_element_mode) || (
+		computed_field_manager && root_region && data_root_region &&
+		element_point_ranges_selection && element_selection &&
+		node_selection && data_selection)))
 	{
 		return_code = 1;
 		Scene_begin_cache(scene);
@@ -4863,22 +4759,19 @@ material and spectrum.
 			}
 			if (return_code)
 			{
-				scene->graphical_element_mode=graphical_element_mode;
-				scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-				scene->element_manager=(struct MANAGER(FE_element) *)NULL;
-				/* turn off element_group_manager callbacks */
-				if (scene->element_group_manager_callback_id)
+				if (GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)
 				{
-					MANAGER_DEREGISTER(GROUP(FE_element))(
-						scene->element_group_manager_callback_id,
-						scene->element_group_manager);
-					scene->element_group_manager_callback_id=(void *)NULL;
+					/* remove region callbacks */
+					Cmiss_region_remove_callback(scene->root_region,
+						Scene_Cmiss_region_change, (void *)scene);
+					/* remove region callbacks */
+					Cmiss_region_remove_callback(scene->data_root_region,
+						Scene_Cmiss_region_change, (void *)scene);
 				}
-				scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-				scene->node_manager=(struct MANAGER(FE_node) *)NULL;
-				scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-				scene->data_manager=(struct MANAGER(FE_node) *)NULL;
-				scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+				scene->graphical_element_mode = graphical_element_mode;
+				scene->computed_field_manager = (struct MANAGER(Computed_field) *)NULL;
+				scene->root_region = (struct Cmiss_region *)NULL;
+				scene->data_root_region = (struct Cmiss_region *)NULL;
 				scene->element_point_ranges_selection=
 					(struct Element_point_ranges_selection *)NULL;
 				scene->element_selection=(struct FE_element_selection *)NULL;
@@ -4896,46 +4789,35 @@ material and spectrum.
 		{
 			/* check managers consistent current mode - unless this is
 				 GRAPHICAL_ELEMENT_NONE so setting for the first time */
-			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)||(
-				(computed_field_manager == scene->computed_field_manager)&&
-				(element_manager == scene->element_manager)&&
-				(element_group_manager == scene->element_group_manager)&&
-				(fe_field_manager == scene->fe_field_manager)&&
-				(node_manager == scene->node_manager)&&
-				(node_group_manager == scene->node_group_manager)&&
-				(data_manager == scene->data_manager)&&
-				(data_group_manager == scene->data_group_manager)))
+			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode) || (
+				(computed_field_manager == scene->computed_field_manager) &&
+				(root_region == scene->root_region) &&
+				(data_root_region == scene->data_root_region)))
 			{
 				if (scene->graphical_material_manager)
 				{
 					if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
 					{
-						scene->graphical_element_mode=graphical_element_mode;
-						scene->computed_field_manager=computed_field_manager;
-						scene->element_manager=element_manager;
-						scene->element_group_manager=element_group_manager;
-						scene->fe_field_manager=fe_field_manager;
-						scene->node_manager=node_manager;
-						scene->node_group_manager=node_group_manager;
-						scene->data_manager=data_manager;
-						scene->data_group_manager=data_group_manager;
-						scene->element_point_ranges_selection=
+						scene->graphical_element_mode = graphical_element_mode;
+						scene->computed_field_manager = computed_field_manager;
+						scene->root_region = root_region;
+						scene->data_root_region = data_root_region;
+						scene->element_point_ranges_selection =
 							element_point_ranges_selection;
-						scene->element_selection=element_selection;
-						scene->node_selection=node_selection;
-						scene->data_selection=data_selection;
-						scene->user_interface=user_interface;
+						scene->element_selection = element_selection;
+						scene->node_selection = node_selection;
+						scene->data_selection = data_selection;
+						scene->user_interface = user_interface;
 						if (GRAPHICAL_ELEMENT_MANUAL != graphical_element_mode)
 						{
-							/* add all current element_groups to new scene */
-							FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-								element_group_to_scene,(void *)scene,
-								scene->element_group_manager);
+							/* ensure we have a graphical element for each child region */
+							Scene_update_graphical_element_groups(scene);
 						}
-						/* register for any element_group_manager changes */
-						scene->element_group_manager_callback_id=
-							MANAGER_REGISTER(GROUP(FE_element))(Scene_element_group_change,
-								(void *)scene,scene->element_group_manager);
+						/* add region callbacks */
+						Cmiss_region_add_callback(root_region,
+							Scene_Cmiss_region_change, (void *)scene);
+						Cmiss_region_add_callback(data_root_region,
+							Scene_Cmiss_region_change, (void *)scene);
 					}
 					else
 					{
@@ -5054,10 +4936,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 				source->default_time_keeper);
 		}
 		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
-			source->computed_field_manager,source->element_manager,
-			source->element_group_manager,source->fe_field_manager,
-			source->node_manager,source->node_group_manager,
-			source->data_manager,source->data_group_manager,
+			source->computed_field_manager,
+			source->root_region, source->data_root_region,
 			source->element_point_ranges_selection,
 			source->element_selection,source->node_selection,source->data_selection,
 			source->user_interface);
@@ -5898,17 +5778,17 @@ Returns the list of all any_objects in the <scene_picked_object_list>.
 
 struct FE_element *Scene_picked_object_list_get_nearest_element(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct GROUP(FE_element) *element_group,
+	struct Cmiss_region *cmiss_region,
 	int select_elements_enabled,int select_faces_enabled,int select_lines_enabled,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Returns the nearest picked element in <scene_picked_object_list> that is in
-<element_group> (or any group if NULL). If any of the remaining address
+<cmiss_region> (or in root_region if NULL). If any of the remaining address
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest element.
 <select_elements_enabled> allows top-level/3-D elements to be selected.
@@ -5921,7 +5801,7 @@ pertaining to the nearest element.
 	ENTER(Scene_picked_object_list_get_nearest_element);
 	nearest_element_data.nearest=0.0;
 	nearest_element_data.nearest_element=(struct FE_element *)NULL;
-	nearest_element_data.element_group=element_group;
+	nearest_element_data.cmiss_region = cmiss_region;
 	nearest_element_data.select_elements_enabled=select_elements_enabled;
 	nearest_element_data.select_faces_enabled=select_faces_enabled;
 	nearest_element_data.select_lines_enabled=select_lines_enabled;
@@ -6006,16 +5886,16 @@ Returns the list of all elements identified in the <scene_picked_object_list>.
 
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct GROUP(FE_element) *element_group,
+	struct Cmiss_region *cmiss_region,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Returns the nearest picked element point in <scene_picked_object_list> that is
-in <element_group> (or any group if NULL). If any of the remaining address
+in <cmiss_region> (or in root_region if NULL). If any of the remaining address
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest element point.
 The returned Element_point_ranges structure should be used or destroyed by the
@@ -6029,7 +5909,7 @@ calling function.
 	nearest_element_point_data.nearest=0.0;
 	nearest_element_point_data.nearest_element_point=
 		(struct Element_point_ranges *)NULL;
-	nearest_element_point_data.element_group=element_group;
+	nearest_element_point_data.cmiss_region = cmiss_region;
 	nearest_element_point_data.scene_picked_object=
 		(struct Scene_picked_object *)NULL;
 	nearest_element_point_data.gt_element_group=(struct GT_element_group *)NULL;
@@ -6105,20 +5985,22 @@ Returns the list of all element_points in the <scene_picked_object_list>.
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int use_data,struct GROUP(FE_node) *node_group,
+	int use_data, struct Cmiss_region *cmiss_region,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Returns the nearest picked node in <scene_picked_object_list> that is in
-<node_group> (or any group if NULL). If any of the remaining address arguments
-are not NULL, they are filled with the appropriate information pertaining to
-the nearest node.
+<cmiss_region> (or any region if NULL). If any of the remaining address
+arguments are not NULL, they are filled with the appropriate information
+pertaining to the nearest node.
 The <use_data> flag indicates that we are searching for a data point instead of
-a node, needed since different settings type used for each.
+a node, needed since different settings type used for each, plus it uses the
+data_Cmiss_region from the GT_element_group. <cmiss_region> must be a data
+region if <use_data> set.
 ==============================================================================*/
 {
 	struct Scene_picked_object_get_nearest_node_data nearest_node_data;
@@ -6127,7 +6009,7 @@ a node, needed since different settings type used for each.
 	nearest_node_data.nearest=0.0;
 	nearest_node_data.nearest_node=(struct FE_node *)NULL;
 	nearest_node_data.use_data=use_data;
-	nearest_node_data.node_group=node_group;
+	nearest_node_data.cmiss_region = cmiss_region;
 	nearest_node_data.scene_picked_object=(struct Scene_picked_object *)NULL;
 	nearest_node_data.gt_element_group=(struct GT_element_group *)NULL;
 	nearest_node_data.gt_element_settings=(struct GT_element_settings *)NULL;
@@ -7405,32 +7287,33 @@ Does not complain if <child_scene> is not used in <scene>.
 } /* Scene_remove_child_scene */
 
 int Scene_add_graphical_element_group(struct Scene *scene,
-	struct GROUP(FE_element) *element_group, int position,
-	char *scene_object_name)
+	struct Cmiss_region *cmiss_region, 	struct Cmiss_region *data_cmiss_region,
+	int position, char *scene_object_name)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
-Adds a graphical <element_group> to the list of objects on <scene> at
-<position>. The group will be given a default rendition depending on the
-scenes current graphical_element_mode.
+Adds a graphical element group for <cmiss_region>, with data from
+<data_cmiss_region> to the list of objects in <scene> at <position>.
+The group will be given a default rendition depending on the scene's current
+graphical_element_mode.
+The new Scene_object will take the <scene_object_name>; an error is
+reported if this name is already in use in <scene>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
-The optional <scene_object_name> allows the scene_object to be given a different
-name from that of the <element_group>, and must be unique for the scene.
 Note if the scene is in GRAPHICAL_ELEMENT_MANUAL mode, a group may be added
 more than once with a different name, however, it will share the underlying
 GT_element_group and therefore have the same rendition.
 ==============================================================================*/
 {
-	char *element_group_name;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum GT_visibility_type visibility;
-	int default_value, maximum_value, return_code;
+	int default_coordinate_field_defined, default_value, maximum_value,
+		return_code;
 	struct Computed_field *default_coordinate_field, *element_xi_coordinate_field,
 		*orientation_scale_field, *variable_scale_field;
 	struct Element_discretization element_discretization;
-	struct GROUP(FE_node) *data_group, *node_group;
+	struct FE_region *fe_region;
 	struct GT_object *glyph;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
@@ -7438,20 +7321,14 @@ GT_element_group and therefore have the same rendition.
 	Triple glyph_centre, glyph_size, glyph_scale_factors;
 
 	ENTER(Scene_add_graphical_element_group);
-	if (scene && element_group)
+	if (scene && cmiss_region && data_cmiss_region && scene_object_name)
 	{
-		element_group_name = (char *)NULL;
-		GET_NAME(GROUP(FE_element))(element_group, &element_group_name);
-		if (!scene_object_name)
-		{
-			scene_object_name = element_group_name;
-		}
 		if (!FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_name,
 			(void *)scene_object_name, scene->scene_object_list))
 		{
 			/* see if group is currently in scene under any name */
 			if (scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-				Scene_object_has_element_group, (void *)element_group,
+				Scene_object_has_Cmiss_region, (void *)cmiss_region,
 				scene->scene_object_list))
 			{
 				gt_element_group =
@@ -7470,11 +7347,11 @@ GT_element_group and therefore have the same rendition.
 				{
 					/* not allowed to add group more than once, and must have same name
 						 as element_group */
-					if (scene_object || strcmp(scene_object_name, element_group_name))
+					if (scene_object)
 					{
 						display_message(ERROR_MESSAGE,
 							"Scene_add_graphical_element_group.  "
-							"Can not add groups again or under different names in %s mode",
+							"Can not add graphical groups more than once in %s mode",
 							ENUMERATOR_STRING(Scene_graphical_element_mode)(
 								scene->graphical_element_mode));
 						return_code = 0;
@@ -7503,115 +7380,89 @@ GT_element_group and therefore have the same rendition.
 				if (!gt_element_group)
 				{
 					/* Make a new GT_element_group */
-					/* First retrieve node group of the same name as the element group.
-						 Retrieve/create data group as necessary */
-					node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						element_group_name, scene->node_group_manager);
-					if (!(data_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						element_group_name, scene->data_group_manager)))
+					if (gt_element_group = CREATE(GT_element_group)(
+						cmiss_region, data_cmiss_region,
+						scene->computed_field_manager,
+						scene->element_point_ranges_selection,
+						scene->element_selection,
+						scene->node_selection,
+						scene->data_selection))
 					{
-						if (data_group = CREATE(GROUP(FE_node))(element_group_name))
-						{
-							if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(data_group,
-								scene->data_group_manager))
-							{
-								DESTROY(GROUP(FE_node))(&data_group);
-							}
-						}
-					}
-					if (node_group && data_group)
-					{
-						if (gt_element_group = CREATE(GT_element_group)(
-							element_group, node_group, data_group,
-							scene->element_manager,
-							scene->element_group_manager,
-							scene->node_manager,
-							scene->node_group_manager,
-							scene->data_manager,
-							scene->data_group_manager,
-							scene->computed_field_manager,
-							scene->element_point_ranges_selection,
-							scene->element_selection,
-							scene->node_selection,
-							scene->data_selection))
-						{
-							default_coordinate_field = 
-								GT_element_group_get_default_coordinate_field(gt_element_group);
-							/* set default circle and element discretization in group */
-							read_circle_discretization_defaults(&default_value,
-								&maximum_value, scene->user_interface);
-							GT_element_group_set_circle_discretization(gt_element_group,
-								default_value, scene->user_interface);
-							read_element_discretization_defaults(&default_value,
-								&maximum_value, scene->user_interface);
-							element_discretization.number_in_xi1 = default_value;
-							element_discretization.number_in_xi2 = default_value;
-							element_discretization.number_in_xi3 = default_value;
-							GT_element_group_set_element_discretization(gt_element_group,
-								&element_discretization, scene->user_interface);
+						default_coordinate_field = 
+							GT_element_group_get_default_coordinate_field(gt_element_group);
+						/* set default circle and element discretization in group */
+						read_circle_discretization_defaults(&default_value,
+							&maximum_value, scene->user_interface);
+						GT_element_group_set_circle_discretization(gt_element_group,
+							default_value, scene->user_interface);
+						read_element_discretization_defaults(&default_value,
+							&maximum_value, scene->user_interface);
+						element_discretization.number_in_xi1 = default_value;
+						element_discretization.number_in_xi2 = default_value;
+						element_discretization.number_in_xi3 = default_value;
+						GT_element_group_set_element_discretization(gt_element_group,
+							&element_discretization, scene->user_interface);
 
-							if (GRAPHICAL_ELEMENT_LINES == scene->graphical_element_mode)
+						if (GRAPHICAL_ELEMENT_LINES == scene->graphical_element_mode)
+						{
+							/* add default settings - wireframe (line) rendition */
+							if (settings =
+								CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_LINES))
 							{
-								/* add default settings - wireframe (line) rendition */
-								if (settings =
-									CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_LINES))
-								{
-									GT_element_settings_set_material(settings,
-										scene->default_material);
-									GT_element_settings_set_selected_material(settings,
-										FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-											"default_selected", scene->graphical_material_manager));
-									if (!GT_element_group_add_settings(gt_element_group,
-										settings, 0))
-									{
-										display_message(ERROR_MESSAGE,
-											"Scene_add_graphical_element_group.  "
-											"Could not add default line settings");
-										DESTROY(GT_element_settings)(&settings);
-									}
-								}
-								else
+								GT_element_settings_set_material(settings,
+									scene->default_material);
+								GT_element_settings_set_selected_material(settings,
+									FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+										"default_selected", scene->graphical_material_manager));
+								if (!GT_element_group_add_settings(gt_element_group,
+									settings, 0))
 								{
 									display_message(ERROR_MESSAGE,
 										"Scene_add_graphical_element_group.  "
-										"Could not create default line settings");
+										"Could not add default line settings");
+									DESTROY(GT_element_settings)(&settings);
 								}
-								/* if the group has data, and the default_coordinate_field
-									 element_xi_coordinate field defined over them, then
-									 add data_points to the rendition */
-								element_xi_coordinate_field =
-									FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_type_embedded, NULL,
-										scene->computed_field_manager);
-								if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-									(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
-									(void *)NULL, data_group) &&
-									(default_coordinate_field && FIRST_OBJECT_IN_GROUP_THAT(
-										FE_node)(FE_node_has_Computed_field_defined,
-										(void *)default_coordinate_field, data_group)) ||
-										(element_xi_coordinate_field &&
-											FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-												FE_node_has_Computed_field_defined,
-												(void *)element_xi_coordinate_field, data_group)))
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Scene_add_graphical_element_group.  "
+									"Could not create default line settings");
+							}
+							/* if the group has data, and the default_coordinate_field
+								 element_xi_coordinate field defined over them, then
+								 add data_points to the rendition */
+							element_xi_coordinate_field =
+								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+									Computed_field_is_type_embedded, NULL,
+									scene->computed_field_manager);
+							if ((fe_region = Cmiss_region_get_FE_region(data_cmiss_region)) &&
+								FE_region_get_first_FE_node_that(fe_region,
+									(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL))
+							{
+								default_coordinate_field_defined = default_coordinate_field && 
+									FE_region_get_first_FE_node_that(fe_region,
+										FE_node_has_Computed_field_defined,
+										(void *)default_coordinate_field);
+								if (default_coordinate_field_defined ||
+									(element_xi_coordinate_field &&
+										FE_region_get_first_FE_node_that(fe_region,
+											FE_node_has_Computed_field_defined,
+											(void *)element_xi_coordinate_field)))
 								{
 									if (settings = CREATE(GT_element_settings)(
 										GT_ELEMENT_SETTINGS_DATA_POINTS))
 									{
-										if (element_xi_coordinate_field&&
-											!(default_coordinate_field && 
-												FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-												FE_node_has_Computed_field_defined,
-												(void *)default_coordinate_field,data_group)))
+										if (!default_coordinate_field_defined)
 										{
 											GT_element_settings_set_coordinate_field(
-												settings,element_xi_coordinate_field);
+												settings, element_xi_coordinate_field);
 										}
 										GT_element_settings_set_material(settings,
 											scene->default_material);
 										GT_element_settings_set_selected_material(settings,
-											FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
-												name)("default_selected",
-													scene->graphical_material_manager));
+											FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+												"default_selected", scene->graphical_material_manager));
 										/* set the glyph to "point" */
 										GT_element_settings_get_glyph_parameters(settings,
 											&glyph, &glyph_scaling_mode, glyph_centre,
@@ -7639,25 +7490,14 @@ GT_element_group and therefore have the same rendition.
 											"Could not create default data_point settings");
 									}
 								}
-								/* build graphics for default rendition */
-								/*GT_element_group_build_graphics_objects(
-									gt_element_group, (struct FE_element *)NULL,
-									(struct FE_node *)NULL);*/
 							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Scene_add_graphical_element_group.  "
-								"Could not create graphical element group");
-							return_code = 0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"Scene_add_graphical_element_group.  "
-							"Could not get matching node_group and/or data_group");
+							"Could not create graphical element group");
 						return_code = 0;
 					}
 				}
@@ -7718,7 +7558,6 @@ GT_element_group and therefore have the same rendition.
 				"Object with name '%s' already in scene", scene_object_name);
 			return_code = 0;
 		}
-		DEALLOCATE(element_group_name);
 	}
 	else
 	{
@@ -7732,25 +7571,25 @@ GT_element_group and therefore have the same rendition.
 } /* Scene_add_graphical_element_group */
 
 int Scene_remove_graphical_element_group(struct Scene *scene,
-	struct GROUP(FE_element) *element_group)
+	struct Cmiss_region *cmiss_region)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Removes all scene objects containing a graphical rendition of <element_group>
-from <scene>. Does not complain if <element_group> is not used in <scene>.
+Removes all scene objects containing a graphical rendition of <cmiss_region>
+from <scene>. Does not complain if <cmiss_region> is not used in <scene>.
 ==============================================================================*/
 {
 	int return_code;
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_remove_graphical_element_group);
-	if (scene && element_group)
+	if (scene && cmiss_region)
 	{
 		return_code = 1;
 		while (return_code && (scene_object =
-			FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_element_group,
-				(void *)element_group, scene->scene_object_list)))
+			FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_Cmiss_region,
+				(void *)cmiss_region, scene->scene_object_list)))
 		{
 			if (!Scene_remove_Scene_object(scene, scene_object))
 			{
@@ -7843,50 +7682,47 @@ Scene_object has a Time_object.
 } /* Scene_update_time_behaviour */
 
 int Scene_update_time_behaviour_with_gt_element_group(struct Scene *scene,
-	struct GT_element_group *element_group)
+	struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-If the <element_group> has more than one time, this function ensures that the
+If the <gt_element_group> has more than one time, this function ensures that the
 Scene_object has a Time_object.
 ==============================================================================*/
 {
-	char *element_group_name, *time_object_name;
+	char *time_object_name;
 	int return_code;
 	struct Scene_object *scene_object;
 	struct Time_object *time;
 	
 	ENTER(Scene_update_time_behaviour_with_gt_element_group);
-	/* check arguments */
-	if (scene&&element_group)
+	if (scene && gt_element_group)
 	{
 		return_code = 1;
 		/* Ensure the Scene object has a time object if and only if the 
 			graphics object has more than one time */
 		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 			Scene_object_has_graphical_element_group,
-			(void *)element_group,scene->scene_object_list))
+			(void *)gt_element_group,scene->scene_object_list))
 		{
-			if(GT_element_group_has_multiple_times(element_group))
+			if(GT_element_group_has_multiple_times(gt_element_group))
 			{
 				if(!Scene_object_has_time(scene_object))
 				{
-					if(GET_NAME(GT_element_group)(element_group,&element_group_name)
-						&& ALLOCATE(time_object_name, char, strlen(element_group_name)
+					if (ALLOCATE(time_object_name, char, strlen(scene_object->name)
 						+ strlen(scene->name) + 5))
 					{
-						sprintf(time_object_name, "%s_in_%s", element_group_name,
+						sprintf(time_object_name, "%s_in_%s", scene_object->name,
 							scene->name);
 						if(time = CREATE(Time_object)(time_object_name))
 						{
 							Scene_object_set_time_object(scene_object, time);
 							Time_object_set_time_keeper(time, scene->default_time_keeper);
 							/* Time_object_set_next_time_function(time,
-								GT_element_group_next_time_function, element_group); */
+								GT_element_group_next_time_function, gt_element_group); */
 						}
 						DEALLOCATE(time_object_name);
-						DEALLOCATE(element_group_name);
 					}
 				}
 				else
@@ -8038,13 +7874,13 @@ Returns 0 without error if scene is empty.
 } /* Scene_get_graphics_range */
 
 int Scene_get_element_group_position(struct Scene *scene,
-	struct GROUP(FE_element) *element_group)
+	struct Cmiss_region *cmiss_region)
 /*******************************************************************************
-LAST MODIFIED : 28 February 1998
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
-This function returns the position of <element_group> in <scene>, starting
+This function returns the position of <cmiss_region> in <scene>, starting
 from 1 at the top. A return value of 0 indicates an error - probably saying
 that the GFE for element_group is not in the scene.
 ==============================================================================*/
@@ -8053,26 +7889,26 @@ that the GFE for element_group is not in the scene.
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_get_element_group_position);
-	if (scene&&element_group)
+	if (scene && cmiss_region)
 	{
 		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_element_group,(void *)element_group,
+			Scene_object_has_Cmiss_region, (void *)cmiss_region,
 			scene->scene_object_list))
 		{
-			return_code=Scene_object_get_position(scene_object);
+			return_code = Scene_object_get_position(scene_object);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"Scene_get_element_group_position.  "
 				"Element_group not in scene");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_get_element_group_position.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -8080,15 +7916,15 @@ that the GFE for element_group is not in the scene.
 } /* Scene_get_element_group_position */
 
 int Scene_set_element_group_position(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,int position)
+	struct Cmiss_region *cmiss_region, int position)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 2 December 200
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
-This function sets the position of <element_group> in <scene>, starting
+This function sets the position of <cmiss_region> in <scene>, starting
 from 1 at the top. A value less than 1 or greater than the number of graphics
-objects in the list puts <element_group> at the end.
+objects in the list puts <cmiss_region> at the end.
 Scene_object for the group keeps the same name.
 ==============================================================================*/
 {
@@ -8096,26 +7932,27 @@ Scene_object for the group keeps the same name.
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_set_element_group_position);
-	if (scene&&element_group)
+	if (scene && cmiss_region)
 	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_element_group,(void *)element_group,
+		if (scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+			Scene_object_has_Cmiss_region, (void *)cmiss_region,
 			scene->scene_object_list))
 		{
-			return_code=Scene_set_scene_object_position(scene,scene_object,position);
+			return_code =
+				Scene_set_scene_object_position(scene, scene_object, position);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"Scene_set_element_group_position.  "
 				"Graphics object not in scene");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_set_element_group_position.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -8271,22 +8108,22 @@ objects in the list puts <scene_object> at the end.
 } /* Scene_set_scene_object_position */
 
 enum GT_visibility_type Scene_get_element_group_visibility(
-	struct Scene *scene,struct GROUP(FE_element) *element_group)
+	struct Scene *scene, struct Cmiss_region *cmiss_region)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1998
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Returns the visibility of the GFE for <element_group> in <scene>.
+Returns the visibility of the GFE for <cmiss_region> in <scene>.
 ==============================================================================*/
 {
 	enum GT_visibility_type visibility;
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_get_element_group_visibility);
-	if (scene&&element_group)
+	if (scene&&cmiss_region)
 	{
 		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_element_group,(void *)element_group,
+			Scene_object_has_Cmiss_region,(void *)cmiss_region,
 			scene->scene_object_list))
 		{
 			visibility=Scene_object_get_visibility(scene_object);
@@ -8311,7 +8148,7 @@ Returns the visibility of the GFE for <element_group> in <scene>.
 
 struct Element_group_visibility_data
 {
-	struct GROUP(FE_element) *element_group;
+	struct Cmiss_region *cmiss_region;
 	enum GT_visibility_type visibility;
 };
 
@@ -8321,7 +8158,7 @@ static int Scene_object_set_element_group_visibility_iterator(
 LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
-If the <scene_object> is a graphical element group using <element_group>, set
+If the <scene_object> is a graphical element group using <cmiss_region>, set
 its <visibility>.
 ==============================================================================*/
 {
@@ -8332,8 +8169,8 @@ its <visibility>.
 	if (scene_object &&
 		(user_data = (struct Element_group_visibility_data *)user_data_void))
 	{
-		if (Scene_object_has_element_group(scene_object,
-			(void *)user_data->element_group))
+		if (Scene_object_has_Cmiss_region(scene_object,
+			(void *)user_data->cmiss_region))
 		{
 			return_code =
 				Scene_object_set_visibility(scene_object, user_data->visibility);
@@ -8356,22 +8193,22 @@ its <visibility>.
 } /* Scene_object_set_element_group_visibility_iterator */
 
 int Scene_set_element_group_visibility(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,enum GT_visibility_type visibility)
+	struct Cmiss_region *cmiss_region,enum GT_visibility_type visibility)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Sets the visibility of all scene objects that are graphical element groups for
-<element_group> in <scene>.
+<cmiss_region> in <scene>.
 ==============================================================================*/
 {
 	int return_code;
 	struct Element_group_visibility_data user_data;
 
 	ENTER(Scene_set_element_group_visibility);
-	if (scene && element_group)
+	if (scene && cmiss_region)
 	{
-		user_data.element_group = element_group;
+		user_data.cmiss_region = cmiss_region;
 		user_data.visibility = visibility;
 		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(
 			Scene_object_set_element_group_visibility_iterator,
@@ -8602,61 +8439,58 @@ Returns the Scene_object called <name> in <scene>, or NULL if not found.
 	return (scene_object);
 } /* Scene_get_Scene_object_by_name */
 
-int Scene_has_graphical_element_group(struct Scene *scene,
-	struct GROUP(FE_element) *element_group)
+int Scene_has_Cmiss_region(struct Scene *scene,
+	struct Cmiss_region *cmiss_region)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Returns true if <element_group> is in the list of objects on <scene>.
+Returns true if <scene> contains a graphical element for <cmiss_region>.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Scene_has_graphical_element_group);
-	/* check arguments */
-	if (scene&&element_group)
+	ENTER(Scene_has_Cmiss_region);
+	if (scene && cmiss_region)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_element_group,(void *)element_group,
-			scene->scene_object_list))
+		if (FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_Cmiss_region,
+			(void *)cmiss_region, scene->scene_object_list))
 		{
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_has_graphical_element_group.  Invalid argument(s)");
-		return_code=0;
+			"Scene_has_Cmiss_region.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_has_graphical_element_group */
+} /* Scene_has_Cmiss_region */
 
 struct GT_element_group *Scene_get_graphical_element_group(
-	struct Scene *scene,struct GROUP(FE_element) *element_group)
+	struct Scene *scene, struct Cmiss_region *cmiss_region)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Returns the graphical element_group for <element_group> in <scene>.
+Returns the graphical element_group for <cmiss_region> in <scene>.
 ==============================================================================*/
 {
 	struct GT_element_group *gt_element_group;
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_get_graphical_element_group);
-	/* check arguments */
-	if (scene&&element_group)
+	if (scene && cmiss_region)
 	{
 		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_element_group,(void *)element_group,
+			Scene_object_has_Cmiss_region, (void *)cmiss_region,
 			scene->scene_object_list))
 		{
 			gt_element_group=Scene_object_get_graphical_element_group(scene_object);
@@ -8670,17 +8504,17 @@ Returns the graphical element_group for <element_group> in <scene>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_get_graphical_element_group.  Invalid argument(s)");
-		gt_element_group=(struct GT_element_group *)NULL;
+		gt_element_group = (struct GT_element_group *)NULL;
 	}
 	LEAVE;
 
 	return (gt_element_group);
 } /* Scene_get_graphical_element_group */
 
-struct Scene_object *Scene_get_scene_object_with_element_group(
-	struct Scene *scene,struct GROUP(FE_element) *element_group)
+struct Scene_object *Scene_get_scene_object_with_Cmiss_region(
+	struct Scene *scene, struct Cmiss_region *cmiss_region)
 /*******************************************************************************
-LAST MODIFIED : 24 January 2002
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Returns the scene_object for <element_group> in <scene>.
@@ -8688,24 +8522,23 @@ Returns the scene_object for <element_group> in <scene>.
 {
 	struct Scene_object *scene_object;
 
-	ENTER(Scene_get_scene_object_with_element_group);
-	/* check arguments */
-	if (scene&&element_group)
+	ENTER(Scene_get_scene_object_with_Cmiss_region);
+	if (scene && cmiss_region)
 	{
-		scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_element_group,(void *)element_group,
+		scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+			Scene_object_has_Cmiss_region, (void *)cmiss_region,
 			scene->scene_object_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_get_scene_object_with_element_group.  Invalid argument(s)");
-		scene_object=(struct Scene_object *)NULL;
+			"Scene_get_scene_object_with_Cmiss_region.  Invalid argument(s)");
+		scene_object = (struct Scene_object *)NULL;
 	}
 	LEAVE;
 
 	return (scene_object);
-} /* Scene_get_scene_object_with_element_group */
+} /* Scene_get_scene_object_with_Cmiss_region */
 
 int set_Scene(struct Parse_state *state,
 	void *scene_address_void,void *scene_manager_void)
@@ -9055,7 +8888,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 int modify_Scene(struct Parse_state *state,void *scene_void,
 	void *modify_scene_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Parser commands for modifying scenes - lighting, etc.
@@ -9117,13 +8950,8 @@ Parser commands for modifying scenes - lighting, etc.
 							Scene_set_graphical_element_mode(scene,
 								graphical_element_mode,
 								modify_scene_data->computed_field_manager,
-								modify_scene_data->element_manager,
-								modify_scene_data->element_group_manager,
-								modify_scene_data->fe_field_manager,
-								modify_scene_data->node_manager,
-								modify_scene_data->node_group_manager,
-								modify_scene_data->data_manager,
-								modify_scene_data->data_group_manager,
+								modify_scene_data->root_region,
+								modify_scene_data->data_root_region,
 								modify_scene_data->element_point_ranges_selection,
 								modify_scene_data->element_selection,
 								modify_scene_data->node_selection,
@@ -9251,9 +9079,9 @@ Writes the properties of the <scene> to the command window.
 } /* list_Scene */
 
 int gfx_modify_g_element_general(struct Parse_state *state,
-	void *element_group_void,void *scene_void)
+	void *cmiss_region_void, void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT GENERAL command.
@@ -9261,23 +9089,16 @@ Allows general element_group settings to be changed (eg. discretization) and
 updates graphics of settings affected by the changes (probably all).
 ==============================================================================*/
 {
-	int circle_discretization,clear_flag,i,return_code;
+	int circle_discretization, clear_flag, return_code;
+	struct Cmiss_region *cmiss_region;
 	struct Computed_field *default_coordinate_field;
 	struct FE_field *native_discretization_field;
-	struct GROUP(FE_element) *element_group;
-	static struct Modifier_entry option_table[]=
-	{
-		{"circle_discretization",NULL,NULL,set_Circle_discretization},
-		{"clear",NULL,NULL,set_char_flag},
-		{"default_coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"element_discretization",NULL,NULL,set_Element_discretization},
-		{"native_discretization",NULL,NULL,set_FE_field},
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Set_FE_field_conditional_FE_region_data
+		native_discretization_field_conditional_data;
 	struct Element_discretization element_discretization;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
+	struct Option_table *option_table;
 	struct Scene *scene;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
@@ -9285,12 +9106,12 @@ updates graphics of settings affected by the changes (probably all).
 	if (state)
 	{
 		/* get default scene */
-		if (scene=(struct Scene *)scene_void)
+		if (scene = (struct Scene *)scene_void)
 		{
 			/* if possible, get defaults from element_group on default scene */
-			if ((element_group=(struct GROUP(FE_element) *)element_group_void)&&
+			if ((cmiss_region = (struct Cmiss_region *)cmiss_region_void)&&
 				(gt_element_group=Scene_get_graphical_element_group(scene,
-					element_group)))
+					cmiss_region)))
 			{
 				if (default_coordinate_field=
 					GT_element_group_get_default_coordinate_field(gt_element_group))
@@ -9319,40 +9140,46 @@ updates graphics of settings affected by the changes (probably all).
 			/* ACCESS scene for use by set_Scene */
 			clear_flag=0;
 			ACCESS(Scene)(scene);
-			i=0;
+
+			option_table = CREATE(Option_table)();
 			/* circle_discretization */
-			(option_table[i]).to_be_modified= &circle_discretization;
-			(option_table[i]).user_data= (void *)(scene->user_interface);
-			i++;
+			Option_table_add_entry(option_table, "circle_discretization",
+				(void *)&circle_discretization, (void *)(scene->user_interface),
+				set_Circle_discretization);
 			/* clear */
-			(option_table[i]).to_be_modified= &clear_flag;
-			i++;
+			Option_table_add_entry(option_table, "clear",
+				(void *)&clear_flag, NULL, set_char_flag);
 			/* default_coordinate */
 			set_coordinate_field_data.computed_field_manager=
 				scene->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &default_coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table, "default_coordinate",
+				(void *)&default_coordinate_field, (void *)&set_coordinate_field_data,
+				set_Computed_field_conditional);
 			/* element_discretization */
-			(option_table[i]).to_be_modified= &element_discretization;
-			(option_table[i]).user_data= (void *)(scene->user_interface);
-			i++;
+			Option_table_add_entry(option_table, "element_discretization",
+				(void *)&element_discretization, (void *)(scene->user_interface),
+				set_Element_discretization);
 			/* native_discretization */
-			(option_table[i]).to_be_modified= &native_discretization_field;
-			(option_table[i]).user_data=scene->fe_field_manager;
-			i++;
+			native_discretization_field_conditional_data.conditional_function = 
+				(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL;
+			native_discretization_field_conditional_data.user_data = (void *)NULL;
+			native_discretization_field_conditional_data.fe_region =
+				Cmiss_region_get_FE_region(scene->root_region);
+			Option_table_add_entry(option_table, "native_discretization",
+				(void *)&native_discretization_field,
+				(void *)&native_discretization_field_conditional_data,
+				set_FE_field_conditional_FE_region);
 			/* scene */
-			(option_table[i]).to_be_modified= &scene;
-			(option_table[i]).user_data= (void *)(scene->scene_manager);
-			i++;
-			if (return_code=process_multiple_options(state,option_table))
+			Option_table_add_entry(option_table, "scene",
+				(void *)&scene, (void *)(scene->scene_manager), set_Scene);
+			if (return_code = Option_table_multi_parse(option_table, state))
 			{
 				/* scene may have changed so get gt_element_group again */
 				if (gt_element_group=Scene_get_graphical_element_group(scene,
-					element_group))
+					cmiss_region))
 				{
 					GT_element_group_begin_cache(gt_element_group);
 					if (clear_flag)
@@ -9388,6 +9215,7 @@ updates graphics of settings affected by the changes (probably all).
 					return_code=0;
 				}
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (default_coordinate_field)
 			{
 				DEACCESS(Computed_field)(&default_coordinate_field);

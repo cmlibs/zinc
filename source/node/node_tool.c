@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 29 April 2003
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -14,7 +14,6 @@ Scene input.
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
 #include "choose/choose_computed_field.h"
-#include "choose/choose_node_group.h"
 #endif /* defined (MOTIF) */
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
@@ -35,6 +34,7 @@ Scene input.
 #include "node/node_tool.uidh"
 #include "motif/image_utilities.h"
 #endif /* defined (MOTIF) */
+#include "region/cmiss_region_chooser.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -67,11 +67,13 @@ changes in node position and derivatives etc.
 	struct Execute_command *execute_command;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
-	struct MANAGER(FE_node) *node_manager;
 	/* flag indicating that the above manager is actually the data manager */
 	int use_data;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	void *node_group_manager_callback_id;
+	/* The root region */
+	struct Cmiss_region *root_region;
+	/* The region we are working in */
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
 	/* needed for destroy button */
 	struct MANAGER(FE_element) *element_manager;
 	struct FE_node_selection *node_selection;
@@ -94,7 +96,7 @@ changes in node position and derivatives etc.
 		 a stream of nodes where the user swipes, rather than just 1 */
 	int streaming_create_enabled;
 	enum Node_tool_edit_mode edit_mode;
-	struct GROUP(FE_node) *node_group;
+	struct Cmiss_region_chooser *cmiss_region_chooser;
 	struct Computed_field *coordinate_field, *url_field;
 	struct FE_node *template_node;
 	/* information about picked nodes the editor knows about */
@@ -145,10 +147,8 @@ to its position between these two planes.
 	struct Computed_field *orientation_scale_field,
 		*wrapper_orientation_scale_field, *variable_scale_field;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
-	/* need the node manager for global modify */
-	struct MANAGER(FE_node) *node_manager;
-	/* only edit the node if in the node_group, if supplied */
-	struct GROUP(FE_node) *node_group;
+	/* editing nodes in this region */
+	struct FE_region *fe_region;
 	/* information for undoing scene object transformations - only needs to be
 		 done if transformation_required is set */
 	int transformation_required,LU_indx[4];
@@ -195,9 +195,7 @@ Defines the appropriate FE_field upon which the <coordinate_field> depends in
 	if (node_tool && node)
 	{
 		if (node_tool->coordinate_field && (fe_field_list=
-			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field,
-				Computed_field_package_get_computed_field_manager(
-					node_tool->computed_field_package))))
+			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
 		{
 			if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
 				(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
@@ -273,10 +271,11 @@ Ensures there is a template node defined with the coordinate_field in the
 		{
 			if (node_tool->coordinate_field)
 			{
-				if (node_tool->node_group)
+				if (node_tool->fe_region)
 				{
 					if (node_tool->template_node=CREATE(FE_node)(
-						/*node_number*/0,(struct FE_node *)NULL))
+						/*node_number*/0, node_tool->fe_region,
+						/*template*/(struct FE_node *)NULL))
 					{
 						if (Node_tool_define_field_at_node(node_tool,
 							node_tool->template_node))
@@ -447,7 +446,7 @@ applied to multiple nodes.
 
 	ENTER(FE_node_calculate_delta_position);
 	if (node&&(edit_info=(struct FE_node_edit_information *)edit_info_void)&&
-		edit_info->node_manager&&edit_info->rc_coordinate_field&&
+		edit_info->fe_region&&edit_info->rc_coordinate_field&&
 		(3>=Computed_field_get_number_of_components(
 			edit_info->rc_coordinate_field)))
 	{
@@ -500,9 +499,9 @@ applied to multiple nodes.
 					return_code=Computed_field_evaluate_at_node(
 						edit_info->coordinate_field,node,edit_info->time,
 						initial_coordinates)&&
-						Computed_field_set_values_at_managed_node(
+						Computed_field_set_values_at_node_in_FE_region(
 							edit_info->rc_coordinate_field,node,coordinates,
-							edit_info->node_manager)&&
+							edit_info->fe_region)&&
 						Computed_field_evaluate_at_node(edit_info->coordinate_field,
 							node,edit_info->time,final_coordinates);
 					edit_info->delta1 = final_coordinates[0] - initial_coordinates[0];
@@ -514,9 +513,9 @@ applied to multiple nodes.
 					edit_info->delta1 = coordinates[0] - initial_coordinates[0];
 					edit_info->delta2 = coordinates[1] - initial_coordinates[1];
 					edit_info->delta3 = coordinates[2] - initial_coordinates[2];
-					return_code=Computed_field_set_values_at_managed_node(
+					return_code=Computed_field_set_values_at_node_in_FE_region(
 						edit_info->rc_coordinate_field,node,coordinates,
-						edit_info->node_manager);
+						edit_info->fe_region);
 				}
 			}
 		}
@@ -558,15 +557,15 @@ stored in the <edit_info>.
 
 	ENTER(FE_node_edit_position);
 	if (node&&(edit_info=(struct FE_node_edit_information *)edit_info_void)&&
-		edit_info->node_manager&&edit_info->rc_coordinate_field&&
+		edit_info->fe_region&&edit_info->rc_coordinate_field&&
 		(3>=Computed_field_get_number_of_components(
 			edit_info->rc_coordinate_field)))
 	{
 		return_code=1;
 		/* the last_picked_node was edited in FE_node_calculate_delta_position.
 			 Also, don't edit unless in node_group, if supplied */
-		if ((node != edit_info->last_picked_node)&&((!edit_info->node_group)||
-			IS_OBJECT_IN_GROUP(FE_node)(node,edit_info->node_group)))
+		if ((node != edit_info->last_picked_node)&&(
+			FE_region_contains_FE_node(edit_info->fe_region, node)))
 		{
 			/* clear coordinates in case less than 3 dimensions */
 			coordinates[0]=0.0;
@@ -586,9 +585,12 @@ stored in the <edit_info>.
 					coordinates[2] += edit_info->delta3;
 					if (return_code)
 					{
-						if (!Computed_field_set_values_at_managed_node(
+						/*???RC following function currently copies all FE_fields in node,
+							not just those affected, and therefore sends less efficient
+							change message */
+						if (!Computed_field_set_values_at_node_in_FE_region(
 							edit_info->coordinate_field,node,coordinates,
-							edit_info->node_manager))
+							edit_info->fe_region))
 						{
 							return_code=0;
 						}
@@ -636,7 +638,7 @@ NOTE: currently does not tolerate having a variable_scale_field.
 
 	ENTER(FE_node_calculate_delta_vector);
 	if (node&&(edit_info=(struct FE_node_edit_information *)edit_info_void)&&
-		edit_info->node_manager&&edit_info->rc_coordinate_field&&
+		edit_info->fe_region&&edit_info->rc_coordinate_field&&
 		(3>=Computed_field_get_number_of_components(
 			edit_info->rc_coordinate_field))&&
 		edit_info->wrapper_orientation_scale_field&&
@@ -740,9 +742,9 @@ NOTE: currently does not tolerate having a variable_scale_field.
 			}
 			if (return_code)
 			{
-				if (!Computed_field_set_values_at_managed_node(
+				if (!Computed_field_set_values_at_node_in_FE_region(
 					edit_info->wrapper_orientation_scale_field,node,orientation_scale,
-					edit_info->node_manager))
+					edit_info->fe_region))
 				{
 					return_code=0;
 				}
@@ -834,17 +836,16 @@ stored in the <edit_info>.
 
 	ENTER(FE_node_edit_vector);
 	if (node&&(edit_info=(struct FE_node_edit_information *)edit_info_void)&&
-		edit_info->node_manager&&edit_info->orientation_scale_field&&
+		edit_info->fe_region&&edit_info->orientation_scale_field&&
 		(0<(number_of_orientation_scale_components=
 			Computed_field_get_number_of_components(
 				edit_info->orientation_scale_field)))&&
 		(9>=number_of_orientation_scale_components))
 	{
 		return_code=1;
-		/* the last_picked_node was edited in FE_node_calculate_delta_vector.
-			 Also, don't edit unless in node_group, if supplied */
-		if ((node != edit_info->last_picked_node)&&((!edit_info->node_group)||
-			IS_OBJECT_IN_GROUP(FE_node)(node,edit_info->node_group)))
+		/* the last_picked_node was edited in FE_node_calculate_delta_vector. */
+		if ((node != edit_info->last_picked_node)&&(
+			FE_region_contains_FE_node(edit_info->fe_region, node)))
 		{
 			if (Computed_field_evaluate_at_node(
 				edit_info->orientation_scale_field,node,edit_info->time,
@@ -882,9 +883,9 @@ stored in the <edit_info>.
 				}
 				if (return_code)
 				{
-					if (!Computed_field_set_values_at_managed_node(
+					if (!Computed_field_set_values_at_node_in_FE_region(
 						edit_info->orientation_scale_field,node,orientation_scale,
-						edit_info->node_manager))
+						edit_info->fe_region))
 					{
 						return_code=0;
 					}
@@ -928,7 +929,7 @@ object's coordinate field.
 	struct Computed_field *coordinate_field, *picked_coordinate_field,
 		*rc_coordinate_field, *rc_picked_coordinate_field;
 
-	ENTER(Node_tool_define_field_at_node_at_interaction_volume);
+	ENTER(Node_tool_define_field_at_node_from_picked_coordinates);
 	if (node_tool&&node)
 	{
 		coordinate_field=node_tool->coordinate_field;
@@ -1003,7 +1004,7 @@ static struct FE_node *Node_tool_create_node_at_interaction_volume(
 	struct Node_tool *node_tool,struct Scene *scene,
 	struct Interaction_volume *interaction_volume)
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 15 April 2003
 
 DESCRIPTION :
 Returns a new node in the position indicated by <interaction_volume>, in the
@@ -1017,7 +1018,7 @@ the new node.
 	FE_value coordinates[3];
 	int i,LU_indx[4],node_number,transformation_required;
 	struct Computed_field *coordinate_field,*rc_coordinate_field;
-	struct FE_node *node;
+	struct FE_node *merged_node, *node;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *gt_element_settings;
 	struct Scene_object *scene_object;
@@ -1025,7 +1026,7 @@ the new node.
 	struct Scene_picked_object *scene_picked_object;
 
 	ENTER(Node_tool_create_node_at_interaction_volume);
-	node=(struct FE_node *)NULL;
+	merged_node = (struct FE_node *)NULL;
 	scene_picked_object=(struct Scene_picked_object *)NULL;
 	gt_element_group=(struct GT_element_group *)NULL;
 	gt_element_settings=(struct GT_element_settings *)NULL;
@@ -1036,16 +1037,16 @@ the new node.
 			coordinate_field=node_tool->coordinate_field;
 			if (node_tool->use_data)
 			{
-				scene_object_conditional_function=Scene_object_has_data_group;
+				scene_object_conditional_function=Scene_object_has_data_Cmiss_region;
 				gt_element_settings_type=GT_ELEMENT_SETTINGS_DATA_POINTS;
 			}
 			else
 			{
-				scene_object_conditional_function=Scene_object_has_node_group;
+				scene_object_conditional_function=Scene_object_has_Cmiss_region;
 				gt_element_settings_type=GT_ELEMENT_SETTINGS_NODE_POINTS;
 			}
 			if (scene&&(scene_object=first_Scene_object_in_Scene_that(scene,
-				scene_object_conditional_function,(void *)node_tool->node_group)))
+				scene_object_conditional_function,(void *)node_tool->region)))
 			{
 				gt_element_group=Scene_object_get_graphical_element_group(scene_object);
 				gt_element_settings=first_settings_in_GT_element_group_that(
@@ -1067,7 +1068,8 @@ the new node.
 			if (rc_coordinate_field=
 				Computed_field_begin_wrap_coordinate_field(coordinate_field))
 			{
-				node_number=get_next_FE_node_number(node_tool->node_manager,1);
+				node_number = FE_region_get_next_FE_node_identifier(
+					node_tool->fe_region, /*start*/1);
 				/* get new node coordinates from interaction_volume */
 				Interaction_volume_get_placement_point(interaction_volume,
 					node_coordinates);
@@ -1084,24 +1086,19 @@ the new node.
 					world_to_model_coordinates(coordinates,
 						LU_transformation_matrix,LU_indx);
 				}
-				if (!((node=CREATE(FE_node)(node_number,node_tool->template_node))&&
-					Computed_field_set_values_at_node(rc_coordinate_field,
-						node,coordinates)&&
-					ADD_OBJECT_TO_MANAGER(FE_node)(node,node_tool->node_manager)&&
-					ADD_OBJECT_TO_GROUP(FE_node)(node,node_tool->node_group)))
+				if (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+					node_tool->template_node))
 				{
-					display_message(ERROR_MESSAGE,
-						"Node_tool_create_node_at_interaction_volume.  "
-						"Could not create node");
-					if (IS_MANAGED(FE_node)(node,node_tool->node_manager))
+					ACCESS(FE_node)(node);
+					if (!(Computed_field_set_values_at_node(rc_coordinate_field, node,
+						coordinates) && (merged_node =
+							FE_region_merge_FE_node(node_tool->fe_region, node))))
 					{
-						REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,
-							node_tool->node_manager);
+						display_message(ERROR_MESSAGE,
+							"Node_tool_create_node_at_interaction_volume.  "
+							"Could not create node");
 					}
-					else
-					{
-						DESTROY(FE_node)(&node);
-					}
+					DEACCESS(FE_node)(&node);
 				}
 				Computed_field_clear_cache(rc_coordinate_field);
 				Computed_field_end_wrap(&rc_coordinate_field);
@@ -1123,7 +1120,7 @@ the new node.
 	if (node_tool)
 	{
 		/* only need following if editing; in which case need all of them */
-		if ((!node)||(!scene_picked_object)||(!gt_element_group)||
+		if ((!merged_node) || (!scene_picked_object) || (!gt_element_group) ||
 			(!gt_element_settings))
 		{
 			scene_picked_object=(struct Scene_picked_object *)NULL;
@@ -1140,8 +1137,51 @@ the new node.
 	}
 	LEAVE;
 
-	return (node);
+	return (merged_node);
 } /* Node_tool_create_node_at_interaction_volume */
+
+static int Node_tool_set_Cmiss_region(struct Node_tool *node_tool,
+	struct Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2003
+
+DESCRIPTION :
+Sets the <region> used by <node_tool>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Node_tool_set_Cmiss_region);
+	if (node_tool)
+	{
+		return_code=1;
+		if (region != node_tool->region)
+		{
+			if (node_tool->template_node)
+			{
+				DEACCESS(FE_node)(&(node_tool->template_node));
+			}
+			node_tool->region = region;
+			if (region)
+			{
+				node_tool->fe_region = Cmiss_region_get_FE_region(region);
+			}
+			else
+			{
+				node_tool->fe_region = (struct FE_region *)NULL;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_Cmiss_region.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_Cmiss_region */
 
 #if defined (MOTIF)
 static void Node_tool_close_CB(Widget widget,void *node_tool_void,
@@ -1428,32 +1468,32 @@ Callback for change of url_field.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void Node_tool_update_node_group(Widget widget,
-	void *node_tool_void,void *node_group_void)
+static void Node_tool_update_region(Widget widget,
+	void *node_tool_void,void *region_void)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 23 January 2003
 
 DESCRIPTION :
-Callback for change of node group to put the new nodes in.
+Callback for change of region that we are working in.
 ==============================================================================*/
 {
-	struct GROUP(FE_node) *node_group;
+	struct Cmiss_region *region;
 	struct Node_tool *node_tool;
 
-	ENTER(Node_tool_update_node_group);
+	ENTER(Node_tool_update_region);
 	USE_PARAMETER(widget);
 	if (node_tool=(struct Node_tool *)node_tool_void)
 	{
-		node_group=(struct GROUP(FE_node) *)node_group_void;
-		Node_tool_set_node_group(node_tool,node_group);
+		region = (struct Cmiss_region *)region_void;
+		Node_tool_set_Cmiss_region(node_tool, region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_update_node_group.  Invalid argument(s)");
+			"Node_tool_update_region.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Node_tool_update_node_group */
+} /* Node_tool_update_region */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -1488,7 +1528,7 @@ Callback for change of coordinate_field.
 static void Node_tool_destroy_selected_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 28 April 2003
 
 DESCRIPTION :
 Attempts to destroy all the nodes currently in the global selection.
@@ -1496,6 +1536,7 @@ Attempts to destroy all the nodes currently in the global selection.
 {
 	struct LIST(FE_node) *destroy_node_list;
 	struct Node_tool *node_tool;
+	struct FE_region *master_fe_region;
 
 	ENTER(Node_tool_destroy_selected_CB);
 	USE_PARAMETER(widget);
@@ -1506,9 +1547,14 @@ Attempts to destroy all the nodes currently in the global selection.
 		{
 			COPY_LIST(FE_node)(destroy_node_list,
 				FE_node_selection_get_node_list(node_tool->node_selection));
-			destroy_listed_nodes(destroy_node_list,
-				node_tool->node_manager,node_tool->node_group_manager,
-				node_tool->element_manager,node_tool->node_selection);
+			/* nodes destroyed only if removed from ultimate master FE_region */
+			if (FE_region_get_ultimate_master_FE_region(node_tool->fe_region,
+				&master_fe_region))
+			{
+				FE_region_begin_change(master_fe_region);
+				FE_region_remove_FE_node_list(master_fe_region, destroy_node_list);
+				FE_region_end_change(master_fe_region);
+			}
 			DESTROY(LIST(FE_node))(&destroy_node_list);
 		}
 	}
@@ -1525,14 +1571,16 @@ Attempts to destroy all the nodes currently in the global selection.
 static void Node_tool_undefine_selected_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 September 2000
+LAST MODIFIED : 29 April 2003
 
 DESCRIPTION :
 Attempts to undefine all the nodes currently in the global selection.
 ==============================================================================*/
 {
+	int number_in_elements;
 	struct FE_field *fe_field;
 	struct LIST(FE_field) *fe_field_list;
+	struct LIST(FE_node) *node_list;
 	struct Node_tool *node_tool;
 
 	ENTER(Node_tool_undefine_selected_CB);
@@ -1541,18 +1589,26 @@ Attempts to undefine all the nodes currently in the global selection.
 	if (node_tool=(struct Node_tool *)node_tool_void)
 	{
 		if (node_tool->coordinate_field && (fe_field_list=
-			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field,
-				Computed_field_package_get_computed_field_manager(
-					node_tool->computed_field_package))))
+			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
 		{
 			if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
 				(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
 					(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
 					fe_field_list)))
 			{
-				undefine_field_at_listed_nodes(
-					FE_node_selection_get_node_list(node_tool->node_selection),
-					fe_field,node_tool->node_manager,node_tool->element_manager);
+				node_list = CREATE(LIST(FE_node))();
+				if (COPY_LIST(FE_node)(node_list,
+					FE_node_selection_get_node_list(node_tool->node_selection)))
+				{
+					FE_region_begin_change(node_tool->fe_region);
+					FE_region_undefine_FE_field_in_FE_node_list(
+						node_tool->fe_region, fe_field, node_list, &number_in_elements);
+					display_message(WARNING_MESSAGE,
+						"Field could not be undefined in %d node(s) "
+						"because in-use by elements", number_in_elements);
+					FE_region_end_change(node_tool->fe_region);
+				}
+				DESTROY(LIST(FE_node))(&node_list);
 			}
 			else
 			{
@@ -1633,7 +1689,7 @@ release.
 							{
 								picked_node=Scene_picked_object_list_get_nearest_node(
 									scene_picked_object_list,node_tool->use_data,
-									(struct GROUP(FE_node) *)NULL,&scene_picked_object,
+									(struct Cmiss_region *)NULL,&scene_picked_object,
 									&gt_element_group,&gt_element_settings);
 							}
 							if (picked_node)
@@ -1761,19 +1817,9 @@ release.
 								edit_info.initial_interaction_volume=
 									node_tool->last_interaction_volume;
 								edit_info.final_interaction_volume=interaction_volume;
-								edit_info.node_manager=node_tool->node_manager;
+								edit_info.fe_region=node_tool->fe_region;
 								edit_info.time=Time_keeper_get_time(
 									node_tool->time_keeper);
-								if (node_tool->use_data)
-								{
-									edit_info.node_group=GT_element_group_get_data_group(
-										node_tool->gt_element_group);
-								}
-								else
-								{
-									edit_info.node_group=GT_element_group_get_node_group(
-										node_tool->gt_element_group);
-								}
 								/* get coordinate field to edit */
 								if (node_tool->define_enabled)
 								{
@@ -1831,8 +1877,7 @@ release.
 									if (node_list=FE_node_selection_get_node_list(
 										node_tool->node_selection))
 									{
-										/* cache manager so only one change message produced */
-										MANAGER_BEGIN_CACHE(FE_node)(node_tool->node_manager);
+										FE_region_begin_change(node_tool->fe_region);
 										/* edit vectors if non-constant orientation_scale field */
 										if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode) ||
 											(NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))&&
@@ -1867,7 +1912,7 @@ release.
 												return_code=0;
 											}
 										}
-										MANAGER_END_CACHE(FE_node)(node_tool->node_manager);
+										FE_region_end_change(node_tool->fe_region);
 									}
 									else
 									{
@@ -2075,51 +2120,6 @@ Fetches the appropriate icon for the interactive tool.
 	return (image);
 } /* Node_tool_get_icon */
 
-static void Node_tool_node_group_change(
-	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *node_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 30 September 2002
-
-DESCRIPTION :
-Node group manager change callback.  Makes sure we don't hold onto a 
-reference to an invalid node group.
-==============================================================================*/
-{
-	struct Node_tool *node_tool;
-
-	ENTER(Node_tool_node_group_change);
-	if (message && (node_tool = (struct Node_tool *)node_tool_void))
-	{
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_REMOVE(GROUP(FE_node)):
-			{
-				/* If the node group we are creating into disappears then
-					remove our reference to it and leave create mode */
-				if (node_tool->node_group && 
-					IS_OBJECT_IN_LIST(GROUP(FE_node))(node_tool->node_group,
-					message->changed_object_list))
-				{
-					node_tool->node_group = (struct GROUP(FE_node) *)NULL;
-					Node_tool_set_create_enabled(node_tool, /*false*/0);
-				}
-			} break;
-			case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
-			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
-			case MANAGER_CHANGE_ADD(GROUP(FE_node)):
-			{
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_node_group_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_tool_node_group_change */
-
 /*
 Global functions
 ----------------
@@ -2127,9 +2127,7 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_node) *node_manager,int use_data,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *root_region, int use_data,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
@@ -2137,7 +2135,7 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Time_keeper *time_keeper,
 	struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 31 March 2003
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -2150,6 +2148,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 	char *tool_display_name,*tool_name;
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
+	char *initial_path;
 	int init_widgets;
 	MrmType node_tool_dialog_class;
 	static MrmRegisterArg callback_list[]=
@@ -2199,28 +2198,24 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 	};
 	struct Callback_data callback;
 #endif /* defined (MOTIF) */
+	struct Cmiss_region *region;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_tool *node_tool;
 
 	ENTER(CREATE(Node_tool));
 	node_tool=(struct Node_tool *)NULL;
-	if (interactive_tool_manager&&node_manager&&
-		node_group_manager&&(element_manager||use_data)&&node_selection&&
+	if (interactive_tool_manager&&root_region&&node_selection&&
 		computed_field_package&&(computed_field_manager=
 			Computed_field_package_get_computed_field_manager(computed_field_package))
 		&&rubber_band_material&&user_interface&&execute_command)
 	{
+		Cmiss_region_get_root_region_path(&initial_path);
 		if (ALLOCATE(node_tool,struct Node_tool,1))
 		{
 			node_tool->execute_command=execute_command;
 			node_tool->interactive_tool_manager=interactive_tool_manager;
-			node_tool->node_manager=node_manager;
-			node_tool->use_data=use_data;
-			node_tool->node_group_manager=node_group_manager;
-			node_tool->node_group_manager_callback_id=
-				MANAGER_REGISTER(GROUP(FE_node))(Node_tool_node_group_change,
-				(void *)node_tool, node_tool->node_group_manager);
-			node_tool->element_manager=element_manager;
+			node_tool->root_region=root_region;
+			node_tool->use_data = use_data;
 			node_tool->node_selection=node_selection;
 			node_tool->computed_field_package=computed_field_package;
 			node_tool->rubber_band_material=
@@ -2239,9 +2234,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->create_enabled=0;
 			node_tool->streaming_create_enabled=0;
 			node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
-			node_tool->node_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
-				(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
-				(void *)NULL,node_group_manager);
 			node_tool->coordinate_field =
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 					Computed_field_has_up_to_3_numerical_components, (void *)NULL,
@@ -2280,6 +2272,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			/* initialise widgets */
 			node_tool->coordinate_field_form=(Widget)NULL;
 			node_tool->coordinate_field_widget=(Widget)NULL;
+			node_tool->cmiss_region_chooser=(struct Cmiss_region_chooser *)NULL;
 			node_tool->create_button=(Widget)NULL;
 			node_tool->define_button=(Widget)NULL;
 			node_tool->display = User_interface_get_display(user_interface);
@@ -2365,17 +2358,19 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 								{
 									init_widgets=0;
 								}
-								if (node_tool->node_group_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_node))(
-										node_tool->node_group_form,
-										node_tool->node_group,node_group_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
-										(void *)NULL, user_interface))
+								if (node_tool->cmiss_region_chooser =
+									CREATE(Cmiss_region_chooser)(node_tool->node_group_form,
+										node_tool->root_region, initial_path))
 								{
-									callback.data=(void *)node_tool;
-									callback.procedure=Node_tool_update_node_group;
-									CHOOSE_OBJECT_SET_CALLBACK(GROUP(FE_node))(
-										node_tool->node_group_widget,&callback);
+									if (Cmiss_region_chooser_get_region(
+										node_tool->cmiss_region_chooser, &region))
+									{
+										Node_tool_set_Cmiss_region(node_tool, region);
+									}
+									Cmiss_region_chooser_set_callback(
+										node_tool->cmiss_region_chooser,
+										Node_tool_update_region,
+										(void *)node_tool);
 								}
 								else
 								{
@@ -2451,6 +2446,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				"CREATE(Node_tool).  Not enough memory");
 			DEALLOCATE(node_tool);
 		}
+		DEALLOCATE(initial_path);
 	}
 	else
 	{
@@ -2498,13 +2494,6 @@ structure itself.
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
-		if (node_tool->node_group_manager_callback_id && node_tool->node_group_manager)
-		{
-			MANAGER_DEREGISTER(GROUP(FE_node))(
-				node_tool->node_group_manager_callback_id,
-				node_tool->node_group_manager);
-			node_tool->node_group_manager_callback_id=(void *)NULL;
-		}
 		if (node_tool->time_keeper)
 		{
 			DEACCESS(Time_keeper)(&(node_tool->time_keeper));
@@ -2710,7 +2699,7 @@ on a mouse button press. Also ensures define is enabled if create is.
 		return_code=1;
 		if (create_enabled)
 		{
-			if (node_tool->node_group && node_tool->coordinate_field)
+			if (node_tool->region && node_tool->coordinate_field)
 			{
 				/* make sure value of flag is exactly 1 */
 				create_enabled=1;
@@ -3077,67 +3066,67 @@ events, not just at the end of a mouse gesture.
 	return (return_code);
 } /* Node_tool_set_motion_update_enabled */
 
-struct GROUP(FE_node) *Node_tool_get_node_group(struct Node_tool *node_tool)
+int Node_tool_get_region_path(struct Node_tool *node_tool,
+	char **path_address)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
-Returns the node group new nodes are created in by <node_tool>.
-==============================================================================*/
-{
-	struct GROUP(FE_node) *node_group;
-
-	ENTER(Node_tool_get_node_group);
-	if (node_tool)
-	{
-		node_group=node_tool->node_group;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_get_node_group.  Invalid argument(s)");
-		node_group=(struct GROUP(FE_node) *)NULL;
-	}
-	LEAVE;
-
-	return (node_group);
-} /* Node_tool_get_node_group */
-
-int Node_tool_set_node_group(struct Node_tool *node_tool,
-	struct GROUP(FE_node) *node_group)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Sets the node group new nodes are created in by <node_tool>.
+Returns in <path_address> the path to the Cmiss_region where nodes created by
+the <node_tool> are put.
+Up to the calling function to DEALLOCATE the returned path.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Node_tool_set_node_group);
-	if (node_tool)
+	ENTER(Node_tool_get_region_path);
+	if (node_tool && path_address)
 	{
-		return_code=1;
-		if (node_group != node_tool->node_group)
-		{
-			node_tool->node_group=node_group;
-#if defined (MOTIF)
-			/* make sure the current group is shown */
-			CHOOSE_OBJECT_SET_OBJECT(GROUP(FE_node))(
-				node_tool->node_group_widget,node_tool->node_group);
-#endif /* defined (MOTIF) */
-		}
+		return_code = Cmiss_region_chooser_get_path(node_tool->cmiss_region_chooser,
+			path_address);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_set_node_group.  Invalid argument(s)");
-		return_code=0;
+			"Node_tool_get_region_path.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Node_tool_set_node_group */
+} /* Node_tool_get_region_path */
+
+int Node_tool_set_region_path(struct Node_tool *node_tool,
+	char *path)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2003
+
+DESCRIPTION :
+Sets the <path> to the region/FE_region where nodes created by
+<node_tool> are placed.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_region *region;
+
+	ENTER(Node_tool_set_region_path);
+	if (node_tool && path)
+	{
+		Cmiss_region_chooser_set_path(node_tool->cmiss_region_chooser, path);
+		region = (struct Cmiss_region *)NULL;
+		Cmiss_region_chooser_get_region(node_tool->cmiss_region_chooser, &region);
+		return_code = Node_tool_set_Cmiss_region(node_tool, region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_region_path.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_region_path */
 
 int Node_tool_get_select_enabled(struct Node_tool *node_tool)
 /*******************************************************************************
@@ -3376,3 +3365,4 @@ in the <node_tool>.
 
 	return (return_code);
 } /* Node_tool_set_url_field */
+

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -158,7 +158,7 @@ DESCRIPTION :
 #if defined (UNEMAP_USE_3D)
 struct Map_3d_package	
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION : Information specific to each individual 3d map (and managers).
 ??JW possibly scene and scene_viewer should be moved here from 
@@ -174,21 +174,14 @@ map_drawing_information.
 	struct GT_element_settings **contour_settings;	
 	struct FE_field *map_position_field,*map_fit_field;	
 	struct FE_node_order_info *node_order_info;
-	/*element_group,node_group on the cylinder (or prolate spheroid or patch) surface*/
-	/* mapped_torso_element_group,mapped_torso_node_group on the loaded default torso mesh*/
-	/* delaunay_torso_element_group,delaunay_torso_node_group on delaunay surface*/
-	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
-		*delaunay_torso_element_group;
-	struct GROUP(FE_node) *node_group,*mapped_torso_node_group,
-		*delaunay_torso_node_group;		
+	/* 'group' on the cylinder (or prolate spheroid or patch) surface */
+	/* 'mapped_torso_group' on the loaded default torso mesh */
+	/* 'delaunay_torso_group' on delaunay surface */
+	struct FE_region *group, *mapped_torso_group, *delaunay_torso_group;
 	struct GT_object *electrode_glyph;	
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_node) *data_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;  
+	struct Cmiss_region *root_cmiss_region;
+	struct Cmiss_region *data_root_cmiss_region;
 };
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -257,7 +250,7 @@ from here.
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
-	struct MANAGER(FE_node) *data_manager;	
+	struct Cmiss_region *data_root_cmiss_region;	
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;	
 	struct GT_object *torso_arm_labels;/*FOR AJP*/	
 #endif /* defined (UNEMAP_USE_3D) */
@@ -502,7 +495,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(FE_node) *data_manager,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct LIST(GT_object) *glyph_list,
 	struct Graphical_material *graphical_material,
 	struct Computed_field_package *computed_field_package,
@@ -511,7 +504,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 #endif /* defined (UNEMAP_USE_NODES) */
        );
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -548,16 +541,11 @@ sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
 PROTOTYPE_OBJECT_FUNCTIONS(Map_3d_package);
 
 struct Map_3d_package *CREATE(Map_3d_package)(
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(GROUP(FE_element))	*element_group_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager, 
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Computed_field) *computed_field_manager);
 /*******************************************************************************
-LAST MODIFIED : 8 September 1999
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION:
 Create and  and set it's components 
@@ -811,111 +799,58 @@ DESCRIPTION :
 sets the map_fit_field for map_3d_package
 ==============================================================================*/
 
-struct GROUP(FE_node) *get_map_3d_package_node_group(struct Map_3d_package *map_3d_package);
+struct FE_region *get_map_3d_package_group(struct Map_3d_package *map_3d_package);
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-gets the node_group for map_3d_package 
+gets the group for map_3d_package 
 ==============================================================================*/
 
-int set_map_3d_package_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *map_node_group);
+int set_map_3d_package_group(struct Map_3d_package *map_3d_package,
+	struct FE_region *map_group);
 /*******************************************************************************
-LAST MODIFIED : 8 December 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-sets the node_group for map_3d_package 
+sets the group for map_3d_package 
 ==============================================================================*/
 
-struct GROUP(FE_node) *get_map_3d_package_mapped_torso_node_group(
+struct FE_region *get_map_3d_package_mapped_torso_group(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-gets the mapped_torso_node_group for map_3d_package 
+gets the mapped_torso_group for map_3d_package 
 ==============================================================================*/
 
-int set_map_3d_package_mapped_torso_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *mapped_torso_node_group);
+int set_map_3d_package_mapped_torso_group(
+	struct Map_3d_package *map_3d_package, struct FE_region *mapped_torso_group);
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Sets the mapped_torso_node_group for map_3d_package
+Sets the mapped_torso_group for map_3d_package
 ==============================================================================*/
 
-struct GROUP(FE_node) *get_map_3d_package_delaunay_torso_node_group(
+struct FE_region *get_map_3d_package_delaunay_torso_group(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-gets the delaunay_torso_node_group for map_3d_package 
+gets the delaunay_torso_group for map_3d_package 
 ==============================================================================*/
 
-int set_map_3d_package_delaunay_torso_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *delaunay_torso_node_group);
+int set_map_3d_package_delaunay_torso_group(
+	struct Map_3d_package *map_3d_package,
+	struct FE_region *delaunay_torso_group);
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Sets the delaunay_torso_node_group for map_3d_package
-==============================================================================*/
-
-struct GROUP(FE_element) *get_map_3d_package_element_group(
-	struct Map_3d_package *map_3d_package);
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-gets the element_group for map_3d_package
-==============================================================================*/
-
-int set_map_3d_package_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *map_element_group);
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-Sets the element_group for map_3d_package
-==============================================================================*/
-
-struct GROUP(FE_element) *get_map_3d_package_mapped_torso_element_group(
-	struct Map_3d_package *map_3d_package);
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-gets the mapped_torso_element_group for map_3d_package
-==============================================================================*/
-
-int set_map_3d_package_mapped_torso_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *mapped_torso_element_group);
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-Sets the mapped_torso_element_group for map_3d_package
-==============================================================================*/
-
-struct GROUP(FE_element) *get_map_3d_package_delaunay_torso_element_group(
-	struct Map_3d_package *map_3d_package);
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-gets the delaunay_torso_element_group for map_3d_package
-==============================================================================*/
-
-int set_map_3d_package_delaunay_torso_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *delaunay_torso_element_group);
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-Sets the delaunay_torso_element_group for map_3d_package
+Sets the delaunay_torso_group for map_3d_package
 ==============================================================================*/
 
 int get_map_drawing_information_viewed_scene(
@@ -1239,27 +1174,24 @@ Should be in Scene_viewer? RC doesn't think so.
 ==============================================================================*/
 
 int define_fit_field_at_quad_elements_and_nodes(
-	struct GROUP(FE_element) *torso_element_group,
-	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *node_manager);
+	struct FE_region *torso_group, struct FE_field *fit_field);
 /*******************************************************************************
-LAST MODIFIED : 7 December 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-Finds all the elements in <torso_element_group> with 4 nodes, 
+Finds all the elements in <torso_group> with 4 nodes, 
 for these elements defines <fit_field> at the element, and it's nodes.
 ===============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_3D) 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *create_mapping_type_fe_field(char *field_name,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time);
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 15 November 2001
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-creates a 1 component  <field_name>
+creates a 1 component <field_name>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 

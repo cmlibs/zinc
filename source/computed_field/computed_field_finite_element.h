@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.h
 
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 2 April 2002
 
 DESCRIPTION :
 Implements computed fields which interface to finite element fields.
@@ -13,6 +13,7 @@ Implements computed fields which interface to finite element fields.
 Global types
 ------------
 */
+
 struct Computed_field_finite_element_package;
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -25,16 +26,17 @@ Private package
 Global functions
 ----------------
 */
+
 struct Computed_field_finite_element_package *
 	Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time);
+	struct Cmiss_region *cmiss_region);
 /*******************************************************************************
-LAST MODIFIED : 9 November 2001
+LAST MODIFIED : 11 March 2003
 
 DESCRIPTION :
 This function registers the finite_element related types of Computed_fields and
-also registers with the <fe_field_manager> so that any fe_fields are
+also registers with the fe_region in the <cmiss_region> so that any fe_fields are
 automatically wrapped in corresponding computed_fields.
 ==============================================================================*/
 
@@ -55,9 +57,9 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Computed_field_set_type_finite_element(struct Computed_field *field,
-	struct FE_field *fe_field, struct MANAGER(FE_field) *fe_field_manager);
+	struct FE_field *fe_field, struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 11 March 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
@@ -78,15 +80,36 @@ If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 "wrapped" by it is returned - otherwise an error is reported.
 ==============================================================================*/
 
-struct LIST(FE_field) *Computed_field_get_defining_FE_field_list(
-	struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager);
+int Computed_field_is_read_only_with_fe_field(
+	struct Computed_field *field, void *fe_field_void);
 /*******************************************************************************
-LAST MODIFIED : 11 September 2000
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
-Returns the list of FE_fields that <field> depends on, by sorting through the
-<computed_field_manager>.
+Iterator/conditional function returning true if <field> is read only and a
+wrapper for <fe_field>.
+???RC This looks ready for an overhaul since other fields in this module can
+contain FE_fields.
+==============================================================================*/
+
+int Computed_field_contains_changed_FE_field(
+	struct Computed_field *field, void *fe_field_change_log_void);
+/*******************************************************************************
+LAST MODIFIED : 22 January 2003
+
+DESCRIPTION :
+Returns true if <field> directly contains an FE_field and it is listed as
+changed, added or removed in <fe_field_change_log>.
+<fe_field_change_log_void> must point at a struct CHANGE_LOG<FE_field>.
+==============================================================================*/
+
+struct LIST(FE_field)
+	*Computed_field_get_defining_FE_field_list(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 2 April 2003
+
+DESCRIPTION :
+Returns the list of FE_fields that <field> depends on.
 ==============================================================================*/
 
 int Computed_field_is_type_cmiss_number(struct Computed_field *field);
@@ -106,16 +129,6 @@ fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_is_read_only_with_fe_field(
-	struct Computed_field *field,void *fe_field_void);
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> is read only and a
-wrapper for <fe_field>.
 ==============================================================================*/
 
 int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
@@ -179,13 +192,14 @@ Returns true if the field is of an embedded type or depends on any computed
 fields which are or an embedded type.
 ==============================================================================*/
 
-int remove_computed_field_from_manager_given_FE_field(
-	struct MANAGER(Computed_field) *computed_field_manager,struct FE_field *field);
+int Computed_field_manager_destroy_FE_field(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_field *fe_field);
 /*******************************************************************************
-LAST MODIFIED : August 27 1999
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
-Frees the computed fields from the computed field manager, given the FE_field
+Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
 ==============================================================================*/
 
 int Computed_field_set_type_node_value(struct Computed_field *field,
@@ -202,17 +216,6 @@ Field automatically takes the coordinate system of the source fe_field. See note
 at start of this file about changing use of coordinate systems.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
-==============================================================================*/
-
-int destroy_computed_field_given_fe_field(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 17 May 2000
-
-DESCRIPTION :
-Given <fe_field>, destroys the associated computed field, and fe_field
 ==============================================================================*/
 
 int Computed_field_is_type_xi_coordinates(struct Computed_field *field,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_compose.c
 
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Implements a computed_field that uses evaluates one field, does a
@@ -12,6 +12,7 @@ Essentially it is used to embed one mesh in the elements of another.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
+#include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
@@ -20,12 +21,13 @@ Essentially it is used to embed one mesh in the elements of another.
 struct Computed_field_compose_package 
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(GROUP(FE_element)) *fe_element_group_manager;
+	struct Cmiss_region *root_region;
 };
 
 struct Computed_field_compose_type_specific_data
 {
-	struct GROUP(FE_element) *element_group;
+	char *region_path;
+	struct Cmiss_region *region;
 };
 
 static char computed_field_compose_type_string[] = "compose";
@@ -72,9 +74,13 @@ Clear the type specific data used by this type.
 		(struct Computed_field_compose_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (data->element_group)
+		if (data->region)
 		{
-			DEACCESS(GROUP(FE_element))(&(data->element_group));
+			DEACCESS(Cmiss_region)(&(data->region));
+		}
+		if (data->region_path)
+		{
+			DEALLOCATE(data->region_path);
 		}
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
@@ -107,9 +113,10 @@ Copy the type specific data used by this type.
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_compose_type_specific_data, 1))
+			struct Computed_field_compose_type_specific_data, 1) &&
+			(destination->region_path = duplicate_string(source->region_path)))
 		{
-			destination->element_group = ACCESS(GROUP(FE_element))(source->element_group);
+			destination->region = ACCESS(Cmiss_region)(source->region);
 		}
 		else
 		{
@@ -158,7 +165,8 @@ Compare the type specific data.
 		(struct Computed_field_compose_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
-		if (data->element_group == other_data->element_group)
+		if ((data->region == other_data->region) &&
+			(!strcmp(data->region_path, other_data->region_path)))
 		{
 			return_code = 1;
 		}
@@ -214,7 +222,7 @@ DESCRIPTION :
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
 					field->source_fields[0]->number_of_components, &element, xi,
-					data->element_group, /*propagate_field*/1) && element)
+					/*element_dimension=all*/0,data->region, /*propagate_field*/1) && element)
 				{
 					/* calculate the third source_field at this new location */
 					return_code = Computed_field_is_defined_in_element(
@@ -285,7 +293,8 @@ Evaluate the fields cache at the node.
 			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
-				&compose_element, compose_xi, data->element_group, /*propagate_field*/1))
+					  &compose_element, compose_xi, /*element_dimension=all*/0,
+					  data->region, /*propagate_field*/1))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
@@ -355,7 +364,8 @@ Evaluate the fields cache at the node.
 			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
-				&compose_element, compose_xi, data->element_group, /*propagate_field*/1))
+					  &compose_element, compose_xi, /*element_dimension=all*/0,
+					  data->region, /*propagate_field*/1))
 				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
@@ -456,7 +466,6 @@ LAST MODIFIED : 23 January 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *group_name;
 	int return_code;
 	struct Computed_field_compose_type_specific_data *data;
 
@@ -465,22 +474,17 @@ DESCRIPTION :
 		(struct Computed_field_compose_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code = GET_NAME(GROUP(FE_element))(data->element_group,
-			&group_name))
-		{
-			display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
-			display_message(INFORMATION_MESSAGE," %s\n",
-				field->source_fields[0]->name);
-			display_message(INFORMATION_MESSAGE,"    find element xi field :");
-			display_message(INFORMATION_MESSAGE," %s\n",
-				field->source_fields[1]->name);
-			display_message(INFORMATION_MESSAGE,"    search element group :");
-			display_message(INFORMATION_MESSAGE," %s\n", group_name);
-			display_message(INFORMATION_MESSAGE,"    calculate values field :");
-			display_message(INFORMATION_MESSAGE," %s\n",
-				field->source_fields[2]->name);
-			DEALLOCATE(group_name);
-		}
+		display_message(INFORMATION_MESSAGE,"    texture coordinates field :");
+		display_message(INFORMATION_MESSAGE," %s\n",
+			field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE,"    find element xi field :");
+		display_message(INFORMATION_MESSAGE," %s\n",
+			field->source_fields[1]->name);
+		display_message(INFORMATION_MESSAGE,"    search element group :");
+		display_message(INFORMATION_MESSAGE," %s\n", data->region_path);
+		display_message(INFORMATION_MESSAGE,"    calculate values field :");
+		display_message(INFORMATION_MESSAGE," %s\n",
+			field->source_fields[2]->name);
 	}
 	else
 	{
@@ -530,7 +534,7 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		append_string(&command_string, " group ", &error);
-		if (GET_NAME(GROUP(FE_element))(data->element_group, &group_name))
+		if (group_name = duplicate_string(data->region_path))
 		{
 			make_valid_token(&group_name);
 			append_string(&command_string, group_name, &error);
@@ -567,9 +571,9 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
-	struct GROUP(FE_element) *search_element_group)
+	struct Cmiss_region *search_region, char *region_path)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -578,15 +582,18 @@ to then calculate a corresponding element/xi and finally calculate values using
 this element/xi and a third field.  You can then evaluate values on a "host"
 mesh for any points "contained" inside.  The <search_element_group> is the group
 from which any returned element_xi will belong.
+The <region_path> string is supplied so that the commands listed can correctly
+name the string used to select the <search_region>.
 ==============================================================================*/
 {
+	char *region_path_copy;
 	int number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 	struct Computed_field_compose_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_compose);
 	if (field&&texture_coordinate_field&&find_element_xi_field&&
-		calculate_values_field&&search_element_group)
+		calculate_values_field&&search_region&&region_path)
 	{
 		return_code = 1;
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -599,7 +606,8 @@ from which any returned element_xi will belong.
 			{
 				if (ALLOCATE(source_fields, struct Computed_field *,
 					number_of_source_fields) &&
-					ALLOCATE(data, struct Computed_field_compose_type_specific_data, 1))
+					ALLOCATE(data, struct Computed_field_compose_type_specific_data, 1)
+					&& (region_path_copy = duplicate_string(region_path)))
 				{
 					/* 2. free current type-specific data */
 					Computed_field_clear_type(field);
@@ -613,7 +621,8 @@ from which any returned element_xi will belong.
 					field->source_fields=source_fields;
 					field->number_of_source_fields=number_of_source_fields;
 					field->type_specific_data = (void *)data;
-					data->element_group = ACCESS(GROUP(FE_element))(search_element_group);
+					data->region = ACCESS(Cmiss_region)(search_region);
+					data->region_path = region_path_copy;
 
 					/* Set all the methods */
 					COMPUTED_FIELD_ESTABLISH_METHODS(compose);
@@ -657,14 +666,15 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **find_element_xi_field,
 	struct Computed_field **calculate_values_field,
-	struct GROUP(FE_element) **search_element_group)
+	struct Cmiss_region **search_region, char **region_path)
 /*******************************************************************************
 LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
 fields which define the field.
-Note that the fields are not ACCESSed.
+Note that the fields are not ACCESSed and the <region_path> points to the
+internally used path.
 ==============================================================================*/
 {
 	int return_code;
@@ -674,12 +684,13 @@ Note that the fields are not ACCESSed.
 	if (field && (field->type_string == computed_field_compose_type_string) &&
 		(data = (struct Computed_field_compose_type_specific_data *)
 		field->type_specific_data) && texture_coordinate_field &&
-		find_element_xi_field && calculate_values_field && search_element_group)
+		find_element_xi_field && calculate_values_field && search_region)
 	{
 		*texture_coordinate_field = field->source_fields[0];
 		*find_element_xi_field = field->source_fields[1];
 		*calculate_values_field = field->source_fields[2];
-		*search_element_group = data->element_group;
+		*search_region = data->region;
+		*region_path = data->region_path;
 		return_code = 1;
 	}
 	else
@@ -703,12 +714,13 @@ Converts <field> into type COMPUTED_FIELD_COMPOSE (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
+	char *old_region_path, *search_region_path;
 	int return_code;
 	struct Computed_field *field, *calculate_values_field,*find_element_xi_field,
 		*texture_coordinates_field;
 	struct Computed_field_compose_package *computed_field_compose_package;
 	struct Coordinate_system *coordinate_system_ptr;
-	struct GROUP(FE_element) *search_element_group;
+	struct Cmiss_region *search_region;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_calculate_values_field_data,
 		set_find_element_xi_field_data, set_texture_coordinates_field_data;
@@ -720,7 +732,8 @@ already) and allows its contents to be modified.
 			computed_field_compose_package_void))
 	{
 		return_code = 1;
-		search_element_group = (struct GROUP(FE_element) *)NULL;
+		search_region = (struct Cmiss_region *)NULL;
+		search_region_path = (char *)NULL;
 		calculate_values_field = (struct Computed_field *)NULL;
 		find_element_xi_field = (struct Computed_field *)NULL;
 		texture_coordinates_field = (struct Computed_field *)NULL;
@@ -730,7 +743,8 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_compose(field, 
 				&calculate_values_field, &find_element_xi_field,
-				&texture_coordinates_field, &search_element_group);
+				&texture_coordinates_field, &search_region, &old_region_path);
+			search_region_path = duplicate_string(old_region_path);
 		}
 		if (return_code)
 		{
@@ -742,10 +756,6 @@ already) and allows its contents to be modified.
 			if (find_element_xi_field)
 			{
 				ACCESS(Computed_field)(find_element_xi_field);
-			}
-			if (search_element_group)
-			{
-				ACCESS(GROUP(FE_element))(search_element_group);
 			}
 			if (texture_coordinates_field)
 			{
@@ -774,10 +784,8 @@ already) and allows its contents to be modified.
 				&find_element_xi_field, &set_find_element_xi_field_data, 
 				set_Computed_field_conditional);
 			/* group */
-			Option_table_add_entry(option_table, "group", 
-				&search_element_group, 
-				computed_field_compose_package->fe_element_group_manager, 
-				set_FE_element_group);
+			Option_table_add_set_Cmiss_region_path(option_table, "group", 
+				 computed_field_compose_package->root_region, &search_region_path);
 			/* texture_coordinates_field */
 			set_texture_coordinates_field_data.computed_field_manager =
 				computed_field_compose_package->computed_field_manager;
@@ -792,9 +800,26 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
+				if (search_region_path)
+				{
+					if (!(search_region = Cmiss_region_get_child_region_from_name(
+								computed_field_compose_package->root_region, search_region_path)))
+					{
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_compose.  Unable to find region %s",
+							search_region_path);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "You must specify a region path (group)");
+				}
+			}
+			if (return_code)
+			{
 				if (return_code=Computed_field_set_type_compose(field,
 					texture_coordinates_field, find_element_xi_field,
-					calculate_values_field, search_element_group))
+					calculate_values_field, search_region, search_region_path))
 				{
 					/* Set default coordinate system */
 					/* Inherit from third source field */
@@ -822,9 +847,9 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&find_element_xi_field);
 			}
-			if (search_element_group)
+			if (search_region_path)
 			{
-				DEACCESS(GROUP(FE_element))(&search_element_group);
+				DEALLOCATE(search_region_path);
 			}
 			if (texture_coordinates_field)
 			{
@@ -846,9 +871,9 @@ already) and allows its contents to be modified.
 
 int Computed_field_register_types_compose(
 	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(GROUP(FE_element)) *fe_element_group_manager)
+	struct Cmiss_region *root_region)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -858,13 +883,12 @@ DESCRIPTION :
 		computed_field_compose_package;
 
 	ENTER(Computed_field_register_types_compose);
-	if (computed_field_package && fe_element_group_manager)
+	if (computed_field_package && root_region)
 	{
 		computed_field_compose_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 			computed_field_package);
-		computed_field_compose_package.fe_element_group_manager =
-			fe_element_group_manager;
+		computed_field_compose_package.root_region = root_region;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_compose_type_string, 
 			define_Computed_field_type_compose,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Graphical object data structures.
@@ -38,6 +38,7 @@ Used to be gtypes.h
 
 #include "general/geometry.h"
 #include "general/list.h"
+#include "general/multi_range.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
@@ -49,6 +50,7 @@ Used to be gtypes.h
 Global types
 ------------
 */
+
 typedef enum
 /*******************************************************************************
 LAST MODIFIED : 16 February 1996
@@ -331,7 +333,7 @@ DESCRIPTION :
 
 struct GT_point
 /*******************************************************************************
-LAST MODIFIED : 16 February 1996
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -342,12 +344,16 @@ DESCRIPTION :
 	float marker_size;
 	int n_data_components;
 	GTDATA *data;
+
+	/* store integer object_name eg. node number from which this object came */
+	int object_name;
+
 	struct GT_point *ptrnext;
 }; /* struct GT_point */
 
 struct GT_pointset
 /*******************************************************************************
-LAST MODIFIED : 16 April 1999
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 ???RC.  integer names added for OpenGL picking.
@@ -361,6 +367,10 @@ DESCRIPTION :
 	int n_data_components;
 	GTDATA *data;
 	struct GT_pointset *ptrnext;
+
+	/* store integer object_name eg. element number from which this object came */
+	int object_name;
+
 	/* names are usually node numbers (they were accessed nodes, but this
 		 prevented the nodes from being destroyed) */
 	int *names;
@@ -407,7 +417,7 @@ DESCRIPTION :
 
 struct GT_userdef
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 User defined graphics object primitive type. Contains three parameters:
@@ -423,6 +433,10 @@ User defined graphics object primitive type. Contains three parameters:
 	void *data;
 	int (*destroy_function)(void **);
 	int (*render_function)(void *);
+
+	/* store integer object_name eg. node number from which this object came */
+	int object_name;
+
 	/* for compatibility with the other GT_objects: */
 	struct GT_userdef *ptrnext;
 }; /* struct GT_userdef */
@@ -470,9 +484,6 @@ DESCRIPTION :
 	enum GT_voltex_type voltex_type;
 }; /* struct GT_voltex */
 
-/* The callback makes a circular reference in this file */
-struct GT_object;
-
 typedef int(*Graphics_object_callback)(struct GT_object *graphics_object,
 	void *user_data);
 
@@ -483,9 +494,45 @@ struct Graphics_object_callback_data
 	struct Graphics_object_callback_data *next;
 }; /* struct Graphics_object_callback_data */
 
+union GT_primitive_list
+/*******************************************************************************
+LAST MODIFIED : 17 March 2003
+
+DESCRIPTION :
+Storage for a single linked list of primitives of any type. The linked list
+maintains a pointer to the first and last primitives so that the list can be
+traversed from first to last, and additional primitives added at the end.
+==============================================================================*/
+{
+	struct {
+		struct GT_glyph_set *first, *last;
+	} gt_glyph_set;
+	struct {
+		struct GT_nurbs *first, *last;
+	} gt_nurbs;
+	struct {
+		struct GT_point *first, *last;
+	} gt_point;
+	struct {
+		struct GT_pointset *first, *last;
+	} gt_pointset;
+	struct {
+		struct GT_polyline *first, *last;
+	} gt_polyline;
+	struct {
+		struct GT_surface *first, *last;
+	} gt_surface;
+	struct {
+		struct GT_userdef *first, *last;
+	} gt_userdef;
+	struct {
+		struct GT_voltex *first, *last;
+	} gt_voltex;
+}; /* union GT_primitive_list */
+
 typedef struct GT_object
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Graphical object data structure.
@@ -515,17 +562,7 @@ Graphical object data structure.
 		between <times> and is constant before the first and after the last */
 	int number_of_times;
 	float *times;
-	union
-	{
-		struct GT_glyph_set **gt_glyph_set;
-		struct GT_nurbs **gt_nurbs;
-		struct GT_point **gt_point;
-		struct GT_pointset **gt_pointset;
-		struct GT_polyline **gt_polyline;
-		struct GT_surface **gt_surface;
-		struct GT_userdef **gt_userdef;
-		struct GT_voltex **gt_voltex;
-	} gu;
+	union GT_primitive_list *primitive_lists;
 #if defined (OPENGL_API)
 	GLuint display_list;
 #endif /* defined (OPENGL_API) */
@@ -841,9 +878,10 @@ texture coordinates.
 ==============================================================================*/
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
-	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data);
+	gtMarkerType marker_type,float marker_size,int n_data_components,
+	int object_name, GTDATA *data);
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_point.  When the <marker_type> is
@@ -865,7 +903,7 @@ struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data,
 	int *names);
 /*******************************************************************************
-LAST MODIFIED : 1 June 1999
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_pointset.  When the <marker_type>
@@ -1088,6 +1126,15 @@ DESCRIPTION :
 Returns 1 if the time parameter is used by the graphics_object.
 ==============================================================================*/
 
+int GT_object_has_primitives_at_time(struct GT_object *graphics_object,
+	float time);
+/*******************************************************************************
+LAST MODIFIED : 17 March 2003
+
+DESCRIPTION :
+Returns true if <graphics_object> has primitives stored exactly at <time>.
+==============================================================================*/
+
 int GT_object_get_number_of_times(struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
@@ -1162,11 +1209,12 @@ int GT_OBJECT_ADD(primitive_type)( \
 	struct GT_object *graphics_object, \
 	float time,struct primitive_type *primitive) \
 /***************************************************************************** \
-LAST MODIFIED : 19 June 1998 \
+LAST MODIFIED : 17 March 2003 \
 \
 DESCRIPTION : \
 Adds <primitive> to <graphics_object> at <time>, creating the new time if it \
-does not already exist. \
+does not already exist. If the <primitive> is NULL an empty time is added if \
+there is not already one. <primitive> is a NULL-terminated linked-list. \
 ============================================================================*/ \
 
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_glyph_set);
@@ -1193,75 +1241,73 @@ LAST MODIFIED : 19 June 1997 \
 \
 DESCRIPTION : \
 Returns pointer to the primitive at the given time in graphics_object. \
+???RC only used in spectrum_editor.c and should be replaced.
 ============================================================================*/
 
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_glyph_set);
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_nurbs);
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_point);
 PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_pointset);
 PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_polyline);
 PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_surface);
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_userdef);
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_voltex);
 
-int GT_object_delete_time(struct GT_object *graphics_object,float time);
+typedef int (GT_object_primitive_object_name_conditional_function) \
+	(int object_name, void *user_data);
+
+int GT_object_remove_primitives_at_time(
+	struct GT_object *graphics_object, float time,
+	GT_object_primitive_object_name_conditional_function *conditional_function,
+	void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
-Removes all primitive at <time> from <graphics_object>.
+Removes primitives at <time> from <graphics_object>.
+The optional <conditional_function> allows a subset of the primitives to
+be removed. This function is called with the object_name integer associated
+with each primitive plus the void *<user_data> supplied here. A true result
+from the conditional_function causes the primitive to be removed.
+==============================================================================*/
+
+int GT_object_transfer_primitives_at_time(struct GT_object *destination,
+	struct GT_object *source, float time);
+/*******************************************************************************
+LAST MODIFIED : 18 March 2003
+
+DESCRIPTION :
+Transfers the primitives stored at exactly <time> in <source> to <time> in
+<destination>. Should already have called GT_object_has_primitives_at_time
+with <source> to verify it has primitives at that time.
+Primitives are added after any in <destination> at <time>.
 ==============================================================================*/
 
 #if defined (FULL_NAMES)
-#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_(primitive_type) \
-	GT_object_remove_primitives_with_object_name_ ## primitive_type
+#define GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_(primitive_type) \
+	GT_object_extract_first_primitives_at_time_ ## primitive_type
 #else
-#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_(primitive_type) \
-	gorpwon_ ## primitive_type
+#define GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_(primitive_type) \
+	goefpt_ ## primitive_type
 #endif
-#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(primitive_type) \
-	GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_(primitive_type)
+#define GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(primitive_type) \
+	GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_(primitive_type)
 
-#define PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION( \
+#define PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION( \
 	primitive_type) \
-int GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(primitive_type)( \
-	struct GT_object *graphics_object,float time,int object_name) \
+struct primitive_type *GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME( \
+	primitive_type)(struct GT_object *graphics_object, \
+	float time, int object_name) \
 /***************************************************************************** \
-LAST MODIFIED : 20 April 1999 \
+LAST MODIFIED : 18 March 2003 \
 \
 DESCRIPTION : \
-Removes all primitives from <graphics_object> at <time> for which the \
-object_name member matches the given <object_name>. \
-============================================================================*/
+Returns the first primitives in <graphics_object> at <time> that have the \
+given <object_name>, or NULL if there are no primitives or none with the name. \
+The extracted primitives are returned in a linked-list. \
+If the primitive type has an auxiliary_object_name, it is matched, not the \
+object_name. \
+============================================================================*/ \
 
-PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_glyph_set);
-PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_polyline);
-PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_surface);
-PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex);
-
-#if defined (FULL_NAMES)
-#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_(primitive_type) \
-	GT_object_remove_primitives_with_auxiliary_object_name_ ## primitive_type
-#else
-#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_(primitive_type) \
-	gorpwaon_ ## primitive_type
-#endif
-#define GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type) \
-	GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_(primitive_type)
-
-#define PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( primitive_type ) \
-int GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type)( \
-	struct GT_object *graphics_object, float time, int auxiliary_object_name) \
-/***************************************************************************** \
-LAST MODIFIED : 7 June 2001 \
-\
-DESCRIPTION : \
-Removes all primitives from <graphics_object> at <time> for which the \
-auxiliary_object_name member matches the given <auxiliary_object_name>. \
-============================================================================*/
-
-PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( \
-	GT_glyph_set);
+PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_glyph_set);
+PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_polyline);
+PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_surface);
+PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_voltex);
 
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object);
@@ -1350,6 +1396,14 @@ LAST MODIFIED : 11 June 1998
 
 DESCRIPTION :
 Sets the default_material of a GT_object.
+==============================================================================*/
+
+int GT_object_set_name(struct GT_object *graphics_object, char *name);
+/*******************************************************************************
+LAST MODIFIED : 30 April 2003
+
+DESCRIPTION :
+Changes the name of <graphics_object> to a copy of <name>.
 ==============================================================================*/
 
 struct Graphical_material *get_GT_object_selected_material(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_time.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 27 November 2002
 
 DESCRIPTION :
 Representing time in finite elements.
@@ -668,6 +668,90 @@ If the <time_index> is valid returns the corresponding <time>.
 	return (return_code);
 } /* FE_time_version_get_index_for_time */
 
+struct FE_time_version *get_FE_time_version_matching_FE_time_version(
+	struct FE_time *fe_time, struct FE_time_version *source_fe_time_version)
+/*******************************************************************************
+LAST MODIFIED : 27 November 2002
+
+DESCRIPTION :
+Searches <fe_time> for a FE_time_version matching <source_fe_time_version>.
+If no equivalent fe_time_version is found one is created in <fe_time> and
+returned.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_time_version *fe_time_version;
+
+	ENTER(get_FE_time_version_matching_FE_time_version);
+	if (fe_time && fe_time->fe_time_version_manager && source_fe_time_version)
+	{
+		/* first try to find a matching fe_time_version in the manager */
+		if (!(fe_time_version = FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_version,self)(
+			source_fe_time_version, fe_time->fe_time_version_manager)))
+		{
+			if (fe_time_version = CREATE(FE_time_version)())
+			{
+				return_code = 1;
+				switch (source_fe_time_version->type)
+				{
+					case FE_TIME_SERIES:
+					{
+						fe_time_version->type = FE_TIME_SERIES;
+						fe_time_version->number_of_times =
+							source_fe_time_version->number_of_times;
+						fe_time_version->times = (FE_value *)NULL;
+						if (ALLOCATE(fe_time_version->times, FE_value,
+							source_fe_time_version->number_of_times))
+						{
+							memcpy(fe_time_version->times, source_fe_time_version->times,
+								source_fe_time_version->number_of_times*sizeof(FE_value));
+							if (!ADD_OBJECT_TO_MANAGER(FE_time_version)(fe_time_version,
+								fe_time->fe_time_version_manager))
+							{
+								return_code = 0;
+							}
+						}
+						else
+						{
+							return_code = 0;
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"get_FE_time_version_matching_FE_time_version.  "
+							"Unimplemented FE_time_version type");
+						return_code = 0;
+					} break;
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,
+						"get_FE_time_version_matching_FE_time_version.  "
+						"Could not copy contents of FE_time_version");
+					DESTROY(FE_time_version)(&fe_time_version);
+					fe_time_version = (struct FE_time_version *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"get_FE_time_version_matching_FE_time_version.  "
+					"Could not create FE_time_version");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_time_version_matching_FE_time_version.  Invalid argument(s)");
+		fe_time_version = (struct FE_time_version *)NULL;
+	}
+	LEAVE;
+
+	return (fe_time_version);
+} /* get_FE_time_version_matching_FE_time_version */
+
 struct FE_time_version *get_FE_time_version_matching_time_series(
 	struct FE_time *fe_time, int number_of_times, FE_value *times)
 /*******************************************************************************
@@ -854,3 +938,37 @@ by merging the two time_versions supplied.
 	return (fe_time_version);
 } /* get_FE_time_version_matching_time_series */
 
+int FE_time_has_FE_time_version(struct FE_time *fe_time,
+	struct FE_time_version *fe_time_version)
+/*******************************************************************************
+LAST MODIFIED : 15 October 2002
+
+DESCRIPTION :
+Returns true if <fe_time> contains the <fe_time_version>.
+==============================================================================*/
+{
+	int return_code;
+	
+	ENTER(FE_time_has_FE_time_version);
+	if (fe_time && fe_time_version)
+	{
+		if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_version,self)(fe_time_version,
+			fe_time->fe_time_version_manager))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_time_has_FE_time_version.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_time_has_FE_time_version */

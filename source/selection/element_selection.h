@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_selection.h
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Global store of selected elements for group actions and highlighting.
@@ -10,6 +10,7 @@ Global store of selected elements for group actions and highlighting.
 #define ELEMENT_SELECTION_H
 
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "general/callback.h"
 #include "general/object.h"
 
@@ -51,9 +52,11 @@ DECLARE_CMISS_CALLBACK_TYPES(FE_element_selection_change, \
 Global functions
 ----------------
 */
-struct FE_element_selection *CREATE(FE_element_selection)(void);
+
+struct FE_element_selection *CREATE(FE_element_selection)(
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Creates the global store of selected elements for group actions and

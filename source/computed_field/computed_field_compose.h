@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_compose.h
 
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -9,12 +9,13 @@ DESCRIPTION :
 #define COMPUTED_FIELD_COMPOSE_H
 
 #include "finite_element/finite_element.h"
+#include "region/cmiss_region.h"
 
 int Computed_field_register_types_compose(
-	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(GROUP(FE_element)) *fe_element_group_manager);
+	struct Computed_field_package *computed_field_package,
+	struct Cmiss_region *root_region);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -23,9 +24,9 @@ int Computed_field_set_type_compose(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
-	struct GROUP(FE_element) *search_element_group);
+	struct Cmiss_region *search_region, char *region_path);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
@@ -40,14 +41,15 @@ int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,
 	struct Computed_field **find_element_xi_field,
 	struct Computed_field **calculate_values_field,
-	struct GROUP(FE_element) **search_element_group);
+	struct Cmiss_region **search_region, char **region_path);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_COMPOSE, the function returns the three
 fields which define the field.
-Note that the fields are not ACCESSed.
+Note that the fields are not ACCESSed and the <region_path> points to the
+internally used path.
 ==============================================================================*/
 
 #endif /* !defined (COMPUTED_FIELD_COMPOSE_H) */

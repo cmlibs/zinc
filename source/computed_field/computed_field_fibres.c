@@ -210,7 +210,7 @@ Derivatives may not be computed for this type of Computed_field [yet].
 			fibre_field = field->source_fields[0];
 			coordinate_field = field->source_fields[1];
 			if (return_code =
-				Computed_field_get_top_level_element_and_xi(element,xi,
+				FE_element_get_top_level_element_and_xi(element,xi,
 					element_dimension,&top_level_element,top_level_xi,
 					&top_level_element_dimension) &&
 				Computed_field_evaluate_cache_in_element(fibre_field,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_update.h
 
-LAST MODIFIED : 4 February 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
@@ -10,6 +10,7 @@ Functions for updating values of one computed field from those of another.
 #define COMPUTED_FIELD_UPDATE_H
 
 #include "finite_element/finite_element.h"
+#include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -37,29 +38,27 @@ this function are finished.
 
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
-	struct FE_node_selection *node_selection, FE_value time);
+	struct Cmiss_region *region, struct FE_node_selection *node_selection,
+	FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 3 March 2003
 
 DESCRIPTION :
-Set <destination_field> in all the nodes in <node_group> or <node_manager> if
-not supplied to the values from <source_field>.
-Restricts update to nodes in <node_selection>, if supplied.
+Set <destination_field> in all the nodes in <region> to the values from
+<source_field>. Restricts update to nodes in <node_selection>, if supplied.
 ==============================================================================*/
 
 int Computed_field_update_element_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct GROUP(FE_element) *element_group,
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 3 March 2003
 
 DESCRIPTION :
-Set grid-based <destination_field> in all the elements in <element_group> or
-<element_manager> if not supplied to the values from <source_field>.
+Set grid-based <destination_field> in all the elements in <region> to the
+values from <source_field>.
 Restricts update to grid points which are in <element_point_ranges_selection>
 or whose elements are in <element_selection>, if either supplied.
 Note the union of these two selections is used if both supplied.

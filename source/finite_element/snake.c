@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : snake.c
 
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Functions for making a snake of 1-D cubic Hermite elements from a chain of
@@ -10,6 +10,7 @@ data points.
 #include <math.h>
 #include <stdio.h>
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/snake.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -284,30 +285,32 @@ and <nodal_value_types> for each component, and only 1 version.
 	return (return_code);
 } /* define_FE_field_at_node_simple */
 
-struct FE_element *create_1d_hermite_element(struct FE_field *field,
-	struct MANAGER(FE_basis) *basis_manager)
+struct FE_element *create_1d_hermite_element(struct FE_region *fe_region,
+	struct FE_field *fe_field)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2001
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
-Creates and returns a 1-D line element with <field> defined using a 1-D cubic
+Creates and returns a 1-D line element with <fe_field> defined using a 1-D cubic
 Hermite basis over it.
 ==============================================================================*/
 {
 	int basis_type[2] = {1, CUBIC_HERMITE};
 	int shape_type[1] = {LINE_SHAPE};
-	int j, n, number_of_components, number_of_nodes, number_of_scale_factors,
+	int i, j, n, number_of_components, number_of_nodes, number_of_scale_factors,
 		return_code;
 	struct CM_element_information cm;
 	struct FE_basis *element_basis;
 	struct FE_element *element;
-	struct FE_element_field_component *component,**components;
-			struct FE_element_shape *element_shape;
-	struct Standard_node_to_element_map **standard_node_map;
+	struct FE_element_field_component *component, **components;
+	struct FE_element_shape *element_shape;
+	struct MANAGER(FE_basis) *basis_manager;
+	struct Standard_node_to_element_map *standard_node_map;
 
 	ENTER(create_1d_hermite_element);
 	element = (struct FE_element *)NULL;
-	if (field && basis_manager)
+	if (fe_region && (basis_manager = FE_region_get_basis_manager(fe_region)) &&
+		fe_field)
 	{
 		return_code = 1;
 
@@ -318,19 +321,27 @@ Hermite basis over it.
 
 		cm.type = CM_ELEMENT;
 		cm.number = 0;
-		if (element =
-			CREATE(FE_element)(&cm, /*template*/(struct FE_element *)NULL))
+		if (element = CREATE(FE_element)(&cm, element_shape, fe_region,
+			/*template*/(struct FE_element *)NULL))
 		{
 			number_of_scale_factors = 4;
 			number_of_nodes = 2;
-			if (set_FE_element_shape(element, element_shape) &&
-				set_FE_element_node_scale_field_info(element,
+			if (set_FE_element_number_of_nodes(element, number_of_nodes) &&
+				set_FE_element_number_of_scale_factor_sets(element,
 					/*number_of_scale_factor_sets*/1,
 					/*scale_factor_set_identifiers*/(void *)&element_basis,
-					/*numbers_in_scale_factor_sets*/&number_of_scale_factors,
-					number_of_nodes))
+					/*numbers_in_scale_factor_sets*/&number_of_scale_factors))
 			{
-				number_of_components = get_FE_field_number_of_components(field);
+				/* set scale factors to 1.0 */
+				for (i = 0; i < number_of_scale_factors; i++)
+				{
+					if (!set_FE_element_scale_factor(element, i, 1.0))
+					{
+						return_code = 0;
+					}
+				}
+
+				number_of_components = get_FE_field_number_of_components(fe_field);
 				if (ALLOCATE(components, struct FE_element_field_component *,
 					number_of_components))
 				{
@@ -344,28 +355,33 @@ Hermite basis over it.
 							STANDARD_NODE_TO_ELEMENT_MAP, number_of_nodes,
 							element_basis, (FE_element_field_component_modify)NULL))
 						{
-							standard_node_map =
-								component->map.standard_node_based.node_to_element_maps;
 							for (j = 0; j < number_of_nodes; j++)
 							{
-								if (*standard_node_map = CREATE(Standard_node_to_element_map)(
+								if (standard_node_map = CREATE(Standard_node_to_element_map)(
 									/*node_index*/j, /*number_of_values*/2))
 								{
-									(*standard_node_map)->nodal_value_indices[0] = 0;
-									(*standard_node_map)->scale_factor_indices[0] = j*2;
-									(*standard_node_map)->nodal_value_indices[1] = 1;
-									(*standard_node_map)->scale_factor_indices[1] = j*2 + 1;
-									/* set scale_factors to 1 */
-									element->information->scale_factors[
-										(*standard_node_map)->scale_factor_indices[0]] = 1.0;
-									element->information->scale_factors[
-										(*standard_node_map)->scale_factor_indices[1]] = 1.0;
+									if (!(Standard_node_to_element_map_set_nodal_value_index(
+										standard_node_map,
+										/*nodal_value_number*/0, /*nodal_value_index*/0) &&
+										Standard_node_to_element_map_set_scale_factor_index(
+											standard_node_map,
+											/*nodal_value_number*/0, /*scale_factor_index*/j*2) &&
+										Standard_node_to_element_map_set_nodal_value_index(
+											standard_node_map,
+											/*nodal_value_number*/1, /*nodal_value_index*/1) &&
+										Standard_node_to_element_map_set_scale_factor_index(
+											standard_node_map,
+											/*nodal_value_number*/1, /*scale_factor_index*/j*2 + 1) &&
+										FE_element_field_component_set_standard_node_map(
+											component, /*node_number*/j, standard_node_map)))
+									{
+										return_code = 0;
+									}
 								}
 								else
 								{
 									return_code = 0;
 								}
-								standard_node_map++;
 							}
 						}
 						else
@@ -376,7 +392,7 @@ Hermite basis over it.
 					}
 					if (return_code)
 					{
-						if (!define_FE_field_at_element(element, field, components))
+						if (!define_FE_field_at_element(element, fe_field, components))
 						{
 							display_message(ERROR_MESSAGE,"create_1d_hermite_element.  "
 								"Could not define field on element");
@@ -444,18 +460,14 @@ Global functions
 */
 
 int create_FE_element_snake_from_data_points(
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct GROUP(FE_element) *element_group,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_basis) *basis_manager,
+	struct FE_region *fe_region,
 	struct FE_field *coordinate_field,
 	struct LIST(FE_node) *data_list,
 	int number_of_elements,
 	FE_value density_factor,
 	FE_value stiffness)
 /*******************************************************************************
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in
@@ -467,7 +479,6 @@ A positive value of <stiffness> penalises solutions with large second
 derivatives; helps make smooth snakes from few data points.
 ==============================================================================*/
 {
-	char *group_name;
 	double d, d2phi_dxi2[4], d2phi_dxi2_m, dxi_ds, dxi_ds_4, double_stiffness,
 		double_xi, *force_vectors, phi[4], phi_m, *pos, *stiffness_matrix,
 		*stiffness_offset, weight;
@@ -476,18 +487,15 @@ derivatives; helps make smooth snakes from few data points.
 	FE_value *coordinates, density_multiplier, length_multiplier, *lengths,
 		*this_coordinate, xi;
 	int element_number, i, *indx, j, m, n, node_number, number_of_components,
-		number_of_data, number_of_rows, remove_from_manager, return_code, row,
-		start_row;
+		number_of_data, number_of_rows, return_code, row, start_row;
 	struct CM_element_information cm;
 	struct FE_element *element, *template_element;
 	struct FE_field_component component;
-	struct FE_node *node, **nodes, *template_node;
+	struct FE_node **nodes, *template_node;
 	struct FE_node_accumulate_length_data accumulate_data;
-	struct GROUP(FE_node) *node_group;
 
 	ENTER(create_FE_element_snake_from_data_points);
-	if (element_manager && node_manager && element_group && node_group_manager &&
-		basis_manager && coordinate_field && data_list &&
+	if (fe_region && coordinate_field && data_list &&
 		(0 < number_of_elements) &&
 		(0.0 <= density_factor) && (1.0 >= density_factor) &&
 		(0.0 <= (double_stiffness = (double)stiffness)))
@@ -499,17 +507,6 @@ derivatives; helps make smooth snakes from few data points.
 		stiffness_matrix = (double *)NULL;
 		force_vectors = (double *)NULL;
 		indx = (int *)NULL;
-		group_name = (char *)NULL;
-		/* get node_group of same name as element_group in node_group_manager */
-		if (!(GET_NAME(GROUP(FE_element))(element_group, &group_name) &&
-			(node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node), name)(
-				group_name, node_group_manager))))
-		{
-			display_message(ERROR_MESSAGE,
-				"create_FE_element_snake_from_data_points.  Could not get node_group");
-			return_code = 0;
-		}
-		DEALLOCATE(group_name);
 		/* 1. Make table of lengths from first data point up to last */
 		if (1 < (number_of_data = NUMBER_IN_LIST(FE_node)(data_list)))
 		{
@@ -727,10 +724,7 @@ derivatives; helps make smooth snakes from few data points.
 		}
 		if (return_code)
 		{
-			MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-			MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-			MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
+			FE_region_begin_change(fe_region);
 #if defined (DEBUG)
 			/*???debug*/
 			for (n = 0; n < number_of_components; n++)
@@ -751,7 +745,7 @@ derivatives; helps make smooth snakes from few data points.
 				}
 				/* create a template node suitable for 1-D Hermite interpolation of the
 					 coordinate_field */
-				if (template_node = CREATE(FE_node)(/*node_number*/0,
+				if (template_node = CREATE(FE_node)(/*node_number*/0, fe_region,
 					/*template_node*/(struct FE_node *)NULL))
 				{
 					if (!define_FE_field_at_node_simple(template_node, coordinate_field,
@@ -777,11 +771,12 @@ derivatives; helps make smooth snakes from few data points.
 				component.field = coordinate_field;
 				for (j = 0; (j <= number_of_elements) && return_code; j++)
 				{
-					/* get next unused node number from manager */
-					node_number = get_next_FE_node_number(node_manager, node_number);
-					if (nodes[j] = CREATE(FE_node)(node_number, template_node))
+					/* get next unused node number from fe_region */
+					node_number = FE_region_get_next_FE_node_identifier(fe_region,
+						node_number);
+					if (nodes[j] = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+						template_node))
 					{
-						ACCESS(FE_node)(nodes[j]);
 						/* set the coordinate and derivatives */
 						for (n = 0; (n < number_of_components) && return_code; n++)
 						{
@@ -801,21 +796,11 @@ derivatives; helps make smooth snakes from few data points.
 						}
 						if (return_code)
 						{
-							if (ADD_OBJECT_TO_MANAGER(FE_node)(nodes[j], node_manager))
-							{
-								if (!ADD_OBJECT_TO_GROUP(FE_node)(nodes[j], node_group))
-								{
-									display_message(ERROR_MESSAGE,
-										"create_FE_element_snake_from_data_points.  "
-										"Could not add node to group");
-									return_code = 0;
-								}
-							}
-							else
+							if (!FE_region_merge_FE_node(fe_region, nodes[j]))
 							{
 								display_message(ERROR_MESSAGE,
 									"create_FE_element_snake_from_data_points.  "
-									"Could not add node to manager");
+									"Could not merge node into region");
 								return_code = 0;
 							}
 						}
@@ -830,40 +815,37 @@ derivatives; helps make smooth snakes from few data points.
 				}
 				if (return_code)
 				{
-					if (template_element = create_1d_hermite_element(coordinate_field,
-						basis_manager))
+					if (template_element =
+						create_1d_hermite_element(fe_region, coordinate_field))
 					{
 						cm.type = CM_ELEMENT;
-						cm.number = 0;
+						cm.number = 1;
 						for (j = 0; (j < number_of_elements) && return_code; j++)
 						{
-							/* get next unused element number from manager */
-							while (FIND_BY_IDENTIFIER_IN_MANAGER(FE_element, identifier)(
-								&cm, element_manager))
+							/* get next unused element identifier from fe_region */
+							cm.number = FE_region_get_next_FE_element_identifier(
+								fe_region, cm.type, cm.number);
+							if (element = CREATE(FE_element)(&cm,
+								(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+								template_element))
 							{
-								cm.number++;
-							}
-							if (element = CREATE(FE_element)(&cm, template_element))
-							{
+								ACCESS(FE_element)(element);
 								if (!(set_FE_element_node(element, 0, nodes[j]) &&
-									set_FE_element_node(element, 1, nodes[j + 1]) &&
-									ADD_OBJECT_TO_MANAGER(FE_element)(element, element_manager) &&
-									ADD_OBJECT_TO_GROUP(FE_element)(element, element_group)))
+									set_FE_element_node(element, 1, nodes[j + 1])))
 								{
-									display_message(ERROR_MESSAGE,
-										"create_FE_element_snake_from_data_points.  "
-										"Could not make element");
-									if (IS_MANAGED(FE_element)(element, element_manager))
-									{
-										REMOVE_OBJECT_FROM_MANAGER(FE_element)(element,
-											element_manager);
-									}
-									else
-									{
-										DESTROY(FE_element)(&element);
-									}
 									return_code = 0;
 								}
+								if (return_code)
+								{
+									if (!FE_region_merge_FE_element(fe_region, element))
+									{
+										display_message(ERROR_MESSAGE,
+											"create_FE_element_snake_from_data_points.  "
+											"Could not merge element into region");
+										return_code = 0;
+									}
+								}
+								DEACCESS(FE_element)(&element);
 							}
 							else
 							{
@@ -892,24 +874,6 @@ derivatives; helps make smooth snakes from few data points.
 			}
 			if (nodes)
 			{
-				for (j = 0; j <= number_of_elements; j++)
-				{
-					if (node = nodes[j])
-					{
-						remove_from_manager =
-							(!return_code) && IS_MANAGED(FE_node)(node, node_manager);
-						DEACCESS(FE_node)(&(nodes[j]));
-						/* On failure, remove from manager and group*/
-						if (remove_from_manager)
-						{
-							if (IS_OBJECT_IN_GROUP(FE_node)(node, node_group))
-							{
-								REMOVE_OBJECT_FROM_GROUP(FE_node)(node, node_group);
-							}
-							REMOVE_OBJECT_FROM_MANAGER(FE_node)(node, node_manager);
-						}
-					}
-				}
 				DEALLOCATE(nodes);
 			}
 			if (template_node)
@@ -920,10 +884,7 @@ derivatives; helps make smooth snakes from few data points.
 			{
 				DESTROY(FE_element)(&template_element);
 			}
-			MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-			MANAGER_END_CACHE(FE_node)(node_manager);
-			MANAGED_GROUP_END_CACHE(FE_element)(element_group);
-			MANAGER_END_CACHE(FE_element)(element_manager);
+			FE_region_end_change(fe_region);
 		}
 		if (coordinates)
 		{

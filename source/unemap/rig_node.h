@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.h
 
-LAST MODIFIED : 6 September 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Essentially the same functionality as rig.h, but using nodes and fields to store
@@ -44,7 +44,7 @@ struct Min_max_iterator
 LAST MODIFIED : 19 February 2002
 
 DESCRIPTION :
-Used by get_rig_node_group_signal_min_max_at_time, set_rig_node_signal_min_max
+Used by get_rig_group_signal_min_max_at_time, set_rig_node_signal_min_max
 etc to store info about the minimum and maximum signal values at a rig node
 group at time. Not all the fields are not necesarily used simultaneously.
 No ACCessing of fields as just temp reference for iteration.
@@ -704,18 +704,17 @@ Sets the field of the signal_drawing_package.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *make_unrejected_node_group(
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct GROUP(FE_node) *rig_node_group,struct FE_field *signal_status_field);
+struct FE_region *make_unrejected_group(
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
+	char *rig_node_group_name,
+	struct FE_region *rig_node_group,
+	struct FE_field *signal_status_field);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
-makes and returns unrejected_node_group, consisting of all the unrejected 
+makes and returns unrejected_group, consisting of all the unrejected 
 (ie accepted or undecided) nodes in <rig_node_group>. Adds the group to the 
 manager.
 ==============================================================================*/
@@ -773,11 +772,11 @@ The extraction arguments are:
 int file_read_config_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig);
 /*******************************************************************************
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Reads  configuration file into  a node group.
-cf file_read_FE_node_group() in import_finite_element.c
+Reads configuration file into a node group.
+cf read_exregion_file_of_name in import_finite_element.c
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -787,21 +786,21 @@ int file_read_signal_FE_node_group(char *file_name,struct Rig *rig);
 LAST MODIFIED : 18 October 2001
 
 DESCRIPTION :
-Reads  node group(s) from a signal file into rig . Signal file includes the
+Reads  node group(s) from a signal file into rig. Signal file includes the
 configuration info.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-int get_node_group_position_min_max(struct GROUP(FE_node) *node_group,
+int get_node_group_position_min_max(struct FE_region *group,
 	struct FE_field *map_electrode_position_field,FE_value *min_x,FE_value *max_x,
   FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z);
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-Finds the min and max coordinates of the  <position_field>
-in the <node_group>
+Finds the min and max coordinates of the <position_field> in the nodes of
+<group>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -858,45 +857,44 @@ This function is called iteratively by analysis_set_range
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_3D)
-int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
+int get_rig_node_group_signal_min_max_at_time(struct FE_region *group,
 	struct Computed_field *scaled_offset_signal_value_at_time_field,
 	struct FE_field *signal_status_field,
 	FE_value time,FE_value *min,FE_value *max);
 /*******************************************************************************
-LAST MODIFIED : 19 February 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Returns the <min> and <max>  signal values at the rig nodes in the rig_node_group
-<node_group>, field <signal_field>, time <time>
+Returns the <min> and <max> signal values at the rig nodes in the rig_node_group
+<group>, field <signal_field>, time <time>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 int rig_node_group_set_map_electrode_position_lambda_r(
-	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
+	struct Unemap_package *package,struct FE_region *rig_group,
 	struct Region *region,FE_value sock_lambda,FE_value torso_major_r,
 	FE_value torso_minor_r);
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Sets the node group's nodal map_electrode_postions from the nodal electrode_positions, 
-and changes the <rig_node_group>'s map_electrode_postions lambda or r values to 
-<value>
+Sets the node group's nodal map_electrode_postions from the nodal
+electrode_positions, and changes the <rig_group>'s map_electrode_postions
+lambda or r values to <value>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 int rig_node_group_add_map_electrode_position_field(
-	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
+	struct Unemap_package *package,struct FE_region *rig_group,
 	struct FE_field *map_electrode_position_field);
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Add an electrode_position_field  to the <rig_node_group> nodes,
+Add an electrode_position_field  to the <rig_group> nodes,
 in addition to the one created with create_config_template_node.
-
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -924,12 +922,12 @@ larger (> 0) event_time than the <second> device.
 
 #if defined (UNEMAP_USE_3D) 
 struct FE_node *find_rig_node_given_device(struct Device *device,
-	struct GROUP(FE_node) *rig_node_group,struct FE_field *device_name_field);
+	struct FE_region *rig_group,struct FE_field *device_name_field);
 /*******************************************************************************
-LAST MODIFIED : 26 September 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Given a <device>, finds the corresponding FE_node in <rig_node_group>.
+Given a <device>, finds the corresponding FE_node in <rig_group>.
 Currently matches the names.
 Does by matching the names. Therefore assume's device/node names are unique.
 If they're not, you'll get the first match.
@@ -966,7 +964,7 @@ Returns 1 if the <signal_status_field> at the <node> does NOT return the string
 int convert_config_rig_to_nodes(struct Rig *rig,
 	struct FE_node_order_info **the_all_devices_node_order_info);
 /*******************************************************************************
-LAST MODIFIED :15 October 2001
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION : 
 Convert a the configuration file information of a rig into nodes/elements/fields.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 21 October 2001
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11,6 +11,7 @@ DESCRIPTION :
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "graphics/element_point_ranges.h"
@@ -393,7 +394,7 @@ top_level. Assumes <identifier> has been validated.
 		{
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
-				(struct GROUP(FE_element) *)NULL,/*face_number*/-1,
+				(struct LIST(FE_element) *)NULL,/*face_number*/-1,
 				element_to_top_level))&&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
@@ -994,9 +995,9 @@ faces or lines of other elements not being destroyed.
 } /* Element_point_ranges_is_wholly_within_element_list_tree */
 
 int set_Element_point_ranges(struct Parse_state *state,
-	void *element_point_ranges_address_void,void *element_manager_void)
+	void *element_point_ranges_address_void, void *fe_region_void)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2001
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Modifier function to set an element_point_ranges. <element_point_ranges_address>
@@ -1010,18 +1011,18 @@ returned in this location, for the calling function to use or destroy.
 	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int dimension, i, number_of_xi_points, number_of_valid_strings, return_code,
 		start, stop;
-	struct CM_element_information cm;
+	struct CM_element_information element_identifier;
 	struct Element_point_ranges *element_point_ranges,
 		**element_point_ranges_address;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
-	struct MANAGER(FE_element) *element_manager;
+	struct FE_region *fe_region;
 	struct Option_table *option_table;
 
 	ENTER(set_Element_point_ranges);
 	if (state&&(element_point_ranges_address=
 		(struct Element_point_ranges **)element_point_ranges_address_void)&&
 		((struct Element_point_ranges *)NULL == *element_point_ranges_address)&&
-		(element_manager=(struct MANAGER(FE_element) *)element_manager_void))
+		(fe_region = (struct FE_region *)fe_region_void))
 	{
 		element_point_ranges_identifier.element=(struct FE_element *)NULL;
 		element_point_ranges_identifier.top_level_element=(struct FE_element *)NULL;
@@ -1040,15 +1041,15 @@ returned in this location, for the calling function to use or destroy.
 				/* element type */
 				if (fuzzy_string_compare(current_token,"element"))
 				{
-					cm.type=CM_ELEMENT;
+					element_identifier.type=CM_ELEMENT;
 				}
 				else if (fuzzy_string_compare(current_token,"face"))
 				{
-					cm.type=CM_FACE;
+					element_identifier.type=CM_FACE;
 				}
 				else if (fuzzy_string_compare(current_token,"line"))
 				{
-					cm.type=CM_LINE;
+					element_identifier.type=CM_LINE;
 				}
 				else
 				{
@@ -1065,17 +1066,18 @@ returned in this location, for the calling function to use or destroy.
 						if (strcmp(PARSER_HELP_STRING,current_token)&&
 							strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 						{
-							cm.number=atoi(current_token);
-							if (element_point_ranges_identifier.element=
-								FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(&cm,
-									element_manager))
+							element_identifier.number=atoi(current_token);
+							if (element_point_ranges_identifier.element =
+								FE_region_get_FE_element_from_identifier(fe_region,
+									&element_identifier))
 							{
 								shift_Parse_state(state,1);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,"Unknown element: %s %d",
-									CM_element_type_string(cm.type),cm.number);
+									CM_element_type_string(element_identifier.type),
+									element_identifier.number);
 								display_parse_state_location(state);
 								return_code=0;
 							}
@@ -1099,32 +1101,34 @@ returned in this location, for the calling function to use or destroy.
 					if ((current_token=state->current_token)&&
 						fuzzy_string_compare(current_token,"top_level_element"))
 					{
-						cm.type=CM_ELEMENT;
+						element_identifier.type = CM_ELEMENT;
 						shift_Parse_state(state,1);
 						if (current_token=state->current_token)
 						{
 							if (strcmp(PARSER_HELP_STRING,current_token)&&
 								strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 							{
-								cm.number=atoi(current_token);
+								element_identifier.number=atoi(current_token);
 								shift_Parse_state(state,1);
-								if (element_point_ranges_identifier.top_level_element=
-									FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(&cm,
-										element_manager))
+								if (element_point_ranges_identifier.top_level_element =
+									FE_region_get_FE_element_from_identifier(fe_region,
+										&element_identifier))
 								{
 									if (!FE_element_is_top_level_parent_of_element(
 										element_point_ranges_identifier.top_level_element,
 										(void *)element_point_ranges_identifier.element))
 									{
 										display_message(ERROR_MESSAGE,
-											"Invalid top_level_element: %d",cm.number);
+											"Invalid top_level_element: %d",
+											element_identifier.number);
 										return_code=0;
 									}
 								}
 								else
 								{
 									display_message(WARNING_MESSAGE,
-										"Unknown top_level_element: %d",cm.number);
+										"Unknown top_level_element: %d",
+										element_identifier.number);
 									display_parse_state_location(state);
 									return_code=0;
 								}
@@ -1144,11 +1148,10 @@ returned in this location, for the calling function to use or destroy.
 					}
 					else
 					{
-						if (!(element_point_ranges_identifier.top_level_element=
-							FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
+						if (!(element_point_ranges_identifier.top_level_element =
+							FE_region_get_first_FE_element_that(fe_region,
 								FE_element_is_top_level_parent_of_element,
-								(void *)element_point_ranges_identifier.element,
-								element_manager)))
+								(void *)element_point_ranges_identifier.element)))
 						{
 							display_message(ERROR_MESSAGE,"No top_level_element");
 							return_code=0;
@@ -1317,41 +1320,40 @@ returned in this location, for the calling function to use or destroy.
 	return (return_code);
 } /* set_Element_point_ranges */
 
-int Element_point_ranges_element_is_in_group(
-	struct Element_point_ranges *element_point_ranges,void *element_group_void)
+int Element_point_ranges_element_is_in_FE_region(
+	struct Element_point_ranges *element_point_ranges, void *fe_region_void)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
-Returns true if the element for <element_point_ranges> is in <element_group>.
+Returns true if the element for <element_point_ranges> is in <fe_region>.
 ==============================================================================*/
 {
 	int return_code;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 
-	ENTER(Element_point_ranges_element_is_in_group);
-	if (element_point_ranges&&
-		(element_group=(struct GROUP(FE_element) *)element_group_void))
+	ENTER(Element_point_ranges_element_is_in_FE_region);
+	if (element_point_ranges && (fe_region = (struct FE_region *)fe_region_void))
 	{
-		return_code=(struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
-				element_point_ranges->id.element,element_group);
+		return_code = FE_region_contains_FE_element(fe_region,
+			element_point_ranges->id.element);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_point_ranges_element_is_in_group.  Invalid argument(s)");
-		return_code=0;
+			"Element_point_ranges_element_is_in_FE_region.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Element_point_ranges_element_is_in_group */
+} /* Element_point_ranges_element_is_in_FE_region */
 
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 If <grid_field> is a single component grid-based field in <element>, creates and
@@ -1363,12 +1365,14 @@ No Element_point_ranges object is returned without error if:
 ==============================================================================*/
 {
 	int grid_value_in_range,i,number_of_grid_values,*values;
+	struct CM_element_information element_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier identifier;
 
 	ENTER(Element_point_ranges_from_grid_field_ranges);
 	element_point_ranges=(struct Element_point_ranges *)NULL;
-	if (element&&(CM_ELEMENT == element->cm.type)&&grid_field&&
+	if (element && get_FE_element_identifier(element, &element_identifier) &&
+		(CM_ELEMENT == element_identifier.type) && grid_field &&
 		(1==get_FE_field_number_of_components(grid_field))&&
 		(INT_VALUE==get_FE_field_value_type(grid_field))&&ranges)
 	{
@@ -1437,7 +1441,7 @@ No Element_point_ranges object is returned without error if:
 int FE_element_grid_to_Element_point_ranges_list(struct FE_element *element,
 	void *grid_to_list_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Iterator function that gets an Element_point_ranges structure representing all
@@ -1452,6 +1456,7 @@ Uses only top level elements, type CM_ELEMENT.
 ==============================================================================*/
 {
 	int return_code;
+	struct CM_element_information element_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element_grid_to_Element_point_ranges_list_data *grid_to_list_data;
 
@@ -1460,7 +1465,8 @@ Uses only top level elements, type CM_ELEMENT.
 		(struct FE_element_grid_to_Element_point_ranges_list_data *)
 		grid_to_list_data_void))
 	{
-		if ((CM_ELEMENT == element->cm.type)&&
+		if (get_FE_element_identifier(element, &element_identifier) &&
+			(CM_ELEMENT == element_identifier.type) &&
 			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
 				element,grid_to_list_data->grid_fe_field,
 				grid_to_list_data->grid_value_ranges)))
@@ -1489,7 +1495,7 @@ int Element_point_ranges_grid_to_multi_range(
 	struct Element_point_ranges *element_point_ranges,
 	void *grid_to_multi_range_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Last parameter is a struct Element_point_ranges_grid_to_multi_range_data.
@@ -1501,6 +1507,7 @@ If field and element_point_ranges not identically grid-based, clear
 {
 	int dimension,native,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],i,
 		number_of_grid_values,return_code,*values;
+	struct CM_element_information element_identifier;
 	struct Element_point_ranges_grid_to_multi_range_data
 		*grid_to_multi_range_data;
 	struct FE_element *element;
@@ -1518,7 +1525,8 @@ If field and element_point_ranges not identically grid-based, clear
 		/* work out if element_point_ranges matches the native discretization of
 			 grid_fe_field in element */
 		native=0;
-		if ((CM_ELEMENT == element->cm.type)&&
+		if (get_FE_element_identifier(element, &element_identifier) &&
+			(CM_ELEMENT == element_identifier.type) &&
 			(XI_DISCRETIZATION_CELL_CORNERS ==
 				element_point_ranges->id.xi_discretization_mode)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
@@ -1580,7 +1588,7 @@ If field and element_point_ranges not identically grid-based, clear
 int FE_element_grid_to_multi_range(struct FE_element *element,
 	void *grid_to_multi_range_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 September 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Last parameter is a struct FE_element_grid_to_multi_range_data.
@@ -1589,6 +1597,7 @@ in <element> to the <multi_range>.
 ==============================================================================*/
 {
 	int i,number_of_grid_values,return_code,*values;
+	struct CM_element_information element_identifier;
 	struct FE_element_grid_to_multi_range_data *grid_to_multi_range_data;
 	struct FE_field *grid_fe_field;
 	struct Multi_range *multi_range;
@@ -1602,9 +1611,10 @@ in <element> to the <multi_range>.
 		(INT_VALUE==get_FE_field_value_type(grid_fe_field))&&
 		(multi_range=grid_to_multi_range_data->multi_range))
 	{
-		return_code=1;
-		if ((CM_ELEMENT == element->cm.type)&&
-			FE_element_field_is_grid_based(element,grid_fe_field))
+		return_code = 1;
+		if (get_FE_element_identifier(element, &element_identifier) &&
+			(CM_ELEMENT == element_identifier.type) &&
+			FE_element_field_is_grid_based(element, grid_fe_field))
 		{
 			if (get_FE_element_field_component_grid_int_values(element,
 				grid_fe_field,/*component_number*/0,&values))
@@ -1835,7 +1845,7 @@ int Element_point_ranges_set_grid_values(
 	struct Element_point_ranges *element_point_ranges,
 	void *set_grid_values_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Last parameter is a struct Element_point_ranges_set_grid_values_data. Sets the
@@ -1845,9 +1855,10 @@ uses a manager_modify to make changes global.
 ==============================================================================*/
 {
 	int return_code;
+	struct CM_element_information element_identifier;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct Element_point_ranges_set_grid_values_data *set_grid_values_data;
-	struct FE_element *element;
+	struct FE_element *element, *element_copy;
 
 	ENTER(Element_point_ranges_set_grid_values);
 	if (element_point_ranges&&
@@ -1855,31 +1866,34 @@ uses a manager_modify to make changes global.
 			set_grid_values_data_void)&&
 		set_grid_values_data->source_identifier&&
 		set_grid_values_data->field_component_ranges_list&&
-		set_grid_values_data->element_manager)
+		set_grid_values_data->fe_region)
 	{
 		/* make local element_copy from that in element_point_ranges */
 		if (Element_point_ranges_get_identifier(element_point_ranges,
-			&element_point_ranges_identifier)&&
-			(element=element_point_ranges_identifier.element)&&
-			(set_grid_values_data->element_copy=
-				CREATE(FE_element)(element->identifier,element)))
+			&element_point_ranges_identifier) &&
+			(element = element_point_ranges_identifier.element) &&
+			get_FE_element_identifier(element, &element_identifier) &&
+			(element_copy = CREATE(FE_element)(&element_identifier,
+				(struct FE_element_shape *)NULL, (struct FE_region *)NULL, element)))
 		{
 			/* access element_copy to be safe from ACCESS/DEACCESS cycles in
 				 computed field evaluations */
-			ACCESS(FE_element)(set_grid_values_data->element_copy);
+			set_grid_values_data->element_copy = ACCESS(FE_element)(element_copy);
 			/* pass element_point_ranges to compare discretizations */
 			set_grid_values_data->destination_identifier=
 				&element_point_ranges_identifier;
 			set_grid_values_data->destination_element_point_numbers=
 				Element_point_ranges_get_ranges(element_point_ranges);
 			/* set values in the local element_copy */
-			if (return_code=FOR_EACH_OBJECT_IN_LIST(Field_value_index_ranges)(
+			if (return_code = FOR_EACH_OBJECT_IN_LIST(Field_value_index_ranges)(
 				Field_value_index_ranges_set_grid_values,set_grid_values_data_void,
 				set_grid_values_data->field_component_ranges_list))
 			{
-				return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
-					element,set_grid_values_data->element_copy,
-					set_grid_values_data->element_manager);
+				if (!FE_region_merge_FE_element(set_grid_values_data->fe_region,
+					element_copy))
+				{
+					return_code = 0;
+				}
 			}
 			if (!return_code)
 			{

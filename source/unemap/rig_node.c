@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 6 September 2002
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -64,7 +64,7 @@ The type of the rig.
 
 struct Add_map_electrode_position_info
 /*******************************************************************************
-LAST MODIFIED : 3 April 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Used by  rig_node_group_map_add_electrode_position_field
@@ -72,8 +72,7 @@ to store info when iterating
 ==============================================================================*/
 {
 	struct FE_field *map_electrode_position_field;	
-	struct MANAGER(FE_field) *field_manager;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *fe_region;
 };
 
 struct Position_min_max_iterator
@@ -91,7 +90,7 @@ used by get_node_position_min_max
 
 struct Set_map_electrode_position_info
 /*******************************************************************************
-LAST MODIFIED : 3 April 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION 	
 Used by rig_node_group_set_map_electrode_position_lambda_r
@@ -102,8 +101,7 @@ to store info when iterating
 	FE_value value1;
 	FE_value value2;
 	struct FE_field *map_electrode_position_field;
-	struct MANAGER(FE_field) *field_manager;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *fe_region;
 };
 
 #endif /* defined (UNEMAP_USE_3D) */
@@ -123,9 +121,10 @@ Module functions
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *create_config_template_node(enum Config_node_type 
 	config_node_type,FE_value focus,struct FE_field_order_info **field_order_info,
-	struct Unemap_package *package,struct FE_field **electrode_position_field)
+	struct Unemap_package *unemap_package,
+	struct FE_field **electrode_position_field)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2001
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Creates and returns a configuration template node for read_text_config_FE_node
@@ -167,6 +166,7 @@ created electrode_position_field.
 	char *electrode_name;
 	char *rig_type_str;
 	int number_of_fields,success;
+	struct Cmiss_region *root_cmiss_region;	
 	struct Coordinate_system coordinate_system;	
 	struct FE_field *channel_number_field;
 	struct FE_field *device_name_field;
@@ -179,8 +179,7 @@ created electrode_position_field.
 	struct FE_field_order_info *the_field_order_info;
 	struct FE_node *node;
 	struct FE_node_field_creator *node_field_creator;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct FE_time *fe_time;
+	struct FE_region *root_fe_region;
 	
 	char *device_name_component_names[1]=
 	{
@@ -214,7 +213,7 @@ created electrode_position_field.
 	};
 
 	ENTER(create_config_template_node);
-	if (package)
+	if (unemap_package)
 	{		
 		electrode_name =(char *)NULL;
 		rig_type_str =(char *)NULL;	
@@ -229,13 +228,13 @@ created electrode_position_field.
 		the_field_order_info = 
 			(struct FE_field_order_info *)NULL;
 		node=(struct FE_node *)NULL;
-		fe_field_manager=(struct MANAGER(FE_field) *)NULL;
-		fe_field_manager=get_unemap_package_FE_field_manager(package);	
-		fe_time=get_unemap_package_FE_time(package);	
+		root_cmiss_region = get_unemap_package_root_Cmiss_region(unemap_package);
+		root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
+		FE_region_begin_change(root_fe_region);
 		success = 1;			
 		electrode_name = (char *)NULL;
 		/* create the node */		
-		if (node = CREATE(FE_node)(0, (struct FE_node *)NULL))
+		if (node = CREATE(FE_node)(0, root_fe_region, (struct FE_node *)NULL))
 		{
 			/* get info that depends on config_node_type */
 			switch (config_node_type)
@@ -287,15 +286,15 @@ created electrode_position_field.
 								/* create the electrode position field, add it to the node and
 									create the FE_field_order_info with enough fields */
 								if ((the_electrode_position_field=
-									get_FE_field_manager_matched_field(fe_field_manager,
-									electrode_name,GENERAL_FE_FIELD,fe_time,
+									FE_region_get_FE_field_with_properties(root_fe_region,
+									electrode_name,GENERAL_FE_FIELD,
 									/*indexer_field*/(struct FE_field *)NULL,
 									/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 									&coordinate_system,FE_VALUE_VALUE,
 									/*number_of_components*/3,sock_electrode_component_names,
 									/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 									(struct FE_field_external_information *)NULL)))
-								{						
+								{
 									success =define_node_field_and_field_order_info(node,
 										the_electrode_position_field, node_field_creator,
 										the_field_order_info);
@@ -314,8 +313,8 @@ created electrode_position_field.
 									field */
 								coordinate_system.type=RECTANGULAR_CARTESIAN;
 								if ((the_electrode_position_field=
-									get_FE_field_manager_matched_field(fe_field_manager,
-									electrode_name,GENERAL_FE_FIELD,fe_time,
+									FE_region_get_FE_field_with_properties(root_fe_region,
+									electrode_name,GENERAL_FE_FIELD,
 									/*indexer_field*/(struct FE_field *)NULL,
 									/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 									&coordinate_system,FE_VALUE_VALUE,
@@ -342,8 +341,8 @@ created electrode_position_field.
 								coordinate_system.type=RECTANGULAR_CARTESIAN;						
 								/* create the electrode position field, add it to the node */
 								if ((the_electrode_position_field=
-									get_FE_field_manager_matched_field(fe_field_manager,
-									electrode_name,GENERAL_FE_FIELD,fe_time,
+									FE_region_get_FE_field_with_properties(root_fe_region,
+									electrode_name,GENERAL_FE_FIELD,
 									/*indexer_field*/(struct FE_field *)NULL,
 									/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 									&coordinate_system,FE_VALUE_VALUE,
@@ -393,16 +392,17 @@ created electrode_position_field.
 					/* set up the info needed to create the device name field */			
 					coordinate_system.type=NOT_APPLICABLE;				
 					/* create the device name field, add it to the node */			
-					if (device_name_field=get_FE_field_manager_matched_field(
-						fe_field_manager,"device_name",GENERAL_FE_FIELD,
-						fe_time,/*indexer_field*/(struct FE_field *)NULL,
+					if (device_name_field=FE_region_get_FE_field_with_properties(
+						root_fe_region,"device_name",GENERAL_FE_FIELD,
+						/*indexer_field*/(struct FE_field *)NULL,
 						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 						&coordinate_system,STRING_VALUE,
 						/*number_of_components*/1,device_name_component_names,
 						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 						(struct FE_field_external_information *)NULL))
 					{ 
-						set_unemap_package_device_name_field(package,device_name_field);
+						set_unemap_package_device_name_field(unemap_package,
+							device_name_field);
 						success =define_node_field_and_field_order_info(node,
 							device_name_field, node_field_creator,
 							the_field_order_info); 
@@ -417,16 +417,16 @@ created electrode_position_field.
 					/* set up the info needed to create the device type field */			
 					coordinate_system.type=NOT_APPLICABLE;				
 					/* create the device type field, add it to the node */			
-					if (device_type_field=get_FE_field_manager_matched_field(
-							 fe_field_manager,"device_type",GENERAL_FE_FIELD,
-							 fe_time,/*indexer_field*/(struct FE_field *)NULL,
+					if (device_type_field=FE_region_get_FE_field_with_properties(
+							 root_fe_region,"device_type",GENERAL_FE_FIELD,
+							 /*indexer_field*/(struct FE_field *)NULL,
 							 /*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							 &coordinate_system,STRING_VALUE,
 							 /*number_of_components*/1,device_type_component_names,
 							 /*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 							 (struct FE_field_external_information *)NULL))
 					{ 
-						set_unemap_package_device_type_field(package,device_type_field);
+						set_unemap_package_device_type_field(unemap_package,device_type_field);
 						success =define_node_field_and_field_order_info(node,
 							device_type_field, node_field_creator,
 							the_field_order_info); 						
@@ -440,16 +440,16 @@ created electrode_position_field.
 					/* set up the info needed to create the channel number field */			
 					coordinate_system.type=NOT_APPLICABLE;				
 					/* create the channel number field, add it to the node */			
-					if (channel_number_field=get_FE_field_manager_matched_field(
-							 fe_field_manager,"channel_number",GENERAL_FE_FIELD,
-							 fe_time,/*indexer_field*/(struct FE_field *)NULL,
+					if (channel_number_field=FE_region_get_FE_field_with_properties(
+							 root_fe_region,"channel_number",GENERAL_FE_FIELD,
+							 /*indexer_field*/(struct FE_field *)NULL,
 							 /*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							 &coordinate_system,INT_VALUE,
 							 /*number_of_components*/1,channel_number_component_names,
 							 /*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 							 (struct FE_field_external_information *)NULL))
 					{	
-						set_unemap_package_channel_number_field(package,channel_number_field);
+						set_unemap_package_channel_number_field(unemap_package,channel_number_field);
 						success =define_node_field_and_field_order_info(node,
 							channel_number_field, node_field_creator,
 							the_field_order_info); 
@@ -463,16 +463,16 @@ created electrode_position_field.
 					/* set up the info needed to create the read_order field */			
 					coordinate_system.type=NOT_APPLICABLE;				
 					/* create the channel number field, add it to the node */			
-					if (read_order_field=get_FE_field_manager_matched_field(
-							 fe_field_manager,"read_order",GENERAL_FE_FIELD,
-							 fe_time,/*indexer_field*/(struct FE_field *)NULL,
+					if (read_order_field=FE_region_get_FE_field_with_properties(
+							 root_fe_region,"read_order",GENERAL_FE_FIELD,
+							 /*indexer_field*/(struct FE_field *)NULL,
 							 /*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							 &coordinate_system,INT_VALUE,
 							 /*number_of_components*/1,read_order_component_names,
 							 /*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 							 (struct FE_field_external_information *)NULL))
 					{	
-						set_unemap_package_read_order_field(package,read_order_field);
+						set_unemap_package_read_order_field(unemap_package,read_order_field);
 						success =define_node_field_and_field_order_info(node,
 							read_order_field, node_field_creator,
 							the_field_order_info); 
@@ -487,16 +487,16 @@ created electrode_position_field.
 					/* set up the info needed to create the highlight field */			
 					coordinate_system.type=NOT_APPLICABLE;				
 					/* create the channel number field, add it to the node */			
-					if (highlight_field=get_FE_field_manager_matched_field(
-							 fe_field_manager,"highlight",GENERAL_FE_FIELD,
-							 fe_time,/*indexer_field*/(struct FE_field *)NULL,
+					if (highlight_field=FE_region_get_FE_field_with_properties(
+							 root_fe_region,"highlight",GENERAL_FE_FIELD,
+							 /*indexer_field*/(struct FE_field *)NULL,
 							 /*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							 &coordinate_system,INT_VALUE,
 							 /*number_of_components*/1,highlight_component_names,
 							 /*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
 							 (struct FE_field_external_information *)NULL))
 					{	
-						set_unemap_package_highlight_field(package,highlight_field);					
+						set_unemap_package_highlight_field(unemap_package,highlight_field);					
 						success =define_node_field_and_field_order_info(node,
 							highlight_field, node_field_creator,
 							the_field_order_info); 
@@ -540,6 +540,7 @@ created electrode_position_field.
 			DESTROY(FE_node)(&node);
 			node = (struct FE_node *)NULL;			
 		}		
+		FE_region_end_change(root_fe_region);
 	}
 	else
 	{
@@ -548,13 +549,14 @@ created electrode_position_field.
 		node = (struct FE_node *)NULL;
 	}		
 	LEAVE;
+
 	return(node);
 }/* create_config_template_node */
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *set_config_FE_node(struct FE_node *template_node,
-	struct MANAGER(FE_node) *node_manager,enum Config_node_type	config_node_type,
+	struct FE_region *fe_region, enum Config_node_type	config_node_type,
 	int node_number,int read_order_number,
 #if  defined (UNEMAP_USE_NODES)
 	int highlight,
@@ -562,12 +564,12 @@ static struct FE_node *set_config_FE_node(struct FE_node *template_node,
 	struct FE_field_order_info *field_order_info,char *name,
 	int channel_number,FE_value xpos,FE_value ypos,FE_value zpos)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
-sets a node's values storage with the passed, name, channel_number,read_order_number,
-highlight  xpos, ypos, zpos using the template node created in 
-create_config_template_node, and the field_order_info. 
+sets a node's values storage with the passed, name, channel_number,
+read_order_number, highlight  xpos, ypos, zpos using the template node created
+in  create_config_template_node, and the field_order_info. 
 ==============================================================================*/
 {
 	FE_value lambda,mu,theta;	
@@ -578,273 +580,275 @@ create_config_template_node, and the field_order_info.
 	struct FE_node *node;
 
 	ENTER(set_config_FE_node);
+	node = (struct FE_node *)NULL;
 	field_number = 0;
-	if (template_node&&node_manager&&field_order_info)
-	{	 							
-		if (node=CREATE(FE_node)(node_number,template_node))
-		{								
-			/*	set up the type dependent values	*/
-			switch (config_node_type)
-			{
-				case SOCK_ELECTRODE_TYPE:
-				{	
-					/* convert to prolate */	 
-					/* 1st field contains electrode coords */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					coordinate_system =	get_FE_field_coordinate_system(component.field);
-					
-#if defined (DEBUG)
-					/* for IUPS heart usr/people/williams/unemap_notes/iups2001/poster/epi_trsf_new.signal */
-					{
-						FE_value a,b,c;
-						Linear_transformation *lt;
-					
-						if (ALLOCATE(lt,Linear_transformation,1))
-						{						
-							lt->translate_x=-19.0514;
-							lt->translate_y=-71.9462;
-							lt->translate_z=3.1975;
-
-							lt->txx=0.6457;
-							lt->txy= 0.6298;
-							lt->txz= 0.4316;
-
-							lt->tyx= 0.2155;
-							lt->tyy= -0.6927;
-							lt->tyz= 0.6883;
-
-							lt->tzx= -0.7325;
-							lt->tzy=   0.3514;
-							lt->tzz= 0.5830;
-
-							linear_transformation(lt,xpos,ypos,zpos,&a,&b,&c);	
-							cartesian_to_prolate_spheroidal(a,b,c,
-								coordinate_system->parameters.focus,&lambda,&mu,&theta,
-						(float *)NULL);
-						}
-					}
-#else
-					cartesian_to_prolate_spheroidal(xpos,ypos,zpos,
-						coordinate_system->parameters.focus,&lambda,&mu,&theta,
-						(float *)NULL);
-#endif/*  defined (DEBUG)*/
-					component.number = 0;					
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,lambda);
-					component.number = 1;
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,mu);
-					component.number = 2;
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,theta);
-					/* 2nd field contains device name */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,name);
-					/* 3rd field contains device type */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,"ELECTRODE");
-					/* 4th field contains channel number */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,channel_number);	
-					/* 5th field contains read_order_number */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,read_order_number);	
-#if  defined (UNEMAP_USE_NODES)	
-					/* 6th field contains highlight */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,highlight);
-#endif /*  defined (UNEMAP_USE_NODES) */
-				} break;
-				case TORSO_ELECTRODE_TYPE:
-				{
-					/* 1st field contains electrode coords */	
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number = 0;					
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
-					component.number = 1;	
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
-					component.number = 2;	
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,zpos);
-					/* 2nd field contains device name */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,name);
-					/* 3rd field contains device type */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,"ELECTRODE");
-					/* 4th field contains channel number */					
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,channel_number);	
-					/* 5th field contains read_order_number */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,read_order_number);
-#if  defined (UNEMAP_USE_NODES)		
-					/* 6th field contains highlight */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,highlight);
-#endif /*  defined (UNEMAP_USE_NODES)	*/
-				} break;		
-				case PATCH_ELECTRODE_TYPE:
-				{	 
-					/* 1st field contains electrode coords */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number = 0;					
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
-					component.number = 1;	
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
-					/* 2nd field contains device name */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,name);
-					/* 3rd field contains device type */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,"ELECTRODE");
-					/* 4th field contains channel number */					
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,channel_number);	
-					/* 5th field contains read_order_number */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,read_order_number);	
-#if  defined (UNEMAP_USE_NODES)	
-					/* 6th field contains highlight */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,highlight);
-#endif /*  defined (UNEMAP_USE_NODES)	*/
-				} break;
-				case AUXILIARY_TYPE:
-				{					
-					/* 1st field contains device name */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,name);
-					/* 2nd field contains device type */
-					field=get_FE_field_order_info_field(field_order_info,
-						field_number);
-					field_number++;
-					component_number=0;
-					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,"AUXILIARY");
-					/* 3rd field contains channel number */					
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,channel_number);	
-					/* 4th field contains read_order_number */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,read_order_number);
-#if  defined (UNEMAP_USE_NODES)		
-					/* 5th field contains highlight */
-					component.field=get_FE_field_order_info_field(
-						field_order_info,field_number);
-					field_number++;
-					component.number=0;
-					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,/*time*/0,highlight);
-#endif /*  defined (UNEMAP_USE_NODES)	*/
-				} break;
-			}	/* switch () */
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-				cm_node_identifier)(node_number,node_manager))
-			{									
-				display_message(ERROR_MESSAGE,
-					"set_config_FE_node.  Node already exists!");	
-				node=(struct FE_node *)NULL;
-			}				
-		}
-		else
+	if (fe_region && template_node && field_order_info)
+	{
+		if (FE_region_get_FE_node_from_identifier(fe_region, node_number))
 		{
 			display_message(ERROR_MESSAGE,
-				"set_config_FE_node.  Error creating node");	
-			node=(struct FE_node *)NULL;
-		}					
+				"set_config_FE_node.  Node already exists!");	
+		}				
+		else
+		{
+			if (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+				template_node))
+			{								
+				/*	set up the type dependent values	*/
+				switch (config_node_type)
+				{
+					case SOCK_ELECTRODE_TYPE:
+					{	
+						/* convert to prolate */	 
+						/* 1st field contains electrode coords */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						coordinate_system =	get_FE_field_coordinate_system(component.field);
+					
+#if defined (DEBUG)
+						/* for IUPS heart usr/people/williams/unemap_notes/iups2001/poster/epi_trsf_new.signal */
+						{
+							FE_value a,b,c;
+							Linear_transformation *lt;
+					
+							if (ALLOCATE(lt,Linear_transformation,1))
+							{						
+								lt->translate_x=-19.0514;
+								lt->translate_y=-71.9462;
+								lt->translate_z=3.1975;
+
+								lt->txx=0.6457;
+								lt->txy= 0.6298;
+								lt->txz= 0.4316;
+
+								lt->tyx= 0.2155;
+								lt->tyy= -0.6927;
+								lt->tyz= 0.6883;
+
+								lt->tzx= -0.7325;
+								lt->tzy=   0.3514;
+								lt->tzz= 0.5830;
+
+								linear_transformation(lt,xpos,ypos,zpos,&a,&b,&c);	
+								cartesian_to_prolate_spheroidal(a,b,c,
+									coordinate_system->parameters.focus,&lambda,&mu,&theta,
+									(float *)NULL);
+							}
+						}
+#else
+						cartesian_to_prolate_spheroidal(xpos,ypos,zpos,
+							coordinate_system->parameters.focus,&lambda,&mu,&theta,
+							(float *)NULL);
+#endif/*  defined (DEBUG)*/
+						component.number = 0;					
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,lambda);
+						component.number = 1;
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,mu);
+						component.number = 2;
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,theta);
+						/* 2nd field contains device name */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,name);
+						/* 3rd field contains device type */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,"ELECTRODE");
+						/* 4th field contains channel number */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,channel_number);	
+						/* 5th field contains read_order_number */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,read_order_number);	
+#if  defined (UNEMAP_USE_NODES)	
+						/* 6th field contains highlight */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,highlight);
+#endif /*  defined (UNEMAP_USE_NODES) */
+					} break;
+					case TORSO_ELECTRODE_TYPE:
+					{
+						/* 1st field contains electrode coords */	
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number = 0;					
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
+						component.number = 1;	
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
+						component.number = 2;	
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,zpos);
+						/* 2nd field contains device name */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,name);
+						/* 3rd field contains device type */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,"ELECTRODE");
+						/* 4th field contains channel number */					
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,channel_number);	
+						/* 5th field contains read_order_number */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,read_order_number);
+#if  defined (UNEMAP_USE_NODES)		
+						/* 6th field contains highlight */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,highlight);
+#endif /*  defined (UNEMAP_USE_NODES)	*/
+					} break;		
+					case PATCH_ELECTRODE_TYPE:
+					{	 
+						/* 1st field contains electrode coords */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number = 0;					
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
+						component.number = 1;	
+						set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
+						/* 2nd field contains device name */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,name);
+						/* 3rd field contains device type */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,"ELECTRODE");
+						/* 4th field contains channel number */					
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,channel_number);	
+						/* 5th field contains read_order_number */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,read_order_number);	
+#if  defined (UNEMAP_USE_NODES)	
+						/* 6th field contains highlight */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,highlight);
+#endif /*  defined (UNEMAP_USE_NODES)	*/
+					} break;
+					case AUXILIARY_TYPE:
+					{					
+						/* 1st field contains device name */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,name);
+						/* 2nd field contains device type */
+						field=get_FE_field_order_info_field(field_order_info,
+							field_number);
+						field_number++;
+						component_number=0;
+						set_FE_nodal_string_value(node,field,component_number,/*version*/0,
+							FE_NODAL_VALUE,"AUXILIARY");
+						/* 3rd field contains channel number */					
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,channel_number);	
+						/* 4th field contains read_order_number */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,read_order_number);
+#if  defined (UNEMAP_USE_NODES)		
+						/* 5th field contains highlight */
+						component.field=get_FE_field_order_info_field(
+							field_order_info,field_number);
+						field_number++;
+						component.number=0;
+						set_FE_nodal_int_value(node,&component,/*version*/0,
+							FE_NODAL_VALUE,/*time*/0,highlight);
+#endif /*  defined (UNEMAP_USE_NODES)	*/
+					} break;
+				}	/* switch () */
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"set_config_FE_node.  Error creating node");	
+			}
+		}
 	}	
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_config_FE_node.  Invalid argument(s)");
-		node=(struct FE_node *)NULL;
+		display_message(ERROR_MESSAGE, "set_config_FE_node.  Invalid argument(s)");
 	}
 	LEAVE;
+
 	return (node);
 }/* set_config_FE_node*/
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *read_text_config_FE_node(FILE *input_file,
-	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
+	struct FE_node *template_node,struct FE_region *fe_region,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Reads a node  from a text configuration file, using the template node created in
@@ -861,7 +865,7 @@ cf read_FE_node() in import_finite_element.c
 	ENTER(read_text_config_FE_node);
 	node=(struct FE_node *)NULL;
 	success=0;
-	if (input_file&&template_node&&node_manager&&field_order_info)
+	if (input_file&&template_node&& fe_region &&field_order_info)
 	{
 		fscanf(input_file," : ");
 		/* read in name */
@@ -1052,7 +1056,7 @@ cf read_FE_node() in import_finite_element.c
 			}
 			if (success)
 			{
-				if (!(node=set_config_FE_node(template_node,node_manager,
+				if (!(node=set_config_FE_node(template_node, fe_region,
 					config_node_type,node_number,read_order_number,
 #if  defined (UNEMAP_USE_NODES)
 					0/*highlight*/,
@@ -1094,11 +1098,11 @@ cf read_FE_node() in import_finite_element.c
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *read_binary_config_FE_node(FILE *input_file,
-	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
+	struct FE_node *template_node,struct FE_region *fe_region,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 24 July 1999
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Reads a node from a binary configuration file, using the template node created
@@ -1114,7 +1118,7 @@ cf read_FE_node() in import_finite_element.c
 	ENTER(read_binary_config_FE_node);
 	node=(struct FE_node *)NULL;
 	success=0;
-	if (input_file&&template_node&&node_manager&&field_order_info)
+	if (input_file&&template_node&& fe_region &&field_order_info)
 	{
 		BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
 		if (ALLOCATE(name,char,string_length+1))
@@ -1177,7 +1181,7 @@ cf read_FE_node() in import_finite_element.c
 			}
 			if (success)
 			{
-				if (!(node=set_config_FE_node(template_node,node_manager,
+				if (!(node=set_config_FE_node(template_node, fe_region,
 					config_node_type,node_number,read_order_number,
 #if  defined (UNEMAP_USE_NODES)
 					0/*highlight*/,
@@ -1223,7 +1227,7 @@ static int read_binary_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type rig_type,
 	struct FE_node_order_info **the_node_order_info,struct Rig *rig) 
 /*******************************************************************************
-LAST MODIFIED : 24 July 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Reads  a node group from a configuration file into the rig . An FE_node_order_info
@@ -1242,16 +1246,12 @@ in rig.c
 		number_of_pages,number_of_page_devices,number_of_regions,read_order_number,
 		region_number,region_number_of_devices,return_code,string_length;
 	int string_error =0;
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_field *electrode_position_field;	
 	struct FE_field_order_info *field_order_info;	
 	struct FE_node *node,*template_node;
 	struct FE_node_order_info *all_devices_node_order_info;	
-	struct GROUP(FE_node) *node_group,*all_devices_node_group;	
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;	
+	struct FE_region *node_group, *all_devices_node_group, *root_fe_region;	
 	struct Region *region=(struct Region *)NULL;
 	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
 
@@ -1263,18 +1263,13 @@ in rig.c
 	template_node = (struct FE_node *)NULL;	
 	field_order_info = (struct FE_field_order_info *)NULL;
 	electrode_position_field = (struct FE_field *)NULL;
-	node_group = (struct GROUP(FE_node) *)NULL;
-	all_devices_node_group = (struct GROUP(FE_node) *)NULL;
+	node_group = (struct FE_region *)NULL;
+	all_devices_node_group = (struct FE_region *)NULL;
 	all_devices_node_order_info =(struct FE_node_order_info *)NULL;	
-	element_manager= (struct MANAGER(FE_element) *)NULL;
 	device_count =0;
 	if (input_file&&package) 
 	{			
-		element_group_manager=get_unemap_package_element_group_manager(package);
-		node_manager=get_unemap_package_node_manager(package);
-		element_manager=get_unemap_package_element_manager(package);
-		data_group_manager=get_unemap_package_data_group_manager(package);
-		node_group_manager= get_unemap_package_node_group_manager(package);
+		root_cmiss_region = get_unemap_package_root_Cmiss_region(package);
 		/* we've read in the rig type, now read in the rig name */
 		/* read the rig name */
 		BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
@@ -1310,338 +1305,349 @@ in rig.c
 				{
 					config_node_type = TORSO_ELECTRODE_TYPE;
 				} break;
-			}		
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
-			all_devices_node_group	= make_node_and_element_and_data_groups(
-				node_group_manager,node_manager,element_manager,element_group_manager,
-				data_group_manager,"all_devices");
-			MANAGED_GROUP_BEGIN_CACHE(FE_node)(all_devices_node_group);
-			set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
-			last_node_number = 1;	
-			/* read the number of regions */
-			BINARY_FILE_READ((char *)&number_of_regions,sizeof(int),1,input_file);			
-			region_number=0;			
-			if (region_item=get_Rig_region_list(rig))
+			}
+			root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
+			if (all_devices_node_group = Cmiss_region_get_or_create_child_FE_region(
+				root_cmiss_region, "all_devices", /*master_fe_region*/root_fe_region,
+				(struct MANAGER(FE_basis) *)NULL))
 			{
-				while((region_number<number_of_regions)&&return_code)
+				FE_region_begin_change(all_devices_node_group);
+				FE_region_clear(all_devices_node_group, /*destroy_in_master*/1);
+				set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
+				last_node_number = 1;	
+				/* read the number of regions */
+				BINARY_FILE_READ((char *)&number_of_regions,sizeof(int),1,input_file);
+				region_number=0;			
+				if (region_item=get_Rig_region_list(rig))
 				{
-					if (!(region=get_Region_list_item_region(region_item)))
+					while((region_number<number_of_regions)&&return_code)
 					{
-						display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group. "
-							"region_item->region is NULL ");
-						return_code=0;
-					}
-					/* read the region type */
-					if (MIXED==rig_type)
-					{
-						BINARY_FILE_READ((char *)&region_type,sizeof(enum Region_type),
-							1,input_file);
-					}
-					else
-					{
-						region_type=rig_type;
-					}
-					/* read the region name */
-					BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
-					if (ALLOCATE(region_name,char,string_length+1))
-					{					
-						BINARY_FILE_READ(region_name,sizeof(char),string_length,input_file);
-						region_name[string_length]='\0';
-						/*append the region number to the name, to ensure it's unique*/
-						sprintf(region_num_string,"%d",region_number);
-						append_string(&region_name,region_num_string,&string_error);
+						if (!(region=get_Region_list_item_region(region_item)))
+						{
+							display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group. "
+								"region_item->region is NULL ");
+							return_code=0;
+						}
+						/* read the region type */
 						if (MIXED==rig_type)
 						{
-							switch (region_type)
-							{
-								case SOCK:
-								{	
-									BINARY_FILE_READ((char *)&focus,sizeof(float),1,input_file);
-									config_node_type = SOCK_ELECTRODE_TYPE;
-									/*destroy any existing template,field_order_info*/
-									/* create the template node */								
-									DESTROY(FE_node)(&template_node);
-									DESTROY(FE_field_order_info)(&field_order_info);	
-									if (node_group) /* stop caching the current group,(if any) */
-									{
-										MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-									}			
-									template_node = create_config_template_node(
-										SOCK_ELECTRODE_TYPE,focus,&field_order_info,package,
-										&electrode_position_field);
-									node_group=CREATE(GROUP(FE_node))(region_name);
-									ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-									set_Region_electrode_position_field(region,electrode_position_field);
-									set_Region_rig_node_group(region,node_group);								
-								} break;
-								case TORSO:
-								{	
-									config_node_type = TORSO_ELECTRODE_TYPE;
-									/*destroy any existing template,field_order_info*/
-									/*create the template node */								
-									DESTROY(FE_node)(&template_node);
-									DESTROY(FE_field_order_info)(&field_order_info);
-									if (node_group) /* stop caching the current group,(if any) */
-									{
-										MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-									}	
-									template_node = create_config_template_node(
-										TORSO_ELECTRODE_TYPE,0,&field_order_info,package,
-										&electrode_position_field);
-									node_group=CREATE(GROUP(FE_node))(region_name);
-									ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-									set_Region_electrode_position_field(region,electrode_position_field);
-									set_Region_rig_node_group(region,node_group);
-								} break;
-								case PATCH:
-								{
-									config_node_type = PATCH_ELECTRODE_TYPE;
-									/*destroy any existing template,field_order_info*/
-									/* create the template node */								
-									DESTROY(FE_node)(&template_node);
-									DESTROY(FE_field_order_info)(&field_order_info);	
-									if (node_group) /* stop caching the current group,(if any) */
-									{
-										MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-									}		
-									template_node = create_config_template_node(
-										PATCH_ELECTRODE_TYPE,0,&field_order_info,package,
-										&electrode_position_field);
-									node_group=CREATE(GROUP(FE_node))(region_name);
-									ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-									set_Region_electrode_position_field(region,electrode_position_field);
-									set_Region_rig_node_group(region,node_group);
-								} break;
-							}/*	switch (region_type) */	
-						}	/*	if (MIXED==rig_type)  */
-						else
-						{						
-							if (node_group) /* stop caching the current group,(if any) */
-							{
-								MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-							}								
-							/* Get group */
-							node_group=CREATE(GROUP(FE_node))(region_name);
-							ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-							MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-							set_Region_rig_node_group(region,node_group);
-							/*destroy any exisiting template,field_order_info*/
-							/* create the template node,(but may change it to auxiliary later*/	
-							DESTROY(FE_node)(&template_node);
-							DESTROY(FE_field_order_info)(&field_order_info);
-							switch (config_node_type)
-							{							
-								case SOCK_ELECTRODE_TYPE:
-								{
-									template_node = create_config_template_node(
-										SOCK_ELECTRODE_TYPE,focus,&field_order_info,package,
-										&electrode_position_field);
-									set_Region_electrode_position_field(region,electrode_position_field);
-								} break;
-								case TORSO_ELECTRODE_TYPE:
-								{
-									template_node = create_config_template_node(
-										TORSO_ELECTRODE_TYPE,0,&field_order_info,package,
-										&electrode_position_field);
-									set_Region_electrode_position_field(region,electrode_position_field);
-								} break;
-								case PATCH_ELECTRODE_TYPE:
-								{
-									template_node = create_config_template_node(
-										PATCH_ELECTRODE_TYPE,0,&field_order_info,package,
-										&electrode_position_field);
-									set_Region_electrode_position_field(region,electrode_position_field);
-								} break;
-							}	/* switch (config_node_type) */
-						}			
-						/* read the devices for the region */
-						/* read the number of inputs */
-						BINARY_FILE_READ((char *)&region_number_of_devices,
-							sizeof(int),1,input_file);	
-						/* create or reallocate the all_devices_node_order_info */
-						if (!all_devices_node_order_info)
-						{
-							all_devices_node_order_info =CREATE(FE_node_order_info)
-								(region_number_of_devices);
-
-							*the_node_order_info = all_devices_node_order_info;
-							if (!all_devices_node_order_info)
-							{
-								display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group."
-									"CREATE(FE_node_order_info) failed ");
-								return_code=0;						
-								DESTROY_GROUP(FE_node)(&node_group);
-								node_group = (struct GROUP(FE_node) *)NULL;					
-							}
+							BINARY_FILE_READ((char *)&region_type,sizeof(enum Region_type),
+								1,input_file);
 						}
 						else
-						{ 
-							if (!(return_code =add_nodes_FE_node_order_info(
-								region_number_of_devices,all_devices_node_order_info)))
-							{							
-								DESTROY_GROUP(FE_node)(&node_group);
-								node_group = (struct GROUP(FE_node) *)NULL;	
-							}
-						}
-						/* read in the inputs */
-						read_order_number=0;
-						while((region_number_of_devices>0)&&return_code)
 						{
-							BINARY_FILE_READ((char *)&device_type,sizeof(enum Device_type),1,
-								input_file);
-							/* if valid device type */
-							if ((ELECTRODE==device_type)||(AUXILIARY==device_type))
-							{													
-								/* read the device number */
-								BINARY_FILE_READ((char *)&device_number,sizeof(int),1,
-									input_file);
-								node_number = get_next_FE_node_number(node_manager,
-									last_node_number);
-								/* read device type dependent properties */
-								switch (device_type)
+							region_type=rig_type;
+						}
+						/* read the region name */
+						BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
+						if (ALLOCATE(region_name,char,string_length+1))
+						{					
+							BINARY_FILE_READ(region_name,sizeof(char),string_length,input_file);
+							region_name[string_length]='\0';
+							/*append the region number to the name, to ensure it's unique*/
+							sprintf(region_num_string,"%d",region_number);
+							append_string(&region_name,region_num_string,&string_error);
+							if (MIXED==rig_type)
+							{
+								switch (region_type)
 								{
-									case ELECTRODE:
-									{
-										node=read_binary_config_FE_node(input_file,template_node,
-											node_manager,config_node_type,node_number,read_order_number,
-											field_order_info);
-										last_node_number = node_number;	
-									} break;
-									case AUXILIARY:
+									case SOCK:
 									{	
-										config_node_type = AUXILIARY_TYPE;									
+										BINARY_FILE_READ((char *)&focus,sizeof(float),1,input_file);
+										config_node_type = SOCK_ELECTRODE_TYPE;
+										/*destroy any existing template,field_order_info*/
+										/* create the template node */								
 										DESTROY(FE_node)(&template_node);
 										DESTROY(FE_field_order_info)(&field_order_info);	
-										template_node = create_config_template_node(config_node_type,
-											0,&field_order_info,package,&electrode_position_field);
-										node=read_binary_config_FE_node(input_file,template_node,
-											node_manager,config_node_type,node_number,read_order_number,
-											field_order_info);
-										last_node_number = node_number;										
-									} break;
-								}	/* switch (device_type) */
-								if (node)
-								{ 
-									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
-									{						
-										if (ADD_OBJECT_TO_GROUP(FE_node)(node,node_group))
+										if (node_group) /* stop caching the current group,(if any) */
 										{
-											if (ADD_OBJECT_TO_GROUP(FE_node)(node,
-												all_devices_node_group))
+											FE_region_end_change(node_group);
+											FE_region_end_change(node_group);
+										}			
+										template_node = create_config_template_node(
+											SOCK_ELECTRODE_TYPE,focus,&field_order_info,package,
+											&electrode_position_field);
+										node_group = Cmiss_region_get_or_create_child_FE_region(
+											root_cmiss_region, region_name,
+											/*master_fe_region*/root_fe_region,
+											(struct MANAGER(FE_basis) *)NULL);
+										FE_region_begin_change(node_group);
+										FE_region_clear(node_group, /*destroy_in_master*/1);
+										set_Region_electrode_position_field(region,electrode_position_field);
+										set_Region_rig_node_group(region,node_group);								
+									} break;
+									case TORSO:
+									{	
+										config_node_type = TORSO_ELECTRODE_TYPE;
+										/*destroy any existing template,field_order_info*/
+										/*create the template node */								
+										DESTROY(FE_node)(&template_node);
+										DESTROY(FE_field_order_info)(&field_order_info);
+										if (node_group) /* stop caching the current group,(if any) */
+										{
+											FE_region_end_change(node_group);
+										}	
+										template_node = create_config_template_node(
+											TORSO_ELECTRODE_TYPE,0,&field_order_info,package,
+											&electrode_position_field);
+										node_group = Cmiss_region_get_or_create_child_FE_region(
+											root_cmiss_region, region_name,
+											/*master_fe_region*/root_fe_region,
+											(struct MANAGER(FE_basis) *)NULL);
+										FE_region_begin_change(node_group);
+										FE_region_clear(node_group, /*destroy_in_master*/1);
+										set_Region_electrode_position_field(region,electrode_position_field);
+										set_Region_rig_node_group(region,node_group);
+									} break;
+									case PATCH:
+									{
+										config_node_type = PATCH_ELECTRODE_TYPE;
+										/*destroy any existing template,field_order_info*/
+										/* create the template node */								
+										DESTROY(FE_node)(&template_node);
+										DESTROY(FE_field_order_info)(&field_order_info);	
+										if (node_group) /* stop caching the current group,(if any) */
+										{
+											FE_region_end_change(node_group);
+										}		
+										template_node = create_config_template_node(
+											PATCH_ELECTRODE_TYPE,0,&field_order_info,package,
+											&electrode_position_field);
+										node_group = Cmiss_region_get_or_create_child_FE_region(
+											root_cmiss_region, region_name,
+											/*master_fe_region*/root_fe_region,
+											(struct MANAGER(FE_basis) *)NULL);
+										FE_region_begin_change(node_group);
+										FE_region_clear(node_group, /*destroy_in_master*/1);
+										set_Region_electrode_position_field(region,electrode_position_field);
+										set_Region_rig_node_group(region,node_group);
+									} break;
+								}/*	switch (region_type) */	
+							}	/*	if (MIXED==rig_type)  */
+							else
+							{						
+								if (node_group) /* stop caching the current group,(if any) */
+								{
+									FE_region_end_change(node_group);
+								}								
+								/* Get group */
+								node_group = Cmiss_region_get_or_create_child_FE_region(
+									root_cmiss_region, region_name,
+									/*master_fe_region*/root_fe_region,
+									(struct MANAGER(FE_basis) *)NULL);
+								FE_region_begin_change(node_group);
+								FE_region_clear(node_group, /*destroy_in_master*/1);
+								set_Region_rig_node_group(region,node_group);
+								/*destroy any exisiting template,field_order_info*/
+								/* create the template node,(but may change it to auxiliary later*/	
+								DESTROY(FE_node)(&template_node);
+								DESTROY(FE_field_order_info)(&field_order_info);
+								switch (config_node_type)
+								{							
+									case SOCK_ELECTRODE_TYPE:
+									{
+										template_node = create_config_template_node(
+											SOCK_ELECTRODE_TYPE,focus,&field_order_info,package,
+											&electrode_position_field);
+										set_Region_electrode_position_field(region,electrode_position_field);
+									} break;
+									case TORSO_ELECTRODE_TYPE:
+									{
+										template_node = create_config_template_node(
+											TORSO_ELECTRODE_TYPE,0,&field_order_info,package,
+											&electrode_position_field);
+										set_Region_electrode_position_field(region,electrode_position_field);
+									} break;
+									case PATCH_ELECTRODE_TYPE:
+									{
+										template_node = create_config_template_node(
+											PATCH_ELECTRODE_TYPE,0,&field_order_info,package,
+											&electrode_position_field);
+										set_Region_electrode_position_field(region,electrode_position_field);
+									} break;
+								}	/* switch (config_node_type) */
+							}			
+							/* read the devices for the region */
+							/* read the number of inputs */
+							BINARY_FILE_READ((char *)&region_number_of_devices,
+								sizeof(int),1,input_file);	
+							/* create or reallocate the all_devices_node_order_info */
+							if (!all_devices_node_order_info)
+							{
+								all_devices_node_order_info = CREATE(FE_node_order_info)
+									(region_number_of_devices);
+
+								*the_node_order_info = all_devices_node_order_info;
+								if (!all_devices_node_order_info)
+								{
+									display_message(ERROR_MESSAGE,
+										"read_binary_config_FE_node_group.  "
+										"CREATE(FE_node_order_info) failed");
+									return_code = 0;						
+									node_group = (struct FE_region *)NULL;					
+								}
+							}
+							else
+							{ 
+								if (!(return_code = add_nodes_FE_node_order_info(
+									region_number_of_devices,all_devices_node_order_info)))
+								{							
+									display_message(ERROR_MESSAGE,
+										"read_binary_config_FE_node_group.  "
+										"add_nodes_FE_node_order_info failed");
+									return_code = 0;						
+									node_group = (struct FE_region *)NULL;	
+								}
+							}
+							/* read in the inputs */
+							read_order_number=0;
+							while((region_number_of_devices>0)&&return_code)
+							{
+								BINARY_FILE_READ((char *)&device_type,sizeof(enum Device_type),1,
+									input_file);
+								/* if valid device type */
+								if ((ELECTRODE==device_type)||(AUXILIARY==device_type))
+								{													
+									/* read the device number */
+									BINARY_FILE_READ((char *)&device_number,sizeof(int),1,
+										input_file);
+									node_number = FE_region_get_next_FE_node_identifier(
+										root_fe_region, last_node_number);
+									/* read device type dependent properties */
+									switch (device_type)
+									{
+										case ELECTRODE:
+										{
+											node=read_binary_config_FE_node(input_file, template_node,
+												root_fe_region, config_node_type, node_number,
+												read_order_number, field_order_info);
+											last_node_number = node_number;	
+										} break;
+										case AUXILIARY:
+										{	
+											config_node_type = AUXILIARY_TYPE;									
+											DESTROY(FE_node)(&template_node);
+											DESTROY(FE_field_order_info)(&field_order_info);	
+											template_node = create_config_template_node(config_node_type,
+												0,&field_order_info,package,&electrode_position_field);
+											node = read_binary_config_FE_node(input_file,
+												template_node, root_fe_region, config_node_type,
+												node_number, read_order_number, field_order_info);
+											last_node_number = node_number;										
+										} break;
+									}	/* switch (device_type) */
+									if (node)
+									{ 
+										if (FE_region_merge_FE_node(node_group, node))
+										{
+											if (FE_region_merge_FE_node(all_devices_node_group, node))
 											{
 												/* add the node to the node_order_info*/
-												set_FE_node_order_info_node(all_devices_node_order_info,device_count,
-													node);
+												set_FE_node_order_info_node(all_devices_node_order_info,
+													device_count, node);
 												device_count++;
 											}
 											else
 											{
 												display_message(ERROR_MESSAGE,
-													"read_binary_config_FE_node_group."
-													" Could not add node to all_devices_node_group");
-												REMOVE_OBJECT_FROM_GROUP(FE_node)(node,
-													all_devices_node_group);
-												REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-												node=(struct FE_node *)NULL;
-												return_code=0;
+													"read_binary_config_FE_node_group.  "
+													"Could not add node to all_devices_node_group");
+												/* remove node from its ultimate master FE_region */
+												FE_region_remove_FE_node(root_fe_region, node);
+												node = (struct FE_node *)NULL;
+												return_code = 0;
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"read_binary_config_FE_node_group. Could not add node "
-												"to node_group");
-											REMOVE_OBJECT_FROM_GROUP(FE_node)(node,node_group);
-											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-											node=(struct FE_node *)NULL;
-											return_code=0;
-										}							
-									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"read_binary_config_FE_node_group. Could not add node to"
-											" node_manager");
-										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-										node=(struct FE_node *)NULL;
-										return_code=0;
-									}
-								}/*	if (node) */									
-							}/* if ((ELECTRODE==device_type)||(AUXILIARY==device_type)) */
-							else
+												"read_binary_config_FE_node_group.  "
+												"Could not add node to node_group");
+											/*???RC This was an existing potential leak */
+											node = (struct FE_node *)NULL;
+											return_code = 0;
+										}
+									}/*	if (node) */
+								}/* if ((ELECTRODE==device_type)||(AUXILIARY==device_type)) */
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"read_binary_config_FE_node_group. Invalid device type");
+									return_code = 0;
+								}
+								region_number_of_devices--;
+								read_order_number++;
+							} /*	while (region_number_of_devices>0)&&return_code) */					
+						}	/* if (ALLOCATE(region_name */
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"read_binary_config_FE_node_group. Could not create region name");
+							return_code =0;		
+						}	
+						if (return_code)
+						{
+							/* move to the next region */
+							region_number++;				
+						}
+						region_item=get_Region_list_item_next(region_item);
+						if (region_name)
+						{
+							DEALLOCATE(region_name);
+						}				
+					}/*	while((region_number<number_of_regions)&&return_code) */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"read_binary_config_FE_node_group. rig->region_list is NULL");
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					/* read the number of pages */
+					BINARY_FILE_READ((char *)&number_of_pages,sizeof(int),1,input_file);
+					/* read in the pages */
+					count=0;		
+					while ((count<number_of_pages)&&return_code)
+					{									
+						/* read the page name */
+						BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
+						if (ALLOCATE(page_name,char,string_length+1))
+						{
+							BINARY_FILE_READ(page_name,sizeof(char),string_length,input_file);
+							page_name[string_length]='\0';
+							/* read the number of devices in the device list */
+							BINARY_FILE_READ((char *)&number_of_page_devices,sizeof(int),1,
+								input_file);
+							/* read the device list */					
+							while ((number_of_page_devices>0)&&return_code)
 							{
-								display_message(ERROR_MESSAGE,
-									"read_binary_config_FE_node_group. Invalid device type");
-								return_code = 0;
+								BINARY_FILE_READ((char *)&device_number,sizeof(int),1,input_file);
+								number_of_page_devices--;
 							}
-							region_number_of_devices--;
-							read_order_number++;
-						} /*	while (region_number_of_devices>0)&&return_code) */					
-					}	/* if (ALLOCATE(region_name */
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_binary_config_FE_node_group. Could not create region name");
-						return_code =0;		
-					}	
-					if (return_code)
-					{
-						/* move to the next region */
-						region_number++;				
-					}
-					region_item=get_Region_list_item_next(region_item);
-					if (region_name)
-					{
-						DEALLOCATE(region_name);
-					}				
-				}/*	while((region_number<number_of_regions)&&return_code) */
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"read_binary_config_FE_node_group.  Could not create page name");
+							return_code = 0;
+						}			 
+						if (page_name)
+						{
+							DEALLOCATE(page_name);
+						}
+						count++;
+					} /*	while ((count<number_of_pages)&&return_code) */
+				}	/* if (success) */
+				FE_region_end_change(all_devices_node_group);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-						"read_binary_config_FE_node_group. rig->region_list is NULL");
-					return_code =0;		
+				display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group.  "
+					"Can't create all_devices_node_group");	
+				return_code = 0;
 			}
-			if (return_code)
-			{
-				/* read the number of pages */
-				BINARY_FILE_READ((char *)&number_of_pages,sizeof(int),1,input_file);
-				/* read in the pages */
-				count=0;		
-				while ((count<number_of_pages)&&return_code)
-				{									
-					/* read the page name */
-					BINARY_FILE_READ((char *)&string_length,sizeof(int),1,input_file);
-					if (ALLOCATE(page_name,char,string_length+1))
-					{
-						BINARY_FILE_READ(page_name,sizeof(char),string_length,input_file);
-						page_name[string_length]='\0';
-						/* read the number of devices in the device list */
-						BINARY_FILE_READ((char *)&number_of_page_devices,sizeof(int),1,
-							input_file);
-						/* read the device list */					
-						while ((number_of_page_devices>0)&&return_code)
-						{
-							BINARY_FILE_READ((char *)&device_number,sizeof(int),1,input_file);
-							number_of_page_devices--;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_binary_config_FE_node_group.  Could not create page name");
-						return_code = 0;
-					}			 
-					if (page_name)
-					{
-						DEALLOCATE(page_name);
-					}
-					count++;
-				} /*	while ((count<number_of_pages)&&return_code) */
-			}	/* if (success) */
 		}
 		else
 		{
@@ -1654,15 +1660,10 @@ in rig.c
 		{
 			DESTROY(FE_node)(&template_node);
 		}			
-		MANAGER_END_CACHE(FE_node)(node_manager);
 		if (node_group)
 		{
-			MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+			FE_region_end_change(node_group);
 		}		
-		if (all_devices_node_group)
-		{
-			MANAGED_GROUP_END_CACHE(FE_node)(all_devices_node_group);
-		}	
 		if (field_order_info)
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
@@ -1695,7 +1696,7 @@ in rig.c
 static int read_text_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type region_type,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Reads a node group from a configuration file.
@@ -1713,15 +1714,11 @@ files, and there are no text signal files.
 	int device_number,finished,is_auxiliary,is_electrode,last_node_number,
 		node_number,read_order_number,region_number,return_code;
 	int string_error =0;
-	struct FE_node *node,*template_node;
+	struct Cmiss_region *root_cmiss_region;
+	struct FE_node *node, *template_node;
 	struct FE_field *electrode_position_field;				
 	struct FE_field_order_info *field_order_info;	
-	struct GROUP(FE_node) *node_group,*all_devices_node_group;
-	struct MANAGER(FE_element) *element_manager;			
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;	
+	struct FE_region *node_group, *all_devices_node_group, *root_fe_region;
 	struct Region *region=(struct Region *)NULL;
 	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
 
@@ -1731,19 +1728,15 @@ files, and there are no text signal files.
 	electrode_position_field = (struct FE_field *)NULL;	
 	field_order_info=(struct FE_field_order_info *)NULL;
 	dummy_str=(char *)NULL;
-	node_group=(struct GROUP(FE_node) *)NULL; 	
-	all_devices_node_group=(struct GROUP(FE_node) *)NULL;
-	element_manager=(struct MANAGER(FE_element) *)NULL;
+	node_group=(struct FE_region *)NULL; 	
+	all_devices_node_group=(struct FE_region *)NULL;
 	read_order_number=0;
 	device_number=0;
 	region_number=0;
 	return_code=1;
 	if (input_file&&package) 
-	{		
-		element_group_manager=get_unemap_package_element_group_manager(package);
-		node_manager=get_unemap_package_node_manager(package);
-		data_group_manager=get_unemap_package_data_group_manager(package);
-		node_group_manager= get_unemap_package_node_group_manager(package);					
+	{
+		root_cmiss_region = get_unemap_package_root_Cmiss_region(package);
 		/* we've read in the rig type, now read in the rig name */
 		fscanf(input_file,"%*[ :\n]");
 		/* rig name */		 
@@ -1781,330 +1774,340 @@ files, and there are no text signal files.
 					config_node_type=TORSO_ELECTRODE_TYPE;
 				} break;
 			}
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);		
-			all_devices_node_group=make_node_and_element_and_data_groups(
-				node_group_manager,node_manager,element_manager,element_group_manager,
-				data_group_manager,"all_devices");
-			MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-			set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
-			last_node_number=1;	 
-			fscanf(input_file," ");				
-			finished=0;
-			if (region_item=get_Rig_region_list(rig))
+			root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
+			if (all_devices_node_group = Cmiss_region_get_or_create_child_FE_region(
+				root_cmiss_region, "all_devices", /*master_fe_region*/root_fe_region,
+				(struct MANAGER(FE_basis) *)NULL))
 			{
-				while ((!feof(input_file))&&(!finished)&&return_code)
+				FE_region_begin_change(all_devices_node_group);
+				FE_region_clear(all_devices_node_group, /*destroy_in_master*/1);
+				set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
+				last_node_number=1;	 
+				fscanf(input_file," ");				
+				finished=0;
+				if (region_item=get_Rig_region_list(rig))
 				{
-					if (region_item)
-					/* not an error if it isn't set*/
+					while ((!feof(input_file))&&(!finished)&&return_code)
 					{
-						region=get_Region_list_item_region(region_item);
-					}					
-					is_electrode=0;
-					is_auxiliary=0;
-					fscanf(input_file," ");
-					fscanf(input_file,"%5c",input_str); 
-					/* NULL terminate for use with strcmp */	
-					input_str[5]='\0';
-					/* for a mixed rig, may load in the actual rig information */
-					if ((!strcmp("torso",input_str))&&(region_type==MIXED))
-					{
-						/* get the rig name */	
-						fscanf(input_file,"%*[ :\n]");
-						if (read_string(input_file,"[^\n]",&dummy_str)&&
-							(rig_name=trim_string(dummy_str)))
-						{	
-							fscanf(input_file," ");
-							/*append the region number to the name, to ensure it's unique*/
-							sprintf(region_num_string,"%d",region_number);
-							append_string(&rig_name,region_num_string,&string_error);					
-							region_number++;
-						}	
-						else
-						{	
-							display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
-								" Can't read torso rig name");	
-							return_code =0;	
-						}
-						config_node_type=TORSO_ELECTRODE_TYPE;
-						/*destroy any existing template,field_order_info*/						
-						/* create the template node */						
-						DESTROY(FE_node)(&template_node);
-						DESTROY(FE_field_order_info)(&field_order_info);
-						/* stop caching the current group,(if any) */
-						if (node_group)
+						if (region_item)
+							/* not an error if it isn't set*/
 						{
-							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-						}	
-						template_node=create_config_template_node(TORSO_ELECTRODE_TYPE,0,
-							&field_order_info,package,&electrode_position_field);
-						node_group=CREATE(GROUP(FE_node))(rig_name);
-						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-						set_Region_electrode_position_field(region,electrode_position_field);
-						set_Region_rig_node_group(region,node_group);
-						/* new group, new rig, so reset device number */
-						device_number=0;
-					}
-					else if ((!strcmp("patch",input_str))&&(region_type==MIXED))
-					{	
-						/* get the rig name */	
-						fscanf(input_file,"%*[ :\n]");
-						if (read_string(input_file,"[^\n]",&dummy_str)&&
-							(rig_name=trim_string(dummy_str))) 
-						{	
-							fscanf(input_file," ");		
-							/*append the region number to the name, to ensure it's unique*/
-							sprintf(region_num_string,"%d",region_number);
-							append_string(&rig_name,region_num_string,&string_error);						
-							region_number++;										
-						}	
-						else
-						{	
-							display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
-								" Can't read patch rig name");	
-							return_code=0;	
-						}
-						config_node_type=PATCH_ELECTRODE_TYPE;
-						/*destroy any existing template,field_order_info*/	
-						/* create the template node */					
-						DESTROY(FE_node)(&template_node);
-						DESTROY(FE_field_order_info)(&field_order_info);	
-						/* stop caching the current group,(if any) */
-						if (node_group)
+							region=get_Region_list_item_region(region_item);
+						}					
+						is_electrode=0;
+						is_auxiliary=0;
+						fscanf(input_file," ");
+						fscanf(input_file,"%5c",input_str); 
+						/* NULL terminate for use with strcmp */	
+						input_str[5]='\0';
+						/* for a mixed rig, may load in the actual rig information */
+						if ((!strcmp("torso",input_str))&&(region_type==MIXED))
 						{
-							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-						}		
-						template_node = create_config_template_node(PATCH_ELECTRODE_TYPE,
-							0,&field_order_info,package,&electrode_position_field);
-						node_group=CREATE(GROUP(FE_node))(rig_name);
-						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-						set_Region_electrode_position_field(region,electrode_position_field);
-						set_Region_rig_node_group(region,node_group);
-						/* new group, new rig, so reset device number */
-						device_number=0;
-					}
-					else if ((!strcmp("sock ",input_str))&&(region_type==MIXED))
-					{
-						/* shorten string, 'sock' only 4 chars long*/
-						input_str[4]='\0';
-						/* get the rig name */
-						fscanf(input_file,"%*[ :\n]");
-						if (read_string(input_file,"[^\n]",&dummy_str)&&
-							(rig_name = trim_string(dummy_str))) 
-						{	
-							fscanf(input_file," ");				
-							/* read in focus (if any)*/						
-							if (!fscanf(input_file,"focus for Hammer projection : %f",&focus))
-							{
-								focus=(float)0;
+							/* get the rig name */	
+							fscanf(input_file,"%*[ :\n]");
+							if (read_string(input_file,"[^\n]",&dummy_str)&&
+								(rig_name=trim_string(dummy_str)))
+							{	
+								fscanf(input_file," ");
+								/*append the region number to the name, to ensure it's unique*/
+								sprintf(region_num_string,"%d",region_number);
+								append_string(&rig_name,region_num_string,&string_error);					
+								region_number++;
 							}	
-							fscanf(input_file," ");	
-							/*append the region number to the name, to ensure it's unique*/
-							sprintf(region_num_string,"%d",region_number);
-							append_string(&rig_name,region_num_string,&string_error);						
-							region_number++;		
-						}	
-						else
+							else
+							{	
+								display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
+									" Can't read torso rig name");	
+								return_code =0;	
+							}
+							config_node_type=TORSO_ELECTRODE_TYPE;
+							/*destroy any existing template,field_order_info*/						
+							/* create the template node */						
+							DESTROY(FE_node)(&template_node);
+							DESTROY(FE_field_order_info)(&field_order_info);
+							/* stop caching the current group,(if any) */
+							if (node_group)
+							{
+								FE_region_end_change(node_group);
+							}	
+							template_node=create_config_template_node(TORSO_ELECTRODE_TYPE,0,
+								&field_order_info,package,&electrode_position_field);
+							node_group = Cmiss_region_get_or_create_child_FE_region(
+								root_cmiss_region, rig_name, /*master_fe_region*/root_fe_region,
+								(struct MANAGER(FE_basis) *)NULL);
+							FE_region_begin_change(node_group);
+							FE_region_clear(node_group, /*destroy_in_master*/1);
+							set_Region_electrode_position_field(region,electrode_position_field);
+							set_Region_rig_node_group(region,node_group);
+							/* new group, new rig, so reset device number */
+							device_number=0;
+						}
+						else if ((!strcmp("patch",input_str))&&(region_type==MIXED))
 						{	
-							display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
-								" Can't read sock rig name");	
-							return_code=0;	
-						}
-						config_node_type=SOCK_ELECTRODE_TYPE;
-						/*destroy any existing template,field_order_info*/	
-						/* create the template node */						
-						DESTROY(FE_node)(&template_node);
-						DESTROY(FE_field_order_info)(&field_order_info);	
-						/* stop caching the current group,(if any) */
-						if (node_group)
-						{
-							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-						}			
-						template_node=create_config_template_node(SOCK_ELECTRODE_TYPE,focus,
-							&field_order_info,package,&electrode_position_field);
-						node_group=CREATE(GROUP(FE_node))(rig_name);
-						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-						set_Region_electrode_position_field(region,electrode_position_field);
-						set_Region_rig_node_group(region,node_group);
-						/* new group, new rig, so reset device number */
-						device_number=0;
-					}				
-					else if (!strcmp("regio",input_str))
-					{
-						/* line is "region" */
-						fscanf(input_file,"n : "); 
-						read_string(input_file,"[^\n]",&dummy_str);
-						region_name=trim_string(dummy_str);	
-						/*append the region number to the name, to ensure it's unique*/
-						sprintf(region_num_string,"%d",region_number);
-						append_string(&region_name,region_num_string,&string_error);
-						region_number++;						
-						/* stop caching the current group,(if any) */
-						if (node_group)
-						{
-							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-						}								
-						/* get group */
-						node_group=CREATE(GROUP(FE_node))(region_name);
-						ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-						set_Region_rig_node_group(region,node_group);											
-						/*destroy any existing template,field_order_info*/	
-						/* create the template node (but may change it to auxiliary later) */					
-						DESTROY(FE_node)(&template_node);
-						DESTROY(FE_field_order_info)(&field_order_info);
-						switch (config_node_type)
-						{							
-							case SOCK_ELECTRODE_TYPE:
-							{
-								template_node=create_config_template_node(SOCK_ELECTRODE_TYPE,
-									focus,&field_order_info,package,&electrode_position_field);
-								set_Region_electrode_position_field(region,electrode_position_field);
-							} break;
-							case TORSO_ELECTRODE_TYPE:
-							{
-								template_node=create_config_template_node(TORSO_ELECTRODE_TYPE,0,
-									&field_order_info,package,&electrode_position_field);
-								set_Region_electrode_position_field(region,electrode_position_field);
-							} break;
-							case PATCH_ELECTRODE_TYPE:
-							{
-								template_node=create_config_template_node(PATCH_ELECTRODE_TYPE,0,
-									&field_order_info,package,&electrode_position_field);
-								set_Region_electrode_position_field(region,electrode_position_field);
-							} break;
-						}
-						/* new group, new rig, so reset device number */
-						device_number=0;
-					}				
-					else if ((is_electrode = !strcmp("elect",input_str))||
-						(is_auxiliary=!strcmp("auxil",input_str)))
-					{
-						/* node, line is "electrode" or "auxiliary" */
-						/* complete the word */
-						fscanf(input_file,"%4c",input_str);
-						node_number=get_next_FE_node_number(node_manager,last_node_number);
-						fscanf(input_file," ");							
-						/* have we got an auxiliary node? */
-						if (is_auxiliary)
-						{
-							config_node_type=AUXILIARY_TYPE;							
+							/* get the rig name */	
+							fscanf(input_file,"%*[ :\n]");
+							if (read_string(input_file,"[^\n]",&dummy_str)&&
+								(rig_name=trim_string(dummy_str))) 
+							{	
+								fscanf(input_file," ");		
+								/*append the region number to the name, to ensure it's unique*/
+								sprintf(region_num_string,"%d",region_number);
+								append_string(&rig_name,region_num_string,&string_error);						
+								region_number++;										
+							}	
+							else
+							{	
+								display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
+									" Can't read patch rig name");	
+								return_code=0;	
+							}
+							config_node_type=PATCH_ELECTRODE_TYPE;
+							/*destroy any existing template,field_order_info*/	
+							/* create the template node */					
 							DESTROY(FE_node)(&template_node);
 							DESTROY(FE_field_order_info)(&field_order_info);	
-							template_node=create_config_template_node(config_node_type,0,
-								&field_order_info,package,&electrode_position_field);
-							node=read_text_config_FE_node(input_file,template_node,node_manager,
-								config_node_type,node_number,read_order_number,field_order_info);
-							last_node_number=node_number;	
-							device_number++;
-							read_order_number++;					
+							/* stop caching the current group,(if any) */
+							if (node_group)
+							{
+								FE_region_end_change(node_group);
+							}		
+							template_node = create_config_template_node(PATCH_ELECTRODE_TYPE,
+								0,&field_order_info,package,&electrode_position_field);
+							node_group = Cmiss_region_get_or_create_child_FE_region(
+								root_cmiss_region, rig_name, /*master_fe_region*/root_fe_region,
+								(struct MANAGER(FE_basis) *)NULL);
+							FE_region_begin_change(node_group);
+							FE_region_clear(node_group, /*destroy_in_master*/1);
+							set_Region_electrode_position_field(region,electrode_position_field);
+							set_Region_rig_node_group(region,node_group);
+							/* new group, new rig, so reset device number */
+							device_number=0;
 						}
-						else if (is_electrode)
-						{							
-							/* not an auxiliary node,electrode node! */
-							node=read_text_config_FE_node(input_file,template_node,node_manager,
-								config_node_type,node_number,read_order_number,field_order_info);	
-							last_node_number=node_number;
-							device_number++;
-							read_order_number++;
-						}						
-						if (node)
-						{ 
-							if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
-							{						
-								if (ADD_OBJECT_TO_GROUP(FE_node)(node,node_group))
+						else if ((!strcmp("sock ",input_str))&&(region_type==MIXED))
+						{
+							/* shorten string, 'sock' only 4 chars long*/
+							input_str[4]='\0';
+							/* get the rig name */
+							fscanf(input_file,"%*[ :\n]");
+							if (read_string(input_file,"[^\n]",&dummy_str)&&
+								(rig_name = trim_string(dummy_str))) 
+							{	
+								fscanf(input_file," ");				
+								/* read in focus (if any)*/						
+								if (!fscanf(input_file,"focus for Hammer projection : %f",&focus))
 								{
-									if (!ADD_OBJECT_TO_GROUP(FE_node)(node,all_devices_node_group))
+									focus=(float)0;
+								}	
+								fscanf(input_file," ");	
+								/*append the region number to the name, to ensure it's unique*/
+								sprintf(region_num_string,"%d",region_number);
+								append_string(&rig_name,region_num_string,&string_error);						
+								region_number++;		
+							}	
+							else
+							{	
+								display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
+									" Can't read sock rig name");	
+								return_code=0;	
+							}
+							config_node_type=SOCK_ELECTRODE_TYPE;
+							/*destroy any existing template,field_order_info*/	
+							/* create the template node */						
+							DESTROY(FE_node)(&template_node);
+							DESTROY(FE_field_order_info)(&field_order_info);	
+							/* stop caching the current group,(if any) */
+							if (node_group)
+							{
+								FE_region_end_change(node_group);
+							}			
+							template_node=create_config_template_node(SOCK_ELECTRODE_TYPE,focus,
+								&field_order_info,package,&electrode_position_field);
+							node_group = Cmiss_region_get_or_create_child_FE_region(
+								root_cmiss_region, rig_name, /*master_fe_region*/root_fe_region,
+								(struct MANAGER(FE_basis) *)NULL);
+							FE_region_begin_change(node_group);
+							FE_region_clear(node_group, /*destroy_in_master*/1);
+							set_Region_electrode_position_field(region,electrode_position_field);
+							set_Region_rig_node_group(region,node_group);
+							/* new group, new rig, so reset device number */
+							device_number=0;
+						}				
+						else if (!strcmp("regio",input_str))
+						{
+							/* line is "region" */
+							fscanf(input_file,"n : "); 
+							read_string(input_file,"[^\n]",&dummy_str);
+							region_name=trim_string(dummy_str);	
+							/*append the region number to the name, to ensure it's unique*/
+							sprintf(region_num_string,"%d",region_number);
+							append_string(&region_name,region_num_string,&string_error);
+							region_number++;						
+							/* stop caching the current group,(if any) */
+							if (node_group)
+							{
+								FE_region_end_change(node_group);
+							}								
+							/* get group */
+							node_group = Cmiss_region_get_or_create_child_FE_region(
+								root_cmiss_region, region_name,
+								/*master_fe_region*/root_fe_region,
+								(struct MANAGER(FE_basis) *)NULL);
+							FE_region_begin_change(node_group);
+							FE_region_clear(node_group, /*destroy_in_master*/1);
+							set_Region_rig_node_group(region,node_group);											
+							/*destroy any existing template,field_order_info*/	
+							/* create the template node (but may change it to auxiliary later) */					
+							DESTROY(FE_node)(&template_node);
+							DESTROY(FE_field_order_info)(&field_order_info);
+							switch (config_node_type)
+							{							
+								case SOCK_ELECTRODE_TYPE:
+								{
+									template_node=create_config_template_node(SOCK_ELECTRODE_TYPE,
+										focus,&field_order_info,package,&electrode_position_field);
+									set_Region_electrode_position_field(region,electrode_position_field);
+								} break;
+								case TORSO_ELECTRODE_TYPE:
+								{
+									template_node=create_config_template_node(TORSO_ELECTRODE_TYPE,0,
+										&field_order_info,package,&electrode_position_field);
+									set_Region_electrode_position_field(region,electrode_position_field);
+								} break;
+								case PATCH_ELECTRODE_TYPE:
+								{
+									template_node=create_config_template_node(PATCH_ELECTRODE_TYPE,0,
+										&field_order_info,package,&electrode_position_field);
+									set_Region_electrode_position_field(region,electrode_position_field);
+								} break;
+							}
+							/* new group, new rig, so reset device number */
+							device_number=0;
+						}				
+						else if ((is_electrode = !strcmp("elect",input_str))||
+							(is_auxiliary=!strcmp("auxil",input_str)))
+						{
+							/* node, line is "electrode" or "auxiliary" */
+							/* complete the word */
+							fscanf(input_file,"%4c",input_str);
+							node_number = FE_region_get_next_FE_node_identifier(
+								root_fe_region, last_node_number);
+							fscanf(input_file," ");							
+							/* have we got an auxiliary node? */
+							if (is_auxiliary)
+							{
+								config_node_type=AUXILIARY_TYPE;							
+								DESTROY(FE_node)(&template_node);
+								DESTROY(FE_field_order_info)(&field_order_info);	
+								template_node=create_config_template_node(config_node_type,0,
+									&field_order_info,package,&electrode_position_field);
+								node = read_text_config_FE_node(input_file, template_node,
+									root_fe_region, config_node_type, node_number,
+									read_order_number, field_order_info);
+								last_node_number=node_number;	
+								device_number++;
+								read_order_number++;					
+							}
+							else if (is_electrode)
+							{							
+								/* not an auxiliary node,electrode node! */
+								node = read_text_config_FE_node(input_file, template_node,
+									root_fe_region, config_node_type, node_number,
+									read_order_number, field_order_info);	
+								last_node_number=node_number;
+								device_number++;
+								read_order_number++;
+							}						
+							if (node)
+							{ 
+								if (FE_region_merge_FE_node(node_group, node))
+								{
+									if (!FE_region_merge_FE_node(all_devices_node_group, node))
 									{
 										display_message(ERROR_MESSAGE,
-											"read_text_config_FE_node_group."
-											" Could not add node to all_devices_node_group");
-										REMOVE_OBJECT_FROM_GROUP(FE_node)(node,
-											all_devices_node_group);
-										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-										node=(struct FE_node *)NULL;
-										return_code=0;
+											"read_text_config_FE_node_group.  "
+											"Could not add node to all_devices_node_group");
+										/* remove node from its ultimate master FE_region */
+										FE_region_remove_FE_node(root_fe_region, node);
+										node = (struct FE_node *)NULL;
+										return_code = 0;
 									}
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
+									display_message(ERROR_MESSAGE,
+										"read_text_config_FE_node_group.  "
 										"Could not add node to node_group");
-									REMOVE_OBJECT_FROM_GROUP(FE_node)(node,node_group);
-									REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-									node=(struct FE_node *)NULL;
-									return_code=0;
-								}							
-							} /* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
-							else
-							{
-								display_message(ERROR_MESSAGE,"read_text_config_FE_node_group."
-									" Could not add node to node_manager");
-								REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-								node=(struct FE_node *)NULL;
-								return_code=0;
-							}
-						} /*if (node) */					
-					} /* else if ((is_electrode = */
-					else
-					{
-						finished=1;
-					}
-					fscanf(input_file," ");
-					DEALLOCATE(dummy_str); 
-					if (region_item)
-					/* not an error if it isn't set*/
-					{
-						/* move to the next region */
-						region_item=get_Region_list_item_next(region_item);					
-					}						
-				} /* while((!feof(input_file))&&(!finished)) */
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
+									/*???RC This was an existing potential leak */
+									node = (struct FE_node *)NULL;
+									return_code = 0;
+								}
+							}/*	if (node) */
+						} /* else if ((is_electrode = */
+						else
+						{
+							finished=1;
+						}
+						fscanf(input_file," ");
+						DEALLOCATE(dummy_str); 
+						if (region_item)
+							/* not an error if it isn't set*/
+						{
+							/* move to the next region */
+							region_item=get_Region_list_item_next(region_item);					
+						}						
+					} /* while((!feof(input_file))&&(!finished)) */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
 						"read_text_config_FE_node_group. rig->region_list is NULL");
 					return_code =0;		
-			}
-			if (return_code&&!feof(input_file))
-			{
-				if (!strcmp("pages",input_str))			
-				{				
-					/* read the first page name */
-					if (read_string(input_file,"s",&name))
-					{
-						fscanf(input_file," %c",&separator);
-						while (!feof(input_file)&&return_code&&(':'==separator))
-						{													
-							/* read the list of devices */
-							fscanf(input_file," ");
-							separator=',';					
-							while (!feof(input_file)&&return_code&&(separator!=':'))
-							{
-								if (read_string(input_file,"[^:, \n]",&dummy))
+				}
+				if (return_code&&!feof(input_file))
+				{
+					if (!strcmp("pages",input_str))			
+					{				
+						/* read the first page name */
+						if (read_string(input_file,"s",&name))
+						{
+							fscanf(input_file," %c",&separator);
+							while (!feof(input_file)&&return_code&&(':'==separator))
+							{													
+								/* read the list of devices */
+								fscanf(input_file," ");
+								separator=',';					
+								while (!feof(input_file)&&return_code&&(separator!=':'))
 								{
-									if (separator!=',')
+									if (read_string(input_file,"[^:, \n]",&dummy))
 									{
-										if (ALLOCATE(name,char,strlen(dummy)+2))
+										if (separator!=',')
 										{
-											name[0]=separator;
-											name[1]='\0';
-											strcat(name,dummy);
-											DEALLOCATE(dummy);
+											if (ALLOCATE(name,char,strlen(dummy)+2))
+											{
+												name[0]=separator;
+												name[1]='\0';
+												strcat(name,dummy);
+												DEALLOCATE(dummy);
+											}
 										}
-									}
-									else
-									{
-										name=dummy;
-									}
-									if (name)
-									{
-										fscanf(input_file," %c ",&separator);
-										if (separator!=':')
+										else
 										{
+											name=dummy;
+										}
+										if (name)
+										{
+											fscanf(input_file," %c ",&separator);
+											if (separator!=':')
+											{
 											
+											}
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"read_text_config_FE_node_group."
+												"  Could not create device name for page");
+											return_code=0;
 										}
 									}
 									else
@@ -2115,29 +2118,29 @@ files, and there are no text signal files.
 										return_code=0;
 									}
 								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"read_text_config_FE_node_group."
-										"  Could not create device name for page");
-									return_code=0;
-								}
 							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"read_text_config_FE_node_group.  Could not create page name");
+							return_code=0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"read_text_config_FE_node_group.  Could not create page name");
+							"read_text_config_FE_node_group.  Invalid device type");
 						return_code=0;
 					}
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"read_text_config_FE_node_group.  Invalid device type");
-					return_code=0;
-				}
+				FE_region_end_change(all_devices_node_group);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"read_text_config_FE_node_group.  "
+					"Can't create all_devices_node_group");	
+				return_code = 0;
 			}
 		}	
 		else
@@ -2152,15 +2155,10 @@ files, and there are no text signal files.
 		{
 			DESTROY(FE_node)(&template_node);
 		}
-		MANAGER_END_CACHE(FE_node)(node_manager);
 		if (node_group)
 		{
-			MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-		}
-		if (all_devices_node_group)
-		{
-			MANAGED_GROUP_END_CACHE(FE_node)(all_devices_node_group);
-		}	
+			FE_region_end_change(node_group);
+		}		
 		if (rig_name)
 		{
 			DEALLOCATE(rig_name);					
@@ -2238,7 +2236,7 @@ static int read_signal_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,
 	struct FE_node_order_info *node_order_info)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Reads signals from a signal file, stores them in a node group, via 
@@ -2282,8 +2280,6 @@ linear combinations of other channels.
 	{
 		"status"
 	};
-	
-
 
 	char *device_type_string;
 	enum Signal_value_type signal_value_type;	
@@ -2296,6 +2292,7 @@ linear combinations of other channels.
 		number_of_samples,number_of_devices,
 		number_of_signals,return_code,temp_int;
 	short int *buffer_signals_short,*node_signals_short;
+	struct Cmiss_region *root_cmiss_region;
 	struct Coordinate_system coordinate_system;		
 	struct FE_field *channel_gain_field,*channel_offset_field,
 #if defined (UNEMAP_USE_NODES)
@@ -2306,9 +2303,7 @@ linear combinations of other channels.
 	struct FE_field_component component;
 	struct FE_node *device_node,*node,*node_managed;
 	struct FE_node_field_creator *node_field_creator;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct FE_time *fe_time;
+	struct FE_region *root_fe_region;
 	struct FE_time_version *fe_time_version;
 #if defined(NEW_CODE) /* not using yet, may use later*/
 	int index;
@@ -2335,11 +2330,10 @@ linear combinations of other channels.
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
 	times=(FE_value *)NULL;
-	if (input_file&&package&&node_order_info) 
+	if (input_file && package && node_order_info &&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(package)) &&
+		(root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region)))
 	{
-		fe_field_manager = get_unemap_package_FE_field_manager(package);	
-		fe_time = get_unemap_package_FE_time(package);	
-		node_manager = get_unemap_package_node_manager(package);			
 		number_of_devices = get_FE_node_order_info_number_of_nodes(
 			node_order_info);
 		coordinate_system.type=NOT_APPLICABLE;
@@ -2521,9 +2515,9 @@ linear combinations of other channels.
 											{
 												if (ALLOCATE(node_signals_short,short int,number_of_samples))
 												{
-													if (!(signal_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"signal",GENERAL_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (!(signal_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"signal",GENERAL_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,SHORT_VALUE,
 														/*number_of_components*/1,signal_component_names,
@@ -2547,9 +2541,9 @@ linear combinations of other channels.
 											{
 												if (ALLOCATE(node_signals_fe_value,float,number_of_samples))
 												{
-													if (!(signal_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"signal",GENERAL_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (!(signal_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"signal",GENERAL_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,signal_component_names,
@@ -2577,8 +2571,9 @@ linear combinations of other channels.
 											{
 												set_FE_field_time_FE_value(signal_field,j,times[j]);
 											}
-											if (!(fe_time_version = get_FE_time_version_matching_time_series(
-												fe_time, number_of_samples, times)))
+											if (!(fe_time_version =
+												FE_region_get_FE_time_version_matching_series(
+													root_fe_region, number_of_samples, times)))
 											{
 												return_code = 0;
 											}
@@ -2590,11 +2585,11 @@ linear combinations of other channels.
 											as they have one component with no derivative
 											and no versions */
 										if (node_field_creator = CREATE(FE_node_field_creator)(
-												 /*number_of_components*/1))
+											/*number_of_components*/1))
 										{
 											number_of_nodes=get_FE_node_order_info_number_of_nodes(
 												node_order_info);
-											MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
+											FE_region_begin_change(root_fe_region);
 											for(i=0;i<number_of_nodes;i++)
 											{								
 												/* copy data from buffer to node_signals. Channels are interlaced */
@@ -2618,16 +2613,15 @@ linear combinations of other channels.
 												/* convert short to FE_value if necessary*/
 												node_managed =get_FE_node_order_info_node(
 													node_order_info,i);
-												/* create a node to work with */
-												node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-												/*copy it from the manager */
-												if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-													(node,node_managed))
-												{									
-													/* add channel_gain and channel_offset fields to node*/
-													if (channel_gain_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"channel_gain",GENERAL_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+												/* create a copy of the node to work with */
+												if (node = CREATE(FE_node)(
+													get_FE_node_identifier(node_managed),
+													(struct FE_region *)root_fe_region, node_managed))
+												{
+													/* add channel_gain and channel_offset fields to node */
+													if (channel_gain_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"channel_gain",GENERAL_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,channel_gain_component_names,
@@ -2660,9 +2654,9 @@ linear combinations of other channels.
 															"error getting  channel_gain_field");	
 														return_code =0;
 													}	
-													if (channel_offset_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"channel_offset",GENERAL_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (channel_offset_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"channel_offset",GENERAL_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,channel_offset_component_names,
@@ -2697,9 +2691,9 @@ linear combinations of other channels.
 													}	
 													/* add signal_minimum field to node. Set to default (1.0)*/
 													/* Value set up in draw_signal()*/
-													if (signal_minimum_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"signal_minimum",GENERAL_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (signal_minimum_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"signal_minimum",GENERAL_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,signal_minimum_component_names,
@@ -2734,9 +2728,9 @@ linear combinations of other channels.
 													}	
 													/* add signal_maximum field to node.Set to default (0.0)*/
 													/* Value set up in draw_signal()*/
-													if (signal_maximum_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"signal_maximum",GENERAL_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (signal_maximum_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"signal_maximum",GENERAL_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,signal_maximum_component_names,
@@ -2771,9 +2765,9 @@ linear combinations of other channels.
 													/* add signal_status field to node. The contents of this may be */
 													/*overwritten if loaded in in */
 													/*read_event_settings_and_signal_status_FE_node_group*/	
-													if (signal_status_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"signal_status",GENERAL_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (signal_status_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"signal_status",GENERAL_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,STRING_VALUE,
 														/*number_of_components*/1,signal_status_component_names,
@@ -2858,9 +2852,9 @@ linear combinations of other channels.
 #if defined (UNEMAP_USE_NODES)
 													/* create the display start time field, add it to the node */	
 													/*NOTE: it's a CONSTANT_FE_FIELD, values stored t field, not node */
-													if (display_start_time_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"display_start_time",CONSTANT_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (display_start_time_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"display_start_time",CONSTANT_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,display_start_time_component_names,
@@ -2891,9 +2885,9 @@ linear combinations of other channels.
 													}	
 													/* create the display start time field, add it to the node */	
 													/*NOTE: it's a CONSTANT_FE_FIELD, values stored t field, not node */
-													if (display_end_time_field=get_FE_field_manager_matched_field(
-														fe_field_manager,"display_end_time",CONSTANT_FE_FIELD,
-														fe_time,/*indexer_field*/(struct FE_field *)NULL,
+													if (display_end_time_field=FE_region_get_FE_field_with_properties(
+														root_fe_region,"display_end_time",CONSTANT_FE_FIELD,
+														/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,display_end_time_component_names,
@@ -2923,20 +2917,20 @@ linear combinations of other channels.
 														return_code =0;
 													}	
 #endif /* (UNEMAP_USE_NODES) */
-													/* copy node back into the manager */
-													MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-														(node_managed,node,node_manager);
-												}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+													/* merge it back into the region */
+													FE_region_merge_FE_node(root_fe_region, node);
+													/* destroy the working copy */
+													DESTROY(FE_node)(&node);
+												}
 												else
 												{
 													display_message(ERROR_MESSAGE,
-														"read_signal_FE_node_group.  MANAGER_COPY_WITH_IDENTIFIER failed");
+														"read_signal_FE_node_group.  "
+														"CREATE(FE_node) failed");
 													return_code=0;
 												}
-												/* destroy the working copy */
-												DESTROY(FE_node)(&node);
 											}
-											MANAGER_END_CACHE(FE_node)(node_manager);
+											FE_region_end_change(root_fe_region);
 											DESTROY(FE_node_field_creator)(
 												&node_field_creator);
 										}
@@ -3023,7 +3017,7 @@ linear combinations of other channels.
 static int read_event_settings_and_signal_status_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,struct FE_node_order_info *node_order_info)
 /*******************************************************************************
-LAST MODIFIED :  27 June 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 If they are present, reads the event settings, and the signal_status,
@@ -3047,19 +3041,22 @@ Must call after read_signal_FE_node_group
 	int datum,end_search_interval,event_number,event_time,i,number_of_devices,
 		number_of_events,potential_time,minimum_separation,start_search_interval,
 		threshold,return_code;
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_node *node,*node_managed;
 	struct FE_field *signal_maximum_field,*signal_minimum_field,*signal_status_field;
 	struct FE_field_component component;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *root_fe_region;
 
 	ENTER(read_event_settings_and_signal_status_FE_node_group);
+	return_code = 0;
 	node=(struct FE_node *)NULL;
 	node_managed=(struct FE_node *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_status_field=(struct FE_field *)NULL;
-	if (input_file&&package&&node_order_info)
+	if (input_file && package && node_order_info &&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(package)) &&
+		(root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region)))
 	{
 		return_code=1;
 		if ((1==BINARY_FILE_READ((char *)&datum,sizeof(int),1,input_file))&&
@@ -3078,8 +3075,7 @@ Must call after read_signal_FE_node_group
 			input_file))&&(1==BINARY_FILE_READ((char *)&start_search_interval,
 			sizeof(int),1,input_file))&&(1==BINARY_FILE_READ(
 			(char *)&end_search_interval,sizeof(int),1,input_file)))
-		{	
-			node_manager = get_unemap_package_node_manager(package);	
+		{
 			signal_maximum_field=
 				get_unemap_package_signal_maximum_field(package);	
 			signal_minimum_field=
@@ -3089,14 +3085,14 @@ Must call after read_signal_FE_node_group
 			number_of_devices = 
 				get_FE_node_order_info_number_of_nodes(node_order_info);
 			/* for each signal read the status, range and events */
-			if (((number_of_devices)>0)&&node_manager&&signal_maximum_field&&
+			if (((number_of_devices)>0)&& signal_maximum_field&&
 				signal_minimum_field&&signal_status_field)
 			{
 				i=0;
-				return_code=1;	
-				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+				return_code=1;
+				FE_region_begin_change(root_fe_region);
 				while (return_code&&(i<number_of_devices))
-				{				
+				{
 					/* read the status and range */
 					/* if no signal_status,  a linear comb auxiliary device. Do nothing*/
 					if ((1==BINARY_FILE_READ((char *)&(signal_status),
@@ -3138,11 +3134,10 @@ Must call after read_signal_FE_node_group
 
 						/* this */
 						/* put (some of!) the read info into the node */
-						node_managed =get_FE_node_order_info_node(node_order_info,i);
-						/* create a node to work with */
-						node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-						if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-							(node,node_managed))
+						node_managed = get_FE_node_order_info_node(node_order_info,i);
+						/* create a copy of the node to work with */
+						if (node = CREATE(FE_node)(get_FE_node_identifier(node_managed),
+							(struct FE_region *)NULL, node_managed))
 						{
 							component.number=0;
 							component.field=signal_minimum_field;
@@ -3177,30 +3172,28 @@ Must call after read_signal_FE_node_group
 									return_code=0;							
 								} break;					
 							}
-							/* copy node back into the manager */
-							MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-								(node_managed,node,node_manager);
-						}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+							/* merge node back into fe_region */
+							FE_region_merge_FE_node(root_fe_region, node);
+							/* destroy the working copy */
+							DESTROY(FE_node)(&node);
+						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"read_event_settings_and_signal_status_FE_node_group."
-								"  MANAGER_COPY_WITH_IDENTIFIER failed");
-							return_code=0;
+								"read_event_settings_and_signal_status_FE_node_group.  "
+								"CREATE(FE_node) failed");
+							return_code = 0;
 						}
-						/* destroy the working copy */
-						DESTROY(FE_node)(&node);
-
 					}
 					i++;
 				}/* while (return_code&&(i<number_of_devices))*/
-				MANAGER_END_CACHE(FE_node)(node_manager);
+				FE_region_end_change(root_fe_region);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"read_event_settings_and_signal_status_FE_node_group."
-							"  node or field info incorrect");
+					"read_event_settings_and_signal_status_FE_node_group.  "
+					"node or field info incorrect");
 				return_code=0;
 			}
 		}/* if ((1==BINARY_FILE_READ((char *)&datum,  <else nothing to do>*/
@@ -3211,7 +3204,8 @@ Must call after read_signal_FE_node_group
 			"read_event_settings_and_signal_status_FE_node_group. Invalid arguments");
 	}
 	LEAVE;
-	return(return_code);
+
+	return (return_code);
 }/*read_event_settings_and_signal_status_FE_node_group. */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -3387,7 +3381,7 @@ scaled_offset_signal_value_at_time_field
 static int iterative_rig_node_set_map_electrode_position_lambda_r(struct FE_node *node,
 	void *set_map_electrode_position_info_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Sets the node's nodal map_electrode_postions from the nodal electrode_positions, 
@@ -3402,42 +3396,42 @@ rig_node_group_set_map_electrode_position_lambda_r
 	struct FE_field_component component;	
 	struct FE_field *electrode_position_field,*map_electrode_position_field;
 	struct FE_node *node_unmanaged;	
-	struct MANAGER(FE_field) *field_manager;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *fe_region;
 	struct Set_map_electrode_position_info *set_map_electrode_position_info;
 	/* ROUND_TORSO defined in rig_node.h */
 #if !defined (ROUND_TORSO) /*FOR AJP*/
 	FE_value c,torso_x,s,t,torso_major_r,torso_minor_r,torso_y;
 #endif /* defined (ROUND_TORSO)*/
+
 	ENTER(iterative_rig_node_set_map_electrode_position_lambda_r);
 	return_code=1;
 	node_unmanaged=(struct FE_node *)NULL;
-	if ((node)&&(set_map_electrode_position_info_void))
+	if (node && (set_map_electrode_position_info =
+		(struct Set_map_electrode_position_info *)
+		set_map_electrode_position_info_void))
 	{
-		set_map_electrode_position_info=
-			(struct Set_map_electrode_position_info *)set_map_electrode_position_info_void;
-		if (set_map_electrode_position_info&&(field_manager=
-			set_map_electrode_position_info->field_manager)&&
-			(node_manager=set_map_electrode_position_info->node_manager)&&
+		if ((fe_region = set_map_electrode_position_info->fe_region) &&
 			(map_electrode_position_field=
 				set_map_electrode_position_info->map_electrode_position_field))
-		{						
+		{
 			if ((electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
+				FE_region_get_FE_field_from_name(fe_region,
+					(char *)sock_electrode_position_str)) &&
+				(FE_field_is_defined_at_node(electrode_position_field,node)) ||
+				(electrode_position_field =
+					FE_region_get_FE_field_from_name(fe_region,
+						(char *)torso_electrode_position_str)) &&
+				(FE_field_is_defined_at_node(electrode_position_field,node)) ||
 				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
-				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
-				/* if we don't have an electrode_position_field, it's an auxilliary node-do 
-					 nothing */
-			{				
-				node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
-				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-					(node_unmanaged,node))
-				{												
+					FE_region_get_FE_field_from_name(fe_region,
+						(char *)patch_electrode_position_str)) &&
+				(FE_field_is_defined_at_node(electrode_position_field,node)))
+				/* if we don't have an electrode_position_field, it's an auxilliary
+					 node -- do nothing */
+			{
+				if (node_unmanaged = CREATE(FE_node)(get_FE_node_identifier(node),
+					(struct FE_region *)NULL, node))
+				{
 					switch (set_map_electrode_position_info->region_type)
 					{
 						case SOCK:
@@ -3543,18 +3537,17 @@ rig_node_group_set_map_electrode_position_lambda_r
 							return_code=0;
 						} break;
 					}
-					/* copy node back into the manager */
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-						(node,node_unmanaged,node_manager);
-				}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+					/* merge node back into the fe_region */
+					FE_region_merge_FE_node(fe_region, node_unmanaged);
+					DESTROY(FE_node)(&node_unmanaged);
+				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"iterative_rig_node_set_map_electrode_position_lambda_r"
-						"  MANAGER_COPY_WITH_IDENTIFIER failed");
+						"iterative_rig_node_set_map_electrode_position_lambda_r  "
+						"CREATE(FE_node) failed");
 					return_code=0;
 				}
-				DESTROY(FE_node)(&node_unmanaged);
 			}
 		}	/* if (set_map_electrode_position_info */
 		else
@@ -3579,7 +3572,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 static int rig_node_add_map_electrode_position_field(struct FE_node *node,
 	void *add_map_electrode_position_info_void)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1999
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Add a map  electrode_position_field  to the rig_node.
@@ -3592,43 +3585,41 @@ Called by rig_node_group_add_map_electrode_position_field
 	struct FE_field *map_electrode_position_field,*electrode_position_field;
 	struct FE_node *node_unmanaged;
 	struct FE_node_field_creator *node_field_creator;
-	struct MANAGER(FE_field) *field_manager;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *fe_region;
 
 	ENTER(rig_node_add_map_electrode_position_field);
 	return_code=1;
 	node_unmanaged=(struct FE_node *)NULL;
 	electrode_position_field=(struct FE_field *)NULL;
 	map_electrode_position_field=(struct FE_field *)NULL;	
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	field_manager=(struct MANAGER(FE_field) *)NULL;
-	if ((node)&&(add_map_electrode_position_info_void))
+	if (node && (add_map_electrode_position_info =
+		(struct Add_map_electrode_position_info *)
+		add_map_electrode_position_info_void))
 	{
-		add_map_electrode_position_info=
-			(struct Add_map_electrode_position_info *)add_map_electrode_position_info_void;
-		if (add_map_electrode_position_info&&(map_electrode_position_field=
+		if ((map_electrode_position_field=
 			add_map_electrode_position_info->map_electrode_position_field)&&
-			(node_manager=add_map_electrode_position_info->node_manager)&&		
-			(field_manager=add_map_electrode_position_info->field_manager))
+			(fe_region = add_map_electrode_position_info->fe_region))
 		{					
 			/* if we have a electrode_position_field, want a map_electrode_position_field */
 			/* if we don't it's an auxilliary node-do nothing. */
 			if ((electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
+				FE_region_get_FE_field_from_name(fe_region,
+					(char *)sock_electrode_position_str)) &&
+				(FE_field_is_defined_at_node(electrode_position_field,node)) ||
 				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
+					FE_region_get_FE_field_from_name(fe_region,
+						(char *)torso_electrode_position_str)) &&
+				(FE_field_is_defined_at_node(electrode_position_field,node)) ||
 				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
-				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
+					FE_region_get_FE_field_from_name(fe_region,
+						(char *)patch_electrode_position_str)) &&
+				(FE_field_is_defined_at_node(electrode_position_field,node)))
 			{	
 				/* if its already deined, have nothing to do */
 				if (!FE_field_is_defined_at_node(map_electrode_position_field,node))
 				{
-					node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
-					if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-						(node_unmanaged,node))
+					if (node_unmanaged = CREATE(FE_node)(get_FE_node_identifier(node),
+						(struct FE_region *)NULL, node))
 					{
 						if (node_field_creator = CREATE(FE_node_field_creator)(
 							/*number_of_components*/3))
@@ -3641,26 +3632,25 @@ Called by rig_node_group_add_map_electrode_position_field
 								return_code =0;
 							}	
 							/* copy node back into the manager */
-							MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-								(node,node_unmanaged,node_manager);
+							FE_region_merge_FE_node(fe_region, node_unmanaged);
 							DESTROY(FE_node_field_creator)(&node_field_creator);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"rig_node_add_map_electrode_position_field"
-								"  Unable to make node field creator.");
+								"rig_node_add_map_electrode_position_field.  "
+								"Unable to make node field creator.");
 							return_code=0;
 						}
-					}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+						DESTROY(FE_node)(&node_unmanaged);
+					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"rig_node_add_map_electrode_position_field"
-							"  MANAGER_COPY_WITH_IDENTIFIER failed");
+							"rig_node_add_map_electrode_position_field.  "
+							"CREATE(FE_node) failed");
 						return_code=0;
 					}
-					DESTROY(FE_node)(&node_unmanaged);
 				}
 			}/* if ((electrode_position_field= */
 		}	/* if (add_map_electrode_position_info */
@@ -5223,15 +5213,11 @@ Sets the field of the Signal_drawing_package.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *make_unrejected_node_group(
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct GROUP(FE_node) *rig_node_group,struct FE_field *signal_status_field)
+struct FE_region *make_unrejected_node_group(
+	struct Cmiss_region *root_cmiss_region,
+	struct FE_region *rig_node_group,struct FE_field *signal_status_field)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 makes and returns unrejected_node_group, consisting of all the unrejected 
@@ -5239,52 +5225,53 @@ makes and returns unrejected_node_group, consisting of all the unrejected
 manager.
 ==============================================================================*/
 {
-	char *group_name,*unrejected_name;
-	int string_length;
-	struct FE_node_group_conditional_data group_conditional_data;
-	struct GROUP(FE_node) *unrejected_node_group;
+	char *rig_node_group_name;
+	char *unrejected_name;
 	char *unrejected_str = "_unrejected";
+	int child_number;
+	struct Cmiss_region *rig_node_cmiss_region;
+	struct FE_region *unrejected_node_group;
 
 	ENTER(make_unrejected_node_group);
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
-	group_name=(char *)NULL;
-	if (rig_node_group&&signal_status_field&&node_manager&&node_group_manager)
+	rig_node_group_name = (char *)NULL;
+	unrejected_node_group = (struct FE_region *)NULL;
+	if (root_cmiss_region && rig_node_group && signal_status_field &&
+		FE_region_get_Cmiss_region(rig_node_group,
+			&rig_node_cmiss_region) &&
+		Cmiss_region_get_child_region_number(root_cmiss_region,
+			rig_node_cmiss_region, &child_number) &&
+		Cmiss_region_get_child_region_name(root_cmiss_region,
+			child_number, &rig_node_group_name))
 	{
 		/* construct the unrejected group name */
-		GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);
-		string_length = strlen(group_name);
-		string_length += strlen(unrejected_str);
-		string_length++;
-		if (ALLOCATE(unrejected_name,char,string_length))
+		if (ALLOCATE(unrejected_name, char,
+			strlen(rig_node_group_name) + strlen(unrejected_str) + 1))
 		{
-			strcpy(unrejected_name,group_name);
-			strcat(unrejected_name,unrejected_str);
+			strcpy(unrejected_name, rig_node_group_name);
+			strcat(unrejected_name, unrejected_str);
 			/* make the group */
-			if (unrejected_node_group=	make_node_and_element_and_data_groups(
-				node_group_manager,node_manager,element_manager,
-				element_group_manager,data_group_manager,unrejected_name))
-			{				
-				group_conditional_data.node_group=unrejected_node_group;
-				group_conditional_data.function=node_signal_is_unrejected;
-				group_conditional_data.user_data=(void *)(signal_status_field);
-				MANAGED_GROUP_BEGIN_CACHE(FE_node)(unrejected_node_group);
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_group_conditional,
-					(void *)&group_conditional_data,rig_node_group);
-				MANAGED_GROUP_END_CACHE(FE_node)(unrejected_node_group);
+			if (unrejected_node_group = Cmiss_region_get_or_create_child_FE_region(
+				root_cmiss_region, unrejected_name,
+				/*master_fe_region*/Cmiss_region_get_FE_region(root_cmiss_region),
+				(struct MANAGER(FE_basis) *)NULL))
+			{
+				FE_region_begin_change(unrejected_node_group);
+				FE_region_clear(unrejected_node_group, /*destroy_in_master*/1);
+				FE_region_for_each_FE_node_conditional(rig_node_group,
+					node_signal_is_unrejected, (void *)signal_status_field,
+					FE_region_merge_FE_node_iterator, (void *)unrejected_node_group);
+				FE_region_end_change(unrejected_node_group);
 			}
 			else
-			{	
-				DESTROY(GROUP(FE_node))(&unrejected_node_group);
-					unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+			{
 				display_message(ERROR_MESSAGE,
 					"make_unrejected_node_group. Couldn't CREATE unrejected_node_group");
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"make_unrejected_node_group. Could not allocate memory for "
-				"unrejected_name");		
+			display_message(ERROR_MESSAGE, "make_unrejected_node_group.  "
+				"Could not allocate memory for unrejected_name");		
 		}
 	}
 	else
@@ -5292,7 +5279,12 @@ manager.
 		display_message(ERROR_MESSAGE,
 			"make_unrejected_node_group.  Invalid argument");	
 	}
+	if (rig_node_group_name)
+	{
+		DEALLOCATE(rig_node_group_name);
+	}
 	LEAVE;
+
 	return(unrejected_node_group);
 } /* make_unrejected_node_group */
 #endif /* defined (UNEMAP_USE_3D) */
@@ -6325,7 +6317,7 @@ The extraction arguments are:
 #if defined (UNEMAP_USE_3D)
 int file_read_signal_FE_node_group(char *file_name,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Reads  node group(s) from a signal file into rig . Signal file includes the
@@ -6335,31 +6327,24 @@ configuration info.
 	enum Region_type region_type;	
 	FILE *input_file;
 	int return_code;
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_node_order_info *node_order_info;
 	struct FE_field *signal_status_field;
-	struct GROUP(FE_node) *unrejected_node_group,*rig_node_group;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_element) *element_manager;	
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct FE_region *unrejected_node_group, *rig_node_group;
 	struct Region *region;
 	struct Region_list_item *region_item;
 	struct Unemap_package *unemap_package;
+
 	ENTER(file_read_signal_FE_node_group);	
 	unemap_package=(struct Unemap_package *)NULL;
 	signal_status_field = (struct FE_field *)NULL;
-	unrejected_node_group= (struct GROUP(FE_node) *)NULL;
-	rig_node_group= (struct GROUP(FE_node) *)NULL;	
+	unrejected_node_group= (struct FE_region *)NULL;
+	rig_node_group= (struct FE_region *)NULL;	
 	node_order_info=(struct FE_node_order_info *)NULL;
 	region=(struct Region *)NULL;
 	region_item=(struct Region_list_item *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;	
-	element_manager=(struct MANAGER(FE_element) *)NULL;
-	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-	if (file_name&&(unemap_package=rig->unemap_package))
+	if (file_name && (unemap_package = rig->unemap_package) &&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(unemap_package)))
 	{					
 		if (input_file=fopen(file_name,"rb"))
 		{
@@ -6386,29 +6371,23 @@ configuration info.
 							/* set up the unrejected_node_groups*/
 							region_item=get_Rig_region_list(rig);
 							while (region_item)
-							{	
-								region=get_Region_list_item_region(region_item);
-								rig_node_group=get_Region_rig_node_group(region);
-								if ((signal_status_field=
-									get_unemap_package_signal_status_field(unemap_package))&&
-									(node_manager=get_unemap_package_node_manager(unemap_package))&&
-									(element_manager=get_unemap_package_element_manager(unemap_package))&&
-									(node_group_manager=
-										get_unemap_package_node_group_manager(unemap_package))&&
-									(element_group_manager=
-										get_unemap_package_element_group_manager(unemap_package))&&
-									(data_group_manager=
-										get_unemap_package_data_group_manager(unemap_package))&&
-									(unrejected_node_group=make_unrejected_node_group(node_manager,
-										element_manager,node_group_manager,element_group_manager,
-										data_group_manager,rig_node_group,signal_status_field)))
+							{
+								region = get_Region_list_item_region(region_item);
+								rig_node_group = get_Region_rig_node_group(region);
+								if ((signal_status_field =
+									get_unemap_package_signal_status_field(unemap_package)) &&
+									(unrejected_node_group = make_unrejected_node_group(
+										root_cmiss_region, rig_node_group,
+										signal_status_field)))
 								{									
-									set_Region_unrejected_node_group(region,unrejected_node_group);
+									set_Region_unrejected_node_group(region,
+										unrejected_node_group);
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group."
-										"can't set_Region_unrejected_node_group");
+									display_message(ERROR_MESSAGE,
+										"read_binary_config_FE_node_group.  "
+										"Can't set_Region_unrejected_node_group");
 								}
 								region_item=get_Region_list_item_next(region_item);							
 							}/* while (region_item) */													
@@ -6416,7 +6395,8 @@ configuration info.
 						else
 						{	
 							display_message(ERROR_MESSAGE,
-								"file_read_signal_FE_node_group.  read_signal_FE_node_group failed");
+								"file_read_signal_FE_node_group.  "
+								"read_signal_FE_node_group failed");
 							return_code=0;
 						}
 						/* no longer needed */
@@ -6579,11 +6559,11 @@ cf file_read_FE_node_group() in import_finite_element.c
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-int get_node_group_position_min_max(struct GROUP(FE_node) *node_group,
+int get_node_group_position_min_max(struct FE_region *node_group,
 	struct FE_field *position_field,FE_value *min_x,FE_value *max_x,
   FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z)
 /*******************************************************************************
-LAST MODIFIED : 16 October 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Finds the min and max coordinates of the  <position_field>
@@ -6606,8 +6586,8 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 		position_min_max_iterator.position_field=position_field;	
 		component.number=0;
 		component.field=position_field;
-		if (node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-			(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group))
+		if (node=FE_region_get_first_FE_node_that(node_group,
+			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL))
 		{
 			source_coordinates[0]=0;
 			component.number=0;
@@ -6634,9 +6614,8 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 			position_min_max_iterator.min_z=dest_coordinates[2];
 			position_min_max_iterator.max_z=position_min_max_iterator.min_z;
 
-			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
-				(get_node_position_min_max,
-					(void *)&position_min_max_iterator,node_group);	
+			return_code = FE_region_for_each_FE_node(node_group,
+				get_node_position_min_max, (void *)&position_min_max_iterator);	
 			*min_x= position_min_max_iterator.min_x;
 			*max_x= position_min_max_iterator.max_x;
 			*min_y= position_min_max_iterator.min_y;
@@ -6646,8 +6625,8 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"get_node_group_position_min_max."
-			" can't get node");
+			display_message(ERROR_MESSAGE,"get_node_group_position_min_max.  "
+				"can't get node");
 			return_code=0;
 		}
 	}
@@ -6923,12 +6902,12 @@ This function is called iteratively by anal_set_range_all_accep_undec
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_3D)
-int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
+int get_rig_node_group_signal_min_max_at_time(struct FE_region *node_group,
 	struct Computed_field *scaled_offset_signal_value_at_time_field,
 	struct FE_field *signal_status_field,
 	FE_value time,FE_value *min,FE_value *max)
 /*******************************************************************************
-LAST MODIFIED : 19 February 2002
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Returns the <min> and <max>  signal values at the rig nodes in the rig_node_group
@@ -6948,8 +6927,8 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 		{	
 			set_Min_max_iterator_count(min_max_iterator,0);
 			set_Min_max_iterator_time(min_max_iterator,time);	
-			node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-				(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group);				
+			node=FE_region_get_first_FE_node_that(node_group,
+				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL);				
 			if (return_code)
 			{			
 				Computed_field_evaluate_at_node(scaled_offset_signal_value_at_time_field,
@@ -6959,9 +6938,9 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 				set_Min_max_iterator_signal_status_field(min_max_iterator,signal_status_field);
 				set_Min_max_iterator_scaled_offset_signal_value_at_time_field(min_max_iterator,
 					scaled_offset_signal_value_at_time_field);				
-				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
-					(iterative_get_rig_node_signal_min_max_at_time,
-						(void *)min_max_iterator,node_group);					
+				return_code = FE_region_for_each_FE_node(node_group,
+					iterative_get_rig_node_signal_min_max_at_time,
+					(void *)min_max_iterator);					
 				get_Min_max_iterator_min(min_max_iterator,&minimum);
 				*min= minimum;
 				get_Min_max_iterator_max(min_max_iterator,&maximum);
@@ -6977,9 +6956,10 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 		}
 		else
 		{
-			return_code=0;
 			display_message(ERROR_MESSAGE,
-				"get_rig_node_group_signal_min_max_at_time. CREATE(Min_max_iterator failed)");
+				"get_rig_node_group_signal_min_max_at_time.  "
+				"CREATE(Min_max_iterator failed)");
+			return_code=0;
 		}
 	}
 	else
@@ -6996,11 +6976,11 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 
 #if defined (UNEMAP_USE_3D)
 int rig_node_group_set_map_electrode_position_lambda_r(
-	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
+	struct Unemap_package *package,struct FE_region *rig_node_group,
 	struct Region *region,FE_value sock_lambda,FE_value torso_major_r,
 	FE_value torso_minor_r)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Sets the node group's nodal map_electrode_postions from the nodal electrode_positions, 
@@ -7012,13 +6992,9 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 	FE_value value1,value2;
 	int return_code;	
 	struct FE_field *map_electrode_position_field;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_field) *field_manager;	
 	struct Set_map_electrode_position_info set_map_electrode_position_info;
 
 	ENTER(rig_node_group_set_map_electrode_position_lambda_r);
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	field_manager=(struct MANAGER(FE_field) *)NULL;
 	map_electrode_position_field=(struct FE_field *)NULL;
 	return_code=1;
 	if (package&&rig_node_group)
@@ -7061,20 +7037,17 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 		{
 			map_electrode_position_field=
 			  get_Region_map_electrode_position_field(region);
-			field_manager=get_unemap_package_FE_field_manager(package); 
-			node_manager=	get_unemap_package_node_manager(package);
 			set_map_electrode_position_info.map_electrode_position_field=
 				map_electrode_position_field;	
-			set_map_electrode_position_info.field_manager=field_manager;
-			set_map_electrode_position_info.node_manager=node_manager;
+			set_map_electrode_position_info.fe_region = rig_node_group;
 			set_map_electrode_position_info.value1=value1;
 			set_map_electrode_position_info.value2=value2;
 			set_map_electrode_position_info.region_type=region_type;
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);				
-			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+			FE_region_begin_change(rig_node_group);
+			return_code=FE_region_for_each_FE_node(rig_node_group,
 				iterative_rig_node_set_map_electrode_position_lambda_r,
-				(void *)&set_map_electrode_position_info,rig_node_group);
-			MANAGER_END_CACHE(FE_node)(node_manager);	
+				(void *)&set_map_electrode_position_info);
+			FE_region_end_change(rig_node_group);
 		}	
 	}
 	else
@@ -7091,42 +7064,36 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 
 #if defined (UNEMAP_USE_3D)
 int rig_node_group_add_map_electrode_position_field(
-	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
+	struct Unemap_package *package,struct FE_region *rig_node_group,
 	struct FE_field *map_electrode_position_field)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Add an electrode_position_field  to the <rig_node_group> nodes,
 in addition to the one created with create_config_template_node.
-
 ==============================================================================*/
 {	
 	int return_code;
 	struct Add_map_electrode_position_info add_map_electrode_position_info;	
-	struct MANAGER(FE_field) *field_manager;
-	struct MANAGER(FE_node) *node_manager;
 	
 	ENTER(rig_node_group_add_map_electrode_position_field);
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	if (package&&rig_node_group&&map_electrode_position_field)
-	{				
-		node_manager=	get_unemap_package_node_manager(package);
-		field_manager=get_unemap_package_FE_field_manager(package);
-		add_map_electrode_position_info.field_manager=field_manager;	
+	if (package && rig_node_group && map_electrode_position_field)
+	{
 		add_map_electrode_position_info.map_electrode_position_field=
 			map_electrode_position_field;
-		add_map_electrode_position_info.node_manager=node_manager;		
-		MANAGER_BEGIN_CACHE(FE_node)(node_manager);				
-		return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+		add_map_electrode_position_info.fe_region = rig_node_group;		
+		FE_region_begin_change(rig_node_group);
+		return_code=FE_region_for_each_FE_node(rig_node_group,
 			rig_node_add_map_electrode_position_field,
-			(void *)&add_map_electrode_position_info,rig_node_group);
-		MANAGER_END_CACHE(FE_node)(node_manager);
+			(void *)&add_map_electrode_position_info);
+		FE_region_end_change(rig_node_group);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"rig_node_group_add_map_electrode_position_field."
-			" Invalid argument");
+		display_message(ERROR_MESSAGE,
+			"rig_node_group_add_map_electrode_position_field.  "
+			"Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
@@ -7209,9 +7176,9 @@ larger (> 0) event_time than the <second> device.
 
 #if defined (UNEMAP_USE_3D)
 struct FE_node *find_rig_node_given_device(struct Device *device,
-	struct GROUP(FE_node) *rig_node_group,struct FE_field *device_name_field)
+	struct FE_region *rig_node_group,struct FE_field *device_name_field)
 /*******************************************************************************
-LAST MODIFIED : 26 September 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Given a <device>, finds the corresponding FE_node in <rig_node_group>.
@@ -7233,8 +7200,8 @@ If they're not, you'll get the first match.
 	{
 		field_and_string_data.fe_field=device_name_field;
 		field_and_string_data.string=name;
-		rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_has_FE_field_and_string_data,
-			(void *)(&field_and_string_data),rig_node_group);
+		rig_node = FE_region_get_first_FE_node_that(rig_node_group,
+			FE_node_has_FE_field_and_string_data, (void *)(&field_and_string_data));
 	}
 	else
 	{
@@ -7372,11 +7339,11 @@ Returns 1 if the <signal_status_field> at the <node> does NOT return the string
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *create_config_FE_node_from_device(struct Device *device,
-	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
+	struct FE_node *template_node,struct FE_region *fe_region,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Creates a config FE_node from <device>, <template_node> and other passed 
@@ -7395,7 +7362,7 @@ cf read_binary_config_FE_node
 	description=(struct Device_description *)NULL;
 	success=0;
 	if (device&&(description=device->description)&&template_node&&
-		node_manager&&field_order_info)
+		fe_region &&field_order_info)
 	{
 		/* read in name */
 		name=description->name;
@@ -7449,7 +7416,7 @@ cf read_binary_config_FE_node
 		}
 		if (success)
 		{
-			if (!(node=set_config_FE_node(template_node,node_manager,
+			if (!(node=set_config_FE_node(template_node, fe_region,
 				config_node_type,node_number,read_order_number,
 #if  defined (UNEMAP_USE_NODES)
 				0/*highlight*/,
@@ -7484,7 +7451,7 @@ cf read_binary_config_FE_node
 int convert_config_rig_to_nodes(struct Rig *rig,
 	struct FE_node_order_info **the_all_devices_node_order_info)
 /*******************************************************************************
-LAST MODIFIED :15 October 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION : 
 Convert a the configuration file information of a rig into nodes/elements/fields.
@@ -7500,18 +7467,14 @@ cf read_binary_config_FE_node_group.
 	int count,device_count,last_node_number,node_number,number_of_regions,
 		read_order_number,region_number,region_number_of_devices,return_code,
 		rig_number_of_devices,string_error,string_length;
+	struct Cmiss_region *root_cmiss_region;
 	struct Device **device;	
 	struct Device_description *description;
 	struct FE_field *electrode_position_field;	
 	struct FE_field_order_info *field_order_info;	
 	struct FE_node *node,*template_node;
 	struct FE_node_order_info *all_devices_node_order_info;		
-	struct GROUP(FE_node) *all_devices_node_group,*node_group;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;	
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_node) *node_manager;	
+	struct FE_region *all_devices_node_group, *node_group, *root_fe_region;
 	struct Region *region;
 	struct Region_list_item *region_item;
 	struct Unemap_package *package;
@@ -7527,177 +7490,174 @@ cf read_binary_config_FE_node_group.
 	region=(struct Region *)NULL;
 	region_item=(struct Region_list_item *)NULL;
 	package=(struct Unemap_package *)NULL;
-	all_devices_node_group=(struct GROUP(FE_node) *)NULL;
+	all_devices_node_group=(struct FE_region *)NULL;
 	all_devices_node_order_info =(struct FE_node_order_info *)NULL;	
-	node_group=(struct GROUP(FE_node) *)NULL;
-	if (rig&&(device=rig->devices)&&(package=rig->unemap_package)&&
-		(element_group_manager=get_unemap_package_element_group_manager(package))&&
-		(node_manager=get_unemap_package_node_manager(package))&&
-		(element_manager=get_unemap_package_element_manager(package))&&
-		(data_group_manager=get_unemap_package_data_group_manager(package))&&
-		(node_group_manager= get_unemap_package_node_group_manager(package)))
+	node_group=(struct FE_region *)NULL;
+	if (rig && (device=rig->devices)&&(package=rig->unemap_package)&&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(package)) &&
+		(root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region)))
 	{	
 		return_code=1;
 		device_count =0;
 		rig_number_of_devices=rig->number_of_devices;
 		number_of_regions=rig->number_of_regions;
-		MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
+		FE_region_begin_change(root_fe_region);
 		/*make all_devices_node_group */
-		all_devices_node_group	= make_node_and_element_and_data_groups(
-			node_group_manager,node_manager,element_manager,element_group_manager,
-			data_group_manager,"all_devices");
-		MANAGED_GROUP_BEGIN_CACHE(FE_node)(all_devices_node_group);
-		set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
-		last_node_number = 1;	
-		region_number=0;
-		/* for all the regions..*/
-		if (region_item=get_Rig_region_list(rig))
+		if (all_devices_node_group = Cmiss_region_get_or_create_child_FE_region(
+			root_cmiss_region, "all_devices", /*master_fe_region*/root_fe_region,
+			(struct MANAGER(FE_basis) *)NULL))
 		{
-			while((region_number<number_of_regions)&&return_code)
+			FE_region_begin_change(all_devices_node_group);
+			FE_region_clear(all_devices_node_group, /*destroy_in_master*/1);
+			set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
+			last_node_number = 1;	
+			region_number=0;
+			/* for all the regions..*/
+			if (region_item=get_Rig_region_list(rig))
 			{
-				if (!(region=get_Region_list_item_region(region_item)))
+				while((region_number<number_of_regions)&&return_code)
 				{
-					display_message(ERROR_MESSAGE,
-						"convert_config_rig_to_nodes region_item->region is NULL ");
-					return_code=0;
-				}
-				region_type=region->type;
-				/*get the focus*/
-				if(region_type==SOCK)
-				{
-					focus=(region->properties).sock.focus;
-				}
-				else
-				{
-					focus=0.0;
-				}
-				/*get the name */
-				string_length=strlen(region->name);
-				string_length++;
-				if (ALLOCATE(region_name,char,string_length+1))
-				{
-					strcpy(region_name,region->name);
-					region_name[string_length]='\0';
-					/*append the region number to the name, to ensure it's unique*/
-					sprintf(region_num_string,"%d",region_number);
-					append_string(&region_name,region_num_string,&string_error);
-					if (node_group) /* stop caching the current group,(if any) */
+					if (!(region=get_Region_list_item_region(region_item)))
 					{
-						MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-					}								
-					/* Get group */
-					node_group=CREATE(GROUP(FE_node))(region_name);
-					ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
-					MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-					set_Region_rig_node_group(region,node_group);
-					/*destroy any exisiting template,field_order_info*/
-					/* create the template node,(but may change it to auxiliary later*/	
-					DESTROY(FE_node)(&template_node);
-					DESTROY(FE_field_order_info)(&field_order_info);
-					switch (region_type)
-					{							
-						case SOCK:
-						{
-							config_node_type = SOCK_ELECTRODE_TYPE;
-							template_node = create_config_template_node(
-								config_node_type,focus,&field_order_info,package,
-								&electrode_position_field);
-							set_Region_electrode_position_field(region,electrode_position_field);
-						} break;
-						case TORSO:
-						{
-							config_node_type = TORSO_ELECTRODE_TYPE;
-							template_node = create_config_template_node(
-								config_node_type,0,&field_order_info,package,
-								&electrode_position_field);
-							set_Region_electrode_position_field(region,electrode_position_field);
-						} break;
-						case PATCH:
-						{
-							config_node_type = PATCH_ELECTRODE_TYPE;
-							template_node = create_config_template_node(
-									config_node_type,0,&field_order_info,package,
-								&electrode_position_field);
-							set_Region_electrode_position_field(region,electrode_position_field);
-						} break;
-						case MIXED:
-						default :
-						{
-							display_message(ERROR_MESSAGE,"convert_config_rig_to_nodes."
-								"invalid region type ");
-							return_code=0;
-						} break;
-					}	/* switch (config_node_type) */
-					region_number_of_devices=region->number_of_devices;
-					/* create or reallocate the all_devices_node_order_info */
-					if (!all_devices_node_order_info)
+						display_message(ERROR_MESSAGE,
+							"convert_config_rig_to_nodes region_item->region is NULL ");
+						return_code=0;
+					}
+					region_type=region->type;
+					/*get the focus*/
+					if(region_type==SOCK)
 					{
-						all_devices_node_order_info =CREATE(FE_node_order_info)
-							(region_number_of_devices);
-						*the_all_devices_node_order_info = all_devices_node_order_info;						
-						if (!all_devices_node_order_info)
-						{
-							display_message(ERROR_MESSAGE,"convert_config_rig_to_nodes."
-								"CREATE(FE_node_order_info) failed ");
-							return_code=0;						
-							DESTROY_GROUP(FE_node)(&node_group);
-							node_group = (struct GROUP(FE_node) *)NULL;					
-						}
+						focus=(region->properties).sock.focus;
 					}
 					else
-					{ 
-						if (!(return_code =add_nodes_FE_node_order_info(
-							region_number_of_devices,all_devices_node_order_info)))
-						{			
-							return_code=0;					
-							DESTROY_GROUP(FE_node)(&node_group);
-							node_group = (struct GROUP(FE_node) *)NULL;	
-						}
-					}/* if (!all_devices_node_order_info) */
-					/* read in the inputs */
-					read_order_number=0;					
-					count=rig_number_of_devices;
-					/* for all the devices in the rig*/
-					device=rig->devices;
-					while((count>0)&&return_code)
-					{	
-						description=(*device)->description;
-						/*if the device is in the current region */
-						if(description->region==region)
+					{
+						focus=0.0;
+					}
+					/*get the name */
+					string_length=strlen(region->name);
+					string_length++;
+					if (ALLOCATE(region_name,char,string_length+1))
+					{
+						strcpy(region_name,region->name);
+						region_name[string_length]='\0';
+						/*append the region number to the name, to ensure it's unique*/
+						sprintf(region_num_string,"%d",region_number);
+						append_string(&region_name,region_num_string,&string_error);
+						if (node_group) /* stop caching the current group,(if any) */
 						{
-							node_number = get_next_FE_node_number(node_manager,
-								last_node_number);
-							/* create a node from the device */
-							switch (description->type)
+							FE_region_end_change(node_group);
+						}								
+						/* Get group */
+						node_group = Cmiss_region_get_or_create_child_FE_region(
+							root_cmiss_region, region_name, /*master_fe_region*/root_fe_region,
+							(struct MANAGER(FE_basis) *)NULL);
+						FE_region_begin_change(node_group);
+						FE_region_clear(node_group, /*destroy_in_master*/1);
+						set_Region_rig_node_group(region,node_group);
+						/*destroy any exisiting template,field_order_info*/
+						/* create the template node,(but may change it to auxiliary later*/	
+						DESTROY(FE_node)(&template_node);
+						DESTROY(FE_field_order_info)(&field_order_info);
+						switch (region_type)
+						{							
+							case SOCK:
 							{
-								case ELECTRODE:
+								config_node_type = SOCK_ELECTRODE_TYPE;
+								template_node = create_config_template_node(
+									config_node_type,focus,&field_order_info,package,
+									&electrode_position_field);
+								set_Region_electrode_position_field(region,
+									electrode_position_field);
+							} break;
+							case TORSO:
+							{
+								config_node_type = TORSO_ELECTRODE_TYPE;
+								template_node = create_config_template_node(
+									config_node_type,0,&field_order_info,package,
+									&electrode_position_field);
+								set_Region_electrode_position_field(region,electrode_position_field);
+							} break;
+							case PATCH:
+							{
+								config_node_type = PATCH_ELECTRODE_TYPE;
+								template_node = create_config_template_node(
+									config_node_type,0,&field_order_info,package,
+									&electrode_position_field);
+								set_Region_electrode_position_field(region,electrode_position_field);
+							} break;
+							case MIXED:
+							default :
+							{
+								display_message(ERROR_MESSAGE,"convert_config_rig_to_nodes."
+									"invalid region type ");
+								return_code=0;
+							} break;
+						}	/* switch (config_node_type) */
+						region_number_of_devices=region->number_of_devices;
+						/* create or reallocate the all_devices_node_order_info */
+						if (!all_devices_node_order_info)
+						{
+							all_devices_node_order_info =CREATE(FE_node_order_info)
+								(region_number_of_devices);
+							*the_all_devices_node_order_info = all_devices_node_order_info;						
+							if (!all_devices_node_order_info)
+							{
+								display_message(ERROR_MESSAGE,"convert_config_rig_to_nodes."
+									"CREATE(FE_node_order_info) failed ");
+								return_code=0;						
+								node_group = (struct FE_region *)NULL;					
+							}
+						}
+						else
+						{ 
+							if (!(return_code =add_nodes_FE_node_order_info(
+								region_number_of_devices,all_devices_node_order_info)))
+							{			
+								return_code=0;					
+								node_group = (struct FE_region *)NULL;	
+							}
+						}/* if (!all_devices_node_order_info) */
+						/* read in the inputs */
+						read_order_number=0;					
+						count=rig_number_of_devices;
+						/* for all the devices in the rig*/
+						device=rig->devices;
+						while((count>0)&&return_code)
+						{	
+							description=(*device)->description;
+							/*if the device is in the current region */
+							if(description->region==region)
+							{
+								node_number = FE_region_get_next_FE_node_identifier(
+									root_fe_region, last_node_number);
+								/* create a node from the device */
+								switch (description->type)
 								{
-									node=create_config_FE_node_from_device(*device,template_node,
-										node_manager,config_node_type,node_number,read_order_number,
-										field_order_info);
-									last_node_number = node_number;	
-								} break;
-								case AUXILIARY:
-								{	
-									config_node_type = AUXILIARY_TYPE;									
-									DESTROY(FE_node)(&template_node);
-									DESTROY(FE_field_order_info)(&field_order_info);	
-									template_node = create_config_template_node(config_node_type,
-										0,&field_order_info,package,&electrode_position_field);
-									node=create_config_FE_node_from_device(*device,template_node,
-										node_manager,config_node_type,node_number,read_order_number,
-										field_order_info);
-									last_node_number = node_number;										
-								} break;
-							}	/* switch (device_type) */
-							if (node)
-							{ 
-								if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
-								{						
-									if (ADD_OBJECT_TO_GROUP(FE_node)(node,node_group))
+									case ELECTRODE:
 									{
-										if (ADD_OBJECT_TO_GROUP(FE_node)(node,
-											all_devices_node_group))
+										node=create_config_FE_node_from_device(*device,template_node,
+											root_fe_region,config_node_type,node_number,read_order_number,
+											field_order_info);
+										last_node_number = node_number;	
+									} break;
+									case AUXILIARY:
+									{	
+										config_node_type = AUXILIARY_TYPE;									
+										DESTROY(FE_node)(&template_node);
+										DESTROY(FE_field_order_info)(&field_order_info);	
+										template_node = create_config_template_node(config_node_type,
+											0,&field_order_info,package,&electrode_position_field);
+										node=create_config_FE_node_from_device(*device,template_node,
+											root_fe_region,config_node_type,node_number,read_order_number,
+											field_order_info);
+										last_node_number = node_number;										
+									} break;
+								}	/* switch (device_type) */
+								if (node)
+								{ 
+									if (FE_region_merge_FE_node(node_group, node))
+									{
+										if (FE_region_merge_FE_node(all_devices_node_group, node))
 										{
 											/* add the node to the node_order_info*/
 											set_FE_node_order_info_node(all_devices_node_order_info,
@@ -7707,82 +7667,71 @@ cf read_binary_config_FE_node_group.
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"convert_config_rig_to_nodes."
-												" Could not add node to all_devices_node_group");
-											REMOVE_OBJECT_FROM_GROUP(FE_node)(node,
-												all_devices_node_group);
-											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-											node=(struct FE_node *)NULL;
-											return_code=0;
+												"convert_config_rig_to_nodes.  "
+												"Could not add node to all_devices_node_group");
+											/* remove node from its ultimate master FE_region */
+											FE_region_remove_FE_node(root_fe_region, node);
+											node = (struct FE_node *)NULL;
+											return_code = 0;
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"convert_config_rig_to_nodes. Could not add node "
-											"to node_group");
-										REMOVE_OBJECT_FROM_GROUP(FE_node)(node,node_group);
-										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-										node=(struct FE_node *)NULL;
-										return_code=0;
-									}							
-								}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"convert_config_rig_to_nodes. Could not add node to"
-										" node_manager");
-									REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-									node=(struct FE_node *)NULL;
-									return_code=0;
-								}
-							}/*	if (node) */								
-							read_order_number++;
-						}
-						device++;
-						count--;						
-					} /*	while (count>0)&&return_code) */		
-
-
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"convert_config_rig_to_nodes. failed to allocate region_name");
-					return_code =0;	
-				}		
-				if (return_code)
-				{
-				/* move to the next region */
-					region_number++;				
-				}
-				if (region_name)
-				{
-					DEALLOCATE(region_name);
-				}			
-				region_item=get_Region_list_item_next(region_item);							
-			}/*	while((region_number<number_of_regions)&&return_code) */	
+											"convert_config_rig_to_nodes.  "
+											"Could not add node to node_group");
+										node = (struct FE_node *)NULL;
+										return_code = 0;
+									}
+								} /*	if (node) */								
+								read_order_number++;
+							}
+							device++;
+							count--;						
+						} /*	while (count>0)&&return_code) */		
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"convert_config_rig_to_nodes. failed to allocate region_name");
+						return_code =0;	
+					}		
+					if (return_code)
+					{
+						/* move to the next region */
+						region_number++;				
+					}
+					if (region_name)
+					{
+						DEALLOCATE(region_name);
+					}			
+					region_item=get_Region_list_item_next(region_item);							
+				}/*	while((region_number<number_of_regions)&&return_code) */	
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"convert_config_rig_to_nodes. rig->region_list is NULL");
+				return_code =0;		
+			}	
+			/* We've finished. Clean up */	
+			if (template_node)
+			{
+				DESTROY(FE_node)(&template_node);
+			}	
+			if (node_group)
+			{
+				FE_region_end_change(node_group);
+			}	
+			FE_region_end_change(all_devices_node_group);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"convert_config_rig_to_nodes. rig->region_list is NULL");
-			return_code =0;		
-		}	
-		/* We've finished. Clean up */	
-		if (template_node)
-		{
-			DESTROY(FE_node)(&template_node);
-		}	
-		MANAGER_END_CACHE(FE_node)(node_manager);
-		if (node_group)
-		{
-			MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-		}	
-		if (all_devices_node_group)
-		{
-			MANAGED_GROUP_END_CACHE(FE_node)(all_devices_node_group);
-		}	
+				"convert_config_rig_to_nodes.  Could not create node_group");
+			return_code = 0;
+		}
+		FE_region_end_change(root_fe_region);
 		if (field_order_info)
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
@@ -7799,6 +7748,7 @@ cf read_binary_config_FE_node_group.
 		return_code=0;
 	}
 	LEAVE;
+
 	return (return_code);
 } /* convert_config_rig_to_nodes*/
 #endif /* defined (UNEMAP_USE_3D) */
@@ -7846,7 +7796,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	float *buffer_signals_float,frequency;
 	int *buffer_times,i,j,number_of_nodes,number_of_samples,
 		number_of_signals,return_code;
-	short int *buffer_signals_short,*node_signals_short;	
+	short int *buffer_signals_short,*node_signals_short;
+	struct Cmiss_region *root_cmiss_region;
 	struct Coordinate_system coordinate_system;	
 	struct Device **device;	
 	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field,
@@ -7854,10 +7805,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	struct FE_field_component component;
 	struct FE_node *node,*node_managed;
 	struct FE_node_field_creator *node_field_creator;
-	struct FE_time *fe_time;
+	struct FE_region *root_fe_region;
 	struct FE_time_version *fe_time_version;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
 	struct Signal_buffer *buffer;
 	struct Unemap_package *package;
 
@@ -7877,20 +7826,16 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	times=(FE_value *)NULL;
 	node_signals_fe_value=(FE_value *)NULL;
 	device=(struct Device **)NULL;
-	fe_field_manager=(struct MANAGER(FE_field) *)NULL;
-	fe_time=(struct FE_time *)NULL;
 	fe_time_version=(struct FE_time_version *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
 	package=(struct Unemap_package *)NULL;
 	/*assumes all devices share the same signal buffer*/
 	/*is this necessarily true for multiple regions? */
 	/*read_signal_file makes this assumption.*/
 	if (rig&&all_devices_node_order_info&&(device=rig->devices)&&
 		((*device)->signal)&&(buffer=(*device)->signal->buffer)&&
-		(package=rig->unemap_package)&&
-		(node_manager=get_unemap_package_node_manager(package))&&
-		(fe_field_manager=get_unemap_package_FE_field_manager(package))&&
-		(fe_time=get_unemap_package_FE_time(package)))
+		(package=rig->unemap_package) &&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(package)) &&
+		(root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region)))
 	{
 		return_code=1;					
 		coordinate_system.type=NOT_APPLICABLE;	
@@ -7910,8 +7855,8 @@ Assumes that convert_config_rig_to_nodes has been called first.
 				{
 					times[j] = buffer_times[j]*period;										
 				}											
-				if (!(fe_time_version = get_FE_time_version_matching_time_series(
-					fe_time, number_of_samples, times)))
+				if (!(fe_time_version = FE_region_get_FE_time_version_matching_series(
+					root_fe_region, number_of_samples, times)))
 				{
 					return_code = 0;
 				}
@@ -7931,9 +7876,9 @@ Assumes that convert_config_rig_to_nodes has been called first.
 					buffer_signals_short=buffer->signals.short_int_values;
 					if (ALLOCATE(node_signals_short,short int,number_of_samples))
 					{
-						if (!(signal_field=get_FE_field_manager_matched_field(
-							fe_field_manager,"signal",GENERAL_FE_FIELD,
-							fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (!(signal_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,"signal",GENERAL_FE_FIELD,
+							/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							&coordinate_system,SHORT_VALUE,
 							/*number_of_components*/1,signal_component_names,
@@ -7958,9 +7903,9 @@ Assumes that convert_config_rig_to_nodes has been called first.
 					buffer_signals_float=buffer->signals.float_values;
 					if (ALLOCATE(node_signals_fe_value,float,number_of_samples))
 					{
-						if (!(signal_field=get_FE_field_manager_matched_field(
-							fe_field_manager,"signal",GENERAL_FE_FIELD,
-							fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (!(signal_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,"signal",GENERAL_FE_FIELD,
+							/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/1,signal_component_names,
@@ -7992,7 +7937,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 				number_of_nodes=get_FE_node_order_info_number_of_nodes(
 					all_devices_node_order_info);
 				device=rig->devices;
-				MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
+				FE_region_begin_change(root_fe_region);
 				for(i=0;i<number_of_nodes;i++)
 				{								
 					/* copy data from buffer to node_signals. Channels are interlaced */
@@ -8015,16 +7960,14 @@ Assumes that convert_config_rig_to_nodes has been called first.
 					}	/* for(j=0;j<number_of_samples) */
 					/* convert short to FE_value if necessary*/
 					node_managed =get_FE_node_order_info_node(all_devices_node_order_info,i);
-					/* create a node to work with */
-					node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-					/*copy it from the manager */
-					if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-						(node,node_managed))
-					{									
+					/* create a copy of the node to work with */
+					if (node = CREATE(FE_node)(get_FE_node_identifier(node_managed),
+						(struct FE_region *)NULL, node_managed))
+					{
 						/* add channel_gain and channel_offset fields to node*/
-						if (channel_gain_field=get_FE_field_manager_matched_field(
-							fe_field_manager,"channel_gain",GENERAL_FE_FIELD,
-							fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (channel_gain_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,"channel_gain",GENERAL_FE_FIELD,
+							/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/1,channel_gain_component_names,
@@ -8065,9 +8008,9 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								"error getting  channel_gain_field");	
 							return_code =0;
 						}	
-						if (channel_offset_field=get_FE_field_manager_matched_field(
-							fe_field_manager,"channel_offset",GENERAL_FE_FIELD,
-							fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (channel_offset_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,"channel_offset",GENERAL_FE_FIELD,
+							/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/1,channel_offset_component_names,
@@ -8110,9 +8053,9 @@ Assumes that convert_config_rig_to_nodes has been called first.
 						}	
 						/* add signal_minimum field to node. Set to default (1.0)*/
 						/* Value set up in draw_signal()*/
-						if (signal_minimum_field=get_FE_field_manager_matched_field(
-							fe_field_manager,"signal_minimum",GENERAL_FE_FIELD,
-							fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (signal_minimum_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,"signal_minimum",GENERAL_FE_FIELD,
+							/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/1,signal_minimum_component_names,
@@ -8146,9 +8089,9 @@ Assumes that convert_config_rig_to_nodes has been called first.
 						}	
 						/* add signal_maximum field to node.Set to default (0.0)*/
 						/* Value set up in draw_signal()*/
-						if (signal_maximum_field=get_FE_field_manager_matched_field(
-							fe_field_manager,"signal_maximum",GENERAL_FE_FIELD,
-							fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (signal_maximum_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,"signal_maximum",GENERAL_FE_FIELD,
+							/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/1,signal_maximum_component_names,
@@ -8182,9 +8125,9 @@ Assumes that convert_config_rig_to_nodes has been called first.
 						/* add signal_status field to node. The contents of this may be */
 						/*overwritten if loaded in in */
 						/*read_event_settings_and_signal_status_FE_node_group*/	
-						if (signal_status_field=get_FE_field_manager_matched_field(
-							fe_field_manager,"signal_status",GENERAL_FE_FIELD,
-							fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (signal_status_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,"signal_status",GENERAL_FE_FIELD,
+							/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 							&coordinate_system,STRING_VALUE,
 							/*number_of_components*/1,signal_status_component_names,
@@ -8282,21 +8225,20 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								" define_field_at_node failed");							
 							return_code=0;
 						}
-						/* copy node back into the manager */
-						MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-							(node_managed,node,node_manager);
-					}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+						/* merge node back into the fe_region */
+						FE_region_merge_FE_node(root_fe_region, node);
+						/* destroy the working copy */
+						DESTROY(FE_node)(&node);
+					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"convert_signal_rig_to_nodes.  MANAGER_COPY_WITH_IDENTIFIER failed");
+							"convert_signal_rig_to_nodes.  CREATE(FE_node) failed");
 						return_code=0;
 					}
-					/* destroy the working copy */
-					DESTROY(FE_node)(&node);
 					device++;
 				} /* for(i=0;i<number_of_nodes;i++) */
-				MANAGER_END_CACHE(FE_node)(node_manager);								
+				FE_region_end_change(root_fe_region);
 				DESTROY(FE_node_field_creator)(&node_field_creator);
 			}
 			else
@@ -8326,7 +8268,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 #if defined (UNEMAP_USE_3D)
 int convert_rig_to_nodes(struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED :18 October 2001
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION : 
 Converts a rig, including it's signals to nodes and fields.
@@ -8334,33 +8276,25 @@ cf file_read_signal_FE_node_group
 ==============================================================================*/
 {
 	int return_code;
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_field *signal_status_field;
 	struct FE_node_order_info *all_devices_node_order_info;
-	struct GROUP(FE_node) *unrejected_node_group,*rig_node_group;	
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_element) *element_manager;	
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct FE_region *unrejected_node_group,*rig_node_group;	
 	struct Region *region;
 	struct Region_list_item *region_item;
 	struct Unemap_package *unemap_package;
 
 	ENTER(convert_rig_to_nodes);	
-	node_manager=(struct MANAGER(FE_node) *)NULL;	
-	element_manager=(struct MANAGER(FE_element) *)NULL;
-	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 	unemap_package=(struct Unemap_package *)NULL;
 	signal_status_field = (struct FE_field *)NULL;
-	unrejected_node_group= (struct GROUP(FE_node) *)NULL;
-	rig_node_group= (struct GROUP(FE_node) *)NULL;	
+	unrejected_node_group= (struct FE_region *)NULL;
+	rig_node_group= (struct FE_region *)NULL;	
 	region=(struct Region *)NULL;
 	region_item=(struct Region_list_item *)NULL;
 	all_devices_node_order_info=(struct FE_node_order_info *)NULL;
 	return_code=0;
-	if(rig&&(unemap_package=rig->unemap_package))
+	if (rig && (unemap_package=rig->unemap_package) &&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(unemap_package)))
 	{
 		if(return_code=convert_config_rig_to_nodes(rig,&all_devices_node_order_info))
 		{										
@@ -8370,21 +8304,13 @@ cf file_read_signal_FE_node_group
 				region_item=get_Rig_region_list(rig);
 				while (region_item)
 				{	
-					region=get_Region_list_item_region(region_item);
-					rig_node_group=get_Region_rig_node_group(region);
-					if ((signal_status_field=
-						get_unemap_package_signal_status_field(unemap_package))&&
-						(node_manager=get_unemap_package_node_manager(unemap_package))&&
-						(element_manager=get_unemap_package_element_manager(unemap_package))&&
-						(node_group_manager=
-							get_unemap_package_node_group_manager(unemap_package))&&
-						(element_group_manager=
-							get_unemap_package_element_group_manager(unemap_package))&&
-						(data_group_manager=
-							get_unemap_package_data_group_manager(unemap_package))&&
-						(unrejected_node_group=make_unrejected_node_group(node_manager,
-							element_manager,node_group_manager,element_group_manager,
-							data_group_manager,rig_node_group,signal_status_field)))
+					region = get_Region_list_item_region(region_item);
+					rig_node_group = get_Region_rig_node_group(region);
+					if ((signal_status_field =
+						get_unemap_package_signal_status_field(unemap_package)) &&
+						(unrejected_node_group = make_unrejected_node_group(
+							root_cmiss_region, rig_node_group,
+							signal_status_field)))
 					{									
 						set_Region_unrejected_node_group(region,unrejected_node_group);
 					}
@@ -8417,6 +8343,7 @@ cf file_read_signal_FE_node_group
 			"convert_rig_to_nodes. Invalid argument(s)");		
 	}
 	LEAVE;
+
 	return(return_code);
 }/* convert_rig_to_nodes */
 #endif /* defined (UNEMAP_USE_3D) */

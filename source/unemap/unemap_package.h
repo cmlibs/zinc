@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 16 July 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -15,6 +15,7 @@ DESCRIPTION :
 #include "graphics/colour.h"
 #include "graphics/spectrum.h"
 #include "finite_element/finite_element.h"
+#include "region/cmiss_region.h"
 #include "unemap/mapping.h"
 
 /*
@@ -26,7 +27,7 @@ struct Unemap_package
 /* Still need structure, for (NULL) function parameters, */ 
 /*even when UNEMAP_USE_NODE not defined*/
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Stores information needed to construct rig_node element,nodes, fields,
@@ -34,14 +35,9 @@ and map element,nodes, fields. This information is also uses to clean up the
 element,nodes, fields when they are no longer required.
 ==============================================================================*/
 {
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct FE_time *fe_time;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_node) *data_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager; 
 	struct MANAGER(FE_basis) *fe_basis_manager;
-	struct MANAGER(FE_element) *element_manager;
+	struct Cmiss_region *root_cmiss_region;
+	struct Cmiss_region *data_root_cmiss_region;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct FE_node_selection *node_selection;
@@ -81,19 +77,14 @@ element,nodes, fields when they are no longer required.
 PROTOTYPE_OBJECT_FUNCTIONS(Unemap_package);
 
 struct Unemap_package *CREATE(Unemap_package)(
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_basis) *fe_basis_manager,
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct FE_node_selection *node_selection);
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
@@ -432,24 +423,24 @@ Sets the potential time object.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_field) *get_unemap_package_FE_field_manager(
+struct Cmiss_region *get_unemap_package_root_Cmiss_region(
 	struct Unemap_package *package);
 /*******************************************************************************
-LAST MODIFIED : July 8 1999
+LAST MODIFIED : May 8 2003
 
 DESCRIPTION :
-gets a manager of the unemap package.
+gets the root region from the unemap package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct FE_time *get_unemap_package_FE_time(
+struct Cmiss_region *get_unemap_package_data_root_Cmiss_region(
 	struct Unemap_package *package);
 /*******************************************************************************
-LAST MODIFIED : 15 November 2001
+LAST MODIFIED : May 8 2003
 
 DESCRIPTION :
-gets a manager of the unemap package.
+gets the data root region from the unemap package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
@@ -476,50 +467,6 @@ gets a FE_node_selection of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct MANAGER(GROUP(FE_element)) *get_unemap_package_element_group_manager(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_node) *get_unemap_package_node_manager(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_node) *get_unemap_package_data_manager(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_element) *get_unemap_package_element_manager(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
 struct MANAGER(Interactive_tool) *get_unemap_package_interactive_tool_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -542,36 +489,14 @@ gets a manager of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct MANAGER(GROUP(FE_node)) *get_unemap_package_data_group_manager(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(GROUP(FE_node)) *get_unemap_package_node_group_manager(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
 int unemap_package_rig_node_group_has_electrodes(struct Unemap_package *package,
-	struct GROUP(FE_node) *rig_node_group);
+	struct FE_region *rig_node_group);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 8 May 2003
 
-DESCRIPTION :determines if the  <rig_node group> 
- contains at least one node with a device_type field
-set to "ELECTRODE". See also rig_node_has_electrode_defined
+DESCRIPTION : determines if the <rig_node group> contains at least one node
+with a device_type field set to "ELECTRODE". See also
+rig_node_has_electrode_defined
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
@@ -600,22 +525,22 @@ Frees the <unemap_package> rig's computed and fe fields
 int free_unemap_package_rig_node_group_glyphs(
 	struct Map_drawing_information *drawing_information,
 	struct Unemap_package *package,
-	struct GROUP(FE_node) *rig_node_group);
+	struct FE_region *rig_node_group);
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-Frees up any glyphs used by the nodes in the rig_node_group
+Frees up any glyphs used by the nodes in the <rig_node_group>.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_node_group(struct Unemap_package *package,	
-	struct GROUP(FE_node) **rig_node_group);
+	struct FE_region **rig_node_group);
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000 
+LAST MODIFIED : 8 May 2003
 
-DESCRIPTION :Frees the node, element and data groups of <rig_node_group>
+DESCRIPTION : Frees the node, element and data groups of <rig_node_group>
 Note: DOESN't free the glyphs of the node group. See 
 free_unemap_package_rig_node_group_glyphs for this
 ==============================================================================*/

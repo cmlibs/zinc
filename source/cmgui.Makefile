@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 17 February 2003
+# LAST MODIFIED : 15 May 2003
 #
 # DESCRIPTION :
 #
@@ -42,11 +42,7 @@ endif # CMISS_ROOT_DEFINED
 include $(COMMONMAKEFILE)
 
 ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
-   MIRAGE = true
    UNEMAP = true
-   ifneq ($(SYSNAME),AIX)
-      CELL = true
-   endif # SYSNAME == AIX
    LINK_CMISS = true
 endif # $(USER_INTERFACE) != CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
 PERL_INTERPRETER = true
@@ -232,20 +228,10 @@ endif # USE_XML2
    endif # SYSNAME == AIX
 endif # ! IMAGEMAGICK
 
-ifndef MIRAGE
-   MIRAGE_DEFINES =
-   MIRAGE_SRCS =
-else # ! MIRAGE
-   MIRAGE_DEFINES = -DMIRAGE
-   MIRAGE_SRCS = \
-	   mirage/digitiser_window.c \
-	   mirage/em_cmgui.c \
-	   mirage/mirage_node_editor.c \
-	   mirage/movie.c \
-	   mirage/movie_data.c \
-	   mirage/tracking_editor_dialog.c \
-	   slider/emoter_dialog.c
-endif # ! MIRAGE
+MIRAGE_DEFINES = -DMIRAGE
+MIRAGE_SRCS = \
+	mirage/em_cmgui.c \
+	slider/emoter_dialog.c
 
 ifndef PERL_INTERPRETER
    INTERPRETER_INC =
@@ -398,7 +384,7 @@ POSTSCRIPT_DEFINES =
 NAME_DEFINES = -DFULL_NAMES
 
 #  Temporary flags that are used during development
-TEMPORARY_DEVELOPMENT_FLAGS =
+TEMPORARY_DEVELOPMENT_FLAGS = -DCMGUI_REGIONS
 # TEMPORARY_DEVELOPMENT_FLAGS = -DINTERNAL_UIDS -DPHANTOM_FARO
 # TEMPORARY_DEVELOPMENT_FLAGS = -DINTERPOLATE_TEXELS -DOTHER_FIBRE_DIR -DREPORT_GL_ERRORS
 # TEMPORARY_DEVELOPMENT_FLAGS = -DDO_NOT_ADD_DETAIL
@@ -442,17 +428,17 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       #version if they differ in size.  Older greps don't have -o option.
       Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
       Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
-      ifneq ($(Xm_XeditRes),)
-         ifneq ($(Xmu_XeditRes),)
-            ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
+#      ifneq ($(Xm_XeditRes),)
+#         ifneq ($(Xmu_XeditRes),)
+#            ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
                ifneq ($(STATIC_LINK),true)
                   USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a
                else # STATIC_LINK != true
                   USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
                endif # STATIC_LINK != true
-            endif
-         endif
-      endif
+#            endif
+#         endif
+#      endif
       ifneq ($(STATIC_LINK),true)
          USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
       else # STATIC_LINK != true
@@ -496,6 +482,16 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
+ifeq ($(SYSNAME),Linux)
+MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/linux86 -llapack-debug -lblas-debug
+endif # $(SYSNAME) == Linux 
+ifeq ($(SYSNAME:IRIX%=),)
+MATRIX_LIB = -lscs
+endif # $(SYSNAME) == Linux 
+ifeq ($(SYSNAME),win32)
+MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/win32 -llapack-debug -lblas-debug
+endif # $(SYSNAME) == win32 
+
 
 ifeq ($(SYSNAME:IRIX%=),)
    LIB = -lPW -lftn -lm -lC -lCio -lpthread 
@@ -536,7 +532,8 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
 	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
-	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(LIB)
+	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
+	$(LIB)
 
 API_SRCS = \
 	api/cmiss_core.c \
@@ -546,11 +543,9 @@ API_INTERFACE_SRCS = \
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_control_curve.c \
-	choose/choose_element_group.c \
 	choose/choose_enumerator.c \
 	choose/choose_fe_field.c \
 	choose/choose_field_component.c \
-	choose/choose_node_group.c \
 	choose/choose_graphical_material.c \
 	choose/choose_gt_object.c \
 	choose/choose_scene.c \
@@ -602,6 +597,7 @@ COMPUTED_FIELD_INTERFACE_SRCS = \
 COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_value.c \
 	computed_variable/computed_value_finite_element.c \
+	computed_variable/computed_value_matrix.c \
 	computed_variable/computed_variable.c \
 	computed_variable/computed_variable_finite_element.c
 CURVE_SRCS = \
@@ -609,11 +605,6 @@ CURVE_SRCS = \
 CURVE_INTERFACE_SRCS = \
 	curve/control_curve_editor.c \
 	curve/control_curve_editor_dialog.c
-DATA_SRCS = \
-	data/node_transform.c
-DATA_INTERFACE_SRCS = \
-	data/data_grabber.c \
-	data/data_grabber_dialog.c
 DOF3_INTERFACE_SRCS = \
 	dof3/dof3.c \
 	dof3/dof3_control.c \
@@ -632,8 +623,10 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
 	finite_element/finite_element_discretization.c \
+	finite_element/finite_element_region.c \
 	finite_element/finite_element_time.c \
 	finite_element/finite_element_to_graphics_object.c \
+	finite_element/finite_element_to_iges.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
 	finite_element/import_finite_element.c \
@@ -739,6 +732,10 @@ endif # LINK_CMISS
 MATERIAL_INTERFACE_SRCS =  \
 	material/material_editor.c \
 	material/material_editor_dialog.c
+MATRIX_SRCS =  \
+	matrix/factor.c \
+	matrix/matrix.c \
+	matrix/matrix_blas.c
 MENU_INTERFACE_SRCS =  \
 	menu/menu_window.c
 MOTIF_INTERFACE_SRCS =  \
@@ -747,21 +744,18 @@ NODE_SRCS = \
 	node/node_operations.c \
 	node/node_tool.c
 NODE_INTERFACE_SRCS = \
-	node/interactive_node_editor.c \
-	node/interactive_node_editor_dialog.c \
 	node/node_field_viewer_widget.c \
 	node/node_viewer.c \
 	node/node_viewer_widget.c
-PROJECTION_INTERFACE_SRCS = \
-	projection/projection.c \
-	projection/projection_dialog.c \
-	projection/projection_window.c
 PROMPT_INTERFACE_SRCS =\
 	prompt/prompt_window.c
+REGION_SRCS = \
+   region/cmiss_region.c \
+   region/cmiss_region_chooser.c \
+   region/cmiss_region_write_info.c
 SELECT_INTERFACE_SRCS = \
 	select/select_control_curve.c \
 	select/select_environment_map.c \
-	select/select_finite_element.c \
 	select/select_graphical_material.c \
 	select/select_private.c \
 	select/select_spectrum.c
@@ -770,8 +764,6 @@ SELECTION_SRCS = \
 	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
 	selection/node_selection.c
-SLIDER_INTERFACE_SRCS = \
-	slider/node_group_slider_dialog.c
 THREE_D_DRAWING_SRCS = \
 	three_d_drawing/graphics_buffer.c
 THREE_D_DRAWING_INTERFACE_SRCS = \
@@ -812,7 +804,6 @@ SRCS_1 = \
 	$(COMPUTED_FIELD_SRCS) \
 	$(COMPUTED_VARIABLE_SRCS) \
 	$(CURVE_SRCS) \
-	$(DATA_SRCS) \
 	$(ELEMENT_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
@@ -838,7 +829,6 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 	   $(COMMAND_INTERFACE_SRCS) \
 	   $(COMPUTED_FIELD_INTERFACE_SRCS) \
 	   $(CURVE_INTERFACE_SRCS) \
-	   $(DATA_INTERFACE_SRCS) \
 	   $(DOF3_INTERFACE_SRCS) \
 	   $(ELEMENT_INTERFACE_SRCS) \
 	   $(FINITE_ELEMENT_INTERFACE_SRCS) \
@@ -847,12 +837,13 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 	   $(INTERACTION_INTERFACE_SRCS) \
 	   $(IO_DEVICES_INTERFACE_SRCS) \
 	   $(LINK_INTERFACE_SRCS) \
+	   $(MATRIX_SRCS) \
 	   $(MATERIAL_INTERFACE_SRCS) \
 	   $(MENU_INTERFACE_SRCS) \
 	   $(MOTIF_INTERFACE_SRCS) \
 	   $(NODE_INTERFACE_SRCS) \
-	   $(PROJECTION_INTERFACE_SRCS) \
 	   $(PROMPT_INTERFACE_SRCS) \
+	   $(REGION_SRCS) \
 	   $(SELECT_INTERFACE_SRCS) \
 	   $(SLIDER_INTERFACE_SRCS) \
 	   $(THREE_D_DRAWING_INTERFACE_SRCS) \

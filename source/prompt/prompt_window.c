@@ -7,6 +7,7 @@ DESCRIPTION :
 Management routines for the prompt window.
 ???DB.  Needs tidying
 ==============================================================================*/
+#include <stdio.h>
 #include <Xm/DialogS.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Text.h>

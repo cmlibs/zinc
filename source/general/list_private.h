@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : list_private.h
 
-LAST MODIFIED : 14 November 1996
+LAST MODIFIED : 16 October 2002
 
 DESCRIPTION :
 Macros for declaring standard list types and declaring standard list functions.
@@ -179,55 +179,100 @@ PROTOTYPE_COPY_LIST_FUNCTION(object_type) \
 	return (return_code); \
 } /* COPY_LIST(object_type) */
 
+#define DECLARE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
+PROTOTYPE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
+{ \
+	int return_code; \
+	struct LIST_ITEM(object_type) *add_item; \
+\
+	ENTER(ADD_OBJECT_TO_LIST(object_type)); \
+	if (object && list) \
+	{ \
+		/* allocate memory for list item */ \
+		if (ALLOCATE(add_item, struct LIST_ITEM(object_type), 1)) \
+		{ \
+			add_item->object = ACCESS(object_type)(object); \
+			add_item->next = (struct LIST_ITEM(object_type) *)NULL; \
+			if (list->tail) \
+			{ \
+				(list->tail)->next = add_item; \
+				list->tail = add_item; \
+			} \
+			else \
+			{ \
+				list->head = add_item; \
+				list->tail = add_item; \
+			} \
+			(list->count)++; \
+			return_code = 1; \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, "ADD_OBJECT_TO_LIST(" #object_type \
+				").  Could not allocate memory for list item"); \
+			return_code = 0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"ADD_OBJECT_TO_LIST(" #object_type ").  Invalid argument(s)"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* ADD_OBJECT_TO_LIST(object_type) */
+
 #define DECLARE_REMOVE_OBJECT_FROM_LIST_FUNCTION( object_type ) \
 PROTOTYPE_REMOVE_OBJECT_FROM_LIST_FUNCTION(object_type) \
 { \
 	int return_code; \
-	struct LIST_ITEM(object_type) *item,*previous_item; \
+	struct LIST_ITEM(object_type) *item, *previous_item; \
 \
 	ENTER(REMOVE_OBJECT_FROM_LIST(object_type)); \
-	if (object&&list) \
+	if (object && list) \
 	{ \
 		/* search for the object in the list */ \
-		item=list->head; \
-		previous_item=(struct LIST_ITEM(object_type) *)NULL; \
-		while (item&&(object!=item->object)) \
+		item = list->head; \
+		previous_item = (struct LIST_ITEM(object_type) *)NULL; \
+		while (item && (object != item->object)) \
 		{ \
-			previous_item=item; \
-			item=item->next; \
+			previous_item = item; \
+			item = item->next; \
 		} \
 		if (item) \
 		{ \
 			/* remove the object from the list */ \
-			if (item==list->head) \
+			if (item == list->head) \
 			{ \
-				list->head=item->next; \
+				list->head = item->next; \
 			} \
 			else \
 			{ \
-				previous_item->next=item->next; \
+				previous_item->next = item->next; \
 			} \
-			if (item==list->tail) \
+			if (item == list->tail) \
 			{ \
-				list->tail=previous_item; \
+				list->tail = previous_item; \
 			} \
-			return_code=DEACCESS(object_type)(&(item->object)); \
+			return_code = DEACCESS(object_type)(&(item->object)); \
 			DEALLOCATE(item); \
 			(list->count)--; \
-			return_code=1; \
+			return_code = 1; \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"REMOVE_OBJECT_FROM_LIST(" #object_type ").  Could not find object"); \
-			return_code=0; \
+			return_code = 0; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"REMOVE_OBJECT_FROM_LIST(" #object_type ").  Invalid argument(s)"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -318,51 +363,6 @@ PROTOTYPE_REMOVE_OBJECTS_FROM_LIST_THAT_FUNCTION(object_type) \
 \
 	return (return_code); \
 } /* REMOVE_OBJECTS_FROM_LIST_THAT(object_type) */
-
-#define DECLARE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
-PROTOTYPE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
-{ \
-	int return_code; \
-	struct LIST_ITEM(object_type) *add_item; \
-\
-	ENTER(ADD_OBJECT_TO_LIST(object_type)); \
-	if (object&&list) \
-	{ \
-		/* allocate memory for list item */ \
-		if (ALLOCATE(add_item,struct LIST_ITEM(object_type),1)) \
-		{ \
-			add_item->object=ACCESS(object_type)(object); \
-			add_item->next=(struct LIST_ITEM(object_type) *)NULL; \
-			if (list->tail) \
-			{ \
-				(list->tail)->next=add_item; \
-				list->tail=add_item; \
-			} \
-			else \
-			{ \
-				list->head=add_item; \
-				list->tail=add_item; \
-			} \
-			(list->count)++; \
-			return_code=1; \
-		} \
-		else \
-		{ \
-			display_message(ERROR_MESSAGE,"ADD_OBJECT_TO_LIST(" #object_type \
-				").  Could not allocate memory for list item"); \
-			return_code=0; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"ADD_OBJECT_TO_LIST(" #object_type ").  Invalid argument(s)"); \
-		return_code=0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* ADD_OBJECT_TO_LIST(object_type) */
 
 #define DECLARE_NUMBER_IN_LIST_FUNCTION( object_type ) \
 PROTOTYPE_NUMBER_IN_LIST_FUNCTION(object_type) \
@@ -663,4 +663,4 @@ DECLARE_IS_OBJECT_IN_LIST_FUNCTION(object_type) \
 DECLARE_FIRST_OBJECT_IN_LIST_THAT_FUNCTION(object_type) \
 DECLARE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type)
 
-#endif
+#endif /* !defined (LIST_PRIVATE_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 7 March 2002
+LAST MODIFIED : 15 April 2003
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -19,6 +19,7 @@ Provides the widgets to manipulate graphical element group settings.
 #include "choose/choose_enumerator.h"
 #include "choose/choose_fe_field.h"
 #include "command/parser.h"
+#include "finite_element/finite_element_region.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -73,18 +74,17 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Settings_item);
 
 struct Graphical_element_editor
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
 ==============================================================================*/
 {
+	struct Cmiss_region *root_region;
 	struct Computed_field_package *computed_field_package;
 	struct GT_element_group *edit_gt_element_group;
 	struct Graphical_material *default_material;
 	struct LIST(GT_object) *glyph_list;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	void *material_manager_callback_id;
 	struct Spectrum *default_spectrum;
@@ -1013,7 +1013,7 @@ controls graying out widgets not currently in use.
 		if (field_set=((struct FE_field *)NULL != (native_discretization_field=
 			GT_element_group_get_native_discretization_field(gt_element_group))))
 		{
-			CHOOSE_OBJECT_SET_OBJECT(FE_field)(
+			FE_REGION_CHOOSE_OBJECT_SET_OBJECT(FE_field)(
 				gelem_editor->native_discretization_field_widget,
 				native_discretization_field);
 		}
@@ -1252,7 +1252,7 @@ Called when the native_discretization toggle button value changes.
 		else
 		{
 			/* get native_discretization field from the widget */
-			native_discretization_field=CHOOSE_OBJECT_GET_OBJECT(FE_field)(
+			native_discretization_field=FE_REGION_CHOOSE_OBJECT_GET_OBJECT(FE_field)(
 				gelem_editor->native_discretization_field_widget);
 		}
 		GT_element_group_set_native_discretization_field(gt_element_group,
@@ -1347,7 +1347,7 @@ Called when switching between Points/Lines/Surfaces/Iso-surfaces etc.
 static void graphical_element_editor_add_button_CB(Widget widget,
 	XtPointer client_data, XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 15 April 2003
 
 DESCRIPTION :
 Add button press: create new settings of the current type.
@@ -1360,8 +1360,8 @@ Add button press: create new settings of the current type.
 	struct Computed_field *default_coordinate_field,*element_xi_coordinate_field,
 		*iso_scalar_field,*orientation_scale_field,*stream_vector_field,
 		*variable_scale_field;
+	struct FE_region *data_fe_region;
 	struct Graphical_element_editor *gelem_editor;
-	struct GROUP(FE_node) *data_group;
 	struct GT_object *glyph, *old_glyph;
 	struct GT_element_settings *settings;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -1383,7 +1383,7 @@ Add button press: create new settings of the current type.
 			if (gelem_editor->current_settings)
 			{
 				/* copy current settings into new settings */
-				return_code=COPY(GT_element_settings)(settings,
+				return_code = GT_element_settings_copy_without_graphics_object(settings,
 					gelem_editor->current_settings);
 				/* make sure new settings is visible */
 				GT_element_settings_set_visibility(settings,1);
@@ -1402,21 +1402,22 @@ Add button press: create new settings of the current type.
 				if (GT_ELEMENT_SETTINGS_DATA_POINTS==
 					gelem_editor->current_settings_type)
 				{
-					data_group=GT_element_group_get_data_group(
-						gelem_editor->edit_gt_element_group);
+					data_fe_region = Cmiss_region_get_FE_region(
+						GT_element_group_get_data_Cmiss_region(
+							gelem_editor->edit_gt_element_group));
 					default_coordinate_field=
 						GT_element_group_get_default_coordinate_field(
 							gelem_editor->edit_gt_element_group);
-					if (!FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+					if (!FE_region_get_first_FE_node_that(data_fe_region,
 						FE_node_has_Computed_field_defined,
-						(void *)default_coordinate_field,data_group))
+						(void *)default_coordinate_field))
 					{
 						if ((element_xi_coordinate_field=
 							FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-								"element_xi_coordinate",computed_field_manager))&&
-							FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+								"element_xi_coordinate",computed_field_manager)) &&
+							FE_region_get_first_FE_node_that(data_fe_region,
 								FE_node_has_Computed_field_defined,
-								(void *)element_xi_coordinate_field,data_group))
+								(void *)element_xi_coordinate_field))
 						{
 							GT_element_settings_set_coordinate_field(settings,
 								element_xi_coordinate_field);
@@ -1510,12 +1511,12 @@ Add button press: create new settings of the current type.
 						return_code=0;
 					}
 				}
-			}
-			/* set use_element_type for element_points */
-			if (return_code && (GT_ELEMENT_SETTINGS_ELEMENT_POINTS ==
-				gelem_editor->current_settings_type))
-			{
-				GT_element_settings_set_use_element_type(settings,USE_ELEMENTS);
+				/* set use_element_type for element_points */
+				if (return_code && (GT_ELEMENT_SETTINGS_ELEMENT_POINTS ==
+					gelem_editor->current_settings_type))
+				{
+					GT_element_settings_set_use_element_type(settings,USE_ELEMENTS);
+				}
 			}
 			if (return_code && GT_element_group_add_settings(
 				gelem_editor->edit_gt_element_group, settings, 0))
@@ -1792,11 +1793,11 @@ changed the name of a spectrum, must remake the menu.
 Global functions
 ----------------
 */
+
 Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	Widget parent,struct GT_element_group *gt_element_group,
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct LIST(GT_object) *glyph_list,
@@ -1805,7 +1806,7 @@ Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates a graphical_element_editor widget.
@@ -1815,6 +1816,7 @@ Creates a graphical_element_editor widget.
 	int init_widgets,number_of_valid_strings;
 	MrmType graphical_element_editor_dialog_class;
 	struct Callback_data callback;
+	struct FE_region *root_fe_region;
 	struct Graphical_element_editor *gelem_editor=NULL;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	static MrmRegisterArg callback_list[]=
@@ -1880,9 +1882,10 @@ Creates a graphical_element_editor widget.
 
 	ENTER(create_graphical_element_editor_widget);
 	return_widget=(Widget)NULL;
-	if (gelem_editor_widget&&parent&&computed_field_package&&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			computed_field_package))&&element_manager&&fe_field_manager&&
+	if (gelem_editor_widget && parent && computed_field_package &&
+		(computed_field_manager = Computed_field_package_get_computed_field_manager(
+			computed_field_package)) && root_region &&
+		(root_fe_region = Cmiss_region_get_FE_region(root_region)) &&
 		graphical_material_manager&&default_material&&glyph_list&&
 		spectrum_manager&&default_spectrum&&volume_texture_manager&&user_interface)
 	{
@@ -1896,8 +1899,7 @@ Creates a graphical_element_editor widget.
 				/* initialise the structure */
 				gelem_editor->edit_gt_element_group=(struct GT_element_group *)NULL;
 				gelem_editor->computed_field_package=computed_field_package;
-				gelem_editor->element_manager=element_manager;
-				gelem_editor->fe_field_manager=fe_field_manager;
+				gelem_editor->root_region = root_region;
 				gelem_editor->glyph_list=glyph_list;
 				gelem_editor->graphical_material_manager=graphical_material_manager;
 				gelem_editor->default_material=default_material;
@@ -1966,12 +1968,12 @@ Creates a graphical_element_editor widget.
 								init_widgets=0;
 							}
 							/* create chooser for native_discretization_field */
-							if (!(gelem_editor->native_discretization_field_widget=
-								CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
-								gelem_editor->native_discretization_field_form,
-								(struct FE_field *)NULL,fe_field_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
-								user_interface)))
+							if (!(gelem_editor->native_discretization_field_widget =
+								CREATE_FE_REGION_CHOOSE_OBJECT_WIDGET(FE_field)(
+									gelem_editor->native_discretization_field_form,
+									root_fe_region, (struct FE_field *)NULL,
+									(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
+									user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -1995,8 +1997,7 @@ Creates a graphical_element_editor widget.
 								&(gelem_editor->settings_widget),
 								gelem_editor->settings_form,(struct GT_element_settings *)NULL,
 								gelem_editor->computed_field_package,
-								gelem_editor->element_manager,
-								gelem_editor->fe_field_manager,
+								gelem_editor->root_region,
 								gelem_editor->graphical_material_manager,
 								gelem_editor->glyph_list,gelem_editor->spectrum_manager,
 								gelem_editor->volume_texture_manager,
@@ -2031,7 +2032,7 @@ Creates a graphical_element_editor widget.
 									gelem_editor->default_coordinate_field_widget,&callback);
 								callback.procedure=
 									graphical_element_editor_update_native_discretization_field;
-								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
+								FE_REGION_CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									gelem_editor->native_discretization_field_widget,&callback);
 								callback.procedure=
 									graphical_element_editor_update_settings_type;
@@ -2289,7 +2290,7 @@ Sets the gt_element_group to be edited by the graphical_element_editor widget.
 							graphical_element_editor_material_manager_message,
 							(void *)gelem_editor, gelem_editor->graphical_material_manager);
 				}
-				/* register for any material changes */
+				/* register for any spectrum changes */
 				if (!gelem_editor->spectrum_manager_callback_id)
 				{
 					gelem_editor->spectrum_manager_callback_id =

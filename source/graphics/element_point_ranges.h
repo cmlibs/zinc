@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 6 March 2003
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -94,7 +94,7 @@ Data for passing to FE_element_grid_to_multi_range.
 
 struct Element_point_ranges_set_grid_values_data
 /*******************************************************************************
-LAST MODIFIED : 19 June 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Data for passing to Element_point_ranges_set_grid_values and for it to pass to
@@ -112,8 +112,8 @@ Field_value_index_ranges_set_grid_values.
 	struct Element_point_ranges_identifier *destination_identifier;
 	struct Multi_range *destination_element_point_numbers;
 	struct FE_element *element_copy;
-	/* the manager used by Element_point_ranges_set_grid_values */
-	struct MANAGER(FE_element) *element_manager;
+	/* the FE_region the elements belong to */
+	struct FE_region *fe_region;
 	/* set following to 1 before calling - after calling, if set can report that
 		 some element points were not at native/grid discretizations */
 	int all_points_native;
@@ -304,9 +304,9 @@ faces or lines of other elements not being destroyed.
 ==============================================================================*/
 
 int set_Element_point_ranges(struct Parse_state *state,
-	void *element_point_ranges_address_void,void *element_manager_void);
+	void *element_point_ranges_address_void, void *fe_region_void);
 /*******************************************************************************
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 6 March 2003
 
 DESCRIPTION :
 Modifier function to set an element_point_ranges. <element_point_ranges_address>
@@ -315,13 +315,13 @@ successful return an Element_point_ranges will be created and the pointer to it
 returned in this location, for the calling function to use or destroy.
 ==============================================================================*/
 
-int Element_point_ranges_element_is_in_group(
-	struct Element_point_ranges *element_point_ranges,void *element_group_void);
+int Element_point_ranges_element_is_in_FE_region(
+	struct Element_point_ranges *element_point_ranges, void *fe_region_void);
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 23 January 2003
 
 DESCRIPTION :
-Returns true if the element for <element_point_ranges> is in <element_group>.
+Returns true if the element for <element_point_ranges> is in <fe_region>.
 ==============================================================================*/
 
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(

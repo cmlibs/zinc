@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 7 March 2002
+LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -47,16 +47,15 @@ static MrmHierarchy settings_editor_hierarchy;
 
 struct Settings_editor
 /*******************************************************************************
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
 ==============================================================================*/
 {
+	struct Cmiss_region *root_region;
 	struct GT_element_settings *current_settings;
-	struct MANAGER(FE_element) *element_manager;
 	struct Computed_field_package *computed_field_package;
-	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct LIST(GT_object) *glyph_list;
 	struct MANAGER(Spectrum) *spectrum_manager;
@@ -1049,7 +1048,7 @@ Called when entry is made into the discretization text field.
 static void settings_editor_native_discretization_button_CB(Widget widget,
 	XtPointer settings_editor_void,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Called when the native_discretization_field toggle button value changes.
@@ -1074,8 +1073,9 @@ Called when the native_discretization_field toggle button value changes.
 		else
 		{
 			/* get data field from widget */
-			native_discretization_field=CHOOSE_OBJECT_GET_OBJECT(FE_field)(
-				settings_editor->native_discretization_field_widget);
+			native_discretization_field =
+				FE_REGION_CHOOSE_OBJECT_GET_OBJECT(FE_field)(
+					settings_editor->native_discretization_field_widget);
 		}
 		GT_element_settings_set_native_discretization_field(
 			settings_editor->current_settings,native_discretization_field);
@@ -1961,7 +1961,7 @@ Called when the seed element toggle button value changes.
 		}
 		else
 		{
-			seed_element=TEXT_CHOOSE_OBJECT_GET_OBJECT(FE_element)(
+			seed_element=TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_element)(
 				settings_editor->seed_element_widget);
 		}
 		GT_element_settings_set_seed_element(
@@ -2783,14 +2783,13 @@ Global functions
 Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	Widget parent,struct GT_element_settings *settings,
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct LIST(GT_object) *glyph_list,struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2799,6 +2798,7 @@ Creates a settings_editor widget.
 	char **valid_strings;
 	int init_widgets,number_of_valid_strings;
 	MrmType settings_editor_dialog_class;
+	struct FE_region *fe_region;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Settings_editor *settings_editor=NULL;
 	static MrmRegisterArg callback_list[]=
@@ -3006,10 +3006,12 @@ Creates a settings_editor widget.
 
 	ENTER(create_settings_editor_widget);
 	return_widget=(Widget)NULL;
-	if (settings_editor_widget&&parent&&element_manager&&computed_field_package&&
+	if (settings_editor_widget && parent && computed_field_package &&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			computed_field_package))&&fe_field_manager&&graphical_material_manager&&
-		glyph_list&&spectrum_manager&&volume_texture_manager&&user_interface)
+			computed_field_package)) && root_region &&
+		(fe_region = Cmiss_region_get_FE_region(root_region)) &&
+		graphical_material_manager && glyph_list && spectrum_manager &&
+		volume_texture_manager && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(settings_editor_uidh,
 			&settings_editor_hierarchy,&settings_editor_hierarchy_open))
@@ -3020,8 +3022,7 @@ Creates a settings_editor widget.
 				/* initialise the structure */
 				settings_editor->current_settings=
 					(struct GT_element_settings *)NULL;
-				settings_editor->element_manager=element_manager;
-				settings_editor->fe_field_manager=fe_field_manager;
+				settings_editor->root_region = root_region;
 				settings_editor->graphical_material_manager=
 					graphical_material_manager;
 				settings_editor->glyph_list=glyph_list;
@@ -3237,10 +3238,10 @@ Creates a settings_editor widget.
 								init_widgets=0;
 							}
 							if (!(settings_editor->native_discretization_field_widget=
-								CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
+								CREATE_FE_REGION_CHOOSE_OBJECT_WIDGET(FE_field)(
 								settings_editor->native_discretization_field_form,
-								(struct FE_field *)NULL,fe_field_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
+								fe_region, (struct FE_field *)NULL,
+								(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
 								user_interface)))
 							{
 								init_widgets=0;
@@ -3277,12 +3278,12 @@ Creates a settings_editor widget.
 								init_widgets=0;
 							}
 							if (!(settings_editor->seed_element_widget=
-								CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
+								CREATE_TEXT_CHOOSE_FROM_FE_REGION_WIDGET(FE_element)(
 								settings_editor->seed_element_form,
-								(struct FE_element *)NULL,element_manager,
+								(struct FE_element *)NULL,fe_region,
 								FE_element_is_dimension_3,(void *)NULL,
 								FE_element_to_element_string,
-								element_string_to_FE_element)))
+								FE_region_element_string_to_FE_element)))
 							{
 								init_widgets=0;
 							}
@@ -3600,7 +3601,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3651,7 +3652,7 @@ Changes the currently chosen settings.
 					if (settings_editor->current_settings=
 						CREATE(GT_element_settings)(settings_type))
 					{
-						if (COPY(GT_element_settings)(
+						if (GT_element_settings_copy_without_graphics_object(
 							settings_editor->current_settings,new_settings))
 						{
 							XtManageChild(settings_editor->widget);
@@ -3887,7 +3888,7 @@ Changes the currently chosen settings.
 									XmNset, (XtPointer)field_set, NULL);
 								if (field_set)
 								{
-									CHOOSE_OBJECT_SET_OBJECT(FE_field)(
+									FE_REGION_CHOOSE_OBJECT_SET_OBJECT(FE_field)(
 										settings_editor->native_discretization_field_widget,
 										native_discretization_field);
 								}
@@ -3913,7 +3914,7 @@ Changes the currently chosen settings.
 								callback.data=(void *)settings_editor;
 								callback.procedure=
 									settings_editor_update_native_discretization_field;
-								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
+								FE_REGION_CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									settings_editor->native_discretization_field_widget,
 									&callback);
 								callback.procedure =
@@ -3935,7 +3936,7 @@ Changes the currently chosen settings.
 								/* turn off callbacks */
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
-								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
+								FE_REGION_CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									settings_editor->native_discretization_field_widget,
 									&callback);
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
@@ -3974,7 +3975,7 @@ Changes the currently chosen settings.
 								if (seed_element=
 									GT_element_settings_get_seed_element(new_settings))
 								{
-									TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+									TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 										settings_editor->seed_element_widget,seed_element);
 								}
 								XtVaSetValues(settings_editor->seed_element_button,
@@ -3985,7 +3986,7 @@ Changes the currently chosen settings.
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=settings_editor_update_seed_element;
-								TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+								TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
 									settings_editor->seed_element_widget,&callback);
 							}
 							else
@@ -3994,7 +3995,7 @@ Changes the currently chosen settings.
 								/* turn off callbacks */
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
-								TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+								TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
 									settings_editor->seed_element_widget,&callback);
 							}
 
@@ -4245,11 +4246,11 @@ Changes the currently chosen settings.
 						settings_editor->glyph_orientation_scale_field_widget,&callback);
 					CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 						settings_editor->label_field_widget,&callback);
-					CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
+					FE_REGION_CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 						settings_editor->native_discretization_field_widget,&callback);
 					CHOOSE_OBJECT_SET_CALLBACK(VT_volume_texture)(
 						settings_editor->volume_texture_widget,&callback);
-					TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+					TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
 						settings_editor->seed_element_widget,&callback);
 					CHOOSE_OBJECT_SET_CALLBACK(Graphical_material)(
 						settings_editor->material_widget,&callback);

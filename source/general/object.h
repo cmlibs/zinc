@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : object.h
 
-LAST MODIFIED : 12 March 1999
+LAST MODIFIED : 29 January 2003
 
 DESCRIPTION :
 Macros for prototyping standard object functions and declaring standard object
@@ -221,7 +221,7 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(object_type) \
 #define PROTOTYPE_DEACCESS_OBJECT_FUNCTION( object_type ) \
 int DEACCESS(object_type)(struct object_type **object_address) \
 /***************************************************************************** \
-LAST MODIFIED : 12 March 1999 \
+LAST MODIFIED : 14 October 2002 \
 \
 DESCRIPTION : \
 Decreases the <access_count> of the object by 1. If the access_count becomes \
@@ -238,22 +238,22 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(object_type) \
 	struct object_type *object; \
 \
 	ENTER(DEACCESS(object_type)); \
-	if (object_address&&(object= *object_address)) \
+	if (object_address && (object = *object_address)) \
 	{ \
 		(object->access_count)--; \
-		if (object->access_count<=0) \
+		if (object->access_count <= 0) \
 		{ \
-			return_code=DESTROY(object_type)(object_address); \
+			return_code = DESTROY(object_type)(object_address); \
 		} \
 		else \
 		{ \
-			*object_address=(struct object_type *)NULL; \
-			return_code=1; \
+			return_code = 1; \
 		} \
+		*object_address = (struct object_type *)NULL; \
 	} \
 	else \
 	{ \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -271,7 +271,7 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(object_type) \
 int REACCESS(object_type)(struct object_type **object_address, \
 	struct object_type *new_object) \
 /***************************************************************************** \
-LAST MODIFIED : 12 March 1999 \
+LAST MODIFIED : 14 October 2002 \
 \
 DESCRIPTION : \
 Makes <*object_address> point to <new_object> with safe ACCESS transfer. \
@@ -290,29 +290,29 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(object_type) \
 	ENTER(REACCESS(object_type)); \
 	if (object_address) \
 	{ \
-		return_code=1; \
+		return_code = 1; \
 		if (new_object) \
 		{ \
 			/* access the new object */ \
 			(new_object->access_count)++; \
 		} \
-		if (current_object= *object_address) \
+		if (current_object = *object_address) \
 		{ \
 			/* deaccess the current object */ \
 			(current_object->access_count)--; \
-			if (current_object->access_count<=0) \
+			if (current_object->access_count <= 0) \
 			{ \
 				DESTROY(object_type)(object_address); \
 			} \
 		} \
 		/* point to the new object */ \
-		*object_address=new_object; \
+		*object_address = new_object; \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"REACCESS(" #object_type ").  Invalid argument"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -328,4 +328,5 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(object_type)
 DECLARE_ACCESS_OBJECT_FUNCTION(object_type) \
 DECLARE_DEACCESS_OBJECT_FUNCTION(object_type) \
 DECLARE_REACCESS_OBJECT_FUNCTION(object_type)
+
 #endif

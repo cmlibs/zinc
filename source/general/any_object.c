@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : any_object.c
 
-LAST MODIFIED : 23 August 2000
+LAST MODIFIED : 2 October 2002
 
 DESCRIPTION :
 Definition of Any_object structure for storing any object which can be uniquely
@@ -286,11 +286,12 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Any_object, \
 
 struct Any_object *CREATE(Any_object)(char *type_string,void *subobject)
 /*******************************************************************************
-LAST MODIFIED : 22 August 2000
+LAST MODIFIED : 2 October 2002
 
 DESCRIPTION :
 Creates an Any_object which uses the static <type_string> to identify the type
 of the <subobject>.
+This function is private to objects using Any_object interface.
 ==============================================================================*/
 {
 	struct Any_object *any_object;
@@ -298,10 +299,12 @@ of the <subobject>.
 	ENTER(CREATE(Any_object));
 	if (type_string && subobject)
 	{
-		if (ALLOCATE(any_object,struct Any_object,1))
+		if (ALLOCATE(any_object, struct Any_object, 1))
 		{
 			any_object->type_string = type_string;
 			any_object->subobject = subobject;
+			any_object->any_object_cleanup_function =
+				(Any_object_cleanup_function)NULL;
 			any_object->access_count = 0;
 		}
 		else
@@ -321,17 +324,23 @@ of the <subobject>.
 
 int DESTROY(Any_object)(struct Any_object **any_object_address)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2000
+LAST MODIFIED : 2 October 2002
 
 DESCRIPTION :
 Destroys the Any_object.
 ==============================================================================*/
 {
 	int return_code;
+	struct Any_object *any_object;
 
 	ENTER(DESTROY(Any_object));
-	if (any_object_address && *any_object_address)
+	if (any_object_address && (any_object = *any_object_address))
 	{
+		/* call cleanup function for subobject if provided */
+		if (any_object->any_object_cleanup_function)
+		{
+			(any_object->any_object_cleanup_function)(any_object->subobject);
+		}
 		DEALLOCATE(*any_object_address);
 		return_code=1;
 	}
@@ -345,6 +354,37 @@ Destroys the Any_object.
 
 	return (return_code);
 } /* DESTROY(Any_object) */
+
+int Any_object_set_cleanup_function(struct Any_object *any_object,
+	Any_object_cleanup_function any_object_cleanup_function)
+/*******************************************************************************
+LAST MODIFIED : 2 October 2002
+
+DESCRIPTION :
+Adds function to <any_object> which will be called when it is destroyed. The
+single argument to this function is a void pointer to the subobject in the
+Any_object, NOT the address of a pointer to it.
+This function is private to objects using Any_object interface.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Any_object_set_cleanup_function);
+	if (any_object && any_object_cleanup_function)
+	{
+		any_object->any_object_cleanup_function = any_object_cleanup_function;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Any_object_set_cleanup_function.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Any_object_set_cleanup_function */
 
 int ensure_Any_object_is_in_list(struct Any_object *any_object,
 	void *any_object_list_void)
@@ -420,4 +460,3 @@ in it.
 
 	return (return_code);
 } /* ensure_Any_object_is_not_in_list */
-

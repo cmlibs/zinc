@@ -10,6 +10,7 @@ elements.
 ???DB.  What about time integrals?
 ==============================================================================*/
 
+#include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/integration.h"
 #include "general/mystring.h"
@@ -410,7 +411,7 @@ Frees memory/deaccess objects in scheme at <*scheme_address>.
 	return (return_code);
 } /* DESTROY(Integration_scheme) */
 
-int integrate(struct Computed_field *field,struct GROUP(FE_element) *domain,
+int integrate(struct Computed_field *field,struct FE_region *domain,
 	struct Integration_scheme *scheme,FE_value time,FE_value *result)
 /*******************************************************************************
 LAST MODIFIED : 27 December 2002
@@ -452,9 +453,9 @@ value for each component of the <field>.
 				{
 					result[i]=(FE_value)0;
 				}
-				if (!(return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+				if (!(return_code=FE_region_for_each_FE_element(domain,
 					integrate_Computed_field_over_element,
-					&integrate_Computed_field_over_element_data,domain)))
+					&integrate_Computed_field_over_element_data)))
 				{
 					display_message(ERROR_MESSAGE,"integrate.  "
 						"Failed for an element.  %d",

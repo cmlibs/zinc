@@ -1,15 +1,19 @@
 /*******************************************************************************
 FILE : node_operations.h
 
-LAST MODIFIED : 20 June 2001
+LAST MODIFIED : 3 March 2003
 
 DESCRIPTION :
-Functions for mouse controlled node selection and position and vector editing
-based on input from devices.
+FE_node functions that utilise non finite element data structures and therefore
+cannot reside in finite element modules.
 ==============================================================================*/
 #if !defined (NODE_OPERATIONS_H)
 #define NODE_OPERATIONS_H
 
+#include "computed_field/computed_field.h"
+#include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
+#include "general/multi_range.h"
 #include "selection/node_selection.h"
 
 /*
@@ -17,21 +21,40 @@ Global functions
 ----------------
 */
 
-int destroy_listed_nodes(struct LIST(FE_node) *node_list,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct FE_node_selection *node_selection);
+struct LIST(FE_node) *
+	FE_node_list_from_fe_region_selection_ranges_condition(
+		struct FE_region *fe_region, struct FE_node_selection *node_selection,
+		int selected_flag, struct Multi_range *node_ranges,
+		struct Computed_field *conditional_field, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 20 June 2002
+LAST MODIFIED : 3 March 2003
 
 DESCRIPTION :
-Destroys all the nodes in <node_list> that are not accessed outside
-<node_manager>, the groups in <node_group_manager> and <node_selection>.
-Nodes in use by elements in the <element_manager> cannot be destroyed so are
-immediately ruled out in order to keep them in the node groups and selection.
-<node_group_manager>, <element_manager> and <node_selection> are optional.
-Upon return <node_list> contains all the nodes that could not be destroyed.
+Creates and returns an node list that is the intersection of:
+- all the nodes in <fe_region>;
+- all nodes in the <node_selection> if <selected_flag> is set;
+- all nodes in the given <node_ranges>, if any.
+- all nodes for which the <conditional_field> evaluates as "true"
+  in its centre at the specified <time>
+Up to the calling function to destroy the returned node list.
+==============================================================================*/
+
+int FE_region_change_node_identifiers(struct FE_region *fe_region,
+	int node_offset, struct Computed_field *sort_by_field, FE_value time);
+/*******************************************************************************
+LAST MODIFIED : 17 January 2003
+
+DESCRIPTION :
+Changes the identifiers of all nodes in <fe_region>.
+If <sort_by_field> is NULL, adds <node_offset> to the identifiers.
+If <sort_by_field> is specified, it is evaluated for all nodes
+in <fe_region> and they are sorted by it - changing fastest with the first
+component and keeping the current order where the field has the same values.
+Checks for and fails if attempting to give any of the nodes in <fe_region> an
+identifier already used by a node in the same master FE_region.
+Calls to this function should be enclosed in FE_region_begin_change/end_change.
+Note function avoids iterating through FE_region node lists as this is not
+allowed during identifier changes.
 ==============================================================================*/
 
 #endif /* !defined (NODE_OPERATIONS_H) */

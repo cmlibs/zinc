@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -132,6 +132,7 @@ like the number of components.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -1541,6 +1542,26 @@ Computed_field_is_defined_at_node.
 	return (return_code);
 } /* Computed_field_is_defined_at_node_conditional */
 
+int Computed_field_is_in_list(struct Computed_field *field,
+	void *field_list_void)
+/*******************************************************************************
+LAST MODIFIED : 5 February 2003
+
+DESCRIPTION :
+Computed_field conditional/iterator function returning true if <field> is in the
+computed <field_list>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_in_list);
+	return_code = IS_OBJECT_IN_LIST(Computed_field)(field,
+		(struct LIST(Computed_field) *)field_list_void);
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_in_list */
+
 int Computed_field_is_true_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time)
 /*******************************************************************************
@@ -1718,13 +1739,13 @@ FE_node conditional function version of Computed_field_is_defined_at_node.
 {
 	int return_code;
 
-	ENTER(Computed_field_is_defined_at_node_conditional);
+	ENTER(FE_node_has_Computed_field_defined);
 	return_code=
 		Computed_field_is_defined_at_node((struct Computed_field *)field_void,node);
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_is_defined_at_node_conditional */
+} /* FE_node_has_Computed_field_defined */
 
 int Computed_field_depends_on_Computed_field(struct Computed_field *field,
 	struct Computed_field *other_field)
@@ -1774,49 +1795,32 @@ determine if the field in use needs updating.
 	return (return_code);
 } /* Computed_field_depends_on_Computed_field */
 
-static int Computed_field_is_source_field_conditional(
-	struct Computed_field *field, void *other_field_void)
-/*******************************************************************************
-LAST MODIFIED : 23 May 2001
-
-DESCRIPTION :
-List conditional function returning true if <field> is a source field of
-<other_field>, ie. <other_field> depends on <field>.
-???RC Review Manager Messages Here
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_source_field_conditional);
-	return_code = Computed_field_depends_on_Computed_field(
-		(struct Computed_field *)other_field_void, field);
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_source_field_conditional */
-
 int Computed_field_depends_on_Computed_field_in_list(
 	struct Computed_field *field, struct LIST(Computed_field) *field_list)
 /*******************************************************************************
-LAST MODIFIED : 1 June 2001
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Returns true if <field> depends on any field in <field_list>.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 
 	ENTER(Computed_field_depends_on_Computed_field_in_list);
 	if (field && field_list)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(Computed_field)(
-			Computed_field_is_source_field_conditional, (void *)field, field_list))
+		if (IS_OBJECT_IN_LIST(Computed_field)(field, field_list))
 		{
 			return_code = 1;
 		}
 		else
 		{
 			return_code = 0;
+			for (i = 0; (i < field->number_of_source_fields) && (!return_code); i++)
+			{
+				return_code = Computed_field_depends_on_Computed_field_in_list(
+					field->source_fields[i], field_list);
+			}
 		}
 	}
 	else
@@ -1829,6 +1833,124 @@ Returns true if <field> depends on any field in <field_list>.
 
 	return (return_code);
 } /* Computed_field_depends_on_Computed_field_in_list */
+
+int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
+	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 5 February 2003
+
+DESCRIPTION :
+Returns true if <field> satisfies <conditional_function> with <user_data>. If
+not, recursively calls this function for each of its source fields until one
+satisfies the function for a true result, or all have failed for false.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_or_ancestor_satisfies_condition);
+	if (field && conditional_function)
+	{
+		if ((conditional_function)(field, user_data))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+			for (i = 0; (i < field->number_of_source_fields) && (!return_code); i++)
+			{
+				return_code = Computed_field_or_ancestor_satisfies_condition(
+					field->source_fields[i], conditional_function, user_data);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_or_ancestor_satisfies_condition.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_or_ancestor_satisfies_condition */
+
+int Computed_field_for_each_ancestor(struct Computed_field *field,
+	LIST_ITERATOR_FUNCTION(Computed_field) *iterator_function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 2 April 2003
+
+DESCRIPTION :
+For <field> and all of its source Computed_fields, calls <iterator_function>
+with <user_data>. Iteration stops if a single iterator_function call returns 0.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_for_each_ancestor);
+	if (field && iterator_function)
+	{
+		return_code = (iterator_function)(field, user_data);
+		for (i = 0; (i < field->number_of_source_fields) && return_code; i++)
+		{
+			return_code = Computed_field_for_each_ancestor(
+				field->source_fields[i], iterator_function, user_data);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_for_each_ancestor.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_for_each_ancestor */
+
+int Computed_field_add_to_list_if_depends_on_list(
+	struct Computed_field *field, void *field_list_void)
+/*******************************************************************************
+LAST MODIFIED : 23 January 2003
+
+DESCRIPTION :
+If <field> depends on a field in <field_list> it is added to the list.
+Checks to see if it is already in the list.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(Computed_field) *field_list;
+
+	ENTER(Computed_field_add_to_list_if_depends_on_list);
+	if (field && (field_list = (struct LIST(Computed_field) *)field_list_void))
+	{
+		if (IS_OBJECT_IN_LIST(Computed_field)(field, field_list))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			if (Computed_field_depends_on_Computed_field_in_list(field, field_list))
+			{
+				return_code = ADD_OBJECT_TO_LIST(Computed_field)(field, field_list);
+			}
+			else
+			{
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_add_to_list_if_depends_on_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_add_to_list_if_depends_on_list */
 
 int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
@@ -1973,74 +2095,6 @@ is avoided.
 
 	return (return_code);
 } /* Computed_field_evaluate_cache_in_element */
-
-int Computed_field_get_top_level_element_and_xi(struct FE_element *element, 
-	FE_value *xi, int element_dimension, struct FE_element **top_level_element,
-	FE_value *top_level_xi, int *top_level_element_dimension)
-/*******************************************************************************
-LAST MODIFIED : 30 October 2000
-
-DESCRIPTION :
-Finds the <top_level_element>, <top_level_xi> and <top_level_element_dimension>
-for the given <element> and <xi>.  If <top_level_element> is already set it 
-is checked and the <top_level_xi> calculated.
-==============================================================================*/
-{
-	FE_value element_to_top_level[9];
-	int i,j,k,return_code;
-
-	ENTER(Computed_field_get_top_level_element_and_xi);
-	if (element&&xi&&top_level_element&&top_level_xi&&top_level_element_dimension)
-	{
-		return_code = 1;
-		if (CM_ELEMENT == element->cm.type)
-		{
-			*top_level_element = element;
-			for (i=0;i<element_dimension;i++)
-			{
-				top_level_xi[i]=xi[i];
-			}
-			/* do not set element_to_top_level */
-			*top_level_element_dimension=element_dimension;
-		}
-		else
-		{
-			/* check or get top_level element and xi coordinates for it */
-			if (*top_level_element = FE_element_get_top_level_element_conversion(
-				element,*top_level_element,(struct GROUP(FE_element) *)NULL,
-				-1,element_to_top_level))
-			{
-				/* convert xi to top_level_xi */
-				*top_level_element_dimension = (*top_level_element)->shape->dimension;
-				for (j=0;j<*top_level_element_dimension;j++)
-				{
-					top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
-					for (k=0;k<element_dimension;k++)
-					{
-						top_level_xi[j] +=
-							element_to_top_level[j*(element_dimension+1)+k+1]*xi[k];
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_get_top_level_element_and_xi.  "
-					"No top-level element found to evaluate on");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_top_level_element_and_xi.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_top_level_element_and_xi */
 
 int Computed_field_evaluate_source_fields_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
@@ -2267,7 +2321,7 @@ number_of_components
 			{
 				source=field->derivatives;
 				destination=derivatives;
-				for (i=field->number_of_components*element->shape->dimension;0<i;i--)
+				for (i=field->number_of_components*get_FE_element_dimension(element);0<i;i--)
 				{
 					*destination = *source;
 					source++;
@@ -2737,10 +2791,10 @@ should not be managed at the time it is modified by this function.
 	return (return_code);
 } /* Computed_field_set_values_at_node */
 
-int Computed_field_set_values_at_managed_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values,struct MANAGER(FE_node) *node_manager)
+int Computed_field_set_values_at_node_in_FE_region(struct Computed_field *field,
+	struct FE_node *node,FE_value *values,struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -2763,50 +2817,57 @@ cache is always cleared after calling.
 It is up to calling function to begin/end node manager cache if more than one
 node is being modified.
 Note that the values array will not be modified by this function.
+???RC Inefficient since all fields of the global node are copied. Far better
+is to use FE_node_copy_with_FE_field_list, set values with
+Computed_field_set_values_at_node and merge with FE_region_merge_FE_node.
+However, need computed_field_finite_element to extract the list of FE_fields
+that this Computed_field depends on.
 ==============================================================================*/
 {
 	int return_code;
 	struct FE_node *copy_node;
 
-	ENTER(Computed_field_set_values_at_managed_node);
-	return_code=0;
-	if (field&&node&&values&&node_manager)
+	ENTER(Computed_field_set_values_at_node_in_FE_region);
+	return_code = 0;
+	if (field && node && values && fe_region)
 	{
 		/* CREATE with template node is assumed to copy its values */
-		if (copy_node=CREATE(FE_node)(0,node))
+		if (copy_node = CREATE(FE_node)(get_FE_node_identifier(node),
+			(struct FE_region *)NULL, node))
 		{
 			/* The node must be accessed as the use of cache on the nodes
-				by get values etc. access and deaccessess the nodes */
+				by get values etc. access and deaccesses the nodes */
 			ACCESS(FE_node)(copy_node);
-			return_code=
-				Computed_field_set_values_at_node(field,copy_node,values);
+			return_code = Computed_field_set_values_at_node(field, copy_node, values);
 			/* must clear the cache before MANAGER_MODIFY as previously cached
 				 values may be invalid */
 			Computed_field_clear_cache(field);
 			if (return_code)
 			{
-				return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-					node,copy_node,node_manager);
+				if (FE_region_merge_FE_node(fe_region, copy_node))
+				{
+					return_code = 1;
+				}
 			}
 			DEACCESS(FE_node)(&copy_node);
 		}
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_at_managed_node.  Failed");
+				"Computed_field_set_values_at_node_in_FE_region.  Failed");
 			Computed_field_clear_cache(field);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_at_managed_node.  Invalid argument(s)");
+			"Computed_field_set_values_at_node_in_FE_region.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_values_at_managed_node */
+} /* Computed_field_set_values_at_node_in_FE_region */
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value **values,FE_value time)
@@ -2830,7 +2891,7 @@ It is up to the calling function to deallocate the returned values.
 	if (field&&element&&number_in_xi&&values)
 	{
 		return_code=1;
-		element_dimension=element->shape->dimension;
+		element_dimension=get_FE_element_dimension(element);
 		number_of_points=1;
 		for (i=0;(i<element_dimension)&&return_code;i++)
 		{
@@ -2928,7 +2989,7 @@ Note that the values array will not be modified by this function. Also,
 	int return_code;
 
 	ENTER(Computed_field_set_values_in_element);
-	if (field && element && element->shape && number_in_xi && values)
+	if (field && element && number_in_xi && values)
 	{
 		if (field->computed_field_set_values_in_element_function)
 		{
@@ -2962,11 +3023,11 @@ Note that the values array will not be modified by this function. Also,
 	return (return_code);
 } /* Computed_field_set_values_in_element */
 
-int Computed_field_set_values_in_managed_element(struct Computed_field *field,
+int Computed_field_set_values_in_element_in_FE_region(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value *values,
-	struct MANAGER(FE_element) *element_manager)
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 10 March 2003
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -2999,14 +3060,18 @@ Note that the values array will not be modified by this function.
 ==============================================================================*/
 {
 	int return_code;
+	struct CM_element_information cm_information;
 	struct FE_element *copy_element;
 
-	ENTER(Computed_field_set_values_in_managed_element);
+	ENTER(Computed_field_set_values_in_element_in_FE_region);
 	return_code=0;
-	if (field&&element&&number_in_xi&&values&&element_manager)
+	if (field&&element&&number_in_xi&&values&&fe_region)
 	{
 		/* CREATE with template element is assumed to copy its values */
-		if (copy_element=CREATE(FE_element)(element->identifier,element))
+		
+		if (get_FE_element_identifier(element, &cm_information) &&
+			(copy_element = CREATE(FE_element)(&cm_information,
+				(struct FE_element_shape *)NULL, fe_region, element)))
 		{
 			/* The element must be accessed as the use of cache on the elements
 				by get values etc. access and deaccessess the elements */
@@ -3014,8 +3079,7 @@ Note that the values array will not be modified by this function.
 			if (Computed_field_set_values_in_element(field,copy_element,
 				number_in_xi,values))
 			{
-				if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
-					element,copy_element,element_manager))
+				if (FE_region_merge_FE_element(fe_region, copy_element))
 				{
 					return_code=1;
 				}
@@ -3026,19 +3090,19 @@ Note that the values array will not be modified by this function.
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_values_in_managed_element.  Failed");
+				"Computed_field_set_values_in_in_element_in_FE_region.  Failed");
 			Computed_field_clear_cache(field);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_values_in_managed_element.  Invalid argument(s)");
+			"Computed_field_set_values_in_in_element_in_FE_region.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_values_in_managed_element */
+} /* Computed_field_set_values_in_in_element_in_FE_region */
 
 int Computed_field_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi)
@@ -3061,7 +3125,7 @@ Computed_field_set_values_in_[managed_]element.
 	int return_code;
 
 	ENTER(Computed_field_get_native_discretization_in_element);
-	if (field && element && number_in_xi && element->shape &&
+	if (field && element && number_in_xi &&
 		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= get_FE_element_dimension(element)))
 	{
 		if (field->computed_field_get_native_discretization_in_element_function)
@@ -3099,8 +3163,8 @@ Inherits its result from the first source field -- if any.
 	int return_code;
 
 	ENTER(Computed_field_default_get_native_discretization_in_element);
-	if (field&&element&&number_in_xi&&element->shape&&
-		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=element->shape->dimension))
+	if (field&&element&&number_in_xi&&
+		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=get_FE_element_dimension(element)))
 	{
 		if (field->source_fields && (0 < field->number_of_source_fields))
 		{
@@ -3748,10 +3812,10 @@ to modify and destroy it.
 
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group,
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int propagate_field)
 /*******************************************************************************
-LAST MODIFIED : 21 August 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -3778,17 +3842,17 @@ pass in pointers to field cache values.
 
 	ENTER(Computed_field_find_element_xi);
 	if (field && values && (number_of_values == field->number_of_components) &&
-		element && xi && search_element_group)
+		element && xi && search_region)
 	{
 		if (propagate_field && field->computed_field_find_element_xi_function)
 		{
 			return_code = field->computed_field_find_element_xi_function(
-				field, values, number_of_values, element, xi, search_element_group);
+				field, values, number_of_values, element, xi, element_dimension, search_region);
 		}
 		else
 		{
 			return_code = Computed_field_perform_find_element_xi(field,
-				values, number_of_values, element, xi, search_element_group);
+				values, number_of_values, element, xi, element_dimension, search_region);
 		}
 	}
 	else
@@ -4553,14 +4617,12 @@ its name matches the contents of the <other_computed_field_void>.
 
 struct Computed_field_package *CREATE(Computed_field_package)(void)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 7 March 2003
 
 DESCRIPTION :
 Creates a Computed_field_package which is used by the rest of the program to
 access everything to do with computed fields. The computed_field_manager is
-created here, and callbacks for changes in the fe_field_manager are established
-so that wrapper Computed_fields are automatically created and updated to match
-FE_fields.
+created as part of the package.
 ==============================================================================*/
 {
 	struct Computed_field_package *computed_field_package;

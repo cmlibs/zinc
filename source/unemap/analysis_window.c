@@ -3166,14 +3166,29 @@ nodes similar to rig->devices. This FE_node_order_info is also used elsewhere.
 					} break;
 				} /* switch */
 				/* get highlighted signal min,max put in range widget*/
-				update_signal_range_widget_from_highlight_signal(
-					&(analysis_window->interval),
+				if (
 #if defined (UNEMAP_USE_NODES)
-					*(analysis_window->highlight_rig_node),signal_drawing_package
+					analysis_window->highlight_rig_node
 #else
-					**(analysis_window->highlight)
+					analysis_window->highlight && (*analysis_window->highlight)
 #endif /* defined (UNEMAP_USE_NODES)*/
-					);
+					)
+				{
+					update_signal_range_widget_from_highlight_signal(
+						&(analysis_window->interval),
+#if defined (UNEMAP_USE_NODES)
+						*(analysis_window->highlight_rig_node),signal_drawing_package
+#else
+						**(analysis_window->highlight)
+#endif /* defined (UNEMAP_USE_NODES)*/
+						);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"draw_all_signals.  Attempted to dereference NULL pointer");
+					return_code=0;
+				}
 			}	/* if (number_of_signals>0)*/
 		} /* if ((!rig_node_group&&!signal_drawing_package)|| */
 		else

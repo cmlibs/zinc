@@ -10,6 +10,7 @@ Functions for updating values of one computed field from those of another.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
@@ -84,7 +85,7 @@ DESCRIPTION :
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
 	struct FE_node_selection *node_selection;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *fe_region;
 };
 
 static int Computed_field_update_nodal_values_from_source_sub(
@@ -112,8 +113,8 @@ DESCRIPTION :
 				if (Computed_field_evaluate_at_node(data->source_field, node,
 					data->time, data->values))
 				{
-					if (Computed_field_set_values_at_managed_node(data->destination_field,
-						node, data->values, data->node_manager))
+					if (Computed_field_set_values_at_node_in_FE_region(data->destination_field,
+						node, data->values, data->fe_region))
 					{
 						data->success_count++;
 					}
@@ -136,10 +137,10 @@ DESCRIPTION :
 
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
-	struct FE_node_selection *node_selection, FE_value time)
+	struct Cmiss_region *region, struct FE_node_selection *node_selection,
+	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Set <destination_field> in all the nodes in <node_group> or <node_manager> if
@@ -149,10 +150,12 @@ Restricts update to nodes in <node_selection>, if supplied.
 {
 	int return_code;
 	struct Computed_field_update_nodal_values_from_source_data data;
+	struct FE_region *fe_region;
 
 	ENTER(Computed_field_update_nodal_values_from_source);
 	return_code = 0;
-	if (destination_field && source_field && node_manager)
+	if (destination_field && source_field && region && 
+		(fe_region = Cmiss_region_get_FE_region(region)))
 	{
 		if (Computed_field_get_number_of_components(source_field) ==
 			Computed_field_get_number_of_components(destination_field))
@@ -162,25 +165,16 @@ Restricts update to nodes in <node_selection>, if supplied.
 			{
 				data.source_field = source_field;
 				data.destination_field = destination_field;
-				data.node_manager = node_manager;
+				data.fe_region = fe_region;
 				data.node_selection = node_selection;
 				data.selected_count = 0;
 				data.success_count = 0;
 				data.time = time;
 
-				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-				if (node_group)
-				{
-					FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-						Computed_field_update_nodal_values_from_source_sub,
-						(void *)&data, node_group);
-				}
-				else
-				{
-					FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-						Computed_field_update_nodal_values_from_source_sub,
-						(void *)&data, node_manager);
-				}
+				FE_region_begin_change(fe_region);
+				FE_region_for_each_FE_node(fe_region,
+					Computed_field_update_nodal_values_from_source_sub,
+						(void *)&data);
 				if (data.success_count != data.selected_count)
 				{
 					display_message(ERROR_MESSAGE,
@@ -193,7 +187,7 @@ Restricts update to nodes in <node_selection>, if supplied.
 				/* to be safe, clear cache of source and destination fields */
 				Computed_field_clear_cache(source_field);
 				Computed_field_clear_cache(destination_field);
-				MANAGER_END_CACHE(FE_node)(node_manager);
+				FE_region_end_change(fe_region);				
 				DEALLOCATE(data.values);
 			}
 			else
@@ -237,7 +231,7 @@ DESCRIPTION :
 	struct Computed_field *destination_field;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct MANAGER(FE_element) *element_manager;
+	struct FE_region *fe_region;
 };
 
 static int Computed_field_update_element_values_from_source_sub(
@@ -263,7 +257,7 @@ DESCRIPTION :
 	{
 		return_code = 1;
 		/* elements with information only - no faces or lines */
-		if (element->information)
+		if (FE_element_has_FE_field_values(element))
 		{
 			if (Computed_field_get_native_discretization_in_element(
 				data->destination_field, element,
@@ -398,10 +392,10 @@ DESCRIPTION :
 						}
 						if (success)
 						{
-							if (Computed_field_set_values_in_managed_element(
+							if (Computed_field_set_values_in_element_in_FE_region(
 								data->destination_field, element,
 								element_point_ranges_identifier.number_in_xi,
-								values, data->element_manager))
+								values, data->fe_region))
 							{
 								data->success_count++;
 							}
@@ -426,12 +420,10 @@ DESCRIPTION :
 
 int Computed_field_update_element_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct GROUP(FE_element) *element_group,
-	struct MANAGER(FE_element) *element_manager,
-	struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct Cmiss_region *region, struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Set grid-based <destination_field> in all the elements in <element_group> or
@@ -443,10 +435,12 @@ Note the union of these two selections is used if both supplied.
 {
 	int return_code;
 	struct Computed_field_update_element_values_from_source_data data;
+	struct FE_region *fe_region;
 
 	ENTER(Computed_field_update_element_values_from_source);
 	return_code = 0;
-	if (destination_field && source_field && element_manager)
+	if (destination_field && source_field && region && 
+		(fe_region = Cmiss_region_get_FE_region(region)))
 	{
 		if (Computed_field_get_number_of_components(source_field) ==
 			 Computed_field_get_number_of_components(destination_field))
@@ -454,25 +448,16 @@ Note the union of these two selections is used if both supplied.
 			return_code = 1;
 			data.source_field = source_field;
 			data.destination_field = destination_field;
-			data.element_manager = element_manager;
+			data.fe_region = fe_region;
 			data.element_point_ranges_selection = element_point_ranges_selection;
 			data.element_selection = element_selection;
 			data.selected_count = 0;
 			data.success_count = 0;
 			data.time = time;
-			MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-			if (element_group)
-			{
-				FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-					Computed_field_update_element_values_from_source_sub,
-					(void *)&data, element_group);
-			}
-			else
-			{
-				FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-					Computed_field_update_element_values_from_source_sub,
-					(void *)&data, element_manager);
-			}
+			FE_region_begin_change(fe_region);
+			FE_region_for_each_FE_element(fe_region,
+				Computed_field_update_element_values_from_source_sub,
+				(void *)&data);
 			if (data.success_count != data.selected_count)
 			{
 				display_message(ERROR_MESSAGE,
@@ -486,7 +471,7 @@ Note the union of these two selections is used if both supplied.
 			/* to be safe, clear cache of source and destination fields */
 			Computed_field_clear_cache(source_field);
 			Computed_field_clear_cache(destination_field);
-			MANAGER_END_CACHE(FE_element)(element_manager);
+			FE_region_end_change(fe_region);
 		}
 		else
 		{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_selection.c
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Global store of selected elements for group actions and highlighting.
@@ -22,12 +22,14 @@ FULL_DECLARE_CMISS_CALLBACK_TYPES(FE_element_selection_change, \
 
 struct FE_element_selection
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Global store of selected elements for group actions and highlighting.
 ==============================================================================*/
 {
+	/* the FE_region the selection is from */
+	struct FE_region *fe_region;
 	/* flag indicating whether the cache is on */
 	int cache;
 	/* list of all elements currently selected */
@@ -46,6 +48,7 @@ Global store of selected elements for group actions and highlighting.
 Module functions
 ----------------
 */
+
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_element_selection_change)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_element_selection_change, \
@@ -104,14 +107,53 @@ on or if no such changes have occurred.
 	return (return_code);
 } /* FE_element_selection_update */
 
+void FE_element_selection_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes, void *element_selection_void)
+/*******************************************************************************
+LAST MODIFIED : 3 April 2003
+
+DESCRIPTION :
+Callback from <fe_region> with its <changes>.
+Elements removed from the <fe_region> must be removed from the
+<element_selection>.
+==============================================================================*/
+{
+	enum CHANGE_LOG_CHANGE(FE_element) fe_element_change_summary;
+	struct FE_element_selection *element_selection;
+
+	ENTER(FE_element_selection_FE_region_change);
+	if (fe_region && changes &&
+		(element_selection = (struct FE_element_selection *)element_selection_void))
+	{
+		if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes,
+			&fe_element_change_summary) &&
+			(fe_element_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element)))
+		{
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_FE_region,
+				(void *)fe_region, element_selection->element_list);
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_FE_region,
+				(void *)fe_region, element_selection->newly_selected_element_list);
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(FE_element_is_not_in_FE_region,
+				(void *)fe_region, element_selection->newly_unselected_element_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_selection_FE_region_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* FE_element_selection_FE_region_change */
+
 /*
 Global functions
 ----------------
 */
 
-struct FE_element_selection *CREATE(FE_element_selection)(void)
+struct FE_element_selection *CREATE(FE_element_selection)(
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Creates the global store of selected elements for group actions and
@@ -121,28 +163,40 @@ highlighting.
 	struct FE_element_selection *element_selection;
 
 	ENTER(CREATE(FE_element_selection));
-	if (ALLOCATE(element_selection,struct FE_element_selection,1))
+	element_selection = (struct FE_element_selection *)NULL;
+	if (fe_region)
 	{
-		element_selection->cache=0;
-		element_selection->element_list=CREATE(LIST(FE_element))();
-		element_selection->newly_selected_element_list=CREATE(LIST(FE_element))();
-		element_selection->newly_unselected_element_list=CREATE(LIST(FE_element))();
-		element_selection->change_callback_list=
-			CREATE(LIST(CMISS_CALLBACK_ITEM(FE_element_selection_change)))();
-		if (!(element_selection->element_list&&
-			element_selection->newly_selected_element_list&&
-			element_selection->newly_unselected_element_list&&
-			element_selection->change_callback_list))
+		if (ALLOCATE(element_selection,struct FE_element_selection,1))
+		{
+			FE_region_add_callback(fe_region,
+				FE_element_selection_FE_region_change, (void *)element_selection);
+			element_selection->fe_region = ACCESS(FE_region)(fe_region);
+			element_selection->cache=0;
+			element_selection->element_list=CREATE(LIST(FE_element))();
+			element_selection->newly_selected_element_list=CREATE(LIST(FE_element))();
+			element_selection->newly_unselected_element_list=CREATE(LIST(FE_element))();
+			element_selection->change_callback_list=
+				CREATE(LIST(CMISS_CALLBACK_ITEM(FE_element_selection_change)))();
+			if (!(element_selection->element_list&&
+				element_selection->newly_selected_element_list&&
+				element_selection->newly_unselected_element_list&&
+				element_selection->change_callback_list))
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(FE_element_selection).  Could not create lists");
+				DESTROY(FE_element_selection)(&element_selection);
+			}
+		}
+		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(FE_element_selection).  Could not create lists");
-			DESTROY(FE_element_selection)(&element_selection);
+				"CREATE(FE_element_selection).  Not enough memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(FE_element_selection).  Not enough memory");
+			"CREATE(FE_element_selection).  Invalid argument");
 	}
 	LEAVE;
 
@@ -152,7 +206,7 @@ highlighting.
 int DESTROY(FE_element_selection)(
 	struct FE_element_selection **element_selection_address)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Destroys the FE_element_selection.
@@ -165,6 +219,9 @@ Destroys the FE_element_selection.
 	if (element_selection_address&&
 		(element_selection= *element_selection_address))
 	{
+		FE_region_remove_callback(element_selection->fe_region,
+			FE_element_selection_FE_region_change, (void *)element_selection);
+		DEACCESS(FE_region)(&(element_selection->fe_region));
 		DESTROY(LIST(FE_element))(&(element_selection->element_list));
 		DESTROY(LIST(FE_element))(
 			&(element_selection->newly_selected_element_list));
@@ -445,12 +502,14 @@ is currently there. Calls FE_element_selection_update.
 ==============================================================================*/
 {
 	int return_code;
+	struct CM_element_information identifier;
 
 	ENTER(FE_element_selection_unselect_element);
-	if (element_selection&&element)
+	if (element_selection&&element&&
+		get_FE_element_identifier(element, &identifier))
 	{
 		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			element->identifier,element_selection->element_list))
+			&identifier,element_selection->element_list))
 		{
 			ADD_OBJECT_TO_LIST(FE_element)(element,
 				element_selection->newly_unselected_element_list);

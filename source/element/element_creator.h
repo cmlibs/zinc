@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.h
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 17 January 2003
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -29,17 +29,12 @@ Global functions
 
 struct Element_creator *CREATE(Element_creator)(
 	struct Element_creator **element_creator_address,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct Cmiss_region *root_region, char *initial_region_path,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 14 January 2003
 
 DESCRIPTION :
 Creates a Element_creator, giving it the element_manager to put new
@@ -114,26 +109,26 @@ DESCRIPTION :
 Sets the <element_dimension> of any subsequent elements to be created.
 ==============================================================================*/
 
-struct GROUP(FE_element) *Element_creator_get_element_group(
-	struct Element_creator *element_creator);
+int Element_creator_get_region_path(struct Element_creator *element_creator,
+	char **path_address);
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 10 January 2003
 
 DESCRIPTION :
-Returns the group where elements created by the <element_creator> are put.
-???RC Eventually this will get the Region.
+Returns in <path_address> the path to the Cmiss_region where elements created by
+the <element_creator> are put.
+Up to the calling function to DEALLOCATE the returned path.
 ==============================================================================*/
 
-int Element_creator_set_element_group(struct Element_creator *element_creator,
-	struct GROUP(FE_element) *element_group);
+int Element_creator_set_region_path(struct Element_creator *element_creator,
+	char *path);
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 13 January 2003
 
 DESCRIPTION :
-Sets the <element_group> where elements created by <element_creator> are placed.
-The <element_creator> will assume its nodes are to be in the node group of the
-same name, which enables the nodes and elements to be exported as a group.
-???RC Eventually this will set the Region.
+Sets the <path> to the region/FE_region where elements created by
+<element_creator> are placed.
+The <element_creator> assumes its nodes are to come from the same FE_region.
 ==============================================================================*/
 
 int Element_creator_bring_window_to_front(
@@ -143,6 +138,7 @@ LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 Pops the window for <element_creator> to the front of those visible.
+??? De-iconify as well?
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_CREATOR_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : write_fieldml.c
 
-LAST MODIFIED : 29 January 2003
+LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 Functions for exporting finite element data to a file.
@@ -16,6 +16,8 @@ Functions for exporting finite element data to a file.
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#include "region/cmiss_region.h"
+#include "region/cmiss_region_write_info.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -124,25 +126,6 @@ struct Write_FE_region_node_data
 	struct Node_template *node_templates;
 }; /* struct Write_FE_region_node_data */
 
-enum Cmiss_region_write_status
-{
-	CMISS_REGION_NOT_WRITTEN,
-	CMISS_REGION_DECLARED,
-	CMISS_REGION_WRITTEN
-};
-
-struct Cmiss_region_write_info
-{
-	struct Cmiss_region *region;
-	enum Cmiss_region_write_status status;
-	char *path;
-	int access_count;
-};
-
-DECLARE_LIST_TYPES(Cmiss_region_write_info);
-
-FULL_DECLARE_INDEXED_LIST_TYPE(Cmiss_region_write_info);
-
 /*
 Module functions
 ----------------
@@ -152,45 +135,6 @@ Module functions
 Module functions
 ----------------
 */
-#if ! defined (CMGUI_REGIONS)
-/* Temporary delarations so that the code compiles before regions exist.
-   Till end */
-struct Cmiss_region *ACCESS(Cmiss_region)(struct Cmiss_region *region)
-{
-	return (region);
-}
-int DEACCESS(Cmiss_region)(struct Cmiss_region **region)
-{
-	*region=(struct Cmiss_region *)NULL;
-	return (1);
-}
-int Cmiss_region_get_child_region_from_path(struct Cmiss_region *region, 
-	char *path, struct Cmiss_region **write_path_region, char **write_path)
-{
-	*write_path = path;
-	*write_path_region = region;
-	return(1);
-}
-int FE_region_get_master_FE_region(struct FE_region *region,
-	struct FE_region **master_region)
-{
-	*master_region = region;
-	return(1);
-}
-int Cmiss_region_get_region_from_path(struct Cmiss_region *root_region,
-	char *path, struct Cmiss_region **region)
-{
-	USE_PARAMETER(path);
-	*region = root_region;
-	return(1);
-}
-#define FE_region_for_each_FE_field(fe_region, function, user_data) FOR_EACH_OBJECT_IN_MANAGER(FE_field)(function, user_data, fe_region->fe_field_manager)
-#define FE_region_for_each_FE_node(fe_region, function, user_data) FOR_EACH_OBJECT_IN_GROUP(FE_node)(function, user_data, fe_region->node_group)
-#define FE_region_for_each_FE_element(fe_region, function, user_data) FOR_EACH_OBJECT_IN_GROUP(FE_element)(function, user_data, fe_region->element_group)
-#define Cmiss_region_get_FE_region(region) region->fe_region
-#define get_FE_node_identifier get_FE_node_cm_node_identifier
-/* end Temporary delarations so that the code compiles before regions exist. */
-#endif /* ! defined (CMGUI_REGIONS) */
 
 static int indent_fprintf(FILE *file, int indent, char *format, ... )
 /*******************************************************************************
@@ -214,185 +158,6 @@ Writes to a file prepending the indent level number of spaces to the front.
 
 	return (return_code);
 } /* indent_fprintf */
-
-struct Cmiss_region_write_info *CREATE(Cmiss_region_write_info)(void)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Cmiss_region_write_info *write_info;
-
-	ENTER(CREATE(Cmiss_region_write_info));
-	if (ALLOCATE(write_info, struct Cmiss_region_write_info, 1))
-	{
-		write_info->region = (struct Cmiss_region *)NULL;
-		write_info->status = CMISS_REGION_NOT_WRITTEN;
-		write_info->path = (char *)NULL;
-		write_info->access_count = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Cmiss_region_write_info).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (write_info);
-} /* CREATE(Cmiss_region_write_info) */
-
-int DESTROY(Cmiss_region_write_info)(
-	struct Cmiss_region_write_info **write_info_address)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_region_write_info *write_info;
-
-	ENTER(DESTROY(Cmiss_region_write_info));
-	if (write_info_address && (write_info = *write_info_address))
-	{
-		if (write_info->region)
-		{
-			DEACCESS(Cmiss_region)(&(write_info->region));
-		}
-		if (write_info->path)
-		{
-			DEALLOCATE(write_info->path);
-		}
-		DEALLOCATE(*write_info_address);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Cmiss_region_write_info).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Cmiss_region_write_info) */
-
-DECLARE_OBJECT_FUNCTIONS(Cmiss_region_write_info)
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Cmiss_region_write_info, region, \
-	struct Cmiss_region *, compare_pointer)
-
-DECLARE_INDEXED_LIST_FUNCTIONS(Cmiss_region_write_info)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Cmiss_region_write_info, \
-	region, struct Cmiss_region *, compare_pointer)
-
-int set_Cmiss_region_write_info(
-	struct LIST(Cmiss_region_write_info) *write_info_list,
-	struct Cmiss_region *region, enum Cmiss_region_write_status write_status,
-	char *path)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_region_write_info *write_info;
-
-	ENTER(set_Cmiss_region_write_info);
-	if (write_info_list && region && path &&
-		((CMISS_REGION_DECLARED == write_status) ||
-			(CMISS_REGION_WRITTEN == write_status)))
-	{
-		return_code = 1;
-		if (write_info = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_region_write_info,region)(
-			region, write_info_list))
-		{
-			/* only need to handle updating from DECLARED to WRITTEN */
-			if (CMISS_REGION_DECLARED == write_info->status)
-			{
-				write_info->status = write_status;
-			}
-		}
-		else
-		{
-			if (write_info = CREATE(Cmiss_region_write_info)())
-			{
-				write_info->region = ACCESS(Cmiss_region)(region);
-				write_info->status = write_status;
-				write_info->path = duplicate_string(path);
-				if (!(write_info->path && ADD_OBJECT_TO_LIST(Cmiss_region_write_info)(
-					write_info,	write_info_list)))
-				{
-					DESTROY(Cmiss_region_write_info)(&write_info);
-					return_code = 0;
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"set_Cmiss_region_write_info.  Could not set info");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Cmiss_region_write_info.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Cmiss_region_write_info */
-
-int get_Cmiss_region_write_info(
-	struct LIST(Cmiss_region_write_info) *write_info_list,
-	struct Cmiss_region *region,
-	enum Cmiss_region_write_status *write_status_address,
-	char **path_address)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-The returned path is not to be deallocated.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_region_write_info *write_info;
-
-	ENTER(get_Cmiss_region_write_info);
-	if (write_info_list && region && write_status_address && path_address)
-	{
-		return_code = 1;
-		if (write_info = FIND_BY_IDENTIFIER_IN_LIST(Cmiss_region_write_info,region)(
-			region, write_info_list))
-		{
-			*write_status_address = write_info->status;
-			*path_address = write_info->path;
-		}
-		else
-		{
-			*write_status_address = CMISS_REGION_NOT_WRITTEN;
-			*path_address = (char *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Cmiss_region_write_info.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_Cmiss_region_write_info */
 
 static int write_element_xi_value(FILE *output_file,struct FE_element *element,
 	FE_value *xi)
@@ -3343,7 +3108,7 @@ in the header.
 	return (return_code);
 } /* write_FE_region_element */
 
-int write_FE_region(FILE *output_file, int indent, struct FE_region *fe_region,
+static int write_FE_region(FILE *output_file, int indent, struct FE_region *fe_region,
 	int write_elements, int write_nodes, struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 23 January 2003
@@ -3465,7 +3230,7 @@ If <field_order_info> contains fields, they are written in that order.
 	return (return_code);
 } /* write_FE_region */
 
-int write_Cmiss_region(FILE *output_file, struct Cmiss_region *region,
+static int write_Cmiss_region(FILE *output_file, struct Cmiss_region *region,
 	struct Cmiss_region *root_region, int force_no_master_region,
 	char *write_path, struct Cmiss_region *write_region, int indent,
 	int write_elements, int write_nodes, struct FE_field_order_info *field_order_info,

@@ -258,7 +258,7 @@ DESCRIPTION :
 
 int execute_comfile(char *file_name,struct Execute_command *execute_command)
 /******************************************************************************
-LAST MODIFIED : 5 November 1997
+LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Opens, executes and then closes a com file.  No window is created.
@@ -283,11 +283,12 @@ Opens, executes and then closes a com file.  No window is created.
 					fscanf(comfile," ");
 				}
 				fclose(comfile);
+				return_code=1;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,"Could not open: %s",file_name);
-				return_code=1;
+				return_code=0;
 			}
 		}
 		else

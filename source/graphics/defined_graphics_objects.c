@@ -132,9 +132,15 @@ graphics_objects that don't come from finite_elements?
 					(label_graphics_object = tick_graphics_object->nextobject) &&
 					(g_POINTSET == label_graphics_object->object_type))
 				{
-					GT_object_delete_time(bar_graphics_object,time);
-					GT_object_delete_time(tick_graphics_object,time);
-					GT_object_delete_time(label_graphics_object,time);
+					GT_object_remove_primitives_at_time(bar_graphics_object,time,
+						(GT_object_primitive_object_name_conditional_function *)NULL,
+						NULL);
+					GT_object_remove_primitives_at_time(tick_graphics_object,time,
+						(GT_object_primitive_object_name_conditional_function *)NULL,
+						NULL);
+					GT_object_remove_primitives_at_time(label_graphics_object,time,
+						(GT_object_primitive_object_name_conditional_function *)NULL,
+						NULL);
 					/* valid existing colour_bar */
 					return_code=1;
 				}

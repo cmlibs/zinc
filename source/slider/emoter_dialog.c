@@ -72,17 +72,13 @@ DESCRIPTION :
 		movie_playing;
 	float time;
 	struct Colour viewer_background_colour;
+	struct Cmiss_region *region;
 	struct Emoter_slider *active_slider, **sliders;
 	struct Execute_command *execute_command;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
+	struct MANAGER(FE_basis) *basis_manager;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(Control_curve) *control_curve_manager;
 	struct EM_Object *em_object;
 	struct Scene *viewer_scene;
@@ -157,23 +153,10 @@ DESCRIPTION :
 		play_max_text, play_min_text, mode_subform,
 		mode_text, solid_motion_button, movie_control_form,
 		play_button, movie_framerate_text, input_sequence_button;
-	struct GROUP(FE_node) *minimum_nodegroup;
-	struct GROUP(FE_element) *minimum_elementgroup;
+	struct Cmiss_region *minimum_region;
 	struct Shell_list_item *shell_list_item;
 	struct Movie_graphics *movie;
 }; /* struct Emoter_dialog */
-
-struct Update_node_data
-/*******************************************************************************
-LAST MODIFIED : 2 June 1997
-
-DESCRIPTION :
-==============================================================================*/
-{
-	float new_slider_value,old_slider_value;
-	struct MANAGER(FE_node) *node_manager;
-	struct Emoter_slider *slider;
-}; /* struct Update_node_data */
 
 /*
 Module functions
@@ -260,8 +243,10 @@ Updates the node locations for the <emoter_slider>
 	float euler_angles[3];
 	gtMatrix transformation; /* 4 x 4 */
 	int i,j,k,offset,return_code,versions;
+	struct Cmiss_region *input_sequence;
 	struct FE_field_component coordinate_field_component;
 	struct FE_node *node,*temp_node;
+	struct FE_region *fe_region;
 	struct EM_Object *em_object;
 
 	ENTER(emoter_update_nodes);
@@ -271,156 +256,171 @@ Updates the node locations for the <emoter_slider>
 		em_object=shared_data->em_object;
 		if (0<em_object->n_nodes)
 		{
-			if ((node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-				(em_object->index)[0],shared_data->node_manager))&&
-				(coordinate_field_component.field=get_FE_node_default_coordinate_field(
-				node)))
+			if ((fe_region=Cmiss_region_get_FE_region(shared_data->region))&&
+				(node=FE_region_get_FE_node_from_identifier(fe_region,
+				(em_object->index)[0]))&&(coordinate_field_component.field=
+				get_FE_node_default_coordinate_field(node)))
 			{
-				if (temp_node=CREATE(FE_node)(0,(struct FE_node *)NULL))
+				/* Read from an input sequence which the emoter is overriding */
+				if (shared_data->input_sequence)
 				{
-					/* Read from an input sequence which the emoter is overriding */
-					if (shared_data->input_sequence)
+					sprintf(input_filename,shared_data->input_sequence,
+						shared_data->time);
+					if (input_file = fopen(input_filename, "r"))
 					{
-						sprintf(input_filename,shared_data->input_sequence,
-							shared_data->time);
-						if (input_file = fopen(input_filename, "r"))
+						if (input_sequence=read_exregion_file(input_file,shared_data->basis_manager,
+							(struct FE_import_time_index *)NULL))
 						{
-							read_FE_node_group(input_file,shared_data->fe_field_manager,
-								(struct FE_time *)NULL,
-								shared_data->node_manager,
-								shared_data->element_manager,
-								shared_data->node_group_manager,
-								shared_data->data_group_manager,
-								shared_data->element_group_manager);
-							fclose(input_file);
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-				"emoter_update_nodes.  Unable to import node file %s", input_filename);
-							return_code=0;							
-						}
-					}
-
-					MANAGER_BEGIN_CACHE(FE_node)(shared_data->node_manager);
-
-					/* perform EM reconstruction */
-					i=0;
-					offset=em_object->m;
-					while (return_code&&(i<em_object->n_nodes))
-					{
-						if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-							(em_object->index)[i],shared_data->node_manager))
-						{
-							if (COPY(FE_node)(temp_node,node))
+							ACCESS(Cmiss_region)(input_sequence);
+							if (Cmiss_regions_FE_regions_can_be_merged(
+								shared_data->region, input_sequence))
 							{
-								position[0] = 0;
- 								position[1] = 0;
- 								position[2] = 0;
-								u=(em_object->u)+(3*i);
-								weights=shared_data->weights + SOLID_BODY_MODES;
-								for (k=shared_data->mode_limit;k>0;k--)
+								if (!Cmiss_regions_merge_FE_regions(
+									shared_data->region, input_sequence))
 								{
-									position[0] += u[0]*(*weights);
-									position[1] += u[1]*(*weights);
-									position[2] += u[2]*(*weights);
-									u += offset;
-									weights++;
-								}
-
-								if ( solid_body_motion )
-								{
-									if (shared_data->transformation_scene_object)
-									{
-										euler_angles[0] = shared_data->weights[5];
-										euler_angles[1] = shared_data->weights[4];
-										euler_angles[2] = shared_data->weights[3];
-										euler_to_gtMatrix(euler_angles, transformation);
-										transformation[3][0] = shared_data->weights[0];
-										transformation[3][1] = shared_data->weights[1];
-										transformation[3][2] = shared_data->weights[2];
-										Scene_object_set_transformation(
-											shared_data->transformation_scene_object,
-											&transformation);
-									}
-									else
-									{
-										/* Need to apply rotations in reverse order */
-										weights = shared_data->weights + 5;
-										temp_sin = sin( -*weights );
-										temp_cos = cos( -*weights );
-										temp_two = temp_cos * position[0] - temp_sin * position[1];
-										position[1] = temp_sin * position[0] + temp_cos * position[1];
-										position[0] = temp_two;
-										weights--;
-										
-										temp_sin = sin( -*weights );
-										temp_cos = cos( -*weights );
-										temp_two = temp_cos * position[2] - temp_sin * position[0];
-										position[0] = temp_sin * position[2] + temp_cos * position[0];
-										position[2] = temp_two;
-										weights--;
-										
-										temp_sin = sin( -*weights );
-										temp_cos = cos( -*weights );
-										temp_two = temp_cos * position[1] - temp_sin * position[2];
-										position[2] = temp_sin * position[1] + temp_cos * position[2];
-										position[1] = temp_two;
-										weights--;
-										
-										position[2] -= *weights;
-										weights--;
-										position[1] -= *weights;
-										weights--;
-										position[0] -= *weights;
-									}
-								}
-
-								for (k = 0 ; k < 3 ; k++)
-								{
-									coordinate_field_component.number = k;
-									versions = get_FE_node_field_component_number_of_versions(
-										temp_node, coordinate_field_component.field, k);
-									for (j = 0 ; j < versions ; j++)
-									{
-										return_code=set_FE_nodal_FE_value_value(temp_node,
-											&coordinate_field_component, j, FE_NODAL_VALUE,
-											/*time*/0, (FE_value)position[k]);
-									}
-								}
-
-								if (return_code)
-								{
-									return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
-										cm_node_identifier)(node,temp_node,
-										shared_data->node_manager);
+									display_message(ERROR_MESSAGE,
+										"Error merging elements from file: %s", input_filename);
+									return_code = 0;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"emoter_update_nodes.  Could not copy node");
-								return_code=0;
+									"Contents of file %s not compatible with global objects",
+									input_filename);
+								return_code = 0;
+							}
+							DEACCESS(Cmiss_region)(&input_sequence);
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"Unable to parse node file %s", input_filename);
+							return_code=0;							
+						}
+						fclose(input_file);
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"emoter_update_nodes.  Unable to import node file %s", input_filename);
+						return_code=0;							
+					}
+				}
+
+				FE_region_begin_change(fe_region);
+				
+				/* perform EM reconstruction */
+				i=0;
+				offset=em_object->m;
+				while (return_code&&(i<em_object->n_nodes))
+				{
+					if ((node=FE_region_get_FE_node_from_identifier(fe_region,
+						(em_object->index)[i])))
+					{
+						if (temp_node=CREATE(FE_node)((em_object->index)[i],
+							(struct FE_region *)NULL,node))
+						{
+							position[0] = 0;
+							position[1] = 0;
+							position[2] = 0;
+							u=(em_object->u)+(3*i);
+							weights=shared_data->weights + SOLID_BODY_MODES;
+							for (k=shared_data->mode_limit;k>0;k--)
+							{
+								position[0] += u[0]*(*weights);
+								position[1] += u[1]*(*weights);
+								position[2] += u[2]*(*weights);
+								u += offset;
+								weights++;
+							}
+
+							if ( solid_body_motion )
+							{
+								if (shared_data->transformation_scene_object)
+								{
+									euler_angles[0] = shared_data->weights[5];
+									euler_angles[1] = shared_data->weights[4];
+									euler_angles[2] = shared_data->weights[3];
+									euler_to_gtMatrix(euler_angles, transformation);
+									transformation[3][0] = shared_data->weights[0];
+									transformation[3][1] = shared_data->weights[1];
+									transformation[3][2] = shared_data->weights[2];
+									Scene_object_set_transformation(
+										shared_data->transformation_scene_object,
+										&transformation);
+								}
+								else
+								{
+									/* Need to apply rotations in reverse order */
+									weights = shared_data->weights + 5;
+									temp_sin = sin( -*weights );
+									temp_cos = cos( -*weights );
+									temp_two = temp_cos * position[0] - temp_sin * position[1];
+									position[1] = temp_sin * position[0] + temp_cos * position[1];
+									position[0] = temp_two;
+									weights--;
+										
+									temp_sin = sin( -*weights );
+									temp_cos = cos( -*weights );
+									temp_two = temp_cos * position[2] - temp_sin * position[0];
+									position[0] = temp_sin * position[2] + temp_cos * position[0];
+									position[2] = temp_two;
+									weights--;
+										
+									temp_sin = sin( -*weights );
+									temp_cos = cos( -*weights );
+									temp_two = temp_cos * position[1] - temp_sin * position[2];
+									position[2] = temp_sin * position[1] + temp_cos * position[2];
+									position[1] = temp_two;
+									weights--;
+										
+									position[2] -= *weights;
+									weights--;
+									position[1] -= *weights;
+									weights--;
+									position[0] -= *weights;
+								}
+							}
+
+							for (k = 0 ; k < 3 ; k++)
+							{
+								coordinate_field_component.number = k;
+								versions = get_FE_node_field_component_number_of_versions(
+									temp_node, coordinate_field_component.field, k);
+								for (j = 0 ; j < versions ; j++)
+								{
+									return_code=set_FE_nodal_FE_value_value(temp_node,
+										&coordinate_field_component, j, FE_NODAL_VALUE,
+										/*time*/0, (FE_value)position[k]);
+								}
+							}
+
+							if (return_code)
+							{
+								if(!FE_region_merge_FE_node(fe_region, temp_node))
+								{
+									return_code = 0;
+								}
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"emoter_update_nodes.  Unknown node %d",
-								(em_object->index)[i]);
+								"emoter_update_nodes.  Could not copy node");
 							return_code=0;
 						}
-						i++;
 					}
-					MANAGER_END_CACHE(FE_node)(shared_data->node_manager);
-					DESTROY(FE_node)(&temp_node);
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"emoter_update_nodes.  Unknown node %d",
+							(em_object->index)[i]);
+						return_code=0;
+					}
+					i++;
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"emoter_update_nodes.  Could not create temp_node");
-					return_code=0;
-				}
+				FE_region_end_change(fe_region);
 			}
 			else
 			{
@@ -1066,8 +1066,6 @@ Callback for the emoter dialog - tidies up all details - mem etc
 ==============================================================================*/
 {
 	struct Emoter_dialog *emoter_dialog;
-	struct GROUP(FE_element) *temp_fe_element_group;
-	struct GROUP(FE_node) *temp_fe_node_group;
 
 	ENTER(emoter_dialog_destroy_CB);
 	USE_PARAMETER(user_data);
@@ -1092,19 +1090,9 @@ Callback for the emoter dialog - tidies up all details - mem etc
 		DEALLOCATE(emoter_dialog->shared->sliders);
 		destroy_EM_Object(&(emoter_dialog->shared->em_object));
 
-		if( emoter_dialog->minimum_elementgroup )
+		if(emoter_dialog->minimum_region)
 		{
-			temp_fe_element_group = emoter_dialog->minimum_elementgroup;
-			DEACCESS(GROUP(FE_element))(&(emoter_dialog->minimum_elementgroup));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(temp_fe_element_group,
-				emoter_dialog->shared->element_group_manager);
-		}
-		if ( emoter_dialog->minimum_nodegroup )
-		{
-			temp_fe_node_group = emoter_dialog->minimum_nodegroup;
-			DEACCESS(GROUP(FE_node))(&(emoter_dialog->minimum_nodegroup));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(temp_fe_node_group,
-				emoter_dialog->shared->node_group_manager);
+			DEACCESS(Cmiss_region)(&emoter_dialog->minimum_region);
 		}
 
 		destroy_Shell_list_item(&(emoter_dialog->shell_list_item));
@@ -4059,11 +4047,14 @@ DESCRIPTION :
 	char value_text_string[20];
 	int i, *node_numbers, number_of_nodes, return_code;
 	struct FE_node *node;
+	struct FE_region *minimum_fe_region, *root_fe_region;
+	struct LIST(FE_node) *node_list;
 
 	ENTER(emoter_set_mode_limit);
 
 	if ( emoter_dialog )
 	{
+		return_code = 1;
 		if ( new_value > emoter_dialog->shared->number_of_modes )
 		{
 			new_value = emoter_dialog->shared->number_of_modes;
@@ -4081,21 +4072,48 @@ DESCRIPTION :
 		if ( node_numbers = emoter_dialog->shared->em_object->minimum_nodes )
 		{
 			number_of_nodes = new_value;
-			if ( emoter_dialog->minimum_nodegroup )
+			root_fe_region = Cmiss_region_get_FE_region(
+				emoter_dialog->shared->region);
+			if (emoter_dialog->minimum_region)
 			{
-				MANAGED_GROUP_BEGIN_CACHE(FE_node)(emoter_dialog->minimum_nodegroup);
-				REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(emoter_dialog->minimum_nodegroup);
+				minimum_fe_region = Cmiss_region_get_FE_region(
+					emoter_dialog->minimum_region);
+				FE_region_begin_change(minimum_fe_region);
 
-				return_code = 0;
+				/* Remove all the nodes from the region */
+				node_list = CREATE(LIST(FE_node))();
+				FE_region_for_each_FE_node(minimum_fe_region,
+					ensure_FE_node_is_in_list, (void *)node_list);
+				FE_region_remove_FE_node_list(minimum_fe_region, node_list);
+				DESTROY(LIST(FE_node))(&node_list);
+			}
+			else
+			{
+				if ((emoter_dialog->minimum_region = CREATE(Cmiss_region)())&&
+					(minimum_fe_region = CREATE(FE_region)(root_fe_region,
+					emoter_dialog->shared->basis_manager))&&
+					Cmiss_region_add_child_region(emoter_dialog->shared->region,
+					emoter_dialog->minimum_region, "minimum_set", /*position*/-1))
+				{
+					FE_region_begin_change(minimum_fe_region);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"emoter_set_mode_limit.  Unable to create minimum region.");
+					return_code = 0;
+				}
+			}
+					
+			if (return_code)
+			{
 				for ( i = 0 ; i < number_of_nodes ; i++ )
 				{
-					if ( ( node_numbers[i] != -1 ) &&
-						!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-						node_numbers[i],emoter_dialog->minimum_nodegroup))
+					if ( node_numbers[i] != -1 )
 					{
-						if ( (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-							node_numbers[i],emoter_dialog->shared->node_manager))&&
-							ADD_OBJECT_TO_GROUP(FE_node)(node,emoter_dialog->minimum_nodegroup))
+						if ((node=FE_region_get_FE_node_from_identifier(root_fe_region,
+							node_numbers[i]))&&FE_region_merge_FE_node(minimum_fe_region,
+							node))
 						{
 							return_code = 1;
 						}
@@ -4106,85 +4124,7 @@ DESCRIPTION :
 						}
 					}
 				}
-
-				MANAGED_GROUP_END_CACHE(FE_node)(emoter_dialog->minimum_nodegroup);
-			}
-			else
-			{
-				if ( emoter_dialog->minimum_nodegroup
-					= CREATE_GROUP(FE_node)("minimum_set"))
-				{
-					return_code = 0;
-					for ( i = 0 ; i < number_of_nodes ; i++ )
-					{
-						if ( ( node_numbers[i] != -1 ) &&
-							!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-							node_numbers[i],emoter_dialog->minimum_nodegroup))
-						{
-							if ( (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-								node_numbers[i],emoter_dialog->shared->node_manager))&&
-								ADD_OBJECT_TO_GROUP(FE_node)(node,emoter_dialog->minimum_nodegroup))
-							{
-								return_code = 1;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"emoter_set_mode_limit.  Unable to add node %d", i);
-							}
-						}
-					}
-					if ( return_code )
-					{
-						ACCESS(GROUP(FE_node))( emoter_dialog->minimum_nodegroup );
-						if (ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(emoter_dialog->minimum_nodegroup,
-							emoter_dialog->shared->node_group_manager))
-						{
-							if ( emoter_dialog->minimum_elementgroup
-								= CREATE_GROUP(FE_element)("minimum_set"))
-							{
-								ACCESS(GROUP(FE_element))( emoter_dialog->minimum_elementgroup );
-								if (ADD_OBJECT_TO_MANAGER(GROUP(FE_element))(emoter_dialog->minimum_elementgroup,
-									emoter_dialog->shared->element_group_manager))
-								{
-									return_code = 1;
-								}
-								else
-								{
-									DEACCESS(GROUP(FE_element))( &(emoter_dialog->minimum_elementgroup) );
-									display_message(ERROR_MESSAGE,
-										"emoter_set_mode_limit.  Could not add element group to manager");
-									return_code=0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"emoter_set_mode_limit.  Could not create element group");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"emoter_set_mode_limit.  Could not add group to manager");
-							DEACCESS(GROUP(FE_node))( &(emoter_dialog->minimum_nodegroup) );
-							return_code=0;
-						}
-					}
-					else
-					{
-					display_message(ERROR_MESSAGE,
-						"emoter_set_mode_limit.  No nodes in group");
-					return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"emoter_set_mode_limit.  Could not create node group");
-					return_code = 0;
-				}
+				FE_region_end_change(minimum_fe_region);
 			}
 		}
 	}
@@ -5512,8 +5452,7 @@ Create emoter controls.
 			emoter_dialog->movie_framerate_text = (Widget)NULL;
 			emoter_dialog->movie_loop = 1;
 			emoter_dialog->movie_every_frame = 1;
-			emoter_dialog->minimum_nodegroup = (struct GROUP(FE_node) *)NULL;
-			emoter_dialog->minimum_elementgroup = (struct GROUP(FE_element) *)NULL;
+			emoter_dialog->minimum_region = (struct Cmiss_region *)NULL;
 			emoter_dialog->shell_list_item = (struct Shell_list_item *)NULL;
 
 			/* make the dialog shell */
@@ -5690,7 +5629,7 @@ DESCRIPTION :
 			index_list_data->maximum_index_nodes)
 		{
 			index_list_data->index_nodes[index_list_data->number_of_index_nodes] =
-				get_FE_node_cm_node_identifier(node);
+				get_FE_node_identifier(node);
 			index_list_data->number_of_index_nodes++;
 			return_code = 1;
 		}
@@ -5726,27 +5665,19 @@ Executes a GFX CREATE EMOTER command.  If there is a emoter dialog
 in existence, then bring it to the front, otherwise create new one.
 ==============================================================================*/
 {
-	char *basis_file_name, minimum_nodeset_flag,
+	char *basis_file_name, minimum_nodeset_flag, *region_path,
 		*transformation_graphics_object_name;
 	int i,*index_nodes,number_of_modes,number_of_nodes,number_of_index_nodes,
 		return_code;
 	struct Create_emoter_slider_data *create_emoter_slider_data;
-	struct GROUP(FE_node) *node_group;
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
 	struct Index_list_data index_list_data;
-	struct MANAGER(FE_node) *node_manager;
+	struct Option_table *option_table;
 	struct Scene_object *transformation_scene_object;
 	struct Scene *transformation_scene;
 	struct Shared_emoter_slider_data *shared_emoter_slider_data;
 	struct EM_Object *em_object;
-	static struct Modifier_entry option_table[]=
-	{
-		{"minimum_nodeset",NULL,NULL,set_char_flag},
-		{"basis",NULL,(void *)1,set_name},
-		{"ngroup",NULL,NULL,set_FE_node_group},
-		{"transformation_graphics_object",NULL,(void *)1,set_name},
-		{"transformation_scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,set_name}
-	};
 
 	ENTER(gfx_create_emoter);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -5755,31 +5686,36 @@ in existence, then bring it to the front, otherwise create new one.
 	if (state&&(create_emoter_slider_data=
 		(struct Create_emoter_slider_data *)
 		create_emoter_slider_data_void)&&
-		(create_emoter_slider_data->emoter_slider_dialog_address)&&		
-		(node_manager=create_emoter_slider_data->node_manager)&&
-		(create_emoter_slider_data->element_manager)&&
-		(create_emoter_slider_data->node_group_manager)&&
-		(create_emoter_slider_data->control_curve_manager)&&
-		(create_emoter_slider_data->execute_command))
+		(create_emoter_slider_data->emoter_slider_dialog_address))
 	{
+		Cmiss_region_get_root_region_path(&region_path);
 		index_nodes = (int *)NULL;
 		number_of_index_nodes = 0;
 		minimum_nodeset_flag = 0;
 		basis_file_name = (char *)NULL;
-		node_group = (struct GROUP(FE_node) *) NULL;
 		transformation_graphics_object_name=(char *)NULL;
 		transformation_scene=ACCESS(Scene)(create_emoter_slider_data->viewer_scene);
 		transformation_scene_object = (struct Scene_object *)NULL;
-		(option_table[0]).to_be_modified = &minimum_nodeset_flag;
-		(option_table[1]).to_be_modified = &basis_file_name;
-		(option_table[2]).to_be_modified = &node_group;
-		(option_table[2]).user_data=
-			create_emoter_slider_data->node_group_manager;
-		(option_table[3]).to_be_modified = &transformation_graphics_object_name;
-		(option_table[4]).to_be_modified = &transformation_scene;
-		(option_table[4]).user_data=create_emoter_slider_data->scene_manager;
-		(option_table[5]).to_be_modified = &basis_file_name;
-		return_code=process_multiple_options(state,option_table);
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table,"basis",&basis_file_name,
+			(void *)1,set_name);
+		/* group */
+		Option_table_add_entry(option_table, "group", &region_path,
+			create_emoter_slider_data->root_region, set_Cmiss_region_path);
+		/* minimum_nodeset */
+		Option_table_add_entry(option_table,"minimum_nodeset",&minimum_nodeset_flag,
+			NULL,set_char_flag);
+		/* transformation_graphics_object */
+		Option_table_add_entry(option_table,"transformation_graphics_object",
+			&transformation_graphics_object_name,(void *)1,set_name);
+		/* transformation_scene */
+		Option_table_add_entry(option_table,"transformation_scene",
+			&transformation_scene,create_emoter_slider_data->scene_manager,set_Scene);
+		/* default */
+		Option_table_add_entry(option_table,NULL,&basis_file_name,
+			(void *)1,set_name);
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
 		if (return_code)
 		{
 			if ((!create_emoter_slider_data->parent)||
@@ -5809,16 +5745,18 @@ in existence, then bring it to the front, otherwise create new one.
 					}
 				}
 				em_object=(struct EM_Object *)NULL;
-				if (node_group)
+				if (Cmiss_region_get_region_from_path(
+					create_emoter_slider_data->root_region, region_path, &region)&&
+					(fe_region = Cmiss_region_get_FE_region(region)))
 				{
-					number_of_index_nodes = NUMBER_IN_GROUP(FE_node)(node_group);
+					number_of_index_nodes = FE_region_get_number_of_FE_nodes(fe_region);
 					if (ALLOCATE(index_nodes, int, number_of_index_nodes))
 					{
 						index_list_data.number_of_index_nodes = 0;
 						index_list_data.maximum_index_nodes = number_of_index_nodes;
 						index_list_data.index_nodes = index_nodes;
-						FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_number_to_list,
-							(void *)&index_list_data, node_group);
+						FE_region_for_each_FE_node(fe_region, add_FE_node_number_to_list,
+							(void *)&index_list_data);
 						if (index_list_data.number_of_index_nodes != 
 							number_of_index_nodes)
 						{
@@ -5832,6 +5770,15 @@ in existence, then bring it to the front, otherwise create new one.
 						number_of_index_nodes = 0;
 					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_create_emoter.  Unable to get region.");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
 				if (EM_read_basis(basis_file_name,&em_object,index_nodes,
 					number_of_index_nodes))
 				{
@@ -5841,8 +5788,8 @@ in existence, then bring it to the front, otherwise create new one.
 					{
 						/* check that all the nodes exist */
 						i=0;
-						while ((i<number_of_nodes)&&FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-							cm_node_identifier)((em_object->index)[i],node_manager))
+						while ((i<number_of_nodes)&&FE_region_get_FE_node_from_identifier(
+						   fe_region,(em_object->index)[i]))
 						{
 							i++;
 						}
@@ -5864,12 +5811,8 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->number_of_sliders = 0;
 								shared_emoter_slider_data->number_of_modes=number_of_modes;
 								shared_emoter_slider_data->mode_limit = number_of_modes;
+								shared_emoter_slider_data->region = region;
 								shared_emoter_slider_data->show_solid_body_motion = 1;
-								shared_emoter_slider_data->fe_field_manager = 
-									create_emoter_slider_data->fe_field_manager;
-								shared_emoter_slider_data->node_manager = node_manager;
-								shared_emoter_slider_data->element_manager =
-									create_emoter_slider_data->element_manager;
 								shared_emoter_slider_data->control_curve_manager
 									= create_emoter_slider_data->control_curve_manager;
 								shared_emoter_slider_data->execute_command =
@@ -5884,12 +5827,6 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->time = 1;
 								shared_emoter_slider_data->user_interface
 									= create_emoter_slider_data->user_interface;
-								shared_emoter_slider_data->element_group_manager
-									= create_emoter_slider_data->element_group_manager;
-								shared_emoter_slider_data->node_group_manager
-									= create_emoter_slider_data->node_group_manager;
-								shared_emoter_slider_data->data_group_manager
-									= create_emoter_slider_data->data_group_manager;
 								shared_emoter_slider_data->graphics_window_manager
 									= create_emoter_slider_data->graphics_window_manager;
 								shared_emoter_slider_data->viewer_scene
@@ -5948,10 +5885,7 @@ in existence, then bring it to the front, otherwise create new one.
 		{
 			DEACCESS(Scene)(&transformation_scene);
 		}
-		if (node_group)
-		{
-			DEACCESS(GROUP(FE_node))(&node_group);
-		}
+		DEALLOCATE(region_path);
 	}
 	else
 	{

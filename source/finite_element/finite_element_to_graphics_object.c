@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 11 October 2002
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -16,6 +16,7 @@ The functions for creating graphical objects from finite elements.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "general/debug.h"
@@ -368,8 +369,7 @@ fields used here.
 				}
 				if (node_to_glyph_set_data->name)
 				{
-					*(node_to_glyph_set_data->name) =
-						get_FE_node_cm_node_identifier(node);
+					*(node_to_glyph_set_data->name) = get_FE_node_identifier(node);
 					(node_to_glyph_set_data->name)++;
 				}
 				if (node_to_glyph_set_data->label_field)
@@ -408,6 +408,7 @@ but are indirectly connected (e.g. mesh with slit)
 *******************************************************************************/
 {
 	int number_of_elements, return_code;
+	struct CM_element_information cm;
 	struct FE_element **elements, *element_ptr;
 
 	ENTER(fill_table);
@@ -426,8 +427,8 @@ but are indirectly connected (e.g. mesh with slit)
 			{
 				/* Just use the first one */
 				element_ptr=elements[0];
-				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+1]=
-					element_ptr->cm.number;
+				get_FE_element_identifier(element_ptr, &cm);
+				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+1] = cm.number;
 				fill_table(element_block,adjacency_table,element_ptr,i+1,j,k,n_xi);
 				DEALLOCATE(elements);
 			}
@@ -440,8 +441,8 @@ but are indirectly connected (e.g. mesh with slit)
 			{
 				/* Just use the first one */
 				element_ptr=elements[0];
-				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+3]=
-					element_ptr->cm.number;
+				get_FE_element_identifier(element_ptr, &cm);
+				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+3] = cm.number;
 				fill_table(element_block,adjacency_table,element_ptr,i,j+1,k,n_xi);
 				DEALLOCATE(elements);
 			}
@@ -454,8 +455,8 @@ but are indirectly connected (e.g. mesh with slit)
 			{
 				/* Just use the first one */
 				element_ptr=elements[0];
-				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+5]=
-					element_ptr->cm.number;
+				get_FE_element_identifier(element_ptr, &cm);
+				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+5] = cm.number;
 				fill_table(element_block,adjacency_table,element_ptr,i,j,k+1,n_xi);
 				DEALLOCATE(elements);
 			}
@@ -875,40 +876,41 @@ found if either the dimension or the CM_element_type matches the element.
 	return (dimension);
 } /* Use_element_type_dimension */
 
-struct FE_element *FE_element_group_get_element_with_Use_element_type(
-	struct GROUP(FE_element) *element_group,
-	enum Use_element_type use_element_type,int element_number)
+struct FE_element *FE_region_get_element_with_Use_element_type(
+	struct FE_region *fe_region, enum Use_element_type use_element_type,
+	int element_number)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Because USE_FACES can refer to either a 2-D CM_FACE or a 2-D CM_ELEMENT, and
 USE_LINES can refer to a 1-D CM_LINE or a 1-D CM_ELEMENT, this function handles
-the logic for getting the most appropriate element from <element_group> with
+the logic for getting the most appropriate element from <fe_region> with
 the given the <use_element_type> and <element_number>.
 ==============================================================================*/
 {
 	struct CM_element_information element_identifier;
 	struct FE_element *element;
 
-	ENTER(FE_element_group_get_element_with_Use_element_type);
-	if (element_group)
+	ENTER(FE_region_get_element_with_Use_element_type);
+	if (fe_region)
 	{
-		element_identifier.type=Use_element_type_CM_element_type(use_element_type);
-		element_identifier.number=element_number;
-		if (!(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-			&element_identifier,element_group)))
+		element_identifier.type =
+			Use_element_type_CM_element_type(use_element_type);
+		element_identifier.number = element_number;
+		if (!(element = FE_region_get_FE_element_from_identifier(fe_region,
+			&element_identifier)))
 		{
 			if (USE_ELEMENTS != use_element_type)
 			{
-				element_identifier.type=CM_ELEMENT;
-				if (element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-					&element_identifier,element_group))
+				element_identifier.type = CM_ELEMENT;
+				if (element = FE_region_get_FE_element_from_identifier(fe_region,
+					&element_identifier))
 				{
 					if (get_FE_element_dimension(element) !=
 						Use_element_type_dimension(use_element_type))
 					{
-						element=(struct FE_element *)NULL;
+						element = (struct FE_element *)NULL;
 					}
 				}
 			}
@@ -917,14 +919,14 @@ the given the <use_element_type> and <element_number>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_group_get_element_with_Use_element_type.  "
+			"FE_region_get_element_with_Use_element_type.  "
 			"Invalid argument(s)");
 		element=(struct FE_element *)NULL;
 	}
 	LEAVE;
 
 	return (element);
-} /* FE_element_group_get_element_with_Use_element_type */
+} /* FE_region_get_element_with_Use_element_type */
 
 int CM_element_information_to_graphics_name(struct CM_element_information *cm)
 /*******************************************************************************
@@ -1054,8 +1056,8 @@ Used for selection and highlighting of elements.
 	return (return_code);
 } /* CM_element_information_from_graphics_name */
 
-struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
-	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
+struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
+	struct FE_region *fe_region,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
@@ -1064,12 +1066,11 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
 	enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
-given glyph <centre> at each node in <node_group> (or <node_manager> if the
-former is NULL).
+given glyph <centre> at each node in <fe_region>.
 The optional <orientation_scale_field> can be used to orient and scale the
 glyph in a manner depending on the number of components in the field. The
 optional <variable_scale_field> can provide signed scaling independently of the
@@ -1081,8 +1082,7 @@ colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The <select_mode> controls whether node cmiss numbers are output as integer
 names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
-only nodes in (or not in) the <selected_node_list> are rendered. This
-functionality is only supported if <node_group> is supplied.
+only nodes in (or not in) the <selected_node_list> are rendered.
 Notes:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 - the coordinate system of the variable_scale_field is ignored/not used.
@@ -1093,14 +1093,14 @@ Notes:
 	int i, n_data_components, *names, number_of_fields, number_of_points,
 		return_code;
 	struct GT_glyph_set *glyph_set;
-	struct LIST(FE_node) *node_list;
 	struct Node_to_glyph_set_data node_to_glyph_set_data;
 	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
 	struct Computed_field *required_fields[4];
 	struct Computed_fields_of_node *computed_fields_of_node;
 
-	ENTER(create_GT_glyph_set_from_FE_node_group);
-	if ((node_group||node_manager)&&coordinate_field&&
+	ENTER(create_GT_glyph_set_from_FE_region_nodes);
+	glyph_set = (struct GT_glyph_set *)NULL;
+	if (fe_region && coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		((!orientation_scale_field) ||
 			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
@@ -1141,62 +1141,32 @@ Notes:
 				number_of_fields++;			
 			}
 			computed_fields_of_node->num_required_fields=number_of_fields;
-
-			node_list = (struct LIST(FE_node) *)NULL;
-			if (node_group && ((GRAPHICS_DRAW_SELECTED == select_mode) ||
-				(GRAPHICS_DRAW_UNSELECTED == select_mode)))
+			switch (select_mode)
 			{
-				/* create a node list containing all the nodes in node_group */
-				node_list = CREATE(LIST(FE_node))();
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_list,
-					(void *)node_list, node_group);
-				/* remove the nodes that are selected or not selected */
-				if (GRAPHICS_DRAW_SELECTED == select_mode)
+				case GRAPHICS_DRAW_SELECTED:
 				{
-					REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-						FE_node_is_not_in_list, (void *)selected_node_list, node_list);
-				}
-				else /* GRAPHICS_DRAW_UNSELECTED */
+					return_code = FE_region_for_each_FE_node_conditional(fe_region,
+						FE_node_is_in_list, selected_node_list,
+						FE_node_count_if_computed_fields_defined,
+						(void *)computed_fields_of_node);
+				} break;
+				case GRAPHICS_DRAW_UNSELECTED:
 				{
-					REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-						FE_node_is_in_list, (void *)selected_node_list, node_list);
-				}
+					return_code = FE_region_for_each_FE_node_conditional(fe_region,
+						FE_node_is_not_in_list, selected_node_list,
+						FE_node_count_if_computed_fields_defined,
+						(void *)computed_fields_of_node);
+				} break;
+				default:
+				{
+					return_code = FE_region_for_each_FE_node(fe_region,
+						FE_node_count_if_computed_fields_defined,
+						(void *)computed_fields_of_node);
+				} break;
 			}
-			if (node_list)
-			{
-				return_code= FOR_EACH_OBJECT_IN_LIST(FE_node)
-					(FE_node_count_if_computed_fields_defined,
-						(void *)computed_fields_of_node,node_list);
-				number_of_points=NUMBER_IN_LIST(FE_node)(node_list);
-			}
-			else if (node_group)
-			{
-				return_code= FOR_EACH_OBJECT_IN_GROUP(FE_node)
-					(FE_node_count_if_computed_fields_defined,
-						(void *)computed_fields_of_node,node_group);
-				number_of_points=NUMBER_IN_GROUP(FE_node)(node_group);
-			}
-			else
-			{
-				return_code= FOR_EACH_OBJECT_IN_MANAGER(FE_node)
-					(FE_node_count_if_computed_fields_defined,
-						(void *)computed_fields_of_node,node_manager);
-				number_of_points=NUMBER_IN_MANAGER(FE_node)(node_manager);
-			}
-#if defined (OLD_CODE)
-			/*???RC I no longer want this warning... perhaps printf it? */
-			if (number_of_points>computed_fields_of_node->number_of_nodes)
-			{
-				display_message(WARNING_MESSAGE,
-					"create_GT_glyph_set_from_FE_node_group.  %d nodes/data not drawn "
-					"because one or more fields not defined for them",
-					number_of_points-computed_fields_of_node->number_of_nodes);			
-			}		
-#endif /* defined (OLD_CODE) */
-			glyph_set=(struct GT_glyph_set *)NULL;
 			if (return_code) 
 			{
-				number_of_points=computed_fields_of_node->number_of_nodes;
+				number_of_points = computed_fields_of_node->number_of_nodes;
 				if (0<number_of_points)
 				{
 					point_list = (Triple *)NULL;
@@ -1261,20 +1231,25 @@ Notes:
 						node_to_glyph_set_data.label_field = label_field;
 						node_to_glyph_set_data.name = names;
 						node_to_glyph_set_data.time = time;
-						if (node_list)
+						switch (select_mode)
 						{
-							return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(node_to_glyph_set,
-								(void *)(&node_to_glyph_set_data),node_list);
-						}
-						else if (node_group)
-						{
-							return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(node_to_glyph_set,
-								(void *)(&node_to_glyph_set_data),node_group);
-						}
-						else
-						{
-							return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(node_to_glyph_set,
-								(void *)(&node_to_glyph_set_data),node_manager);
+							case GRAPHICS_DRAW_SELECTED:
+							{
+								return_code = FE_region_for_each_FE_node_conditional(fe_region,
+									FE_node_is_in_list, selected_node_list,
+									node_to_glyph_set, (void *)(&node_to_glyph_set_data));
+							} break;
+							case GRAPHICS_DRAW_UNSELECTED:
+							{
+								return_code = FE_region_for_each_FE_node_conditional(fe_region,
+									FE_node_is_not_in_list, selected_node_list,
+									node_to_glyph_set, (void *)(&node_to_glyph_set_data));
+							} break;
+							default:
+							{
+								return_code = FE_region_for_each_FE_node(fe_region,
+									node_to_glyph_set, (void *)(&node_to_glyph_set_data));
+							} break;
 						}
 						/* clear Computed_field caches so nodes not accessed */
 						Computed_field_clear_cache(coordinate_field);
@@ -1313,46 +1288,41 @@ Notes:
 					if (!glyph_set)
 					{
 						display_message(ERROR_MESSAGE,
-							"create_GT_glyph_set_from_FE_node_group.  Failed");
+							"create_GT_glyph_set_from_FE_region_nodes.  Failed");
 					}
 				} /* no points, hence no glyph_set */
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"create_GT_glyph_set_from_FE_node_group."
-					"  Field(s) not defined for all nodes");
-				glyph_set=(struct GT_glyph_set *)NULL;
-			}
-			if (node_list)
-			{
-				DESTROY(LIST(FE_node))(&node_list);
+				display_message(ERROR_MESSAGE,
+					"create_GT_glyph_set_from_FE_region_nodes.  "
+					"Error counting nodes with all fields defined");
 			}
 			DESTROY(Computed_fields_of_node)(&computed_fields_of_node);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"create_GT_glyph_set_from_FE_node_group.  "
+			display_message(ERROR_MESSAGE,
+				"create_GT_glyph_set_from_FE_region_nodes.  "
 				"Could not create fields_of_node");
-			glyph_set=(struct GT_glyph_set *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_GT_glyph_set_from_FE_node_group.  Invalid argument(s)");
-		glyph_set=(struct GT_glyph_set *)NULL;
+			"create_GT_glyph_set_from_FE_region_nodes.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (glyph_set);
-} /* create_GT_glyph_set_from_FE_node_group */
+} /* create_GT_glyph_set_from_FE_region_nodes */
 
 struct GT_polyline *create_GT_polyline_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,int number_of_segments,
 	struct FE_element *top_level_element, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite <element>
@@ -1368,13 +1338,14 @@ Notes:
 	FE_value coordinates[3],distance,xi;
 	GTDATA *data;
 	int i,n_data_components;
+	struct CM_element_information cm;
 	struct GT_polyline *polyline;
 	Triple *point,*points;
 
 	ENTER(create_GT_polyline_from_FE_element);
-	if (element&&(element->shape)&&(1==element->shape->dimension)&&
-		(0<number_of_segments)&&coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field)))
+	if (element && (1 == get_FE_element_dimension(element)) &&
+		(0 < number_of_segments) && coordinate_field &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)))
 	{
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0]=0.0;
@@ -1399,8 +1370,8 @@ Notes:
 				points,/* normalpoints */NULL,n_data_components,data)))
 		{
 			/* for selective editing of GT_object primitives, record element ID */
-			polyline->object_name=
-				CM_element_information_to_graphics_name(element->identifier);
+			get_FE_element_identifier(element, &cm);
+			polyline->object_name = CM_element_information_to_graphics_name(&cm);
 			point=points;
 			distance=(FE_value)number_of_segments;
 			i=0;
@@ -1465,7 +1436,7 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
@@ -1491,12 +1462,13 @@ Notes:
 	float texture_coordinate1;
 	GTDATA *data, *datum;
 	int facet_offset,i,j,k,n_data_components,number_of_points;
+	struct CM_element_information cm;
 	struct GT_surface *surface;
 	Triple *derivative, *normal, *normalpoints, *point, *points, *previous_point,
 		*previous_normal, *texturepoints, *texture_coordinate;
 
 	ENTER(create_cylinder_from_FE_element);
-	if (element && (element->shape) && (1 == element->shape->dimension) &&
+	if (element && (1 == get_FE_element_dimension(element)) &&
 		(0 < number_of_segments_along) && (1 < number_of_segments_around) &&
 		coordinate_field &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
@@ -1537,8 +1509,8 @@ Notes:
 				points,normalpoints,texturepoints,n_data_components,data)))
 		{
 			/* for selective editing of GT_object primitives, record element ID */
-			surface->object_name=
-				CM_element_information_to_graphics_name(element->identifier);
+			get_FE_element_identifier(element, &cm);
+			surface->object_name = CM_element_information_to_graphics_name(&cm);
 			point=points;
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
@@ -1975,23 +1947,26 @@ struct GT_nurbs *create_GT_nurb_from_FE_element(struct FE_element *element,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
 ==============================================================================*/
 {
-	double sign1, sign2, *sknots, *tknots, *control_points, *texture_control_points;
+	double sign1, sign2, *sknots, *tknots, *control_points,
+		*texture_control_points;
 	FE_value derivative_xi[6],coordinates[3], xi[3];
+	struct CM_element_information cm;
 	struct GT_nurbs *nurbs;
-	int i, j, offset0, offset1, offset2, number_of_points, sorder, torder, sknotcount,
-		tknotcount, scontrolcount, tcontrolcount, texture_coordinate_components;
+	int i, j, offset0, offset1, offset2, number_of_points, sorder, torder,
+		sknotcount, tknotcount, scontrolcount, tcontrolcount,
+		texture_coordinate_components;
 
 	ENTER(create_GT_nurb_from_FE_element);
 	/* check the arguments */
-	if (element&&(element->shape)&&(2==element->shape->dimension)
-		&&(3>=Computed_field_get_number_of_components(coordinate_field)))
+	if (element && (2 == get_FE_element_dimension(element)) &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)))
 	{
 #if defined (OLD_CODE)
 		collapsed_nodes=0;
@@ -2047,8 +2022,8 @@ to say which parent element they should be evaluated on as necessary.
 				/* check for bi-quadratic Lagrange with collapse along xi2=0 */
 				/*???DB.  Extend ? */
 				if ((element->information)&&(9==element->information->number_of_nodes)&&
-					(get_FE_node_cm_node_identifier((element->information->nodes)[0])==
-						get_FE_node_cm_node_identifier((element->information->nodes)[2])))
+					(get_FE_node_identifier((element->information->nodes)[0])==
+						get_FE_node_identifier((element->information->nodes)[2])))
 				{
 					collapsed_nodes=1;
 				}
@@ -2073,8 +2048,8 @@ to say which parent element they should be evaluated on as necessary.
 			if (nurbs=CREATE(GT_nurbs)())
 			{
 				/* for selective editing of GT_object primitives, record element ID */
-				nurbs->object_name=
-					CM_element_information_to_graphics_name(element->identifier);
+				get_FE_element_identifier(element, &cm);
+				nurbs->object_name = CM_element_information_to_graphics_name(&cm);
 				if (GT_nurbs_set_surface(nurbs, sorder, torder,
 					sknotcount, tknotcount, sknots, tknots, 
 					scontrolcount, tcontrolcount, control_points))
@@ -2555,115 +2530,153 @@ int get_surface_element_segmentation(struct FE_element *element,
 	int *number_of_points_in_xi1,int *number_of_points_in_xi2,
 	int *number_of_points,int *number_of_polygon_vertices,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
-	char *modified_reverse_normals)
+	char *modified_reverse_normals,
+	enum FE_element_shape_type *shape_type_address)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Sorts out how standard, polygon and simplex elements are segmented, based on
 numbers of segments requested for "square" elements.
 ==============================================================================*/
 {
-	int return_code;
-	struct FE_element **faces;
+	int i, number_of_faces, return_code;
+	struct FE_element *faces[4];
+	struct FE_element_shape *element_shape;
 
 	ENTER(get_surface_element_segmentation);
-	return_code=0;
-	if (element)
+	return_code = 0;
+	if (element && (2 == get_FE_element_dimension(element)) &&
+		get_FE_element_shape(element, &element_shape) && shape_type_address)
 	{
-		*collapsed_element=ELEMENT_NOT_COLLAPSED;
-		*number_of_polygon_vertices=0;
-		*modified_reverse_normals=reverse_normals;
-		/* check for polygon */
-		switch (*(element->shape->type))
+		if (get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/0,
+			shape_type_address))
 		{
-			case POLYGON_SHAPE:
+			return_code = 1;
+			*collapsed_element = ELEMENT_NOT_COLLAPSED;
+			*number_of_polygon_vertices = 0;
+			*modified_reverse_normals = reverse_normals;
+			switch (*shape_type_address)
 			{
-				/* polygon */
-				*number_of_polygon_vertices=(element->shape->type)[1];
-				*number_of_points_in_xi1=((number_of_segments_in_xi1_requested)/
-					(*number_of_polygon_vertices)+1)*(*number_of_polygon_vertices)+1;
-				*collapsed_element=ELEMENT_COLLAPSED_XI2_0;
-				*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
-				*number_of_points= *number_of_points_in_xi1*(*number_of_points_in_xi2);
-				*polygon_type=g_QUADRILATERAL;
-			} break;
-			case SIMPLEX_SHAPE:
-			{
-				/* simplex */
-				if (number_of_segments_in_xi1_requested >
-					number_of_segments_in_xi2_requested)
+				case POLYGON_SHAPE:
 				{
-					*number_of_points_in_xi1=number_of_segments_in_xi1_requested+1;
-					*number_of_points_in_xi2=number_of_segments_in_xi1_requested+1;
-				}
-				else
+					/* polygon */
+					if (get_FE_element_shape_xi_linkage_number(element_shape,
+						/*xi_number1*/0, /*xi_number2*/1, number_of_polygon_vertices) &&
+						(2 < *number_of_polygon_vertices))
+					{
+						*number_of_points_in_xi1=((number_of_segments_in_xi1_requested)/
+							(*number_of_polygon_vertices)+1)*(*number_of_polygon_vertices)+1;
+						*collapsed_element=ELEMENT_COLLAPSED_XI2_0;
+						*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
+						*number_of_points =
+							*number_of_points_in_xi1*(*number_of_points_in_xi2);
+						*polygon_type=g_QUADRILATERAL;
+					}
+					else
+					{
+						return_code = 0;
+					}
+				} break;
+				case SIMPLEX_SHAPE:
 				{
-					*number_of_points_in_xi1=number_of_segments_in_xi2_requested+1;
+					/* simplex */
+					if (number_of_segments_in_xi1_requested >
+						number_of_segments_in_xi2_requested)
+					{
+						*number_of_points_in_xi1=number_of_segments_in_xi1_requested+1;
+						*number_of_points_in_xi2=number_of_segments_in_xi1_requested+1;
+					}
+					else
+					{
+						*number_of_points_in_xi1=number_of_segments_in_xi2_requested+1;
+						*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
+					}
+					*number_of_points=
+						(*number_of_points_in_xi1*(*number_of_points_in_xi1+1))/2;
+					*polygon_type=g_TRIANGLE;
+					/* to get the surface colouring right, the points need to be given in a
+						 certain order to GL_TRIANGLE_STRIP.  To keep the lighting correct,
+						 the normals need to be reversed */
+					if (reverse_normals)
+					{
+						*modified_reverse_normals=0;
+					}
+					else
+					{
+						*modified_reverse_normals=1;
+					}
+				} break;
+				default:
+				{
+					*number_of_points_in_xi1 = number_of_segments_in_xi1_requested + 1;
+					/* check for collapsed elements */
+					if ((LINE_SHAPE == (*shape_type_address)) &&
+						get_FE_element_number_of_faces(element, &number_of_faces))
+					{
+						for (i = 0; (i < 4) && return_code; i++)
+						{
+							if (i < number_of_faces)
+							{
+								if (!get_FE_element_face(element, i, &(faces[i])))
+								{
+									return_code = 0;
+								}
+							}
+							else
+							{
+								faces[i] = (struct FE_element *)NULL;
+							}
+						}
+						if (return_code)
+						{
+							if (!faces[0])
+							{
+								if (faces[1]&&faces[2]&&faces[3])
+								{
+									*collapsed_element=ELEMENT_COLLAPSED_XI1_0;
+								}
+							}
+							else if (!faces[1])
+							{
+								if (faces[0]&&faces[2]&&faces[3])
+								{
+									*collapsed_element=ELEMENT_COLLAPSED_XI1_1;
+								}
+							}
+							else if (!faces[2])
+							{
+								if (faces[0]&&faces[1]&&faces[3])
+								{
+									*collapsed_element=ELEMENT_COLLAPSED_XI2_0;
+								}
+							}
+							else if (!faces[3])
+							{
+								if (faces[0]&&faces[1]&&faces[2])
+								{
+									*collapsed_element=ELEMENT_COLLAPSED_XI2_1;
+								}
+							}
+						}
+					}
 					*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
-				}
-				*number_of_points=
-					(*number_of_points_in_xi1*(*number_of_points_in_xi1+1))/2;
-				*polygon_type=g_TRIANGLE;
-				/* to get the surface colouring right, the points need to be given in a
-					certain order to GL_TRIANGLE_STRIP.  To keep the lighting correct,
-					the normals need to be reversed */
-				if (reverse_normals)
-				{
-					*modified_reverse_normals=0;
-				}
-				else
-				{
-					*modified_reverse_normals=1;
-				}
-			} break;
-			default:
-			{
-				*number_of_points_in_xi1=number_of_segments_in_xi1_requested+1;
-				/* check for collapsed elements */
-				if ((faces=element->faces)&&(LINE_SHAPE== *(element->shape->type)))
-				{
-					if (!faces[0])
-					{
-						if (faces[1]&&faces[2]&&faces[3])
-						{
-							*collapsed_element=ELEMENT_COLLAPSED_XI1_0;
-						}
-					}
-					else if (!faces[1])
-					{
-						if (faces[0]&&faces[2]&&faces[3])
-						{
-							*collapsed_element=ELEMENT_COLLAPSED_XI1_1;
-						}
-					}
-					else if (!faces[2])
-					{
-						if (faces[0]&&faces[1]&&faces[3])
-						{
-							*collapsed_element=ELEMENT_COLLAPSED_XI2_0;
-						}
-					}
-					else if (!faces[3])
-					{
-						if (faces[0]&&faces[1]&&faces[2])
-						{
-							*collapsed_element=ELEMENT_COLLAPSED_XI2_1;
-						}
-					}
-				}
-				*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
-				*number_of_points=(*number_of_points_in_xi1)*(*number_of_points_in_xi2);
-				*polygon_type=g_QUADRILATERAL;
-			} break;
+					*number_of_points =
+						(*number_of_points_in_xi1)*(*number_of_points_in_xi2);
+					*polygon_type = g_QUADRILATERAL;
+				} break;
+			}
 		}
-		return_code=1;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"get_surface_element_segmentation.  Could not get shape type");
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"get_surface_element_segmentation.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -2678,7 +2691,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	struct FE_element *top_level_element,enum Render_type render_type,
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 15 April 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
@@ -2712,6 +2725,7 @@ normals are used.
 {
 	char modified_reverse_normals,special_normals;
 	enum Collapsed_element_type collapsed_element;
+	enum FE_element_shape_type shape_type;
 	FE_value coordinates[3],derivative_xi[6],texture_values[3],xi[2],xi2;
 	float coordinate_1,coordinate_2,coordinate_3,distance;
 	GTDATA *data;
@@ -2719,12 +2733,13 @@ normals are used.
 	struct GT_surface *surface;
 	int i,j,n_data_components,number_of_points,number_of_points_in_xi1,
 		number_of_points_in_xi2,number_of_polygon_vertices;
+	struct CM_element_information cm;
 	Triple *normal,*normalpoints,*point,*point_a,*point_b,*points,*point_s,
 		*point_t,*texturepoints,*texture_coordinate,*texture_coordinate_s,
 		*texture_coordinate_t;
 
 	ENTER(create_GT_surface_from_FE_element);
-	if (element&&(element->shape)&&(2==element->shape->dimension)&&
+	if (element && (2 == get_FE_element_dimension(element)) &&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
@@ -2747,7 +2762,7 @@ normals are used.
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
 			reverse_normals,&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,
-			&collapsed_element,&modified_reverse_normals);
+			&collapsed_element,&modified_reverse_normals, &shape_type);
 		/* create the GT_surface */
 		surface=(struct GT_surface *)NULL;
 		points=(Triple *)NULL;
@@ -2777,13 +2792,13 @@ normals are used.
 				normalpoints, texturepoints, n_data_components,data))))
 		{
 			/* for selective editing of GT_object primitives, record element ID */
-			surface->object_name=
-				CM_element_information_to_graphics_name(element->identifier);
+			get_FE_element_identifier(element, &cm);
+			surface->object_name = CM_element_information_to_graphics_name(&cm);
 			/* calculate the xi coordinates and store in "normals" */
 			point_a=normalpoints;
 			point_b=point_a;
 			distance=(FE_value)(number_of_points_in_xi1-1);
-			if (SIMPLEX_SHAPE== *(element->shape->type))
+			if (SIMPLEX_SHAPE == shape_type)
 			{
 				for (i=0;i<number_of_points_in_xi1;i++)
 				{
@@ -3147,7 +3162,7 @@ normals are used.
 					(*texture_coordinate)[0]=0.;
 					(*texture_coordinate)[1]=0.;
 					(*texture_coordinate)[2]=0.;
-					if (SIMPLEX_SHAPE== *(element->shape->type))
+					if (SIMPLEX_SHAPE== shape_type)
 					{
 						for (j=number_of_points_in_xi1-1;j>0;j--)
 						{
@@ -3358,7 +3373,7 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field,
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
@@ -3379,16 +3394,17 @@ faces.
 		rmag,vector1[3],vector2[3],result[3],vectorsum[3],vertex0[3],vertex1[3],
 		vertex2[3];
 	FE_value colour_data[4];
-	struct Environment_map *environment_map;
-	struct Graphical_material *material;
-	struct GT_voltex *voltex;
 	int *adjacency_table,data_index,*deform,i,ii,j,jj,k,kk,m,n_iso_polys,
 		n_data_components,number_of_elements,number_of_faces,n_xi_rep[3],return_code,
 		/*???DB.  Merge ?  Better names ? */
 		a,aaa,b,bbb,c,ccc,n_xi[3],index,triangle,v_count,n_vertices,
 		*triangle_list,*triangle_list2,acc_triangle_index,
 		*dont_draw;
+	struct CM_element_information cm;
+	struct Environment_map *environment_map;
 	struct FE_element **element_block,**element_block_ptr;
+	struct Graphical_material *material;
+	struct GT_voltex *voltex;
 	struct VT_iso_vertex *vertex_list;
 
 	double *iso_poly_cop;
@@ -3406,7 +3422,7 @@ faces.
 	printf("enter create_GT_voltex_from_FE_element\n");
 #endif /* defined (DEBUG) */
 	voltex=(struct GT_voltex *)NULL;
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&vtexture&&
+	if (element && (3 == get_FE_element_dimension(element)) && vtexture &&
 		coordinate_field&&
 		Computed_field_has_3_components(coordinate_field,NULL)&&
 		((!blur_field)||
@@ -3651,8 +3667,9 @@ faces.
 							{
 								/* for selective editing of GT_object primitives,
 									 record element ID */
-								voltex->object_name=
-									CM_element_information_to_graphics_name(element->identifier);
+								get_FE_element_identifier(element, &cm);
+								voltex->object_name =
+									CM_element_information_to_graphics_name(&cm);
 
 								/*???Mark.  THIS CODE NEEDS TO BE DOCTORED.  begin */
 								/* copy volume texture values into triangle_list */
@@ -4463,20 +4480,17 @@ faces.
 	return (voltex);
 } /* create_GT_voltex_from_FE_element */
 
-int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
+int create_FE_nodes_on_GT_voltex_surface(struct GT_voltex *voltex,
 	struct FE_element *element, struct Computed_field *coordinate_field,
-	struct VT_volume_texture *vtexture,
-	struct MANAGER(FE_node) *data_manager, struct GROUP(FE_node) *data_group,
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
+	struct VT_volume_texture *vtexture, struct FE_region *fe_region,
 	struct Computed_field *data_density_field,
 	struct Computed_field *data_coordinate_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
 This function takes a <voltex> and the corresponding <vtexture> and creates
-a randomly placed set of data_points over the surface the <voltex> describes.
+a randomly placed set of FE_nodes over the surface the <voltex> describes.
 The vtexture is used to define an element_xi field at each of the data_points.
 These can then be used to draw axes or gradient vectors over the surface of an
 isosurface or to create hair streamlines starting from the surface of a volume
@@ -4503,26 +4517,28 @@ the position of the point, with appropriate coordinate conversion.
 		"value"
 	};
 
-	ENTER(create_surface_data_points_from_GT_voltex);
+	ENTER(create_FE_nodes_on_GT_voltex_surface);
 #if defined (DEBUG)
 	/*???debug */
-	printf("enter create_surface_data_points_from_GT_voltex\n");
+	printf("enter create_FE_nodes_on_GT_voltex_surface\n");
 #endif /* defined (DEBUG) */
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&vtexture&&
-		vtexture&&data_manager&&data_group&& computed_field_manager && fe_field_manager &&
-		coordinate_field&&(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		data_density_field&&(4>=Computed_field_get_number_of_components(data_density_field))&&
-		vtexture->mc_iso_surface&&voltex&&
-		(vtexture->mc_iso_surface->n_triangles==voltex->n_iso_polys)&&
-		(vtexture->mc_iso_surface->n_vertices==voltex->n_vertices))
+	if (element && (3 == get_FE_element_dimension(element)) && vtexture &&
+		vtexture && fe_region && coordinate_field &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+		data_density_field &&
+		(4 >= Computed_field_get_number_of_components(data_density_field)) &&
+		vtexture->mc_iso_surface && voltex &&
+		(vtexture->mc_iso_surface->n_triangles == voltex->n_iso_polys) &&
+		(vtexture->mc_iso_surface->n_vertices == voltex->n_vertices))
 	{
+		FE_region_begin_change(fe_region);
 		fe_coordinate_field_list = (struct LIST(FE_field) *)NULL;
 		fe_coordinate_field = (struct FE_field *)NULL;
 		rc_data_coordinate_field = (struct Computed_field *)NULL;
 		if ((!data_coordinate_field) || (
 			(3 == Computed_field_get_number_of_components(data_coordinate_field)) &&
-			(fe_coordinate_field_list = Computed_field_get_defining_FE_field_list(
-				data_coordinate_field, computed_field_manager)) &&
+			(fe_coordinate_field_list =
+				Computed_field_get_defining_FE_field_list(data_coordinate_field)) &&
 			(1 == NUMBER_IN_LIST(FE_field)(fe_coordinate_field_list)) &&
 			(fe_coordinate_field = FIRST_OBJECT_IN_LIST_THAT(FE_field)(
 				(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
@@ -4586,7 +4602,7 @@ the position of the point, with appropriate coordinate conversion.
 						if (!element_block[i])
 						{
 							display_message(WARNING_MESSAGE,
-								"create_surface_data_points_from_GT_voltex.  "
+								"create_FE_nodes_on_GT_voltex_surface.  "
 								"voltex extends beyond elements");
 							return_code=0;
 						}
@@ -4624,7 +4640,7 @@ the position of the point, with appropriate coordinate conversion.
 								density_data,(FE_value *)NULL);
 
 #if defined (DEBUG)
-							printf("create_surface_data_points_from_GT_voltex.  colour %f\n",
+							printf("create_FE_nodes_on_GT_voltex_surface.  colour %f\n",
 								texture_data[0]);
 #endif /* defined (DEBUG) */
 
@@ -4662,7 +4678,7 @@ the position of the point, with appropriate coordinate conversion.
 							number_of_points =
 								sample_Poisson_distribution((double)expected_number);
 #if defined (DEBUG)
-							printf("create_surface_data_points_from_GT_voltex.\n"
+							printf("create_FE_nodes_on_GT_voltex_surface.\n"
 								"\tarea %f expected %f sample number_of_points %d\n",
 								area, expected_number, number_of_points);
 #endif /* defined (DEBUG) */
@@ -4715,7 +4731,7 @@ the position of the point, with appropriate coordinate conversion.
 									(FE_value *)NULL)))
 								{
 									display_message(ERROR_MESSAGE,
-										"create_surface_data_points_from_GT_voltex."
+										"create_FE_nodes_on_GT_voltex_surface."
 										"  Unable to evaluate node coordinate position");
 									return_code = 0;
 								}
@@ -4725,32 +4741,33 @@ the position of the point, with appropriate coordinate conversion.
 								{
 									/* create or find the element_xi field */
 									rect_cart_coords.type=RECTANGULAR_CARTESIAN;
-									if (fe_element_xi_field = get_FE_field_manager_matched_field(
-										fe_field_manager,"element_xi",GENERAL_FE_FIELD,
-										fe_time,/*indexer_field*/(struct FE_field *)NULL,
-										/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
-										&rect_cart_coords,ELEMENT_XI_VALUE,
-										/*number_of_components*/1,element_xi_component_names,
-										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
-										(struct FE_field_external_information *)NULL))
+									if (fe_element_xi_field = 
+										FE_region_get_FE_field_with_properties(fe_region,
+											"element_xi",GENERAL_FE_FIELD,
+											/*indexer_field*/(struct FE_field *)NULL,
+											/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
+											&rect_cart_coords,ELEMENT_XI_VALUE,
+											/*number_of_components*/1,element_xi_component_names,
+											/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+											(struct FE_field_external_information *)NULL))
 									{
 										if ((coordinate_node_field_creator = CREATE(
-												 FE_node_field_creator)(/*number_of_components*/3))&&
+											FE_node_field_creator)(/*number_of_components*/3))&&
 											(element_xi_node_field_creator = CREATE(
 												FE_node_field_creator)(/*number_of_components*/1)))
 										{
 											/* create the node */
-											if ((template_node=CREATE(FE_node)(0,
+											if ((template_node = CREATE(FE_node)(0, fe_region,
 												(struct FE_node *)NULL)) &&
 												((!fe_coordinate_field) ||
+													define_FE_field_at_node(template_node,
+														fe_coordinate_field,
+														(struct FE_time_version *)NULL,
+														coordinate_node_field_creator)) &&
 												define_FE_field_at_node(template_node,
-												fe_coordinate_field,
-												(struct FE_time_version *)NULL,
-												coordinate_node_field_creator)) &&
-												define_FE_field_at_node(template_node,
-												fe_element_xi_field,
-												(struct FE_time_version *)NULL,
-												element_xi_node_field_creator))
+													fe_element_xi_field,
+													(struct FE_time_version *)NULL,
+													element_xi_node_field_creator))
 											{
 												return_code=1;	
 											}
@@ -4769,8 +4786,10 @@ the position of the point, with appropriate coordinate conversion.
 										return_code=0;
 									}
 								}
-								node_number = get_next_FE_node_number(data_manager, node_number);
-								if (new_node = CREATE(FE_node)(node_number, template_node))
+								node_number = FE_region_get_next_FE_node_identifier(fe_region,
+									node_number);
+								if (new_node = CREATE(FE_node)(node_number,
+									(struct FE_region *)NULL, template_node))
 								{	
 									ACCESS(FE_node)(new_node);
 									if (((!fe_coordinate_field) ||
@@ -4780,30 +4799,18 @@ the position of the point, with appropriate coordinate conversion.
 											fe_element_xi_field, 0/*component_number*/, 0/*version*/,
 											FE_NODAL_VALUE, local_element, xi))
 									{
-										if (ADD_OBJECT_TO_GROUP(FE_node)(new_node, data_group))
-										{
-											if (!(ADD_OBJECT_TO_MANAGER(FE_node)(new_node, data_manager)))
-											{
-												display_message(ERROR_MESSAGE,
-													"create_surface_data_points_from_GT_voltex.  "
-													"Could not add node to manager");
-												return_code = 0;
-												/* must remove it from the group or won't be destroyed */
-												REMOVE_OBJECT_FROM_GROUP(FE_node)(new_node, data_group);
-											}
-										}
-										else
+										if (!FE_region_merge_FE_node(fe_region, new_node))
 										{
 											display_message(ERROR_MESSAGE,
-												"create_surface_data_points_from_GT_voltex.  "
-												"Could not add node to group");
+												"create_FE_nodes_on_GT_voltex_surface.  "
+												"Could not merge node into region");
 											return_code = 0;
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"create_surface_data_points_from_GT_voltex.  "
+											"create_FE_nodes_on_GT_voltex_surface.  "
 											"Could not set fields at node");
 										return_code = 0;
 									}
@@ -4812,18 +4819,18 @@ the position of the point, with appropriate coordinate conversion.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"create_surface_data_points_from_GT_voltex.  "
+										"create_FE_nodes_on_GT_voltex_surface.  "
 										"Could not create FE_node");
 									return_code = 0;
 								}
 #if defined (DEBUG)
-								printf("create_surface_data_points_from_GT_voltex.  "
+								printf("create_FE_nodes_on_GT_voltex_surface.  "
 									"point_coords %f %f %f\n", position[0], position[1], position[2]);
-								printf("create_surface_data_points_from_GT_voltex.  rand xi %f %f\n",
+								printf("create_FE_nodes_on_GT_voltex_surface.  rand xi %f %f\n",
 									xi1, xi2);
-								printf("create_surface_data_points_from_GT_voltex.  element %p\n",
+								printf("create_FE_nodes_on_GT_voltex_surface.  element %p\n",
 									element);
-								printf("create_surface_data_points_from_GT_voltex.  xi %f %f %f\n",
+								printf("create_FE_nodes_on_GT_voltex_surface.  xi %f %f %f\n",
 									xi[0], xi[1], xi[2]);
 #endif /* defined (DEBUG) */
 							}
@@ -4839,7 +4846,7 @@ the position of the point, with appropriate coordinate conversion.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_surface_data_points_from_GT_voltex.  Could not allocate memory for elements");
+						"create_FE_nodes_on_GT_voltex_surface.  Could not allocate memory for elements");
 					return_code = 0;
 				}
 				DEALLOCATE(element_block);
@@ -4848,7 +4855,7 @@ the position of the point, with appropriate coordinate conversion.
 			else
 			{
 				/* display_message(ERROR_MESSAGE,
-					 "create_surface_data_points_from_GT_voltex.  n_iso_polys = 0");*/
+					 "create_FE_nodes_on_GT_voltex_surface.  n_iso_polys = 0");*/
 				return_code = 0;
 			}
 			if (rc_data_coordinate_field)
@@ -4859,7 +4866,7 @@ the position of the point, with appropriate coordinate conversion.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_surface_data_points_from_GT_voltex.  "
+				"create_FE_nodes_on_GT_voltex_surface.  "
 				"Could not use surface data coordinate field");
 			return_code = 0;
 		}
@@ -4867,1053 +4874,22 @@ the position of the point, with appropriate coordinate conversion.
 		{
 			DESTROY(LIST(FE_field))(&fe_coordinate_field_list);
 		}
+		FE_region_end_change(fe_region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_surface_data_points_from_GT_voltex.  Invalid argument(s)");
+			"create_FE_nodes_on_GT_voltex_surface.  Invalid argument(s)");
 		return_code = 0;
 	}
 #if defined (DEBUG)
 	/*???debug */
-	printf("leave create_surface_data_points_from_GT_voltex %p\n",voltex);
+	printf("leave create_FE_nodes_on_GT_voltex_surface %p\n",voltex);
 #endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
-} /* create_surface_data_points_from_GT_voltex */
-
-int warp_GT_voltex_with_FE_element(struct GT_voltex *voltex1,
-	struct GT_voltex *voltex2,struct FE_element *element,
-	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order,
-	FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Replaces voltex2 vertices with voltex1 vertices warped over an element block
-Vertices are normalized by their x, y, z range values.
-???DB.  xi_order should be an enumerated type
-==============================================================================*/
-{
-	FE_value coordinate[3],coordinate_1,coordinate_2,coordinate_3,distance,
-		minimum_distance,result[3],rmag,vectorsum[3],vector1[3],vector2[3],
-		vertex0[3],vertex1[3],vertex2[3],xi[3];
-	int a,aa,*adjacency_table,b,bb,c,cc,i,j,k,m,n_iso_polys,
-		number_of_elements,n_vertices,n_xi[3],outside_block,
-		return_code,triangle;
-	struct FE_element **element_block,**element_block_ptr,*element_ptr;
-	struct FE_element_field_values *element_warp_values,
-		*element_warp_values_ptr,**element_warp_values_table;
-	struct VT_iso_vertex *vertex_list;
-	struct Coordinate_system *coordinate_system;
-
-	ENTER(warp_GT_voltex_with_FE_element);
-	return_code=0;
-	/* check arguments */
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&voltex1&&
-		voltex2)
-	{
-		n_iso_polys=voltex1->n_iso_polys;
-		vertex_list=voltex1->vertex_list;
-		n_vertices=voltex1->n_vertices;
-		if ((n_iso_polys==voltex2->n_iso_polys)&&(n_vertices==voltex2->n_vertices))
-		{
-			/* examine min & max xi values of voltex. If 0<xi<1 possibly repeat.  If
-				xi>1 then will need to draw over other elements, so must find
-				neighbouring ones */
-			number_of_elements=1;
-			for (i=0;i<3;i++)
-			{
-				/* MACRO TEXTURES : spread over several elements */
-				/* round to nearest integer above if non integer (eg 1->1,1.2 ->2) */
-				n_xi[i]=(int)ceil(ximax[i]);
-				number_of_elements *= n_xi[i];
-				/* MICRO TEXTURES : repeated within one element ???*/
-			}
-			/* allocate memory for elements */
-			ALLOCATE(element_block,struct FE_element *,number_of_elements);
-			ALLOCATE(adjacency_table, int, 6*number_of_elements);
-			ALLOCATE(element_warp_values,struct FE_element_field_values,
-				number_of_elements);
-			ALLOCATE(element_warp_values_table,struct FE_element_field_values *,
-				number_of_elements);
-			if (element_block&&adjacency_table&&element_warp_values&&
-				element_warp_values_table)
-			{
-				for (i=0;i<number_of_elements;i++)
-				{
-					element_warp_values_table[i]=(struct FE_element_field_values *)NULL;
-				}
-				/* pick seed element starting at minimum xi1,2,3 position (ie give
-					closest bottom leftmost element ) */
-				/* calculute elements sitting in block which texture extends into */
-				/* count the number of faces */
-					/*???MS.  number_of_elements*6 */
-					/*???DB.  Not necessarily */
-				element_block_ptr=element_block;
-				for (i=0;i<n_xi[0];i++)
-				{
-					for (j=0;j<n_xi[1];j++)
-					{
-						for (k=0;k<n_xi[2];k++)
-						{
-							element_block_ptr[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]=
-								(struct FE_element *)NULL;
-							for (m=0;m<6;m++)
-							{
-								adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+m]=0;
-							}
-						}
-					}
-				}
-				/* recursively filling element block */
-				fill_table(element_block,adjacency_table,element,0,0,0,n_xi);
-				/* coordinates calculated using Q=G(geometry vector).M(blending matrix).
-					T(monomial basis (of xi values)) */
-				/* calculate G.M [using calc_FE_elem_field_vals] (to multiply the
-					monomial basis T) for each element in the block - when an xi
-					coordinate in the vertex list extends over the first element, the next
-					element is used */
-				return_code=1;
-				element_block_ptr=element_block;
-				element_warp_values_ptr=element_warp_values;
-				i=number_of_elements;
-				while (return_code&&(i>0))
-				{
-					element_ptr=element_block[i-1];
-					if (element_ptr)
-					{
-						/* determine if the coordinate field is defined over the element */
-						if (calculate_FE_element_field_values(element_ptr,warp_field,
-							time,/*calculate_derivatives*/0,element_warp_values_ptr,
-							/*top_level_element*/(struct FE_element *)NULL)&&
-							(3==element_warp_values_ptr->number_of_components))
-						{
-							element_warp_values_table[i-1]=element_warp_values_ptr;
-							element_warp_values_ptr++;
-							i--;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-	"warp_GT_voltex_with_FE_element.  Coordinate field not defined over element");
-							return_code=0;
-						}
-					}
-				}
-				if (return_code)
-				{
-					/*???DB.  Not correct if there are different coordinate fields for
-						different elements */
-
-					i=0;
-					while (return_code&&(i<n_vertices))
-					{
-						/* get coord values from volume texture */
-						/* vertex */
-
-						/* warp values = (xmin,xmax),(ymin,ymax),(zmin,zmax) */
-						/* these are normalized to fit within the extent or ximax # of
-							elements */
-						switch (xi_order)
-						{
-							case 123:
-							{
-								xi[0]=(FE_value)(vertex_list[i].coord[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[0];
-								xi[1]=(FE_value)(vertex_list[i].coord[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[1];
-								xi[2]=(FE_value)(vertex_list[i].coord[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-							case 132:
-							{
-								xi[0]=(FE_value)(vertex_list[i].coord[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[0];
-								xi[2]=(FE_value)(vertex_list[i].coord[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[2];
-								xi[1]=(FE_value)(vertex_list[i].coord[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[1];
-							} break;
-							case 321:
-							{
-								xi[2]=(FE_value)(vertex_list[i].coord[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[2];
-								xi[1]=(FE_value)(vertex_list[i].coord[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[1];
-								xi[0]=(FE_value)(vertex_list[i].coord[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[0];
-							} break;
-							case 213:
-							{
-								xi[1]=(FE_value)(vertex_list[i].coord[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[1];
-								xi[0]=(FE_value)(vertex_list[i].coord[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[0];
-								xi[2]=(FE_value)(vertex_list[i].coord[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-							case 231:
-							{
-								xi[1]=(FE_value)(vertex_list[i].coord[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[1];
-								xi[0]=(FE_value)(vertex_list[i].coord[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[0];
-								xi[2]=(FE_value)(vertex_list[i].coord[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-							case 312:
-							{
-								xi[2]=(FE_value)(vertex_list[i].coord[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[2];
-								xi[0]=(FE_value)(vertex_list[i].coord[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[0];
-								xi[1]=(FE_value)(vertex_list[i].coord[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[1];
-							} break;
-							default:
-							{
-								xi[0]=(FE_value)(vertex_list[i].coord[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[0];
-								xi[1]=(FE_value)(vertex_list[i].coord[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[1];
-								xi[2]=(FE_value)(vertex_list[i].coord[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-						}
-						/* here it must be decided which element the xi point is in.  Once
-							the element is chosen, the xi value is renormalized to lie
-							within that element */
-						/* the element indices */
-						a=(int)(floor(((float)xi[0])));
-						b=(int)(floor(((float)xi[1])));
-						c=(int)(floor(((float)xi[2])));
-#if defined (OLD_CODE)
-						if (a>n_xi[0]-1)
-						{
-							a=n_xi[0]-1;
-						}
-						if (b>n_xi[1]-1)
-						{
-							b=n_xi[1]-1;
-						}
-						if (c>n_xi[2]-1)
-						{
-							c=n_xi[2]-1;
-						}
-						if (a<0)
-						{
-							a=0;
-						}
-						if (b<0)
-						{
-							b=0;
-						}
-						if (c<0)
-						{
-							c=0;
-						}
-#endif /* defined (OLD_CODE) */
-						/* if a vertex is outside of the element block, then do not deform
-							it */
-						outside_block= 0;
-						if (a>n_xi[0]-1)
-						{
-							outside_block=1;
-						}
-						if (b>n_xi[1]-1)
-						{
-							outside_block=1;
-						}
-						if (c>n_xi[2]-1)
-						{
-							outside_block=1;
-						}
-						if (a<0)
-						{
-							outside_block=1;
-						}
-						if (b<0)
-						{
-							outside_block=1;
-						}
-						if (c<0)
-						{
-							outside_block =1;
-						}
-						if (!outside_block)
-						{
-							/* normalize the xi values to lie in element [a][b][c] */
-							if (!(element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a]))
-							{
-								/* find nearest non-null element to xi */
-								minimum_distance=(xi[0])*(xi[0])+(xi[1])*(xi[1])+
-									(xi[2])*(xi[2]);
-								for (aa=0;aa<n_xi[0];aa++)
-								{
-									for (bb=0;bb<n_xi[1];bb++)
-									{
-										for (cc=0;cc<n_xi[2];cc++)
-										{
-											distance=(xi[0]-aa)*(xi[0]-aa)+(xi[1]-bb)*(xi[1]-bb)+
-												(xi[2]-cc)*(xi[2]-cc);
-											if ((distance<minimum_distance)&&
-												element_block[cc*n_xi[0]*n_xi[1]+bb*n_xi[0]+aa])
-											{
-												minimum_distance=distance;
-												a=aa;
-												b=bb;
-												c=cc;
-											}
-										}
-									}
-								}
-							}
-							xi[0] -= ((FE_value)a);
-							xi[1] -= ((FE_value)b);
-							xi[2] -= ((FE_value)c);
-							/* coordinate_n_value contains the blended matrix
-								(M.G (m=blending (eg Cubic Hermite),G=geometry)) for each
-								element dimension. To calculate the monomial values (dependent
-								on xi1,2,3) the standard basis fn (which happens to be
-								monomial (T(xi1,2,3)) in this case) is called.  This need only
-								be calculated once for each set of xi coords and then used for
-								each coordinate by obtaining the dot product
-								(Q(xi1,2,3)=M.G.T) */
-								/*???MS.  I think this is actually Q=G.M.T */
-							element_warp_values_ptr=element_warp_values_table[
-								c*n_xi[0]*n_xi[1]+b*n_xi[0]+a];
-							if (calculate_FE_element_field(-1,element_warp_values_ptr,xi,
-								coordinate,(FE_value *)NULL))
-							{
-								/* transform points to cartesian coordinates */
-
-								coordinate_system =  get_FE_field_coordinate_system(
-									element_warp_values_ptr->field);
-								switch(coordinate_system->type)
-								{
-									case CYLINDRICAL_POLAR:
-									{
-										cylindrical_polar_to_cartesian(coordinate[0],
-											coordinate[1],coordinate[2],&coordinate_1,&coordinate_2,
-											&coordinate_3,(float *)NULL);
-									} break;
-									case SPHERICAL_POLAR:
-									{
-										spherical_polar_to_cartesian(coordinate[0],coordinate[1],
-											coordinate[2],&coordinate_1,&coordinate_2,&coordinate_3,
-											(float *)NULL);
-									} break;
-									case PROLATE_SPHEROIDAL:
-									{
-										prolate_spheroidal_to_cartesian(coordinate[0],
-											coordinate[1],coordinate[2],coordinate_system->parameters.focus,
-											&coordinate_1,&coordinate_2,&coordinate_3,(float *)NULL);
-									} break;
-									case OBLATE_SPHEROIDAL:
-									{
-										oblate_spheroidal_to_cartesian(coordinate[0],
-											coordinate[1],coordinate[2],coordinate_system->parameters.focus,
-											&coordinate_1,&coordinate_2,&coordinate_3,(float *)NULL);
-									} break;
-									default:
-									{
-										coordinate_1=coordinate[0];
-										coordinate_2=coordinate[1];
-										coordinate_3=coordinate[2];
-									} break;
-								} /* switch */
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-				"warp_GT_voltex_with_FE_element.  Error calculating coordinate field");
-								return_code=0;
-							}
-							/* assign the coordinates to the point */
-							voltex2->vertex_list[i].coord[0]=(float)coordinate_1;
-							voltex2->vertex_list[i].coord[1]=(float)coordinate_2;
-							voltex2->vertex_list[i].coord[2]=(float)coordinate_3;
-						} /* outside block */
-						else
-						{
-							voltex2->vertex_list[i].coord[0]=vertex_list[i].coord[0];
-							voltex2->vertex_list[i].coord[1]=vertex_list[i].coord[1];
-							voltex2->vertex_list[i].coord[2]=vertex_list[i].coord[2];
-						}
-						i++;
-					} /* i */
-					if (return_code)
-					{
-						/* now calculate vertex normals in cartesian space by averaging
-							normals of surrounding faces */
-							/*???DB.  Can the normals be transformed ? */
-						for (i=0;i<n_vertices;i++)
-						{
-							for (k=0;k<3;k++)
-							{
-								vectorsum[k]=0;
-							}
-							for (j=0;j<voltex2->vertex_list[i].n_ptrs;j++)
-							{
-								triangle=voltex2->vertex_list[i].ptrs[j];
-								for (k=0;k<3;k++)
-								{
-									vertex0[k]=voltex2->vertex_list[
-										voltex2->triangle_list[triangle*3+0]].coord[k];
-									vertex1[k]=voltex2->vertex_list[
-										voltex2->triangle_list[triangle*3+1]].coord[k];
-									vertex2[k]=voltex2->vertex_list[
-										voltex2->triangle_list[triangle*3+2]].coord[k];
-									vector1[k]=vertex1[k]-vertex0[k];
-									vector2[k]=vertex2[k]-vertex0[k];
-								}
-								cross_product_float3(vector1,vector2,result);
-								rmag=sqrt((double)(result[0]*result[0]+
-									result[1]*result[1]+result[2]*result[2]));
-								if (rmag > 1e-3)
-								{
-									for (k=0;k<3;k++)
-									{
-										vectorsum[k] += result[k] / rmag;
-									}
-								}
-							}
-							/* now set normal as the average & normalize */
-							rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
-							vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
-							for (k=0;k<3;k++)
-							{
-								voltex2->vertex_list[i].normal[k]= -vectorsum[k]/rmag;
-									/*???MS.  This should be + */
-							}
-						} /* i */
-					}
-					for (i=number_of_elements;i>0;i--)
-					{
-						element_warp_values_ptr=element_warp_values_table[i-1];
-						if (element_warp_values_ptr)
-						{
-							clear_FE_element_field_values(element_warp_values_ptr);
-						}
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-		"warp_GT_voltex_with_FE_element.  Could not allocate memory for elements");
-				return_code=0;
-			}
-			DEALLOCATE(element_block);
-			DEALLOCATE(adjacency_table);
-			DEALLOCATE(element_warp_values);
-			DEALLOCATE(element_warp_values_table);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"warp_GT_voltex_with_FE_element.  Volumes not compatible");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"warp_GT_voltex_with_FE_element.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* warp_GT_voltex_with_FE_element */
-
-struct Warp_node_data
-{
-	double *ximax;
-	FE_value focus;
-	float *warp_values;
-	int *adjacency_table,normalize,n_xi[3],xi_order;
-	struct FE_element **element_block;
-	struct FE_element_field_values *element_warp_values,
-		**element_warp_values_table;
-	struct FE_field *coordinate_field,*to_coordinate_field;
-	struct MANAGER(FE_node) *node_manager;
-}; /* struct Warp_node_data */
-
-static int warp_node(struct FE_node *node,void *warp_node_data_void)
-/*******************************************************************************
-LAST MODIFIED : 17 November 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	char *field_name;
-	double *ximax;
-	FE_value coordinates[3],coordinate_1,coordinate_2,coordinate_3,xi[3];
-	float distance,minimum_distance,*warp_values;
-	int a,aa,b,bb,c,cc,*n_xi,outside_block,return_code;
-	struct FE_element **element_block;
-	struct FE_element_field_values *element_warp_values_ptr;
-	struct FE_field *coordinate_field;
-	struct FE_field_component field_component;
-	struct FE_node *node_copy;
-	struct Warp_node_data *warp_node_data;
-
-	ENTER(warp_node);
-	return_code=0;
-	/* check arguments */
-	if (node&&(warp_node_data=(struct Warp_node_data *)warp_node_data_void)&&
-		(element_block=warp_node_data->element_block)&&
-		(warp_values=warp_node_data->warp_values)&&
-		(ximax=warp_node_data->ximax))
-	{
-		if (coordinate_field=FE_node_get_position_cartesian(node,
-			warp_node_data->coordinate_field,coordinates,coordinates+1,
-			coordinates+2,(FE_value *)NULL))
-		{
-			warp_node_data->coordinate_field=coordinate_field;
-			if (!(warp_node_data->to_coordinate_field))
-			{
-				warp_node_data->to_coordinate_field=warp_node_data->coordinate_field;
-			}
-			if ((warp_node_data->coordinate_field)&&
-				(field_component.field=warp_node_data->to_coordinate_field))
-			{
-				if ((node_copy=CREATE(FE_node)(0,(struct FE_node *)NULL))
-					&&(MANAGER_COPY_WITH_IDENTIFIER(FE_node,
-					cm_node_identifier)(node_copy,node)))
-				{
-					n_xi=warp_node_data->n_xi;
-					/* warp values = (xmin,xmax),(ymin,ymax),(zmin,zmax) */
-					/* these are normalized to fit within the extent or ximax # of
-						elements */
-					if (warp_node_data->normalize)
-					{
-						switch (warp_node_data->xi_order)
-						{
-							case 123:
-							{
-								xi[0]=(FE_value)(coordinates[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[0];
-								xi[1]=(FE_value)(coordinates[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[1];
-								xi[2]=(FE_value)(coordinates[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-							case 132:
-							{
-								xi[0]=(FE_value)(coordinates[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[0];
-								xi[2]=(FE_value)(coordinates[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[2];
-								xi[1]=(FE_value)(coordinates[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[1];
-							} break;
-							case 321:
-							{
-								xi[2]=(FE_value)(coordinates[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[2];
-								xi[1]=(FE_value)(coordinates[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[1];
-								xi[0]=(FE_value)(coordinates[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[0];
-							} break;
-							case 213:
-							{
-								xi[1]=(FE_value)(coordinates[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[1];
-								xi[0]=(FE_value)(coordinates[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[0];
-								xi[2]=(FE_value)(coordinates[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-							case 231:
-							{
-								xi[1]=(FE_value)(coordinates[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[1];
-								xi[0]=(FE_value)(coordinates[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[0];
-								xi[2]=(FE_value)(coordinates[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-							case 312:
-							{
-								xi[2]=(FE_value)(coordinates[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[2];
-								xi[0]=(FE_value)(coordinates[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[0];
-								xi[1]=(FE_value)(coordinates[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[1];
-							} break;
-							default:
-							{
-								xi[0]=(FE_value)(coordinates[0]-warp_values[0])/
-									(warp_values[1]-warp_values[0])*ximax[0];
-								xi[1]=(FE_value)(coordinates[1]-warp_values[2])/
-									(warp_values[3]-warp_values[2])*ximax[1];
-								xi[2]=(FE_value)(coordinates[2]-warp_values[4])/
-									(warp_values[5]-warp_values[4])*ximax[2];
-							} break;
-						}
-					}
-					else /* use precalculated material coordinates */
-					{
-						switch (warp_node_data->xi_order)
-						{
-							case 123:
-							{
-								xi[0]=(FE_value)(coordinates[0]);
-								xi[1]=(FE_value)(coordinates[1]);
-								xi[2]=(FE_value)(coordinates[2]);
-							} break;
-							case 132:
-							{
-								xi[0]=(FE_value)(coordinates[0]);
-								xi[2]=(FE_value)(coordinates[1]);
-								xi[1]=(FE_value)(coordinates[2]);
-							} break;
-							case 321:
-							{
-								xi[2]=(FE_value)(coordinates[0]);
-								xi[1]=(FE_value)(coordinates[1]);
-								xi[0]=(FE_value)(coordinates[2]);
-							} break;
-							case 213:
-							{
-								xi[1]=(FE_value)(coordinates[0]);
-								xi[0]=(FE_value)(coordinates[1]);
-								xi[2]=(FE_value)(coordinates[2]);
-							} break;
-							case 231:
-							{
-								xi[1]=(FE_value)(coordinates[0]);
-								xi[0]=(FE_value)(coordinates[1]);
-								xi[2]=(FE_value)(coordinates[2]);
-							} break;
-							case 312:
-							{
-								xi[2]=(FE_value)(coordinates[0]);
-								xi[0]=(FE_value)(coordinates[1]);
-								xi[1]=(FE_value)(coordinates[2]);
-							} break;
-							default:
-							{
-								xi[0]=(FE_value)(coordinates[0]);
-								xi[1]=(FE_value)(coordinates[1]);
-								xi[2]=(FE_value)(coordinates[2]);
-							} break;
-						}
-					}
-					/* here it must be decided which element the xi point is in.  Once
-						the element is chosen, the xi value is renormalized to lie
-						within that element */
-					/* the element indices */
-					a=(int)(floor(((float)xi[0])));
-					b=(int)(floor(((float)xi[1])));
-					c=(int)(floor(((float)xi[2])));
-#if defined (OLD_CODE)
-					if (a>n_xi[0]-1)
-					{
-						a=n_xi[0]-1;
-					}
-					if (b>n_xi[1]-1)
-					{
-						b=n_xi[1]-1;
-					}
-					if (c>n_xi[2]-1)
-					{
-						c=n_xi[2]-1;
-					}
-					if (a<0)
-					{
-						a=0;
-					}
-					if (b<0)
-					{
-						b=0;
-					}
-					if (c<0)
-					{
-						c=0;
-					}
-#endif /* defined (OLD_CODE) */
-					/* if a vertex is outside of the element block, then do not deform
-						it */
-					outside_block=0;
-					if (a>n_xi[0]-1)
-					{
-						outside_block=1;
-					}
-					if (b>n_xi[1]-1)
-					{
-						outside_block=1;
-					}
-					if (c>n_xi[2]-1)
-					{
-						outside_block=1;
-					}
-					if (a<0)
-					{
-						outside_block=1;
-					}
-					if (b<0)
-					{
-						outside_block=1;
-					}
-					if (c<0)
-					{
-						outside_block=1;
-					}
-					if (!outside_block)
-					{
-						/* normalize the xi values to lie in element [a][b][c] */
-						if (!(element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a]))
-						{
-							/* find nearest non-null element to xi */
-							minimum_distance=(xi[0])*(xi[0])+(xi[1])*(xi[1])+
-								(xi[2])*(xi[2]);
-							for (aa=0;aa<n_xi[0];aa++)
-							{
-								for (bb=0;bb<n_xi[1];bb++)
-								{
-									for (cc=0;cc<n_xi[2];cc++)
-									{
-										distance=(xi[0]-aa)*(xi[0]-aa)+(xi[1]-bb)*(xi[1]-bb)+
-											(xi[2]-cc)*(xi[2]-cc);
-										if ((distance<minimum_distance)&&
-											element_block[cc*n_xi[0]*n_xi[1]+bb*n_xi[0]+aa])
-										{
-											minimum_distance=distance;
-											a=aa;
-											b=bb;
-											c=cc;
-										}
-									}
-								}
-							}
-						}
-						xi[0] -= ((FE_value)a);
-						xi[1] -= ((FE_value)b);
-						xi[2] -= ((FE_value)c);
-						/* coordinate_n_value contains the blended matrix
-							(M.G (m=blending (eg Cubic Hermite),G=geometry)) for each
-							element dimension. To calculate the monomial values (dependent
-							on xi1,2,3) the standard basis fn (which happens to be monomial
-							(T(xi1,2,3)) in this case) is called.  This need only be
-							calculated once for each set of xi coords and then used for each
-							coordinate by obtaining the dot product (Q(xi1,2,3)=M.G.T) */
-							/*???MS.  I think this is actually Q=G.M.T */
-						element_warp_values_ptr=(warp_node_data->element_warp_values_table)[
-							c*n_xi[0]*n_xi[1]+b*n_xi[0]+a];
-						if (calculate_FE_element_field(-1,element_warp_values_ptr,xi,
-							coordinates,(FE_value *)NULL))
-						{
-							/* transform points to cartesian coordinates */
-							switch (get_coordinate_system_type(
-								get_FE_field_coordinate_system(element_warp_values_ptr->
-								field)))
-							{
-								case CYLINDRICAL_POLAR:
-								{
-									cylindrical_polar_to_cartesian(coordinates[0],coordinates[1],
-										coordinates[2],&coordinate_1,&coordinate_2,&coordinate_3,
-										(float *)NULL);
-								} break;
-								case SPHERICAL_POLAR:
-								{
-									spherical_polar_to_cartesian(coordinates[0],coordinates[1],
-										coordinates[2],&coordinate_1,&coordinate_2,&coordinate_3,
-										(float *)NULL);
-								} break;
-								case PROLATE_SPHEROIDAL:
-								{
-									prolate_spheroidal_to_cartesian(coordinates[0],coordinates[1],
-										coordinates[2],warp_node_data->focus,&coordinate_1,
-										&coordinate_2,&coordinate_3,(float *)NULL);
-								} break;
-								case OBLATE_SPHEROIDAL:
-								{
-									oblate_spheroidal_to_cartesian(coordinates[0],coordinates[1],
-										coordinates[2],warp_node_data->focus,&coordinate_1,
-										&coordinate_2,&coordinate_3,(float *)NULL);
-								} break;
-								default:
-								{
-									coordinate_1=coordinates[0];
-									coordinate_2=coordinates[1];
-									coordinate_3=coordinates[2];
-								} break;
-							} /* switch */
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"warp_node.  Error calculating coordinate field");
-							return_code=0;
-						}
-						/* assign the coordinates to the node */
-						field_component.number=0;
-						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							/*time*/0, coordinate_1);
-						(field_component.number)++;
-						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							/*time*/0, coordinate_2);
-						(field_component.number)++;
-						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							/*time*/0, coordinate_3);
-						return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-							node,node_copy,warp_node_data->node_manager);
-					} /* if outside_block */
-					else
-					{
-						/* do nothing ?? */
-						field_component.number=0;
-						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							/*time*/0, coordinates[0]);
-						(field_component.number)++;
-						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							/*time*/0, coordinates[1]);
-						(field_component.number)++;
-						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							/*time*/0, coordinates[2]);
-						return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-							node,node_copy,warp_node_data->node_manager);
-
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"warp_node.  Could not create node_copy");
-					return_code=0;
-				}
-				if (node_copy)
-				{
-					DESTROY(FE_node)(&node_copy);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"warp_node.  Missing coordinate field(s)");
-				return_code=0;
-			}
-		}
-		else
-		{
-			field_name=(char *)NULL;
-			GET_NAME(FE_field)(warp_node_data->coordinate_field,&field_name);
-			display_message(ERROR_MESSAGE,
-				"warp_node.  Could not calculate coordinate field %s at node %d",
-				field_name,get_FE_node_cm_node_identifier(node));
-			display_message(ERROR_MESSAGE,
-				"warp_node.  Could not calculate coordinate field");
-			DEALLOCATE(field_name);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"warp_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* warp_node */
-
-int warp_FE_node_group_with_FE_element(struct GROUP(FE_node) *node_group,
-	struct MANAGER(FE_node) *node_manager,struct FE_field *coordinate_field,
-	struct FE_field *to_coordinate_field,struct FE_element *element,
-	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order,
-	FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Replaces the <coordinate_field> nodal values for the nodes in the <node_group>
-with warped values obtained using the <warp_field> over the <element> block.
-???DB.  xi_order should be an enumerated type
-==============================================================================*/
-{
-	int i,j,k,m,number_of_elements,return_code;
-	struct FE_element **element_block_ptr,*element_ptr;
-	struct FE_element_field_values *element_warp_values_ptr;
-	struct Warp_node_data warp_node_data;
-
-	ENTER(warp_FE_node_group_with_FE_element);
-	return_code=0;
-	/* check arguments */
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&
-		(warp_node_data.node_manager=node_manager))
-	{
-		warp_node_data.xi_order=xi_order;
-		warp_node_data.coordinate_field=coordinate_field;
-		warp_node_data.to_coordinate_field=to_coordinate_field;
-		warp_node_data.ximax=ximax;
-		warp_node_data.warp_values=warp_values;
-		/* if warp_values are set to zero then do not normalize (i.e use as is) */
-		if ((0==warp_values[0])&&(0==warp_values[1]))
-		{
-			warp_node_data.normalize=0;
-			display_message(WARNING_MESSAGE,
-				"warp_FE_node_group_with_FE_element.  Not normalizing nodal data");
-		}
-		else
-		{
-			warp_node_data.normalize=1;
-		}
-		/* examine min & max xi values element block. If 0<xi<1 possibly repeat.  If
-			xi>1 then will need to draw over other elements, so must find
-			neighbouring ones */
-		number_of_elements=1;
-		for (i=0;i<3;i++)
-		{
-			/* MACRO TEXTURES : spread over several elements */
-			/* round to nearest integer above if non integer (eg 1->1,1.2 ->2) */
-			(warp_node_data.n_xi)[i]=(int)ceil(ximax[i]);
-			number_of_elements *= (warp_node_data.n_xi)[i];
-			/* MICRO TEXTURES : repeated within one element ???*/
-		}
-		/* allocate memory for elements */
-		ALLOCATE(warp_node_data.element_block,struct FE_element *,
-			number_of_elements);
-		ALLOCATE(warp_node_data.adjacency_table,int,6*number_of_elements);
-		ALLOCATE(warp_node_data.element_warp_values,struct FE_element_field_values,
-			number_of_elements);
-		ALLOCATE(warp_node_data.element_warp_values_table,
-			struct FE_element_field_values *,number_of_elements);
-		if ((warp_node_data.element_block)&&(warp_node_data.adjacency_table)&&
-			(warp_node_data.element_warp_values)&&
-			(warp_node_data.element_warp_values_table))
-		{
-			for (i=0;i<number_of_elements;i++)
-			{
-				(warp_node_data.element_warp_values_table)[i]=
-					(struct FE_element_field_values *)NULL;
-			}
-			/* pick seed element starting at minimum xi1,2,3 position (ie give
-				closest bottom leftmost element ) */
-			/* calculute elements sitting in block which texture extends into */
-			element_block_ptr=warp_node_data.element_block;
-			for (i=0;i<(warp_node_data.n_xi)[0];i++)
-			{
-				for (j=0;j<(warp_node_data.n_xi)[1];j++)
-				{
-					for (k=0;k<(warp_node_data.n_xi)[2];k++)
-					{
-						element_block_ptr[k*(warp_node_data.n_xi)[0]*
-							(warp_node_data.n_xi)[1]+j*(warp_node_data.n_xi)[0]+i]=
-							(struct FE_element *)NULL;
-						for (m=0;m<6;m++)
-						{
-							(warp_node_data.adjacency_table)[(k*(warp_node_data.n_xi)[0]*
-								(warp_node_data.n_xi)[1]+j*(warp_node_data.n_xi)[0]+i)*6+m]=0;
-						}
-					}
-				}
-			}
-			/* recursively filling element block */
-			fill_table(warp_node_data.element_block,warp_node_data.adjacency_table,
-				element,0,0,0,warp_node_data.n_xi);
-			/* coordinates calculated using Q=G(geometry vector).M(blending matrix).
-				T(monomial basis (of xi values)) */
-			/* calculate G.M [using calc_FE_elem_field_vals] (to multiply the
-				monomial basis T) for each element in the block - when an xi
-				coordinate in the vertex list extends over the first element, the next
-				element is used */
-			return_code=1;
-			element_block_ptr=warp_node_data.element_block;
-			element_warp_values_ptr=warp_node_data.element_warp_values;
-			i=number_of_elements;
-			while (return_code&&(i>0))
-			{
-				element_ptr=(warp_node_data.element_block)[i-1];
-				if (element_ptr)
-				{
-					/* determine if the coordinate field is defined over the element */
-					if (calculate_FE_element_field_values(element_ptr,warp_field,
-						time,/*calculate_derivatives*/0,element_warp_values_ptr,
-						/*top_level_element*/(struct FE_element *)NULL)&&
-						(3==element_warp_values_ptr->number_of_components))
-					{
-						(warp_node_data.element_warp_values_table)[i-1]=
-							element_warp_values_ptr;
-						element_warp_values_ptr++;
-						i--;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-"warp_FE_node_group_with_FE_element.  Coordinate field not defined over element");
-						return_code=0;
-					}
-				}
-			}
-			if (return_code)
-			{
-				/*???DB.  Not correct if there are different coordinate fields for
-					different elements */
-				switch (get_coordinate_system_type(get_FE_field_coordinate_system(
-					(warp_node_data.element_warp_values)->field)))
-				{
-					case PROLATE_SPHEROIDAL: case OBLATE_SPHEROIDAL:
-					{
-						if (!get_FE_field_FE_value_value
-							((warp_node_data.element_warp_values)->field,
-							0,&(warp_node_data.focus)))
-						{
-							warp_node_data.focus=1;
-						}
-					} break;
-					default:
-					{
-						warp_node_data.focus=1;
-					} break;
-				}
-				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-				if (node_group)
-				{
-					return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(warp_node,
-						&warp_node_data,node_group);
-				}
-				else
-				{
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(warp_node,
-						&warp_node_data,node_manager);
-				}
-				MANAGER_END_CACHE(FE_node)(node_manager);
-				for (i=number_of_elements;i>0;i--)
-				{
-					element_warp_values_ptr=
-						(warp_node_data.element_warp_values_table)[i-1];
-					if (element_warp_values_ptr)
-					{
-						clear_FE_element_field_values(element_warp_values_ptr);
-					}
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-"warp_FE_node_group_with_FE_element.  Could not allocate memory for elements");
-			return_code=0;
-		}
-		DEALLOCATE(warp_node_data.element_block);
-		DEALLOCATE(warp_node_data.adjacency_table);
-		DEALLOCATE(warp_node_data.element_warp_values);
-		DEALLOCATE(warp_node_data.element_warp_values_table);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"warp_FE_node_group_with_FE_element.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* warp_FE_node_group_with_FE_element */
+} /* create_FE_nodes_on_GT_voltex_surface */
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element, struct FE_element *top_level_element,
@@ -5926,7 +4902,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	enum Graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -5964,6 +4940,7 @@ Note:
 	int draw_all, i, j, n_data_components, *name, *names,
 		number_of_orientation_scale_components, number_of_variable_scale_components,
 		point_number, point_selected,	points_to_draw;
+	struct CM_element_information cm;
 	struct GT_glyph_set *glyph_set;
 	Triple *axis1, *axis1_list, *axis2, *axis2_list, *axis3, *axis3_list,
 		*point, *point_list, *scale, *scale_list;
@@ -5972,7 +4949,7 @@ Note:
 	/* must set following to 0 in case fields not supplied */
 	number_of_orientation_scale_components = 0;
 	number_of_variable_scale_components = 0;
-	if (element && (element->shape) && coordinate_field &&
+	if (element && coordinate_field &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
 		(0 < number_of_xi_points) && xi_points && glyph &&
 		centre && base_size && scale_factors &&
@@ -6057,6 +5034,7 @@ Note:
 				ALLOCATE(names,int,points_to_draw);
 			}
 			/* store element number as object_name for editing GT_object primitives */
+			get_FE_element_identifier(element, &cm);
 			if ((data || (!n_data_components)) && ((!label_field) || labels) &&
 				((GRAPHICS_NO_SELECT == select_mode) || names) &&
 				ALLOCATE(point_list, Triple, points_to_draw) &&
@@ -6067,7 +5045,7 @@ Note:
 				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list, glyph, labels,
 					n_data_components, data,
-					CM_element_information_to_graphics_name(element->identifier), names)))
+					CM_element_information_to_graphics_name(&cm), names)))
 			{
 				point = point_list;
 				axis1 = axis1_list;
@@ -6226,7 +5204,7 @@ struct VT_vector_field *interpolate_vector_field_on_FE_element(double ximax[3],
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct VT_vector_field *vector_field, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Interpolates xi points (triples in vector field) over the finite <element>
@@ -6244,8 +5222,9 @@ Interpolates xi points (triples in vector field) over the finite <element>
 	/*???debug */
 	printf("enter interpolate_vector_field_on_FE_element\n");
 #endif /* defined (DEBUG) */
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&vector_field&&
-		coordinate_field&&(3>=Computed_field_get_number_of_components(coordinate_field)))
+	if (element && (3 == get_FE_element_dimension(element)) && vector_field &&
+		coordinate_field &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)))
 	{
 		/* examine min & max xi values of voltex. If 0<xi<1 possibly repeat.  If
 			xi>1 then will need to draw over other elements, so must find neighbouring
@@ -6781,184 +5760,10 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 	return (voltex);
 } /* generate_clipped_GT_voltex_from_FE_element */
 
-int write_FE_element_layout(double ximax[3],struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 18 May 1998
-
-DESCRIPTION :
-Prints out element block layout (given seed element) for use in external
-programs
-???DB.  Should this be here ?
-==============================================================================*/
-{
-	FILE *fp;
-	int *adjacency_table,i,j,k,m,number_of_elements,n_xi[3],return_code;
-	struct FE_element **element_block,**element_block_ptr;
-
-	ENTER(write_FE_element_layout);
-	return_code=0;
-#if defined (DEBUG)
-	/*???debug */
-	printf("write_FE_element_layout\n");
-#endif /* defined (DEBUG) */
-	if (element&&(element->shape)&&(3==element->shape->dimension))
-	{
-		/* examine min & max xi values of voltex. If 0<xi<1 possibly repeat.  If
-			xi>1 then will need to draw over other elements, so must find neighbouring
-			ones */
-		number_of_elements=1;
-		for (i=0;i<3;i++)
-		{
-			/* MACRO TEXTURES : spread over several elements */
-			/* round to nearest integer above if non integer (eg 1->1,1.2 ->2) */
-			n_xi[i]=(int)ceil(ximax[i]);
-			number_of_elements *= n_xi[i];
-			/* MICRO TEXTURES : repeated within one element ???*/
-		}
-		/* allocate memory for elements */
-		ALLOCATE(element_block,struct FE_element *,number_of_elements);
-		ALLOCATE(adjacency_table, int, 6*number_of_elements);
-		if (element_block&&adjacency_table)
-		{
-			/* pick seed element starting at minimum xi1,2,3 position (ie give closet
-				bottom leftmost element ) */
-			/* calculute elements sitting in block which texture extends into */
-			element_block_ptr=element_block;
-			for (i=0;i<n_xi[0];i++)
-			{
-				for (j=0;j<n_xi[1];j++)
-				{
-					for (k=0;k<n_xi[2];k++)
-					{
-						element_block_ptr[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]=
-							(struct FE_element *)NULL;
-						for (m=0;m<6;m++)
-						{
-							adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+m]=0;
-						}
-					}
-				}
-			}
-			/* recursively filling element block */
-			fill_table(element_block,adjacency_table,element,0,0,0,n_xi);
-			/* output element block */
-			if (fp = fopen("element_layout", "w"))
-			{
-				printf("writing element_layout file...\n");
-				fprintf(fp,"%d %d %d\n",n_xi[0],n_xi[1],n_xi[2]);
-				printf("%d %d %d\n",n_xi[0],n_xi[1],n_xi[2]);
-				for (k=0;k<n_xi[2];k++)
-				{
-					for (j=0;j<n_xi[1];j++)
-					{
-						for (i=0;i<n_xi[0];i++)
-						{
-							fprintf(fp,"%d ",
-								element_block_ptr[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]->cm.number);
-							printf("%d ",
-								element_block_ptr[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]->cm.number);
-						}
-						fprintf(fp,"\n");
-						printf("\n");
-					}
-					fprintf(fp,"\n");
-					printf("\n");
-				}
-				fclose(fp);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"write_FE_element_layout.  Could not open element_layout file");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"write_FE_element_layout.  Could not allocate memory for elements");
-			return_code=0;
-		}
-		DEALLOCATE(element_block);
-		DEALLOCATE(adjacency_table);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_FE_element_layout  Invalid argument(s)");
-		return_code=0;
-	}
-
-	LEAVE;
-	return(return_code);
-} /* write_FE_element_layout */
-
-int FE_element_can_be_displayed(struct FE_element *element,
-	int dimension,enum CM_element_type cm_element_type,int exterior,
-	int face_number,struct GROUP(FE_element) *element_group)
-/*******************************************************************************
-LAST MODIFIED : 22 December 1999
-
-DESCRIPTION :
-Returns true if the element is <exterior>, if set, and on the given
-<face_number>, if non-negative, and that the parent element identifying this is
-in the <element_group> in the latter case, again if specified. Tests are assumed
-to succeed for all unspecified parameters.
-Also tests whether the <dimension> and/or <cm_element_type> matches.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_face_of_element_in_group_data face_in_group_data;
-
-	ENTER(FE_element_can_be_displayed);
-	return_code=0;
-	if (element)
-	{
-		if ((dimension==get_FE_element_dimension(element))||
-			(cm_element_type==element->cm.type))
-		{
-			return_code=1;
-			if (3>dimension)
-			{
-				/* test for exterior element */
-				if (return_code&&exterior)
-				{
-					return_code=
-						(1==NUMBER_IN_LIST(FE_element_parent)(element->parent_list))||
-						((1==dimension)&&FIRST_OBJECT_IN_LIST_THAT(
-							FE_element_parent)(FE_element_parent_is_exterior,(void *)NULL,
-								element->parent_list));
-				}
-				/* test for on correct face */
-				if (return_code&&(0<=face_number))
-				{
-					face_in_group_data.face_number=face_number;
-					face_in_group_data.element_group=element_group;
-					if (!FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-						FE_element_parent_face_of_element_in_group,
-						(void *)&face_in_group_data,element->parent_list))
-					{
-						return_code=0;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_can_be_displayed.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_can_be_displayed */
-
 int element_to_cylinder(struct FE_element *element,
 	void *void_element_to_cylinder_data)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2002
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Converts a finite element into a cylinder.
@@ -6973,9 +5778,10 @@ Converts a finite element into a cylinder.
 	if (element&&(element_to_cylinder_data=
 		(struct Element_to_cylinder_data *)void_element_to_cylinder_data))
 	{
-		if (FE_element_can_be_displayed(element,1,CM_LINE,
-			element_to_cylinder_data->exterior,element_to_cylinder_data->face_number,
-			element_to_cylinder_data->element_group))
+		if (FE_region_FE_element_meets_topological_criteria(
+			element_to_cylinder_data->fe_region, element, 1, CM_LINE,
+			element_to_cylinder_data->exterior,
+			element_to_cylinder_data->face_number))
 		{
 			if (surface_element=create_cylinder_from_FE_element(element,
 				element_to_cylinder_data->coordinate_field,
@@ -7019,7 +5825,7 @@ Converts a finite element into a cylinder.
 int element_to_polyline(struct FE_element *element,
 	void *element_to_polyline_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 December 1999
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Converts a finite element into a polyline and adds it to a graphics_object.
@@ -7033,9 +5839,10 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 	if (element&&(element_to_polyline_data=
 		(struct Element_to_polyline_data *)element_to_polyline_data_void))
 	{
-		if (FE_element_can_be_displayed(element,1,CM_LINE,
-			element_to_polyline_data->exterior,element_to_polyline_data->face_number,
-			element_to_polyline_data->element_group))
+		if (FE_region_FE_element_meets_topological_criteria(
+			element_to_polyline_data->fe_region, element, 1, CM_LINE,
+			element_to_polyline_data->exterior,
+			element_to_polyline_data->face_number))
 		{
 			if (polyline=create_GT_polyline_from_FE_element(element,
 				element_to_polyline_data->coordinate_field,
@@ -7074,7 +5881,7 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 int element_to_surface(struct FE_element *element,
 	void *void_element_to_surface_data)
 /*******************************************************************************
-LAST MODIFIED : 20 December 1999
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Converts a finite element into a surface.
@@ -7089,9 +5896,9 @@ Converts a finite element into a surface.
 	if (element&&(element_to_surface_data=
 		(struct Element_to_surface_data *)void_element_to_surface_data))
 	{
-		if (FE_element_can_be_displayed(element,2,CM_FACE,
-			element_to_surface_data->exterior,element_to_surface_data->face_number,
-			element_to_surface_data->element_group))
+		if (FE_region_FE_element_meets_topological_criteria(
+			element_to_surface_data->fe_region, element, 2, CM_FACE,
+			element_to_surface_data->exterior, element_to_surface_data->face_number))
 		{
 			switch(element_to_surface_data->object_type)
 			{
@@ -7262,172 +6069,10 @@ A modifier function for setting the displacement map.
 	return (return_code);
 } /* set_Displacement_map */
 
-int set_Warp_values(struct Parse_state *state,
-	void *warp_values_void,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 6 February 1998
-
-DESCRIPTION :
-???RC Move to volume_texture?
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct Warp_values *warp_values;
-
-	ENTER(set_Warp_values);
-	/* check argument */
-	if (state && (!dummy_user_data))
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				if (warp_values=(struct Warp_values *)warp_values_void)
-				{
-					if ((1==sscanf(current_token," %f ",&(warp_values->value[0])))&&
-						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-						(1==sscanf(current_token," %f ",&(warp_values->value[1])))&&
-						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-						(1==sscanf(current_token," %f ",&(warp_values->value[2])))&&
-						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-						(1==sscanf(current_token," %f ",&(warp_values->value[3])))&&
-						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-						(1==sscanf(current_token," %f ",&(warp_values->value[4])))&&
-						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-						(1==sscanf(current_token," %f ",&(warp_values->value[5]))))
-					{
-						return_code=shift_Parse_state(state,1);
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,"Missing/invalid wrap value(s)");
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_Warp_values.  Missing warp_values");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE," X_MIN#");
-				if (warp_values=(struct Warp_values *)warp_values_void)
-				{
-					display_message(INFORMATION_MESSAGE,"[%g]",warp_values->value[0]);
-				}
-				display_message(INFORMATION_MESSAGE," X_MAX#");
-				if (warp_values)
-				{
-					display_message(INFORMATION_MESSAGE,"[%g]",warp_values->value[1]);
-				}
-				display_message(INFORMATION_MESSAGE," Y_MIN#");
-				if (warp_values)
-				{
-					display_message(INFORMATION_MESSAGE,"[%g]",warp_values->value[2]);
-				}
-				display_message(INFORMATION_MESSAGE," Y_MAX#");
-				if (warp_values)
-				{
-					display_message(INFORMATION_MESSAGE,"[%g]",warp_values->value[3]);
-				}
-				display_message(INFORMATION_MESSAGE," Z_MIN#");
-				if (warp_values)
-				{
-					display_message(INFORMATION_MESSAGE,"[%g]",warp_values->value[4]);
-				}
-				display_message(INFORMATION_MESSAGE," Z_MAX#");
-				if (warp_values)
-				{
-					display_message(INFORMATION_MESSAGE,"[%g]",warp_values->value[5]);
-				}
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,"Missing ranges for warp");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Warp_values.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Warp_values */
-
-#if defined (OLD_CODE)
-int warp_volume(struct FE_element *element,void *warp_data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 September 1997
-
-DESCRIPTION :
-Warps a volume.
-==============================================================================*/
-{
-	double ximax[3];
-	struct GT_voltex *volume_element;
-	int itime1,itime2,return_code;
-	struct Warp_data *warp_data;
-
-	ENTER(warp_volume);
-	/* check arguments */
-	if (element&&(warp_data=(struct Warp_data *)warp_data_void))
-	{
-		/* determine if the element is required */
-		if ((element->shape)&&(3==element->shape->dimension))
-		{
-			ximax[0]=warp_data->extent->number_in_xi1;
-			ximax[1]=warp_data->extent->number_in_xi2;
-			ximax[2]=warp_data->extent->number_in_xi3;
-			itime1=warp_data->graphics_object1->number_of_times;
-			itime2=warp_data->graphics_object2->number_of_times;
-			if (!(return_code=warp_GT_voltex_with_FE_element(
-				(warp_data->graphics_object1->gu.gtVoltex)[itime1-1],
-				(warp_data->graphics_object2->gu.gtVoltex)[itime2-1],
-				element,warp_data->coordinate_field,ximax,
-				(warp_data->warp_values).value,warp_data->xi_order)))
-			{
-				display_message(ERROR_MESSAGE,
-					"warp_volume.  Failed to warp: check arguments");
-			}
-/*???debug */
-printf("Warp called: volume1 = %s, volume2 = %s,  element = %d, coordinates = %s, extent = %d %d %d, values = %f %f,  %f %f,  %f %f xi_order = %d\n",
-	warp_data->graphics_object1->name,warp_data->graphics_object2->name,
-	(element->cmiss).element_number,warp_data->coordinate_field->name,
-	warp_data->extent->number_in_xi1,warp_data->extent->number_in_xi2,
-	warp_data->extent->number_in_xi3,(warp_data->warp_values).value[0],
-	(warp_data->warp_values).value[1],(warp_data->warp_values).value[2],
-	(warp_data->warp_values).value[3],(warp_data->warp_values).value[4],
-	(warp_data->warp_values).value[5],warp_data->xi_order);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"warp_volume.  Incorrect element dimensions");
-			return_code=0;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* warp_volume */
-#endif /* defined (OLD_CODE) */
-
 int element_to_glyph_set(struct FE_element *element,
 	void *element_to_glyph_set_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information about the
@@ -7442,18 +6087,18 @@ fields defined over it.
 	Triple *xi_points;
 
 	ENTER(element_to_glyph_set);
-	if (element && (element->shape) && (element_to_glyph_set_data=
+	if (element && (element_to_glyph_set_data=
 		(struct Element_to_glyph_set_data *)element_to_glyph_set_data_void))
 	{
 		return_code=1;
 		/* determine if the element is required */
-		if (FE_element_can_be_displayed(element,
+		if (FE_region_FE_element_meets_topological_criteria(
+			element_to_glyph_set_data->fe_region, element,
 			Use_element_type_dimension(element_to_glyph_set_data->use_element_type),
 			Use_element_type_CM_element_type(
 				element_to_glyph_set_data->use_element_type),
 			element_to_glyph_set_data->exterior,
-			element_to_glyph_set_data->face_number,
-			element_to_glyph_set_data->element_group))
+			element_to_glyph_set_data->face_number))
 		{
 			top_level_element = (struct FE_element *)NULL;
 			for (i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
@@ -7461,8 +6106,8 @@ fields defined over it.
 				top_level_number_in_xi[i] = element_to_glyph_set_data->number_in_xi[i];
 			}
 			/* determine discretization of element for graphic */
-			if (get_FE_element_discretization(element,
-				element_to_glyph_set_data->element_group,
+			if (FE_region_get_FE_element_discretization(
+				element_to_glyph_set_data->fe_region, element,
 				element_to_glyph_set_data->face_number,
 				element_to_glyph_set_data->native_discretization_field,
 				top_level_number_in_xi, &top_level_element, number_in_xi))
@@ -7553,12 +6198,8 @@ Converts a 3-D element into a volume.
 		(struct Element_to_volume_data *)void_element_to_volume_data))
 	{
 		/* determine if the element is required */
-		if ((element->shape)&&(3==element->shape->dimension))
+		if (3 == get_FE_element_dimension(element))
 		{
-/*			if (volume_element=create_GT_voltex_from_FE_element(element,
-				element_to_volume_data->coordinate_field,
-				element_to_volume_data->data_field,
-				element_to_volume_data->volume_texture))*/
 			if (volume_element= generate_clipped_GT_voltex_from_FE_element(
 				element_to_volume_data->clipping,
 				element,
@@ -7576,21 +6217,15 @@ Converts a 3-D element into a volume.
 					element_to_volume_data->graphics_object,
 					element_to_volume_data->time,volume_element))
 				{
-					if(element_to_volume_data->surface_data_density_field
-						&& element_to_volume_data->surface_data_group
-						&& element_to_volume_data->data_manager
-						&& element_to_volume_data->fe_field_manager)
+					if(element_to_volume_data->surface_data_density_field &&
+						element_to_volume_data->surface_data_fe_region)
 					{
-						return_code = create_surface_data_points_from_GT_voltex(
+						return_code = create_FE_nodes_on_GT_voltex_surface(
 							volume_element,
 							element,
 							element_to_volume_data->coordinate_field,
 							element_to_volume_data->volume_texture,
-							element_to_volume_data->data_manager,
-							element_to_volume_data->surface_data_group,
-							element_to_volume_data->computed_field_manager,
-							element_to_volume_data->fe_field_manager, 
-							element_to_volume_data->fe_time, 
+							element_to_volume_data->surface_data_fe_region,
 							element_to_volume_data->surface_data_density_field,
 							element_to_volume_data->surface_data_coordinate_field,
 							element_to_volume_data->time);
@@ -7639,7 +6274,7 @@ printf("generate_clipped_GT_voltex_from_FE_element failed\n");
 int element_to_iso_scalar(struct FE_element *element,
 	void *element_to_iso_scalar_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2000
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Computes iso-surfaces/lines/points graphics from <element>.
@@ -7651,18 +6286,18 @@ Computes iso-surfaces/lines/points graphics from <element>.
 	struct FE_element *top_level_element;
 
 	ENTER(element_to_iso_scalar);
-	if (element&&(element->shape)&&(element_to_iso_scalar_data=
+	if (element && (element_to_iso_scalar_data=
 		(struct Element_to_iso_scalar_data *)element_to_iso_scalar_data_void))
 	{
 		return_code=1;
 		/* determine if the element is required */
-		if (FE_element_can_be_displayed(element,
+		if (FE_region_FE_element_meets_topological_criteria(
+			element_to_iso_scalar_data->fe_region, element,
 			Use_element_type_dimension(element_to_iso_scalar_data->use_element_type),
 			Use_element_type_CM_element_type(
 				element_to_iso_scalar_data->use_element_type),
 			element_to_iso_scalar_data->exterior,
-			element_to_iso_scalar_data->face_number,
-			element_to_iso_scalar_data->element_group))
+			element_to_iso_scalar_data->face_number))
 		{
 			top_level_element=(struct FE_element *)NULL;
 			for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
@@ -7670,8 +6305,8 @@ Computes iso-surfaces/lines/points graphics from <element>.
 				top_level_number_in_xi[i]=element_to_iso_scalar_data->number_in_xi[i];
 			}
 			/* determine discretization of element for graphic */
-			if (get_FE_element_discretization(element,
-				element_to_iso_scalar_data->element_group,
+			if (FE_region_get_FE_element_discretization(
+				element_to_iso_scalar_data->fe_region, element,
 				element_to_iso_scalar_data->face_number,
 				element_to_iso_scalar_data->native_discretization_field,
 				top_level_number_in_xi,&top_level_element,number_in_xi))
@@ -7695,11 +6330,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								number_in_xi,
 								element_to_iso_scalar_data->graphics_object,
 								element_to_iso_scalar_data->render_type,
-								element_to_iso_scalar_data->surface_data_group,
-								element_to_iso_scalar_data->data_manager,
-								element_to_iso_scalar_data->fe_field_manager,
-								element_to_iso_scalar_data->fe_time,
-								element_to_iso_scalar_data->computed_field_manager);
+								element_to_iso_scalar_data->surface_data_fe_region);
 						}
 						else
 						{
@@ -7755,7 +6386,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 } /* element_to_iso_scalar */
 
 int create_iso_surfaces_from_FE_element(struct FE_element *element,
-	double iso_value,FE_value time,struct Clipping *clipping,
+	double iso_value, FE_value time,struct Clipping *clipping,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,
@@ -7763,22 +6394,21 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *texture_coordinate_field,
 	int *number_in_xi,
 	struct GT_object *graphics_object,enum Render_type render_type,
-	struct GROUP(FE_node) *surface_data_group,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(Computed_field) *computed_field_manager)
+	struct FE_region *surface_data_fe_region)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2002
+LAST MODIFIED : 15 May 2003
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
 ==============================================================================*/
 {
+	enum FE_element_shape_type shape_type;
 	FE_value scalar_value,xi[3];
+	struct FE_element_shape *element_shape;
 	struct GT_voltex *iso_surface_voltex;
-	int cell_limit,*detail_map,i,number_of_passes,number_in_xi1,number_in_xi2,
-		number_in_xi3,number_of_vertices,number_of_volume_texture_cells,
-		number_of_volume_texture_nodes,pass,return_code,*shape_type,xi3_step;
+	int cell_limit, *detail_map, i, linked_xi1, linked_xi2, number_of_passes,
+		number_of_polygon_vertices, number_in_xi1, number_in_xi2, number_in_xi3, number_of_volume_texture_cells,
+		number_of_volume_texture_nodes, pass, return_code, xi3_step;
 	struct MC_cell **mc_cell;
 	struct MC_iso_surface *mc_iso_surface;
 	struct VT_texture_cell *cell,*cell_block,**cell_list;
@@ -7788,7 +6418,8 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 	ENTER(create_iso_surfaces_from_FE_element);
 	/* default return_code */
 	return_code=0;
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&
+	if (element && (3 == get_FE_element_dimension(element)) &&
+		get_FE_element_shape(element, &element_shape) &&
 		Computed_field_has_3_components(coordinate_field,NULL)&&
 		number_in_xi&&(0<number_in_xi[0])&&(0<number_in_xi[1])&&(0<number_in_xi[2])
 		&&scalar_field&&(1==Computed_field_get_number_of_components(scalar_field)))
@@ -7796,6 +6427,52 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 		number_in_xi1=number_in_xi[0];
 		number_in_xi2=number_in_xi[1];
 		number_in_xi3=number_in_xi[2];
+		/* check for polygons */
+		/*???DB.  Only for linear polygons */
+		/* make sure that polygon vertices land on grid points */
+		/*???DB.  For a polygon the "radial" component has to be second ? */
+		linked_xi1 = -1;
+		if (get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/0,
+					&shape_type) && (POLYGON_SHAPE == shape_type))
+		{
+			linked_xi1 = 0;
+		}
+		if (get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/1,
+					&shape_type) && (POLYGON_SHAPE == shape_type))
+		{
+			if (0 <= linked_xi1)
+			{
+				linked_xi2 = 1;
+			}
+			else
+			{
+				linked_xi1 = 1;
+				linked_xi2 = 2;
+			}
+		}
+		else if (0 <= linked_xi1)
+		{
+			linked_xi2 = 2;
+		}
+		if (0 <= linked_xi1)
+		{
+			if (get_FE_element_shape_xi_linkage_number(element_shape,
+						linked_xi1, linked_xi2, &number_of_polygon_vertices) &&
+				(0 < number_of_polygon_vertices))
+			{
+				if (0 == linked_xi1)
+				{
+					number_in_xi1 = (1 + (number_in_xi1 - 1)/number_of_polygon_vertices)
+						* number_of_polygon_vertices;
+				}
+				else
+				{
+					number_in_xi2 = (1 + (number_in_xi2 - 1)/number_of_polygon_vertices)
+						* number_of_polygon_vertices;
+				}
+			}
+		}
+
 		/* SAB 17 March 2003  To reduce the maximum amount of memory used in generating
 			these isosurfaces I am dividing up the xi3 direction if the number of cells is
 			greater than this limit.  A sensible value for this threshhold is dependent
@@ -7835,41 +6512,6 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 			if (volume_texture=CREATE(VT_volume_texture)((char *)NULL))
 			{
 				/* fill in the volume texture */
-				/* check for polygons */
-				/*???DB.  Only for linear polygons */
-				if ((element->shape)&&(shape_type=element->shape->type)&&
-					(3==element->shape->dimension))
-				{
-					/* make sure that polygon vertices land on grid points */
-					/*???DB.  For a polygon the "radial" component has to be second ? */
-					if (POLYGON_SHAPE==shape_type[0])
-					{
-						number_of_vertices=shape_type[1];
-						if (0==number_of_vertices)
-						{
-							number_of_vertices=shape_type[2];
-						}
-#if defined (OLD_CODE)
-						number_in_xi1=1+(1+(number_in_xi1-2)/number_of_vertices)*
-							number_of_vertices;
-#endif /* defined (OLD_CODE) */
-						number_in_xi1=
-							(1+(number_in_xi1-1)/number_of_vertices)*number_of_vertices;
-					}
-					else
-					{
-						if (POLYGON_SHAPE==shape_type[3])
-						{
-							number_of_vertices=shape_type[4];
-#if defined (OLD_CODE)
-							number_in_xi2=1+(1+(number_in_xi2-2)/number_of_vertices)*
-								number_of_vertices;
-#endif /* defined (OLD_CODE) */
-							number_in_xi2=
-								(1+(number_in_xi2-1)/number_of_vertices)*number_of_vertices;
-						}
-					}
-				}
 				number_of_volume_texture_cells=
 					number_in_xi1*number_in_xi2*number_in_xi3;
 				number_of_volume_texture_nodes=
@@ -8041,19 +6683,13 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 										 graphics_object,
 										 /*time*/0,iso_surface_voltex))
 								{
-									if (surface_data_density_field
-										&& surface_data_group
-										&& data_manager
-										&& fe_field_manager)
+									if (surface_data_fe_region && surface_data_density_field)
 									{
-										return_code = create_surface_data_points_from_GT_voltex(
+										return_code = create_FE_nodes_on_GT_voltex_surface(
 											iso_surface_voltex,
 											element, coordinate_field,
 											volume_texture,
-											data_manager,
-											surface_data_group,
-											computed_field_manager, 
-											fe_field_manager, fe_time,
+											surface_data_fe_region,
 											surface_data_density_field,
 											surface_data_coordinate_field, time);
 									}

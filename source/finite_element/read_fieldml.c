@@ -17,11 +17,7 @@ The function for importing finite element data into CMISS.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
-#if defined (CMGUI_REGIONS)
 #include "finite_element/finite_element_region.h"
-#else /* defined (CMGUI_REGIONS) */
-#include "finite_element/write_fieldml.h" /* SAB For temporary regions stuff */
-#endif /* defined (CMGUI_REGIONS) */
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -185,271 +181,6 @@ DESCRIPTION :
 Module functions
 ----------------
 */
-
-#if !defined (CMGUI_REGIONS)
-/* Temporary delarations so that the code compiles before regions exist.
-   Till end */
-static struct Cmiss_region *CREATE(Cmiss_region)(void)
-{
-	struct Cmiss_region *cmiss_region;
-
-	ALLOCATE(cmiss_region, struct Cmiss_region, 1);
-	cmiss_region->fe_region = (struct FE_region *)NULL;
-	return (cmiss_region);
-}
-static struct FE_region *CREATE(FE_region)(struct FE_region *master_fe_region,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_node) *node_manager, struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager)
-{
-	struct FE_region *fe_region;
-
-	USE_PARAMETER(master_fe_region);
-	ALLOCATE(fe_region, struct FE_region, 1);
-	fe_region->basis_manager = basis_manager;
-	fe_region->node_manager = node_manager;
-	fe_region->element_manager = element_manager;
-	fe_region->fe_field_manager = fe_field_manager;
-	return (fe_region);
-}
-static int Cmiss_region_attach_FE_region(struct Cmiss_region *cmiss_region,
-	struct FE_region *fe_region)
-{
-	cmiss_region->fe_region = fe_region;
-	return(1);
-}
-static int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
-{
-	DEALLOCATE(*region_address);
-	return (1);
-}
-static int DESTROY(FE_region)(struct FE_region **fe_region_address)
-{
-	DEALLOCATE(*fe_region_address);
-	return (1);
-}
-static struct FE_field *FE_region_create_FE_field(struct FE_region *fe_region,
-	char *name)
-{
-	struct FE_field *field;
-	USE_PARAMETER(fe_region);
-	field = CREATE(FE_field)((struct FE_time *)NULL);
-	set_FE_field_name(field, name);
-	return(field);
-}
-static struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
-	struct FE_field **field_address)
-{
-	char *field_name;
-	struct FE_field *field;
-
-	field = *field_address;
-	if (field_name = get_FE_field_name(field))
-	{
-		if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,
-				 name)(field_name,fe_region->fe_field_manager))
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_field.  Cannot merge fe_fields of the same name %s",
-				field_name);
-			DESTROY(FE_field)(&field);
-		}
-		else
-		{
-			if (!ADD_OBJECT_TO_MANAGER(FE_field)(field,fe_region->fe_field_manager))
-			{				
-				display_message(ERROR_MESSAGE,
-					"read_FE_field.  Error adding field %s to field_manager",
-					field_name);
-				DESTROY(FE_field)(&field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"read_FE_field.  Unable to get fe_field name");
-		DESTROY(FE_field)(&field);
-	}
-	if (!field)
-	{
-		*field_address = (struct FE_field *)NULL;
-	}
-	return (field);
-}
-static struct FE_field *FE_region_get_FE_field_from_name(struct FE_region *fe_region,
-	char *field_name)
-{
-	struct FE_field *field;
-	field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,
-		name)(field_name,fe_region->fe_field_manager);
-	return(field);
-}
-static struct FE_node *CREATE_FE_node_2(int cm_node_identifier,
-	struct FE_region *fe_region, struct FE_node *template_node)
-{
-	struct FE_node *node;
-	USE_PARAMETER(fe_region);
-	node = CREATE(FE_node)(cm_node_identifier, template_node);
-	return(node);
-}
-static struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
-	struct FE_node **node_address)
-{
-	int node_number;
-	struct FE_node *existing_node, *node;
-
-	node = *node_address;
-	node_number = get_FE_node_cm_node_identifier(node);
-	if (existing_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-		cm_node_identifier)(node_number,fe_region->node_manager))
-	{
-		/* merge the values from the existing to the new */
-		if (merge_FE_node(node,existing_node))
-		{
-			if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-				existing_node,node,fe_region->node_manager))
-			{
-				DESTROY(FE_node)(&node);
-				node=existing_node;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_node.  Error modifying node %d in node_manager", 
-					node_number);
-				DESTROY(FE_node)(&node);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_node.  Error merging new information for node %d",
-				node_number);
-			DESTROY(FE_node)(&node);
-		}
-	}
-	else
-	{
-		if (!ADD_OBJECT_TO_MANAGER(FE_node)(node,fe_region->node_manager))
-		{				
-			display_message(ERROR_MESSAGE,
-				"read_FE_node.  Error adding node %d to node_manager",
-				node_number);
-			DESTROY(FE_node)(&node);
-		}
-	}
-	if (!node)
-	{
-		*node_address = (struct FE_node *)NULL;
-	}
-	return (node);
-}
-static struct FE_node *FE_region_get_FE_node_from_identifier(
-	struct FE_region *fe_region, int cm_node_identifier)
-{
-	struct FE_node *node;
-	node = FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-		cm_node_identifier)(cm_node_identifier,fe_region->node_manager);
-	return(node);
-}
-struct FE_element *CREATE_FE_element_2(struct CM_element_information *cm,
-	struct FE_element_shape *element_shape,
-	struct FE_region *fe_region, struct FE_element *template_element)
-{
-	struct FE_element *element;
-	USE_PARAMETER(fe_region);
-	element = CREATE(FE_element)(cm, template_element);
-	if (!template_element)
-	{
-		set_FE_element_shape(element, element_shape);
-	}
-	return(element);
-}
-static struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
-	struct FE_element **element_address)
-{
-	struct CM_element_information cm;
-	struct FE_element *existing_element, *element;
-
-	element = *element_address;
-	get_FE_element_identifier(element, &cm);
-	if (existing_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-		identifier)(&cm,fe_region->element_manager))
-	{
-		/* merge the values from the existing to the new */
-		if (merge_FE_element(element,existing_element))
-		{
-			if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
-				existing_element,element,fe_region->element_manager))
-			{
-				DESTROY(FE_element)(&element);
-				element=existing_element;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_element.  Error modifying element %d in element_manager", 
-					cm.number);
-				DESTROY(FE_element)(&element);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_element.  Error merging new information for element %d",
-				cm.number);
-			DESTROY(FE_element)(&element);
-		}
-	}
-	else
-	{
-		if (!ADD_OBJECT_TO_MANAGER(FE_element)(element,fe_region->element_manager))
-		{				
-			display_message(ERROR_MESSAGE,
-				"read_FE_element.  Error adding element %d to element_manager",
-				cm.number);
-			DESTROY(FE_element)(&element);
-		}
-	}
-	if (!element)
-	{
-		*element_address = (struct FE_element *)NULL;
-	}
-	return (element);
-}
-static struct FE_element *FE_region_get_FE_element_from_identifier(
-	struct FE_region *fe_region, struct CM_element_information *identifier)
-{
-	struct FE_element *element;
-	element = FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-		identifier)(identifier,fe_region->element_manager);
-	return(element);
-}
-struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
-	struct FE_region *fe_region, int *basis_type)
-{
-	struct FE_basis *basis;
-	basis = make_FE_basis(basis_type, fe_region->basis_manager);
-	return(basis);
-}
-int Cmiss_regions_FE_regions_can_be_merged(struct Cmiss_region *global_region,
-	struct Cmiss_region *region)
-{
-	USE_PARAMETER(global_region);
-	USE_PARAMETER(region);
-	return(1);
-}
-int Cmiss_regions_merge_FE_regions(struct Cmiss_region *global_region,
-	struct Cmiss_region **region_address)
-{
-	USE_PARAMETER(global_region);
-	USE_PARAMETER(region_address);
-	return(1);
-}
-#define FE_import_time_index Node_time_index
-/* end Temporary delarations so that the code compiles before regions exist. */
-#endif /* !defined (CMGUI_REGIONS) */
 
 PROTOTYPE_LIST_FUNCTIONS(Fieldml_label_name);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Fieldml_label_name,name, \
@@ -866,7 +597,7 @@ DESCRIPTION :
 				fieldml_data->character_buffer && fieldml_data->buffer_length)
 			{
 				node = fieldml_data->current_node;
-				node_number = get_FE_node_cm_node_identifier(node);
+				node_number = get_FE_node_identifier(node);
 				field = fieldml_data->current_field_ref;
 				time_index = (struct FE_import_time_index *)NULL;
 				number_of_values = 0;
@@ -1558,7 +1289,7 @@ DESCRIPTION :
 static int Fieldml_label_name_process_label_in_element(
    struct Fieldml_label_name *label, void *fieldml_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 February 2003
+LAST MODIFIED : 15 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1567,7 +1298,7 @@ DESCRIPTION :
 	enum Fieldml_label_type label_type;
 	enum FE_nodal_value_type derivative_type;
 	int follow_children, index, i, j, node_index_value, node_number, number_of_components,
-		return_code, version_number;
+		number_of_nodal_values, return_code, version_number;
 	struct Fieldml_label_name *node_index, *returned_label, *sub_label, *value_type_label;
 	struct Fieldml_sax_data *fieldml_data;
 
@@ -1924,10 +1655,11 @@ DESCRIPTION :
 												{
 													for (j = 0 ; j < fieldml_data->current_element_field_standard_map_number_of_values ; j++)
 													{
-														fieldml_data->current_element_field_standard_map[
-															fieldml_data->current_element_field_component_nodes]->
-															nodal_value_indices[j] = 
-															fieldml_data->current_element_field_standard_map_indices[j];
+														Standard_node_to_element_map_set_nodal_value_index(
+															fieldml_data->current_element_field_standard_map[
+																fieldml_data->current_element_field_component_nodes],
+															/*nodal_value_number*/j, 
+															fieldml_data->current_element_field_standard_map_indices[j]);
 													}
 													fieldml_data->current_element_field_component_nodes++;
 												}
@@ -2018,10 +1750,11 @@ DESCRIPTION :
 						fieldml_data->current_element_field_standard_map_number_of_values);
 				for (j = 0 ; j < fieldml_data->current_element_field_standard_map_number_of_values ; j++)
 				{
-					fieldml_data->current_element_field_standard_map[
-						fieldml_data->current_element_field_component_nodes]->
-						nodal_value_indices[j] = 
-						fieldml_data->current_element_field_standard_map_indices[j];
+					Standard_node_to_element_map_set_nodal_value_index(
+						fieldml_data->current_element_field_standard_map[
+							fieldml_data->current_element_field_component_nodes],
+						/*nodal_value_number*/j, 
+						fieldml_data->current_element_field_standard_map_indices[j]);
 				}
 				fieldml_data->current_element_field_standard_map_number_of_values = 0;
 				fieldml_data->current_element_field_component_nodes++;
@@ -2030,11 +1763,15 @@ DESCRIPTION :
 			{
 				for (i = 0 ; i < fieldml_data->current_element_field_component_nodes ; i++)
 				{
-					for (j = 0 ; j < fieldml_data->current_element_field_standard_map[i]->number_of_nodal_values ; j++)
+					Standard_node_to_element_map_get_number_of_nodal_values(
+						fieldml_data->current_element_field_standard_map[i],
+						&number_of_nodal_values);
+					for (j = 0 ; j < number_of_nodal_values ; j++)
 					{
-						fieldml_data->current_element_field_standard_map[i]->
-							scale_factor_indices[j] = 
-							fieldml_data->current_scale_factor_list_offset;
+						Standard_node_to_element_map_set_scale_factor_index(
+							fieldml_data->current_element_field_standard_map[i],
+							/*nodal_value_number*/j,
+							fieldml_data->current_scale_factor_list_offset);
 						fieldml_data->current_scale_factor_list_offset++;
 					}
 				}
@@ -2054,10 +1791,11 @@ DESCRIPTION :
 					{
 						for (j = 0 ; j < fieldml_data->current_element_field_component_nodes ; j++)
 						{
-							fieldml_data->current_element_field_components[
-								fieldml_data->current_component_number]
-								->map.standard_node_based.node_to_element_maps[j]
-								= fieldml_data->current_element_field_standard_map[j];
+							FE_element_field_component_set_standard_node_map(
+								fieldml_data->current_element_field_components[
+									fieldml_data->current_component_number],
+								/*node_number*/j,
+								fieldml_data->current_element_field_standard_map[j]);
 						}
 					}
 				}
@@ -2174,8 +1912,9 @@ DESCRIPTION :
 			if (label->value)
 			{
 				sscanf(label->value, "%f", &scale_factor);
-				fieldml_data->current_element->information->scale_factors[
-					fieldml_data->scale_factor_list_offset] = scale_factor;
+				set_FE_element_scale_factor(fieldml_data->current_element,
+					/*scale_factor_number*/fieldml_data->scale_factor_list_offset,
+					scale_factor);
 				fieldml_data->scale_factor_list_offset++;				
 			}
 		}
@@ -2781,7 +2520,7 @@ DESCRIPTION :
 static void fieldml_start_element_lookup(
 	struct Fieldml_sax_data *fieldml_data, char **attributes)
 /*******************************************************************************
-LAST MODIFIED : 24 February 2003
+LAST MODIFIED : 15 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2802,11 +2541,10 @@ DESCRIPTION :
 	{
 		fieldml_data->current_label_name->scale_factor_list_identifier =
 			(void *)fieldml_data->current_basis_mapping->basis;
-		fieldml_data->current_label_name->scale_factor_list_size =
-			fieldml_data->current_basis_mapping->basis->
-			number_of_basis_functions;
+		FE_basis_get_number_of_basis_functions(
+			fieldml_data->current_basis_mapping->basis,
+			&(fieldml_data->current_label_name->scale_factor_list_size));
 	}
-	
 	LEAVE;
 } /* fieldml_start_element_lookup */
 
@@ -3227,8 +2965,8 @@ DESCRIPTION :
 		}
 		if (field_name)
 		{
-			fieldml_data->current_field = FE_region_create_FE_field(
-				fieldml_data->root_fe_region, field_name);
+			fieldml_data->current_field = CREATE(FE_field)(field_name,
+				fieldml_data->root_fe_region);
 			if (value_type_string &&
 				(value_type = Value_type_from_string(value_type_string)))
 			{
@@ -3299,7 +3037,7 @@ DESCRIPTION :
 
 static void fieldml_end_field(struct Fieldml_sax_data *fieldml_data)
 /*******************************************************************************
-LAST MODIFIED : 10 February 2003
+LAST MODIFIED : 15 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3310,7 +3048,7 @@ DESCRIPTION :
 	if (fieldml_data->current_field)
 	{
 		FE_region_merge_FE_field(fieldml_data->root_fe_region,
-			&fieldml_data->current_field);
+			fieldml_data->current_field);
 		fieldml_data->current_field = (struct FE_field *)NULL;
 	}
 	else
@@ -3430,7 +3168,7 @@ DESCRIPTION :
 		}
 		if (node_number)
 		{
-			fieldml_data->current_node = CREATE_FE_node_2(
+			fieldml_data->current_node = CREATE(FE_node)(
 			 	node_number, fieldml_data->root_fe_region, (struct FE_node *)NULL);
 		}
 		else
@@ -3461,7 +3199,7 @@ DESCRIPTION :
 	if (fieldml_data->current_node)
 	{
 		FE_region_merge_FE_node(fieldml_data->root_fe_region,
-			&fieldml_data->current_node);
+			fieldml_data->current_node);
 		fieldml_data->current_node = (struct FE_node *)NULL;
 	}
 	else
@@ -3834,9 +3572,9 @@ DESCRIPTION :
 		{
 			element_template = (struct FE_element *)NULL;
 		}
-		fieldml_data->current_element = CREATE_FE_element_2(
-			&cm, fieldml_data->current_element_shape, 
-			fieldml_data->root_fe_region, element_template);
+		fieldml_data->current_element = CREATE(FE_element)(
+			&cm, (struct FE_element_shape *)NULL, 
+			(struct FE_region *)NULL, element_template);
 		if (fieldml_data->face_numbers)
 		{
 			face_identifier.type = CM_ELEMENT;
@@ -3927,11 +3665,12 @@ DESCRIPTION :
 						}
 					}
 
-					set_FE_element_node_scale_field_info(
-						fieldml_data->current_element,
+					set_FE_element_number_of_nodes(fieldml_data->current_element,
+						number_of_local_nodes);
+					set_FE_element_number_of_scale_factor_sets(fieldml_data->current_element,
 						fieldml_data->number_of_scale_factor_lists, 
 						fieldml_data->scale_factor_list_identifiers,
-						fieldml_data->scale_factor_list_sizes, number_of_local_nodes);
+						fieldml_data->scale_factor_list_sizes);
 
 					Fieldml_label_name_process_label_in_element(
 						fieldml_data->current_element_interpolation_ref,
@@ -3975,7 +3714,7 @@ DESCRIPTION :
 			}
 		}
 		FE_region_merge_FE_element(fieldml_data->root_fe_region,
-			&fieldml_data->current_element);
+			fieldml_data->current_element);
 		if (fieldml_data->current_element_labels)
 		{
 			DESTROY(LIST(Fieldml_label_name))(&fieldml_data->current_element_labels);
@@ -5714,140 +5453,123 @@ DESCRIPTION :
 	return ret;
 } /* specialXmlSAXParseFile */
 
-#if defined (CMGUI_REGIONS)
-int parse_fieldml_file(char *filename, struct Cmiss_region *root_region)
+struct Cmiss_region *parse_fieldml_file(char *filename,
+	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED : 4 March 2003
+LAST MODIFIED : 15 May 2003
 
 DESCRIPTION :
+Reads fieldml file <filename> and returns a Cmiss_region containing its
+contents. A NULL object return indicates an error.
+Up to the calling function to check, merge and destroy the returned
+Cmiss_region.
 ==============================================================================*/
-#else /* defined (CMGUI_REGIONS) */
-int parse_fieldml_file(char *filename, struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_node) *node_manager, struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2003
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (CMGUI_REGIONS) */
 {
-	int return_code;
 	static xmlSAXHandler fieldml_handler;
+	struct Cmiss_region *root_region;
 	struct Fieldml_sax_data fieldml_data;
 
 	ENTER(parse_fieldml_file);
-
-	fieldml_data.unknown_depth = 0;
-	fieldml_data.return_val = 0;
-	fieldml_data.fieldml_version = -1; /* Not in fieldml yet */
-	fieldml_data.fieldml_subversion = -1; /* Not in fieldml yet */
-	fieldml_data.root_region = CREATE(Cmiss_region)();
-#if defined (CMGUI_REGIONS)
-	fieldml_data.root_fe_region = ((struct FE_region *)NULL, basis_manager);
-#else /* defined (CMGUI_REGIONS) */
-	fieldml_data.root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
-		basis_manager, node_manager, element_manager, fe_field_manager);
-#endif /* defined (CMGUI_REGIONS) */
-	Cmiss_region_attach_FE_region(fieldml_data.root_region,
-		fieldml_data.root_fe_region);
-	fieldml_data.label_templates = CREATE(LIST(Fieldml_label_name))();
-	fieldml_data.label_name_stack = CREATE(LIST(Fieldml_label_name))();
-	fieldml_data.basis_mappings = CREATE(LIST(Fieldml_label_name))();
-	fieldml_data.element_interpolations = CREATE(LIST(Fieldml_label_name))();
-	fieldml_data.character_buffer = (char *)NULL;
-	fieldml_data.buffer_length = 0;
-	fieldml_data.buffer_allocated_length = 0;
-	fieldml_data.expecting_characters = 0;
-	
-	fieldml_data.current_assign_labels = (struct Fieldml_label_name *)NULL;
-	fieldml_data.current_label_name = (struct Fieldml_label_name *)NULL;
-	fieldml_data.current_field = (struct FE_field *)NULL;
-	fieldml_data.current_field_ref = (struct FE_field *)NULL;
-	fieldml_data.current_field_component_name = (char *)NULL;
-
-	fieldml_data.current_node = (struct FE_node *)NULL;
-	fieldml_data.current_node_field_creator = (struct FE_node_field_creator *)NULL;
-
-	fieldml_data.current_basis_mapping = (struct Fieldml_label_name *)NULL;
-	fieldml_data.current_element_interpolation_ref = (struct Fieldml_label_name *)NULL;
-	fieldml_data.current_element = (struct FE_element *)NULL;
-	fieldml_data.current_element_number = 0;
-	fieldml_data.current_element_shape = (struct FE_element_shape *)NULL;
-	fieldml_data.current_element_labels = (struct LIST(Fieldml_label_name) *)NULL;
-
-	fieldml_data.current_element_field_components =
-		(struct FE_element_field_component **)NULL;
-
-	fieldml_data.number_of_scale_factor_lists = 0;
-	fieldml_data.scale_factor_list_offset = 0;
-	fieldml_data.scale_factor_list_sizes = (int *)NULL;
-
-	fieldml_data.current_scale_factor_list_size = 0;
-	fieldml_data.current_scale_factor_list_offset = 0;
-
-	fieldml_data.number_of_faces = 0;
-	fieldml_data.face_numbers = (int *)NULL;
-
-	fieldml_data.current_value_list = (struct LIST(Fieldml_label_name) *)NULL;
-
-   fieldml_handler.internalSubset = (internalSubsetSAXFunc)NULL;
-	fieldml_handler.isStandalone = (isStandaloneSAXFunc)NULL;
-	fieldml_handler.hasInternalSubset = (hasInternalSubsetSAXFunc)NULL;
-	fieldml_handler.hasExternalSubset = (hasExternalSubsetSAXFunc)NULL;
-	fieldml_handler.resolveEntity = (resolveEntitySAXFunc)NULL;
-	fieldml_handler.getEntity = (getEntitySAXFunc)NULL;
-	fieldml_handler.entityDecl = (entityDeclSAXFunc)NULL;
-	fieldml_handler.notationDecl = (notationDeclSAXFunc)NULL;
-	fieldml_handler.attributeDecl = (attributeDeclSAXFunc)NULL;
-	fieldml_handler.elementDecl = (elementDeclSAXFunc)NULL;
-	fieldml_handler.unparsedEntityDecl = (unparsedEntityDeclSAXFunc)NULL;
-	fieldml_handler.setDocumentLocator = (setDocumentLocatorSAXFunc)NULL;
-	fieldml_handler.startDocument = (startDocumentSAXFunc)NULL;
-	fieldml_handler.endDocument = (endDocumentSAXFunc)NULL;
-
-	fieldml_handler.startElement = general_start_xml_element;
-	fieldml_handler.endElement = general_end_xml_element;
-
-	fieldml_handler.reference = (referenceSAXFunc)NULL;
-
-	fieldml_handler.characters = general_sax_characters;
-
-	fieldml_handler.ignorableWhitespace = (ignorableWhitespaceSAXFunc)NULL;
-	fieldml_handler.processingInstruction = (processingInstructionSAXFunc)NULL;
-	fieldml_handler.comment = (commentSAXFunc)NULL;
-	fieldml_handler.warning = fieldml_sax_warning;
-	fieldml_handler.error = fieldml_sax_error;
-	fieldml_handler.fatalError = fieldml_sax_fatalError;
-	
-	if (specialXmlSAXParseFile(&fieldml_handler, &fieldml_data, filename) < 0)
+	root_region = (struct Cmiss_region *)NULL;
+	if (filename && basis_manager)
 	{
-		return_code = 1;
-	} 
+		root_region = CREATE(Cmiss_region)();
+		fieldml_data.unknown_depth = 0;
+		fieldml_data.return_val = 0;
+		fieldml_data.fieldml_version = -1; /* Not in fieldml yet */
+		fieldml_data.fieldml_subversion = -1; /* Not in fieldml yet */
+		fieldml_data.root_region = root_region;
+		fieldml_data.root_fe_region =
+			CREATE(FE_region)((struct FE_region *)NULL, basis_manager);
+		Cmiss_region_attach_FE_region(fieldml_data.root_region,
+			fieldml_data.root_fe_region);
+		fieldml_data.label_templates = CREATE(LIST(Fieldml_label_name))();
+		fieldml_data.label_name_stack = CREATE(LIST(Fieldml_label_name))();
+		fieldml_data.basis_mappings = CREATE(LIST(Fieldml_label_name))();
+		fieldml_data.element_interpolations = CREATE(LIST(Fieldml_label_name))();
+		fieldml_data.character_buffer = (char *)NULL;
+		fieldml_data.buffer_length = 0;
+		fieldml_data.buffer_allocated_length = 0;
+		fieldml_data.expecting_characters = 0;
+	
+		fieldml_data.current_assign_labels = (struct Fieldml_label_name *)NULL;
+		fieldml_data.current_label_name = (struct Fieldml_label_name *)NULL;
+		fieldml_data.current_field = (struct FE_field *)NULL;
+		fieldml_data.current_field_ref = (struct FE_field *)NULL;
+		fieldml_data.current_field_component_name = (char *)NULL;
+
+		fieldml_data.current_node = (struct FE_node *)NULL;
+		fieldml_data.current_node_field_creator = (struct FE_node_field_creator *)NULL;
+
+		fieldml_data.current_basis_mapping = (struct Fieldml_label_name *)NULL;
+		fieldml_data.current_element_interpolation_ref = (struct Fieldml_label_name *)NULL;
+		fieldml_data.current_element = (struct FE_element *)NULL;
+		fieldml_data.current_element_number = 0;
+		fieldml_data.current_element_shape = (struct FE_element_shape *)NULL;
+		fieldml_data.current_element_labels = (struct LIST(Fieldml_label_name) *)NULL;
+
+		fieldml_data.current_element_field_components =
+			(struct FE_element_field_component **)NULL;
+
+		fieldml_data.number_of_scale_factor_lists = 0;
+		fieldml_data.scale_factor_list_offset = 0;
+		fieldml_data.scale_factor_list_sizes = (int *)NULL;
+
+		fieldml_data.current_scale_factor_list_size = 0;
+		fieldml_data.current_scale_factor_list_offset = 0;
+
+		fieldml_data.number_of_faces = 0;
+		fieldml_data.face_numbers = (int *)NULL;
+
+		fieldml_data.current_value_list = (struct LIST(Fieldml_label_name) *)NULL;
+
+		fieldml_handler.internalSubset = (internalSubsetSAXFunc)NULL;
+		fieldml_handler.isStandalone = (isStandaloneSAXFunc)NULL;
+		fieldml_handler.hasInternalSubset = (hasInternalSubsetSAXFunc)NULL;
+		fieldml_handler.hasExternalSubset = (hasExternalSubsetSAXFunc)NULL;
+		fieldml_handler.resolveEntity = (resolveEntitySAXFunc)NULL;
+		fieldml_handler.getEntity = (getEntitySAXFunc)NULL;
+		fieldml_handler.entityDecl = (entityDeclSAXFunc)NULL;
+		fieldml_handler.notationDecl = (notationDeclSAXFunc)NULL;
+		fieldml_handler.attributeDecl = (attributeDeclSAXFunc)NULL;
+		fieldml_handler.elementDecl = (elementDeclSAXFunc)NULL;
+		fieldml_handler.unparsedEntityDecl = (unparsedEntityDeclSAXFunc)NULL;
+		fieldml_handler.setDocumentLocator = (setDocumentLocatorSAXFunc)NULL;
+		fieldml_handler.startDocument = (startDocumentSAXFunc)NULL;
+		fieldml_handler.endDocument = (endDocumentSAXFunc)NULL;
+
+		fieldml_handler.startElement = general_start_xml_element;
+		fieldml_handler.endElement = general_end_xml_element;
+
+		fieldml_handler.reference = (referenceSAXFunc)NULL;
+
+		fieldml_handler.characters = general_sax_characters;
+
+		fieldml_handler.ignorableWhitespace = (ignorableWhitespaceSAXFunc)NULL;
+		fieldml_handler.processingInstruction = (processingInstructionSAXFunc)NULL;
+		fieldml_handler.comment = (commentSAXFunc)NULL;
+		fieldml_handler.warning = fieldml_sax_warning;
+		fieldml_handler.error = fieldml_sax_error;
+		fieldml_handler.fatalError = fieldml_sax_fatalError;
+	
+		if (!specialXmlSAXParseFile(&fieldml_handler, &fieldml_data, filename) < 0)
+		{
+			DESTROY(Cmiss_region)(&root_region);
+			root_region = (struct Cmiss_region *)NULL;
+		}
+
+		/* Clean up */
+		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_templates);
+		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_name_stack);
+		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.basis_mappings);
+		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.element_interpolations);
+	}
 	else
 	{
-		return_code = 0;
+		display_message(ERROR_MESSAGE, "parse_fieldml_file.  Invalid argument(s)");
 	}
-
-	/* Regions can be merged */
-#if defined (CMGUI_REGIONS)
-	if (Cmiss_regions_FE_regions_can_be_merged(root_region, fieldml_data.root_region)
-	{
-		Cmiss_regions_merge_FE_regions(root_region, &fieldml_data.root_region);
-	}
-#else /* defined (CMGUI_REGIONS) */
-	DESTROY(FE_region)(&fieldml_data.root_fe_region);
-#endif /* defined (CMGUI_REGIONS) */
-
-	/* Clean up */
-	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_templates);
-	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_name_stack);
-	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.basis_mappings);
-	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.element_interpolations);
-
-	DESTROY(Cmiss_region)(&fieldml_data.root_region);
-
 	LEAVE;
-	return(return_code);
+
+	return (root_region);
 } /* parse_fieldml_file */
 #endif /* defined (HAVE_XML2) */

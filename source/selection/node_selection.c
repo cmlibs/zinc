@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_selection.c
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Global store of selected nodes for group actions and highlighting.
@@ -22,12 +22,14 @@ FULL_DECLARE_CMISS_CALLBACK_TYPES(FE_node_selection_change, \
 
 struct FE_node_selection
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Global store of selected nodes for group actions and highlighting.
 ==============================================================================*/
 {
+	/* the FE_region the selection is from */
+	struct FE_region *fe_region;
 	/* flag indicating whether the cache is on */
 	int cache;
 	/* list of all nodes currently selected */
@@ -46,6 +48,7 @@ Global store of selected nodes for group actions and highlighting.
 Module functions
 ----------------
 */
+
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_node_selection_change)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_node_selection_change, \
@@ -102,43 +105,96 @@ on or if no such changes have occurred.
 	return (return_code);
 } /* FE_node_selection_update */
 
-/*
-Global functions
-----------------
-*/
-
-struct FE_node_selection *CREATE(FE_node_selection)(void)
+void FE_node_selection_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes, void *node_selection_void)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
-Creates the global store of selected nodes for group actions and highlighting.
+Callback from <fe_region> with its <changes>.
+Nodes removed from the <fe_region> must be removed from the <node_selection>.
 ==============================================================================*/
 {
+	enum CHANGE_LOG_CHANGE(FE_node) fe_node_change_summary;
 	struct FE_node_selection *node_selection;
 
-	ENTER(CREATE(FE_node_selection));
-	if (ALLOCATE(node_selection,struct FE_node_selection,1))
+	ENTER(FE_node_selection_FE_region_change);
+	if (fe_region && changes &&
+		(node_selection = (struct FE_node_selection *)node_selection_void))
 	{
-		node_selection->cache=0;
-		node_selection->node_list=CREATE(LIST(FE_node))();
-		node_selection->newly_selected_node_list=CREATE(LIST(FE_node))();
-		node_selection->newly_unselected_node_list=CREATE(LIST(FE_node))();
-		node_selection->change_callback_list=
-			CREATE(LIST(CMISS_CALLBACK_ITEM(FE_node_selection_change)))();
-		if (!(node_selection->node_list&&node_selection->newly_selected_node_list&&
-			node_selection->newly_unselected_node_list&&
-			node_selection->change_callback_list))
+		if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(changes->fe_node_changes,
+			&fe_node_change_summary) &&
+			(fe_node_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_node)))
 		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_node_selection).  Could not create lists");
-			DESTROY(FE_node_selection)(&node_selection);
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_FE_region,
+				(void *)fe_region, node_selection->node_list);
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_FE_region,
+				(void *)fe_region, node_selection->newly_selected_node_list);
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_FE_region,
+				(void *)fe_region, node_selection->newly_unselected_node_list);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(FE_node_selection).  Not enough memory");
+			"FE_node_selection_FE_region_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* FE_node_selection_FE_region_change */
+
+/*
+Global functions
+----------------
+*/
+
+struct FE_node_selection *CREATE(FE_node_selection)(
+	struct FE_region *fe_region)
+/*******************************************************************************
+LAST MODIFIED : 3 April 2003
+
+DESCRIPTION :
+Creates the global store of selected nodes for group actions and highlighting.
+Nodes from the <fe_region> are selectable by this object.
+???RC In use <fe_region> should be its own master but this is not enforced.
+==============================================================================*/
+{
+	struct FE_node_selection *node_selection;
+
+	ENTER(CREATE(FE_node_selection));
+	node_selection = (struct FE_node_selection *)NULL;
+	if (fe_region)
+	{
+		if (ALLOCATE(node_selection,struct FE_node_selection,1))
+		{
+			FE_region_add_callback(fe_region,
+				FE_node_selection_FE_region_change, (void *)node_selection);
+			node_selection->fe_region = ACCESS(FE_region)(fe_region);
+			node_selection->cache=0;
+			node_selection->node_list=CREATE(LIST(FE_node))();
+			node_selection->newly_selected_node_list=CREATE(LIST(FE_node))();
+			node_selection->newly_unselected_node_list=CREATE(LIST(FE_node))();
+			node_selection->change_callback_list=
+				CREATE(LIST(CMISS_CALLBACK_ITEM(FE_node_selection_change)))();
+			if (!(node_selection->node_list &&
+				node_selection->newly_selected_node_list &&
+				node_selection->newly_unselected_node_list &&
+				node_selection->change_callback_list))
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(FE_node_selection).  Could not create lists");
+				DESTROY(FE_node_selection)(&node_selection);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(FE_node_selection).  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(FE_node_selection).  Invalid argument");
 	}
 	LEAVE;
 
@@ -148,7 +204,7 @@ Creates the global store of selected nodes for group actions and highlighting.
 int DESTROY(FE_node_selection)(
 	struct FE_node_selection **node_selection_address)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Destroys the FE_node_selection.
@@ -160,6 +216,9 @@ Destroys the FE_node_selection.
 	ENTER(DESTROY(FE_node_selection));
 	if (node_selection_address&&(node_selection= *node_selection_address))
 	{
+		FE_region_remove_callback(node_selection->fe_region,
+			FE_node_selection_FE_region_change, (void *)node_selection);
+		DEACCESS(FE_region)(&(node_selection->fe_region));
 		DESTROY(LIST(FE_node))(&(node_selection->node_list));
 		DESTROY(LIST(FE_node))(&(node_selection->newly_selected_node_list));
 		DESTROY(LIST(FE_node))(&(node_selection->newly_unselected_node_list));
@@ -437,7 +496,7 @@ currently there. Calls FE_node_selection_update.
 	if (node_selection&&node)
 	{
 		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-			get_FE_node_cm_node_identifier(node),node_selection->node_list))
+			get_FE_node_identifier(node),node_selection->node_list))
 		{
 			ADD_OBJECT_TO_LIST(FE_node)(node,
 				node_selection->newly_unselected_node_list);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.h
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 14 January 2003
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
@@ -63,7 +63,7 @@ Data for converting a 3-D element into an array of streamlines.
 
 struct Node_to_streamline_data
 /*******************************************************************************
-LAST MODIFIED : 5 May 1999
+LAST MODIFIED : 14 January 2003
 
 DESCRIPTION :
 Data for converting a node with an Element_xi field into a streamline.
@@ -76,7 +76,7 @@ Data for converting a node with an Element_xi field into a streamline.
 		with a seed_data_group the data actually drawn can be filtered by
 		these parameters */
 	struct FE_element *seed_element;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 	struct FE_field *seed_data_field;
 	float length, width, time;
 	/* reverse_track = track -vector and store -travel_scalar */

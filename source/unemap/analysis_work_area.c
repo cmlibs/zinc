@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 21 January 2003
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -772,7 +772,7 @@ continuation.  Display the map.
 static void set_analysis_analysis_region(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 May 1997
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Called when a new rig region is selected from the analysis window in the
@@ -793,7 +793,7 @@ analysis work area.
 	struct FE_node_selection *node_selection;
 	struct FE_field *device_name_field;
 	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(set_analysis_analysis_region);
@@ -801,7 +801,7 @@ analysis work area.
 	node_selection=(struct FE_node_selection *)NULL;
 	device_name_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
@@ -2407,7 +2407,7 @@ Sets up the analysis work area for analysing a set of signals.
 	struct FE_node_selection *node_selection;
 	struct FE_field *device_name_field;
 	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(analysis_read_signal_file);
@@ -2417,7 +2417,7 @@ Sets up the analysis work area for analysing a set of signals.
 	node_selection=(struct FE_node_selection *)NULL;
 	device_name_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	/* check the arguments */
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
@@ -2967,7 +2967,7 @@ Sets up the analysis work area for analysing a set of signals.
 			/* highlight the first rig_node */
 			highlight_field=(struct FE_field *)NULL;
 			rig_node=(struct FE_node *)NULL;
-			rig_node_group=(struct GROUP(FE_node) *)NULL;
+			rig_node_group=(struct FE_region *)NULL;
 			if ((rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig))&&
 				(rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
 					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group))&&
@@ -3497,7 +3497,7 @@ Sets up the analysis work area for analysing a set of signals.
 	struct FE_node_selection *node_selection;
 	struct FE_field *device_name_field;
 	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(analysis_work_area_read_signal_file);
@@ -3506,7 +3506,7 @@ Sets up the analysis work area for analysing a set of signals.
 	node_selection=(struct FE_node_selection *)NULL;
 	device_name_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	/* check the arguments */
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
@@ -3875,7 +3875,7 @@ Sets up the analysis work area for analysing a set of signals.
 			/* highlight the first rig_node */
 			highlight_field=(struct FE_field *)NULL;
 			rig_node=(struct FE_node *)NULL;
-			rig_node_group=(struct GROUP(FE_node) *)NULL;
+			rig_node_group=(struct FE_region *)NULL;
 			if ((rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig))&&
 				(rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
 					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group))&&
@@ -4106,7 +4106,7 @@ signals.
 	struct FE_node_selection *node_selection;
 	struct FE_field *device_name_field;
 	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(read_event_times_file);
@@ -4116,7 +4116,7 @@ signals.
 	node_selection=(struct FE_node_selection *)NULL;
 	device_name_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	if (file_name&&(analysis=(struct Analysis_work_area *)analysis_work_area))
 	{
@@ -5517,7 +5517,7 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 	struct FE_node_selection *node_selection;
 	struct FE_field *device_name_field;
 	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(analysis_read_bdf_or_edf_file);
@@ -5526,7 +5526,7 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 	node_selection=(struct FE_node_selection *)NULL;
 	device_name_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	if (analysis)
 	{
@@ -11681,15 +11681,15 @@ Duplicates the raw rig, except that
 	struct Signal *signal;
 	struct Signal_buffer *raw_signal_buffer,*signal_buffer;
 #if defined (UNEMAP_USE_3D)
-	struct GROUP(FE_node) *all_devices_rig_node_group,*rig_node_group,
+	struct FE_region *all_devices_rig_node_group,*rig_node_group,
 		*unrejected_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(create_processed_rig);
 #if defined (UNEMAP_USE_3D)
-	all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	all_devices_rig_node_group=(struct FE_region *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	if (raw_rig&&(0<raw_rig->number_of_devices)&&(raw_rig->devices)&&
 		(*(raw_rig->devices))&&
@@ -12780,7 +12780,7 @@ own min/max
 	struct Analysis_work_area *analysis;
 	struct FE_field *display_start_time_field,*display_end_time_field,
 		*signal_minimum_field,*signal_maximum_field;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 	struct Min_max_iterator *min_max_iterator;
 	struct Region *current_region;
 	struct Rig *rig;
@@ -12793,7 +12793,7 @@ own min/max
 	signal_maximum_field=(struct FE_field *)NULL;
 	display_start_time_field=(struct FE_field *)NULL;
 	display_end_time_field=(struct FE_field *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 	current_region=(struct Region *)NULL;
 	rig=(struct Rig *)NULL;
 	min_max_iterator=(struct Min_max_iterator *)NULL;
@@ -12831,7 +12831,7 @@ own min/max
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
 					display_end_time_field);
 				/* run through all the nodes setting signals min, max */
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_unrange_rig_node_signal,
+				FOR_EACH_OBJECT_IN_FE_region(iterative_unrange_rig_node_signal,
 					(void *)min_max_iterator,rig_node_group);
 				DESTROY(Min_max_iterator)(&min_max_iterator);
 			}
@@ -12933,7 +12933,7 @@ then sets all signals to this range.
 	struct Analysis_work_area *analysis;
 	struct FE_field *display_start_time_field,*display_end_time_field,
 		*signal_minimum_field,*signal_maximum_field,*signal_status_field;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 	struct Min_max_iterator *min_max_iterator;
 	struct Region *current_region;
 	struct Rig *rig;
@@ -12947,7 +12947,7 @@ then sets all signals to this range.
 	signal_maximum_field=(struct FE_field *)NULL;
 	display_start_time_field=(struct FE_field *)NULL;
 	display_end_time_field=(struct FE_field *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 	current_region=(struct Region *)NULL;
 	min_max_iterator=(struct Min_max_iterator *)NULL;
 	rig=(struct Rig *)NULL;
@@ -12988,7 +12988,7 @@ then sets all signals to this range.
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
 					display_end_time_field);
 				/* run through all the nodes to get accepted,undecided signal's min, max */
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)
+				FOR_EACH_OBJECT_IN_FE_region
 					(iterative_get_rig_node_accepted_undecided_signal_min_max,
 						(void *)min_max_iterator,rig_node_group);
 				/*min_max_iterator.max,min_max_iterator.min now set  */
@@ -13000,7 +13000,7 @@ then sets all signals to this range.
 				set_Min_max_iterator_display_end_time_field(min_max_iterator,
 					display_end_time_field);
 				/* run through all the nodes setting signals min, max */
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_set_rig_node_signal_min_max,
+				FOR_EACH_OBJECT_IN_FE_region(iterative_set_rig_node_signal_min_max,
 					(void *)min_max_iterator,rig_node_group);
 				DESTROY(Min_max_iterator)(&min_max_iterator);
 			}
@@ -13139,7 +13139,7 @@ same as the range for the current signal.
 	struct FE_node *rig_node;
 	struct FE_field *signal_minimum_field,*signal_maximum_field;
 	struct FE_field_component component;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 	struct Min_max_iterator *min_max_iterator;
 	struct Region *current_region;
 	struct Rig *rig;
@@ -13151,7 +13151,7 @@ same as the range for the current signal.
 	rig_node=(struct FE_node *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 	current_region=(struct Region *)NULL;
 	rig=(struct Rig *)NULL;
 	min_max_iterator=(struct Min_max_iterator *)NULL;
@@ -13192,7 +13192,7 @@ same as the range for the current signal.
 				set_Min_max_iterator_signal_maximum_field(min_max_iterator,
 					signal_maximum_field);
 				/* run through all the nodes setting signals min, max */
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_set_rig_node_signal_min_max,
+				FOR_EACH_OBJECT_IN_FE_region(iterative_set_rig_node_signal_min_max,
 					(void *)min_max_iterator,rig_node_group);
 				DESTROY(Min_max_iterator)(&min_max_iterator);
 			}
@@ -14026,7 +14026,7 @@ else
 static int accept_signal(struct Analysis_work_area *analysis,
 	struct Device **signal_device)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION : accept the analysis signal.
 ==============================================================================*/
@@ -14036,7 +14036,9 @@ DESCRIPTION : accept the analysis signal.
 	int average_width,device_number,i,minimum_separation,
 		number_of_objective_values,objective_values_step,return_code,
 		threshold_percentage,xpos,ypos;
+	struct Cmiss_region *root_cmiss_region;
 	struct Device **device;
+	struct FE_region *root_fe_region;
 	struct Region *current_region;
 	struct Rig *rig;
 	struct Signal *signal;
@@ -14045,8 +14047,7 @@ DESCRIPTION : accept the analysis signal.
 #if defined(UNEMAP_USE_3D)
 	struct FE_field *device_name_field,*signal_status_field;
 	struct FE_node *rig_node,*node;
-	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *rig_node_group,*unrejected_node_group;
 #endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(accept_signal);
@@ -14055,9 +14056,8 @@ DESCRIPTION : accept the analysis signal.
 	signal_status_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
 	node=(struct FE_node *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
 #endif /* defined(UNEMAP_USE_3D) */
 	if (analysis&&analysis->trace)
 	{
@@ -14207,26 +14207,26 @@ DESCRIPTION : accept the analysis signal.
 					device_name_field);
 				signal_status_field=
 					get_unemap_package_signal_status_field(analysis->unemap_package);
-				node_manager=get_unemap_package_node_manager(analysis->unemap_package);
+				root_cmiss_region =
+					get_unemap_package_root_Cmiss_region(analysis->unemap_package);
+				root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
 				/* create a node to work with */
-				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-				/* copy it from the manager */
-				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(node,
-					rig_node))
+				if (node = CREATE(FE_node)(get_FE_node_identifier(rig_node),
+					(struct FE_region *)NULL, rig_node))
 				{
+					ACCESS(FE_node)(node);
 					set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
 						"ACCEPTED");
-					/* copy it back into the manager */
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-						(rig_node,node,node_manager);
+					/* merge it into the FE_region */
+					FE_region_merge_FE_node(root_fe_region, node);
+					/* clean up the working node */
+					DEACCESS(FE_node)(&node);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"accept_signal. MANAGER_COPY_WITH_IDENTIFIER failed ");
+						"accept_signal.  Could not make working node");
 				}
-				/* destroy the working copy */
-				DESTROY(FE_node)(&node);
 				/* add node to unrejected group, as it's now  visible*/
 				current_region=get_Rig_current_region(rig);
 				if (!current_region)
@@ -14241,10 +14241,9 @@ DESCRIPTION : accept the analysis signal.
 						region=get_Region_list_item_region(region_item);
 						if (unrejected_node_group=get_Region_unrejected_node_group(region))
 						{
-							if (!(IS_OBJECT_IN_GROUP(FE_node)(rig_node,
-								unrejected_node_group)))
+							if (!(FE_region_contains_FE_node(unrejected_node_group,rig_node)))
 							{
-								ADD_OBJECT_TO_GROUP(FE_node)(rig_node,unrejected_node_group);
+								FE_region_merge_FE_node(unrejected_node_group,rig_node);
 							}
 						}
 						region_item=get_Region_list_item_next(region_item);
@@ -14255,9 +14254,9 @@ DESCRIPTION : accept the analysis signal.
 				{
 					unrejected_node_group=get_Region_unrejected_node_group(
 						current_region);
-					if (!(IS_OBJECT_IN_GROUP(FE_node)(rig_node,unrejected_node_group)))
+					if (!(FE_region_contains_FE_node(unrejected_node_group,rig_node)))
 					{
-						ADD_OBJECT_TO_GROUP(FE_node)(rig_node,unrejected_node_group);
+						FE_region_merge_FE_node(unrejected_node_group,rig_node);
 					}
 				}
 #endif /* defined(UNEMAP_USE_3D) */
@@ -14278,14 +14277,16 @@ DESCRIPTION : accept the analysis signal.
 static int reject_signal(struct Analysis_work_area *analysis,
 	struct Device **signal_device)
 /*******************************************************************************
-LAST MODIFIED : 19 April 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Reject the  <signal> in <analysis>
 ==============================================================================*/
 {
 	int device_number,i,return_code,xpos,ypos;
+	struct Cmiss_region *root_cmiss_region;
 	struct Device **device;
+	struct FE_region *root_fe_region;
 	struct Region *current_region;
 	struct Rig *rig;
 	struct Signal *signal;
@@ -14294,8 +14295,7 @@ Reject the  <signal> in <analysis>
 #if defined(UNEMAP_USE_3D)
 	struct FE_field *device_name_field,*signal_status_field;
 	struct FE_node *rig_node,*node;
-	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *rig_node_group,*unrejected_node_group;
 #endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(reject_signal);
@@ -14304,9 +14304,8 @@ Reject the  <signal> in <analysis>
 	signal_status_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;
 	node=(struct FE_node *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
 #endif /* defined(UNEMAP_USE_3D) */
 	if (analysis&&signal_device&&(*signal_device))
 	{
@@ -14375,25 +14374,25 @@ Reject the  <signal> in <analysis>
 					device_name_field);
 				signal_status_field=get_unemap_package_signal_status_field(
 					analysis->unemap_package);
-				node_manager=get_unemap_package_node_manager(analysis->unemap_package);
-				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-				/* copy it from the manager */
-				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)(node,
-					rig_node))
+				root_cmiss_region =
+					get_unemap_package_root_Cmiss_region(analysis->unemap_package);
+				root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
+				if (node = CREATE(FE_node)(get_FE_node_identifier(rig_node),
+					(struct FE_region *)NULL, rig_node))
 				{
+					ACCESS(FE_node)(node);
 					set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
 						"REJECTED");
-					/* copy it back into the manager */
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-						(rig_node,node,node_manager);
+					/* merge it into the FE_region */
+					FE_region_merge_FE_node(root_fe_region, node);
+					/* clean up the working node */
+					DEACCESS(FE_node)(&node);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"reject_signal. MANAGER_COPY_WITH_IDENTIFIER failed ");
+						"reject_signal.  Could not make working node");
 				}
-				/* destroy the working copy */
-				DESTROY(FE_node)(&node);
 #if defined (OLD_CODE)
 				/* unselect the node, as we don't want it to be visible */
 				FE_node_selection_unselect_node(
@@ -14414,10 +14413,9 @@ Reject the  <signal> in <analysis>
 						region=get_Region_list_item_region(region_item);
 						if (unrejected_node_group=get_Region_unrejected_node_group(region))
 						{
-							if (IS_OBJECT_IN_GROUP(FE_node)(rig_node,unrejected_node_group))
+							if (FE_region_contains_FE_node(unrejected_node_group,rig_node))
 							{
-								REMOVE_OBJECT_FROM_GROUP(FE_node)(rig_node,
-									unrejected_node_group);
+								FE_region_remove_FE_node(unrejected_node_group,rig_node);
 							}
 						}
 						region_item=get_Region_list_item_next(region_item);
@@ -14428,9 +14426,9 @@ Reject the  <signal> in <analysis>
 					/* just one region */
 					unrejected_node_group=get_Region_unrejected_node_group(
 						current_region);
-					if (IS_OBJECT_IN_GROUP(FE_node)(rig_node,unrejected_node_group))
+					if (FE_region_contains_FE_node(unrejected_node_group,rig_node))
 					{
-						REMOVE_OBJECT_FROM_GROUP(FE_node)(rig_node,unrejected_node_group);
+						FE_region_remove_FE_node(unrejected_node_group,rig_node);
 					}
 				}
 #endif /* defined(UNEMAP_USE_3D) */
@@ -14451,7 +14449,7 @@ Reject the  <signal> in <analysis>
 static int analysis_accept_or_reject_signal(struct Analysis_work_area *analysis,
 	int accept_reject)
 /*******************************************************************************
-LAST MODIFIED : 29 November 2001
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Accept or reject the <analysis> highlighted signals.  <accept_reject> a flag,
@@ -14463,8 +14461,9 @@ Accept or reject the <analysis> highlighted signals.  <accept_reject> a flag,
 	struct Mapping_window *mapping;
 	struct Rig *rig;
 #if defined(UNEMAP_USE_3D)
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_node_selection *node_selection;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *root_fe_region;
 #endif/* defined(UNEMAP_USE_3D)*/
 
 	ENTER(analysis_accept_or_reject_signal);
@@ -14477,13 +14476,14 @@ Accept or reject the <analysis> highlighted signals.  <accept_reject> a flag,
 		if (rig=analysis->rig)
 		{
 #if defined (UNEMAP_USE_3D)
-			node_manager=(struct MANAGER(FE_node) *)NULL;
 			node_selection=(struct FE_node_selection *)NULL;
-			node_manager=get_unemap_package_node_manager(analysis->unemap_package);
+			root_cmiss_region =
+				get_unemap_package_root_Cmiss_region(analysis->unemap_package);
+			root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
 			node_selection=get_unemap_package_FE_node_selection(
 				analysis->unemap_package);
 			FE_node_selection_begin_cache(node_selection);
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+			FE_region_begin_change(root_fe_region);
 #endif /* defined (UNEMAP_USE_3D) */
 			/* accept/reject all the highlighted signals  */
 			device=rig->devices;
@@ -14541,7 +14541,7 @@ Accept or reject the <analysis> highlighted signals.  <accept_reject> a flag,
 #endif /* defined (UNEMAP_USE_3D) */
 #endif /* defined (OLD_CODE) */
 #if defined(UNEMAP_USE_3D)
-			MANAGER_END_CACHE(FE_node)(node_manager);
+			FE_region_end_change(root_fe_region);
 			FE_node_selection_end_cache(node_selection);
 #endif/* defined(UNEMAP_USE_3D)*/
 		}/* if (rig=analysis->rig)*/
@@ -16770,7 +16770,7 @@ Change the highlight status of the node/device
 	struct Analysis_work_area *analysis;
 	struct Device **device;
 	struct FE_field *device_name_field;
-	struct GROUP(FE_node) *all_devices_rig_node_group;
+	struct FE_region *all_devices_rig_node_group;
 	struct Rig *rig;
 	struct rig_node_selection_change_data *data;
 	struct Map *map;
@@ -16787,7 +16787,7 @@ Change the highlight status of the node/device
 		get_Rig_all_devices_rig_node_group(rig)))
 	{
 		return_code=1;
-		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
+		if (FE_region_contains_FE_node(all_devices_rig_node_group,node))
 		{
 			/* find the device corresponding to the node */
 			device_name_field=get_unemap_package_device_name_field(
@@ -16845,7 +16845,7 @@ the rig_node group. If are highlights them.
 	struct Device **device;
 	struct FE_node *node;
 	struct FE_field *device_name_field;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 	struct Region *current_region;
 	struct rig_node_selection_change_data data;
 	struct Signal_buffer *buffer;
@@ -16869,7 +16869,7 @@ the rig_node group. If are highlights them.
 	buffer=(struct Signal_buffer *)NULL;
 	signals=(struct Signals_area *)NULL;
 	current_region=(struct Region *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 	if (node_selection&&changes&&
 		(analysis=(struct Analysis_work_area *)analysis_work_area_void))
 	{
@@ -16914,7 +16914,7 @@ the rig_node group. If are highlights them.
 				if (current_region&&
 					(rig_node_group=get_Region_rig_node_group(current_region)))
 				{
-					if (IS_OBJECT_IN_GROUP(FE_node)(node,rig_node_group))
+					if (FE_region_contains_FE_node(rig_node_group,node))
 					{
 						node_in_current_group=1;
 					}
@@ -17135,13 +17135,13 @@ Guts of highlighting happens in highlight_analysis_perform_highlighting
 	struct FE_field *device_name_field;
 	struct FE_node *rig_node;
 	struct FE_node_selection *node_selection;
-	struct GROUP(FE_node) *rig_node_group;
+	struct FE_region *rig_node_group;
 #endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(highlight_analysis_device);
 #if defined(UNEMAP_USE_3D)
 	device_name_field=(struct FE_field *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
 	rig_node=(struct FE_node *)NULL;
 	node_selection=(struct FE_node_selection *)NULL;
 #endif /* defined(UNEMAP_USE_3D) */
@@ -17270,7 +17270,7 @@ cf highlight_analysis_device
 	struct Map *map;
 	struct Mapping_window *mapping;
 	struct Region *current_region;
-	struct GROUP(FE_node) *rig_node_group,*all_devices_rig_node_group;
+	struct FE_region *rig_node_group,*all_devices_rig_node_group;
 	struct FE_node_order_info *rig_node_order_info,*all_devices_rig_node_order_info;
 	struct Signals_area *signals;
 	struct FE_field *device_type_field;
@@ -17287,8 +17287,8 @@ cf highlight_analysis_device
 	old_highlight_rig_node=(struct FE_node *)NULL;
 	temp_device_rig_node=(struct FE_node *)NULL;
 	interval=(struct Interval_area *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
+	all_devices_rig_node_group=(struct FE_region *)NULL;
 	device_type_string=(char *)NULL;
 	device_type_field=(struct FE_field *)NULL;
 	signal_drawing_package=(struct Signal_drawing_package *)NULL;
@@ -17747,7 +17747,7 @@ cf highlight_analysis_device
 									highlight_iterator.count=0;
 									highlight_iterator.highlight_field=
 										signal_drawing_package->highlight_field;
-									FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+									FOR_EACH_OBJECT_IN_FE_region(
 										iterative_set_highlight_field,
 										(void *)(&highlight_iterator),rig_node_group);
 								}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : list.h
 
-LAST MODIFIED : 14 November 1996
+LAST MODIFIED : 25 April 2003
 
 DESCRIPTION :
 Macros for forward declaring standard list types and prototyping standard list
@@ -157,7 +157,7 @@ Removes all objects from the list that <conditional> returns true for \
 ==============================================================================*/
 
 #if defined (FULL_NAMES)
-#define ADD_OBJECT_TO_LIST_( object_type )  list_add_object ## object_type
+#define ADD_OBJECT_TO_LIST_( object_type )  list_add_object_ ## object_type
 #else
 #define ADD_OBJECT_TO_LIST_( object_type )  pl ## object_type
 #endif

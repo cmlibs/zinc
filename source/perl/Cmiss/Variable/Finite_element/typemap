@@ -1,0 +1,4 @@
+Cmiss::Variable T_PTROBJ
+Cmiss::Variable * T_PTROBJ
+Cmiss::FE_field T_PTROBJ
+Cmiss::FE_field * T_PTROBJ

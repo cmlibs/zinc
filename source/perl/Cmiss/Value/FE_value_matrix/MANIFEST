@@ -1,0 +1,8 @@
+Makefile.PL
+manifest
+readme
+typemap
+typemap.h
+t/1.t
+FE_value_matrix.pm
+FE_value_matrix.xs

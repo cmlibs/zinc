@@ -877,24 +877,25 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 {
 	char modified_reverse_normals,reverse_normals=0;
 	enum Collapsed_element_type collapsed_element;
+	enum FE_element_shape_type shape_type1;
 	FE_value coordinates[3],*data,*datum,distance1,distance2,*scalar,*scalars,
 		xi[2];
 	gtPolygonType polygon_type;
 	int adjusted_number_of_points_in_xi2,n_data_components,i,j,number_of_points,
 		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
 		simplex_element,return_code;
+	struct CM_element_information cm_identifier;
 	struct Contour_lines *contour_lines;
 	Triple *point,*points;
 
 	ENTER(create_iso_lines_from_FE_element);
-	if (element&&(element->shape)&&(2==element->shape->dimension)&&
+	if (element&&(2==get_FE_element_dimension(element))&&
 		(0<number_of_segments_in_xi1_requested)&&
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		scalar_field&&(1==Computed_field_get_number_of_components(scalar_field))&&
 		graphics_object&&(g_POLYLINE==graphics_object->object_type))
 	{
-		simplex_element=(SIMPLEX_SHAPE== *(element->shape->type));
 		return_code=1;
 		if (data_field)
 		{
@@ -912,7 +913,8 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
 			reverse_normals,&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,
-			&collapsed_element,&modified_reverse_normals);
+			&collapsed_element,&modified_reverse_normals,&shape_type1);
+		simplex_element=(SIMPLEX_SHAPE== shape_type1);
 		points=(Triple *)NULL;
 		scalars=(FE_value *)NULL;
 		data=(FE_value *)NULL;
@@ -1027,9 +1029,10 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 			if (return_code)
 			{
 				Contour_lines_link_ends(contour_lines);
+				get_FE_element_identifier(element, &cm_identifier);
 				if (!Contour_lines_add_to_graphics_object(contour_lines,
 						 graphics_object, graphics_object_time,
-					CM_element_information_to_graphics_name(element->identifier)))
+					CM_element_information_to_graphics_name(&cm_identifier)))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
 						"Could not add lines to graphics object");

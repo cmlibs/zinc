@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : emoter_slider_dialog.h
 
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 This module creates a emoter_slider input device.  A node group slider is
@@ -11,28 +11,25 @@ used to scale the distance between a fixed node and a group of nodes.
 #if !defined (EMOTER_SLIDER_DIALOG_H)
 #define EMOTER_SLIDER_DIALOG_H
 
-#include "finite_element/finite_element.h"
+#include "region/cmiss_region.h"
 #include "user_interface/user_interface.h"
 
 /*
 Global types
 ------------
 */
+
 struct Create_emoter_slider_data
 /*******************************************************************************
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	struct Execute_command *execute_command;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_element) *element_manager;
+	struct Cmiss_region *root_region;
+	struct MANAGER(FE_basis) *basis_manager;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(Control_curve) *control_curve_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *viewer_scene;

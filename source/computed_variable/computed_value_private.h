@@ -1,12 +1,12 @@
 /*******************************************************************************
 FILE : computed_value_private.h
 
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 ==============================================================================*/
-#if !defined (COMPUTED_VALUE_PRIVATE_H)
-#define COMPUTED_VALUE_PRIVATE_H
+#if !defined (__CMISS_VALUE_PRIVATE_H__)
+#define __CMISS_VALUE_PRIVATE_H__
 
 #include "computed_variable/computed_value.h"
 
@@ -14,217 +14,214 @@ DESCRIPTION :
 Method types
 ------------
 */
-typedef void Computed_value_type_specific_data;
+typedef void Cmiss_value_type_specific_data;
 
-typedef int (*Computed_value_clear_type_specific_function)(
-	struct Computed_value *value);
+typedef int (*Cmiss_value_clear_type_specific_function)(
+	Cmiss_value_id value);
 /*******************************************************************************
-LAST MODIFIED : 12 February 2003
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 Clear the type specific data for <value> (passed into the _set_type_
 function), but don't DEALLOCATE the data.
 ==============================================================================*/
 
-#define START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION( value_type ) \
-int Computed_value_ ## value_type ## _clear_type_specific( \
-	struct Computed_value *value) \
+#define START_CMISS_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION( value_type ) \
+int Cmiss_value_ ## value_type ## _clear_type_specific( \
+	Cmiss_value_id value) \
 { \
 	int return_code; \
-	struct Computed_value_ ## value_type ## _type_specific_data *data; \
+	struct Cmiss_value_ ## value_type ## _type_specific_data *data; \
 \
-	ENTER(Computed_value_ ## value_type ## _clear_type_specific); \
+	ENTER(Cmiss_value_ ## value_type ## _clear_type_specific); \
 	return_code=0; \
-	data=(struct Computed_value_ ## value_type ## _type_specific_data *) \
-		Computed_value_get_type_specific_data(value); \
+	data=(struct Cmiss_value_ ## value_type ## _type_specific_data *) \
+		Cmiss_value_get_type_specific_data(value); \
 	ASSERT_IF(data,return_code,0) \
-	ASSERT_IF(computed_value_ ## value_type ## _type_string== \
-		Computed_value_get_type_id_string(value),return_code,0)
+	ASSERT_IF(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value),return_code,0)
 
-#define END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION( value_type ) \
+#define END_CMISS_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION( value_type ) \
 	LEAVE; \
 \
 	return (return_code); \
-} /* Computed_value_ ## value_type ## _clear_type_specific */
+} /* Cmiss_value_ ## value_type ## _clear_type_specific */
 
-typedef Computed_value_type_specific_data*
-	(*Computed_value_duplicate_data_type_specific_function)(
-	struct Computed_value *value);
+typedef Cmiss_value_type_specific_data*
+	(*Cmiss_value_duplicate_data_type_specific_function)(
+	Cmiss_value_id value);
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 Returns a duplicate of the <value>'s type specific data.
 ==============================================================================*/
 
-#define START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION( \
+#define START_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION( \
 	value_type ) \
-Computed_value_type_specific_data * \
-	Computed_value_ ## value_type ## _duplicate_data_type_specific( \
-	struct Computed_value *value) \
+Cmiss_value_type_specific_data * \
+	Cmiss_value_ ## value_type ## _duplicate_data_type_specific( \
+	Cmiss_value_id value) \
 { \
-	struct Computed_value_ ## value_type ## _type_specific_data \
+	struct Cmiss_value_ ## value_type ## _type_specific_data \
 		*destination,*source; \
 \
-	ENTER(Computed_value_ ## value_type ## _duplicate_data_type_specific); \
+	ENTER(Cmiss_value_ ## value_type ## _duplicate_data_type_specific); \
 	/* check arguments */ \
-	ASSERT_IF(value&&(computed_value_ ## value_type ## _type_string== \
-		Computed_value_get_type_id_string(value)),destination,NULL) \
+	ASSERT_IF(value&&(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value)),destination,NULL) \
 	{ \
-		source=Computed_value_get_type_specific_data(value); \
+		source=Cmiss_value_get_type_specific_data(value); \
 		ASSERT_IF(source,destination,NULL) \
 		if (!ALLOCATE(destination, \
-			struct Computed_value_ ## value_type ## _type_specific_data,1)) \
+			struct Cmiss_value_ ## value_type ## _type_specific_data,1)) \
 		{ \
-			display_message(ERROR_MESSAGE,"Computed_value_" #value_type \
+			display_message(ERROR_MESSAGE,"Cmiss_value_" #value_type \
 				"_duplicate_data_type_specific.  Could not ALLOCATE destination"); \
 		} \
 		else
 
-#define END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION( \
+#define END_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION( \
 	value_type ) \
 	} \
 	LEAVE; \
 \
 	return (destination); \
-} /* Computed_value_ ## value_type ## _duplicate_data_type_specific */
+} /* Cmiss_value_ ## value_type ## _duplicate_data_type_specific */
 
-typedef int (*Computed_value_multiply_and_accumulate_type_specific_function)(
-	struct Computed_value *value_1,struct Computed_value *value_2,
-	struct Computed_value *total);
+typedef int (*Cmiss_value_multiply_and_accumulate_type_specific_function)(
+	Cmiss_value_id total,Cmiss_value_id value_1,
+	Cmiss_value_id value_2);
 /*******************************************************************************
-LAST MODIFIED : 12 February 2003
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 Check that <value_1> and <value_2> are of the same type.
-
-???DB.  Allows more than same type_strin
 ==============================================================================*/
 
-#define START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION( \
+#define START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION( \
 	value_type ) \
-int Computed_value_ ## value_type ## _multiply_and_accumulate_type_specific( \
-	struct Computed_value *value_1,struct Computed_value *value_2, \
-	struct Computed_value *total) \
+int Cmiss_value_ ## value_type ## _multiply_and_accumulate_type_specific( \
+	Cmiss_value_id value_1,Cmiss_value_id value_2, \
+	Cmiss_value_id total) \
 { \
 	int return_code; \
 \
-	ENTER(Computed_value_ ## value_type ## \
+	ENTER(Cmiss_value_ ## value_type ## \
 		_multiply_and_accumulater_type_specific); \
 	return_code=0; \
-	ASSERT_IF(value_1&&(computed_value_ ## value_type ## _type_string== \
-		Computed_value_get_type_id_string(value_1))&&value_2&&(computed_value_ ## \
-		value_type ## _type_string==Computed_value_get_type_id_string(value_2))&& \
-		total&&(computed_value_ ## value_type ## _type_string== \
-		Computed_value_get_type_id_string(total)),return_code,0)
+	ASSERT_IF(value_1&&(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value_1))&&value_2&&(Cmiss_value_ ## \
+		value_type ## _type_string==Cmiss_value_get_type_id_string(value_2))&& \
+		total&&(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(total)),return_code,0)
 
-#define END_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION( \
+#define END_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION( \
 	value_type ) \
 	LEAVE; \
 \
 	return (return_code); \
-} /* Computed_value_ ## value_type ## \
+} /* Cmiss_value_ ## value_type ## \
 	_multiply_and_accumulate_type_specific */
 
-typedef int (*Computed_value_same_sub_type_type_specific_function)(
-	struct Computed_value *value_1,struct Computed_value *value_2);
+typedef int (*Cmiss_value_same_sub_type_type_specific_function)(
+	Cmiss_value_id value_1,Cmiss_value_id value_2);
 /*******************************************************************************
-LAST MODIFIED : 13 February 2003
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 Check that <value_1> and <value_2> are of the same sub-type (same type plus
 extra restrictions such as length for a vector).
 ==============================================================================*/
 
-#define START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION( \
+#define START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION( \
 	value_type ) \
-int Computed_value_ ## value_type ## _same_sub_type_type_specific( \
-	struct Computed_value *value_1,struct Computed_value *value_2) \
+int Cmiss_value_ ## value_type ## _same_sub_type_type_specific( \
+	Cmiss_value_id value_1,Cmiss_value_id value_2) \
 { \
 	int return_code; \
 \
-	ENTER(Computed_value_ ## value_type ## _same_sub_type_type_specific); \
+	ENTER(Cmiss_value_ ## value_type ## _same_sub_type_type_specific); \
 	return_code=0; \
-	ASSERT_IF(value_1&&(computed_value_ ## value_type ## _type_string== \
-		Computed_value_get_type_id_string(value_1))&&value_2&&computed_value_ ## \
-		value_type ## _type_string==Computed_value_get_type_id_string(value_2), \
+	ASSERT_IF(value_1&&(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value_1))&&value_2&&Cmiss_value_ ## \
+		value_type ## _type_string==Cmiss_value_get_type_id_string(value_2), \
 		return_code,0)
 
-#define END_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION( value_type ) \
+#define END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION( value_type ) \
 	LEAVE; \
 \
 	return (return_code); \
-} /* Computed_value_ ## value_type ## _same_sub_type_type_specific */
+} /* Cmiss_value_ ## value_type ## _same_sub_type_type_specific */
 
 
 /*
 Friend macros
 -------------
 */
-#define DECLARE_COMPUTED_VALUE_IS_TYPE_FUNCTION( value_type ) \
-PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(value_type) \
+#define DECLARE_CMISS_VALUE_IS_TYPE_FUNCTION( value_type ) \
+PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(value_type) \
 { \
 	int return_code; \
 \
-	ENTER(Computed_value_is_type_ ## value_type); \
+	ENTER(CMISS_VALUE_IS_TYPE(value_type)); \
 	return_code=0; \
 	/* check argument */ \
 	if (value) \
 	{ \
-		if (computed_value_ ## value_type ## _type_string== \
-			Computed_value_get_type_id_string(value)) \
+		if (Cmiss_value_ ## value_type ## _type_string== \
+			Cmiss_value_get_type_id_string(value)) \
 		{ \
 			return_code=1; \
 		} \
 	} \
 	else \
 	{ \
-		display_message(ERROR_MESSAGE,"Computed_value_is_type_" #value_type ".  " \
+		display_message(ERROR_MESSAGE,"CMISS_VALUE_IS_TYPE(" #value_type ").  " \
 			"Missing value"); \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* Computed_value_is_type_ ## value_type */
+} /* CMISS_VALUE_IS_TYPE(value_type) */
 
-#define COMPUTED_VALUE_ESTABLISH_METHODS( value, value_type ) \
+#define CMISS_VALUE_ESTABLISH_METHODS( value, value_type ) \
 /***************************************************************************** \
 LAST MODIFIED : 19 February 2003 \
 \
 DESCRIPTION : \
-Each Computed_value_set_type function should call this macro to establish the \
+Each Cmiss_value_set_type function should call this macro to establish the \
 virtual functions that give the value its particular behaviour.  Each function \
 must therefore be defined for each value type, even if it is set to NULL or \
 some default function. \
 ============================================================================*/ \
-Computed_value_establish_methods(value, \
-	Computed_value_ ## value_type ## _clear_type_specific, \
-	Computed_value_ ## value_type ## _duplicate_data_type_specific, \
-	Computed_value_ ## value_type ## _multiply_and_accumulate_type_specific, \
-	Computed_value_ ## value_type ## _same_sub_type_type_specific)
+Cmiss_value_establish_methods(value, \
+	Cmiss_value_ ## value_type ## _clear_type_specific, \
+	Cmiss_value_ ## value_type ## _duplicate_data_type_specific, \
+	Cmiss_value_ ## value_type ## _multiply_and_accumulate_type_specific, \
+	Cmiss_value_ ## value_type ## _same_sub_type_type_specific)
 
 /*
 Friend functions
 ----------------
 */
-int Computed_value_establish_methods(struct Computed_value *value,
-	Computed_value_clear_type_specific_function
-	computed_value_clear_type_specific_function,
-	Computed_value_duplicate_data_type_specific_function
-	computed_value_duplicate_data_type_specific_function,
-	Computed_value_multiply_and_accumulate_type_specific_function
-	computed_value_multiply_and_accumulate_type_specific_function,
-	Computed_value_same_sub_type_type_specific_function
-	computed_value_same_sub_type_type_specific_function);
+int Cmiss_value_establish_methods(Cmiss_value_id value,
+	Cmiss_value_clear_type_specific_function clear_type_specific_function,
+	Cmiss_value_duplicate_data_type_specific_function
+	duplicate_data_type_specific_function,
+	Cmiss_value_multiply_and_accumulate_type_specific_function
+	multiply_and_accumulate_type_specific_function,
+	Cmiss_value_same_sub_type_type_specific_function
+	same_sub_type_type_specific_function);
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 Sets the methods for the <value>.
 ==============================================================================*/
 
-Computed_value_type_specific_data *Computed_value_get_type_specific_data(
-	struct Computed_value *value);
+Cmiss_value_type_specific_data *Cmiss_value_get_type_specific_data(
+	Cmiss_value_id value);
 /*******************************************************************************
 LAST MODIFIED : 12 February 2003
 
@@ -232,7 +229,7 @@ DESCRIPTION :
 Returns the type specific data for the <value>.
 ==============================================================================*/
 
-int Computed_value_set_type_specific_information(struct Computed_value *value,
+int Cmiss_value_set_type_specific_information(Cmiss_value_id value,
 	char *type_string,void *type_specific_data);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
@@ -241,17 +238,17 @@ DESCRIPTION :
 Sets the type specific information for the <value>.
 ==============================================================================*/
 
-int Computed_value_clear_type(struct Computed_value *value);
+int Cmiss_value_clear_type(Cmiss_value_id value);
 /*******************************************************************************
 LAST MODIFIED : 2 February 2003
 
 DESCRIPTION :
-Used internally by DESTROY and Computed_value_set_type_*() functions to
-deallocate or deaccess data specific to any Computed_value_type.  Functions
-changing the type of the Computed_value should
+Used internally by DESTROY and Cmiss_value_set_type_*() functions to
+deallocate or deaccess data specific to any Cmiss_value_type.  Functions
+changing the type of the Cmiss_value should
 - allocate any dynamic data needed for the type
 - call this function to clear what is currently in the value
 - then set values
 to ensure that the value is not left in an invalid state.
 ==============================================================================*/
-#endif /* !defined (COMPUTED_VALUE_PRIVATE_H) */
+#endif /* !defined (__CMISS_VALUE_PRIVATE_H__) */

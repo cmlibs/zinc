@@ -582,9 +582,9 @@ Inherit result from first source field.
 static int Computed_field_coordinate_transformation_find_element_xi(
 	struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group) 
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region) 
 /*******************************************************************************
-LAST MODIFIED : 18 February 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -603,7 +603,7 @@ DESCRIPTION :
 			/*jacobian*/(float *)NULL) && Computed_field_find_element_xi(
 			field->source_fields[0],source_field_coordinates,
 			field->source_fields[0]->number_of_components,element,
-			xi,search_element_group, /*propagate_field*/1);
+			xi, element_dimension, search_region, /*propagate_field*/1);
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,

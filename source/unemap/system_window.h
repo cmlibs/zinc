@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.h
 
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -48,17 +48,11 @@ struct System_window *CREATE(System_window)(Widget shell,
 #if defined (UNEMAP_USE_3D)
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
-	struct MANAGER(FE_field) *fe_field_manager,
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection,
-	struct FE_time *fe_time,
 	struct MANAGER(FE_basis) *fe_basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Scene) *scene_manager,
@@ -75,7 +69,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct Time_keeper *time_keeper,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_command.h
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Functions and for executing unemap commands.
@@ -49,18 +49,12 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct Interactive_tool *transform_tool,
 #endif /* defined (MOTIF) */
 	struct LIST(GT_object) *glyph_list,
-	struct FE_time *fe_time,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -81,7 +75,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 	);
 /*******************************************************************************
-LAST MODIFIED : 17 July 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Creates a Unemap_command_data structure containing pointers to the passed

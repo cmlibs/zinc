@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
@@ -10,11 +10,11 @@ this dialog.
 ==============================================================================*/
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
+#include "choose/text_choose_fe_node.h"
 #include "general/debug.h"
 #include "node/node_viewer_widget.h"
 #include "node/node_viewer.h"
 #include "node/node_viewer.uidh"
-#include "select/select_finite_element.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -40,12 +40,8 @@ Contains all the information carried by the node_viewer widget.
 	struct Computed_field_package *computed_field_package;
 	struct Node_viewer **node_viewer_address;
 	struct FE_node *node_copy;
-	struct MANAGER(FE_node) *this_node_manager;
-	void *this_node_manager_callback_id;
-	struct MANAGER(FE_node) *actual_node_manager;
-	void *actual_node_manager_callback_id;
-	struct MANAGER(FE_element) *actual_element_manager;
-	void *actual_element_manager_callback_id;
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
 	struct FE_node_selection *node_selection;
 	struct User_interface *user_interface;
 	Widget viewer_form,viewer_widget,select_form,select_widget;
@@ -62,7 +58,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_viewer,Node_viewer,viewer_form)
 
 static int Node_viewer_set_viewer_node(struct Node_viewer *node_viewer)
 /*******************************************************************************
-LAST MODIFIED : 5 December 2000
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Gets the current node from the select widget, makes a copy of it if not NULL,
@@ -70,33 +66,27 @@ and passes it to the node_viewer.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node *node, *node_copy, *temp_node;
+	struct FE_node *node, *node_copy;
 
 	ENTER(Node_viewer_set_viewer_node);
 	if (node_viewer)
 	{
-		if (node = SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget))
+		if (node = TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_node)(
+			node_viewer->select_widget))
 		{
-			node_copy = CREATE(FE_node)(get_FE_node_cm_node_identifier(node), node);
+			node_copy = ACCESS(FE_node)(CREATE(FE_node)(get_FE_node_identifier(node),
+				(struct FE_region *)NULL, node));
 		}
 		else
 		{
 			node_copy = (struct FE_node *)NULL;
 		}
-		/* make sure previous node is around while setting new one */
-		if (node_viewer->node_copy)
-		{
-			temp_node = ACCESS(FE_node)(node_viewer->node_copy);
-		}
-		else
-		{
-			temp_node = (struct FE_node *)NULL;
-		}
 		REACCESS(FE_node)(&(node_viewer->node_copy), node_copy);
-		node_viewer_widget_set_node(node_viewer->viewer_widget, node_copy);
-		if (temp_node)
+		node_viewer_widget_set_node(node_viewer->viewer_widget,
+			node_viewer->fe_region, node_copy);
+		if (node_copy)
 		{
-			DEACCESS(FE_node)(&temp_node);
+			DEACCESS(FE_node)(&node_copy);
 		}
 		return_code=1;
 	}
@@ -167,7 +157,7 @@ Callback for change in the global node selection.
 		(node_viewer=(struct Node_viewer *)node_viewer_void))
 	{
 		/* get the last selected node and put it in the viewer */
-		select_node = SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget);
+		select_node = TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_node)(node_viewer->select_widget);
 		if ((last_selected_node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
 			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
 			changes->newly_selected_node_list)) ||
@@ -179,7 +169,7 @@ Callback for change in the global node selection.
 		{
 			if (last_selected_node != select_node)
 			{
-				SELECT_SET_SELECT_ITEM(FE_node)(node_viewer->select_widget,
+				TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_node)(node_viewer->select_widget,
 					last_selected_node);
 			}
 			Node_viewer_set_viewer_node(node_viewer);
@@ -193,147 +183,45 @@ Callback for change in the global node selection.
 	LEAVE;
 } /* Node_viewer_node_selection_change */
 
-static void Node_viewer_this_node_change(
-	struct MANAGER_MESSAGE(FE_node) *message, void *node_viewer_void)
+static void Node_viewer_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes, void *node_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 24 January 2003
 
 DESCRIPTION :
-Callback from this_node_manager for changes to nodes. If the currently selected
-node has changed, re-send to viewer.
 Note that we do not have to handle add, delete and identifier change messages
 here as the select widget does this for us. Only changes to the content of the
 object cause updates.
 ==============================================================================*/
 {
+	enum CHANGE_LOG_CHANGE(FE_node) change;
 	struct Node_viewer *node_viewer;
 
-	ENTER(Node_viewer_this_node_change);
-	if (message && (node_viewer = (struct Node_viewer *)node_viewer_void))
+	ENTER(Node_viewer_Cmiss_region_change);
+	if (fe_region && changes && 
+		(node_viewer = (struct Node_viewer *)node_viewer_void))
 	{
-		switch (message->change)
+		if (CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
+			TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_node)(node_viewer->select_widget),
+			&change))
 		{
-			case MANAGER_CHANGE_IDENTIFIER(FE_node):
-			case MANAGER_CHANGE_OBJECT(FE_node):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
+			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 			{
-				if (IS_OBJECT_IN_LIST(FE_node)(
-					SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget),
-					message->changed_object_list))
-				{
-					Node_viewer_set_viewer_node(node_viewer);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(FE_node):
-			case MANAGER_CHANGE_REMOVE(FE_node):
-			{
-				/* do nothing */
-			} break;
-		}
+				Node_viewer_set_viewer_node(node_viewer);
+			}
+		}		
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_viewer_this_node_change.  Invalid argument(s)");
+			"Node_viewer_Cmiss_region_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Node_viewer_this_node_change */
-
-static void Node_viewer_actual_node_change(
-	struct MANAGER_MESSAGE(FE_node) *message, void *node_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 6 June 2001
-
-DESCRIPTION :
-Callback from the actual_node_manager for changes to nodes. If the node is
-embedded in any elements using nodes that have changed, updates node in editor.
-==============================================================================*/
-{
-	struct FE_node_is_embedded_in_changed_element_data embedded_data;
-	struct Node_viewer *node_viewer;
-
-	ENTER(Node_viewer_actual_node_change);
-	if (message && (node_viewer = (struct Node_viewer *)node_viewer_void))
-	{
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_OBJECT(FE_node):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
-			{
-				embedded_data.changed_element_list = (struct LIST(FE_element) *)NULL;
-				embedded_data.changed_node_list = message->changed_object_list;
-				if (FE_node_is_embedded_in_changed_element(
-					SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget),
-					(void *)&embedded_data))
-				{
-					Node_viewer_set_viewer_node(node_viewer);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(FE_node):
-			case MANAGER_CHANGE_REMOVE(FE_node):
-			case MANAGER_CHANGE_IDENTIFIER(FE_node):
-			{
-				/* do nothing */
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_viewer_actual_node_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_viewer_actual_node_change */
-
-static void Node_viewer_actual_element_change(
-	struct MANAGER_MESSAGE(FE_element) *message, void *node_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 6 June 2001
-
-DESCRIPTION :
-Callback from the actual_element_manager for changes to elements. If the node is
-embedded in any elements that have changed, updates node in editor.
-==============================================================================*/
-{
-	struct FE_node_is_embedded_in_changed_element_data embedded_data;
-	struct Node_viewer *node_viewer;
-
-	ENTER(Node_viewer_actual_element_change);
-	if (message && (node_viewer = (struct Node_viewer *)node_viewer_void))
-	{
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_OBJECT(FE_element):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
-			{
-				embedded_data.changed_element_list = message->changed_object_list;
-				embedded_data.changed_node_list = (struct LIST(FE_node) *)NULL;
-				if (FE_node_is_embedded_in_changed_element(
-					SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget),
-					(void *)&embedded_data))
-				{
-					Node_viewer_set_viewer_node(node_viewer);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(FE_element):
-			case MANAGER_CHANGE_REMOVE(FE_element):
-			case MANAGER_CHANGE_IDENTIFIER(FE_element):
-			{
-				/* do nothing */
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_viewer_actual_element_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Node_viewer_actual_element_change */
+} /* Node_viewer_Cmiss_region_change */
 
 static int Node_viewer_apply_changes(struct Node_viewer *node_viewer)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Makes the node change global.
@@ -346,9 +234,15 @@ Makes the node change global.
 	{
 		if (node_viewer->node_copy)
 		{
-			return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-				SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget),
-				node_viewer->node_copy,node_viewer->this_node_manager);
+			if (FE_region_merge_FE_node(node_viewer->fe_region,
+				node_viewer->node_copy))
+			{
+				return_code = 1;
+			}
+			else
+			{
+				return_code = 0;
+			}
 		}
 		else
 		{
@@ -489,14 +383,12 @@ struct Node_viewer *CREATE(Node_viewer)(
 	struct Node_viewer **node_viewer_address,
 	char *dialog_title,
 	struct FE_node *initial_node,
-	struct MANAGER(FE_node) *this_node_manager,
-	struct MANAGER(FE_node) *actual_node_manager,
-	struct MANAGER(FE_element) *actual_element_manager,
+	struct Cmiss_region *region,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Time_object *time_object, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Creates a dialog for choosing nodes and displaying and editing their fields.
@@ -529,8 +421,7 @@ Since both nodes and data can depend on embedded fields, the
 
 	ENTER(CREATE(Node_viewer));
 	node_viewer = (struct Node_viewer *)NULL;
-	if (node_viewer_address && dialog_title && this_node_manager &&
-		actual_node_manager && actual_element_manager && node_selection &&
+	if (node_viewer_address && dialog_title && region && node_selection &&
 		computed_field_package && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(node_viewer_uidh,
@@ -539,41 +430,10 @@ Since both nodes and data can depend on embedded fields, the
 			/* allocate memory */
 			if (ALLOCATE(node_viewer,struct Node_viewer,1))
 			{
-				/* initialise the structure */
-				if ((!initial_node) ||
-					(!IS_MANAGED(FE_node)(initial_node, this_node_manager)))
-				{
-					if (!(initial_node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-						(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-						FE_node_selection_get_node_list(node_selection))))
-					{
-						if (initial_node=FIRST_OBJECT_IN_MANAGER_THAT(FE_node)(
-							(MANAGER_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-							this_node_manager))
-						{
-							/* select the node to be displayed in dialog; note this is ok
-								 here as we are not receiving selection callbacks yet */
-							FE_node_selection_select_node(node_selection,initial_node);
-						}
-					}
-				}
-				if (initial_node)
-				{
-					node_viewer->node_copy = ACCESS(FE_node)(
-						CREATE(FE_node)(get_FE_node_cm_node_identifier(initial_node),
-							initial_node));
-				}
-				else
-				{
-					node_viewer->node_copy = (struct FE_node *)NULL;
-				}
+				node_viewer->node_copy = (struct FE_node *)NULL;
 				node_viewer->node_viewer_address = node_viewer_address;
-				node_viewer->this_node_manager = this_node_manager;
-				node_viewer->this_node_manager_callback_id = (void *)NULL;
-				node_viewer->actual_node_manager = actual_node_manager;
-				node_viewer->actual_node_manager_callback_id = (void *)NULL;
-				node_viewer->actual_element_manager = actual_element_manager;
-				node_viewer->actual_element_manager_callback_id = (void *)NULL;
+				node_viewer->region = region;
+				node_viewer->fe_region = Cmiss_region_get_FE_region(region);
 				node_viewer->node_selection=node_selection;
 				node_viewer->computed_field_package=computed_field_package;
 				node_viewer->user_interface=user_interface;
@@ -584,6 +444,22 @@ Since both nodes and data can depend on embedded fields, the
 				node_viewer->select_widget=(Widget)NULL;
 				node_viewer->widget=(Widget)NULL;
 				node_viewer->window_shell=(Widget)NULL;
+				if (!initial_node)
+				{
+					if (!(initial_node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+						(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+						FE_node_selection_get_node_list(node_selection))))
+					{
+						if (initial_node = FE_region_get_first_FE_node_that(
+							node_viewer->fe_region,
+							(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL))
+						{
+							/* select the node to be displayed in dialog; note this is ok
+								 here as we are not receiving selection callbacks yet */
+							FE_node_selection_select_node(node_selection,initial_node);
+						}
+					}
+				}
 				/* get callbacks from global node selection */
 				FE_node_selection_add_callback(node_selection,
 					Node_viewer_node_selection_change,(void *)node_viewer);
@@ -625,10 +501,12 @@ Since both nodes and data can depend on embedded fields, the
 							{
 								XtManageChild(node_viewer->widget);
 								init_widgets=1;
-								if (!CREATE_SELECT_WIDGET(FE_node)(
-									&node_viewer->select_widget,
-									node_viewer->select_form,SELECT_TEXT,
-									initial_node,this_node_manager))
+								if (!(node_viewer->select_widget = 
+									CREATE_TEXT_CHOOSE_FROM_FE_REGION_WIDGET(FE_node)(
+								   node_viewer->select_form, initial_node,
+									node_viewer->fe_region,
+									(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,
+									FE_node_to_node_string, FE_region_node_string_to_FE_node)))
 								{
 									init_widgets=0;
 								}
@@ -636,7 +514,8 @@ Since both nodes and data can depend on embedded fields, the
 									&(node_viewer->viewer_widget),
 									node_viewer->viewer_form,
 									computed_field_package,
-									node_viewer->node_copy, time_object, user_interface))
+									node_viewer->fe_region, (struct FE_node *)NULL,
+									time_object, user_interface))
 								{
 									init_widgets=0;
 								}
@@ -645,19 +524,12 @@ Since both nodes and data can depend on embedded fields, the
 									/* get callbacks from the node selector */
 									callback.procedure = Node_viewer_update_select_widget;
 									callback.data = node_viewer;
-									SELECT_SET_UPDATE_CB(FE_node)(
+									TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_node)(
 										node_viewer->select_widget, &callback);
-									/* get callbacks from managers */
-									node_viewer->this_node_manager_callback_id =
-										MANAGER_REGISTER(FE_node)(Node_viewer_this_node_change,
-											node_viewer, node_viewer->this_node_manager);
-									node_viewer->actual_node_manager_callback_id =
-										MANAGER_REGISTER(FE_node)(Node_viewer_actual_node_change,
-											node_viewer, node_viewer->actual_node_manager);
-									node_viewer->actual_element_manager_callback_id =
-										MANAGER_REGISTER(FE_element)(
-											Node_viewer_actual_element_change, node_viewer,
-											node_viewer->actual_element_manager);
+									/* get callbacks from fe_region */
+									FE_region_add_callback(node_viewer->fe_region,
+										Node_viewer_FE_region_change, (void *)node_viewer);
+									Node_viewer_set_viewer_node(node_viewer);
 									/* bring up the widget */
 									XtRealizeWidget(node_viewer->window_shell);
 									XtPopup(node_viewer->window_shell,XtGrabNone);
@@ -738,23 +610,9 @@ Destroys the Node_viewer. See also Node_viewer_close_CB.
 	if (node_viewer_address&&
 		(node_viewer= *node_viewer_address))
 	{
-		/* end callbacks from managers */
-		if (node_viewer->this_node_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_node)(node_viewer->this_node_manager_callback_id,
-				node_viewer->this_node_manager);
-		}
-		if (node_viewer->actual_node_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_node)(node_viewer->actual_node_manager_callback_id,
-				node_viewer->actual_node_manager);
-		}
-		if (node_viewer->actual_element_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_element)(
-				node_viewer->actual_element_manager_callback_id,
-				node_viewer->actual_element_manager);
-		}
+		/* end callback from region */
+		FE_region_remove_callback(node_viewer->fe_region,
+			Node_viewer_FE_region_change, (void *)node_viewer);
 		/* end callbacks from global node selection */
 		FE_node_selection_remove_callback(node_viewer->node_selection,
 			Node_viewer_node_selection_change,(void *)node_viewer);
@@ -793,7 +651,7 @@ Returns the node currently in the <node_viewer>.
 	ENTER(node_viewer_get_node);
 	if (node_viewer)
 	{
-		node=SELECT_GET_SELECT_ITEM(FE_node)(node_viewer->select_widget);
+		node=TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_node)(node_viewer->select_widget);
 	}
 	else
 	{
@@ -820,7 +678,7 @@ Makes <node> the current_node in <node_viewer>.
 	if (node_viewer&&node)
 	{
 		return_code=
-			SELECT_SET_SELECT_ITEM(FE_node)(node_viewer->select_widget,node)&&
+			TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_node)(node_viewer->select_widget,node)&&
 			Node_viewer_set_viewer_node(node_viewer);
 	}
 	else

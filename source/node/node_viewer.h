@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer.h
 
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 24 January 2003
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
@@ -41,14 +41,12 @@ struct Node_viewer *CREATE(Node_viewer)(
 	struct Node_viewer **node_viewer_address,
 	char *dialog_title,
 	struct FE_node *initial_node,
-	struct MANAGER(FE_node) *this_node_manager,
-	struct MANAGER(FE_node) *actual_node_manager,
-	struct MANAGER(FE_element) *actual_element_manager,
+	struct Cmiss_region *root_region,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Time_object *time_object,	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 24 January 2003
 
 DESCRIPTION :
 Creates a dialog for choosing nodes and displaying and editing their fields.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 9 November 2001
+LAST MODIFIED : 27 November 2002
 
 DESCRIPTION :
 Representing time in finite elements.
@@ -95,6 +95,17 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(FE_time_version,name,char *);
 PROTOTYPE_MANAGER_FUNCTIONS(FE_time_version);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_version,name,char *);
 
+struct FE_time_version *get_FE_time_version_matching_FE_time_version(
+	struct FE_time *fe_time, struct FE_time_version *source_fe_time_version);
+/*******************************************************************************
+LAST MODIFIED : 27 November 2002
+
+DESCRIPTION :
+Searches <fe_time> for a FE_time_version matching <source_fe_time_version>.
+If no equivalent fe_time_version is found one is created in <fe_time> and
+returned.
+==============================================================================*/
+
 struct FE_time_version *get_FE_time_version_matching_time_series(
 	struct FE_time *fe_time, int number_of_times, FE_value *times);
 /*******************************************************************************
@@ -158,4 +169,14 @@ and 1 to indicate what fraction of the way between <time_index_one> and
 <time_index_two> the value is found.  Returns 0 if time is outside the range
 of the time index array.
 ==============================================================================*/
+
+int FE_time_has_FE_time_version(struct FE_time *fe_time,
+	struct FE_time_version *fe_time_version);
+/*******************************************************************************
+LAST MODIFIED : 15 October 2002
+
+DESCRIPTION :
+Returns true if <fe_time> contains the <fe_time_version>.
+==============================================================================*/
+
 #endif /* !defined (FINITE_ELEMENT_TIME_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.h
 
-LAST MODIFIED : 21 August 2002
+LAST MODIFIED : 28 February 2003
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -11,6 +11,7 @@ lookup of the element.
 #define COMPUTED_FIELD_FIND_XI_H
 
 #include "user_interface/user_interface.h"
+#include "region/cmiss_region.h"
 
 struct Computed_field_find_element_xi_cache;
 /*******************************************************************************
@@ -22,26 +23,29 @@ struct Computed_field_find_element_xi_cache is private.
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group);
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
 /*******************************************************************************
-LAST MODIFIED : 17 December 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 This function actually seacrches through the elements in the 
-<search_element_group> trying to find an <xi> location which returns the correct
+<search_region> trying to find an <xi> location which returns the correct
 <values>.  This routine is either called directly by Computed_field_find_element_xi
 or if that field is propogating it's values backwards, it is called by the 
 ultimate parent finite_element field.
+An <element_dimension> of 0 searches in elements of all dimension, any other
+value searches just elements of that dimension.
 ==============================================================================*/
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
 	struct Computed_field_find_element_xi_cache **cache_ptr, 
 	FE_value *values,int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group,
+	FE_value *xi, struct Cmiss_region *search_region,
+	int element_dimension,
 	struct User_interface *user_inteface,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution);
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 28 February 2003
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -49,6 +53,8 @@ This function implements the reverse of some certain computed_fields
 and xi which would evaluate to the given values.
 This implementation of find_element_xi has been separated out as it uses OpenGL
 to accelerate the element xi lookup.
+An <element_dimension> of 0 searches in elements of all dimension, any other
+value searches just elements of that dimension.
 ==============================================================================*/
 
 struct Computed_field_find_element_xi_cache 

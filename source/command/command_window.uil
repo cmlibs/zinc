@@ -19,16 +19,13 @@ procedure
 	id_cell_create_button;
 	id_curve_editor_create_button;
 	id_data_viewer_create_button;
-	id_interactive_data_editor_cbut;
 	id_element_creator_create_butto;
 	id_element_point_viewer_button;
 	id_grid_field_calculator_button;
 	id_im_control_create_button;
 	id_node_viewer_create_button;
-	id_interactive_node_editor_cbut;
 	id_tracking_editor_create_butto;
 	id_unemap_create_button;
-	id_3d_digitizer_create_button;
 ! Graphics menu
 	id_three_d_window_create_button;
 	id_material_editor_create_butto;
@@ -511,16 +508,13 @@ object
 			XmPushButton cell_create_button;
 			XmPushButton curve_editor_create_btn;
 			XmPushButton data_viewer_create_button;
-			XmPushButton interactive_data_editor_cbutton;
 			XmPushButton element_creator_create_button;
 			XmPushButton element_point_viewer_button;
 			XmPushButton grid_field_calculator_btn;
 			XmPushButton im_control_create_button;
 			XmPushButton node_viewer_create_button;
-			XmPushButton interactive_node_editor_cbutton;
 			XmPushButton tracking_editor_create_button;
 			XmPushButton unemap_create_button;
-			XmPushButton digitizer_3d_create_button;
 			};
 		};
 !*******************************************************************************
@@ -574,25 +568,6 @@ object
 			XmNactivateCallback = procedures
 				{
 				callback_command("gfx create data_viewer");
-				};
-			};
-		};
-	interactive_data_editor_cbutton: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Data editor (interactive)");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_interactive_data_editor_cbut(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("gfx create interactive_data_editor");
 				};
 			};
 		};
@@ -691,25 +666,6 @@ object
 				};
 			};
 		};
-	interactive_node_editor_cbutton: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Node editor (interactive)");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_interactive_node_editor_cbut(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("gfx create interactive_node_editor");
-				};
-			};
-		};
 	tracking_editor_create_button: XmPushButton
 		{
 		arguments
@@ -745,25 +701,6 @@ object
 			XmNactivateCallback = procedures
 				{
 				callback_command("UNEMAP Open");
-				};
-			};
-		};
-	digitizer_3d_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("3-D Digitizer");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_3d_digitizer_create_button(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("gfx create 3d_digitizer");
 				};
 			};
 		};

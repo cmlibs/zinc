@@ -181,7 +181,7 @@ Evaluate the fields cache at the node.
 		(1 == field->source_fields[1]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		element_dimension=element->shape->dimension;
+		element_dimension=get_FE_element_dimension(element);
 		if ((return_code=Computed_field_evaluate_cache_in_element(
 			field->source_fields[1],element,xi,time,top_level_element,
 			/*calculate_derivatives*/0)) &&

@@ -1,0 +1,5 @@
+Cmiss::Value T_PTROBJ
+Cmiss::Value * T_PTROBJ
+Cmiss::Value::Matrix T_PTROBJ
+Cmiss::Value::Matrix * T_PTROBJ
+Matrix_value T_DOUBLE

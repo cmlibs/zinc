@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_adjacent_elements.h
 
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Functions for finding elements adjacent to other ones.  These functions have
@@ -29,23 +29,21 @@ int adjacent_FE_element_from_nodes(struct FE_element *element,
 	int node_index, int *number_of_adjacent_elements, 
 	struct FE_element ***adjacent_elements, 
 	struct LIST(Index_multi_range) *node_element_list,
-	struct MANAGER(FE_element) *fe_element_manager);
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 27 October 2000
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 For a 1D top level element this routine will return the list of 
 <adjacent_elements> not including <element> which share the node indicated by
-<node_index>.  <adjacent_elements> is REALLOCATED to the 
+<node_index>.  <adjacent_elements> is ALLOCATED to the 
 correct size and should be DEALLOCATED when calls to this function are finished.
-The <node_element_list> should be created using create_node_element_list which
-creates a list indexed by node identifying elements which refer to each node.
 ==============================================================================*/
 
 struct LIST(Index_multi_range) *create_node_element_list(
-   struct MANAGER(FE_element) *fe_element_manager);
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Creates a list indexed by node identifying elements which refer to each node.

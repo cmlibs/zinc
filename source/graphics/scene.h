@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 4 December 2001
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -30,6 +30,7 @@ December 1997. Created MANAGER(Scene).
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "interaction/interaction_volume.h"
+#include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -132,7 +133,7 @@ DECLARE_MANAGER_TYPES(Scene);
 
 struct Modify_scene_data
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Structure to pass to modify_Scene.
@@ -143,13 +144,8 @@ Structure to pass to modify_Scene.
 	struct Scene *default_scene;
 	/* following used for enabling GFEs */
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	struct MANAGER(FE_node) *data_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct Cmiss_region *root_region;
+	struct Cmiss_region *data_root_region;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
@@ -433,34 +429,24 @@ DESCRIPTION :
 Changes the Time_object object referenced by <scene_object>.
 ==============================================================================*/
 
-int Scene_object_has_data_group(struct Scene_object *scene_object,
-	void *data_group_void);
+int Scene_object_has_Cmiss_region(struct Scene_object *scene_object,
+	void *cmiss_region_void);
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given data_group.
+graphical element group for the given <cmiss_region>.
 ==============================================================================*/
 
-int Scene_object_has_element_group(struct Scene_object *scene_object,
-	void *element_group_void);
+int Scene_object_has_data_Cmiss_region(struct Scene_object *scene_object,
+	void *data_cmiss_region_void);
 /*******************************************************************************
-LAST MODIFIED : 19 September 1997
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given element_group.
-==============================================================================*/
-
-int Scene_object_has_node_group(struct Scene_object *scene_object,
-	void *node_group_void);
-/*******************************************************************************
-LAST MODIFIED : 15 May 2000
-
-DESCRIPTION :
-Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given node_group.
+g_ELEMENT_GROUP gt_object referencing the given <data_cmiss_region>.
 ==============================================================================*/
 
 int Scene_object_has_graphical_element_group(struct Scene_object *scene_object,
@@ -481,28 +467,6 @@ LAST MODIFIED : 5 July 1999
 
 DESCRIPTION :
 Returns the GT_element_group referenced by <scene_object>.
-==============================================================================*/
-
-int Scene_object_has_unmanaged_element_group(
-	struct Scene_object *scene_object,void *element_group_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 18 February 1998
-
-DESCRIPTION :
-Returns true if the <scene_object> contains a GFE for an element group no
-longer in <element_group_manager>.
-???RC Should be static?
-==============================================================================*/
-
-int Scene_object_has_unmanaged_node_group(
-	struct Scene_object *scene_object,void *node_group_manager_void);
-/*******************************************************************************
-LAST MODIFIED : 21 April 1999
-
-DESCRIPTION :
-Returns true if the <scene_object> contains a GFE for an element group no
-longer in <node_group_manager>.
-???RC Should be static?
 ==============================================================================*/
 
 int Scene_object_get_range(struct Scene_object *scene_object,
@@ -668,20 +632,15 @@ scene.
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct Cmiss_region *root_region,
+	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -928,17 +887,17 @@ Returns the list of all any_objects in the <scene_picked_object_list>.
 
 struct FE_element *Scene_picked_object_list_get_nearest_element(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct GROUP(FE_element) *element_group,
+	struct Cmiss_region *cmiss_region,
 	int select_elements_enabled,int select_faces_enabled,int select_lines_enabled,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address);
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Returns the nearest picked element in <scene_picked_object_list> that is in
-<element_group> (or any group if NULL). If any of the remaining address
+<cmiss_region> (or in root_region if NULL). If any of the remaining address
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest element.
 <select_elements_enabled> allows top-level/3-D elements to be selected.
@@ -959,18 +918,19 @@ Returns the list of all elements identified in the <scene_picked_object_list>.
 <select_faces_enabled> allows face and 2-D elements to be selected.
 <select_lines_enabled> allows line and 1-D elements to be selected.
 ==============================================================================*/
+
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	struct GROUP(FE_element) *element_group,
+	struct Cmiss_region *cmiss_region,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address);
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Returns the nearest picked element point in <scene_picked_object_list> that is
-in <element_group> (or any group if NULL). If any of the remaining address
+in <cmiss_region> (or in root_region if NULL). If any of the remaining address
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest element point.
 The returned Element_point_ranges structure should be used or destroyed by the
@@ -988,20 +948,22 @@ Returns the list of all element_points in the <scene_picked_object_list>.
 
 struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
-	int use_data,struct GROUP(FE_node) *node_group,
+	int use_data, struct Cmiss_region *cmiss_region,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Returns the nearest picked node in <scene_picked_object_list> that is in
-<node_group> (or any group if NULL). If any of the remaining address arguments
-are not NULL, they are filled with the appropriate information pertaining to
-the nearest node.
+<cmiss_region> (or any region if NULL). If any of the remaining address
+arguments are not NULL, they are filled with the appropriate information
+pertaining to the nearest node.
 The <use_data> flag indicates that we are searching for a data point instead of
-a node, needed since different settings type used for each.
+a node, needed since different settings type used for each, plus it uses the
+data_Cmiss_region from the GT_element_group. <cmiss_region> must be a data
+region if <use_data> set.
 ==============================================================================*/
 
 struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
@@ -1232,32 +1194,33 @@ Does not complain if <child_scene> is not used in <scene>.
 ==============================================================================*/
 
 int Scene_add_graphical_element_group(struct Scene *scene,
-	struct GROUP(FE_element) *element_group, int position,
-	char *scene_object_name);
+	struct Cmiss_region *cmiss_region, 	struct Cmiss_region *data_cmiss_region,
+	int position, char *scene_object_name);
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Adds a graphical <element_group> to the list of objects on <scene> at
-<position>. The group will be given a default rendition depending on the
-scenes current graphical_element_mode.
+Adds a graphical element group for <cmiss_region>, with data from
+<data_cmiss_region> to the list of objects in <scene> at <position>.
+The group will be given a default rendition depending on the scene's current
+graphical_element_mode.
+The new Scene_object will take the <scene_object_name>; an error is
+reported if this name is already in use in <scene>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
-The optional <scene_object_name> allows the scene_object to be given a different
-name from that of the <element_group>, and must be unique for the scene.
 Note if the scene is in GRAPHICAL_ELEMENT_MANUAL mode, a group may be added
 more than once with a different name, however, it will share the underlying
 GT_element_group and therefore have the same rendition.
 ==============================================================================*/
 
 int Scene_remove_graphical_element_group(struct Scene *scene,
-	struct GROUP(FE_element) *element_group);
+	struct Cmiss_region *cmiss_region);
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Removes all scene objects containing a graphical rendition of <element_group>
-from <scene>. Does not complain if <element_group> is not used in <scene>.
+Removes all scene objects containing a graphical rendition of <cmiss_region>
+from <scene>. Does not complain if <cmiss_region> is not used in <scene>.
 ==============================================================================*/
 
 int Scene_update_time_behaviour(struct Scene *scene, struct GT_object *graphics_object);
@@ -1270,12 +1233,12 @@ corresponding Scene_objects in this scene have a Time_object.
 ==============================================================================*/
 
 int Scene_update_time_behaviour_with_gt_element_group(struct Scene *scene,
-  struct GT_element_group *element_group);
+  struct GT_element_group *gt_element_group);
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-If the <element_group> has more than one time, this function ensures that the
+If the <gt_element_group> has more than one time, this function ensures that the
 Scene_object has a Time_object.
 ==============================================================================*/
 
@@ -1301,27 +1264,28 @@ Returns 0 without error if scene is empty.
 ==============================================================================*/
 
 int Scene_get_element_group_position(struct Scene *scene,
-	struct GROUP(FE_element) *element_group);
+	struct Cmiss_region *cmiss_region);
 /*******************************************************************************
-LAST MODIFIED : 25 February 1998
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
-This function returns the position of <element_group> in <scene>, starting
+This function returns the position of <cmiss_region> in <scene>, starting
 from 1 at the top. A return value of 0 indicates an error - probably saying
 that the GFE for element_group is not in the scene.
 ==============================================================================*/
 
 int Scene_set_element_group_position(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,int position);
+	struct Cmiss_region *cmiss_region, int position);
 /*******************************************************************************
-LAST MODIFIED : 25 February 1998
+LAST MODIFIED : 2 December 200
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
-This function sets the position of <element_group> in <scene>, starting
+This function sets the position of <cmiss_region> in <scene>, starting
 from 1 at the top. A value less than 1 or greater than the number of graphics
-objects in the list puts <element_group> at the end.
+objects in the list puts <cmiss_region> at the end.
+Scene_object for the group keeps the same name.
 ==============================================================================*/
 
 int Scene_get_graphics_object_position(struct Scene *scene,
@@ -1370,22 +1334,22 @@ objects in the list puts <graphics_object> at the end.
 ==============================================================================*/
 
 enum GT_visibility_type Scene_get_element_group_visibility(
-	struct Scene *scene,struct GROUP(FE_element) *element_group);
+	struct Scene *scene, struct Cmiss_region *cmiss_region);
 /*******************************************************************************
-LAST MODIFIED : 16 February 1998
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Returns the visibility of the GFE for <element_group> in <scene>.
+Returns the visibility of the GFE for <cmiss_region> in <scene>.
 ==============================================================================*/
 
 int Scene_set_element_group_visibility(struct Scene *scene,
-	struct GROUP(FE_element) *element_group, enum GT_visibility_type visibility);
+	struct Cmiss_region *cmiss_region, enum GT_visibility_type visibility);
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Sets the visibility of all scene objects that are graphical element groups for
-<element_group> in <scene>.
+<cmiss_region> in <scene>.
 ==============================================================================*/
 
 enum GT_visibility_type Scene_get_graphics_object_visibility(
@@ -1439,46 +1403,32 @@ DESCRIPTION :
 Returns the Scene_object called <name> in <scene>, or NULL if not found.
 ==============================================================================*/
 
-int Scene_has_graphical_element_group(struct Scene *scene,
-	struct GROUP(FE_element) *element_group);
+int Scene_has_Cmiss_region(struct Scene *scene,
+	struct Cmiss_region *cmiss_region);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Returns true if <element_group> is in the list of objects on <scene>.
+Returns true if <scene> contains a graphical element for <cmiss_region>.
 ==============================================================================*/
 
 struct GT_element_group *Scene_get_graphical_element_group(
-	struct Scene *scene,struct GROUP(FE_element) *element_group);
+	struct Scene *scene, struct Cmiss_region *cmiss_region);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Returns the graphical element_group for <element_group> in <scene>.
+Returns the graphical element_group for <cmiss_region> in <scene>.
 ==============================================================================*/
 
-struct Scene_object *Scene_get_scene_object_with_element_group(
-	struct Scene *scene,struct GROUP(FE_element) *element_group);
+struct Scene_object *Scene_get_scene_object_with_Cmiss_region(
+	struct Scene *scene, struct Cmiss_region *cmiss_region);
 /*******************************************************************************
-LAST MODIFIED : 24 January 2002
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Returns the scene_object for <element_group> in <scene>.
 ==============================================================================*/
-
-#if defined (OLD_CODE)
-int regenerate_element_group_in_Scene(
-	struct GROUP(FE_element) *element_group,struct Scene *scene,
-	struct FE_element *changed_element,struct FE_node *changed_node);
-/*******************************************************************************
-LAST MODIFIED : 3 July 1997
-
-DESCRIPTION :
-Regenerates the graphics_objects of any settings on the specified window which
-have their settings_changed flag set, then puts them in that windows linked-list
-of objects attached to the gt_element_group.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
 
 int set_Scene(struct Parse_state *state,
 	void *material_address_void,void *scene_manager_void);
@@ -1520,9 +1470,9 @@ Writes the properties of the <scene> to the command window.
 ==============================================================================*/
 
 int gfx_modify_g_element_general(struct Parse_state *state,
-	void *element_group_void,void *modify_g_element_general_data_void);
+	void *cmiss_region_void, void *scene_void);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT GENERAL command.

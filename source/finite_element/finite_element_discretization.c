@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_discretization.c
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Functions for discretizing finite elements into points and simple sub-domains.
@@ -51,7 +51,7 @@ static int categorize_FE_element_shape(struct FE_element_shape *element_shape,
 	int *number_of_polygon_sides_address, int *linked_xi_directions,
 	int *line_direction_address)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2001
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Upon success the overall <element_shape_category> determined from
@@ -62,7 +62,8 @@ ELEMENT_CATEGORY_3D_TRIANGLE_LINE and ELEMENT_CATEGORY_3D_POLYGON_LINE,
 and in <line_direction_address> the xi direction of LINE_SHAPE.
 ==============================================================================*/
 {
-	int return_code;
+	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
+	int dimension, return_code;
 
 	ENTER(categorize_FE_element_shape);
 	if (element_shape && element_shape_category_address &&
@@ -70,7 +71,8 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 		line_direction_address)
 	{
 		return_code = 1;
-		switch (element_shape->dimension)
+		get_FE_element_shape_dimension(element_shape, &dimension);
+		switch (dimension)
 		{
 			case 1:
 			{
@@ -79,18 +81,22 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 			} break;
 			case 2:
 			{
-				if (LINE_SHAPE == element_shape->type[0])
+				get_FE_element_shape_xi_shape_type(element_shape,
+					0, &shape_type1);
+				if (LINE_SHAPE == shape_type1)
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_2D_SQUARE;
 				}
-				else if (SIMPLEX_SHAPE == element_shape->type[0])
+				else if (SIMPLEX_SHAPE == shape_type1)
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_2D_TRIANGLE;
 				}
-				else if (POLYGON_SHAPE == element_shape->type[0])
+				else if (POLYGON_SHAPE == shape_type1)
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_2D_POLYGON;
-					*number_of_polygon_sides_address = element_shape->type[1];
+					get_FE_element_shape_xi_linkage_number(element_shape,
+						/*xi_number1*/0, /*xi_number2*/1,
+						number_of_polygon_sides_address);
 				}
 				else
 				{
@@ -101,26 +107,30 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 			} break;
 			case 3:
 			{
-				if ((LINE_SHAPE == element_shape->type[0]) &&
-					(LINE_SHAPE == element_shape->type[3]))
+				get_FE_element_shape_xi_shape_type(element_shape,
+					0, &shape_type1);
+				get_FE_element_shape_xi_shape_type(element_shape,
+					1, &shape_type2);
+				get_FE_element_shape_xi_shape_type(element_shape,
+					2, &shape_type3);
+				if ((LINE_SHAPE == shape_type1) && (LINE_SHAPE == shape_type2))
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_3D_CUBE;
 				}
-				else if ((SIMPLEX_SHAPE == element_shape->type[0]) &&
-					(SIMPLEX_SHAPE == element_shape->type[3]) &&
-					(SIMPLEX_SHAPE == element_shape->type[5]))
+				else if ((SIMPLEX_SHAPE == shape_type1) &&
+					(SIMPLEX_SHAPE == shape_type2) && (SIMPLEX_SHAPE == shape_type3))
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_3D_TETRAHEDRON;
 				}
-				else if ((SIMPLEX_SHAPE == element_shape->type[0]) ||
-					(SIMPLEX_SHAPE == element_shape->type[3]))
+				else if ((SIMPLEX_SHAPE == shape_type1) || 
+					(SIMPLEX_SHAPE == shape_type2))
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_3D_TRIANGLE_LINE;
 					/* determine linked xi directions */
-					if (SIMPLEX_SHAPE == element_shape->type[0])
+					if (SIMPLEX_SHAPE == shape_type1)
 					{
 						linked_xi_directions[0] = 0;
-						if (SIMPLEX_SHAPE == element_shape->type[3])
+						if (SIMPLEX_SHAPE == shape_type2)
 						{
 							linked_xi_directions[1] = 1;
 							*line_direction_address = 2;
@@ -138,25 +148,23 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 						*line_direction_address = 0;
 					}
 				}
-				else if ((POLYGON_SHAPE == element_shape->type[0]) ||
-					(POLYGON_SHAPE == element_shape->type[3]))
+				else if ((POLYGON_SHAPE == shape_type1) ||
+					(POLYGON_SHAPE == shape_type2))
 				{
 					*element_shape_category_address = ELEMENT_CATEGORY_3D_POLYGON_LINE;
 					/* determine linked xi directions and number of polygon sides */
-					if (POLYGON_SHAPE == element_shape->type[0])
+					if (POLYGON_SHAPE == shape_type1)
 					{
 						linked_xi_directions[0] = 0;
-						if (POLYGON_SHAPE == element_shape->type[3])
+						if (POLYGON_SHAPE == shape_type2)
 						{
 							linked_xi_directions[1] = 1;
 							*line_direction_address = 2;
-							*number_of_polygon_sides_address = element_shape->type[1];
 						}
 						else
 						{
 							linked_xi_directions[1] = 2;
 							*line_direction_address = 1;
-							*number_of_polygon_sides_address = element_shape->type[2];
 						}
 					}
 					else
@@ -164,8 +172,10 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 						linked_xi_directions[0] = 1;
 						linked_xi_directions[1] = 2;
 						*line_direction_address = 0;
-						*number_of_polygon_sides_address = element_shape->type[4];
 					}
+					get_FE_element_shape_xi_linkage_number(element_shape, 
+						linked_xi_directions[0], linked_xi_directions[1], 
+						number_of_polygon_sides_address);
 				}
 				else
 				{
@@ -223,7 +233,8 @@ comments for simplex and polygons shapes for more details.
 	Triple *xi, *xi_points;
 
 	ENTER(FE_element_shape_get_xi_points_cell_centres);
-	if (element_shape && (0 < (element_dimension = element_shape->dimension)) &&
+	if (element_shape && get_FE_element_shape_dimension(element_shape,
+		&element_dimension) && (0 < element_dimension) &&
 		number_in_xi && number_of_xi_points_address)
 	{
 		return_code = 1;
@@ -665,7 +676,8 @@ comments for simplex and polygons shapes for more details.
 	Triple *xi, *xi_points;
 
 	ENTER(FE_element_shape_get_xi_points_cell_corners);
-	if (element_shape && (0 < (element_dimension = element_shape->dimension)) &&
+	if (element_shape && get_FE_element_shape_dimension(element_shape,
+		&element_dimension) && (0 < element_dimension) &&
 		number_in_xi && number_of_xi_points_address)
 	{
 		return_code = 1;
@@ -974,7 +986,7 @@ static int FE_element_add_xi_points_1d_line_cell_random(
 	struct Computed_field *density_field, int *number_of_xi_points,
 	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
@@ -1043,14 +1055,24 @@ array is enlarged if necessary and the new points added at random locations.
 				}
 				length = (double)dxi1*norm3(a);
 				expected_number = length*(double)density;
-				if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
+				if (0.0 <= expected_number)
 				{
-					number_of_points_in_line = (int)(expected_number + 0.5);
+					if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
+					{
+						number_of_points_in_line = (int)(expected_number + 0.5);
+					}
+					else
+					{
+						number_of_points_in_line =
+							sample_Poisson_distribution(expected_number);
+					}
 				}
 				else
 				{
-					number_of_points_in_line =
-						sample_Poisson_distribution(expected_number);
+					display_message(ERROR_MESSAGE,
+						"FE_element_add_xi_points_1d_line_cell_random.  "
+						"Negative number of points expected in volume");
+					return_code = 0;
 				}
 			}
 			else
@@ -1142,7 +1164,7 @@ static int FE_element_add_xi_points_2d_square_cell_random(
 	struct Computed_field *density_field, int *number_of_xi_points,
 	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
@@ -1209,14 +1231,24 @@ array is enlarged if necessary and the new points added at random locations.
 				cross_product3(a, b, c);
 				area = (double)dxi1*(double)dxi2*norm3(c);
 				expected_number = area*(double)density;
-				if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
+				if (0.0 <= expected_number)
 				{
-					number_of_points_in_square = (int)(expected_number + 0.5);
+					if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
+					{
+						number_of_points_in_square = (int)(expected_number + 0.5);
+					}
+					else
+					{
+						number_of_points_in_square =
+							sample_Poisson_distribution(expected_number);
+					}
 				}
 				else
 				{
-					number_of_points_in_square =
-						sample_Poisson_distribution(expected_number);
+					display_message(ERROR_MESSAGE,
+						"FE_element_add_xi_points_2d_square_cell_random.  "
+						"Negative number of points expected in volume");
+					return_code = 0;
 				}
 			}
 			else
@@ -1308,7 +1340,7 @@ static int FE_element_add_xi_points_3d_cube_cell_random(
 	struct Computed_field *density_field, int *number_of_xi_points,
 	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
@@ -1369,14 +1401,24 @@ array is enlarged if necessary and the new points added at random locations.
 				volume = (double)dxi1*(double)dxi2*(double)dxi3*
 					scalar_triple_product3(a, b, c);
 				expected_number = volume*(double)density;
-				if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
+				if (0.0 <= expected_number)
 				{
-					number_of_points_in_cube = (int)(expected_number + 0.5);
+					if (XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)
+					{
+						number_of_points_in_cube = (int)(expected_number + 0.5);
+					}
+					else
+					{
+						number_of_points_in_cube =
+							sample_Poisson_distribution(expected_number);
+					}
 				}
 				else
 				{
-					number_of_points_in_cube =
-						sample_Poisson_distribution(expected_number);
+					display_message(ERROR_MESSAGE,
+						"FE_element_add_xi_points_3d_cube_cell_random.  "
+						"Negative number of points expected in volume");
+					return_code = 0;
 				}
 			}
 			else
@@ -1499,13 +1541,14 @@ comments for simplex and polygons shapes for more details.
 
 	ENTER(FE_element_get_xi_points_cell_random);
 	if (element && get_FE_element_shape(element, &element_shape) &&
-		(0 < (element_dimension = element_shape->dimension)) && number_in_xi && 
+		get_FE_element_shape_dimension(element_shape,
+		&element_dimension) && (0 < element_dimension) && number_in_xi && 
 		((((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
 			(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode)) &&
 			coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 			(Computed_field_get_number_of_components(coordinate_field) >=
-				element_shape->dimension) && density_field &&
+				element_dimension) && density_field &&
 			Computed_field_is_scalar(density_field, (void *)NULL) &&
 			number_of_xi_points_address) ||
 			(XI_DISCRETIZATION_CELL_RANDOM == xi_discretization_mode)))
@@ -1707,6 +1750,7 @@ is trivial, it is passed and used here to provide a consistent interface.
 ==============================================================================*/
 {
 	int return_code;
+	struct CM_element_information identifier;
 	struct FE_element_shape *element_shape;
 	Triple *xi_points;
 
@@ -1733,7 +1777,8 @@ is trivial, it is passed and used here to provide a consistent interface.
 			{
 				/* seed random number generator with the element number so "random"
 					 layout is consistent for the same element */
-				CMGUI_SEED_RANDOM(element->cm.number);
+				get_FE_element_identifier(element, &identifier);
+				CMGUI_SEED_RANDOM(identifier.number);
 				return_code = FE_element_get_xi_points_cell_random(element,
 					xi_discretization_mode, number_in_xi,	coordinate_field, density_field,
 					number_of_xi_points_address, xi_points_address, time);
@@ -1813,6 +1858,7 @@ a return value here indicates that the xi_points have been converted.
 		line_direction, linked_xi_directions[2], number_of_polygon_sides,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_in_xi1, return_code,
 		top_level_element_dimension, *top_level_xi_point_numbers;
+	struct CM_element_information identifier;
 	struct FE_element *temp_element;
 	struct FE_element_shape *element_shape, *top_level_element_shape;
 
@@ -1829,6 +1875,7 @@ a return value here indicates that the xi_points have been converted.
 	{
 		return_code = 1;
 		element_dimension = get_FE_element_dimension(element);
+		get_FE_element_identifier(element, &identifier);	
 		top_level_element_dimension = get_FE_element_dimension(top_level_element);
 		/* extract useful information about the element_shape */
 		if (!categorize_FE_element_shape(top_level_element_shape,
@@ -1841,13 +1888,13 @@ a return value here indicates that the xi_points have been converted.
 			return_code = 0;
 		}
 		/* check if descended from a line*line or line*line*line element */
-		if (return_code && (CM_ELEMENT != element->cm.type) &&
+		if (return_code && (CM_ELEMENT != identifier.type) &&
 			(element_dimension < top_level_element_dimension) &&
 			((ELEMENT_CATEGORY_2D_SQUARE == top_level_element_shape_category) ||
 				(ELEMENT_CATEGORY_3D_CUBE == top_level_element_shape_category)))
 		{
 			if ((temp_element = FE_element_get_top_level_element_conversion(
-				element, top_level_element, (struct GROUP(FE_element) *)NULL,
+				element, top_level_element, (struct LIST(FE_element) *)NULL,
 				/*face*/-1, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,

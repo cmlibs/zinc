@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -22,7 +22,7 @@ Call graphics routines in the API.
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -31,7 +31,8 @@ un-selected graphics are drawn.
 ==============================================================================*/
 {
 	float proportion,*times;
-	int itime,name_selected,picking_names,return_code,strip,wireframe_flag;
+	int itime, name_selected, number_of_times, picking_names, return_code, strip,
+		wireframe_flag;
 #if defined (OPENGL_API)
 	int lighting_off;
 #endif /* defined (OPENGL_API) */
@@ -46,6 +47,7 @@ un-selected graphics are drawn.
 	struct GT_voltex *voltex;
 	struct Multi_range *selected_name_ranges;
 	struct Spectrum *spectrum;
+	union GT_primitive_list *primitive_list1, *primitive_list2;
 
 	ENTER(makegtobject);
 /*???debug */
@@ -54,27 +56,30 @@ un-selected graphics are drawn.
 	/* check arguments */
 	if (object)
 	{
+		return_code = 1;
 		spectrum=object->spectrum;
 		/* determine if picking names are to be output */
 		picking_names=(GRAPHICS_NO_SELECT != GT_object_get_select_mode(object));
 		/* determine which material to use */
 		if (draw_selected)
 		{
-			material=object->selected_material;
+			material = object->selected_material;
 		}
 		else
 		{
-			material=object->default_material;
+			material = object->default_material;
 		}
-		if ((itime=object->number_of_times)>0)
+		number_of_times = object->number_of_times;
+		if (0 < number_of_times)
 		{
-			if ((itime>1)&&(times=object->times))
+			itime = number_of_times;
+			if ((itime > 1) && (times = object->times))
 			{
 				itime--;
 				times += itime;
 				if (time>= *times)
 				{
-					proportion=0;
+					proportion = 0;
 				}
 				else
 				{
@@ -103,14 +108,40 @@ un-selected graphics are drawn.
 			}
 			else
 			{
-				itime=0;
-				proportion=0;
+				itime = 0;
+				proportion = 0;
 			}
+			if (object->primitive_lists &&
+				(primitive_list1 = object->primitive_lists + itime))
+			{
+				if (proportion > 0)
+				{
+					if (!(primitive_list2 = object->primitive_lists + itime + 1))
+					{
+						display_message(ERROR_MESSAGE,
+							"makegtobject.  Invalid primitive_list");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					primitive_list2 = (union GT_primitive_list *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"makegtobject.  Invalid primitive_lists");
+				return_code = 0;
+			}
+		}
+		if ((0 < number_of_times) && return_code)
+		{
 			switch (object->object_type)
 			{
 				case g_GLYPH_SET:
 				{
-					if (glyph_set=(object->gu.gt_glyph_set)[itime])
+					if (glyph_set = primitive_list1->gt_glyph_set.first)
 					{
 #if defined (OPENGL_API)
 						/* store the transform attribute group to save current matrix mode
@@ -126,9 +157,9 @@ un-selected graphics are drawn.
 							glPushName(0);
 						}
 #endif /* defined (OPENGL_API) */
-						if (proportion>0)
+						if (proportion > 0)
 						{
-							glyph_set_2=(object->gu.gt_glyph_set)[itime+1];
+							glyph_set_2 = primitive_list2->gt_glyph_set.first;
 							while (glyph_set&&glyph_set_2)
 							{
 								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
@@ -204,7 +235,7 @@ un-selected graphics are drawn.
 				} break;
 				case g_POINT:
 				{
-					if (point=(object->gu.gt_point)[itime])
+					if (point = primitive_list1->gt_point.first)
 					{
 						draw_pointsetGL(1, point->position, &(point->text),
 							point->marker_type,
@@ -221,7 +252,7 @@ un-selected graphics are drawn.
 				} break;
 				case g_POINTSET:
 				{
-					if (point_set=(object->gu.gt_pointset)[itime])
+					if (point_set = primitive_list1->gt_pointset.first)
 					{
 #if defined (OPENGL_API)
 						/* disable lighting so rendered in flat diffuse colour */
@@ -231,7 +262,7 @@ un-selected graphics are drawn.
 #endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
-							point_set_2=(object->gu.gt_pointset)[itime+1];
+							point_set_2 = primitive_list2->gt_pointset.first;
 							while (point_set&&point_set_2)
 							{
 								if (interpolate_point_set=morph_GT_pointset(proportion,
@@ -277,7 +308,7 @@ un-selected graphics are drawn.
 				} break;
 				case g_VOLTEX:
 				{
-					voltex=(object->gu.gt_voltex)[itime];
+					voltex = primitive_list1->gt_voltex.first;
 #if defined (OPENGL_API)
 					/* save transformation attributes state */
 					if (voltex)
@@ -339,11 +370,11 @@ un-selected graphics are drawn.
 				{
 					/*???debug */
 					/*printf("g_POLYLINE time=%g proportion=%g\n",time,proportion);*/
-					if (line=(object->gu.gt_polyline)[itime])
+					if (line = primitive_list1->gt_polyline.first)
 					{
 						if (proportion>0)
 						{
-							line_2=(object->gu.gt_polyline)[itime+1];
+							line_2 = primitive_list2->gt_polyline.first;
 						}
 #if defined (OPENGL_API)
 						if (lighting_off=((g_PLAIN == line->polyline_type)||
@@ -507,7 +538,7 @@ un-selected graphics are drawn.
 				} break;
 				case g_SURFACE:
 				{
-					if (surface=(object->gu.gt_surface)[itime])
+					if (surface = primitive_list1->gt_surface.first)
 					{
 #if defined (OPENGL_API)
 						if (picking_names)
@@ -517,7 +548,7 @@ un-selected graphics are drawn.
 #endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
-							surface_2=(object->gu.gt_surface)[itime+1];
+							surface_2 = primitive_list2->gt_surface.first;
 						}
 						switch (surface->surface_type)
 						{
@@ -701,7 +732,7 @@ un-selected graphics are drawn.
 						glPushName(0);
 					}
 #endif /* defined (OPENGL_API) */
-					if (nurbs=(object->gu.gt_nurbs)[itime])
+					if (nurbs = primitive_list1->gt_nurbs.first)
 					{
 						return_code = 1;
 						while(return_code && nurbs)
@@ -744,7 +775,7 @@ un-selected graphics are drawn.
 					glPushAttrib(GL_TRANSFORM_BIT);
 					glEnable(GL_NORMALIZE);
 #endif /* defined (OPENGL_API) */
-					if (userdef=(object->gu.gt_userdef)[itime])
+					if (userdef = primitive_list1->gt_userdef.first)
 					{
 						if (userdef->render_function)
 						{

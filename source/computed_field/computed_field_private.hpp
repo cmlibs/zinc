@@ -47,7 +47,7 @@ typedef int (*Computed_field_get_native_discretization_in_element_function)(
 typedef int (*Computed_field_find_element_xi_function)(
 	struct Computed_field *field, FE_value *values, int number_of_values, 
 	struct FE_element **element, FE_value *xi,
-	struct GROUP(FE_element) *search_element_group);
+	int element_dimension, struct Cmiss_region *search_region);
 typedef int (*List_Computed_field_function)(struct Computed_field *field);
 typedef char* (*Computed_field_get_command_string_function)(
 	struct Computed_field *field);
@@ -495,18 +495,6 @@ Note the order of derivatives:
 1. All the <element_dimension> derivatives of component 1.
 2. All the <element_dimension> derivatives of component 2.
 3. All the <element_dimension> derivatives of component 3.
-==============================================================================*/
-
-int Computed_field_get_top_level_element_and_xi(struct FE_element *element, 
-	FE_value *xi, int element_dimension, struct FE_element **top_level_element,
-	FE_value *top_level_xi, int *top_level_element_dimension);
-/*******************************************************************************
-LAST MODIFIED : 26 October 2000
-
-DESCRIPTION :
-Finds the <top_level_element>, <top_level_xi> and <top_level_element_dimension>
-for the given <element> and <xi>.  If <top_level_element> is already set it 
-is checked and the <top_level_xi> calculated.
 ==============================================================================*/
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */

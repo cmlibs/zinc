@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.h
 
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -32,8 +32,7 @@ Global functions
 
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct Cmiss_region *region,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Computed_field_package *computed_field_package,
@@ -42,7 +41,7 @@ struct Element_tool *CREATE(Element_tool)(
 	struct Time_keeper *time_keeper,
 	struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.

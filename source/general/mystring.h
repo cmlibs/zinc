@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mystring.h
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 29 April 2003
 
 DESCRIPTION :
 Function prototypes for some general purpose string functions.
@@ -121,6 +121,17 @@ DESCRIPTION :
 Returns true if all the non-whitespace characters in <input_string> match those
 in <match_string>. Whitespace characters (space,tab) are only allowed in
 <input_string> where they appear in match_string.
+==============================================================================*/
+
+int is_standard_object_name(char *name);
+/*******************************************************************************
+LAST MODIFIED : 29 April 2003
+
+DESCRIPTION :
+Returns true if <name> is a valid name for an object. This is similar but less
+strict than is_standard_identifier_name: Names may start with a letter and
+contain only alphanumeric characters, underscore '_' or spaces and may not end
+in a space.
 ==============================================================================*/
 
 int make_valid_token(char **token_address);

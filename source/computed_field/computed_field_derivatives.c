@@ -891,7 +891,7 @@ Evaluate the fields cache at the node.
 		element_dimension = get_FE_element_dimension(element);
 		/* 1. Precalculate any source fields that this field depends on,
 			we always want the derivatives and want to use the top_level element */
-		Computed_field_get_top_level_element_and_xi(element, xi, element_dimension,
+		FE_element_get_top_level_element_and_xi(element, xi, element_dimension,
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
@@ -1504,7 +1504,7 @@ Evaluate the fields cache at the node.
 		element_dimension = get_FE_element_dimension(element);
 		/* 1. Precalculate any source fields that this field depends on,
 			we always want the derivatives and want to use the top_level element */
-		Computed_field_get_top_level_element_and_xi(element, xi, element_dimension,
+		FE_element_get_top_level_element_and_xi(element, xi, element_dimension,
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
@@ -2027,7 +2027,7 @@ Evaluate the fields cache in the element.
 			element_dimension = get_FE_element_dimension(element);
 			/* 1. Precalculate any source fields that this field depends on,
 				 we always want the derivatives and want to use the top_level element */
-			if (Computed_field_get_top_level_element_and_xi(element, xi,
+			if (FE_element_get_top_level_element_and_xi(element, xi,
 				element_dimension, &top_level_element, top_level_xi,
 				&top_level_element_dimension) &&
 				Computed_field_evaluate_source_fields_cache_in_element(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -121,6 +121,7 @@ Private structure representing the connection between cm and cmgui.
 	struct FE_element_field_info *current_element_field_info;
 	struct FE_field **template_node_fields;
 	struct FE_node *template_node;
+#if defined (NOT_TEMPORARY)
 	struct GROUP(FE_element) *new_element_group;
 	struct GROUP(FE_node) *new_node_group;
 	struct MANAGER(FE_element) *element_manager;
@@ -131,6 +132,7 @@ Private structure representing the connection between cm and cmgui.
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+#endif /* defined (NOT_TEMPORARY) */
 	struct Prompt_window **prompt_window_address;
 	struct User_interface *user_interface;
 	struct Wh_input *command_input,*data_input,*prompt_input;
@@ -657,7 +659,7 @@ DESCRIPTION :
 Receives any data from the output data wormhole.
 ==============================================================================*/
 {
-/*???DB.  Temporary to disable data transfer */
+	int return_code;
 #if defined (NOT_TEMPORARY)
 	char **component_names,*field_name,*group_name,region_name[]="region_xxxxx";
 	double *temp_field_values;
@@ -666,7 +668,7 @@ Receives any data from the output data wormhole.
 	int component_data[NUM_COMPONENT_DATA],field_num,i,j,
 		node_field_info_data[NUM_NODE_FIELD_INFO_DATA],number_of_components,
 		number_of_fields,number_of_field_values,number_of_values,primary_id,
-		return_code,secondary_id;
+		secondary_id;
 	struct CM_field_information cm_information;
 	struct Coordinate_system coordinate_system;
 	struct FE_field *field,**template_node_fields;
@@ -675,8 +677,6 @@ Receives any data from the output data wormhole.
 	struct FE_node_field_creator *node_field_creator;
 	struct GROUP(FE_node) *old_node_group;
 	struct MANAGER(FE_node) *FE_node_manager;
-#else /* defined (NOT_TEMPORARY) */
-	int return_code;
 #endif /* defined (NOT_TEMPORARY) */
 
 	ENTER(CMISS_connection_get_data);
@@ -2605,20 +2605,16 @@ Global functions
 */
 
 struct CMISS_connection *CREATE(CMISS_connection)(char *machine,
-	enum Machine_type type,int attach,double wormhole_timeout,char mycm_flag,
-	char asynchronous_commands,struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(FE_node) *node_manager,struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	enum Machine_type type, int attach, double wormhole_timeout, char mycm_flag,
+	char asynchronous_commands, struct Cmiss_region *root_region,
+	struct Cmiss_region *data_root_region,
 	struct Prompt_window **prompt_window_address,char *parameters_file_name,
 	char *examples_directory_path,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 October 2001
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
-Creates a connection to the machine specified in <machine>.  If <attach> is 
+Creates a connection to the machine specified in <machine>.  If <attach> is
 not zero then cm already exists and <attach> is the base port number to connect
 on, otherwise a new cm is spawned.  If <asynchronous_commands> is set then cmgui
 does not wait for cm commands to complete, otherwise it does.
@@ -2666,9 +2662,7 @@ does not wait for cm commands to complete, otherwise it does.
 	return_struct=(struct CMISS_connection *)NULL;
 #if defined (NOT_DEBUG)
 #endif /* defined (NOT_DEBUG) */
-	if (machine&&element_manager&&element_group_manager&&fe_field_manager&&
-		node_manager&&data_manager&&node_group_manager&&data_group_manager&&
-		user_interface)
+	if (machine && root_region && data_root_region && user_interface)
 	{
 		if (ALLOCATE(return_struct,struct CMISS_connection,1))
 		{
@@ -2905,54 +2899,37 @@ does not wait for cm commands to complete, otherwise it does.
 					(1 == wh_output_wait(return_struct->command_output,
 					/*timeout_seconds*/7)))
 				{
-					return_struct->element_manager=element_manager;
-/*???DB.  Element transfer needs debugging */
-#if defined (NOT_DEBUG)
 /*???DB.  Temporary to disable data transfer */
 #if defined (NOT_TEMPORARY)
+					return_struct->element_manager=element_manager;
 					return_struct->element_manager_callback_id=
 						MANAGER_REGISTER(FE_element)(
 							CMISS_connection_element_global_change,return_struct,
 							return_struct->element_manager);
-#else /* defined (NOT_TEMPORARY) */
-					return_struct->element_manager_callback_id=NULL;
-#endif /* defined (NOT_TEMPORARY) */
-#else /* defined (NOT_DEBUG) */
-					return_struct->element_manager_callback_id=NULL;
-#endif /* defined (NOT_DEBUG) */
 					return_struct->element_group_manager=element_group_manager;
 					return_struct->fe_field_manager=fe_field_manager;
 					return_struct->fe_time=fe_time;
 					return_struct->node_manager=node_manager;
 					return_struct->data_manager=data_manager;
-/*???DB.  Temporary to disable data transfer */
-#if defined (NOT_TEMPORARY)
 					return_struct->data_manager_callback_id=
 						MANAGER_REGISTER(FE_node)(
 							CMISS_connection_data_global_change,return_struct,
 							return_struct->data_manager);
-#else /* defined (NOT_TEMPORARY) */
-					return_struct->data_manager_callback_id=NULL;
-#endif /* defined (NOT_TEMPORARY) */
-/*???DB.  Temporary to disable data transfer */
-#if defined (NOT_TEMPORARY)
 					return_struct->node_manager_callback_id=
 						MANAGER_REGISTER(FE_node)(
 							CMISS_connection_node_global_change,return_struct,
 							return_struct->node_manager);
-#else /* defined (NOT_TEMPORARY) */
-					return_struct->node_manager_callback_id=NULL;
-#endif /* defined (NOT_TEMPORARY) */
 					return_struct->node_group_manager=node_group_manager;
 					return_struct->data_group_manager=data_group_manager;
+					return_struct->new_element_group=(struct GROUP(FE_element) *)NULL;
+					return_struct->new_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined (NOT_TEMPORARY) */
 					return_struct->prompt_window_address=prompt_window_address;
 					return_struct->user_interface=user_interface;
 					/* fsm information */
 					return_struct->data_input_state=CMISS_DATA_INPUT_STATE_TYPE;
-					return_struct->new_element_group=(struct GROUP(FE_element) *)NULL;
 					return_struct->current_element_field_info=
 						(struct FE_element_field_info *)NULL;
-					return_struct->new_node_group=(struct GROUP(FE_node) *)NULL;
 					return_struct->template_node=(struct FE_node *)NULL;
 					return_struct->template_node_fields=(struct FE_field **)NULL;
 					return_struct->template_node_number_of_fields=0;
@@ -3036,8 +3013,6 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 #if defined (NOT_TEMPORARY)
 			MANAGER_DEREGISTER(FE_element)(connection->element_manager_callback_id,
 				connection->element_manager);
-#endif /* defined (NOT_TEMPORARY) */
-#endif /* defined (NOT_DEBUG) */
 			if (connection->node_manager_callback_id)
 			{
 				MANAGER_DEREGISTER(FE_node)(connection->node_manager_callback_id,
@@ -3048,6 +3023,8 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 				MANAGER_DEREGISTER(FE_node)(connection->data_manager_callback_id,
 					connection->data_manager);
 			}
+#endif /* defined (NOT_TEMPORARY) */
+#endif /* defined (NOT_DEBUG) */
 			if (DESTROY(Wh_input)(&(connection->command_input))&&
 				DESTROY(Wh_output)(&(connection->command_output))&&
 				DESTROY(Wh_input)(&(connection->prompt_input))&&
@@ -3055,12 +3032,14 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 				DESTROY(Wh_input)(&(connection->data_input))&&
 				DESTROY(Wh_output)(&(connection->data_output)))
 			{
+#if defined (NOT_TEMPORARY)
 				if (connection->new_node_group)
 				{
 					display_message(WARNING_MESSAGE,"DESTROY(CMISS_connection).  %s",
 						"Non-NULL new node group");
 					DESTROY(GROUP(FE_node))(&(connection->new_node_group));
 				}
+#endif /* defined (NOT_TEMPORARY) */
 				if (connection->template_node)
 				{
 					for (i=0;i<connection->template_node_number_of_fields;i++)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 14 October 2002
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -2930,11 +2930,11 @@ and NULL if unsuccessful.
     {
       region->unemap_package = (struct Unemap_package *)NULL;
     }
-		region->rig_node_group=(struct GROUP(FE_node) *)NULL;
-		region->unrejected_node_group=(struct GROUP(FE_node) *)NULL;
-		region->map_3d_package=(struct Map_3d_package *)NULL;
-		region->electrode_position_field=(struct FE_field *)NULL;
-		region->map_electrode_position_field=(struct FE_field *)NULL;
+		region->rig_node_group = (struct FE_region *)NULL;
+		region->unrejected_node_group = (struct FE_region *)NULL;
+		region->map_3d_package = (struct Map_3d_package *)NULL;
+		region->electrode_position_field = (struct FE_field *)NULL;
+		region->map_electrode_position_field = (struct FE_field *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
@@ -2949,7 +2949,7 @@ and NULL if unsuccessful.
 
 int destroy_Region(struct Region **region)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000 
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
 This function frees the memory associated with the fields of <**region>, frees
@@ -2959,27 +2959,25 @@ the devices in the device list.
 {
 	int return_code;
 #if defined (UNEMAP_USE_3D)
-	struct FE_field *temp_field=(struct FE_field *)NULL;
-	struct MANAGER(Computed_field) *computed_field_manager=
+	struct MANAGER(Computed_field) *computed_field_manager =
 		(struct MANAGER(Computed_field) *)NULL;	
-	struct MANAGER(FE_field) *fe_field_manager=
-		(struct MANAGER(FE_field) *)NULL;	
-	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
-	struct Region *the_region=(struct Region *)NULL;		
+	struct Unemap_package *unemap_package = (struct Unemap_package *)NULL;
+	struct Region *the_region = (struct Region *)NULL;		
 #endif /* defined (UNEMAP_USE_3D)*/
+
 	ENTER(destroy_Region);
 	return_code=1;
 	if (*region)
 	{
 #if defined (UNEMAP_USE_3D)
-		the_region=*region;
-		unemap_package=the_region->unemap_package;
-		if(the_region&&unemap_package)
+		the_region = *region;
+		if (unemap_package = the_region->unemap_package)
 		{			
 			DEACCESS(Map_3d_package)(&((*region)->map_3d_package)); 
 			if(the_region->rig_node_group)
 			{
-				free_unemap_package_rig_node_group(unemap_package,&(the_region->rig_node_group));
+				free_unemap_package_rig_node_group(unemap_package,
+					&(the_region->rig_node_group));
 			}
 			/* following will deaccess the rig_node_group */	
 			if(the_region->unrejected_node_group)
@@ -2987,28 +2985,37 @@ the devices in the device list.
 				free_unemap_package_rig_node_group(unemap_package,
 					&(the_region->unrejected_node_group));
 			}			
-			computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
-			fe_field_manager=get_unemap_package_FE_field_manager(unemap_package);
-			if(the_region->electrode_position_field)
+			computed_field_manager =
+				get_unemap_package_Computed_field_manager(unemap_package);
+			if (the_region->electrode_position_field)
 			{
-				temp_field=the_region->electrode_position_field;
-				DEACCESS(FE_field)(&temp_field);
-				destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				/*???debug*//*display_message(INFORMATION_MESSAGE,
+					"destroy_Region. BEFORE electrode_position_field %p %d\n",
+					the_region->electrode_position_field,
+					get_FE_field_access_count(the_region->electrode_position_field));*/
+				Computed_field_manager_destroy_FE_field(computed_field_manager,
 					the_region->electrode_position_field);
-				the_region->electrode_position_field=(struct FE_field *)NULL;
+				/*???debug*//*display_message(INFORMATION_MESSAGE,
+					"destroy_Region. AFTER electrode_position_field %p %d\n",
+					the_region->electrode_position_field,
+					get_FE_field_access_count(the_region->electrode_position_field));*/
+				DEACCESS(FE_field)(&(the_region->electrode_position_field));
+				the_region->electrode_position_field = (struct FE_field *)NULL;
 			}	
-			if(the_region->map_electrode_position_field)
+			if (the_region->map_electrode_position_field)
 			{
-				temp_field=the_region->map_electrode_position_field;
-				DEACCESS(FE_field)(&temp_field);
-				destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				Computed_field_manager_destroy_FE_field(computed_field_manager,
 					the_region->map_electrode_position_field);
-				the_region->map_electrode_position_field=(struct FE_field *)NULL;
+				DEACCESS(FE_field)(&(the_region->map_electrode_position_field));
+				the_region->map_electrode_position_field = (struct FE_field *)NULL;
 			}			
-		}	
-		DEACCESS(FE_field)(&((*region)->electrode_position_field));
-		DEACCESS(FE_field)(&((*region)->map_electrode_position_field));
-		DEACCESS(Unemap_package)(&((*region)->unemap_package));	
+			DEACCESS(Unemap_package)(&((*region)->unemap_package));
+		}
+		else
+		{
+			DEACCESS(FE_field)(&(the_region->electrode_position_field));
+			DEACCESS(FE_field)(&(the_region->map_electrode_position_field));
+		}
 #endif /* defined (UNEMAP_USE_3D) */
 		DEALLOCATE((*region)->name);
 		DEALLOCATE(*region);
@@ -3046,7 +3053,7 @@ Gets  unemap_package of <region>
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *get_Region_rig_node_group(struct Region *region)
+struct FE_region *get_Region_rig_node_group(struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
 
@@ -3054,7 +3061,7 @@ DESCRIPTION :
 Gets  rig_node_group of <region> 
 ==============================================================================*/
 {
-	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+	struct FE_region *rig_node_group=(struct FE_region *)NULL;
 
 	ENTER(get_Region_rig_node_group);
 	if(region)
@@ -3073,7 +3080,7 @@ Gets  rig_node_group of <region>
 
 #if defined (UNEMAP_USE_3D)
 int set_Region_rig_node_group(struct Region *region,
-	struct GROUP(FE_node) *rig_node_group)
+	struct FE_region *rig_node_group)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2000
 
@@ -3086,7 +3093,7 @@ Sets (and accesses) rig_node_group of <region> to <rig_node_group>
 	if(region&&rig_node_group)
 	{
 		return_code =1;	
-		REACCESS(GROUP(FE_node))(&(region->rig_node_group),rig_node_group);
+		REACCESS(FE_region)(&(region->rig_node_group),rig_node_group);
 	}
 	else
 	{
@@ -3100,7 +3107,7 @@ Sets (and accesses) rig_node_group of <region> to <rig_node_group>
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *get_Region_unrejected_node_group(struct Region *region)
+struct FE_region *get_Region_unrejected_node_group(struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2001
 
@@ -3108,7 +3115,7 @@ DESCRIPTION :
 Gets  unrejected_node_group of <region> 
 ==============================================================================*/
 {
-	struct GROUP(FE_node) *unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	struct FE_region *unrejected_node_group=(struct FE_region *)NULL;
 
 	ENTER(get_Region_unrejected_node_group);
 	if(region)
@@ -3127,7 +3134,7 @@ Gets  unrejected_node_group of <region>
 
 #if defined (UNEMAP_USE_3D)
 int set_Region_unrejected_node_group(struct Region *region,
-	struct GROUP(FE_node) *unrejected_node_group)
+	struct FE_region *unrejected_node_group)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2001
 
@@ -3140,7 +3147,7 @@ Sets (and accesses) unrejected_node_group of <region> to <unrejected_node_group>
 	if(region&&unrejected_node_group)
 	{
 		return_code =1;	
-		REACCESS(GROUP(FE_node))(&(region->unrejected_node_group),unrejected_node_group);
+		REACCESS(FE_region)(&(region->unrejected_node_group),unrejected_node_group);
 	}
 	else
 	{
@@ -3526,7 +3533,7 @@ NULL if unsuccessful.
       {
         rig->unemap_package = (struct Unemap_package *)NULL;
       }
-			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;				
+			rig->all_devices_rig_node_group=(struct FE_region *)NULL;				
 #endif /* defined (UNEMAP_USE_3D) */
 			rig->signal_file_name=(char *)NULL;
 #if defined (OLD_CODE)
@@ -3932,7 +3939,7 @@ Gets  unemap_package of <rig>
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *get_Rig_all_devices_rig_node_group(struct Rig *rig)
+struct FE_region *get_Rig_all_devices_rig_node_group(struct Rig *rig)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
 
@@ -3940,7 +3947,7 @@ DESCRIPTION :
 Gets  all_devices_rig_node_group of <rig> 
 ==============================================================================*/
 {
-	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+	struct FE_region *rig_node_group=(struct FE_region *)NULL;
 
 	ENTER(get_Rig_all_devices_rig_node_group);
 	if(rig)
@@ -3959,7 +3966,7 @@ Gets  all_devices_rig_node_group of <rig>
 
 #if defined (UNEMAP_USE_3D)
 int set_Rig_all_devices_rig_node_group(struct Rig *rig,
-	struct GROUP(FE_node) *rig_node_group)
+	struct FE_region *rig_node_group)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2000
 
@@ -3972,7 +3979,7 @@ Sets (and accesses) all_devices_rig_node_group of <rig> to <rig_node_group>
 	if(rig&&rig_node_group)
 	{
 		return_code =1;	
-		REACCESS(GROUP(FE_node))(&(rig->all_devices_rig_node_group),rig_node_group);
+		REACCESS(FE_region)(&(rig->all_devices_rig_node_group),rig_node_group);
 	}
 	else
 	{

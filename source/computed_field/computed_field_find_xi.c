@@ -17,6 +17,8 @@ lookup of the element.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_region.h"
 #include "graphics/texture.h"
 #if defined (DM_BUFFERS)
 #include "three_d_drawing/dm_interface.h"
@@ -42,7 +44,7 @@ struct Computed_field_find_element_xi_cache
 #endif /* defined (DM_BUFFERS) */
 	int valid_values;
 	struct FE_element *element;
-	struct GROUP(FE_element) *search_element_group;
+	struct Cmiss_region *search_region;
 	int number_of_values;
 	FE_value *values;
 	FE_value *working_values;
@@ -65,6 +67,7 @@ matches the <field> in this structure or one of its source fields.
 	struct Computed_field *field;
 	int number_of_values;
 	FE_value *values;
+	int element_dimension;
 	int found_number_of_xi;
 	FE_value *found_values;
 	FE_value *found_derivatives;
@@ -249,251 +252,181 @@ as the <data> field or any of its source fields.
 {
 	double a[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		b[MAXIMUM_ELEMENT_XI_DIMENSIONS], d, sum;
-	FE_value delta, *derivatives, last_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], *values;
+	FE_value *derivatives, last_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], *values;
 	int converged, i, indx[MAXIMUM_ELEMENT_XI_DIMENSIONS], iterations, j, k,
-		number_of_xi, return_code, simplex_dimensions,
-		simplex_direction[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		number_of_xi, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
+		number_of_xi_points_created[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code;
 	struct Computed_field_iterative_find_element_xi_data *data;
+	struct FE_element_shape *shape;
+	Triple *xi_points;
 
 	ENTER(Computed_field_iterative_element_conditional);
-	if (element && element->shape &&
-		(data = (struct Computed_field_iterative_find_element_xi_data *)data_void))
+	if (element && (data = (struct Computed_field_iterative_find_element_xi_data *)data_void))
 	{
 		number_of_xi = get_FE_element_dimension(element);
-		if (number_of_xi <= data->number_of_values)
+		/* Filter out the elements we consider.  All elements are valid if data->element_dimension
+			is zero, otherwise the element dimensions must match */
+		if ((!data->element_dimension) || (number_of_xi == data->element_dimension))
 		{
-			return_code = 1;
-			if (data->found_number_of_xi != number_of_xi)
+			if (number_of_xi <= data->number_of_values)
 			{
-				if (REALLOCATE(derivatives, data->found_derivatives, FE_value,
-					data->number_of_values * number_of_xi))
+				return_code = 1;
+				if (data->found_number_of_xi != number_of_xi)
 				{
-					data->found_derivatives = derivatives;
-					data->found_number_of_xi = number_of_xi;
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_iterative_element_conditional.  "
-						"Unable to allocate derivative storage");
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				values = data->found_values;
-				derivatives = data->found_derivatives;
-				/* determine whether the element is simplex to limit xi space */
-				simplex_dimensions = 0;
-				switch (element->shape->dimension)
-				{
-					case 2:
+					if (REALLOCATE(derivatives, data->found_derivatives, FE_value,
+						data->number_of_values * number_of_xi))
 					{
-						if (SIMPLEX_SHAPE == element->shape->type[0])
-						{
-							simplex_dimensions = 2;
-							simplex_direction[0] = 0;
-							simplex_direction[1] = 1;
-						}
-					} break;
-					case 3:
-					{
-						if (SIMPLEX_SHAPE == element->shape->type[0])
-						{
-							if (LINE_SHAPE == element->shape->type[3])
-							{
-								simplex_dimensions = 2;
-								simplex_direction[0] = 0;
-								simplex_direction[1] = 2;
-							}
-							else if (LINE_SHAPE == element->shape->type[5])
-							{
-								simplex_dimensions = 2;
-								simplex_direction[0] = 0;
-								simplex_direction[1] = 1;
-							}
-							else
-							{
-								/* tetrahedron */
-								simplex_dimensions = 3;
-								simplex_direction[0] = 0;
-								simplex_direction[1] = 1;
-								simplex_direction[2] = 2;
-							}
-						}
-						else if (SIMPLEX_SHAPE == element->shape->type[3])
-						{
-							simplex_dimensions = 2;
-							simplex_direction[0] = 1;
-							simplex_direction[1] = 2;
-						}
-					} break;
-				}
-				/* start at centre to find element xi */
-				if (simplex_dimensions)
-				{
-					for (i = 0 ; i < number_of_xi ; i++)
-					{
-						/* not quite centre of tetrahedron; but these are usually linear
-							 so doesn't matter */
-						data->xi[i] = 0.33;
-					}
-				}
-				else
-				{
-					for (i = 0 ; i < number_of_xi ; i++)
-					{
-						data->xi[i] = 0.5;
-					}
-				}
-				converged = 0;
-				iterations = 0;
-				while ((!converged) && return_code)
-				{
-					if (Computed_field_evaluate_in_element(data->field, element, data->xi,
-						/*time*/0, (struct FE_element *)NULL, values, derivatives))
-					{
-						/* least-squares approach: make the derivatives / right hand side
-							 vector into square system to solve for delta-Xi */
-						for (i = 0; i < number_of_xi; i++)
-						{
-							for (j = 0; j < number_of_xi; j++)
-							{
-								sum = 0.0;
-								for (k = 0; k < data->number_of_values; k++)
-								{
-									sum += (double)derivatives[k*number_of_xi + j] *
-										(double)derivatives[k*number_of_xi + i];
-								}
-								a[i*number_of_xi + j] = sum;
-							}
-							sum = 0.0;
-							for (k = 0; k < data->number_of_values; k++)
-							{
-								sum += (double)derivatives[k*number_of_xi + i] *
-									((double)data->values[k] - (double)values[k]);
-							}
-							b[i] = sum;
-						}
-						if (LU_decompose(number_of_xi, a, indx, &d) &&
-							LU_backsubstitute(number_of_xi, a, indx, b))
-						{
-							converged = 1;
-							for (i = 0; i < number_of_xi; i++)
-							{
-								/* converged if all xi increments on or within tolerance */
-								if (fabs(b[i]) > data->tolerance)
-								{
-									converged = 0;
-								}
-								data->xi[i] += b[i];
-							}
-							iterations++;
-							if (!converged)
-							{
-								/* keep xi within simplex bounds plus tolerance */
-								if (simplex_dimensions)
-								{
-									/* calculate distance out of element in xi space */
-									delta = -1.0 - data->tolerance;
-									for (i = 0; i < simplex_dimensions; i++)
-									{
-										delta += data->xi[simplex_direction[i]];
-									}
-									if (delta > 0.0)
-									{
-										/* subtract delta equally from all directions */
-										delta /= simplex_dimensions;
-										for (i = 0; i < simplex_dimensions; i++)
-										{
-											data->xi[simplex_direction[i]] -= delta;
-										}
-									}
-								}
-								/* keep xi within 0.0 to 1.0 bounds plus tolerance */
-								for (i = 0; i < number_of_xi; i++)
-								{
-									if (data->xi[i] < -data->tolerance)
-									{
-										data->xi[i] = -data->tolerance;
-									}
-									else if (data->xi[i] > 1.0 + data->tolerance)
-									{
-										data->xi[i] = 1.0 + data->tolerance;
-									}
-								}
-								if (iterations == MAX_FIND_XI_ITERATIONS)
-								{
-									/* too many iterations; give up */
-									return_code = 0;
-								}
-								else if (1 < iterations)
-								{
-									/* give up if xi not changed this iteration; usually means
-										 the solution is outside this element */
-									return_code = 0;
-									for (i = 0; i < number_of_xi; i++)
-									{
-										if (data->xi[i] != last_xi[i])
-										{
-											return_code = 1;
-										}
-										last_xi[i] = data->xi[i];
-									}
-								}
-							}
-						}
-						else
-						{
-							/* Probably singular matrix, no longer report error
-								as a collapsed element gets reported on every
-							   pixel making it unusable.*/
-							return_code = 0;
-						}
+						data->found_derivatives = derivatives;
+						data->found_number_of_xi = number_of_xi;
+						return_code = 1;
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"Computed_field_iterative_element_conditional.  "
-							"Could not evaluate field");
+							"Unable to allocate derivative storage");
 						return_code = 0;
 					}
 				}
-				/* if field has more components than xi-directions, must
-					 check all components have converged */
-				if (converged && (data->number_of_values > number_of_xi))
+				if (return_code)
 				{
-					/* strategy for determining convergence is to multiply
-						 the derivative for each component by the last increment
-						 in xi, stored in b, and ensuring it is larger than the
-						 difference between target and current field values.
-						 Broadly, this means the given component is not wishing
-						 the solution to shift more than the last xi increment.
-						 Note that the increment in xi is doubled to make this
-						 test slightly less strict than original convergence */
-					for (k = 0; k < data->number_of_values; k++)
+					values = data->found_values;
+					derivatives = data->found_derivatives;
+					/* Find a good estimate of the centre to start with */
+					for (i = 0 ; i < number_of_xi ; i++)
 					{
-						sum = 0.0;
-						for (i = 0; i < number_of_xi; i++)
+						/* I want just one location in the middle */
+						number_in_xi[i] = 1;
+					}
+					if (get_FE_element_shape(element, &shape) &&
+						FE_element_shape_get_xi_points_cell_centres(shape, 
+						number_in_xi, number_of_xi_points_created, &xi_points))
+					{
+						for (i = 0 ; i < number_of_xi ; i++)
 						{
-							sum += (double)derivatives[k*number_of_xi + i] * b[i];
+							data->xi[i] = xi_points[0][i];
 						}
-						if (2.0*fabs(sum) <
-							fabs((double)data->values[k] - (double)values[k]))
+						DEALLOCATE(xi_points);
+					}
+					converged = 0;
+					iterations = 0;
+					while ((!converged) && return_code)
+					{
+						if (Computed_field_evaluate_in_element(data->field, element, data->xi,
+							/*time*/0, (struct FE_element *)NULL, values, derivatives))
 						{
+							/* least-squares approach: make the derivatives / right hand side
+								vector into square system to solve for delta-Xi */
+							for (i = 0; i < number_of_xi; i++)
+							{
+								for (j = 0; j < number_of_xi; j++)
+								{
+									sum = 0.0;
+									for (k = 0; k < data->number_of_values; k++)
+									{
+										sum += (double)derivatives[k*number_of_xi + j] *
+											(double)derivatives[k*number_of_xi + i];
+									}
+									a[i*number_of_xi + j] = sum;
+								}
+								sum = 0.0;
+								for (k = 0; k < data->number_of_values; k++)
+								{
+									sum += (double)derivatives[k*number_of_xi + i] *
+										((double)data->values[k] - (double)values[k]);
+								}
+								b[i] = sum;
+							}
+							if (LU_decompose(number_of_xi, a, indx, &d) &&
+								LU_backsubstitute(number_of_xi, a, indx, b))
+							{
+								converged = 1;
+								for (i = 0; i < number_of_xi; i++)
+								{
+									/* converged if all xi increments on or within tolerance */
+									if (fabs(b[i]) > data->tolerance)
+									{
+										converged = 0;
+									}
+									data->xi[i] += b[i];
+								}
+								iterations++;
+								if (!converged)
+								{
+									FE_element_shape_limit_xi_to_element(shape,
+										data->xi, data->tolerance);
+									if (iterations == MAX_FIND_XI_ITERATIONS)
+									{
+										/* too many iterations; give up */
+										return_code = 0;
+									}
+									else if (1 < iterations)
+									{
+										/* give up if xi not changed this iteration; usually means
+											the solution is outside this element */
+										return_code = 0;
+										for (i = 0; i < number_of_xi; i++)
+										{
+											if (data->xi[i] != last_xi[i])
+											{
+												return_code = 1;
+											}
+											last_xi[i] = data->xi[i];
+										}
+									}
+								}
+							}
+							else
+							{
+								/* Probably singular matrix, no longer report error
+									as a collapsed element gets reported on every
+									pixel making it unusable.*/
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_iterative_element_conditional.  "
+								"Could not evaluate field");
 							return_code = 0;
+						}
+					}
+					/* if field has more components than xi-directions, must
+						check all components have converged */
+					if (converged && (data->number_of_values > number_of_xi))
+					{
+						/* strategy for determining convergence is to multiply
+							the derivative for each component by the last increment
+							in xi, stored in b, and ensuring it is larger than the
+							difference between target and current field values.
+							Broadly, this means the given component is not wishing
+							the solution to shift more than the last xi increment.
+							Note that the increment in xi is doubled to make this
+							test slightly less strict than original convergence */
+						for (k = 0; k < data->number_of_values; k++)
+						{
+							sum = 0.0;
+							for (i = 0; i < number_of_xi; i++)
+							{
+								sum += (double)derivatives[k*number_of_xi + i] * b[i];
+							}
+							if (2.0*fabs(sum) <
+								fabs((double)data->values[k] - (double)values[k]))
+							{
+								return_code = 0;
+							}
 						}
 					}
 				}
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_iterative_element_conditional.  "
-				"Unable to solve underdetermined system");
-			return_code = 0;
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_iterative_element_conditional.  "
+					"Unable to solve underdetermined system");
+				return_code = 0;
+			}
 		}
 	}
 	else
@@ -511,9 +444,9 @@ as the <data> field or any of its source fields.
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group)
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
 /*******************************************************************************
-LAST MODIFIED : 9 January 2003
+LAST MODIFIED : 10 March 2003
 
 DESCRIPTION :
 This function actually seacrches through the elements in the 
@@ -525,11 +458,12 @@ ultimate parent finite_element field.
 {
 	struct Computed_field_find_element_xi_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
+	struct FE_region *fe_region;
 	int i, number_of_xi, return_code;
 
 	ENTER(Computed_field_perform_find_element_xi);
 	if (field && values && (number_of_values == field->number_of_components) &&
-		element && xi && search_element_group)
+		element && xi && search_region && (fe_region = Cmiss_region_get_FE_region(search_region)))
 	{
 		return_code = 1;
 		if (field->find_element_xi_cache)
@@ -541,20 +475,23 @@ ultimate parent finite_element field.
 				DEALLOCATE(cache->values);
 				DEALLOCATE(cache->working_values);
 			}
-			if (cache->valid_values &&
-				(cache->search_element_group != search_element_group))
+			if (cache->valid_values && (cache->search_region != search_region))
 			{
 				cache->valid_values = 0;
 			}
-			if (cache->valid_values &&
-				((!cache->element) || IS_OBJECT_IN_GROUP(FE_element)(
-				cache->element, search_element_group)))
+			if (cache->element &&
+				(element_dimension != get_FE_element_dimension(cache->element)))
+			{
+				cache->valid_values = 0;
+			}
+			if (cache->valid_values && ((!cache->element) || 
+				FE_region_contains_FE_element(fe_region, cache->element)))
 			{
 				for (i = 0; i < number_of_values; i++)
 				{
 					if (cache->values[i] != values[i])
 					{
-						cache->valid_values = 0;
+ 						cache->valid_values = 0;
 					}
 				}
 			}
@@ -617,6 +554,7 @@ ultimate parent finite_element field.
 			else
 			{
 				find_element_xi_data.values = cache->values;
+				find_element_xi_data.element_dimension = element_dimension; 
 				find_element_xi_data.found_values = 
 					cache->working_values;
 				/* copy the source values */
@@ -632,8 +570,8 @@ ultimate parent finite_element field.
 				*element = (struct FE_element *)NULL;
 
 				/* Try the cached element first if it is in the group */
-				if (field->element && IS_OBJECT_IN_GROUP(FE_element)
-					(field->element, search_element_group) &&
+				if (field->element && FE_region_contains_FE_element
+					(fe_region, field->element) &&
 					Computed_field_iterative_element_conditional(
 						field->element, (void *)&find_element_xi_data))
 				{
@@ -642,9 +580,9 @@ ultimate parent finite_element field.
 				/* Now try every element */
 				if (!*element)
 				{
-					*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
-						(Computed_field_iterative_element_conditional,
-							&find_element_xi_data, search_element_group);
+					*element = FE_region_get_first_FE_element_that
+						(fe_region, Computed_field_iterative_element_conditional,
+						&find_element_xi_data);
 				}
 				if (*element)
 				{
@@ -676,7 +614,7 @@ ultimate parent finite_element field.
 						cache->xi[i] = 0.0;
 					}
 				}
-				cache->search_element_group = search_element_group;
+				cache->search_region = search_region;
 				cache->valid_values = 1;
 			}
 		}
@@ -710,24 +648,26 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 {
 	int return_code;
 	struct Computed_field_find_element_xi_cache *data;
+	struct CM_element_information cm_information;
 	
 	ENTER(Expand_element_range);
 	
 	if (data = (struct Computed_field_find_element_xi_cache *)data_void)
 	{
 		/* Expand the element number range */
-		if ((element->cm.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
+		if (get_FE_element_identifier(element, &cm_information) &&
+			(cm_information.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
 		{
-			if (element->cm.number > data->maximum_element_number)
+			if (cm_information.number > data->maximum_element_number)
 			{
-				data->maximum_element_number = element->cm.number;
+				data->maximum_element_number = cm_information.number;
 			}
-			if (element->cm.number < data->minimum_element_number)
+			if (cm_information.number < data->minimum_element_number)
 			{
-				data->minimum_element_number = element->cm.number;
+				data->minimum_element_number = cm_information.number;
 			}			
-			return_code = 1;
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -748,20 +688,24 @@ DESCRIPTION :
 Stores cache data for the Computed_field_find_element_xi_special routine.
 ==============================================================================*/
 {
-	unsigned int scaled_number;
-	int return_code;
+	enum FE_element_shape_type shape_type;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct Render_element_data *data;
 	float red, green, blue;
+	int return_code;
+	struct CM_element_information cm_information;
+	struct FE_element_shape *shape;
+	struct Render_element_data *data;
+ 	unsigned int scaled_number;
 	
 	ENTER(Render_element_as_texture);
 	
 	if (data = (struct Render_element_data *)data_void)
 	{
 		/* Code the element number into the colour */
-		if ((element->cm.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
+		if (get_FE_element_identifier(element, &cm_information) &&
+			(cm_information.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
 		{
-			scaled_number = ((double)element->cm.number - data->minimum_element_number + 1);
+			scaled_number = ((double)cm_information.number - data->minimum_element_number + 1);
 			blue = ((double)((scaled_number & ((1 << data->bit_shift) - 1)) << 
 				(8 - data->bit_shift)) + 0.5) / 255.0;
 			scaled_number = scaled_number >> data->bit_shift;
@@ -774,7 +718,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			glColor3f(red, green, blue);
 		  
 #if defined (DEBUG)
-			printf ( "%d %lf %lf %lf\n",  element->cm.number, red, green, blue);
+			printf ( "%d %lf %lf %lf\n",  cm_information.number, red, green, blue);
 #endif /* defined (DEBUG) */
 
 			xi[0] = 0.0;
@@ -788,7 +732,11 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
 			glVertex2fv(data->values);
 
-			if (SIMPLEX_SHAPE== *(element->shape->type))
+			/* Only need to check the first dimension as this is only working for 2D */
+			if (get_FE_element_shape(element, &shape) &&
+				get_FE_element_shape_xi_shape_type(shape,
+				/*xi_number*/0,  &shape_type) && 
+				(SIMPLEX_SHAPE == shape_type))
 			{
 				xi[0] = 0.0;
 				xi[1] = 1.0;
@@ -829,7 +777,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
 	struct Computed_field_find_element_xi_cache **cache_ptr,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group,
+	FE_value *xi, struct Cmiss_region *search_region,
+	int element_dimension,
 	struct User_interface *user_interface,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution)
 /*******************************************************************************
@@ -865,6 +814,7 @@ sequential element_xi lookup should now be performed.
 	struct Computed_field_find_element_xi_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_element *first_element;
+	struct FE_region *fe_region;
 	struct Render_element_data data;
 	int gl_list, i, nx, ny, px, py, scaled_number;
 #endif /* defined (DM_BUFFERS) */
@@ -895,9 +845,13 @@ sequential element_xi lookup should now be performed.
 	if (hint_minimums && hint_maximums && hint_resolution && 
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
-		(hint_resolution[2] == 1.0f))) && user_interface && search_element_group
-		&& (5 < NUMBER_IN_GROUP(FE_element)(search_element_group)) /*&&
-			(Computed_field_is_find_element_xi_capable(field,NULL))*/)
+		(hint_resolution[2] == 1.0f))) && user_interface && search_region &&
+		/* At some point we may want to search in any FE_regions below the search_region */
+		(fe_region = Cmiss_region_get_FE_region(search_region))
+		/* This special case actually only works for 2D elements */
+		&& ((element_dimension == 0) || (element_dimension == 2))
+		&& (5 < FE_region_get_number_of_FE_elements(fe_region))
+		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
 		find_element_xi_data.field = field;
 		find_element_xi_data.values = values;
@@ -915,16 +869,17 @@ sequential element_xi lookup should now be performed.
 			{
 				/* Get the element number range so we can spread the colour range
 					as widely as possible */
-				if (first_element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
-					((GROUP_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL, search_element_group))
+				if (first_element = FE_region_get_first_FE_element_that(fe_region,
+					(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL))
 				{				
 					*cache_ptr = CREATE(Computed_field_find_element_xi_cache)();
 					cache = *cache_ptr;
 
-					cache->maximum_element_number = first_element->cm.number;
-					cache->minimum_element_number = first_element->cm.number;
-					FOR_EACH_OBJECT_IN_GROUP(FE_element)(Expand_element_range,
-						(void *)cache, search_element_group);
+					get_FE_element_identifier(first_element, &cm);
+					cache->maximum_element_number = cm.number;
+					cache->minimum_element_number = cm.number;
+					FE_region_for_each_FE_element(fe_region, Expand_element_range,
+						(void *)cache);
 
 					cache->bit_shift = ceil(log((double)(cache->maximum_element_number - 
 						cache->minimum_element_number + 2)) / log (2.0));
@@ -962,8 +917,8 @@ sequential element_xi lookup should now be performed.
 						{
 
 							glBegin(GL_QUADS);
-							FOR_EACH_OBJECT_IN_GROUP(FE_element)(Render_element_as_texture,
-								(void *)&data, search_element_group);
+							FE_region_for_each_FE_element(fe_region, Render_element_as_texture,
+								(void *)&data);
 							glEnd();
 						
 							glEndList();
@@ -1045,8 +1000,8 @@ sequential element_xi lookup should now be performed.
 				cm.type = CM_ELEMENT;
 				if (scaled_number)
 				{
-					if (*element = FIND_BY_IDENTIFIER_IN_GROUP(FE_element,
-						identifier)(&cm, search_element_group))
+					if (*element = FE_region_get_FE_element_from_identifier(
+						fe_region, &cm))
 					{
 						first_element = *element;
 #if defined (DEBUG)
@@ -1142,8 +1097,8 @@ sequential element_xi lookup should now be performed.
 								cm.number = scaled_number + cache->minimum_element_number - 1;
 								if (scaled_number)
 								{
-									if (*element = FIND_BY_IDENTIFIER_IN_GROUP(FE_element,
-										identifier)(&cm, search_element_group))
+									if (*element = FE_region_get_FE_element_from_identifier(
+										fe_region, &cm))
 									{
 										if (Computed_field_iterative_element_conditional(
 											*element, (void *)&find_element_xi_data))

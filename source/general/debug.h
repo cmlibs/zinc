@@ -1,10 +1,17 @@
 /*******************************************************************************
 FILE : debug.h
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 Function definitions for debugging.
+
+Optimised ASSERT_IF expands to nothing.  This means that there should be no
+assignments in the ASSERT_IF expression.
+
+???DB.  Could implement __FUNCTION_NAME__ macro using ENTER and LEAVE.  Make
+	so that has call tree?
+???DB.  Should there be levels of ASSERT_IF
 ==============================================================================*/
 #if !defined (DEBUG_H)
 #define DEBUG_H
@@ -21,8 +28,8 @@ Macros
 #define LEAVE
 
 /* Following are the only question mark operators allowed in CMGUI, needed
-	 because it is machine dependent whether a pointer or NULL is returned for
-	 an allocation of zero size. Inlined for optimisation */
+	because it is machine dependent whether a pointer or NULL is returned for an
+	allocation of zero size. Inlined for optimisation */
 #if defined (OPTIMISED)
 
 #define ALLOCATE( result , type , number ) \
@@ -32,6 +39,8 @@ Macros
 
 #define REALLOCATE( final , initial , type , number ) \
  ( final = ( 0 < ( number ) ) ? ( type * )realloc( (char *)( initial ) , ( number ) * sizeof( type ) ) : ( type * )NULL )
+
+#define ASSERT_IF( expression , return_code , error_value )
 
 #else /* defined (OPTIMISED) */
 
@@ -45,6 +54,15 @@ Macros
 #define REALLOCATE( final , initial , type , number ) \
 ( final = ( type *) reallocate( (char *)( initial ) , \
 	( number ) * sizeof( type ) , __FILE__ , __LINE__, #type ))
+
+#define ASSERT_IF( expression , return_code , error_value ) \
+if (!(expression)) \
+{ \
+	display_message(ERROR_MESSAGE,"file: " __FILE__ ", line: %d.  ASSERT_IF(" \
+		#expression ") failed",__LINE__); \
+	return_code=error_value; \
+} \
+else
 
 #endif /* defined (OPTIMISED) */
 

@@ -23,11 +23,11 @@ Global Types
 Global Functions
 ----------------
 */
+
 Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	Widget parent,struct GT_element_group *gt_element_group,
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct LIST(GT_object) *glyph_list,
@@ -36,7 +36,7 @@ Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates a graphical_element_editor widget.

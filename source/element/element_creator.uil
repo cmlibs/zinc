@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : element_creator.uil
 !
-! LAST MODIFIED : 18 July 2000
+! LAST MODIFIED : 10 January 2003
 !
 ! DESCRIPTION :
 ! Controls the elements being created.
@@ -11,7 +11,7 @@ module element_creator_module
 
 procedure
 	elem_cre_id_create_btn;
-	elem_cre_id_element_group_form;
+	elem_cre_id_region_form;
 	elem_cre_id_dimension_text;
 	elem_cre_id_coord_field_form;
 	elem_cre_id_node_list;
@@ -68,7 +68,7 @@ object
 		controls
 			{
   		XmToggleButtonGadget elem_cre_create_btn;
-			XmRowColumn elem_cre_element_group_entry;
+			XmRowColumn elem_cre_region_entry;
 			XmRowColumn elem_cre_dimension_entry;
 			XmRowColumn elem_cre_coord_field_entry;
 			};
@@ -90,7 +90,7 @@ object
       };
     };
 !*******************************************************************************
-  elem_cre_element_group_entry: XmRowColumn
+  elem_cre_region_entry: XmRowColumn
     {
 		arguments
 			{
@@ -102,25 +102,25 @@ object
 			};
     controls
       {
-      XmLabelGadget elem_cre_element_group_label;
-      XmForm elem_cre_element_group_form;
+      XmLabelGadget elem_cre_region_label;
+      XmForm elem_cre_region_form;
       };
     };
-  elem_cre_element_group_label: XmLabelGadget
+  elem_cre_region_label: XmLabelGadget
     {
     arguments
       {
-      XmNlabelString = compound_string("Put in group:");
+      XmNlabelString = compound_string("Put in region:");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
       };
     };
-	elem_cre_element_group_form: XmForm
+	elem_cre_region_form: XmForm
 		{
 		callbacks
 			{
 			MrmNcreateCallback = procedure
-				elem_cre_id_element_group_form(elem_cre_structure);
+				elem_cre_id_region_form(elem_cre_structure);
 			};
 		};
 !*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : indexed_list_private.h
 
-LAST MODIFIED : 20 December 2000
+LAST MODIFIED : 7 April 2003
 
 DESCRIPTION :
 Macros for declaring indexed list types and declaring indexed list functions.
@@ -494,14 +494,15 @@ int REMOVE_OBJECTS_FROM_INDEX_THAT(object_type)( \
 	LIST_CONDITIONAL_FUNCTION(object_type) *conditional,void *user_data, \
 	struct INDEX_NODE(object_type) **index_address) \
 /***************************************************************************** \
-LAST MODIFIED : 29 August 2000 \
+LAST MODIFIED : 7 April 2003 \
 \
 DESCRIPTION : \
 Removes each object that <iterator> returns true for. \
 ============================================================================*/ \
 { \
-	int i,j,count; \
+	int count, i, j, original_number_of_indices; \
 	struct INDEX_NODE(object_type) *child,*index; \
+	struct object_type *temp_object; \
 \
 	ENTER(REMOVE_OBJECTS_FROM_INDEX_THAT(object_type)); \
 	count=0; \
@@ -512,23 +513,41 @@ Removes each object that <iterator> returns true for. \
 		{ \
 			if (index->children) \
 			{ \
-				for (i=0;i<=index->number_of_indices;i++) \
+				original_number_of_indices = index->number_of_indices; \
+				for (i = 0; i <= original_number_of_indices; i++) \
 				{ \
+					/* Note indices partition children, hence one fewer */ \
+					if (i < original_number_of_indices) \
+					{ \
+						/* temporarily ACCESS indices in case objects removed. Needed for \
+							 conditional test below */ \
+						ACCESS(object_type)(index->indices[i]); \
+					} \
 					count += REMOVE_OBJECTS_FROM_INDEX_THAT(object_type)( \
 						conditional,user_data,&(index->children[i])); \
 				} \
 				j=0; \
 				/* shuffle down any NULL children */ \
-				for (i=0;i<=index->number_of_indices;i++) \
+				for (i = 0; i <= original_number_of_indices;i++) \
 				{ \
 					if (index->children[i]) \
 					{ \
-						if (i<index->number_of_indices) \
+						if (i < original_number_of_indices) \
 						{ \
 							index->indices[j]=index->indices[i]; \
 						} \
 						index->children[j]=index->children[i]; \
 						j++; \
+					} \
+					else if (i < original_number_of_indices) \
+					{ \
+						/* must undo temporary ACCESS for removed NULL child indices */ \
+						DEACCESS(object_type)(&(index->indices[i])); \
+					} \
+					else if (0 < j) \
+					{ \
+						/* must undo temporary ACCESS for removed NULL child indices */ \
+						DEACCESS(object_type)(&(index->indices[j - 1])); \
 					} \
 				} \
 				index->number_of_indices=j-1; \
@@ -537,37 +556,43 @@ Removes each object that <iterator> returns true for. \
 					/* no children left */ \
 					DESTROY_INDEX_NODE(object_type)(index_address); \
 				} \
+				else if (0==index->number_of_indices) \
+				{ \
+					/* one child - chain from parent */ \
+					/* first give it its parents parent */ \
+					index->children[0]->parent=index->parent; \
+					/* now chain from parent */ \
+					*index_address=index->children[0]; \
+					/* ensure the destroy does not chain */ \
+					index->number_of_indices--; \
+					/* this next line is redundant */ \
+					index->children[0]=(struct INDEX_NODE(object_type) *)NULL; \
+					DESTROY_INDEX_NODE(object_type)(&index); \
+				} \
 				else \
 				{ \
-					if (0==index->number_of_indices) \
+					/* make sure that not using a removed object as an index */ \
+					for (i = 0; i < index->number_of_indices; i++) \
 					{ \
-						/* one child - chain from parent */ \
-						/* first give it its parents parent */ \
-						index->children[0]->parent=index->parent; \
-						/* now chain from parent */ \
-						*index_address=index->children[0]; \
-						/* ensure the destroy does not chain */ \
-						index->number_of_indices--; \
-						/* this next line is redundant */ \
-						index->children[0]=(struct INDEX_NODE(object_type) *)NULL; \
-						DESTROY_INDEX_NODE(object_type)(&index); \
-					} \
-					else \
-					{ \
-						/* make sure that not using a removed object as an index */ \
-						for (i=0;i<index->number_of_indices;i++) \
+						if ((conditional)(index->indices[i],user_data)) \
 						{ \
-							if ((conditional)(index->indices[i],user_data)) \
+							/* undo temporary ACCESS for removed NULL child indices */ \
+							DEACCESS(object_type)(&(index->indices[i])); \
+							/* find the last object in the child */ \
+							child=(index->children)[i]; \
+							while (child->children) \
 							{ \
-								/* find the last object in the child */ \
-								child=(index->children)[i]; \
-								while (child->children) \
-								{ \
-									child=(child->children)[child->number_of_indices]; \
-								} \
-								index->indices[i]= \
-									(child->indices)[(child->number_of_indices)-1]; \
+								child=(child->children)[child->number_of_indices]; \
 							} \
+							index->indices[i]= \
+								(child->indices)[(child->number_of_indices)-1]; \
+						} \
+						else \
+						{ \
+							/* undo temporary ACCESS for removed NULL child indices \
+								 copy and deaccess so pointer not cleared */ \
+							temp_object = index->indices[i]; \
+							DEACCESS(object_type)(&temp_object); \
 						} \
 					} \
 				} \
@@ -1644,10 +1669,21 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	licd ## object_type ## identifier
 #endif
 
+#define PROTOTYPE_INDEXED_LIST_IDENTIFIER_CHANGE_DATA( object_type , \
+	identifier ) \
+struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+/***************************************************************************** \
+LAST MODIFIED : 13 February 2003 \
+\
+DESCRIPTION : \
+Data structure used by LIST_BEGIN/END_IDENTIFIER_CHANGE functions. \
+Should only be declared with manager functions. \
+============================================================================*/ \
+
 #define DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
 struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 /***************************************************************************** \
-LAST MODIFIED : 20 December 2000 \
+LAST MODIFIED : 13 February 2003 \
 \
 DESCRIPTION : \
 Data structure used by LIST_BEGIN/END_IDENTIFIER_CHANGE functions. \
@@ -1667,13 +1703,30 @@ Should only be declared with manager functions. \
 	lbic ## object_type ## identifier
 #endif
 
-#define DECLARE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
+#define PROTOTYPE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
 	identifier ) \
-static struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
+struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 	*LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) ( \
 	struct object_type *object) \
 /***************************************************************************** \
-LAST MODIFIED : 20 December 2000 \
+LAST MODIFIED : 13 February 2003 \
+\
+DESCRIPTION : \
+MANAGER functions using indexed object lists must call this before modifying \
+the identifier of any object, and afterwards call the companion function \
+LIST_END_IDENTIFIER_CHANGE with the returned \
+identifier_change_data. These functions temporarily remove the object from \
+any list it is in, then re-add it later so it is in the correct indexed \
+position. <object> is ACCESSed between these two functions. \
+Should only be declared with manager functions. \
+============================================================================*/
+
+#define DECLARE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
+	identifier ) \
+PROTOTYPE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
+	identifier) \
+/***************************************************************************** \
+LAST MODIFIED : 13 February 2003 \
 \
 DESCRIPTION : \
 MANAGER functions using indexed object lists must call this before modifying \
@@ -1758,13 +1811,26 @@ Should only be declared with manager functions. \
 	leic ## object_type ## identifier
 #endif
 
-#define DECLARE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION( \
+#define PROTOTYPE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION( \
 	object_type , identifier ) \
-static int LIST_END_IDENTIFIER_CHANGE(object_type,identifier)( \
+int LIST_END_IDENTIFIER_CHANGE(object_type,identifier)( \
 	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 		**identifier_change_data_address) \
 /***************************************************************************** \
-LAST MODIFIED : 20 December 2000 \
+LAST MODIFIED : 13 February 2003 \
+\
+DESCRIPTION : \
+Companion function to LIST_BEGIN_IDENTIFIER_CHANGE function. \
+Re-adds the changed object to all the lists it was in. \
+Should only be declared with manager functions. \
+============================================================================*/
+
+#define DECLARE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type ,  \
+	identifier ) \
+PROTOTYPE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type, \
+	identifier) \
+/***************************************************************************** \
+LAST MODIFIED : 13 February 2003 \
 \
 DESCRIPTION : \
 Companion function to LIST_BEGIN_IDENTIFIER_CHANGE function. \
@@ -1844,8 +1910,17 @@ DECLARE_IS_OBJECT_IN_INDEX_FUNCTION(object_type,identifier,compare_function) \
 DECLARE_FIRST_OBJECT_IN_INDEX_THAT_FUNCTION(object_type) \
 DECLARE_FOR_EACH_OBJECT_IN_INDEX_FUNCTION(object_type)
 
+/* prototypes for private headers, eg. finite_element_private.h */
+#define PROTOTYPE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS( object_type , \
+	identifier ) \
+PROTOTYPE_INDEXED_LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier); \
+PROTOTYPE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
+	identifier); \
+PROTOTYPE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)
+
 /* following only need to be declared when used with managers */
-#define DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS( object_type , identifier ) \
+#define DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS( object_type , \
+	identifier ) \
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier); \
 DECLARE_INDEXED_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier) \
 DECLARE_INDEXED_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)

@@ -341,6 +341,10 @@ endif # CMISS_ROOT_DEFINED
 
 $(OBJECT_PATH)/%.c : $(SOURCE_PATH)/%.c
 
+ifdef NO_MAKE_DEPEND
+%.d :
+	@:
+else # NO_MAKE_DEPEND
 %.d :
 	if [ ! -d $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D))) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$(*D))) ; \
@@ -355,6 +359,7 @@ ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
 	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$${stem_name}.d > $(OBJECT_PATH)/$${stem_name}.d2 ; \
 	mv $(OBJECT_PATH)/$${stem_name}.d2 $(OBJECT_PATH)/$${stem_name}.d
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+endif # NO_MAKE_DEPEND
 
 %.d: %.f
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \

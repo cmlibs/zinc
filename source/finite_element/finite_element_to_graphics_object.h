@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 11 October 2002
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -38,7 +38,7 @@ USE_LINES    = CM_LINE or dimension 1
 
 struct Element_to_cylinder_data
 /*******************************************************************************
-LAST MODIFIED : 11 October 2002
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Data for converting a 1-D element into a cylinder.
@@ -52,13 +52,13 @@ Data for converting a 1-D element into a cylinder.
 	struct Computed_field *coordinate_field, *data_field, *radius_field,
 		*texture_coordinate_field;
 	struct Graphical_material *material;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 	struct GT_object *graphics_object;
 }; /* struct Element_to_cylinder_data */
 
 struct Element_to_polyline_data
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Data for converting a 1-D element into a polyline.
@@ -68,13 +68,13 @@ Data for converting a 1-D element into a polyline.
 	float time;
 	int face_number,number_of_segments_in_xi1;
 	struct Computed_field *coordinate_field,*data_field;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 	struct GT_object *graphics_object;
 }; /* struct Element_to_line_data */
 
 struct Element_to_surface_data
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Data for converts a 2-D element into a surface.
@@ -87,7 +87,7 @@ Data for converts a 2-D element into a surface.
 	float time;
 	int face_number,number_of_segments_in_xi1,number_of_segments_in_xi2;
 	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 	struct GT_object *graphics_object;
 }; /* struct Element_to_surface_data */
 
@@ -117,35 +117,6 @@ DESCRIPTION :
 	struct Texture *texture;
 }; /* struct Surface_pointset */
 
-struct Warp_values
-/*******************************************************************************
-LAST MODIFIED : 27 May 1998
-
-DESCRIPTION :
-Used for warping voltexes.
-???RC Move to volume_texture?
-==============================================================================*/
-{
-	float value[6];
-}; /* struct Warp_values */
-
-#if defined (OLD_CODE)
-struct Warp_data
-/*******************************************************************************
-LAST MODIFIED : 27 May 1998
-
-DESCRIPTION :
-Data for warping a volume.
-==============================================================================*/
-{
-	struct GT_object *graphics_object1,*graphics_object2;
-	struct Element_discretization *extent;
-	struct FE_field *coordinate_field;
-	struct Warp_values warp_values;
-	int xi_order;
-}; /* struct Warp_data */
-#endif /* defined (OLD_CODE) */
-
 struct Element_to_volume_data
 /*******************************************************************************
 LAST MODIFIED : 4 December 2000
@@ -161,14 +132,12 @@ Data for converting a 3-D element into a volume.
 	struct Computed_field *surface_data_density_field;
 	struct Computed_field *surface_data_coordinate_field;
 	struct Computed_field *texture_coordinate_field;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Computed_field *displacement_map_field;
 	int displacement_map_xi_direction;
 	struct FE_time *fe_time;
-	struct GROUP(FE_node) *surface_data_group;
+	struct FE_region *surface_data_fe_region;
 	struct GT_object *graphics_object;
-	struct MANAGER(FE_node) *data_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_region *fe_region;
 	enum Render_type render_type;
 	float time;
 	struct VT_volume_texture *volume_texture;
@@ -191,16 +160,13 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 	struct Computed_field *coordinate_field, *data_field, *scalar_field;
 	struct Computed_field *surface_data_coordinate_field;
 	struct Computed_field *texture_coordinate_field;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Computed_field *surface_data_density_field;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_field *native_discretization_field;
 	struct GT_object *graphics_object;
 	enum Render_type render_type;
-	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *surface_data_group;
-	struct MANAGER(FE_node) *data_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_region *fe_region;
+	struct FE_region *surface_data_fe_region;
 	struct FE_time *fe_time;
 }; /* struct Element_to_iso_surface_data */
 
@@ -241,7 +207,7 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 	struct Computed_field *coordinate_field, *data_field, *variable_scale_field,
 		*label_field, *orientation_scale_field, *xi_point_density_field;
 	struct FE_field *native_discretization_field;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *fe_region;
 	struct GT_object *glyph,*graphics_object;
 	Triple exact_xi;
 }; /* struct Element_to_glyph_set_data */
@@ -266,6 +232,7 @@ How an element is collapsed.
 Global functions
 ----------------
 */
+
 int make_glyph_orientation_scale_axes(
 	int number_of_orientation_scale_values, FE_value *orientation_scale_values,
 	FE_value *axis1,FE_value *axis2, FE_value *axis3, FE_value *size);
@@ -319,16 +286,16 @@ Returns the dimension expected for the <use_element_type>. Note that a match is
 found if either the dimension or the CM_element_type matches the element.
 ==============================================================================*/
 
-struct FE_element *FE_element_group_get_element_with_Use_element_type(
-	struct GROUP(FE_element) *element_group,
-	enum Use_element_type use_element_type,int element_number);
+struct FE_element *FE_region_get_element_with_Use_element_type(
+	struct FE_region *fe_region, enum Use_element_type use_element_type,
+	int element_number);
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Because USE_FACES can refer to either a 2-D CM_FACE or a 2-D CM_ELEMENT, and
 USE_LINES can refer to a 1-D CM_LINE or a 1-D CM_ELEMENT, this function handles
-the logic for getting the most appropriate element from <element_group> with
+the logic for getting the most appropriate element from <fe_region> with
 the given the <use_element_type> and <element_number>.
 ==============================================================================*/
 
@@ -397,8 +364,8 @@ Note:
 - the coordinate system of the variable_scale_field is ignored/not used.
 ==============================================================================*/
 
-struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
-	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager,
+struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
+	struct FE_region *fe_region,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
@@ -407,12 +374,11 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
 	enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list);
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
-given glyph <centre> at each node in <node_group> (or <node_manager> if the
-former is NULL).
+given glyph <centre> at each node in <fe_region>.
 The optional <orientation_scale_field> can be used to orient and scale the
 glyph in a manner depending on the number of components in the field. The
 optional <variable_scale_field> can provide signed scaling independently of the
@@ -424,8 +390,7 @@ colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The <select_mode> controls whether node cmiss numbers are output as integer
 names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
-the nodes (not) in the <selected_node_list> are rendered only. This
-functionality is only supported if <node_group> is supplied.
+only nodes in (or not in) the <selected_node_list> are rendered.
 Notes:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 - the coordinate system of the variable_scale_field is ignored/not used.
@@ -493,9 +458,10 @@ int get_surface_element_segmentation(struct FE_element *element,
 	int *number_of_points_in_xi1,int *number_of_points_in_xi2,
 	int *number_of_points,int *number_of_polygon_vertices,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
-	char *modified_reverse_normals);
+	char *modified_reverse_normals,
+	enum FE_element_shape_type *shape_type_address);
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Sorts out how standard, polygon and simplex elements are segmented, based on
@@ -559,53 +525,23 @@ seed points distributed on the surface randomly but with density due to the
 texture_map.
 ==============================================================================*/
 
-int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
+int create_FE_nodes_on_GT_voltex_surface(struct GT_voltex *voltex,
 	struct FE_element *element, struct Computed_field *coordinate_field,
-	struct VT_volume_texture *vtexture,
-	struct MANAGER(FE_node) *data_manager, struct GROUP(FE_node) *data_group,
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
+	struct VT_volume_texture *vtexture, struct FE_region *fe_region,
 	struct Computed_field *data_density_field,
 	struct Computed_field *data_coordinate_field, FE_value time);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 This function takes a <voltex> and the corresponding <vtexture> and creates
-a randomly placed set of data_points over the surface the <voltex> describes.
+a randomly placed set of FE_nodes over the surface the <voltex> describes.
 The vtexture is used to define an element_xi field at each of the data_points.
 These can then be used to draw axes or gradient vectors over the surface of an
 isosurface or to create hair streamlines starting from the surface of a volume
 texture. If the <data_coordinate_field> is supplied, it - ie. the FE_field it is
 calculated from -  will be defined at the data points, and the field is given
 the position of the point, with appropriate coordinate conversion.
-==============================================================================*/
-
-int warp_GT_voltex_with_FE_element(struct GT_voltex *voltex1,
-	struct GT_voltex *voltex2,struct FE_element *element,
-	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order,
-	FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Replaces voltex2 vertices with voltex1 vertices warped over an element block
-Vertices are normalized by their x, y, z range values.
-???DB.  xi_order should be an enumerated type
-==============================================================================*/
-
-int warp_FE_node_group_with_FE_element(struct GROUP(FE_node) *node_group,
-	struct MANAGER(FE_node) *node_manager,struct FE_field *coordinate_field,
-	struct FE_field *to_coordinate_field,struct FE_element *element,
-	struct FE_field *warp_field,double ximax[3],float *warp_values,int xi_order,
-	FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Replaces voltex2 vertices with voltex1 vertices warped over an element block
-Vertices are normalized by their x, y, z range values.
-???DB.  xi_order should be an enumerated type
 ==============================================================================*/
 
 struct VT_vector_field *interpolate_vector_field_on_FE_element(double ximax[3],
@@ -632,30 +568,6 @@ LAST MODIFIED : 3 December 2001
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
 <element><block>
-==============================================================================*/
-
-int write_FE_element_layout(double ximax[3],
-	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 20 March 1998
-
-DESCRIPTION :
-Prints out element block layout (given seed element) for use in external
-programs
-==============================================================================*/
-
-int FE_element_can_be_displayed(struct FE_element *element,
-	int dimension,enum CM_element_type cm_element_type,int exterior,
-	int face_number,struct GROUP(FE_element) *element_group);
-/*******************************************************************************
-LAST MODIFIED : 22 December 1999
-
-DESCRIPTION :
-Returns true if the element is <exterior>, if set, and on the given
-<face_number>, if non-negative, and that the parent element identifying this is
-in the <element_group> in the latter case, again if specified. Tests are assumed
-to succeed for all unspecified parameters.
-Also tests whether the <dimension> or <cm_element_type> matches.
 ==============================================================================*/
 
 int element_to_cylinder(struct FE_element *element,
@@ -704,25 +616,6 @@ A modifier function for setting the displacement map.
 ???RC Move to texture? volume_texture?
 ==============================================================================*/
 
-int set_Warp_values(struct Parse_state *state,
-	void *warp_values_void,void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 6 February 1998
-
-DESCRIPTION :
-???RC Move to volume_texture?
-==============================================================================*/
-
-#if defined (OLD_CODE)
-int warp_volume(struct FE_element *element,void *warp_data_void);
-/*******************************************************************************
-LAST MODIFIED : 15 September 1997
-
-DESCRIPTION :
-Warps a volume.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
-
 int element_to_glyph_set(struct FE_element *element,
 	void *new_element_to_glyph_set_data_void);
 /*******************************************************************************
@@ -760,12 +653,9 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *texture_coordinate_field,
 	int *number_in_xi,
 	struct GT_object *graphics_object,enum Render_type render_type,
-	struct GROUP(FE_node) *surface_data_group,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(Computed_field) *computed_field_manager);
+	struct FE_region *surface_data_fe_region);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).

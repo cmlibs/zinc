@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 26 July 2002
+LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -36,6 +36,7 @@ Global curves
 Module types
 ------------
 */
+
 struct Control_curve
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
@@ -55,9 +56,7 @@ It is designed to be flexible rather than fast.
 
 	/* each Control_curve is like an FE_region with its own name space */
 	struct MANAGER(FE_basis) *basis_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_element) *element_manager;
+	struct FE_region *fe_region;
 	struct FE_field *parameter_field,*value_field;
 	struct FE_node *template_node;
 	struct FE_element *template_element;
@@ -103,8 +102,7 @@ Returns the element at position element_no in the curve.
 	{
 		cm.number=element_no;
 		cm.type = CM_ELEMENT;
-		element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)
-			(&cm,curve->element_manager);
+		element=FE_region_get_FE_element_from_identifier(curve->fe_region,&cm);
 	}
 	else
 	{
@@ -209,7 +207,7 @@ For Control_curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
 static int cc_calculate_element_field_values(struct FE_element *element,
 	FE_value xi,struct FE_field *field,FE_value *values,FE_value *derivatives)
 /*******************************************************************************
-LAST MODIFIED : 15 November 1999
+LAST MODIFIED : 18 March 2003
 
 DESCRIPTION :
 Calculates the <values> and <derivatives> of <field> at <element> <xi>.
@@ -218,18 +216,19 @@ If <derivatives> is NULL, they will not be calculated.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_element_field_values element_field_values;
+	struct FE_element_field_values *element_field_values;
 
 	ENTER(cc_calculate_element_field_values);
 	if (element&&field&&values)
 	{
-		if (calculate_FE_element_field_values(element,field,/*time*/0,
-			((FE_value *)NULL != derivatives),&element_field_values,
+		if ((element_field_values = CREATE(FE_element_field_values)()) &&
+			calculate_FE_element_field_values(element,field,/*time*/0,
+			((FE_value *)NULL != derivatives),element_field_values,
 			/*top_level_element*/(struct FE_element *)NULL))
 		{
-			return_code=calculate_FE_element_field(-1,&element_field_values,&xi,
+			return_code=calculate_FE_element_field(-1,element_field_values,&xi,
 				values,derivatives);
-			clear_FE_element_field_values(&element_field_values);
+			DESTROY(FE_element_field_values)(&element_field_values);
 		}
 		else
 		{
@@ -313,8 +312,8 @@ table needs to be used when curve->parameter_table is NULL.
 				node_number_increment=curve->value_nodes_per_element-1;
 				for (i=0;(i<=number_of_elements)&&return_code;i++)
 				{
-					if ((node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-						node_no,curve->node_manager))&&
+					if ((node=FE_region_get_FE_node_from_identifier(curve->fe_region,
+						node_no))&&
 						cc_get_node_field_values(node,curve->parameter_field,
 							FE_NODAL_VALUE,&parameter))
 					{
@@ -370,13 +369,11 @@ Used for copy operations and as part of the DESTROY function.
 	if (curve)
 	{
 		DEACCESS(FE_element)(&(curve->template_element));
-		DESTROY(MANAGER(FE_element))(&curve->element_manager);
 		DEACCESS(FE_node)(&(curve->template_node));
-		DESTROY(MANAGER(FE_node))(&curve->node_manager);
-		DESTROY(MANAGER(FE_basis))(&curve->basis_manager);
 		DEACCESS(FE_field)(&curve->parameter_field);
 		DEACCESS(FE_field)(&curve->value_field);
-		DESTROY(MANAGER(FE_field))(&curve->fe_field_manager);
+		DEACCESS(FE_region)(&curve->fe_region);
+		DESTROY(MANAGER(FE_basis))(&curve->basis_manager);
 
 		DEALLOCATE(curve->min_value);
 		DEALLOCATE(curve->max_value);
@@ -424,9 +421,8 @@ but it is at least destroyable when returned from this function.
 			curve->value_derivatives_per_node=0;
 
 			curve->basis_manager=CREATE(MANAGER(FE_basis))();
-			curve->fe_field_manager=CREATE(MANAGER(FE_field))();
-			curve->node_manager=CREATE(MANAGER(FE_node))();
-			curve->element_manager=CREATE(MANAGER(FE_element))();
+			curve->fe_region=ACCESS(FE_region)(CREATE(FE_region)
+				(/*master_fe_region*/(struct FE_region *)NULL, curve->basis_manager));
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;
 			curve->template_node=(struct FE_node *)NULL;
@@ -442,11 +438,10 @@ but it is at least destroyable when returned from this function.
 
 			curve->access_count=0;
 
-			if (!(curve->name&&curve->basis_manager&&curve->fe_field_manager&&
-				curve->node_manager&&curve->element_manager))
+			if (!(curve->name&&curve->basis_manager&&curve->fe_region))
 			{
 				display_message(ERROR_MESSAGE,
-					"cc_create_blank.  Could not create managers");
+					"cc_create_blank.  Could not create basis manager and region");
 				DESTROY(Control_curve)(&curve);
 			}
 		}
@@ -872,7 +867,7 @@ static int cc_copy_convert_without_name(struct Control_curve *destination,
 	enum FE_basis_type fe_basis_type,int number_of_components,
 	struct Control_curve *source)
 /*******************************************************************************
-LAST MODIFIED : 17 November 1999
+LAST MODIFIED : 15 April 2003
 
 DESCRIPTION :
 Makes a copy of <source> but with the given <fe_basis_type> and
@@ -917,6 +912,8 @@ Works even when <destination> and <source> are the same.
 			}
 			if (return_code)
 			{
+				/* transfer contents of temp_curve to destination; note no allocations
+					 or accesses -- clean up manually */
 				cc_clean_up(destination);
 				destination->fe_basis_type=temp_curve->fe_basis_type;
 				destination->number_of_components=temp_curve->number_of_components;
@@ -927,9 +924,7 @@ Works even when <destination> and <source> are the same.
 				destination->value_derivatives_per_node=
 					temp_curve->value_derivatives_per_node;
 				destination->basis_manager=temp_curve->basis_manager;
-				destination->fe_field_manager=temp_curve->fe_field_manager;
-				destination->node_manager=temp_curve->node_manager;
-				destination->element_manager=temp_curve->element_manager;
+				destination->fe_region = temp_curve->fe_region;
 				destination->parameter_field=temp_curve->parameter_field;
 				destination->value_field=temp_curve->value_field;
 				destination->template_node=temp_curve->template_node;
@@ -1211,7 +1206,7 @@ Returns the <Control_curve_extend_mode> described by <extend_mode_string>.
 struct Control_curve *CREATE(Control_curve)(char *name,
 	enum FE_basis_type fe_basis_type,int number_of_components)
 /*******************************************************************************
-LAST MODIFIED : 19 December 2001
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a struct Control_curve using the given
@@ -1229,7 +1224,7 @@ value will be zero in its initial state.
 	struct FE_element_shape *element_shape;
 	struct FE_element_field_component *parameter_component,**value_components;
 	struct FE_node_field_creator *node_field_creator;
-	struct Standard_node_to_element_map **standard_node_map;
+	struct Standard_node_to_element_map *standard_node_map;
 	struct Control_curve *curve;
 	void *scale_factor_set_identifiers[1];
 
@@ -1252,40 +1247,53 @@ value will be zero in its initial state.
 				curve->value_grid=0.1;
 				coordinate_system.type=RECTANGULAR_CARTESIAN;
 				/* create the parameter field = real, 1 component */
-				if (!((curve->parameter_field=ACCESS(FE_field)(
-					CREATE(FE_field)((struct FE_time *)NULL)))&&
-					set_FE_field_name(curve->parameter_field,"parameter")&&
-					set_FE_field_CM_field_type(curve->parameter_field,CM_GENERAL_FIELD)&&
-					set_FE_field_value_type(curve->parameter_field,FE_VALUE_VALUE)&&
-					set_FE_field_coordinate_system(curve->parameter_field,
-						&coordinate_system)&&
-					set_FE_field_number_of_components(curve->parameter_field,1)&&
-					set_FE_field_type_general(curve->parameter_field)&&
-					ADD_OBJECT_TO_MANAGER(FE_field)(curve->parameter_field,
-						curve->fe_field_manager)))
+				if (curve->parameter_field =
+					CREATE(FE_field)("parameter", curve->fe_region))
 				{
-					return_code=0;
+					ACCESS(FE_field)(curve->parameter_field);
+					if (!(set_FE_field_CM_field_type(curve->parameter_field,
+						CM_GENERAL_FIELD) &&
+						set_FE_field_value_type(curve->parameter_field,FE_VALUE_VALUE) &&
+						set_FE_field_coordinate_system(curve->parameter_field,
+							&coordinate_system) &&
+						set_FE_field_number_of_components(curve->parameter_field,1) &&
+						set_FE_field_type_general(curve->parameter_field) &&
+						FE_region_merge_FE_field(curve->fe_region, curve->parameter_field)))
+					{
+						DEACCESS(FE_field)(&(curve->parameter_field));
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
 				}
 				/* create the value field = real, number_of_components */
-				if (!((curve->value_field=ACCESS(FE_field)(
-					CREATE(FE_field)((struct FE_time *)NULL)))&&
-					set_FE_field_name(curve->value_field,"value")&&
-					set_FE_field_CM_field_type(curve->value_field,CM_COORDINATE_FIELD)&&
-					set_FE_field_value_type(curve->value_field,FE_VALUE_VALUE)&&
-					set_FE_field_coordinate_system(curve->value_field,
-						&coordinate_system)&&
-					set_FE_field_number_of_components(curve->value_field,
-						number_of_components)&&
-					ADD_OBJECT_TO_MANAGER(FE_field)(curve->value_field,
-						curve->fe_field_manager)))
+				if (curve->value_field = CREATE(FE_field)("value", curve->fe_region))
 				{
-					return_code=0;
+					ACCESS(FE_field)(curve->value_field);
+					if (!((set_FE_field_CM_field_type(curve->value_field,
+						CM_COORDINATE_FIELD) &&
+						set_FE_field_value_type(curve->value_field,FE_VALUE_VALUE)&&
+						set_FE_field_coordinate_system(curve->value_field,
+							&coordinate_system)&&
+						set_FE_field_number_of_components(curve->value_field,
+							number_of_components)&&
+						FE_region_merge_FE_field(curve->fe_region, curve->value_field))))
+					{
+						DEACCESS(FE_field)(&(curve->value_field));
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
 				}
 				if (return_code)
 				{
 					/* curve must access template_node */
-					if (curve->template_node=
-						ACCESS(FE_node)(CREATE(FE_node)(0,(struct FE_node *)NULL)))
+					if (curve->template_node=ACCESS(FE_node)(CREATE(FE_node)(
+						/*node_identifier*/0,curve->fe_region,(struct FE_node *)NULL)))
 					{
 						node_field_creator = CREATE(FE_node_field_creator)(
 							/*number_of_components*/1);
@@ -1356,41 +1364,54 @@ value will be zero in its initial state.
 								number_of_scale_factor_sets=0;
 							}
 							/* curve must access template_element */
-							if ((curve->template_element=ACCESS(FE_element)(
-								CREATE(FE_element)(&element_identifier,
-									(struct FE_element *)NULL)))&&
-								set_FE_element_shape(curve->template_element,element_shape)&&
-								set_FE_element_node_scale_field_info(curve->template_element,
-									number_of_scale_factor_sets,scale_factor_set_identifiers,
-									numbers_in_scale_factor_sets,curve->value_nodes_per_element))
+							if ((curve->template_element = ACCESS(FE_element)(
+								CREATE(FE_element)(&element_identifier, element_shape,
+							   curve->fe_region, (struct FE_element *)NULL))) &&
+								set_FE_element_number_of_nodes(curve->template_element,
+									curve->value_nodes_per_element) &&
+								set_FE_element_number_of_scale_factor_sets(
+									curve->template_element, number_of_scale_factor_sets,
+									scale_factor_set_identifiers, numbers_in_scale_factor_sets))
 							{
 								/* define parameter_field in template_element */
 								if (parameter_component=CREATE(FE_element_field_component)(
 									STANDARD_NODE_TO_ELEMENT_MAP,/*parameter_nodes_per_element*/2,
 									parameter_basis,modify))
 								{
-									standard_node_map=parameter_component->map.
-										standard_node_based.node_to_element_maps;
-									if (standard_node_map[0]=
-										CREATE(Standard_node_to_element_map)(
-											/*node_number*/0,/*number_of_component_values*/1))
+									if (standard_node_map=CREATE(Standard_node_to_element_map)(
+										/*node_number*/0,/*number_of_component_values*/1))
 									{
-										standard_node_map[0]->nodal_value_indices[0]=0;
+										if (!(Standard_node_to_element_map_set_nodal_value_index(
+											standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
 										/* -1 = use default scale factor of 1 */
-										standard_node_map[0]->scale_factor_indices[0]=-1;
+										Standard_node_to_element_map_set_scale_factor_index(
+											standard_node_map, /*nodal_value_number*/0, /*scale_factor_index*/-1) &&
+										FE_element_field_component_set_standard_node_map(
+											parameter_component, /*local_node_number*/0, standard_node_map)))
+										{
+											DESTROY(Standard_node_to_element_map)(&standard_node_map);
+											return_code = 0;
+										}
 									}
 									else
 									{
 										return_code=0;
 									}
-									if (standard_node_map[1]=
-										CREATE(Standard_node_to_element_map)(
-											/*node_number*/curve->value_nodes_per_element-1,
-											/*number_of_component_values*/1))
+									if (standard_node_map=CREATE(Standard_node_to_element_map)(
+										/*node_number*/curve->value_nodes_per_element-1,
+										/*number_of_component_values*/1))
 									{
-										standard_node_map[1]->nodal_value_indices[0]=0;
+										if (!(Standard_node_to_element_map_set_nodal_value_index(
+											standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
 										/* -1 = use default scale factor of 1 */
-										standard_node_map[1]->scale_factor_indices[0]=-1;
+										Standard_node_to_element_map_set_scale_factor_index(
+											standard_node_map, /*nodal_value_number*/0, /*scale_factor_index*/-1) &&
+										FE_element_field_component_set_standard_node_map(
+											parameter_component, /*local_node_number*/1, standard_node_map)))
+										{
+											DESTROY(Standard_node_to_element_map)(&standard_node_map);
+											return_code = 0;
+										}
 									}
 									else
 									{
@@ -1404,10 +1425,6 @@ value will be zero in its initial state.
 											return_code=0;
 										}
 									}
-									DESTROY(Standard_node_to_element_map)(
-										&(standard_node_map[0]));
-									DESTROY(Standard_node_to_element_map)(
-										&(standard_node_map[1]));
 									DESTROY(FE_element_field_component)(&parameter_component);
 								}
 								else
@@ -1429,35 +1446,48 @@ value will be zero in its initial state.
 											STANDARD_NODE_TO_ELEMENT_MAP,
 											curve->value_nodes_per_element,value_basis,modify))
 										{
-											standard_node_map=(value_components[i])
-												->map.standard_node_based.node_to_element_maps;
 											/* loop over local nodes */
 											for (j=0;(j<curve->value_nodes_per_element)&&
 												return_code;j++)
 											{
-												if (*standard_node_map=
+												if (standard_node_map=
 													CREATE(Standard_node_to_element_map)(
 														/*node_number*/j,/*number_of_component_values*/
 														(1+curve->value_derivatives_per_node)))
 												{
-													(*standard_node_map)->nodal_value_indices[0]=0;
-													/* -1 = use default scale factor of 1 */
-													(*standard_node_map)->scale_factor_indices[0]=-1;
-													if (CUBIC_HERMITE==curve->fe_basis_type)
+													if (Standard_node_to_element_map_set_nodal_value_index(
+														standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
+														/* -1 = use default scale factor of 1 */
+														Standard_node_to_element_map_set_scale_factor_index(
+													   standard_node_map, /*nodal_value_number*/0, /*scale_factor_index*/-1))
 													{
-														(*standard_node_map)->nodal_value_indices[1]=1;
-														/* multiply scale factor for derivative */
-														(*standard_node_map)->scale_factor_indices[1]=j;
-														/* default scale factor of zero for derivative */
-														set_FE_element_scale_factor(
-															curve->template_element,j,0.0);
+														if (CUBIC_HERMITE==curve->fe_basis_type)
+														{
+															Standard_node_to_element_map_set_nodal_value_index(
+																standard_node_map, /*nodal_value_number*/1, /*nodal_value_index*/1);
+															/* multiply scale factor for derivative */
+															Standard_node_to_element_map_set_scale_factor_index(
+																standard_node_map, /*nodal_value_number*/1, /*scale_factor_index*/j);
+															/* default scale factor of zero for derivative */
+															set_FE_element_scale_factor(curve->template_element,j,0.0);
+														}
+														if (!(FE_element_field_component_set_standard_node_map(
+															value_components[i], /*local_node_number*/j, standard_node_map)))
+														{
+															DESTROY(Standard_node_to_element_map)(&standard_node_map);
+															return_code = 0;
+														}
+													}
+													else
+													{
+														DESTROY(Standard_node_to_element_map)(&standard_node_map);
+														return_code = 0;
 													}
 												}
 												else
 												{
 													return_code=0;
 												}
-												standard_node_map++;
 											}
 										}
 										else
@@ -2094,7 +2124,7 @@ Returns the number of elements in the curve.
 	ENTER(Control_curve_get_number_of_elements);
 	if (curve)
 	{
-		number_of_elements=NUMBER_IN_MANAGER(FE_element)(curve->element_manager);
+		number_of_elements=FE_region_get_number_of_FE_elements(curve->fe_region);
 	}
 	else
 	{
@@ -2109,7 +2139,7 @@ Returns the number of elements in the curve.
 
 int Control_curve_add_element(struct Control_curve *curve,int element_no)
 /*******************************************************************************
-LAST MODIFIED : 19 November 1999
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Adds an element to the list of elements in the curve at position element_no.
@@ -2135,13 +2165,14 @@ expected to make the element have a finite size.
 
 	ENTER(Control_curve_add_element);
 	if (curve&&(0<=(number_of_elements=
-		NUMBER_IN_MANAGER(FE_element)(curve->element_manager)))&&
+		FE_region_get_number_of_FE_elements(curve->fe_region)))&&
 		(0<element_no)&&((element_no <= number_of_elements+1)))
 	{
 		cm.type = CM_ELEMENT;
 		cm.number=element_no;
 		/* create the element from the template_element */
-		if (element=CREATE(FE_element)(&cm,curve->template_element))
+		if (element=CREATE(FE_element)(&cm, (struct FE_element_shape *)NULL,
+			(struct FE_region *)NULL, curve->template_element))
 		{
 			return_code=1;
 			if (0==number_of_elements)
@@ -2149,7 +2180,8 @@ expected to make the element have a finite size.
 				/* first element: all new nodes from curve->template_node */
 				for (i=0;(i<curve->value_nodes_per_element)&&return_code;i++)
 				{
-					if (node=CREATE(FE_node)(i+1,curve->template_node))
+					if (node = CREATE(FE_node)(i+1, (struct FE_region *)NULL,
+						curve->template_node))
 					{
 						if (!set_FE_element_node(element,i,node))
 						{
@@ -2168,8 +2200,8 @@ expected to make the element have a finite size.
 				/* last element: share last node of last element, make new nodes as
 					 copy of it */
 				cm.number=number_of_elements;
-				if ((last_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-					&cm,curve->element_manager))&&
+				if ((last_element=FE_region_get_FE_element_from_identifier(
+					curve->fe_region, &cm))&&
 					get_FE_element_node(last_element,curve->value_nodes_per_element-1,
 						&node_to_copy))
 				{
@@ -2177,10 +2209,10 @@ expected to make the element have a finite size.
 					{
 						return_code=0;
 					}
-					node_no=get_FE_node_cm_node_identifier(node_to_copy);
+					node_no=get_FE_node_identifier(node_to_copy);
 					for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
 					{
-						if (node=CREATE(FE_node)(node_no+i,node_to_copy))
+						if (node=CREATE(FE_node)(node_no+i, (struct FE_region *)NULL, node_to_copy))
 						{
 							if (!set_FE_element_node(element,i,node))
 							{
@@ -2205,22 +2237,22 @@ expected to make the element have a finite size.
 					 and add copies of it for remainder of nodes. Set first node of
 					 element_at_pos to last new node for continuity. Renumber subsequent
 					 nodes and elements to keep sequential */
-				if ((existing_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-					identifier)(&cm,curve->element_manager))&&
+				if ((existing_element=FE_region_get_FE_element_from_identifier
+					(curve->fe_region, &cm))&&
 					get_FE_element_node(existing_element,0,&node_to_copy)&&
-					(node_no=get_FE_node_cm_node_identifier(node_to_copy))&&
-					(number_of_nodes=NUMBER_IN_MANAGER(FE_node)(curve->node_manager)))
+					(node_no=get_FE_node_identifier(node_to_copy))&&
+					(number_of_nodes=FE_region_get_number_of_FE_nodes(curve->fe_region)))
 				{
 					/* increment numbers of elements to follow */
 					for (i=number_of_elements;(i>=element_no)&&return_code;i--)
 					{
 						cm.number=i;
-						if (existing_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-							identifier)(&cm,curve->element_manager))
+						if (existing_element=FE_region_get_FE_element_from_identifier
+							(curve->fe_region, &cm))
 						{
 							cm.number++;
-							if (!MANAGER_MODIFY_IDENTIFIER(FE_element,identifier)(
-								existing_element,&cm,curve->element_manager))
+							if (!FE_region_change_FE_element_identifier(
+								curve->fe_region, existing_element, &cm))
 							{
 								return_code=0;
 							}
@@ -2230,10 +2262,9 @@ expected to make the element have a finite size.
 					node_no_increment=curve->value_nodes_per_element-1;
 					for (i=number_of_nodes;(i>node_no)&&return_code;i--)
 					{
-						if (!MANAGER_MODIFY_IDENTIFIER(FE_node,cm_node_identifier)(
-							FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-								i,curve->node_manager),i+node_no_increment,
-							curve->node_manager))
+						if (!FE_region_change_FE_node_identifier(curve->fe_region,
+							FE_region_get_FE_node_from_identifier(
+							curve->fe_region, i), i+node_no_increment))
 						{
 							return_code=0;
 						}
@@ -2246,7 +2277,8 @@ expected to make the element have a finite size.
 					/* create copies of this node for rest of new element */
 					for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
 					{
-						if (node=CREATE(FE_node)(node_no+i,node_to_copy))
+						if (node=CREATE(FE_node)(node_no+i, (struct FE_region *)NULL,
+							node_to_copy))
 						{
 							if (!set_FE_element_node(element,i,node))
 							{
@@ -2274,10 +2306,10 @@ expected to make the element have a finite size.
 			{
 				if (get_FE_element_node(element,i,&node))
 				{
-					if (!FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-						get_FE_node_cm_node_identifier(node),curve->node_manager))
+					if (!FE_region_get_FE_node_from_identifier(curve->fe_region,
+						get_FE_node_identifier(node)))
 					{
-						if (!ADD_OBJECT_TO_MANAGER(FE_node)(node,curve->node_manager))
+						if (!FE_region_merge_FE_node(curve->fe_region, node))
 						{
 							return_code=0;
 						}
@@ -2288,9 +2320,12 @@ expected to make the element have a finite size.
 					return_code=0;
 				}
 			}
-			if (!ADD_OBJECT_TO_MANAGER(FE_element)(element,curve->element_manager))
+			if (return_code)
 			{
-				return_code=0;
+				if (!FE_region_merge_FE_element(curve->fe_region, element))
+				{
+					return_code = 0;
+				}
 			}
 			if (!return_code)
 			{
@@ -2342,28 +2377,28 @@ at the other end of the element being deleted.
 	struct FE_node *left_node,*right_node;
 
 	ENTER(Control_curve_delete_element);
-	if (curve&&(number_of_elements=
-		NUMBER_IN_MANAGER(FE_element)(curve->element_manager))&&
-		(number_of_nodes=NUMBER_IN_MANAGER(FE_node)(curve->node_manager))&&
+	if (curve&&
+		(number_of_elements=FE_region_get_number_of_FE_elements(curve->fe_region))&&
+		(number_of_nodes=FE_region_get_number_of_FE_nodes(curve->fe_region))&&
 		(0<element_no)&&(element_no <= number_of_elements))
 	{
 		return_code=1;
 		cm.type = CM_ELEMENT;
 		cm.number=element_no;
-		if ((element_to_delete=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-			&cm,curve->element_manager))&&
+		if ((element_to_delete=FE_region_get_FE_element_from_identifier(
+			curve->fe_region, &cm))&&
 			get_FE_element_node(element_to_delete,0,&left_node)&&
 			get_FE_element_node(element_to_delete,curve->value_nodes_per_element-1,
 				&right_node))
 		{
 			cm.number=element_no-1;
-			left_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-				&cm,curve->element_manager);
+			left_element=FE_region_get_FE_element_from_identifier(
+				curve->fe_region, &cm);
 			cm.number=element_no+1;
-			right_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-				&cm,curve->element_manager);
-			first_node_to_delete=get_FE_node_cm_node_identifier(left_node);
-			last_node_to_delete=get_FE_node_cm_node_identifier(right_node);
+			right_element=FE_region_get_FE_element_from_identifier(
+				curve->fe_region, &cm);
+			first_node_to_delete=get_FE_node_identifier(left_node);
+			last_node_to_delete=get_FE_node_identifier(right_node);
 			if (1==element_no)
 			{
 				/* first element */
@@ -2445,14 +2480,12 @@ at the other end of the element being deleted.
 			if (return_code)
 			{
 				/* remove the element and nodes */
-				if (REMOVE_OBJECT_FROM_MANAGER(FE_element)(element_to_delete,
-					curve->element_manager))
+				if (FE_region_remove_FE_element(curve->fe_region, element_to_delete))
 				{
 					for (i=first_node_to_delete;(i<=last_node_to_delete)&&return_code;i++)
 					{
-						if (!REMOVE_OBJECT_FROM_MANAGER(FE_node)(
-							FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(i,
-								curve->node_manager),curve->node_manager))
+						if (!FE_region_remove_FE_node(curve->fe_region,
+							FE_region_get_FE_node_from_identifier(curve->fe_region, i)))
 						{
 							return_code=0;
 						}
@@ -2467,12 +2500,12 @@ at the other end of the element being deleted.
 			for (i=element_no+1;(i<=number_of_elements)&&return_code;i++)
 			{
 				cm.number=i;
-				if (existing_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-					identifier)(&cm,curve->element_manager))
+				if (existing_element=FE_region_get_FE_element_from_identifier(
+					curve->fe_region, &cm))
 				{
 					cm.number--;
-					if (!MANAGER_MODIFY_IDENTIFIER(FE_element,identifier)(
-						existing_element,&cm,curve->element_manager))
+					if (!FE_region_change_FE_element_identifier(curve->fe_region,
+						existing_element,&cm))
 					{
 						return_code=0;
 					}
@@ -2482,10 +2515,9 @@ at the other end of the element being deleted.
 			node_no_decrement=(last_node_to_delete-first_node_to_delete)+1;
 			for (i=last_node_to_delete+1;(i<=number_of_nodes)&&return_code;i++)
 			{
-				if (!MANAGER_MODIFY_IDENTIFIER(FE_node,cm_node_identifier)(
-					FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-						i,curve->node_manager),i-node_no_decrement,
-					curve->node_manager))
+				if (!FE_region_change_FE_node_identifier(curve->fe_region,
+					FE_region_get_FE_node_from_identifier(curve->fe_region,
+				   i),i-node_no_decrement))
 				{
 					return_code=0;
 				}
@@ -4021,15 +4053,16 @@ Used for efficiently drawing the curve in the Curve editor.
 	FE_value float_num_segments,xi;
 	int i,return_code;
 	struct FE_element *element;
-	struct FE_element_field_values element_field_values;
+	struct FE_element_field_values *element_field_values;
 
 	ENTER(Control_curve_calculate_component_over_element);
 	if (curve&&values)
 	{
 		if (element=cc_get_element(curve,element_no))
 		{
-			if (calculate_FE_element_field_values(element,curve->value_field,
-				/*time*/0,/*calculate_derivatives*/0,&element_field_values,
+			if ((element_field_values = CREATE(FE_element_field_values)()) &&
+				calculate_FE_element_field_values(element,curve->value_field,
+				/*time*/0,/*calculate_derivatives*/0,element_field_values,
 				/*top_level_element*/(struct FE_element *)NULL))
 			{
 				return_code=1;
@@ -4037,7 +4070,7 @@ Used for efficiently drawing the curve in the Curve editor.
 				for (i=0;(i<=num_segments)&&return_code;i++)
 				{
 					xi=(FE_value)i/float_num_segments;
-					if (!calculate_FE_element_field(component_no,&element_field_values,
+					if (!calculate_FE_element_field(component_no,element_field_values,
 						&xi,&(values[i]),(FE_value *)NULL))
 					{
 						display_message(ERROR_MESSAGE,
@@ -4046,7 +4079,7 @@ Used for efficiently drawing the curve in the Curve editor.
 						return_code=0;
 					}
 				}
-				clear_FE_element_field_values(&element_field_values);
+				DESTROY(FE_element_field_values)(&element_field_values);
 			}
 			else
 			{
@@ -5053,63 +5086,9 @@ Modifier function to set the curve from a command.
 	return (return_code);
 } /* set_Control_curve */
 
-static int add_FE_element_to_group(struct FE_element *element,
-	void *element_group_void)
-/*******************************************************************************
-LAST MODIFIED : 25 November 1999
-
-DESCRIPTION :
-Adds <element> to <element_group>.
-==============================================================================*/
-{
-	int return_code;
-	struct GROUP(FE_element) *element_group;
-
-	ENTER(add_FE_element_to_group);
-	if (element&&(element_group=(struct GROUP(FE_element) *)element_group_void))
-	{
-		return_code=ADD_OBJECT_TO_GROUP(FE_element)(element,element_group);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"add_FE_element_to_group.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_element_to_group */
-
-static int add_FE_node_to_group(struct FE_node *node,void *node_group_void)
-/*******************************************************************************
-LAST MODIFIED : 25 November 1999
-
-DESCRIPTION :
-Adds <node> to <node_group>.
-==============================================================================*/
-{
-	int return_code;
-	struct GROUP(FE_node) *node_group;
-
-	ENTER(add_FE_node_to_group);
-	if (node&&(node_group=(struct GROUP(FE_node) *)node_group_void))
-	{
-		return_code=ADD_OBJECT_TO_GROUP(FE_node)(node,node_group);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"add_FE_node_to_group.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_node_to_group */
-
 int write_Control_curve(struct Control_curve *curve,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 10 September 2001
+LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Writes <curve> to filename(s) stemming from the name of the curve,
@@ -5119,10 +5098,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	char *file_name;
 	FILE *out_file;
 	int comp_no,return_code;
-	struct GROUP(FE_node) *node_group;
-	struct GROUP(FE_element) *element_group;
-	struct Fwrite_FE_node_group_data write_nodes_data;
-	struct Fwrite_FE_element_group_data write_elements_data;
+	struct Cmiss_region *child_cmiss_region, *root_cmiss_region;
 
 	ENTER(write_Control_curve);
 	USE_PARAMETER(dummy_void);
@@ -5158,44 +5134,35 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 			{
 				return_code=0;
 			}
-			if (node_group=CREATE(GROUP(FE_node))(curve->name))
+			/* current export code expects the FE_region to be in a child region */
+			if ((root_cmiss_region = CREATE(Cmiss_region)()) &&
+				(child_cmiss_region = CREATE(Cmiss_region)()) &&
+				Cmiss_region_add_child_region(root_cmiss_region, child_cmiss_region,
+					/*child_name*/curve->name, /*child_position*/0) &&
+				Cmiss_region_attach_FE_region(child_cmiss_region, curve->fe_region))
 			{
-				FOR_EACH_OBJECT_IN_MANAGER(FE_node)(add_FE_node_to_group,
-					(void *)node_group,curve->node_manager);
 				sprintf(file_name,"%s.curve.exnode",curve->name);
-				write_nodes_data.write_criterion = FE_WRITE_COMPLETE_GROUP;
-				write_nodes_data.field_order_info = (struct FE_field_order_info *)NULL;
-				write_nodes_data.node_group=node_group;
-				if (!file_write_FE_node_group(file_name,
-					(void *)&write_nodes_data))
+				if (!write_exregion_file_of_name(file_name, root_cmiss_region,
+					(char *)NULL, /*write_elements*/0, /*write_nodes*/1,
+				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
 				{
-					return_code=0;
+					return_code = 0;
 				}
-				DESTROY(GROUP(FE_node))(&node_group);
-			}
-			else
-			{
-				return_code=0;
-			}
-			if (element_group=CREATE(GROUP(FE_element))(curve->name))
-			{
-				FOR_EACH_OBJECT_IN_MANAGER(FE_element)(add_FE_element_to_group,
-					(void *)element_group,curve->element_manager);
 				sprintf(file_name,"%s.curve.exelem",curve->name);
-				write_elements_data.write_criterion = FE_WRITE_COMPLETE_GROUP;
-				write_elements_data.field_order_info =
-					(struct FE_field_order_info *)NULL;
-				write_elements_data.element_group=element_group;
-				if (!file_write_FE_element_group(file_name,
-					(void *)&write_elements_data))
+				if (!write_exregion_file_of_name(file_name, root_cmiss_region,
+					(char *)NULL, /*write_elements*/1, /*write_nodes*/0,
+				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
 				{
-					return_code=0;
+					return_code = 0;
 				}
-				DESTROY(GROUP(FE_element))(&element_group);
 			}
 			else
 			{
 				return_code=0;
+			}
+			if (root_cmiss_region)
+			{
+				DESTROY(Cmiss_region)(&root_cmiss_region);
 			}
 		}
 		else
@@ -5233,11 +5200,12 @@ appropriateness to curve usage.
 	char *file_name;
 	enum FE_basis_type fe_basis_type;
 	int number_of_components,return_code;
-	FILE *element_file,*node_file;
+	FILE *element_file,*node_file, *region_file;
+	struct Cmiss_region *child_cmiss_region, *cmiss_region, *element_region;
 	struct Control_curve *curve;
-	struct FE_element_field *element_field;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct FE_basis *fe_basis;
+	struct FE_region *fe_region;
+	struct MANAGER(FE_basis) *basis_manager;
 
 	ENTER(create_Control_curve_from_file);
 	curve=(struct Control_curve *)NULL;
@@ -5246,51 +5214,78 @@ appropriateness to curve usage.
 		if (curve=cc_create_blank(curve_name))
 		{
 			/* create group managers needed to use import_finite_element functions  */
-			data_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
-			element_group_manager=CREATE(MANAGER(GROUP(FE_element)))();
-			node_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
-			ALLOCATE(file_name,char,strlen(file_name_stem)+14);
-			if (data_group_manager&&element_group_manager&&node_group_manager&&
-				file_name)
+			basis_manager = curve->basis_manager;
+			if (ALLOCATE(file_name,char,strlen(file_name_stem)+14))
 			{
+				cmiss_region = (struct Cmiss_region *)NULL;
 				return_code=1;
-				sprintf(file_name,"%s.curve.exnode",file_name_stem);
-				if (node_file=fopen(file_name,"r"))
+				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
+					(node_file=fopen(file_name,"r")) && 
+					sprintf(file_name,"%s.curve.exelem",file_name_stem) &&
+					(element_file=fopen(file_name,"r")))
 				{
-					if (!read_FE_node_group(node_file,curve->fe_field_manager,
-						(struct FE_time *)NULL,curve->node_manager,curve->element_manager,
-						node_group_manager,data_group_manager,element_group_manager))
+					element_region = (struct Cmiss_region *)NULL;
+					if ((cmiss_region = read_exregion_file(node_file,
+						basis_manager, (struct FE_import_time_index *)NULL)) &&
+						(element_region = read_exregion_file(element_file,
+							basis_manager, (struct FE_import_time_index *)NULL)) &&
+						Cmiss_regions_FE_regions_can_be_merged(cmiss_region, element_region)
+						&&
+						Cmiss_regions_merge_FE_regions(cmiss_region, element_region) &&
+						Cmiss_region_get_child_region(cmiss_region, /*child_number*/0,
+							&child_cmiss_region))
 					{
-						return_code=0;
+						if (!(fe_region = Cmiss_region_get_FE_region(child_cmiss_region)))
+						{
+							return_code = 0;
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+					if (element_region)
+					{
+						DESTROY(Cmiss_region)(&element_region);
 					}
 					fclose(node_file);
-				}
-				else
-				{
-					return_code=0;
-				}
-				sprintf(file_name,"%s.curve.exelem",file_name_stem);
-				if (element_file=fopen(file_name,"r"))
-				{
-					if (!read_FE_element_group(element_file,curve->element_manager,
-						element_group_manager,curve->fe_field_manager,
-						(struct FE_time *)NULL,curve->node_manager,node_group_manager,
-						data_group_manager,curve->basis_manager))
-					{
-						return_code=0;
-					}
 					fclose(element_file);
 				}
 				else
 				{
-					return_code=0;
+					/*???RC don't wish to use combined node & element files yet --
+						format not agreed; better to wait for FieldML */
+					if (sprintf(file_name,"%s.curve.exregion",file_name_stem) &&
+						(region_file=fopen(file_name,"r")))
+					{
+						if (cmiss_region = read_exregion_file(region_file,
+							basis_manager, (struct FE_import_time_index *)NULL))
+						{
+							if (!(fe_region = Cmiss_region_get_FE_region(cmiss_region)))
+							{
+								return_code = 0;
+							}
+						}
+						else
+						{
+							return_code = 0;
+						}
+						fclose(node_file);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"create_Control_curve_from_file.  "
+							"Unable to read .exnode and .exelem or .exregion from template %s",
+							file_name_stem);
+						return_code = 0;
+					}
 				}
 				if (return_code)
 				{
+					REACCESS(FE_region)(&(curve->fe_region), fe_region);
 					/* now check mesh is appropriate for a Control_curve */
-					if (curve->template_element=FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
-						(MANAGER_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL,
-						curve->element_manager))
+					if (curve->template_element=FE_region_get_first_FE_element_that(fe_region,
+						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL))
 					{
 						ACCESS(FE_element)(curve->template_element);
 						get_FE_element_node(curve->template_element,0,
@@ -5304,32 +5299,26 @@ appropriateness to curve usage.
 							return_code=0;
 						}
 						if (!((curve->parameter_field=ACCESS(FE_field)(
-							FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,
-								name)("parameter",curve->fe_field_manager)))&&
+							FE_region_get_FE_field_from_name(fe_region, "parameter")))&&
 							(1==get_FE_field_number_of_components(curve->parameter_field))))
 						{
 							return_code=0;
 						}
 						if (!((curve->value_field=ACCESS(FE_field)(
-							FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,
-								name)("value",curve->fe_field_manager)))&&
+							FE_region_get_FE_field_from_name(fe_region, "value")))&&
 							(0<(number_of_components=
-								get_FE_field_number_of_components(curve->value_field)))))
+							get_FE_field_number_of_components(curve->value_field)))))
 						{
 							return_code=0;
 						}
 						if ((1==get_FE_element_dimension(curve->template_element))&&
-							curve->template_element->information&&
-							curve->template_element->information->fields&&
-							(element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-								curve->value_field,curve->template_element->information->
-								fields->element_field_list))&&
-							element_field->components&&(*(element_field->components))&&
-							((*(element_field->components))->basis)&&
-							((*(element_field->components))->basis->type))
+							FE_element_field_is_standard_node_based(curve->template_element,
+							curve->value_field) &&
+							FE_element_field_get_component_FE_basis(curve->template_element,
+							curve->value_field, /*component_number*/0, &fe_basis))
 						{
-							fe_basis_type=(enum FE_basis_type)
-								(*(element_field->components))->basis->type[1];
+						   FE_basis_get_xi_basis_type(fe_basis, /*xi_number*/0,
+								&fe_basis_type);
 						}
 						else
 						{
@@ -5358,6 +5347,10 @@ appropriateness to curve usage.
 						return_code=0;
 					}
 				}
+				if (cmiss_region)
+				{
+					DESTROY(Cmiss_region)(&cmiss_region);
+				}
 			}
 			else
 			{
@@ -5370,9 +5363,6 @@ appropriateness to curve usage.
 				DESTROY(Control_curve)(&curve);
 			}
 			DEALLOCATE(file_name);
-			DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
-			DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
-			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
 		}
 		else
 		{

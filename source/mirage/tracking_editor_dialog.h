@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.h
 
-LAST MODIFIED : 11 February 2002
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 Structures and functions prototypes for the tracking editor dialog.
@@ -11,8 +11,6 @@ Structures and functions prototypes for the tracking editor dialog.
 #define TRACKING_EDITOR_DIALOG_H
 
 #include "general/indexed_multi_range.h"
-#include "general/managed_group.h"
-#include "general/manager.h"
 #include "interaction/interactive_tool.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
@@ -51,6 +49,7 @@ struct Tracking_editor_dialog;
 Global functions
 ----------------
 */
+
 void tracking_editor_close_cb(Widget widget_id,XtPointer client_data,
 	XtPointer call_data);
 /*******************************************************************************
@@ -64,12 +63,9 @@ Closes the dialog window, and any children dialogs that may be open.
 int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	XtCallbackProc exit_button_callback,
 	struct Colour *background_colour,
-	struct MANAGER(FE_basis) *basis_manager,
+	struct Cmiss_region *root_region,
+	struct Cmiss_region *data_root_region,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_time *fe_time,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
@@ -78,10 +74,6 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -94,7 +86,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 11 February 2002
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 ==============================================================================*/

@@ -1,21 +1,22 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 26 July 2002
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
-The function for importing finite element data, from a file or CMISS (via a
-socket) into the graphical interface to CMISS.
-???DB.  Not accessing and deaccessing FE_basis's properly.
+Functions for importing finite element data from a file into the graphical
+interface to CMISS.
 ==============================================================================*/
 #if defined (UNIX)
 #include <ctype.h>
 #endif /* defined (UNIX) */
 #include <math.h>
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
+#include "general/indexed_list_private.h"
 #include "general/math.h"
 #include "general/multi_range.h"
 #include "general/myio.h"
@@ -29,15 +30,54 @@ Module types
 ------------
 */
 
-/*
-Module variables
-----------------
-*/
+#if defined (OLD_CODE)
+struct File_read_FE_node_group_data
+/*******************************************************************************
+LAST MODIFIED : 6 September 1999
+
+DESCRIPTION :
+Data needed by file_read_FE_node_group.
+???RC Need data_group_manager, node_group_manager and element_group_manager
+since groups of the same name in each manager are created simultaneously, and
+node groups are updated to contain nodes used by elements in associated group.
+==============================================================================*/
+{
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
+	struct MANAGER(GROUP(FE_element))	*element_group_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
+	struct MANAGER(FE_element) *element_manager;
+}; /* File_read_FE_node_group_data */
+#endif /* defined (OLD_CODE) */
+
+#if defined (OLD_CODE)
+struct File_read_FE_element_group_data
+/*******************************************************************************
+LAST MODIFIED : 22 April 1999
+
+DESCRIPTION :
+Data needed by file_read_FE_element_group.
+???RC Need data_group_manager, node_group_manager and element_group_manager
+since groups of the same name in each manager are created simultaneously, and
+node groups are updated to contain nodes used by elements in associated group.
+==============================================================================*/
+{
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_time *fe_time;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
+	struct MANAGER(FE_basis) *basis_manager;
+}; /* File_read_FE_element_group_data */
+#endif /* defined (OLD_CODE) */
 
 /*
 Module functions
 ----------------
 */
+
 #if defined (OLD_CODE)
 static int read_FE_value_array(FILE *input_file,int *number_of_values,
 	FE_value **values)
@@ -116,120 +156,204 @@ number_of_values in the array; the real values follow.
 #endif /* defined (OLD_CODE) */
 
 static int read_element_xi_value(FILE *input_file,
-	struct MANAGER(FE_element) *element_manager,struct FE_element **element,
+	struct Cmiss_region *root_region, struct FE_element **element_address,
 	FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Reads an element:xi position in from the <input_file> in the format:
-E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
+[REGION_PATH] E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION
+xi1 xi2... xiDIMENSION
+The REGION_PATH is the path relative to the <root_region>, using forward slashes
+for separators, to the cmiss_region containing the fe_region the element is in.
+Omitting the region path is equivalent to having a "/" and means the fe_region
+is in the root_region itself. The REGION_PATH must end in 
 <xi> should have space for up to MAXIMUM_ELEMENT_XI_DIMENSIONS FE_values.
 ==============================================================================*/
 {
-	char element_type[8];
-	int dimension,k,return_code;
+	char *element_type_string, *first_string, *second_string, *separator_string;
+	int dimension, k, return_code;
 	struct CM_element_information cm;
+	struct Cmiss_region *region;
+	struct FE_element *element;
+	struct FE_element_shape *element_shape;
+	struct FE_region *fe_region;
 
 	ENTER(read_element_xi_value);
-	if (input_file&&element_manager&&element&&xi)
+	if (input_file && root_region && element_address && xi)
 	{
-		return_code=1;
-		if (1==fscanf(input_file,"%7s",element_type))
+		return_code = 1;
+		/* determine the region path, element type and element number. First read
+			 two strings and determine if the second is a number, in which case the
+			 region path is omitted */
+		region = (struct Cmiss_region *)NULL;
+		first_string = (char *)NULL;
+		separator_string = (char *)NULL;
+		second_string = (char *)NULL;
+		if (read_string(input_file, "[^ \n]", &first_string) &&
+			read_string(input_file, "[ \n]", &separator_string) &&
+			read_string(input_file, "[^ \n]", &second_string))
 		{
-			if (fuzzy_string_compare(element_type,"element"))
+			element_type_string = (char *)NULL;
+			/* first determine the element_number, which is in the second_string
+				 if the region path has been omitted, otherwise next in the file */
+			if (1 == sscanf(second_string, " %d", &(cm.number)))
 			{
-				cm.type=CM_ELEMENT;
+				region = root_region;
+				element_type_string = first_string;
 			}
-			else if (fuzzy_string_compare(element_type,"face"))
+			else if (1 == fscanf(input_file, " %d", &(cm.number)))
 			{
-				cm.type=CM_FACE;
-			}
-			else if (fuzzy_string_compare(element_type,"line"))
-			{
-				cm.type=CM_LINE;
+				if (Cmiss_region_get_region_from_path(root_region, first_string,
+					&region) && region)
+				{
+					element_type_string = second_string;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Invalid region path %s in element:xi value.  Line %d",
+						first_string, get_line_number(input_file));
+					return_code = 0;
+				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Unknown element type %s for element_xi value.  Line %d",
-					element_type,get_line_number(input_file));
-				return_code=0;
+					"Missing element number in element:xi value.  Line %d",
+					get_line_number(input_file));
+				return_code = 0;
 			}
-			if (return_code)
+			/* determine the element_type */
+			if (element_type_string)
 			{
-				if (1==fscanf(input_file," %d",&(cm.number)))
+				if (fuzzy_string_compare(element_type_string, "element"))
 				{
-					if (((*element) = FIND_BY_IDENTIFIER_IN_MANAGER(
-						FE_element,identifier)(&cm,element_manager))&&(*element)->shape)
-					{
-						if ((1==fscanf(input_file," %d",&dimension))&&(0<dimension)&&
-							(dimension<=MAXIMUM_ELEMENT_XI_DIMENSIONS)&&
-							(dimension == (*element)->shape->dimension))
-						{
-							k=0;
-							while (return_code&&(k<dimension))
-							{
-								if (1==fscanf(input_file,FE_VALUE_INPUT_STRING,&(xi[k])))
-								{
-									if (finite(xi[k]))
-									{
-										k++;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Infinity or NAN xi coordinates read from file.  Line %d",
-											get_line_number(input_file));
-										return_code=0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Missing %d xi value(s).  Line %d",
-										dimension-k,get_line_number(input_file));
-									return_code=0;
-								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Invalid dimension (%d) for %s %d - should be %d.  Line %d",
-								dimension,CM_element_type_string(cm.type),cm.number,
-								(*element)->shape->dimension,get_line_number(input_file));
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Could not find %s %d.  Line %d",
-							CM_element_type_string(cm.type),cm.number,
-							get_line_number(input_file));
-						return_code=0;
-					}
+					cm.type = CM_ELEMENT;
+				}
+				else if (fuzzy_string_compare(element_type_string, "face"))
+				{
+					cm.type = CM_FACE;
+				}
+				else if (fuzzy_string_compare(element_type_string, "line"))
+				{
+					cm.type = CM_LINE;
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Missing %s number.  Line %d",
-						CM_element_type_string(cm.type),get_line_number(input_file));
-					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"Unknown element type %s for element_xi value.  Line %d",
+						element_type_string, get_line_number(input_file));
+					return_code = 0;
 				}
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Missing element type.  Line %d",
-				get_line_number(input_file));
-			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"Missing region path, element type or number in element:xi value.  "
+				"Line %d", get_line_number(input_file));
+			return_code = 0;
+		}
+		DEALLOCATE(second_string);
+		DEALLOCATE(separator_string);
+		DEALLOCATE(first_string);
+		if (return_code)
+		{
+			if (fe_region = Cmiss_region_get_FE_region(region))
+			{
+				element = (struct FE_element *)NULL;
+				if ((1 == fscanf(input_file, " %d", &dimension)) && (0 < dimension))
+				{
+					if (element =
+						FE_region_get_FE_element_from_identifier(fe_region, &cm))
+					{
+						if (get_FE_element_dimension(element) != dimension)
+						{
+							display_message(ERROR_MESSAGE,
+								"Invalid dimension (%d) for %s %d - should be %d.  Line %d",
+								dimension, CM_element_type_string(cm.type), cm.number,
+								get_FE_element_dimension(element),
+								get_line_number(input_file));
+							return_code = 0;
+						}
+					}
+					else
+					{
+						/* create a dummy element of the correct dimension -- ie. one with
+							 an unspecified shape */
+						if (element_shape =
+							CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL))
+						{
+							ACCESS(FE_element_shape)(element_shape);
+							if (!((element = CREATE(FE_element)(&cm, element_shape,
+								fe_region, (struct FE_element *)NULL)) &&
+								FE_region_merge_FE_element(fe_region, element)))
+							{
+								DESTROY(FE_element)(&element);
+								return_code = 0;
+							}
+							DEACCESS(FE_element_shape)(&element_shape);
+						}
+						else
+						{
+							return_code = 0;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Error reading dimension.  Line %d",
+						get_line_number(input_file));
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					if (element)
+					{
+						*element_address = element;
+						/* now read the xi position */
+						for (k = 0; (k < dimension) && return_code; k++)
+						{
+							if (1 == fscanf(input_file, FE_VALUE_INPUT_STRING, &(xi[k])))
+							{
+								if (!finite(xi[k]))
+								{
+									display_message(ERROR_MESSAGE,
+										"Infinity or NAN xi coordinates read from file.  Line %d",
+										get_line_number(input_file));
+									return_code = 0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Missing %d xi value(s).  Line %d",
+									dimension - k, get_line_number(input_file));
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss region does not contain a finite element region.  Line %d");
+				return_code = 0;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"read_element_xi_value.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -391,68 +515,76 @@ by the escape/backslash character in the input file.
 } /* read_string_value */
 
 static struct FE_field *read_FE_field(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time)
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 31 October 2001
+LAST MODIFIED : 2 May 2003
 
 DESCRIPTION :
 Reads a field from its descriptor in <input_file>. Note that the same format is
-used for node and element field headers. The field is returned. It is up to the
-calling function to match the field against existing ones in the manager, and
-destroy or use the returned field as necessary. Also note that the field will
-not have any component names; these must be set by the calling function.
+used for node and element field headers. The field is returned.
+The returned field will be "of" <fe_region>, but not in it. This means it has
+access to information such as FE_time that is private to <fe_region> and can be
+simply merged into it using FE_region_merge_FE_field.
+This approach is used because component names are set later and differently
+for node and element fields.
 ==============================================================================*/
 {
-	char *field_name,*next_block;
+	char *field_name, *next_block;
 	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type;
 	enum Value_type value_type;
 	float focus;
-	int i,number_of_components,number_of_indexed_values,return_code;
+	int i, number_of_components, number_of_indexed_values, return_code;
 	struct Coordinate_system coordinate_system;
-	struct FE_field *field,*indexer_field;
+	struct FE_field *field, *indexer_field, *temp_indexer_field;
 
 	ENTER(read_FE_field);
 	field = (struct FE_field *)NULL;
-	if (input_file&&fe_field_manager)
+	if (input_file && fe_region)
 	{
-		return_code=1;
-		field_name=(char *)NULL;
+		return_code = 1;
+		field_name = (char *)NULL;
 		/* read the field information */
-		fscanf(input_file," %*d) ");
+		fscanf(input_file, " %*d) ");
 		/* read the field name */
 		if (return_code)
 		{
-			if (read_string(input_file,"[^,]",&field_name))
+			if (read_string(input_file, "[^,]", &field_name))
 			{
-				fscanf(input_file,", ");
+				fscanf(input_file, ", ");
 				/* remove trailing blanks off field name */
-				i=strlen(field_name);
-				while ((0<i)&&(isspace(field_name[i-1])))
+				i = strlen(field_name);
+				while ((0 < i) && (isspace(field_name[i - 1])))
 				{
 					i--;
 				}
-				field_name[i]='\0';
-				if (0==i)
+				field_name[i] = '\0';
+				if (0 == i)
 				{
-					display_message(ERROR_MESSAGE,"No field name.  Line %d",
+					display_message(ERROR_MESSAGE, "No field name.  Line %d",
 						get_line_number(input_file));
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"Missing field name.  Line %d",
+				display_message(ERROR_MESSAGE, "Missing field name.  Line %d",
 					get_line_number(input_file));
-				return_code=0;
+				return_code = 0;
 			}
 		}
-		next_block=(char *)NULL;
+		next_block = (char *)NULL;
 		if (return_code)
 		{
 			/* next string required for value_type, below */
-			return_code=read_string(input_file,"[^,]",&next_block);
-			fscanf(input_file,", ");
+			if (!read_string(input_file, "[^,]", &next_block))
+			{
+				display_message(ERROR_MESSAGE,
+					"Field '%s' missing CM field type.  Line %d", field_name,
+					get_line_number(input_file));
+				return_code = 0;
+			}
+			fscanf(input_file, ", ");
 		}
 		/* read the CM_field_type */
 		if (return_code && next_block)
@@ -460,50 +592,82 @@ not have any component names; these must be set by the calling function.
 			if (!STRING_TO_ENUMERATOR(CM_field_type)(next_block, &cm_field_type))
 			{
 				display_message(ERROR_MESSAGE,
-					"Field '%s' has unknown CM field type '%s'.  Line %d",field_name,
-					next_block,get_line_number(input_file));
-				return_code=0;
+					"Field '%s' has unknown CM field type '%s'.  Line %d", field_name,
+					next_block, get_line_number(input_file));
+				return_code = 0;
 			}
 		}
 		if (next_block)
 		{
 			DEALLOCATE(next_block);
+			next_block = (char *)NULL;
 		}
 		/* read the FE_field_information */
 		if (return_code)
 		{
 			/* next string required for value_type, below */
-			return_code=read_string(input_file,"[^,]",&next_block);
-			fscanf(input_file,", ");
+			if (!read_string(input_file, "[^,]", &next_block))
+			{
+				display_message(ERROR_MESSAGE,
+					"Field '%s' missing field/value type.  Line %d", field_name,
+					get_line_number(input_file));
+				return_code = 0;
+			}
+			fscanf(input_file, ", ");
 		}
 		/* read the optional modifier: constant|indexed */
-		if (return_code&&next_block)
+		if (return_code && next_block)
 		{
-			if (fuzzy_string_compare_same_length(next_block,"constant"))
+			if (fuzzy_string_compare_same_length(next_block, "constant"))
 			{
-				fe_field_type=CONSTANT_FE_FIELD;
+				fe_field_type = CONSTANT_FE_FIELD;
 			}
-			else if (fuzzy_string_compare_same_length(next_block,"indexed"))
+			else if (fuzzy_string_compare_same_length(next_block, "indexed"))
 			{
-				fe_field_type=INDEXED_FE_FIELD;
+				fe_field_type = INDEXED_FE_FIELD;
 				DEALLOCATE(next_block);
-				if (!((EOF != fscanf(input_file," Index_field = "))&&
-					read_string(input_file,"[^,]",&next_block)&&
-					(indexer_field=FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
-						next_block,fe_field_manager))&&
-					(1==fscanf(input_file,", #Values=%d",&number_of_indexed_values))&&
-					(0<number_of_indexed_values)))
+				if ((EOF != fscanf(input_file, " Index_field = ")) &&
+					read_string(input_file, "[^,]", &next_block))
+				{
+					if (!(indexer_field =
+						FE_region_get_FE_field_from_name(fe_region, next_block)))
+					{
+						/* create and merge an appropriate indexer field */
+						temp_indexer_field = CREATE(FE_field)(next_block, fe_region);
+						ACCESS(FE_field)(temp_indexer_field);
+						if (!(set_FE_field_number_of_components(temp_indexer_field, 1) &&
+							set_FE_field_value_type(temp_indexer_field, INT_VALUE) &&
+							(indexer_field = FE_region_merge_FE_field(fe_region,
+								temp_indexer_field))))
+						{
+							return_code = 0;
+						}
+						DEACCESS(FE_field)(&temp_indexer_field);
+					}
+					if (return_code)
+					{
+						if (!((1 == fscanf(input_file, ", #Values=%d",
+							&number_of_indexed_values)) && (0 < number_of_indexed_values)))
+						{
+							display_message(ERROR_MESSAGE,
+								"Field '%s' missing number of indexed values.  Line %d",
+								field_name, get_line_number(input_file));
+							return_code = 0;
+						}
+					}
+				}
+				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Field '%s' missing indexing information.  Line %d",field_name,
+						"Field '%s' missing indexing information.  Line %d", field_name,
 						get_line_number(input_file));
-					return_code=0;
+					return_code = 0;
 				}
-				fscanf(input_file,", ");
+				fscanf(input_file, ", ");
 			}
 			else
 			{
-				fe_field_type=GENERAL_FE_FIELD;
+				fe_field_type = GENERAL_FE_FIELD;
 			}
 			if (GENERAL_FE_FIELD != fe_field_type)
 			{
@@ -511,8 +675,8 @@ not have any component names; these must be set by the calling function.
 				if (return_code)
 				{
 					/* next string required for coordinate system or value_type */
-					return_code=read_string(input_file,"[^,]",&next_block);
-					fscanf(input_file,", ");
+					return_code = read_string(input_file, "[^,]", &next_block);
+					fscanf(input_file, ", ");
 				}
 			}
 		}
@@ -524,59 +688,64 @@ not have any component names; these must be set by the calling function.
 			}
 		}
 		/* read the coordinate system (optional) */
-		coordinate_system.type=NOT_APPLICABLE;
-		if (return_code&&next_block)
+		coordinate_system.type = NOT_APPLICABLE;
+		if (return_code && next_block)
 		{
-			if (fuzzy_string_compare_same_length(next_block,"rectangular cartesian"))
+			if (fuzzy_string_compare_same_length(next_block,
+				"rectangular cartesian"))
 			{
-				coordinate_system.type=RECTANGULAR_CARTESIAN;
+				coordinate_system.type = RECTANGULAR_CARTESIAN;
 			}
-			else if (fuzzy_string_compare_same_length(next_block,"cylindrical polar"))
+			else if (fuzzy_string_compare_same_length(next_block,
+				"cylindrical polar"))
 			{
-				coordinate_system.type=CYLINDRICAL_POLAR;
+				coordinate_system.type = CYLINDRICAL_POLAR;
 			}
-			else if (fuzzy_string_compare_same_length(next_block,"spherical polar"))
+			else if (fuzzy_string_compare_same_length(next_block,
+				"spherical polar"))
 			{
-				coordinate_system.type=SPHERICAL_POLAR;
+				coordinate_system.type = SPHERICAL_POLAR;
 			}
 			else if (fuzzy_string_compare_same_length(next_block,
 				"prolate spheroidal"))
 			{
-				coordinate_system.type=PROLATE_SPHEROIDAL;
-				fscanf(input_file," focus=");
-				if ((1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&focus))||
+				coordinate_system.type = PROLATE_SPHEROIDAL;
+				fscanf(input_file, " focus=");
+				if ((1 != fscanf(input_file, FE_VALUE_INPUT_STRING, &focus)) ||
 					(!finite(focus)))
 				{
-					focus=1.0;
+					focus = 1.0;
 				}
-				coordinate_system.parameters.focus=focus;
-				fscanf(input_file," ,");
+				coordinate_system.parameters.focus = focus;
+				fscanf(input_file, " ,");
 			}
-			else if (fuzzy_string_compare_same_length(next_block,"oblate spheroidal"))
+			else if (fuzzy_string_compare_same_length(next_block,
+				"oblate spheroidal"))
 			{
-				coordinate_system.type=OBLATE_SPHEROIDAL;
+				coordinate_system.type = OBLATE_SPHEROIDAL;
 				fscanf(input_file," focus=");
-				if ((1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&focus))||
+				if ((1 != fscanf(input_file,FE_VALUE_INPUT_STRING, &focus)) ||
 					(!finite(focus)))
 				{
-					focus=1.0;
+					focus = 1.0;
 				}
-				coordinate_system.parameters.focus=focus;
-				fscanf(input_file," ,");
+				coordinate_system.parameters.focus = focus;
+				fscanf(input_file, " ,");
 			}
-			else if (fuzzy_string_compare_same_length(next_block,"fibre"))
+			else if (fuzzy_string_compare_same_length(next_block,
+				"fibre"))
 			{
-				coordinate_system.type=FIBRE;
-				value_type=FE_VALUE_VALUE;
+				coordinate_system.type = FIBRE;
+				value_type = FE_VALUE_VALUE;
 			}
-			if (NOT_APPLICABLE!=coordinate_system.type)
+			if (NOT_APPLICABLE != coordinate_system.type)
 			{
 				DEALLOCATE(next_block);
 				if (return_code)
 				{
 					/* next string required for value_type, below */
-					return_code=read_string(input_file,"[^,\n]",&next_block);
-					fscanf(input_file,", ");
+					return_code = read_string(input_file, "[^,\n]", &next_block);
+					fscanf(input_file, ", ");
 				}
 			}
 		}
@@ -588,30 +757,30 @@ not have any component names; these must be set by the calling function.
 			}
 		}
 		/* read the value_type */
-		if (return_code&&next_block)
+		if (return_code && next_block)
 		{
-			value_type=Value_type_from_string(next_block);
+			value_type = Value_type_from_string(next_block);
 			if (UNKNOWN_VALUE == value_type)
 			{
 				if (coordinate_system.type != NOT_APPLICABLE)
 				{
 					/* for backwards compatibility default to FE_VALUE_VALUE if
 						coordinate system specified */
-					value_type=FE_VALUE_VALUE;
+					value_type = FE_VALUE_VALUE;
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Field '%s' has unknown value_type %s.  Line %d",field_name,
-						next_block,get_line_number(input_file));
-					return_code=0;
+						"Field '%s' has unknown value_type %s.  Line %d", field_name,
+						next_block, get_line_number(input_file));
+					return_code = 0;
 				}
 			}
 			else
 			{
 				DEALLOCATE(next_block);
 				/* next string required for value_type, below */
-				return_code=read_string(input_file,"[^,\n]",&next_block);
+				return_code = read_string(input_file,"[^,\n]", &next_block);
 			}
 		}
 		else
@@ -621,15 +790,15 @@ not have any component names; these must be set by the calling function.
 				DEALLOCATE(next_block);
 			}
 		}
-		if (return_code&&next_block)
+		if (return_code && next_block)
 		{
-			if (!((1==sscanf(next_block," #Components=%d",
-				&number_of_components))&&(0<number_of_components)))
+			if (!((1 == sscanf(next_block, " #Components=%d", &number_of_components))
+				&& (0 < number_of_components)))
 			{
 				display_message(ERROR_MESSAGE,
-					"Field '%s' missing #Components.  Line %d",field_name,
+					"Field '%s' missing #Components.  Line %d", field_name,
 					get_line_number(input_file));
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (next_block)
@@ -639,52 +808,49 @@ not have any component names; these must be set by the calling function.
 		if (return_code)
 		{
 			/* create the field */
-			if (((field=CREATE(FE_field)(fe_time))&&
-				set_FE_field_name(field,field_name)&&
-				set_FE_field_value_type(field,value_type)&&
-				set_FE_field_number_of_components(field,number_of_components)))
+			field = CREATE(FE_field)(field_name, fe_region);
+			if (!set_FE_field_value_type(field, value_type))
 			{
-				/* Set the type */
-				if (((CONSTANT_FE_FIELD != fe_field_type)||set_FE_field_type_constant(field))&&
-				((GENERAL_FE_FIELD != fe_field_type)||set_FE_field_type_general(field))&&
-				((INDEXED_FE_FIELD != fe_field_type)||set_FE_field_type_indexed(field,
-					indexer_field,number_of_indexed_values)))
-				{
-					if (set_FE_field_CM_field_type(field,cm_field_type))
-					{
-						if (!((set_FE_field_coordinate_system(field,&coordinate_system))))
-						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_field.  Could not set coordinate system for field '%s'",field_name);
-							DESTROY(FE_field)(&field);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_FE_field.  Could not CM field type for field '%s'",field_name);
-						DESTROY(FE_field)(&field);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"read_FE_field.  Could not set field type for field '%s'",field_name);
-					DESTROY(FE_field)(&field);
-				}
+				return_code = 0;
 			}
-			else
+			if (!set_FE_field_number_of_components(field, number_of_components))
+			{
+				return_code = 0;
+			}
+			if (!(((CONSTANT_FE_FIELD != fe_field_type) ||
+				set_FE_field_type_constant(field)) &&
+				((GENERAL_FE_FIELD != fe_field_type) ||
+					set_FE_field_type_general(field)) &&
+				((INDEXED_FE_FIELD != fe_field_type) ||
+					set_FE_field_type_indexed(field, indexer_field,
+						number_of_indexed_values))))
+			{
+				return_code = 0;
+			}
+			if (!set_FE_field_CM_field_type(field, cm_field_type))
+			{
+				return_code = 0;
+			}
+			if (!((set_FE_field_coordinate_system(field, &coordinate_system))))
+			{
+				return_code = 0;
+			}
+			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
-					"read_FE_field.  Could not create field '%s'",field_name);
-				DESTROY(FE_field)(&field);
+					"read_FE_field.  Could not create field '%s'", field_name);
+				if (field)
+				{
+					DESTROY(FE_field)(&field);
+					field = (struct FE_field *)NULL;
+				}
 			}
 		}
 		DEALLOCATE(field_name);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_FE_field.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "read_FE_field.  Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -692,10 +858,10 @@ not have any component names; these must be set by the calling function.
 } /* read_FE_field */
 
 static int read_FE_field_values(FILE *input_file,
-	struct MANAGER(FE_element) *element_manager,
+	struct FE_region *fe_region, struct Cmiss_region *root_region,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 29 October 2002
 
 DESCRIPTION :
 Reads in from <input_file> the values for the constant and indexed fields in
@@ -704,30 +870,30 @@ the <field_order_info>.
 {
 	char *rest_of_line;
 	enum Value_type value_type;
-	int i,k,number_of_fields,number_of_values,return_code;
+	int i, k, number_of_fields, number_of_values, return_code;
 	struct FE_field *field;
 
 	ENTER(read_FE_field_values);
-	return_code=0;
-	if (input_file&&field_order_info)
+	return_code = 0;
+	if (input_file && fe_region && root_region && field_order_info)
 	{
-		rest_of_line=(char *)NULL;
-		read_string(input_file,"[^\n]",&rest_of_line);
-		return_code=string_matches_without_whitespace(rest_of_line,"alues : ");
+		rest_of_line = (char *)NULL;
+		read_string(input_file, "[^\n]", &rest_of_line);
+		return_code = string_matches_without_whitespace(rest_of_line, "alues : ");
 		DEALLOCATE(rest_of_line);
 		if (return_code)
 		{
-			return_code=1;
-			number_of_fields=
+			return_code = 1;
+			number_of_fields =
 				get_FE_field_order_info_number_of_fields(field_order_info);
-			for (i=0;(i<number_of_fields)&&return_code;i++)
+			for (i = 0; (i < number_of_fields) && return_code; i++)
 			{
-				if (field=get_FE_field_order_info_field(field_order_info,i))
+				if (field = get_FE_field_order_info_field(field_order_info, i))
 				{
-					number_of_values=get_FE_field_number_of_values(field);
-					if (0<number_of_values)
+					number_of_values = get_FE_field_number_of_values(field);
+					if (0 < number_of_values)
 					{
-						value_type=get_FE_field_value_type(field);
+						value_type = get_FE_field_value_type(field);
 						switch (value_type)
 						{
 							case ELEMENT_XI_VALUE:
@@ -735,16 +901,16 @@ the <field_order_info>.
 								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 								struct FE_element *element;
 
-								for (k=0;(k<number_of_values)&&return_code;k++)
+								for (k = 0; (k < number_of_values) && return_code; k++)
 								{
-									if (!(read_element_xi_value(input_file,element_manager,
-										&element,xi)&&
-										set_FE_field_element_xi_value(field,k,element,xi)))
+									if (!(read_element_xi_value(input_file, root_region,
+										&element, xi) &&
+										set_FE_field_element_xi_value(field, k, element, xi)))
 									{
 										display_message(ERROR_MESSAGE,
 											"Error reading field element_xi value.  Line %d",
 											get_line_number(input_file));
-										return_code=0;
+										return_code = 0;
 									}
 								}
 							} break;
@@ -752,15 +918,16 @@ the <field_order_info>.
 							{
 								FE_value value;
 
-								for (k=0;(k<number_of_values)&&return_code;k++)
+								for (k = 0;(k < number_of_values) && return_code; k++)
 								{
-									if (!((1==fscanf(input_file,FE_VALUE_INPUT_STRING,&value))&&
-										finite(value)&&set_FE_field_FE_value_value(field,k,value)))
+									if (!((1 == fscanf(input_file, FE_VALUE_INPUT_STRING, &value))
+										&& finite(value) &&
+										set_FE_field_FE_value_value(field, k, value)))
 									{
 										display_message(ERROR_MESSAGE,
 											"Error reading field FE_value.  Line %d",
 											get_line_number(input_file));
-										return_code=0;
+										return_code = 0;
 									}
 								}
 							} break;
@@ -768,15 +935,15 @@ the <field_order_info>.
 							{
 								int value;
 
-								for (k=0;(k<number_of_values)&&return_code;k++)
+								for (k = 0; (k < number_of_values) && return_code; k++)
 								{
-									if (!((1==fscanf(input_file,"%d",&value))&&
-										set_FE_field_int_value(field,k,value)))
+									if (!((1 == fscanf(input_file, "%d", &value)) &&
+										set_FE_field_int_value(field, k, value)))
 									{
 										display_message(ERROR_MESSAGE,
 											"Error reading field int.  Line %d",
 											get_line_number(input_file));
-										return_code=0;
+										return_code = 0;
 									}
 								}
 							} break;
@@ -784,15 +951,15 @@ the <field_order_info>.
 							{
 								char *the_string;
 
-								for (k=0;(k<number_of_values)&&return_code;k++)
+								for (k = 0; (k < number_of_values) && return_code; k++)
 								{
-									if (read_string_value(input_file,&the_string))
+									if (read_string_value(input_file, &the_string))
 									{
-										if (!set_FE_field_string_value(field,k,the_string))
+										if (!set_FE_field_string_value(field, k, the_string))
 										{
 											display_message(ERROR_MESSAGE,
 												"read_FE_field_values.  Error setting string");
-											return_code=0;
+											return_code = 0;
 										}
 										DEALLOCATE(the_string);
 									}
@@ -801,7 +968,7 @@ the <field_order_info>.
 										display_message(ERROR_MESSAGE,
 											"Error reading field string.  Line %d",
 											get_line_number(input_file));
-										return_code=0;
+										return_code = 0;
 									}
 								}
 							} break;
@@ -809,8 +976,8 @@ the <field_order_info>.
 							{
 								display_message(ERROR_MESSAGE,
 									"Unsupported field value_type %s.  Line %d",
-									Value_type_string(value_type),get_line_number(input_file));
-								return_code=0;
+									Value_type_string(value_type), get_line_number(input_file));
+								return_code = 0;
 							} break;
 						}
 					}
@@ -819,8 +986,8 @@ the <field_order_info>.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"read_FE_field_values.  Invalid field #%d",i+1);
-					return_code=0;
+						"read_FE_field_values.  Invalid field #%d", i + 1);
+					return_code = 0;
 				}
 #endif /* defined (OLD_CODE) */
 			}
@@ -828,12 +995,13 @@ the <field_order_info>.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Invalid field 'Values:'.  Line %d",get_line_number(input_file));
+				"Invalid field 'Values:'.  Line %d", get_line_number(input_file));
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_FE_field_values.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"read_FE_field_values.  Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -841,83 +1009,84 @@ the <field_order_info>.
 } /* read_FE_field_values */
 
 static int read_FE_node_field(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
-	struct FE_node *node, struct FE_field **field, 
-	struct Node_time_index *node_time_index)
+	struct FE_region *fe_region, struct FE_node *node,
+	struct FE_import_time_index *time_index, struct FE_field **field_address)
 /*******************************************************************************
-LAST MODIFIED : 26 July 2002
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Reads a node field from an <input_file>, adding it to the fields defined at
 <node>. <field> is returned.
 ==============================================================================*/
 {
-	char *component_name, *derivative_type_name, *field_name,
-		*nodal_value_type_string, *rest_of_line;
+	char *component_name, *derivative_type_name, *nodal_value_type_string,
+		*rest_of_line;
 	enum FE_field_type fe_field_type;
 	enum FE_nodal_value_type derivative_type;	
 	int component_number, end_of_names, end_of_string, i, number_of_components,
 		number_of_derivatives, number_of_versions, return_code, temp_int;
-	struct FE_field *the_field;
+	struct FE_field *field, *merged_fe_field;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_time_version *fe_time_version;
 	
 	ENTER(read_FE_node_field);
-	*field=(struct FE_field *)NULL;
-	return_code=0;
-	if (input_file&&fe_field_manager&&node&&field)
+	return_code = 0;
+	if (field_address)
 	{
-		if ((the_field=read_FE_field(input_file,fe_field_manager,fe_time))&&
-			(number_of_components=get_FE_field_number_of_components(the_field))&&
-			GET_NAME(FE_field)(the_field,&field_name))
+		*field_address = (struct FE_field *)NULL;
+	}
+	if (input_file && fe_region && node && field_address)
+	{
+		if (field = read_FE_field(input_file, fe_region))
 		{
-			fe_field_type=get_FE_field_FE_field_type(the_field);
-			return_code=1;
+			ACCESS(FE_field)(field);
+			merged_fe_field = (struct FE_field *)NULL;
+			number_of_components = get_FE_field_number_of_components(field);
+			fe_field_type = get_FE_field_FE_field_type(field);
+			return_code = 1;
 			/* allocate memory for the components */
-			component_name=(char *)NULL;
+			component_name = (char *)NULL;
 			node_field_creator = CREATE(FE_node_field_creator)(number_of_components);
 			/* read the components */
-			component_number=0;
-			while (return_code&&(component_number<number_of_components))
+			component_number = 0;
+			while (return_code && (component_number < number_of_components))
 			{
-				fscanf(input_file," ");
+				fscanf(input_file, " ");
 				/* read the component name */
 				if (component_name)
 				{
 					DEALLOCATE(component_name);
+					component_name = (char *)NULL;
 				}
-				if (read_string(input_file,"[^.]",&component_name))
+				if (read_string(input_file, "[^.]", &component_name))
 				{
 					/* strip trailing blanks from component name */
-					i=strlen(component_name);
-					while ((0<i)&&(isspace(component_name[i-1])))
+					i = strlen(component_name);
+					while ((0 < i) && (isspace(component_name[i - 1])))
 					{
 						i--;
 					}
-					component_name[i]='\0';
-					return_code=(0<i)&&set_FE_field_component_name(the_field,
-						component_number,component_name);
+					component_name[i] = '\0';
+					return_code = (0 < i) && set_FE_field_component_name(field,
+						component_number, component_name);
 				}
 				if (return_code)
 				{
 					/* component name is sufficient for non-GENERAL_FE_FIELD */
-					if (GENERAL_FE_FIELD==fe_field_type)
+					if (GENERAL_FE_FIELD == fe_field_type)
 					{
 						/* ignore value index */
-						if ((2==fscanf(input_file,
-							".  Value index=%d, #Derivatives=%d",&temp_int,
-							&number_of_derivatives))&& (0<=temp_int)&&
-							(0<=number_of_derivatives))
+						if ((2 == fscanf(input_file,
+							".  Value index=%d, #Derivatives=%d", &temp_int,
+							&number_of_derivatives)) && (0 <= number_of_derivatives))
 						{
-							/* CMISS starts from 1 */
-							temp_int--;
 							/* first number which is the value, is automatically included */
 							if (read_string(input_file, "[^\n]", &rest_of_line))
 							{
 								derivative_type_name = rest_of_line;
 								derivative_type++;
 								/* skip leading spaces */
-								while (' '== *derivative_type_name)
+								while (' ' == *derivative_type_name)
 								{
 									derivative_type_name++;
 								}
@@ -962,7 +1131,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 													end_of_string = ('\0' == *derivative_type_name);
 												}
 												if (STRING_TO_ENUMERATOR(FE_nodal_value_type)(
-														 nodal_value_type_string, &derivative_type))
+													nodal_value_type_string, &derivative_type))
 												{
 													FE_node_field_creator_define_derivative(
 														node_field_creator, component_number,
@@ -976,8 +1145,8 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 													display_message(WARNING_MESSAGE,
 														"Unknown derivative type '%s' for field "
 														"component %s.%s .  Line %d",
-														nodal_value_type_string,field_name,
-														component_name,get_line_number(input_file));
+														nodal_value_type_string, get_FE_field_name(field),
+														component_name, get_line_number(input_file));
 												}
 											}
 											else
@@ -987,8 +1156,8 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 													FE_NODAL_UNKNOWN);
 												display_message(WARNING_MESSAGE,
 													"Missing derivative type for field component "
-													"%s.%s .  Line %d",field_name,component_name,
-													get_line_number(input_file));
+													"%s.%s .  Line %d", get_FE_field_name(field),
+													component_name, get_line_number(input_file));
 											}
 											derivative_type++;
 											i--;
@@ -1002,7 +1171,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 									{
 										display_message(WARNING_MESSAGE,
 											"Derivative types missing for field component %s.%s"
-											" .  Line %d",field_name,component_name,
+											" .  Line %d", get_FE_field_name(field), component_name,
 											get_line_number(input_file));
 									}
 									/* Make sure we declare any derivatives that weren't 
@@ -1016,7 +1185,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 									}
 								}
 								/* read in the number of versions (if present) */
-								if (1==sscanf(derivative_type_name,", #Versions=%d",
+								if (1 == sscanf(derivative_type_name, ", #Versions=%d",
 									&number_of_versions))
 								{
 									FE_node_field_creator_define_versions(
@@ -1029,7 +1198,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 							{
 								display_message(ERROR_MESSAGE,
 									"read_FE_node_field.  Could not read rest_of_line");
-								return_code=0;
+								return_code = 0;
 							}
 						}
 					}
@@ -1037,15 +1206,15 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 					{
 						/* non GENERAL_FE_FIELD */
 						/* check there is nothing on remainder of line */
-						if (read_string(input_file,"[^\n]",&rest_of_line))
+						if (read_string(input_file, "[^\n]", &rest_of_line))
 						{
-							if (!fuzzy_string_compare(rest_of_line,"."))
+							if (!fuzzy_string_compare(rest_of_line, "."))
 							{
 								display_message(ERROR_MESSAGE,
 									"Unexpected text on field '%s' component '%s'"
-									".  Line %d: %s",field_name,component_name,
-									get_line_number(input_file),rest_of_line);
-								return_code=0;
+									".  Line %d: %s", get_FE_field_name(field), component_name,
+									get_line_number(input_file), rest_of_line);
+								return_code = 0;
 							}
 							DEALLOCATE(rest_of_line);
 						}
@@ -1053,8 +1222,9 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 						{
 							display_message(ERROR_MESSAGE,
 								"Unexpected end of field '%s' component '%s'.  Line %d",
-								field_name,component_name,get_line_number(input_file));
-							return_code=0;
+								get_FE_field_name(field), component_name,
+								get_line_number(input_file));
+							return_code = 0;
 						}
 					}
 					component_number++;
@@ -1063,49 +1233,31 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 				{
 					display_message(ERROR_MESSAGE,
 						"Error establishing component name.  Line",
-							get_line_number(input_file));
-					return_code=0;
+						get_line_number(input_file));
+					return_code = 0;
 				}
 			}
 			if (return_code)
 			{
-				/* first try to retrieve matching field from manager */
-				if ((*field) = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
-					field_name,fe_field_manager))
+				/* first try to retrieve matching field from fe_region */
+				if (!(merged_fe_field = FE_region_merge_FE_field(fe_region, field)))
 				{
-					if (!FE_fields_match(*field,the_field))
-					{
-						display_message(ERROR_MESSAGE,"read_FE_node_field.  "
-							"Field '%s' inconsistent with existing field of same name"
-							".  Line %d",field_name,get_line_number(input_file));
-						*field = (struct FE_field *)NULL;
-						return_code=0;
-					}
-				}
-				else
-				{
-					if (ADD_OBJECT_TO_MANAGER(FE_field)(the_field,fe_field_manager))
-					{
-						*field = the_field;
-						/* clear the_field so not destroyed below */
-						the_field=(struct FE_field *)NULL;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"read_FE_node_field.  "
-							"Could not add field to manager");
-						return_code=0;
-					}
+					display_message(ERROR_MESSAGE,"read_FE_node_field.  "
+						"Could not merge field '%s' into finite element region.  Line %d",
+						get_FE_field_name(field), get_line_number(input_file));
+					return_code = 0;
 				}
 			}
-			DESTROY(FE_field)(&the_field);
 			if (return_code)
 			{
-				if (node_time_index)
+				/* define merged_fe_field at the node */
+				if (time_index)
 				{
-					if (!(fe_time_version = get_FE_time_version_matching_time_series(
-						fe_time, 1, &(node_time_index->time))))
+					if (!(fe_time_version = FE_region_get_FE_time_version_matching_series(
+						fe_region, 1, &(time_index->time))))
 					{
+						display_message(ERROR_MESSAGE,
+							"read_FE_node_field.  Could not get time version");
 						return_code = 0;
 					}
 				}
@@ -1115,13 +1267,16 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 				}
 				if (return_code)
 				{
-					if (!define_FE_field_at_node(node,*field,fe_time_version,
+					if (define_FE_field_at_node(node, merged_fe_field, fe_time_version,
 						node_field_creator))
+					{
+						*field_address = merged_fe_field;
+					}
+					else
 					{
 						display_message(ERROR_MESSAGE,
 							"read_FE_node_field.  Could not define field at node");
-						*field = (struct FE_field *)NULL;
-						return_code=0;
+						return_code = 0;
 					}
 				}
 			}
@@ -1130,15 +1285,13 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 			{
 				DEALLOCATE(component_name);
 			}
-			DEALLOCATE(field_name);
+			DEACCESS(FE_field)(&field);
 		}
-#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"read_FE_node_field.  Could not read field");
 		}
-#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -1152,14 +1305,13 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 } /* read_FE_node_field */
 
 static struct FE_node *read_FE_node_field_info(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct FE_field_order_info **field_order_info,
-	struct Node_time_index *node_time_index)
+	struct FE_region *fe_region, struct FE_field_order_info **field_order_info,
+	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 31 October 2001
+LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
-Creates a node with the field information read from the <input_file>.
+Creates a node with the field information read from <input_file>.
 Creates, fills in and returns field_order_info.
 <*field_order_info> is reallocated here so should be either NULL or returned
 from a previous call to this function.
@@ -1171,27 +1323,27 @@ from a previous call to this function.
 
 	ENTER(read_FE_node_field_info);
 	node = (struct FE_node *)NULL;
-	if (input_file && fe_field_manager && field_order_info)
+	if (input_file && fe_region && field_order_info)
 	{
 		if (*field_order_info)
 		{
 			DESTROY(FE_field_order_info)(field_order_info);
+			*field_order_info = (struct FE_field_order_info *)NULL;
 		}
-		/* create the node */
-		if (node = CREATE(FE_node)(0, (struct FE_node *)NULL))
+		/* create a node to store the field information in */
+		if (node = CREATE(FE_node)(0, fe_region, (struct FE_node *)NULL))
 		{
 			return_code = 1;
-			if ((1==fscanf(input_file,"Fields=%d",&number_of_fields))&&
-				(0<=number_of_fields))
+			if ((1 == fscanf(input_file, "Fields=%d", &number_of_fields)) &&
+				(0 <= number_of_fields))
 			{
-				MANAGER_BEGIN_CACHE(FE_field)(fe_field_manager);
 				*field_order_info = CREATE(FE_field_order_info)();
 				/* read in the node fields */
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
 					field = (struct FE_field *)NULL;
-					if (read_FE_node_field(input_file,fe_field_manager,fe_time,node,
-						&field,node_time_index))
+					if (read_FE_node_field(input_file, fe_region, node, time_index,
+						&field))
 					{
 						if (!add_FE_field_order_info_field(*field_order_info, field))
 						{
@@ -1207,7 +1359,6 @@ from a previous call to this function.
 						return_code = 0;
 					}
 				}
-				MANAGER_END_CACHE(FE_field)(fe_field_manager);
 			}
 			else
 			{
@@ -1219,6 +1370,7 @@ from a previous call to this function.
 			if (!return_code)
 			{
 				DESTROY(FE_node)(&node);
+				node = (struct FE_node *)NULL;
 			}
 		}
 		else
@@ -1239,56 +1391,56 @@ from a previous call to this function.
 } /* read_FE_node_field_info */
 
 static struct FE_node *read_FE_node(FILE *input_file,
-	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
+	struct FE_node *template_node, struct FE_region *fe_region,
+	struct Cmiss_region *root_region,
 	struct FE_field_order_info *field_order_info,
-	struct Node_time_index *node_time_index)
+	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 31 October 2001
+LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
 Reads in a node from an <input_file>.
+<root_region> is root region for locating embedding elements.
 ==============================================================================*/
 {
-	char *field_name;
 	enum Value_type value_type;
-	int i,j,k,length,node_number,number_of_components,number_of_fields,
-		number_of_values,return_code;
+	int i, j, k, length, node_number, number_of_components, number_of_fields,
+		number_of_values, return_code;
 	struct FE_field *field;
-	struct FE_node *existing_node,*node;
+	struct FE_node *node;
 
 	ENTER(read_FE_node);
-	node=(struct FE_node *)NULL;
-	if (input_file&&template_node&&node_manager&&element_manager&&
+	node = (struct FE_node *)NULL;
+	if (input_file && template_node && fe_region && root_region &&
 		field_order_info)
 	{
-		if (1==fscanf(input_file,"ode :%d",&node_number))
+		if (1 == fscanf(input_file, "ode :%d", &node_number))
 		{
-			return_code=1;
+			return_code = 1;
 			/* create node based on template node; read and fill in contents */
-			if (node=CREATE(FE_node)(node_number,template_node))
+			if (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+				template_node))
 			{
-				number_of_fields=
+				number_of_fields =
 					get_FE_field_order_info_number_of_fields(field_order_info);
-				for (i=0;(i<number_of_fields)&&return_code;i++)
+				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
-					if (field=get_FE_field_order_info_field(field_order_info,i))
+					if (field = get_FE_field_order_info_field(field_order_info, i))
 					{
 						/* only GENERAL_FE_FIELD can store values at nodes */
-						if (GENERAL_FE_FIELD==get_FE_field_FE_field_type(field))
+						if (GENERAL_FE_FIELD == get_FE_field_FE_field_type(field))
 						{
-							GET_NAME(FE_field)(field,&field_name);
-							number_of_components=get_FE_field_number_of_components(field);
-							number_of_values=0;
-							for (j=0;j<number_of_components;j++)
+							number_of_components = get_FE_field_number_of_components(field);
+							number_of_values = 0;
+							for (j = 0; j < number_of_components; j++)
 							{
 								number_of_values +=
 									get_FE_node_field_component_number_of_versions(node,field,j)*
 									(1+get_FE_node_field_component_number_of_derivatives(node,
-									field,j));
+									field, j));
 							}
-							value_type=get_FE_field_value_type(field);
-							if (0<number_of_values)
+							value_type = get_FE_field_value_type(field);
+							if (0 < number_of_values)
 							{
 								switch (value_type)
 								{
@@ -1297,19 +1449,19 @@ Reads in a node from an <input_file>.
 										FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 										struct FE_element *element;
 
-										if (number_of_values==number_of_components)
+										if (number_of_values == number_of_components)
 										{
-											for (k=0;(k<number_of_values)&&return_code;k++)
+											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (!(read_element_xi_value(input_file,element_manager,
-													&element,xi)&&set_FE_nodal_element_xi_value(node,
-														field,/*component_number*/k,/*version*/0,
-														FE_NODAL_VALUE,element,xi)))
+												if (!(read_element_xi_value(input_file, root_region,
+													&element, xi) && set_FE_nodal_element_xi_value(node,
+														field, /*component_number*/k, /*version*/0,
+														FE_NODAL_VALUE, element, xi)))
 												{
-													display_message(ERROR_MESSAGE,"read_FE_node.  "
+													display_message(ERROR_MESSAGE, "read_FE_node.  "
 														"Error getting element_xi value for field '%s'",
-														field_name);
-													return_code=0;
+														get_FE_field_name(field));
+													return_code = 0;
 												}
 											}
 										}
@@ -1317,65 +1469,66 @@ Reads in a node from an <input_file>.
 										{
 											display_message(ERROR_MESSAGE,
 												"Derivatives/versions not supported for element_xi"
-												".  Line %d",get_line_number(input_file));
-											return_code=0;
+												".  Line %d", get_line_number(input_file));
+											return_code = 0;
 										}
 									} break;
 									case FE_VALUE_VALUE:
 									{
 										FE_value *values;
 
-										if (ALLOCATE(values,FE_value,number_of_values))
+										if (ALLOCATE(values, FE_value, number_of_values))
 										{
-											for (k=0;(k<number_of_values)&&return_code;k++)
+											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (1 != fscanf(input_file,FE_VALUE_INPUT_STRING,
+												if (1 != fscanf(input_file, FE_VALUE_INPUT_STRING,
 													&(values[k])))
 												{
 													display_message(ERROR_MESSAGE,
 														"Error reading nodal value from file.  Line %d",
 														get_line_number(input_file));
-													return_code=0;
+													return_code = 0;
 												}
 												if (!finite(values[k]))
 												{
 													display_message(ERROR_MESSAGE,
 														"Infinity or NAN read from node file.  Line %d",
 														get_line_number(input_file));
-													return_code=0;
+													return_code = 0;
 												}
 											}
 											if (return_code)
 											{
-												if (node_time_index)
+												if (time_index)
 												{
-													if (return_code=set_FE_nodal_field_FE_values_at_time(
-														field,node,values,&length,node_time_index->time))
+													if (return_code =
+														set_FE_nodal_field_FE_values_at_time(field, node,
+															values, &length, time_index->time))
 													{
 														if (length != number_of_values)
 														{
 															display_message(ERROR_MESSAGE,
 																"node %d field '%s' took %d values from %d"
-																" expected.  Line %d",node_number,field_name,
-																length,number_of_values,
-																get_line_number(input_file));
-															return_code=0;
+																" expected.  Line %d", node_number,
+																get_FE_field_name(field), length,
+																number_of_values, get_line_number(input_file));
+															return_code = 0;
 														}
 													}
 												}
 												else
 												{
-													if (return_code=set_FE_nodal_field_FE_value_values(
-														field,node,values,&length))
+													if (return_code = set_FE_nodal_field_FE_value_values(
+														field, node, values, &length))
 													{
 														if (length != number_of_values)
 														{
 															display_message(ERROR_MESSAGE,
 																"node %d field '%s' took %d values from %d"
-																" expected.  Line %d",node_number,field_name,
-																length,number_of_values,
-																get_line_number(input_file));
-															return_code=0;
+																" expected.  Line %d", node_number,
+																get_FE_field_name(field), length,
+																number_of_values, get_line_number(input_file));
+															return_code = 0;
 														}
 													}
 												}
@@ -1386,7 +1539,7 @@ Reads in a node from an <input_file>.
 										{
 											display_message(ERROR_MESSAGE,"read_FE_node.  "
 												"Insufficient memory for FE_value_values");
-											return_code=0;
+											return_code = 0;
 										}
 									} break;
 									case INT_VALUE:
@@ -1395,29 +1548,29 @@ Reads in a node from an <input_file>.
 
 										if (ALLOCATE(values,int,number_of_values))
 										{
-											for (k=0;(k<number_of_values)&&return_code;k++)
+											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (1 != fscanf(input_file,"%d",&(values[k])))
+												if (1 != fscanf(input_file, "%d", &(values[k])))
 												{
 													display_message(ERROR_MESSAGE,
 														"Error reading nodal value from file.  Line %d",
 														get_line_number(input_file));
-													return_code=0;
+													return_code = 0;
 												}
 											}
 											if (return_code)
 											{
-												if (return_code=set_FE_nodal_field_int_values(field,
-													node,values,&length))
+												if (return_code = set_FE_nodal_field_int_values(field,
+													node, values, &length))
 												{
 													if (length != number_of_values)
 													{
 														display_message(ERROR_MESSAGE,
 															"node %d field '%s' took %d values from %d"
-															" expected.  Line %d",node_number,field_name,
-															length,number_of_values,
-															get_line_number(input_file));
-														return_code=0;
+															" expected.  Line %d", node_number,
+															get_FE_field_name(field), length,
+															number_of_values, get_line_number(input_file));
+														return_code = 0;
 													}
 												}
 											}
@@ -1427,27 +1580,27 @@ Reads in a node from an <input_file>.
 										{
 											display_message(ERROR_MESSAGE,
 												"read_FE_node.  Insufficient memory for int_values");
-											return_code=0;
+											return_code = 0;
 										}
 									} break;
 									case STRING_VALUE:
 									{
 										char *the_string;
 
-										if (number_of_values==number_of_components)
+										if (number_of_values == number_of_components)
 										{
- 											for (k=0;(k<number_of_values)&&return_code;k++)
+ 											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (read_string_value(input_file,&the_string))
+												if (read_string_value(input_file, &the_string))
 												{
-													if (!set_FE_nodal_string_value(node,field,
-														/*component_number*/k,/*version*/0,FE_NODAL_VALUE,
+													if (!set_FE_nodal_string_value(node, field,
+														/*component_number*/k, /*version*/0, FE_NODAL_VALUE,
 														the_string))
 													{
 														display_message(ERROR_MESSAGE,"read_FE_node.  "
 															"Error setting string value for field '%s'",
-															field_name);
-														return_code=0;
+															get_FE_field_name(field));
+														return_code = 0;
 													}
 													DEALLOCATE(the_string);
 												}
@@ -1455,9 +1608,9 @@ Reads in a node from an <input_file>.
 												{
 													display_message(ERROR_MESSAGE,
 														"Error reading string value for field '%s'"
-														".  Line %d",field_name,
+														".  Line %d", get_FE_field_name(field),
 														get_line_number(input_file));
-													return_code=0;
+													return_code = 0;
 												}
 											}
 										}
@@ -1465,8 +1618,8 @@ Reads in a node from an <input_file>.
 										{
 											display_message(ERROR_MESSAGE,
 												"Derivatives/versions not supported for string"
-												".  Line %d",get_line_number(input_file));
-											return_code=0;
+												".  Line %d", get_line_number(input_file));
+											return_code = 0;
 										}
 									} break;
 									default:
@@ -1474,77 +1627,36 @@ Reads in a node from an <input_file>.
 										display_message(ERROR_MESSAGE,"Unsupported value_type %s"
 											".  Line %d",Value_type_string(value_type),
 											get_line_number(input_file));
-										return_code=0;
+										return_code = 0;
 									} break;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"No nodal values for field '%s'.  Line %d",field_name,
-									get_line_number(input_file));
-								return_code=0;
+									"No nodal values for field '%s'.  Line %d",
+									get_FE_field_name(field),	get_line_number(input_file));
+								return_code = 0;
 							}
-							DEALLOCATE(field_name);
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"Invalid field #%d.  Line %d",i+1,get_line_number(input_file));
-						return_code=0;
+						display_message(ERROR_MESSAGE, "Invalid field #%d.  Line %d",
+							i + 1, get_line_number(input_file));
+						return_code = 0;
 					}
 				}
-				if (return_code)
-				{
-					if (existing_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-						cm_node_identifier)(node_number,node_manager))
-					{
-						/* merge the values from the existing to the new */
-						if (merge_FE_node(node,existing_node))
-						{
-							if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
-								existing_node,node,node_manager))
-							{
-								DESTROY(FE_node)(&node);
-								node=existing_node;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_FE_node.  Error modifying node %d in node_manager", 
-									node_number);
-								DESTROY(FE_node)(&node);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_node.  Error merging new information for node %d",
-								node_number);
-							DESTROY(FE_node)(&node);
-						}
-					}
-					else
-					{
-						if (!ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
-						{				
-							display_message(ERROR_MESSAGE,
-								"read_FE_node.  Error adding node %d to node_manager",
-								node_number);
-							DESTROY(FE_node)(&node);
-						}
-					}
-				}
-				else
+				if (!return_code)
 				{
 					DESTROY(FE_node)(&node);
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"read_FE_node.  Could not create node");
-				return_code=0;
+				display_message(ERROR_MESSAGE,
+					"read_FE_node.  Could not create node.  Line %d",
+					get_line_number(input_file));
 			}
 		}
 		else
@@ -1555,61 +1667,53 @@ Reads in a node from an <input_file>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_FE_node.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "read_FE_node.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (node);
 } /* read_FE_node */
 
-static struct FE_element_shape *read_FE_element_shape(FILE *input_file)
+static int read_FE_element_shape(FILE *input_file,
+	struct FE_element_shape **element_shape_address)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2001
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
-Reads element shape information from an <input_file> or the socket (if
-<input_file> is NULL).
+Reads element shape information from <input_file>.
+Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 ==============================================================================*/
 {
 	char *end_description,*shape_description_string,*start_description;
 	int component,dimension,*first_simplex,i,j,number_of_polygon_vertices,
 		previous_component,return_code,*temp_entry,*type,*type_entry,
 		xi_number;
-	struct FE_element_shape *shape;
+	struct FE_element_shape *element_shape;
 
 	ENTER(read_FE_element_shape);
-	/* check argument */
-	if (input_file)
+	element_shape = (struct FE_element_shape *)NULL;
+	if (input_file && element_shape_address)
 	{
 		/* file input */
-		if ((1==fscanf(input_file,"hape.  Dimension=%d",&dimension))&&
-			(0<dimension))
+		if ((1 == fscanf(input_file, "hape.  Dimension=%d", &dimension)) &&
+			(0 <= dimension))
 		{
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Error reading element dimension from file.  Line %d",
 				get_line_number(input_file));
-			return_code=0;
+			return_code = 0;
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"read_FE_element_shape.  Missing input_file");
-		return_code=0;
-	}
-	if (return_code)
-	{
-		if (ALLOCATE(type,int,(dimension*(dimension+1))/2))
+		if (return_code && (0 < dimension))
 		{
-			if (input_file)
+			if (ALLOCATE(type, int, (dimension*(dimension + 1))/2))
 			{
-				/* file input */
 				fscanf(input_file,",");
 				/* read the shape description string */
-				if (read_string(input_file,"[^\n]",&shape_description_string))
+				if (read_string(input_file, "[^\n]", &shape_description_string))
 				{
 					if (shape_description_string)
 					{
@@ -1893,61 +1997,55 @@ Reads element shape information from an <input_file> or the socket (if
 					display_message(ERROR_MESSAGE,
 						"Error reading shape description from file.  Line %d",
 						get_line_number(input_file));
-					shape=(struct FE_element_shape *)NULL;
 					DEALLOCATE(type);
+					return_code = 0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"read_FE_element_shape.  Missing input_file");
-				shape=(struct FE_element_shape *)NULL;
-				DEALLOCATE(type);
+					"read_FE_element_shape.  Could not allocate shape type");
+				return_code = 0;
 			}
-			if (type)
+			if (return_code)
 			{
-				if (!(shape=CREATE(FE_element_shape)(dimension,type)))
+				if (!(element_shape = CREATE(FE_element_shape)(dimension, type)))
 				{
 					display_message(ERROR_MESSAGE,
 						"read_FE_element_shape.  Error creating shape");
+					return_code = 0;
 				}
 				DEALLOCATE(type);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_FE_element_shape.  Invalid shape description");
-				shape=(struct FE_element_shape *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_element_shape.  Insufficient memory for type");
-			shape=(struct FE_element_shape *)NULL;
 		}
 	}
 	else
 	{
-		shape=(struct FE_element_shape *)NULL;
+		display_message(ERROR_MESSAGE,
+			"read_FE_element_shape.  Invalid argument(s)");
+		return_code = 0;
+	}
+	if (element_shape_address)
+	{
+		*element_shape_address = element_shape;
 	}
 	LEAVE;
 
-	return (shape);
+	return (return_code);
 } /* read_FE_element_shape */
 
 static struct FE_basis *read_FE_basis(FILE *input_file,
-	int number_of_xi_coordinates,int *basis_type,
-	struct MANAGER(FE_basis) *basis_manager)
+	struct FE_region *fe_region, int number_of_xi_coordinates, int *basis_type)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2001
+LAST MODIFIED : 15 October 2002
 
 DESCRIPTION :
 Reads a basis description from an <input_file> or the socket (if <input_file> is
 NULL).  If the basis does not exist, it is created.  The basis is returned.
-<basis_type> should be allocated outside the function and on exit will contain
-the a copy of the type for the basis.  Some examples of basis descriptions in an
-input file are
+<basis_type> should be allocated outside the function to the following size:
+1 + (number_of_xi_coordinates*(1 + number_of_xi_coordinates))/2
+and on exit will contain the a copy of the type for the basis.
+Some examples of basis descriptions in an input file are:
 1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
 	linear variation in xi3.
 2. c.Hermite*l.simplex(3)*l.simplex  This has cubic variation in xi1 and 2-D
@@ -1962,120 +2060,109 @@ input file are
 	struct FE_basis *basis;
 
 	ENTER(read_FE_basis);
-	/* check the arguments */
-	if ((number_of_xi_coordinates>0)&&basis_type)
+	basis = (struct FE_basis *)NULL;
+	if (input_file && fe_region && (0 < number_of_xi_coordinates) && basis_type)
 	{
-		if (input_file)
+		/* file input */
+		/* read the basis type */
+		if (read_string(input_file,"[^,]",&basis_description_string))
 		{
-			/* file input */
-			/* read the basis type */
-			if (read_string(input_file,"[^,]",&basis_description_string))
+			/* decipher the basis description */
+			xi_number=0;
+			start_basis_name=basis_description_string;
+			/* skip leading blanks */
+			while (' '== *start_basis_name)
 			{
-				/* decipher the basis description */
-				xi_number=0;
-				start_basis_name=basis_description_string;
-				/* skip leading blanks */
-				while (' '== *start_basis_name)
+				start_basis_name++;
+			}
+			/* remove trailing blanks */
+			end_basis_name=start_basis_name+(strlen(start_basis_name)-1);
+			while (' '== *end_basis_name)
+			{
+				end_basis_name--;
+			}
+			end_basis_name[1]='\0';
+			xi_basis_type=basis_type;
+			*xi_basis_type=number_of_xi_coordinates;
+			xi_basis_type++;
+			no_error=1;
+			while (no_error&&(xi_number<number_of_xi_coordinates))
+			{
+				xi_number++;
+				/* determine the interpolation in the xi direction */
+				if (xi_number<number_of_xi_coordinates)
 				{
-					start_basis_name++;
-				}
-				/* remove trailing blanks */
-				end_basis_name=start_basis_name+(strlen(start_basis_name)-1);
-				while (' '== *end_basis_name)
-				{
-					end_basis_name--;
-				}
-				end_basis_name[1]='\0';
-				xi_basis_type=basis_type;
-				*xi_basis_type=number_of_xi_coordinates;
-				xi_basis_type++;
-				no_error=1;
-				while (no_error&&(xi_number<number_of_xi_coordinates))
-				{
-					xi_number++;
-					/* determine the interpolation in the xi direction */
-					if (xi_number<number_of_xi_coordinates)
+					if (end_basis_name=strchr(start_basis_name,'*'))
 					{
-						if (end_basis_name=strchr(start_basis_name,'*'))
+						*end_basis_name='\0';
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Invalid basis description.  Line %d",
+							get_line_number(input_file));
+						no_error=0;
+					}
+				}
+				if (no_error)
+				{
+					if ((0==strncmp(start_basis_name,"l.simplex",9))||
+						(0==strncmp(start_basis_name,"q.simplex",9)))
+					{
+						/*???debug */
+						/*printf("simplex\n");*/
+						if (0==strncmp(start_basis_name,"l.simplex",9))
 						{
-							*end_basis_name='\0';
+							*xi_basis_type=LINEAR_SIMPLEX;
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"Invalid basis description.  Line %d",
-								get_line_number(input_file));
-							no_error=0;
+							*xi_basis_type=QUADRATIC_SIMPLEX;
 						}
-					}
-					if (no_error)
-					{
-						if ((0==strncmp(start_basis_name,"l.simplex",9))||
-							(0==strncmp(start_basis_name,"q.simplex",9)))
+						/*???debug */
+						/*printf("%p %d %d\n",xi_basis_type,*xi_basis_type,LINEAR_SIMPLEX);*/
+						start_basis_name += 9;
+						/* skip blanks */
+						while (' '== *start_basis_name)
 						{
-/*???debug */
-/*printf("simplex\n");*/
-							if (0==strncmp(start_basis_name,"l.simplex",9))
+							start_basis_name++;
+						}
+						/* check for links to other simplex components */
+						if ('('== *start_basis_name)
+						{
+							/*???debug */
+							/*printf("first simplex component\n");*/
+							xi_basis_type++;
+							/* assign links to other simplex components */
+							previous_component=xi_number+1;
+							if ((1==sscanf(start_basis_name,"(%d %n",&component,&i))&&
+								(previous_component<=component)&&
+								(component<=number_of_xi_coordinates))
 							{
-								*xi_basis_type=LINEAR_SIMPLEX;
-							}
-							else
-							{
-								*xi_basis_type=QUADRATIC_SIMPLEX;
-							}
-/*???debug */
-/*printf("%p %d %d\n",xi_basis_type,*xi_basis_type,LINEAR_SIMPLEX);*/
-							start_basis_name += 9;
-							/* skip blanks */
-							while (' '== *start_basis_name)
-							{
-								start_basis_name++;
-							}
-							/* check for links to other simplex components */
-							if ('('== *start_basis_name)
-							{
-/*???debug */
-/*printf("first simplex component\n");*/
-								xi_basis_type++;
-								/* assign links to other simplex components */
-								previous_component=xi_number+1;
-								if ((1==sscanf(start_basis_name,"(%d %n",&component,&i))&&
-									(previous_component<=component)&&
-									(component<=number_of_xi_coordinates))
+								do
 								{
-									do
+									start_basis_name += i;
+									while (previous_component<component)
 									{
-										start_basis_name += i;
-										while (previous_component<component)
-										{
-											*xi_basis_type=NO_RELATION;
-											xi_basis_type++;
-											previous_component++;
-										}
-										*xi_basis_type=1;
+										*xi_basis_type=NO_RELATION;
 										xi_basis_type++;
 										previous_component++;
-									} while ((')'!=start_basis_name[0])&&
-										(1==sscanf(start_basis_name,"%*[; ]%d %n",&component,&i))&&
-										(previous_component<=component)&&
-										(component<=number_of_xi_coordinates));
-									if (')'==start_basis_name[0])
-									{
-										/* fill rest of basis_type row with NO_RELATION */
-										while (previous_component <= number_of_xi_coordinates)
-										{
-											*xi_basis_type=NO_RELATION;
-											xi_basis_type++;
-											previous_component++;
-										}
 									}
-									else
+									*xi_basis_type=1;
+									xi_basis_type++;
+									previous_component++;
+								} while ((')'!=start_basis_name[0])&&
+									(1==sscanf(start_basis_name,"%*[; ]%d %n",&component,&i))&&
+									(previous_component<=component)&&
+									(component<=number_of_xi_coordinates));
+								if (')'==start_basis_name[0])
+								{
+									/* fill rest of basis_type row with NO_RELATION */
+									while (previous_component <= number_of_xi_coordinates)
 									{
-										/* have no links to succeeding xi directions */
-										display_message(ERROR_MESSAGE,
-											"Invalid simplex component of basis.  Line %d",
-											get_line_number(input_file));
-										no_error=0;
+										*xi_basis_type=NO_RELATION;
+										xi_basis_type++;
+										previous_component++;
 									}
 								}
 								else
@@ -2089,45 +2176,147 @@ input file are
 							}
 							else
 							{
-/*???debug */
-/*printf("not first simplex component\n");*/
-								/* check that links have been assigned */
+								/* have no links to succeeding xi directions */
+								display_message(ERROR_MESSAGE,
+									"Invalid simplex component of basis.  Line %d",
+									get_line_number(input_file));
+								no_error=0;
+							}
+						}
+						else
+						{
+							/*???debug */
+							/*printf("not first simplex component\n");*/
+							/* check that links have been assigned */
+							temp_basis_type=xi_basis_type;
+							i=xi_number-1;
+							j=number_of_xi_coordinates-xi_number;
+							first_simplex=(int *)NULL;
+							while (no_error&&(i>0))
+							{
+								j++;
+								temp_basis_type -= j;
+								if (NO_RELATION!= *temp_basis_type)
+								{
+									/*???debug */
+									/*printf("%p %p\n",xi_basis_type,(temp_basis_type-(xi_number-i)));
+										printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
+									if (*xi_basis_type== *(temp_basis_type-(xi_number-i)))
+									{
+										first_simplex=temp_basis_type;
+									}
+									else
+									{
+										no_error=0;
+									}
+								}
+								i--;
+							}
+							/*???debug */
+							/*printf("%d %p\n",no_error,first_simplex);*/
+							if (no_error&&first_simplex)
+							{
+								xi_basis_type++;
+								first_simplex++;
+								i=xi_number;
+								while (i<number_of_xi_coordinates)
+								{
+									*xi_basis_type= *first_simplex;
+									xi_basis_type++;
+									first_simplex++;
+									i++;
+								}
+							}
+							else
+							{
+								no_error=0;
+							}
+						}
+					}
+					else
+					{
+						if (0==strncmp(start_basis_name,"polygon",7))
+						{
+							*xi_basis_type=POLYGON;
+							start_basis_name += 7;
+							/* skip blanks */
+							while (' '== *start_basis_name)
+							{
+								start_basis_name++;
+							}
+							/* check for link to other polygon component */
+							if ('('== *start_basis_name)
+							{
+								/* assign link to other polygon component */
+								if ((2==sscanf(start_basis_name,"(%d ;%d )%n",
+									&number_of_polygon_vertices,&component,&i))&&
+									(3<=number_of_polygon_vertices)&&
+									(xi_number<component)&&
+									(component<=number_of_xi_coordinates)&&
+									('\0'== start_basis_name[i]))
+								{
+									/* assign link */
+									xi_basis_type++;
+									i=xi_number+1;
+									while (i<component)
+									{
+										*xi_basis_type=NO_RELATION;
+										xi_basis_type++;
+										i++;
+									}
+									*xi_basis_type=number_of_polygon_vertices;
+									xi_basis_type++;
+									while (i<number_of_xi_coordinates)
+									{
+										*xi_basis_type=NO_RELATION;
+										xi_basis_type++;
+										i++;
+									}
+								}
+								else
+								{
+									/* have no links to succeeding xi directions */
+									display_message(ERROR_MESSAGE,
+										"Invalid polygon component of basis.  Line %d",
+										get_line_number(input_file));
+									no_error=0;
+								}
+							}
+							else
+							{
+								/* check that link has been assigned */
 								temp_basis_type=xi_basis_type;
 								i=xi_number-1;
 								j=number_of_xi_coordinates-xi_number;
-								first_simplex=(int *)NULL;
+								number_of_polygon_vertices=0;
 								while (no_error&&(i>0))
 								{
 									j++;
 									temp_basis_type -= j;
 									if (NO_RELATION!= *temp_basis_type)
 									{
-/*???debug */
-/*printf("%p %p\n",xi_basis_type,(temp_basis_type-(xi_number-i)));
-printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
-										if (*xi_basis_type== *(temp_basis_type-(xi_number-i)))
+										if (0<number_of_polygon_vertices)
 										{
-											first_simplex=temp_basis_type;
+											no_error=0;
 										}
 										else
 										{
-											no_error=0;
+											if ((number_of_polygon_vertices= *temp_basis_type)<3)
+											{
+												no_error=0;
+											}
 										}
 									}
 									i--;
 								}
-/*???debug */
-/*printf("%d %p\n",no_error,first_simplex);*/
-								if (no_error&&first_simplex)
+								if (no_error&&(3<=number_of_polygon_vertices))
 								{
 									xi_basis_type++;
-									first_simplex++;
 									i=xi_number;
 									while (i<number_of_xi_coordinates)
 									{
-										*xi_basis_type= *first_simplex;
+										*xi_basis_type=NO_RELATION;
 										xi_basis_type++;
-										first_simplex++;
 										i++;
 									}
 								}
@@ -2139,700 +2328,566 @@ printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
 						}
 						else
 						{
-							if (0==strncmp(start_basis_name,"polygon",7))
+							if (0==strncmp(start_basis_name,"l.Lagrange",10))
 							{
-								*xi_basis_type=POLYGON;
-								start_basis_name += 7;
+								*xi_basis_type=LINEAR_LAGRANGE;
+								start_basis_name += 10;
+							}
+							else
+							{
+								if (0==strncmp(start_basis_name,"q.Lagrange",10))
+								{
+									*xi_basis_type=QUADRATIC_LAGRANGE;
+									start_basis_name += 10;
+								}
+								else
+								{
+									if (0==strncmp(start_basis_name,"c.Lagrange",10))
+									{
+										*xi_basis_type=CUBIC_LAGRANGE;
+										start_basis_name += 10;
+									}
+									else
+									{
+										if (0==strncmp(start_basis_name,"c.Hermite",9))
+										{
+											*xi_basis_type=CUBIC_HERMITE;
+											start_basis_name += 9;
+										}
+										else
+										{
+											if (0==strncmp(start_basis_name,"LagrangeHermite",15))
+											{
+												*xi_basis_type=LAGRANGE_HERMITE;
+												start_basis_name += 15;
+											}
+											else
+											{
+												if (0==strncmp(start_basis_name,"HermiteLagrange",15))
+												{
+													*xi_basis_type=HERMITE_LAGRANGE;
+													start_basis_name += 15;
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"Invalid basis type.  Line %d",
+														get_line_number(input_file));
+													no_error=0;
+												}
+											}
+										}
+									}
+								}
+							}
+							if (no_error)
+							{
 								/* skip blanks */
 								while (' '== *start_basis_name)
 								{
 									start_basis_name++;
 								}
-								/* check for link to other polygon component */
+								/* check for simplex elements */
 								if ('('== *start_basis_name)
 								{
-									/* assign link to other polygon component */
-									if ((2==sscanf(start_basis_name,"(%d ;%d )%n",
-										&number_of_polygon_vertices,&component,&i))&&
-										(3<=number_of_polygon_vertices)&&
-										(xi_number<component)&&
-										(component<=number_of_xi_coordinates)&&
-										('\0'== start_basis_name[i]))
-									{
-										/* assign link */
-										xi_basis_type++;
-										i=xi_number+1;
-										while (i<component)
-										{
-											*xi_basis_type=NO_RELATION;
-											xi_basis_type++;
-											i++;
-										}
-										*xi_basis_type=number_of_polygon_vertices;
-										xi_basis_type++;
-										while (i<number_of_xi_coordinates)
-										{
-											*xi_basis_type=NO_RELATION;
-											xi_basis_type++;
-											i++;
-										}
-									}
-									else
-									{
-										/* have no links to succeeding xi directions */
-										display_message(ERROR_MESSAGE,
-											"Invalid polygon component of basis.  Line %d",
-											get_line_number(input_file));
-										no_error=0;
-									}
-								}
-								else
-								{
-									/* check that link has been assigned */
+									/* assign links to succeeding simplex xi directions */
 									temp_basis_type=xi_basis_type;
-									i=xi_number-1;
-									j=number_of_xi_coordinates-xi_number;
-									number_of_polygon_vertices=0;
-									while (no_error&&(i>0))
+									i=xi_number;
+									while (no_error&&(i<number_of_xi_coordinates)&&
+										(')'!= *start_basis_name))
 									{
-										j++;
-										temp_basis_type -= j;
-										if (NO_RELATION!= *temp_basis_type)
+										temp_basis_type++;
+										if (';'== *start_basis_name)
 										{
-											if (0<number_of_polygon_vertices)
-											{
-												no_error=0;
-											}
-											else
-											{
-												if ((number_of_polygon_vertices= *temp_basis_type)<3)
-												{
-													no_error=0;
-												}
-											}
-										}
-										i--;
-									}
-									if (no_error&&(3<=number_of_polygon_vertices))
-									{
-										xi_basis_type++;
-										i=xi_number;
-										while (i<number_of_xi_coordinates)
-										{
-											*xi_basis_type=NO_RELATION;
-											xi_basis_type++;
-											i++;
-										}
-									}
-									else
-									{
-										no_error=0;
-									}
-								}
-							}
-							else
-							{
-								if (0==strncmp(start_basis_name,"l.Lagrange",10))
-								{
-									*xi_basis_type=LINEAR_LAGRANGE;
-									start_basis_name += 10;
-								}
-								else
-								{
-									if (0==strncmp(start_basis_name,"q.Lagrange",10))
-									{
-										*xi_basis_type=QUADRATIC_LAGRANGE;
-										start_basis_name += 10;
-									}
-									else
-									{
-										if (0==strncmp(start_basis_name,"c.Lagrange",10))
-										{
-											*xi_basis_type=CUBIC_LAGRANGE;
-											start_basis_name += 10;
+											*temp_basis_type=NO_RELATION;
+											start_basis_name++;
 										}
 										else
 										{
-											if (0==strncmp(start_basis_name,"c.Hermite",9))
+											if (0==strncmp(start_basis_name,"l.Lagrange",10))
 											{
-												*xi_basis_type=CUBIC_HERMITE;
-												start_basis_name += 9;
+												*temp_basis_type=LINEAR_LAGRANGE;
+												start_basis_name += 10;
 											}
 											else
 											{
-												if (0==strncmp(start_basis_name,"LagrangeHermite",15))
+												if (0==strncmp(start_basis_name,"q.Lagrange",10))
 												{
-													*xi_basis_type=LAGRANGE_HERMITE;
-													start_basis_name += 15;
-												}
-												else
-												{
-													if (0==strncmp(start_basis_name,"HermiteLagrange",15))
-													{
-														*xi_basis_type=HERMITE_LAGRANGE;
-														start_basis_name += 15;
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"Invalid basis type.  Line %d",
-															get_line_number(input_file));
-														no_error=0;
-													}
-												}
-											}
-										}
-									}
-								}
-								if (no_error)
-								{
-									/* skip blanks */
-									while (' '== *start_basis_name)
-									{
-										start_basis_name++;
-									}
-									/* check for simplex elements */
-									if ('('== *start_basis_name)
-									{
-										/* assign links to succeeding simplex xi directions */
-										temp_basis_type=xi_basis_type;
-										i=xi_number;
-										while (no_error&&(i<number_of_xi_coordinates)&&
-											(')'!= *start_basis_name))
-										{
-											temp_basis_type++;
-											if (';'== *start_basis_name)
-											{
-												*temp_basis_type=NO_RELATION;
-												start_basis_name++;
-											}
-											else
-											{
-												if (0==strncmp(start_basis_name,"l.Lagrange",10))
-												{
-													*temp_basis_type=LINEAR_LAGRANGE;
+													*temp_basis_type=QUADRATIC_LAGRANGE;
 													start_basis_name += 10;
 												}
 												else
 												{
-													if (0==strncmp(start_basis_name,"q.Lagrange",10))
+													if (0==strncmp(start_basis_name,"c.Lagrange",10))
 													{
-														*temp_basis_type=QUADRATIC_LAGRANGE;
+														*temp_basis_type=CUBIC_LAGRANGE;
 														start_basis_name += 10;
 													}
 													else
 													{
-														if (0==strncmp(start_basis_name,"c.Lagrange",10))
+														if (0==strncmp(start_basis_name,"c.Hermite",9))
 														{
-															*temp_basis_type=CUBIC_LAGRANGE;
-															start_basis_name += 10;
+															*temp_basis_type=CUBIC_HERMITE;
+															start_basis_name += 9;
 														}
 														else
 														{
-															if (0==strncmp(start_basis_name,"c.Hermite",9))
+															if (0==strncmp(start_basis_name,
+																"LagrangeHermite",15))
 															{
-																*temp_basis_type=CUBIC_HERMITE;
-																start_basis_name += 9;
+																*temp_basis_type=LAGRANGE_HERMITE;
+																start_basis_name += 15;
 															}
 															else
 															{
 																if (0==strncmp(start_basis_name,
-																	"LagrangeHermite",15))
+																	"HermiteLagrange",15))
 																{
-																	*temp_basis_type=LAGRANGE_HERMITE;
+																	*temp_basis_type=HERMITE_LAGRANGE;
 																	start_basis_name += 15;
 																}
 																else
 																{
-																	if (0==strncmp(start_basis_name,
-																		"HermiteLagrange",15))
-																	{
-																		*temp_basis_type=HERMITE_LAGRANGE;
-																		start_basis_name += 15;
-																	}
-																	else
-																	{
-																		display_message(ERROR_MESSAGE,
-																			"Invalid basis type.  Line %d",
-																			get_line_number(input_file));
-																		no_error=0;
-																	}
+																	display_message(ERROR_MESSAGE,
+																		"Invalid basis type.  Line %d",
+																		get_line_number(input_file));
+																	no_error=0;
 																}
 															}
 														}
 													}
 												}
-												if (';'== *start_basis_name)
-												{
-													start_basis_name++;
-												}
 											}
+											if (';'== *start_basis_name)
+											{
+												start_basis_name++;
+											}
+										}
+										i++;
+									}
+									if (no_error)
+									{
+										while (i<number_of_xi_coordinates)
+										{
+											temp_basis_type++;
+											*temp_basis_type=NO_RELATION;
 											i++;
 										}
-										if (no_error)
+									}
+								}
+								else
+								{
+									if ('\0'== *start_basis_name)
+									{
+										/* have no links to succeeding xi directions */
+										temp_basis_type=xi_basis_type;
+										for (i=xi_number;i<number_of_xi_coordinates;i++)
 										{
-											while (i<number_of_xi_coordinates)
-											{
-												temp_basis_type++;
-												*temp_basis_type=NO_RELATION;
-												i++;
-											}
+											temp_basis_type++;
+											*temp_basis_type=NO_RELATION;
 										}
 									}
 									else
 									{
-										if ('\0'== *start_basis_name)
-										{
-											/* have no links to succeeding xi directions */
-											temp_basis_type=xi_basis_type;
-											for (i=xi_number;i<number_of_xi_coordinates;i++)
-											{
-												temp_basis_type++;
-												*temp_basis_type=NO_RELATION;
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"Invalid basis type.  Line %d",
-												get_line_number(input_file));
-											no_error=0;
-										}
+										display_message(ERROR_MESSAGE,
+											"Invalid basis type.  Line %d",
+											get_line_number(input_file));
+										no_error=0;
 									}
-									if (no_error&&(xi_number<number_of_xi_coordinates))
-									{
-										xi_basis_type += number_of_xi_coordinates-xi_number+1;
-									}
+								}
+								if (no_error&&(xi_number<number_of_xi_coordinates))
+								{
+									xi_basis_type += number_of_xi_coordinates-xi_number+1;
 								}
 							}
 						}
-						start_basis_name=end_basis_name+1;
 					}
-				}
-				DEALLOCATE(basis_description_string);
-				if (!no_error)
-				{
-					display_message(ERROR_MESSAGE,"Invalid basis description.  Line %d",
-						get_line_number(input_file));
+					start_basis_name=end_basis_name+1;
 				}
 			}
-			else
+			DEALLOCATE(basis_description_string);
+			if (!no_error)
 			{
-				display_message(ERROR_MESSAGE,
-					"Error reading basis description from file.  Line %d",
+				display_message(ERROR_MESSAGE,"Invalid basis description.  Line %d",
 					get_line_number(input_file));
-				no_error=0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"read_FE_basis.  Missing input_file");
+			display_message(ERROR_MESSAGE,
+				"Error reading basis description from file.  Line %d",
+				get_line_number(input_file));
 			no_error=0;
 		}
 		if (no_error)
 		{
-			basis = make_FE_basis(basis_type,basis_manager);
+			basis = FE_region_get_FE_basis_matching_basis_type(fe_region, basis_type);
 		}
 		else
 		{
-			basis=(struct FE_basis *)NULL;
+			basis = (struct FE_basis *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_FE_basis.  Invalid argument(s)");
-		basis=(struct FE_basis *)NULL;
+		display_message(ERROR_MESSAGE, "read_FE_basis.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (basis);
 } /* read_FE_basis */
 
-static int read_FE_element_field(FILE *input_file,
-	struct FE_element_shape *shape,struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_time *fe_time,struct MANAGER(FE_basis) *basis_manager,
-	struct FE_element *element,struct FE_field **field)
+static int read_FE_element_field(FILE *input_file, struct FE_region *fe_region,
+	struct FE_element *element, struct FE_field **field_address)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2001
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Reads an element field from an <input_file>, adding it to the fields defined at
 <element>. <field> is returned.
 ==============================================================================*/
 {
-	char *component_name,*field_name,*global_to_element_map_string,
-		*modify_function_name,*rest_of_line;
+	char *component_name, *global_to_element_map_string,
+		*modify_function_name, *rest_of_line;
 	enum FE_field_type fe_field_type;
 	FE_element_field_component_modify modify;
-	int *basis_type,component_number,i,*index,j,node_index,number_of_components,
-		number_of_nodes,number_of_values,*number_in_xi,return_code;
+	int *basis_index, *basis_type, component_number, dimension, i, index, j,
+		node_index, number_of_components, number_of_nodes, number_of_values,
+		number_in_xi, return_code;
 	struct FE_basis *basis;
-	struct FE_field *the_field;
-	struct FE_element_field_component **component,**components;
-	struct Standard_node_to_element_map **standard_node_map;
+	struct FE_field *field, *merged_fe_field;
+	struct FE_element_field_component **component, **components;
+	struct Standard_node_to_element_map *standard_node_map;
 
 	ENTER(read_FE_element_field);
-	*field=(struct FE_field *)NULL;
-	return_code=0;
-	if (input_file&&shape&&fe_field_manager&&basis_manager&&element&&field)
+	return_code = 0;
+	if (field_address)
 	{
-		if ((the_field=read_FE_field(input_file,fe_field_manager,fe_time))&&
-			(number_of_components=get_FE_field_number_of_components(the_field))&&
-			GET_NAME(FE_field)(the_field,&field_name))
+		*field_address = (struct FE_field *)NULL;
+	}
+	if (input_file && fe_region && element && field_address &&
+		(0 < (dimension = get_FE_element_dimension(element))))
+	{
+		if (field = read_FE_field(input_file, fe_region))
 		{
-			fe_field_type=get_FE_field_FE_field_type(the_field);
-			return_code=1;
+			ACCESS(FE_field)(field);
+			merged_fe_field = (struct FE_field *)NULL;
+			number_of_components = get_FE_field_number_of_components(field);
+			fe_field_type = get_FE_field_FE_field_type(field);
+			return_code = 1;
 			/* allocate memory for the components */
-			component_name=(char *)NULL;
-			if (ALLOCATE(components,struct FE_element_field_component *,
+			component_name = (char *)NULL;
+			if (ALLOCATE(components, struct FE_element_field_component *,
 				number_of_components))
 			{
-				for (i=0;i<number_of_components;i++)
+				for (i = 0;i < number_of_components; i++)
 				{
-					components[i]=(struct FE_element_field_component *)NULL;
+					components[i] = (struct FE_element_field_component *)NULL;
 				}
 			}
-			ALLOCATE(basis_type,int,1+((shape->dimension)*(1+shape->dimension))/2);
-			if (components&&basis_type)
+			ALLOCATE(basis_type, int, 1 + (dimension*(1 + dimension))/2);
+			if (components && basis_type)
 			{
 				/* read the components */
-				component_number=0;
-				number_of_values=0;
-				component=components;
-				while (return_code&&(component_number<number_of_components))
+				component_number = 0;
+				number_of_values = 0;
+				component = components;
+				while (return_code && (component_number < number_of_components))
 				{
-					fscanf(input_file," ");
+					fscanf(input_file, " ");
 					/* read the component name */
 					if (component_name)
 					{
 						DEALLOCATE(component_name);
+						component_name = (char *)NULL;
 					}
-					if (read_string(input_file,"[^.]",&component_name))
+					if (read_string(input_file, "[^.]", &component_name))
 					{
 						/* strip trailing blanks from component name */
-						i=strlen(component_name);
-						while ((0<i)&&(isspace(component_name[i-1])))
+						i = strlen(component_name);
+						while ((0 < i) && (isspace(component_name[i - 1])))
 						{
 							i--;
 						}
-						component_name[i]='\0';
-						return_code=(0<i)&&set_FE_field_component_name(the_field,
-							component_number,component_name);
+						component_name[i] = '\0';
+						return_code = (0 < i) && set_FE_field_component_name(field,
+							component_number, component_name);
 					}
 					if (return_code)
 					{
 						/* component name is sufficient for non-GENERAL_FE_FIELD */
-						if (GENERAL_FE_FIELD==fe_field_type)
+						if (GENERAL_FE_FIELD == fe_field_type)
 						{
-							fscanf(input_file,". ");
+							fscanf(input_file, ". ");
 							/* read the basis */
-							if (basis=read_FE_basis(input_file,shape->dimension,
-								basis_type,basis_manager))
+							if (basis =
+								read_FE_basis(input_file, fe_region, dimension, basis_type))
 							{
-								fscanf(input_file,", ");
+								fscanf(input_file, ", ");
 								/* read the modify function name */
-								if (read_string(input_file,"[^,]",
-									&modify_function_name))
+								if (read_string(input_file, "[^,]", &modify_function_name))
 								{
 									/* determine the modify function */
-									if (strcmp("no modify",modify_function_name))
+									if (0 == strcmp("no modify", modify_function_name))
 									{
-										if (strcmp("increasing in xi1",
-											modify_function_name))
-										{
-											if (strcmp("decreasing in xi1",
-												modify_function_name))
-											{
-												if (strcmp("non-increasing in xi1",
-													modify_function_name))
-												{
-													if (strcmp("non-decreasing in xi1",
-														modify_function_name))
-													{
-														if (strcmp("closest in xi1",
-															modify_function_name))
-														{
-															display_message(ERROR_MESSAGE,
-																"Invalid modify function from file.  Line %d",
-																get_line_number(input_file));
-															return_code=0;
-														}
-														else
-														{
-															modify=theta_closest_in_xi1;
-														}
-													}
-													else
-													{
-														modify=theta_non_decreasing_in_xi1;
-													}
-												}
-												else
-												{
-													modify=theta_non_increasing_in_xi1;
-												}
-											}
-											else
-											{
-												modify=theta_decreasing_in_xi1;
-											}
-										}
-										else
-										{
-											modify=theta_increasing_in_xi1;
-										}
+										modify = (FE_element_field_component_modify)NULL;
+									}
+									else if (0 == strcmp("increasing in xi1",
+										modify_function_name))
+									{
+										modify = theta_increasing_in_xi1;
+									}
+									else if (0 == strcmp("decreasing in xi1",
+										modify_function_name))
+									{
+										modify = theta_decreasing_in_xi1;
+									}
+									else if (0 == strcmp("non-increasing in xi1",
+										modify_function_name))
+									{
+										modify = theta_non_increasing_in_xi1;
+									}
+									else if (0 == strcmp("non-decreasing in xi1",
+										modify_function_name))
+									{
+										modify = theta_non_decreasing_in_xi1;
+									}
+									else if (0 == strcmp("closest in xi1",
+										modify_function_name))
+									{
+										modify = theta_closest_in_xi1;
 									}
 									else
 									{
-										modify=(FE_element_field_component_modify)NULL;
+										display_message(ERROR_MESSAGE,
+											"Invalid modify function from file.  Line %d",
+											get_line_number(input_file));
+										return_code = 0;
 									}
 									if (return_code)
 									{
-										fscanf(input_file,", ");
+										fscanf(input_file, ", ");
 										/* read the global to element map type */
-										if (read_string(input_file,"[^.]",
+										if (read_string(input_file, "[^.]",
 											&global_to_element_map_string))
 										{
-											fscanf(input_file,". ");
-																/* determine the global to element map type */
-											if (strcmp("standard node based",
+											fscanf(input_file, ". ");
+											/* determine the global to element map type */
+											if (0 == strcmp("standard node based",
 												global_to_element_map_string))
-											{
-												if (strcmp("grid based",
-													global_to_element_map_string))
-												{
-													if (strcmp("general node based",
-														global_to_element_map_string))
-													{
-														if (strcmp("field based",
-															global_to_element_map_string))
-														{
-															display_message(ERROR_MESSAGE,
-																"Invalid global to element map type from file.  Line %d",
-																get_line_number(input_file));
-															return_code=0;
-														}
-														else
-														{
-															/* FIELD_TO_ELEMENT_MAP */
-															/*???DB.  Not yet implemented */
-															display_message(ERROR_MESSAGE,
-																"Invalid global to element map type from file.  Line %d",
-																get_line_number(input_file));
-															return_code=0;
-														}
-													}
-													else
-													{
-														/* GENERAL_NODE_TO_ELEMENT_MAP */
-														/*???DB.  Not yet implemented */
-														display_message(ERROR_MESSAGE,
-															"Invalid global to element map type from file.  Line %d",
-															get_line_number(input_file));
-														return_code=0;
-													}
-												}
-												else
-												{
-													/* element grid based */
-													if (components[component_number]=
-														CREATE(FE_element_field_component)(
-															ELEMENT_GRID_MAP,1,basis,modify))
-													{
-														/* read the number of divisions in each xi
-															 direction */
-														number_in_xi=
-															(components[component_number]->map).
-															element_grid_based.number_in_xi;
-														i=0;
-														while (return_code&&(i<shape->dimension))
-														{
-															if ((2==fscanf(input_file,"#xi%d = %d",
-																&j,number_in_xi+i))&&(j==i+1)&&
-																(0<number_in_xi[i]))
-															{
-																fscanf(input_file," , ");
-																i++;
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"Error reading #xi%d.  Line %d",i+1,
-																	get_line_number(input_file));
-																return_code=0;
-															}
-														}
-														if (return_code)
-														{
-															/* only allow linear bases */
-															index=basis->type;
-															i= *index;
-															while (return_code&&(i>0))
-															{
-																index++;
-																if (LINEAR_LAGRANGE== *index)
-																{
-																	i--;
-																	j=i;
-																	while (return_code&&(j>0))
-																	{
-																		index++;
-																		if (0== *index)
-																		{
-																			j--;
-																		}
-																		else
-																		{
-																			return_code=0;
-																		}
-																	}
-																}
-																else
-																{
-																	return_code=0;
-																}
-															}
-															if (return_code)
-															{
-																/* CMISS starts from 1 */
-																(components[component_number]->
-																	map).element_grid_based.
-																	value_index=0;
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"Grid based must be linear.  Line %d",
-																	get_line_number(input_file));
-																return_code=0;
-															}
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"read_FE_element_field.  Error creating component from file");
-														return_code=0;
-													}
-												}
-											}
-											else
 											{
 												/* standard node to element map */
 												/* read the number of nodes */
-												if ((1==fscanf(input_file,"#Nodes=%d",
-													&number_of_nodes))&&(0<number_of_nodes))
+												if ((1 == fscanf(input_file, "#Nodes=%d",
+													&number_of_nodes)) && (0 < number_of_nodes))
 												{
-													if (components[component_number]=
+													if (components[component_number] =
 														CREATE(FE_element_field_component)(
 															STANDARD_NODE_TO_ELEMENT_MAP,
-															number_of_nodes,basis,modify))
+															number_of_nodes, basis, modify))
 													{
-														standard_node_map=
-															(components[component_number])->
-															map.standard_node_based.
-															node_to_element_maps;
-														i=number_of_nodes;
-														while (return_code&&(i>0))
+														for (i = 0; (i < number_of_nodes) && return_code;
+															i++)
 														{
-															if ((2==fscanf(input_file,
-																"%d .  #Values=%d",&node_index,
-																&number_of_values))&&
-																(0<node_index--)&&
-																(0<number_of_values)&&
-																(*standard_node_map=
+															if ((2 == fscanf(input_file, "%d .  #Values=%d",
+																&node_index, &number_of_values)) &&
+																(standard_node_map =
 																	CREATE(Standard_node_to_element_map)(
-																		node_index,number_of_values)))
+																		node_index - 1, number_of_values)))
 															{
 																/* read the value indices */
-																fscanf(input_file,
-																	" Value indices:");
-																index=(*standard_node_map)->
-																	nodal_value_indices;
-																j=number_of_values;
-																while (return_code&&(j>0))
+																fscanf(input_file, " Value indices:");
+																for (j = 0; (j < number_of_values) &&
+																	return_code; j++)
 																{
-																	if (1==fscanf(input_file,"%d",
-																		index))
-																	{
-																		/* CMISS arrays start at 1 */
-																		(*index)--;
-																		index++;
-																		j--;
-																	}
-																	else
+																	if (!((1 == fscanf(input_file, "%d",
+																		&index)) &&
+																		Standard_node_to_element_map_set_nodal_value_index(
+																		standard_node_map, j, index - 1)))
 																	{
 																		display_message(ERROR_MESSAGE,
-																			"Error reading nodal value index from file.  Line %d",
+																			"Error reading nodal value index from "
+																			"file.  Line %d",
 																			get_line_number(input_file));
-																		return_code=0;
+																		return_code = 0;
 																	}
 																}
 																if (return_code)
 																{
-																/* read the scale factor indices */
-																	fscanf(input_file,
-																		" Scale factor indices:");
-																	index=(*standard_node_map)->
-																		scale_factor_indices;
-																	j=number_of_values;
-																	while (return_code&&(j>0))
+																	/* read the scale factor indices */
+																	fscanf(input_file, " Scale factor indices:");
+																	for (j = 0; (j < number_of_values) &&
+																		return_code; j++)
 																	{
-																		if (1==fscanf(input_file,"%d",
-																			index))
-																		{
-																			/* CMISS arrays start at 1 */
-																			(*index)--;
-																			index++;
-																			j--;
-																		}
-																		else
+																		if (!((1 == fscanf(input_file, "%d",
+																			&index)) &&
+																			Standard_node_to_element_map_set_scale_factor_index(
+																				standard_node_map, j, index - 1)))
 																		{
 																			display_message(ERROR_MESSAGE,
-																				"Error reading scale factor index from file.  Line %d",
+																				"Error reading scale factor index from "
+																				"file.  Line %d",
 																				get_line_number(input_file));
-																			return_code=0;
+																			return_code = 0;
 																		}
 																	}
 																	if (return_code)
 																	{
-																		standard_node_map++;
-																		i--;
+																		if (!FE_element_field_component_set_standard_node_map(
+																			components[component_number],
+																			/*node_number*/i, standard_node_map))
+																		{
+																			display_message(ERROR_MESSAGE,
+																				"read_FE_element_field.  Error setting "
+																				"standard_node_to_element_map");
+																			DESTROY(Standard_node_to_element_map)(
+																				&standard_node_map);
+																			return_code = 0;
+																		}
 																	}
 																}
 															}
 															else
 															{
 																display_message(ERROR_MESSAGE,
-																	"Error creating standard node to element map from file.  Line %d",
+																	"Error creating standard node to element map "
+																	"from file.  Line %d",
 																	get_line_number(input_file));
-																return_code=0;
+																return_code = 0;
 															}
 														}
 													}
 													else
 													{
 														display_message(ERROR_MESSAGE,
-															"read_FE_element_field.  Error creating component from file");
-														return_code=0;
+															"read_FE_element_field.  "
+															"Error creating component from file");
+														return_code = 0;
 													}
 												}
 												else
 												{
 													display_message(ERROR_MESSAGE,
-														"Error reading component number of nodes from file.  Line %d",
-														get_line_number(input_file));
-													return_code=0;
+														"Error reading component number of nodes from file."
+														"  Line %d", get_line_number(input_file));
+													return_code = 0;
 												}
+											}
+											else if (0 == strcmp("grid based",
+												global_to_element_map_string))
+											{
+												/* element grid based */
+												if (components[component_number] =
+													CREATE(FE_element_field_component)(
+														ELEMENT_GRID_MAP, 1, basis, modify))
+												{
+													/* read number of divisions in each xi direction */
+													i = 0;
+													while (return_code && (i < dimension))
+													{
+														if ((2 == fscanf(input_file, "#xi%d = %d", &j,
+															&number_in_xi)) && (j == i + 1) &&
+													FE_element_field_component_set_grid_map_number_in_xi(
+																components[component_number], i, number_in_xi))
+														{
+															fscanf(input_file, " , ");
+															i++;
+														}
+														else
+														{
+															display_message(ERROR_MESSAGE,
+																"Error reading #xi%d.  Line %d", i + 1,
+																get_line_number(input_file));
+															return_code = 0;
+														}
+													}
+													if (return_code)
+													{
+														/* only allow linear bases */
+														basis_index = basis_type;
+														i = *basis_index;
+														while (return_code && (i > 0))
+														{
+															basis_index++;
+															if (LINEAR_LAGRANGE == *basis_index)
+															{
+																i--;
+																j = i;
+																while (return_code && (j > 0))
+																{
+																	basis_index++;
+																	if (0 == *basis_index)
+																	{
+																		j--;
+																	}
+																	else
+																	{
+																		return_code = 0;
+																	}
+																}
+															}
+															else
+															{
+																return_code = 0;
+															}
+														}
+														if (return_code)
+														{
+															FE_element_field_component_set_grid_map_value_index(
+																components[component_number], 0);
+														}
+														else
+														{
+															display_message(ERROR_MESSAGE,
+																"Grid based must be linear.  Line %d",
+																get_line_number(input_file));
+															return_code = 0;
+														}
+													}
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"read_FE_element_field.  "
+														"Error creating component from file");
+													return_code = 0;
+												}
+											}
+											else if (0 == strcmp("general node based",
+												global_to_element_map_string))
+											{
+												/* GENERAL_NODE_TO_ELEMENT_MAP */
+												/*???DB.  Not yet implemented */
+												display_message(ERROR_MESSAGE,
+													"Invalid global to element map type from file.  "
+													"Line %d", get_line_number(input_file));
+												return_code = 0;
+											}
+											else if (0 == strcmp("field based",
+												global_to_element_map_string))
+											{
+												/* FIELD_TO_ELEMENT_MAP */
+												/*???DB.  Not yet implemented */
+												display_message(ERROR_MESSAGE,
+													"Invalid global to element map type from file.  "
+													"Line %d", get_line_number(input_file));
+												return_code = 0;
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"Invalid global to element map type from file.  "
+													"Line %d", get_line_number(input_file));
+												return_code = 0;
 											}
 											DEALLOCATE(global_to_element_map_string);
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"Error reading global to element map type from file.  Line %d",
-												get_line_number(input_file));
-											return_code=0;
+												"Error reading global to element map type from file.  "
+												"Line %d", get_line_number(input_file));
+											return_code = 0;
 										}
 										DEALLOCATE(modify_function_name);
 									}
@@ -2842,34 +2897,34 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 									display_message(ERROR_MESSAGE,
 										"Error reading modify function name from file.  Line %d",
 										get_line_number(input_file));
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
 									"read_FE_element_field.  Invalid basis from file");
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
 						{
 							/* non GENERAL_FE_FIELD */
 							/* check there is nothing on remainder of line */
-							if (read_string(input_file,"[^\n]",&rest_of_line))
+							if (read_string(input_file, "[^\n]", &rest_of_line))
 							{
-								if (fuzzy_string_compare(rest_of_line,"."))
+								if (fuzzy_string_compare(rest_of_line, "."))
 								{
 									/* components are all NULL */
-									return_code=1;
+									return_code = 1;
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
 										"Unexpected text on field '%s' component '%s' line %d: %s",
-										field_name,component_name,get_line_number(input_file),
-										rest_of_line);
-									return_code=0;
+										get_FE_field_name(field), component_name,
+										get_line_number(input_file), rest_of_line);
+									return_code = 0;
 								}
 								DEALLOCATE(rest_of_line);
 							}
@@ -2877,8 +2932,9 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 							{
 								display_message(ERROR_MESSAGE,
 									"Unexpected end of field '%s' component '%s' line %d",
-									field_name,component_name,get_line_number(input_file));
-								return_code=0;
+									get_FE_field_name(field), component_name,
+									get_line_number(input_file));
+								return_code = 0;
 							}
 						}
 						component_number++;
@@ -2889,7 +2945,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 						display_message(ERROR_MESSAGE,
 							"Error reading component name from file.  Line %d",
 							get_line_number(input_file));
-						return_code=0;
+						return_code = 0;
 					}
 				}
 			}
@@ -2897,65 +2953,47 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 			{
 				display_message(ERROR_MESSAGE,
 					"read_FE_element_field.  Could not allocate component information");
-				return_code=0;
+				return_code = 0;
 			}
 			if (return_code)
 			{
-				/* first try to retrieve matching field from manager */
-				if (*field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
-					field_name,fe_field_manager))
+				/* first try to retrieve matching field from fe_region */
+				if (!(merged_fe_field = FE_region_merge_FE_field(fe_region, field)))
 				{
-					if (!FE_fields_match(*field,the_field))
-					{
-						display_message(ERROR_MESSAGE,
-							"Field '%s' inconsistent with existing field of same name.  Line %d",
-							field_name,get_line_number(input_file));
-						*field = (struct FE_field *)NULL;
-						return_code=0;
-					}
+					display_message(ERROR_MESSAGE,"read_FE_element_field.  "
+						"Could not merge field '%s' into finite element region.  Line %d",
+						get_FE_field_name(field), get_line_number(input_file));
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				/* define merged_fe_field in element */
+				if (define_FE_field_at_element(element, merged_fe_field, components))
+				{
+					*field_address = merged_fe_field;
 				}
 				else
 				{
-					if (ADD_OBJECT_TO_MANAGER(FE_field)(the_field,fe_field_manager))
-					{
-						*field = the_field;
-						/* clear the_field so not destroyed below */
-						the_field=(struct FE_field *)NULL;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"read_FE_element_field.  "
-							"Could not add field to manager");
-						return_code=0;
-					}
-				}
-			}
-			DESTROY(FE_field)(&the_field);
-			if (return_code)
-			{
-				if (!define_FE_field_at_element(element,*field,components))
-				{
 					display_message(ERROR_MESSAGE,
 						"read_FE_element_field.  Could not define field at element");
-					*field = (struct FE_field *)NULL;
-					return_code=0;
+					return_code = 0;
 				}
 			}
-			component_number=number_of_components;
 			if (component_name)
 			{
 				DEALLOCATE(component_name);
 			}
 			if (components)
 			{
-				for (i=0;i<number_of_components;i++)
+				for (i = 0; i < number_of_components; i++)
 				{
 					DESTROY(FE_element_field_component)(&(components[i]));
 				}
 				DEALLOCATE(components);
 			}
 			DEALLOCATE(basis_type);
-			DEALLOCATE(field_name);
+			DEACCESS(FE_field)(&field);
 		}
 		else
 		{
@@ -2974,143 +3012,134 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 } /* read_FE_element_field */
 
 static struct FE_element *read_FE_element_field_info(
-	FILE *input_file,struct FE_element_shape *shape,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(FE_basis) *basis_manager,
+	FILE *input_file, struct FE_region *fe_region,
+	struct FE_element_shape *element_shape,
 	struct FE_field_order_info **field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2001
+LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
-Returns a template element with the element field information read in from the
-<input_file>.
-If this functions encounters a heading with #Fields=0, then there is no
-node_scale_field information and NULL is returned. Previously it did not
-appear to be possible to go from a state where there were fields to where they
-were inherited in the same file, now you just need the header:
+Creates an element with <element_shape> and the field information read in from
+<input_file>. Note that the following header is required to return a template
+element with no fields:
  #Scale factor sets=0
  #Nodes=0
  #Fields=0
 It is also possible to have no scale factors and no nodes but a field - this
 would be the case for grid-based fields.
+Creates, fills in and returns field_order_info.
 <*field_order_info> is reallocated here so should be either NULL or returned
 from a previous call to this function.
 ==============================================================================*/
 {
-	int *basis_type,dimension,i,number_of_fields,number_of_nodes,
-		number_of_scale_factor_sets,*numbers_in_scale_factor_sets,return_code;
+	int *basis_type, dimension, i, number_of_fields, number_of_nodes,
+		number_of_scale_factor_sets, *numbers_in_scale_factor_sets, return_code;
 	struct CM_element_information element_identifier;
 	struct FE_element *element;
 	struct FE_field *field;
 	void **scale_factor_set_identifiers;
 
 	ENTER(read_FE_element_field_info);
-	element=(struct FE_element *)NULL;
-	if (input_file&&shape&&fe_field_manager&&basis_manager&&field_order_info)
+	element = (struct FE_element *)NULL;
+	if (input_file && fe_region && element_shape && field_order_info)
 	{
 		if (*field_order_info)
 		{
 			DESTROY(FE_field_order_info)(field_order_info);
+			*field_order_info = (struct FE_field_order_info *)NULL;
 		}
 		/* create the element */
-		element_identifier.number=0;
-		element_identifier.type=CM_ELEMENT;
-		if (element=CREATE(FE_element)(&element_identifier,
-			(struct FE_element *)NULL))
+		element_identifier.number = 0;
+		element_identifier.type = CM_ELEMENT;
+		if (element = CREATE(FE_element)(&element_identifier, element_shape,
+			fe_region, (struct FE_element *)NULL))
 		{
-			return_code=1;
-			if (!set_FE_element_shape(element,shape))
-			{
-				display_message(ERROR_MESSAGE,"read_FE_element_field_info.  "
-					"Error setting element shape");
-				return_code=0;
-			}
-			dimension=shape->dimension;
+			return_code = 1;
+			get_FE_element_shape_dimension(element_shape, &dimension);
 			/* read in the scale factor information */
-			if (!((1==fscanf(input_file,"Scale factor sets=%d ",
-				&number_of_scale_factor_sets))&&(0<=number_of_scale_factor_sets)))
+			if (!((1 == fscanf(input_file, "Scale factor sets=%d ",
+				&number_of_scale_factor_sets)) && (0 <= number_of_scale_factor_sets)))
 			{
 				display_message(ERROR_MESSAGE,
 					"Error reading #scale sets from file.  Line %d",
 					get_line_number(input_file));
-				return_code=0;
+				return_code = 0;
 			}
 			if (return_code)
 			{
-				scale_factor_set_identifiers=(void **)NULL;
-				numbers_in_scale_factor_sets=(int *)NULL;
-				basis_type=(int *)NULL;
+				scale_factor_set_identifiers = (void **)NULL;
+				numbers_in_scale_factor_sets = (int *)NULL;
+				basis_type = (int *)NULL;
 				/* note can have no scale factor sets */
-				if ((0==number_of_scale_factor_sets)||(
-					ALLOCATE(scale_factor_set_identifiers,void *,
-						number_of_scale_factor_sets)&&
-					ALLOCATE(numbers_in_scale_factor_sets,int,
-						number_of_scale_factor_sets)&&
-					ALLOCATE(basis_type,int,1+(dimension*(1+dimension))/2)))
+				if ((0 == number_of_scale_factor_sets) || (
+					ALLOCATE(scale_factor_set_identifiers, void *,
+						number_of_scale_factor_sets) &&
+					ALLOCATE(numbers_in_scale_factor_sets, int,
+						number_of_scale_factor_sets) &&
+					ALLOCATE(basis_type, int, 1 + (dimension*(1 + dimension))/2)))
 				{
 					/* read in the scale factor set information */
-					for (i=0;(i<number_of_scale_factor_sets)&&return_code;i++)
+					for (i = 0; (i < number_of_scale_factor_sets) && return_code; i++)
 					{
-						if (scale_factor_set_identifiers[i]=(void *)read_FE_basis(
-							input_file,dimension,basis_type,basis_manager))
+						if (scale_factor_set_identifiers[i] = (void *)read_FE_basis(
+							input_file, fe_region, dimension, basis_type))
 						{
-							if (!((1==fscanf(input_file,", #Scale factors=%d ",
-								&(numbers_in_scale_factor_sets[i])))&&
-								(0<numbers_in_scale_factor_sets[i])))
+							if (!((1 == fscanf(input_file, ", #Scale factors=%d ",
+								&(numbers_in_scale_factor_sets[i]))) &&
+								(0 < numbers_in_scale_factor_sets[i])))
 							{
 								display_message(ERROR_MESSAGE,
 									"Error reading #Scale factors from file.  Line %d",
 									get_line_number(input_file));
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Error reading scale factor set identifier (basis) from file.  Line %d",
-								get_line_number(input_file));
-							return_code=0;
+								"Error reading scale factor set identifier (basis) from file.  "
+								"Line %d", get_line_number(input_file));
+							return_code = 0;
 						}
 					}
 					/* read in the node information */
-					if (!((1==fscanf(input_file,"#Nodes=%d ",&number_of_nodes))&&
-						(0<=number_of_nodes)))
+					if (!((1 == fscanf(input_file, "#Nodes=%d ", &number_of_nodes)) &&
+						(0 <= number_of_nodes)))
 					{
 						display_message(ERROR_MESSAGE,
 							"Error reading #Nodes from file.  Line %d",
 							get_line_number(input_file));
-						return_code=0;
+						return_code = 0;
 					}
 					/* read in the field information */
-					if (!((1==fscanf(input_file,"#Fields=%d ",&number_of_fields))&&
-						(0<=number_of_fields)))
+					if (!((1 == fscanf(input_file, "#Fields=%d ", &number_of_fields)) &&
+						(0 <= number_of_fields)))
 					{
 						display_message(ERROR_MESSAGE,
 							"Error reading #fields from file.  Line %d",
 							get_line_number(input_file));
-						return_code=0;
+						return_code = 0;
 					}
-					if (return_code&&(0<number_of_fields))
+					if (return_code && (0 < number_of_fields))
 					{
-						if (!set_FE_element_node_scale_field_info(element,
-							number_of_scale_factor_sets,scale_factor_set_identifiers,
-							numbers_in_scale_factor_sets,number_of_nodes))
+						if (!(set_FE_element_number_of_nodes(element, number_of_nodes) &&
+							set_FE_element_number_of_scale_factor_sets(element,
+								number_of_scale_factor_sets, scale_factor_set_identifiers,
+								numbers_in_scale_factor_sets)))
 						{
-							display_message(ERROR_MESSAGE,"read_FE_element_field_info.  "
-								"Error establishing node scale field information");
-							return_code=0;
+							display_message(ERROR_MESSAGE, "read_FE_element_field_info.  "
+								"Error establishing element nodes and scale factor sets");
+							return_code = 0;
 						}
 					}
 					if (return_code)
 					{
-						MANAGER_BEGIN_CACHE(FE_field)(fe_field_manager);
 						*field_order_info = CREATE(FE_field_order_info)();
 						/* read in the element fields */
 						for (i = 0; (i < number_of_fields) && return_code; i++)
 						{
 							field = (struct FE_field *)NULL;
-							if (read_FE_element_field(input_file, shape, fe_field_manager,
-								fe_time, basis_manager, element, &field))
+							if (read_FE_element_field(input_file, fe_region, element, &field))
 							{
 								if (!add_FE_field_order_info_field(*field_order_info, field))
 								{
@@ -3126,7 +3155,6 @@ from a previous call to this function.
 								return_code = 0;
 							}
 						}
-						MANAGER_END_CACHE(FE_field)(fe_field_manager);
 					}
 				}
 				else
@@ -3151,20 +3179,21 @@ from a previous call to this function.
 			if (!return_code)
 			{
 				DESTROY(FE_element)(&element);
+				element = (struct FE_element *)NULL;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"read_FE_element_field_info.  Could not create element");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"read_FE_element_field_info.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3172,45 +3201,44 @@ from a previous call to this function.
 } /* read_FE_element_field_info */
 
 static struct FE_element *read_FE_element(FILE *input_file,
-	struct FE_element *template_element,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct FE_element *template_element, struct FE_region *fe_region,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2001
+LAST MODIFIED : 6 May 2003
 
 DESCRIPTION :
 Reads in an element from an <input_file>.
-???RC element info may now have no nodes and no scale factors - eg. for reading
+Element info may now have no nodes and no scale factors - eg. for reading
 in a grid field.
 ==============================================================================*/
 {
 	enum Value_type value_type;
-	FE_value *scale_factor;
-	int face_token_length,i,j,k,node_number,number_of_components,number_of_faces,
-		number_of_fields,number_of_nodes,number_of_scale_factors,number_of_values,
-		return_code,element_num,face_num,line_num;
-	struct CM_element_information element_identifier,face_identifier;
-	struct FE_element *element,*existing_element,*face_element;
+	FE_value scale_factor;
+	int dimension, face_token_length, i, j, k, node_number, number_of_components,
+		number_of_faces, number_of_fields, number_of_nodes, number_of_scale_factors,
+		number_of_values, return_code, element_num, face_num, line_num;
+	struct CM_element_information element_identifier, face_identifier;
+	struct FE_element *element, *face_element;
+	struct FE_element_shape *element_shape;
 	struct FE_field *field;
 	struct FE_node *node;
 
 	ENTER(read_FE_element);
-	element=(struct FE_element *)NULL;
-	if (input_file&&template_element&&template_element->shape&&
-		(0<=(number_of_faces=template_element->shape->number_of_faces))&&
-		element_manager&&node_manager&&field_order_info)
+	element = (struct FE_element *)NULL;
+	if (input_file && template_element &&
+		(0 < (dimension = get_FE_element_dimension(template_element))) &&
+		fe_region && field_order_info)
 	{
 		/* read the element identifier */
-		if (3==fscanf(input_file,"lement :%d %d %d",
-			&element_num,&face_num,&line_num))
+		if (3 == fscanf(input_file, "lement :%d %d %d",
+			&element_num, &face_num, &line_num))
 		{
 			if (element_num)
 			{
 				element_identifier.number = element_num;
 				element_identifier.type = CM_ELEMENT;
 			}
-			else if(face_num) 
+			else if (face_num) 
 			{
 				element_identifier.number = face_num;
 				element_identifier.type = CM_FACE;
@@ -3220,240 +3248,274 @@ in a grid field.
 				element_identifier.number = line_num;
 				element_identifier.type = CM_LINE;
 			}
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Error reading element identifier from file.  Line %d",
 				get_line_number(input_file));
-			return_code=0;
+			return_code = 0;
 		}
 		if (return_code)
 		{
 			/* create element based on template element; read and fill in contents */
-			if (element=CREATE(FE_element)(&element_identifier,template_element))
+			if (element = CREATE(FE_element)(&element_identifier,
+				(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+				template_element))
 			{
-				/* if face_token_length > 0, then faces being read */
-				face_token_length=0;
-				fscanf(input_file," Faces:%n",&face_token_length);
-				if (0<face_token_length)
+				if (get_FE_element_number_of_faces(element, &number_of_faces))
 				{
-					for (i=0;(i<number_of_faces)&&return_code;i++)
+					/* if face_token_length > 0, then faces being read */
+					face_token_length = 0;
+					fscanf(input_file, " Faces:%n", &face_token_length);
+					if (0 < face_token_length)
 					{
-						/* file input */			 
-						if (3==fscanf(input_file,"%d %d %d",
-							&element_num,&face_num,&line_num))
+						for (i = 0; (i < number_of_faces) && return_code; i++)
 						{
-							if (element_num)
+							/* file input */			 
+							if (3 == fscanf(input_file, "%d %d %d",
+								&element_num, &face_num, &line_num))
 							{
-								face_identifier.number = element_num;
-								face_identifier.type = CM_ELEMENT;
-							}
-							else if (face_num) 
-							{
-								face_identifier.number = face_num;
-								face_identifier.type = CM_FACE;
-							}
-							else /* line_num */
-							{
-								face_identifier.number = line_num;
-								face_identifier.type = CM_LINE;
-							}								
-							return_code =1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Error reading face identifier from file.  Line %d",
-								get_line_number(input_file));
-							return_code=0;
-						}
-						if (return_code)
-						{
-							/* face number of 0 means no face */
-							if (0 != face_identifier.number)
-							{
-								if (face_element=
-									FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-										&face_identifier,element_manager))
+								if (element_num)
 								{
-									if (!set_FE_element_face(element,i,face_element))
-									{
-										display_message(ERROR_MESSAGE,"read_FE_element.  "
-											"Could not set face %d of %s %d",i,
-											CM_element_type_string(element_identifier.type),
-											element_identifier.number);
-										return_code=0;
-									}
+									face_identifier.number = element_num;
+									face_identifier.type = CM_ELEMENT;
 								}
-								else
+								else if (face_num) 
 								{
-									display_message(ERROR_MESSAGE,"read_FE_element.  "
-										"Could not find face %d of %s %d",i,
-										CM_element_type_string(element_identifier.type),
-										element_identifier.number);
-									return_code=0;
+									face_identifier.number = face_num;
+									face_identifier.type = CM_FACE;
+								}
+								else /* line_num */
+								{
+									face_identifier.number = line_num;
+									face_identifier.type = CM_LINE;
+								}								
+								return_code =1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Error reading face identifier from file.  Line %d",
+									get_line_number(input_file));
+								return_code = 0;
+							}
+							if (return_code)
+							{
+								/* face number of 0 means no face */
+								if (0 != face_identifier.number)
+								{
+									face_element = FE_region_get_FE_element_from_identifier(
+										fe_region, &face_identifier);
+									if (!face_element)
+									{
+										/* create a dummy face of the appropriate dimension; this
+											 is and element with an unspecified shape */
+										if (element_shape = CREATE(FE_element_shape)(dimension - 1,
+											/*type*/(int *)NULL))
+										{
+											ACCESS(FE_element_shape)(element_shape);
+											if (!((face_element = CREATE(FE_element)(&face_identifier,
+												element_shape, fe_region, (struct FE_element *)NULL)) &&
+												FE_region_merge_FE_element(fe_region, face_element)))
+											{
+												DESTROY(FE_element)(&face_element);
+												return_code = 0;
+											}
+											DEACCESS(FE_element_shape)(&element_shape);
+										}
+										else
+										{
+											return_code = 0;
+										}
+									}
+									if (face_element)
+									{
+										if (!set_FE_element_face(element, i, face_element))
+										{
+											display_message(ERROR_MESSAGE,"read_FE_element.  "
+												"Could not set face %d of %s %d", i,
+												CM_element_type_string(element_identifier.type),
+												element_identifier.number);
+											return_code = 0;
+										}
+									}
 								}
 							}
 						}
 					}
 				}
-				if (return_code)
+				else
 				{
-					/* check for field information */
-					if (element->information)
+					display_message(ERROR_MESSAGE,
+						"read_FE_element.  Could not get number of faces of %s %d",
+						CM_element_type_string(element_identifier.type),
+						element_identifier.number);
+					return_code = 0;
+				}
+				/* check whether element has any grid values */
+				if (return_code && FE_element_has_values_storage(element))
+				{
+					/* read the values */
+					fscanf(input_file, " Values :");
+					number_of_fields =
+						get_FE_field_order_info_number_of_fields(field_order_info);
+					for (i = 0; (i < number_of_fields) && return_code; i++)
 					{
-						/* check whether element has any grid values */
-						/*???RC Should have better check than this! */
-						if (0<element->information->values_storage_size)
+						if (field = get_FE_field_order_info_field(field_order_info, i))
 						{
-							/* read the values */
-							fscanf(input_file," Values :");
-							number_of_fields=
-								get_FE_field_order_info_number_of_fields(field_order_info);
-							for (i=0;(i<number_of_fields)&&return_code;i++)
+							if (0 < (number_of_values =
+								get_FE_element_field_number_of_grid_values(element, field)))
 							{
-								if (field=get_FE_field_order_info_field(field_order_info,i))
+								value_type = get_FE_field_value_type(field);
+								number_of_components =
+									get_FE_field_number_of_components(field);
+								switch (value_type)
 								{
-									if (0<(number_of_values=
-										get_FE_element_field_number_of_grid_values(element,field)))
+									case FE_VALUE_VALUE:
 									{
-										value_type=get_FE_field_value_type(field);
-										number_of_components=
-											get_FE_field_number_of_components(field);
-										switch (value_type)
+										FE_value *values;
+
+										if (ALLOCATE(values, FE_value, number_of_values))
 										{
-											case FE_VALUE_VALUE:
+											for (j = 0;(j < number_of_components) && return_code;
+													 j++)
 											{
-												FE_value *values;
-
-												if (ALLOCATE(values,FE_value,number_of_values))
+												for (k = 0; (k < number_of_values) && return_code;
+														 k++)
 												{
-													for (j=0;(j<number_of_components)&&return_code;j++)
+													if (1 != fscanf(input_file, FE_VALUE_INPUT_STRING,
+														&(values[k])))
 													{
-														for (k=0;(k<number_of_values)&&return_code;k++)
-														{
-															if (1 != fscanf(input_file,FE_VALUE_INPUT_STRING,
-																&(values[k])))
-															{
-																display_message(ERROR_MESSAGE,
-																	"Error reading grid FE_value value from file.  Line %d",
-																	get_line_number(input_file));
-																return_code=0;
-															}
-															if (!finite(values[k]))
-															{
-																display_message(ERROR_MESSAGE,
-																	"Infinity or NAN element value read from element file.  Line %d",
-																	get_line_number(input_file));
-																return_code=0;
-															}
-														}
-														if (return_code)
-														{
-															if (!set_FE_element_field_component_grid_FE_value_values(
-																element,field,/*component_number*/j,values))
-															{
-																display_message(ERROR_MESSAGE,
-																	"read_FE_element.  "
-																	"Could not set grid FE_value values");
-															}
-														}
+														display_message(ERROR_MESSAGE,
+															"Error reading grid FE_value value from file.  Line %d",
+															get_line_number(input_file));
+														return_code = 0;
 													}
-													DEALLOCATE(values);
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,"read_FE_element.  "
-														"Insufficient memory for FE_value values");
-													return_code=0;
-												}
-											} break;
-											case INT_VALUE:
-											{
-												int *values;
-
-												if (ALLOCATE(values,int,number_of_values))
-												{
-													for (j=0;(j<number_of_components)&&return_code;j++)
+													if (!finite(values[k]))
 													{
-														for (k=0;(k<number_of_values)&&return_code;k++)
-														{
-															if (1 != fscanf(input_file,"%d",&(values[k])))
-															{
-																display_message(ERROR_MESSAGE,
-																	"Error reading grid int value from file.  Line %d",
-																	get_line_number(input_file));
-																return_code=0;
-															}
-														}
-														if (return_code)
-														{
-															if (!set_FE_element_field_component_grid_int_values(
-																element,field,/*component_number*/j,values))
-															{
-																display_message(ERROR_MESSAGE,
-																	"read_FE_element.  "
-																	"Could not set grid int values");
-															}
-														}
+														display_message(ERROR_MESSAGE,
+															"Infinity or NAN element value read from element file.  Line %d",
+															get_line_number(input_file));
+														return_code = 0;
 													}
-													DEALLOCATE(values);
 												}
-												else
+												if (return_code)
 												{
-													display_message(ERROR_MESSAGE,"read_FE_element.  "
-														"Insufficient memory for int values");
-													return_code=0;
+													if (!set_FE_element_field_component_grid_FE_value_values(
+														element, field, /*component_number*/j, values))
+													{
+														display_message(ERROR_MESSAGE,
+															"read_FE_element.  Could not set grid FE_value values");
+													}
 												}
-											} break;
-											default:
-											{
-												display_message(ERROR_MESSAGE,
-													"Unsupported value_type %s.  Line %d",
-													Value_type_string(value_type),
-													get_line_number(input_file));
-												return_code=0;
-											} break;
+											}
+											DEALLOCATE(values);
 										}
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Invalid field #%d.  Line %d",i+1,
-										get_line_number(input_file));
-									return_code=0;
+										else
+										{
+											display_message(ERROR_MESSAGE,"read_FE_element.  "
+												"Insufficient memory for FE_value values");
+											return_code = 0;
+										}
+									} break;
+									case INT_VALUE:
+									{
+										int *values;
+
+										if (ALLOCATE(values, int, number_of_values))
+										{
+											for (j = 0;(j < number_of_components) && return_code;
+													 j++)
+											{
+												for (k = 0; (k < number_of_values) && return_code;
+														 k++)
+												{
+													if (1 != fscanf(input_file, "%d", &(values[k])))
+													{
+														display_message(ERROR_MESSAGE,
+															"Error reading grid int value from file.  Line %d",
+															get_line_number(input_file));
+														return_code = 0;
+													}
+												}
+												if (return_code)
+												{
+													if (!set_FE_element_field_component_grid_int_values(
+														element, field, /*component_number*/j, values))
+													{
+														display_message(ERROR_MESSAGE,
+															"read_FE_element.  Could not set grid int values");
+													}
+												}
+											}
+											DEALLOCATE(values);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE, "read_FE_element.  "
+												"Insufficient memory for int values");
+											return_code = 0;
+										}
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"Unsupported grid field value_type %s.  Line %d",
+											Value_type_string(value_type),
+											get_line_number(input_file));
+										return_code = 0;
+									} break;
 								}
 							}
 						}
-						if ((0 < (number_of_nodes = element->information->number_of_nodes))
-							&& return_code)
+						else
+						{
+							display_message(ERROR_MESSAGE, "Invalid field #%d.  Line %d",
+								i + 1, get_line_number(input_file));
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					if (get_FE_element_number_of_nodes(element, &number_of_nodes))
+					{
+						if (0 < number_of_nodes)
 						{
 							/* read the nodes */
-							fscanf(input_file," Nodes:");
-							for (i=0;(i<number_of_nodes)&&return_code;i++)
+							fscanf(input_file, " Nodes:");
+							for (i = 0; (i < number_of_nodes) && return_code; i++)
 							{
-								if (1==fscanf(input_file,"%d",&node_number))
+								if (1 == fscanf(input_file, "%d", &node_number))
 								{
-									if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-										cm_node_identifier)(node_number,node_manager))
+									/* try to find the node with node_number */
+									if (!(node = FE_region_get_FE_node_from_identifier(
+										fe_region, node_number)))
 									{
-										if (!set_FE_element_node(element,i,node))
+										/* otherwise create a "dummy" node with no fields */
+										if (!((node = CREATE(FE_node)(node_number, fe_region,
+											/*template_node*/(struct FE_node *)NULL)) &&
+											FE_region_merge_FE_node(fe_region, node)))
+										{
+											display_message(ERROR_MESSAGE,
+												"read_FE_element.  Could not create node %d for %s %d",
+												node_number,
+												CM_element_type_string(element_identifier.type),
+												element_identifier.number);
+											DESTROY(FE_node)(&node);
+											return_code = 0;
+										}
+									}
+									if (return_code)
+									{
+										if (!set_FE_element_node(element, i, node))
 										{
 											display_message(ERROR_MESSAGE,
 												"read_FE_element.  Could not set node");
-											return_code=0;
+											return_code = 0;
 										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"read_FE_element.  No such node %d in %s %d",node_number,
-											CM_element_type_string(element_identifier.type),
-											element_identifier.number);
-										return_code=0;
 									}
 								}
 								else
@@ -3461,92 +3523,73 @@ in a grid field.
 									display_message(ERROR_MESSAGE,
 										"Error reading node number from file.  Line %d",
 										get_line_number(input_file));
-									return_code=0;
+									return_code = 0;
 								}
-							}
-						}
-						if ((0 < (number_of_scale_factors =
-							element->information->number_of_scale_factors)) &&
-							return_code)
-						{
-							/*???RC scale_factors array in element_info should be private */
-							/* read the scale factors */
-							fscanf(input_file," Scale factors:");
-							scale_factor=element->information->scale_factors;
-							for (i=0;(i<number_of_scale_factors)&&return_code;i++)
-							{
-								if (1!=fscanf(input_file,FE_VALUE_INPUT_STRING,
-									&(scale_factor[i])))
-								{
-									display_message(ERROR_MESSAGE,
-										"Error reading scale factor from file.  Line %d",
-										get_line_number(input_file));
-									return_code=0;
-								}
-								if (!finite(scale_factor[i]))
-								{
-									display_message(ERROR_MESSAGE,
-										"Infinity or NAN scale factor read from element file.  Line %d",
-										get_line_number(input_file));
-									return_code=0;
-								}
-							}
-						}
-					}
-				}
-				if (return_code)
-				{
-					if (existing_element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-						identifier)(&element_identifier,element_manager))
-					{
-						/* if there is no element->information, the shape of the new element
-							 and the existing_element match and no faces were read in,
-							 then the existing_element as is. This allows element files to
-							 consist of just lines like "Element: # # #"
-							 to build groups of elements irrespective of the fields in them */
-						if ((!element->information)&&(existing_element->shape==
-							element->shape)&&(0==face_token_length))
-						{
-							DESTROY(FE_element)(&element);
-							element=existing_element;
-						}
-						else
-						{
-							/* merge the values from the existing to the new */
-							if (merge_FE_element(element,existing_element))
-							{
-								if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
-									existing_element,element,element_manager))
-								{
-									DESTROY(FE_element)(&element);
-									element=existing_element;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"read_FE_element.  "
-										"Error modifying element in element_manager");
-									DESTROY(FE_element)(&element);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_FE_element.  Error merging new information");
-								DESTROY(FE_element)(&element);
 							}
 						}
 					}
 					else
 					{
-						if (!ADD_OBJECT_TO_MANAGER(FE_element)(element,element_manager))
-						{
-							display_message(ERROR_MESSAGE,"read_FE_element.  "
-								"Error adding element to element_manager");
-							DESTROY(FE_element)(&element);
-						}
+						display_message(ERROR_MESSAGE,
+							"read_FE_element.  Could not get number of nodes for %s %d",
+							CM_element_type_string(element_identifier.type),
+							element_identifier.number);
+						return_code = 0;
 					}
 				}
-				else
+				if (return_code)
+				{
+					if (get_FE_element_number_of_scale_factors(element,
+						&number_of_scale_factors))
+					{
+						if (0 < number_of_scale_factors)
+						{
+							/*???RC scale_factors array in element_info should be private */
+							/* read the scale factors */
+							fscanf(input_file," Scale factors:");
+							for (i = 0; (i < number_of_scale_factors) && return_code; i++)
+							{
+								if (1 == fscanf(input_file,FE_VALUE_INPUT_STRING,
+									&scale_factor))
+								{
+									if (finite(scale_factor))
+									{
+										if (!set_FE_element_scale_factor(element, i, scale_factor))
+										{
+											display_message(ERROR_MESSAGE,
+												"Error setting scale factor.  Line %d",
+												get_line_number(input_file));
+											return_code = 0;
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"Infinity or NAN scale factor read from element file.  "
+											"Line %d", get_line_number(input_file));
+										return_code = 0;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Error reading scale factor from file.  Line %d",
+										get_line_number(input_file));
+									return_code = 0;
+								}
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "read_FE_element.  "
+							"Could not get number of scale factors for %s %d",
+							CM_element_type_string(element_identifier.type),
+							element_identifier.number);
+						return_code = 0;
+					}
+				}
+				if (!return_code)
 				{
 					DESTROY(FE_element)(&element);
 				}
@@ -3555,7 +3598,7 @@ in a grid field.
 			{
 				display_message(ERROR_MESSAGE,
 					"read_FE_element.  Could not create element");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -3572,1340 +3615,508 @@ in a grid field.
 Global functions
 ----------------
 */
-int read_FE_node_group_with_order(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct FE_node_order_info *node_order_info,
-	struct Node_time_index *node_time_index)
+
+struct Cmiss_region *read_exregion_file(FILE *input_file,
+	struct MANAGER(FE_basis) *basis_manager,
+	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 31 October 2001
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
-Reads node groups from an <input_file> or the socket (if <input_file> is NULL).
-???RC Needs data_group_manager, node_group_manager and element_group_manager
-since groups of the same name in each manager are created simultaneously, and
-node groups are updated to contain nodes used by elements in associated group.
-If the <node_order_info> is non NULL then each node is added to this object
-in the order of the file.
-If the <node_time_index> is non NULL then the values in this read are assumed
+Reads finite element groups in exnode/exelem format from <input_file>.
+If successful, a Cmiss_region structure is returned which contains all the
+groups as its named children. The fields, nodes and elements in each child
+region are independent of one another; it is up to the calling function to
+merge, clean up or otherwise deal with the returned Cmiss_region.
+If the <time_index> is non NULL then the values in this read are assumed
 to belong to the specified time.  This means that the nodal values will be read
 into an array and the correct index put into the corresponding time array.
+Where objects not within the file are referred to, such as nodes in a pure
+exelem file or elements in embedded element:xi fields, local objects of the
+correct type are made as placeholders and all checking is left to the merge.
+Embedding elements are located by a region path starting at the root region
+in the file; if no path is supplied they are placed in the root region.
+If objects are repeated in the file, they are merged correctly.
 ==============================================================================*/
 {
-	char group_field_node_flag,*group_name,*last_character,*temp_string;
-	int cm_node_identifier,existing_group_empty,input_result,return_code;
-	struct FE_node *node,*template_node;
-	struct GROUP(FE_element) *same_name_element_group;
-	struct GROUP(FE_node) *existing_group,*nodes_in_file,*same_name_data_group;
+	char first_character_in_token, *group_name, *last_character, *temp_string;
+	int input_result, return_code;
+	struct CM_element_information element_identifier;
+	struct Cmiss_region *root_region, *region;
+	struct FE_region *root_fe_region, *fe_region;
+	struct FE_element *element, *template_element;
+	struct FE_element_shape *element_shape;
 	struct FE_field_order_info *field_order_info;
-	struct Multi_range *new_cmiss_numbers;
+	struct FE_node *node, *template_node;
 
-	ENTER(read_FE_node_group_with_order);
-	field_order_info = (struct FE_field_order_info *)NULL;
-	group_name=(char *)NULL;
-	template_node=(struct FE_node *)NULL;
-	existing_group=(struct GROUP(FE_node) *)NULL;
-	nodes_in_file=(struct GROUP(FE_node) *)NULL;
-	/* use Multi_range to store cmiss numbers of nodes added to existing group */
-	new_cmiss_numbers = CREATE(Multi_range)();
-	return_code=1;
-	input_result=1;
-	/* don't need to cache all node groups, since the groups themselves are
-		cached */
-	MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-	while (return_code&&(1==input_result))
+	ENTER(read_exregion_file);
+	root_region = (struct Cmiss_region *)NULL;
+	if (input_file && basis_manager)
 	{
-		/* get the flag to say what to read next */
-		if (input_file)
+		root_fe_region = (struct FE_region *)NULL;
+		/* create the top-level region for reading groups into */
+		if ((root_region = CREATE(Cmiss_region)()) &&
+			(root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
+				basis_manager)) &&
+			Cmiss_region_attach_FE_region(root_region, root_fe_region))
 		{
-			/* file input */
-			fscanf(input_file," ");
-			input_result=fscanf(input_file,"%c",&group_field_node_flag);
-			/*???DB.  On the alphas input_result is 0 at the end of file when the
-				fscanfs are combined " %c" ? */
-			if (EOF==input_result)
-			{
-				/* make it look like the group is changing to re-use code for
-					 establishing the group */
-				group_field_node_flag='G';
-			}
+			Cmiss_region_begin_change(root_region);
+			FE_region_begin_change(root_fe_region);
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"read_FE_node_group_with_order.  Missing input_file");
-			return_code=0;
-		}
-		if (return_code)
-		{
-			switch (group_field_node_flag)
+				"read_exregion_file.  Could not create top-level region");
+			if (root_fe_region)
 			{
-				case 'G':
+				DESTROY(FE_region)(&root_fe_region);
+			}
+			return_code = 0;
+		}
+		field_order_info = (struct FE_field_order_info *)NULL;
+		template_node = (struct FE_node *)NULL;
+		template_element = (struct FE_element *)NULL;
+		element_shape = (struct FE_element_shape *)NULL;
+		region = (struct Cmiss_region *)NULL;
+		fe_region = (struct FE_region *)NULL;
+		input_result = 1;
+		while (return_code && (1 == input_result))
+		{
+			/* get first character in next token */
+			fscanf(input_file, " ");
+			/*???DB.  On the alphas input_result is 0 at the end of file when the
+				fscanfs are combined " %c" ? */
+			input_result = fscanf(input_file, "%c", &first_character_in_token);
+			if (1 == input_result)
+			{
+				switch (first_character_in_token)
 				{
-					/* do we currently have a group? If yes, establish it */
-					if (nodes_in_file)
+					case 'G':
 					{
-						if (existing_group)
+						if (fe_region)
 						{
-							if (!existing_group_empty &&
-								(0 < Multi_range_get_number_of_ranges(new_cmiss_numbers)))
-							{
-								/* report node/data numbers added to existing group */
-								temp_string = (char *)NULL;
-								GET_NAME(GROUP(FE_node))(existing_group, &temp_string);
-								display_message(WARNING_MESSAGE, "The following nodes/data "
-									"were added to group %s during read:", temp_string);
-								DEALLOCATE(temp_string);
-								Multi_range_display_ranges(new_cmiss_numbers);
-								Multi_range_clear(new_cmiss_numbers);
-							}
-							if (NUMBER_IN_GROUP(FE_node)(existing_group) !=
-								NUMBER_IN_GROUP(FE_node)(nodes_in_file))
-							{
-								temp_string = (char *)NULL;
-								GET_NAME(GROUP(FE_node))(existing_group, &temp_string);
-								display_message(WARNING_MESSAGE,
-									"File does not contain all nodes in group %s", temp_string);
-								DEALLOCATE(temp_string);
-							}
-							MANAGED_GROUP_END_CACHE(FE_node)(existing_group);
-							DESTROY_GROUP(FE_node)(&nodes_in_file);
+							FE_region_end_change(fe_region);
 						}
-						else
+						if (region)
 						{
-							if (!(return_code=ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(
-								nodes_in_file,node_group_manager)))
-							{
-								DESTROY(GROUP(FE_node))(&nodes_in_file);
-							}
-							/* make sure there are data and element groups of the same name
-								 so that GT_element_group automatically created with them */
-							same_name_data_group=CREATE(GROUP(FE_node))(group_name);
-							if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(same_name_data_group,
-								data_group_manager))
-							{
-								DESTROY(GROUP(FE_node))(&same_name_data_group);
-							}
-							same_name_element_group=CREATE(GROUP(FE_element))(group_name);
-							if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_element))(
-								same_name_element_group,element_group_manager))
-							{
-								DESTROY(GROUP(FE_element))(&same_name_element_group);
-							}
+							Cmiss_region_end_change(region);
 						}
-					}
-					/* read the name of the group of nodes */
-					if (group_name)
-					{
-						DEALLOCATE(group_name);
-					}
-					if (EOF != input_result)
-					{
-						if (input_file)
+						region = (struct Cmiss_region *)NULL;
+						fe_region = (struct FE_region *)NULL;
+						fscanf(input_file,"roup name : "); /* the 'G' has gone */
+						/* read the name of the group */
+						group_name = (char *)NULL;
+						if (read_string(input_file, "[^\n]", &group_name))
 						{
-							/* file input */
-							fscanf(input_file,"roup name : "); /* the 'G' has gone */
-							if (read_string(input_file,"[^\n]",&group_name))
+							/* trim trailing blanks */
+							last_character = group_name+(strlen(group_name)-1);
+							while ((last_character > group_name) && (' ' == *last_character))
 							{
-								/* trim trailing blanks */
-								last_character=group_name+(strlen(group_name)-1);
-								while ((last_character>group_name)&&(' '== *last_character))
-								{
-									last_character--;
-								}
-								*(last_character+1)='\0';
-								return_code=1;
+								last_character--;
 							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Error reading node group name from file.  Line %d",
-									get_line_number(input_file));
-								return_code=0;
-							}
+							*(last_character + 1)='\0';
+							return_code = 1;
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"read_FE_node_group_with_order.  Missing input_file");
-							return_code=0;
+								"Error reading group name from file.  Line %d",
+								get_line_number(input_file));
+							return_code = 0;
 						}
+						/* make sure we have a child region of that name */
 						if (return_code)
 						{
-							/* determine if the group already exists */
-							if (existing_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
-								name)(group_name,node_group_manager))
+							if (!(region = Cmiss_region_get_child_region_from_name(
+								root_region, group_name)))
 							{
-								/* if the existing group is empty do not write warnings for
-									 every new node added to it - see later */
-								existing_group_empty=
-									((struct FE_node *)NULL==FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-										(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-										existing_group));
-								nodes_in_file=CREATE_GROUP(FE_node)((char *)NULL);
-								MANAGED_GROUP_BEGIN_CACHE(FE_node)(existing_group);
+								region = CREATE(Cmiss_region)();
+								if (!Cmiss_region_add_child_region(root_region,
+									region, group_name, /*child_position*/-1))
+								{
+									display_message(ERROR_MESSAGE,
+										"read_exregion_file.  Could not add child region");
+									DESTROY(Cmiss_region)(&region);
+									region = (struct Cmiss_region *)NULL;
+									return_code = 0;
+								}
 							}
-							else
+							if (region)
 							{
-								nodes_in_file=CREATE_GROUP(FE_node)(group_name);
-							}
-							if (template_node)
-							{
-								DEACCESS(FE_node)(&template_node);
+								if (!(fe_region = Cmiss_region_get_FE_region(region)))
+								{
+									/*???RC Later allow separate namespace for group,
+										Use "Region name : NAME" token instead? */
+									fe_region = CREATE(FE_region)(root_fe_region, basis_manager);
+									if (!Cmiss_region_attach_FE_region(region, fe_region))
+									{
+										display_message(ERROR_MESSAGE, "read_exregion_file.  "
+											"Could not attach finite element region");
+										DESTROY(FE_region)(&fe_region);
+										fe_region = (struct FE_region *)NULL;
+										return_code = 0;
+									}
+								}
 							}
 						}
-					}
-				} break;
-				case '#':
-				{
-					/* ensure we have a node group */
-					if (nodes_in_file)
-					{
-						/* clear node field information */
+						if (group_name)
+						{
+							DEALLOCATE(group_name);
+						}
 						if (template_node)
 						{
 							DEACCESS(FE_node)(&template_node);
 						}
-						/* read new node field information and field_order_info */
-						if (template_node=read_FE_node_field_info(input_file,
-							fe_field_manager,fe_time,&field_order_info,node_time_index))
+						if (template_element)
 						{
+							DEACCESS(FE_element)(&template_element);
+						}
+						/* default to reading nodes after group token */
+						if (element_shape)
+						{
+							DEACCESS(FE_element_shape)(&element_shape);
+						}
+						if (region)
+						{
+							Cmiss_region_begin_change(region);
+						}
+						if (fe_region)
+						{
+							FE_region_begin_change(fe_region);
+							/* create the initial template node for no fields */
+							template_node =
+								CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL);
 							ACCESS(FE_node)(template_node);
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Error reading node field information");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"No current group for node field info");
-						return_code=0;
-					}
-				} break;
-				case 'N':
-				{
-					/* ensure we have node field information */
-					if (template_node)
-					{	
-						/* read node */
-						if (node=read_FE_node(input_file,template_node,node_manager,
-							element_manager,field_order_info,node_time_index))
-						{		
-							if (node_order_info)
-							{
-								fill_FE_node_order_info(node, (void *)node_order_info);
-							}
-							/* check for repeated nodes in file */
-							cm_node_identifier=get_FE_node_cm_node_identifier(node);
-							if (FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-								cm_node_identifier,nodes_in_file))
-							{
-								display_message(WARNING_MESSAGE,"Node %d repeated in file",
-									cm_node_identifier);
-							}
-							else
-							{
-								/* add node to the list of the nodes in the file */
-								if (ADD_OBJECT_TO_GROUP(FE_node)(node,nodes_in_file))
-								{
-									if (existing_group)
-									{
-										/* check that node is in the existing group */
-										if (existing_group_empty ||
-											(!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)
-												(cm_node_identifier,existing_group)))
-										{
-											/* collate cmiss numbers of nodes added to group */
-											Multi_range_add_range(new_cmiss_numbers,
-												cm_node_identifier, cm_node_identifier);
-											if (!ADD_OBJECT_TO_GROUP(FE_node)(node,existing_group))
-											{
-												display_message(ERROR_MESSAGE,
-													"read_FE_node_group_with_order.  "
-													"Could not add node to existing_group");
-												REMOVE_OBJECT_FROM_GROUP(FE_node)(node,nodes_in_file);
-												REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-												node=(struct FE_node *)NULL;
-												return_code=0;
-											}
-										}
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"read_FE_node_group_with_order.  "
-										"Could not add node to nodes_in_file");
-									REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-									node=(struct FE_node *)NULL;
-									return_code=0;
-								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_node_group_with_order.  Error reading node");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"read_FE_node_group_with_order.  "
-							"No current node field info for node");
-						return_code=0;
-					}
-				} break;
-				case 'V':
-				{
-					/* read in field values */
-					if (template_node&&field_order_info)
-					{
-						if (!read_FE_field_values(input_file,element_manager,
-							field_order_info))
-						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_node_group_with_order.  Error reading field values");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"read_FE_node_group_with_order.  "
-							"Unexpected V[alues] token in file");
-						return_code=0;
-					}
-				} break;
-				default:
-				{
-					if (read_string(input_file,"[^\n]",&temp_string))
-					{
-						display_message(ERROR_MESSAGE,
-							"Invalid flag \'%c\' in node file.  Line %d \'%c%s\'",
-							group_field_node_flag,get_line_number(input_file),
-							group_field_node_flag,temp_string);
-						DEALLOCATE(temp_string);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Invalid flag \'%c\' in node file.  Line %d",
-							group_field_node_flag,get_line_number(input_file));
-					}
-					return_code=0;
-				} break;
-			}
-		}
-	}
-	/* clear node field information */
-	if (template_node)
-	{
-		DEACCESS(FE_node)(&template_node);
-	}
-	DESTROY(Multi_range)(&new_cmiss_numbers);
-	MANAGER_END_CACHE(FE_node)(node_manager);
-#if defined (OLD_CODE)
-	MANAGER_END_CACHE(GROUP(FE_node))(node_group_manager);
-#endif /* defined (OLD_CODE)*/
-	if (!return_code)
-	{
-		if (existing_group)
-		{
-			MANAGED_GROUP_END_CACHE(FE_node)(existing_group);
-		}
-		DESTROY_GROUP(FE_node)(&nodes_in_file);
-	}
-	if (group_name)
-	{
-		DEALLOCATE(group_name);
-	}
-	if (field_order_info)
-  {
-		DESTROY(FE_field_order_info)(&field_order_info);
-  }
-	LEAVE;
-
-	return (return_code);
-} /* read_FE_node_group_with_order */
-
-int read_FE_node_group(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager)
-/*******************************************************************************
-LAST MODIFIED : 9 November 2001
-
-DESCRIPTION :
-Reads node groups from an <input_file> or the socket (if <input_file> is NULL).
-???RC Needs data_group_manager, node_group_manager and element_group_manager
-since groups of the same name in each manager are created simultaneously, and
-node groups are updated to contain nodes used by elements in associated group.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(read_FE_node_group);
-	return_code=read_FE_node_group_with_order(input_file,fe_field_manager,fe_time,
-		node_manager,element_manager,node_group_manager,data_group_manager,
-		element_group_manager,(struct FE_node_order_info *)NULL,
-		(struct Node_time_index *)NULL);
-	LEAVE;
-
-	return (return_code);
-} /* read_FE_node_group */
-
-int file_read_FE_node_group(char *file_name,void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 September 1999
-
-DESCRIPTION :
-Reads a node group from a file.
-==============================================================================*/
-{
-	FILE *input_file;
-	int return_code;
-	struct File_read_FE_node_group_data *data;
-
-	ENTER(file_read_FE_node_group);
-	if (data=(struct File_read_FE_node_group_data *)data_void)
-	{
-		/* open the input file */
-		if (file_name)
-		{
-			if (input_file=fopen(file_name,"r"))
-			{
-				return_code=read_FE_node_group(input_file,data->fe_field_manager,
-					data->fe_time,data->node_manager,data->element_manager,
-					data->node_group_manager,data->data_group_manager,
-					data->element_group_manager);
-				fclose(input_file);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Could not open node group file: %s",
-					file_name);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing node group file name");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"file_read_FE_node_group.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* file_read_FE_node_group */
-
-int read_FE_element_group(FILE *input_file,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(FE_basis) *basis_manager)
-/*******************************************************************************
-LAST MODIFIED : 18 October 2001
-
-DESCRIPTION :
-Reads an element group from an <input_file> or the socket (if <input_file> is
-NULL).
-???RC Needs data_group_manager, node_group_manager and element_group_manager
-since groups of the same name in each manager are created simultaneously, and
-node groups are updated to contain nodes used by elements in associated group.
-==============================================================================*/
-{
-	char group_field_shape_element_flag,*group_name,*last_character,*temp_string;
-	int existing_group_empty,input_result,return_code;
-	struct CM_element_information element_identifier;
-	struct FE_element *element,*template_element;
-	struct FE_element_list_CM_element_type_data element_list_type_data;
-	struct GROUP(FE_element) *elements_in_file,*existing_group;
-	struct FE_element_shape *element_shape;
-	struct GROUP(FE_node) *same_name_data_group,*same_name_node_group;
-	struct LIST(FE_node) *nodes_to_add;
-	struct LIST(FE_element) *temp_element_list;
-	struct FE_field_order_info *field_order_info;
-	enum CM_element_type last_cm_element_type;
-	struct Multi_range *new_cmiss_numbers;
-
-	ENTER(read_FE_element_group);
-	field_order_info = (struct FE_field_order_info *)NULL;
-	group_name=(char *)NULL;
-	template_element=(struct FE_element *)NULL;
-	existing_group=(struct GROUP(FE_element) *)NULL;
-	elements_in_file=(struct GROUP(FE_element) *)NULL;
-	element_shape=(struct FE_element_shape *)NULL;
-	/* use Multi_range to store cmiss numbers of elements added to existing group */
-	last_cm_element_type = CM_ELEMENT_TYPE_INVALID;
-	new_cmiss_numbers = CREATE(Multi_range)();
-	return_code=1;
-	input_result=1;
-	/* don't need to cache all element groups since each individual group read
-		 is cached */
-#if defined (OLD_CODE)
-	MANAGER_BEGIN_CACHE(GROUP(FE_element))(element_group_manager);
-#endif /* defined (OLD_CODE) */
-	MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-	while (return_code&&(1==input_result))
-	{
-		/* get the flag to say what to read next */
-		if (input_file)
-		{
-			/* file input */
-			fscanf(input_file," ");
-			input_result=fscanf(input_file,"%c",&group_field_shape_element_flag);
-			/*???DB.  On the alphas input_result is 0 at the end of file when the
-				fscanfs are combined " %c" ? */
-			if (EOF==input_result)
-			{
-				/* make it look like the group is changing to re-use code for
-					 establishing the group */
-				group_field_shape_element_flag='G';
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_element_group.  Missing input_file");
-			return_code=0;
-		}
-		if (return_code)
-		{
-			switch (group_field_shape_element_flag)
-			{
-				case 'G':
-				{
-					/* do we currently have a group? If yes, establish it */
-					if (elements_in_file)
-					{
-						/* make sure faces and lines of elements are also in the group. Make
-							 a temporary list of top-level elements since group may change. */
-						if (temp_element_list = CREATE(LIST(FE_element))())
-						{
-							element_list_type_data.cm_element_type = CM_ELEMENT;
-							element_list_type_data.element_list = temp_element_list;
-							FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-								add_FE_element_of_CM_element_type_to_list,
-								(void *)&element_list_type_data, elements_in_file);
-							FOR_EACH_OBJECT_IN_LIST(FE_element)(
-								ensure_FE_element_and_faces_are_in_group,
-								(void *)elements_in_file,temp_element_list);
-							if (existing_group)
-							{
-								/* make sure existing group also has faces and lines added */
-								FOR_EACH_OBJECT_IN_LIST(FE_element)(
-									ensure_FE_element_and_faces_are_in_group,
-									(void *)existing_group,temp_element_list);
-							}
-							DESTROY(LIST(FE_element))(&temp_element_list);
-						}
-						if (existing_group)
-						{
-							/* update the node_group of the same name to contain at least the
-								 nodes in the elements of the existing_group */
-							if (same_name_node_group=FIND_BY_IDENTIFIER_IN_MANAGER(
-								GROUP(FE_node),name)(group_name,node_group_manager))
-							{
-								nodes_to_add=CREATE(LIST(FE_node))();
-								FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-									ensure_top_level_FE_element_nodes_are_in_list,
-									(void *)nodes_to_add,existing_group);
-								FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-									ensure_FE_node_is_not_in_list,(void *)nodes_to_add,
-									same_name_node_group);
-								/* only make change if any new nodes to be added */
-								if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-									(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-									nodes_to_add))
-								{
-									MANAGED_GROUP_BEGIN_CACHE(FE_node)(same_name_node_group);
-									FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_group,
-										(void *)same_name_node_group,nodes_to_add);
-									MANAGED_GROUP_END_CACHE(FE_node)(same_name_node_group);
-								}
-								DESTROY(LIST(FE_node))(&nodes_to_add);
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE,"read_FE_element_group.  "
-									"No node group of same name as element group %s",group_name);
-							}
-							if (!existing_group_empty &&
-								(0 < Multi_range_get_number_of_ranges(new_cmiss_numbers)))
-							{
-								/* report element numbers added to non-empty existing group */
-								temp_string = (char *)NULL;
-								GET_NAME(GROUP(FE_element))(existing_group, &temp_string);
-								display_message(WARNING_MESSAGE,
-									"The following %s(s) were added to group %s during read:",
-									CM_element_type_string(last_cm_element_type), temp_string);
-								DEALLOCATE(temp_string);
-								Multi_range_display_ranges(new_cmiss_numbers);
-								Multi_range_clear(new_cmiss_numbers);
-								last_cm_element_type = CM_ELEMENT_TYPE_INVALID;
-							}
-							if (NUMBER_IN_GROUP(FE_element)(existing_group)!=
-								NUMBER_IN_GROUP(FE_element)(elements_in_file))
-							{
-								display_message(WARNING_MESSAGE,"read_FE_element_group.  "
-									"File does not contain complete element group");
-							}
-							MANAGED_GROUP_END_CACHE(FE_element)(existing_group);
-							DESTROY_GROUP(FE_element)(&elements_in_file);
-						}
-						else
-						{
-							/* make sure there are data and node groups of the same name
-								 so that GT_element_group automatically created with them.
-								 Also fill node_group with all the nodes referred to by elements
-								 in the element group */
-							same_name_data_group=CREATE(GROUP(FE_node))(group_name);
-							if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(same_name_data_group,
-								data_group_manager))
-							{
-								DESTROY(GROUP(FE_node))(&same_name_data_group);
-							}
-							same_name_node_group=CREATE(GROUP(FE_node))(group_name);
-							nodes_to_add=CREATE(LIST(FE_node))();
-							FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-								ensure_top_level_FE_element_nodes_are_in_list,
-								(void *)nodes_to_add,elements_in_file);
-							FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_group,
-								(void *)same_name_node_group,nodes_to_add);
-							DESTROY(LIST(FE_node))(&nodes_to_add);
-							if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(same_name_node_group,
-								node_group_manager))
-							{
-								DESTROY(GROUP(FE_node))(&same_name_node_group);
-							}
-							if (!(return_code=ADD_OBJECT_TO_MANAGER(GROUP(FE_element))(
-								elements_in_file,element_group_manager)))
-							{
-								DESTROY(GROUP(FE_element))(&elements_in_file);
-							}
-						}
-					}
-					/* read the name of the group of elements */
-					if (group_name)
-					{
-						DEALLOCATE(group_name);
-					}
-					if (EOF != input_result)
-					{
-						if (input_file)
-						{
-							/* file input */
-							fscanf(input_file,"roup name : ");
-							if (read_string(input_file,"[^\n]",&group_name))
-							{
-								/* trim trailing blanks */
-								last_character=group_name+(strlen(group_name)-1);
-								while ((last_character>group_name)&&(' '== *last_character))
-								{
-									last_character--;
-								}
-								*(last_character+1)='\0';
-								return_code=1;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"read_FE_element_group.  "
-									"Error reading element group name from file.  Line %d",
-									get_line_number(input_file));
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_element_group.  Missing input_file");
-							return_code=0;
-						}
-						if (return_code)
-						{
-							/* determine if the group already exists */
-							if (existing_group=FIND_BY_IDENTIFIER_IN_MANAGER(
-								GROUP(FE_element),name)(group_name,element_group_manager))
-							{
-								/* if the existing group is empty do not write warnings for
-									 every new element added to it - see later */
-								existing_group_empty=((struct FE_element *)NULL==
-									FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
-										(GROUP_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL,
-										existing_group));
-								elements_in_file=CREATE_GROUP(FE_element)((char *)NULL);
-								MANAGED_GROUP_BEGIN_CACHE(FE_element)(existing_group);
-							}
-							else
-							{
-								elements_in_file=CREATE_GROUP(FE_element)(group_name);
-							}
-							if (template_element)
-							{
-								DEACCESS(FE_element)(&template_element);
-							}
-						}
-					}
-				} break;
-				case '#':
-				{
-					/* ensure we have an element group */
-					if (elements_in_file)
-					{
-						/* clear element field information */
-						if (template_element)
-						{
-							DEACCESS(FE_element)(&template_element);
-						}
-						/* read new element field information and field_order_info */
-						if (template_element=read_FE_element_field_info(input_file,
-							element_shape,fe_field_manager,fe_time,basis_manager,
-							&field_order_info))
-						{
-							ACCESS(FE_element)(template_element);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Error reading element field information");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"No current group for element field info");
-						return_code=0;
-					}
-				} break;
-				case 'S':
-				{
-					/* clear element shape information */
-					DEACCESS(FE_element_shape)(&element_shape);
-					/* read element shape information */
-					if (element_shape=read_FE_element_shape(input_file))
-					{
-						ACCESS(FE_element_shape)(element_shape);
-						/* clear element field information */
-						if (template_element)
-						{
-							DEACCESS(FE_element)(&template_element);
-						}
-						/* create the initial template element for no fields */
-						element_identifier.type=CM_ELEMENT;
-						element_identifier.number=0;
-						template_element=CREATE(FE_element)(&element_identifier,
-							(struct FE_element *)NULL);
-						ACCESS(FE_element)(template_element);
-						set_FE_element_shape(template_element,element_shape);
 						/* clear field_order_info */
 						if (field_order_info)
 						{
 							DESTROY(FE_field_order_info)(&field_order_info);
 						}
 						field_order_info = CREATE(FE_field_order_info)();
-					}
-					else
+					} break;
+					case 'S':
 					{
-						display_message(ERROR_MESSAGE,
-							"read_FE_element_group.  Error reading element shape");
-						return_code=0;
-					}
-				} break;
-				case 'E':
-				{
-					/* ensure we have element field information */
-					if (template_element)
-					{	
-						/* read element */
-						if (element=read_FE_element(input_file,template_element,
-							element_manager,node_manager,field_order_info))
+						if (fe_region)
 						{
-							/* check for repeated elements in file */
-							if (FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-								element->identifier,elements_in_file))
+							if (element_shape)
 							{
-								display_message(WARNING_MESSAGE,
-									"Element repeated in file.  Line %d",
-									get_line_number(input_file));
+								DEACCESS(FE_element_shape)(&element_shape);
+								element_shape = (struct FE_element_shape *)NULL;
+							}
+							/* clear node and element field information */
+							if (template_node)
+							{
+								DEACCESS(FE_node)(&template_node);
+							}
+							if (template_element)
+							{
+								DEACCESS(FE_element)(&template_element);
+							}
+							/* read element shape information */
+							if (read_FE_element_shape(input_file, &element_shape))
+							{
+								/* nodes have 0 dimensions and thus no element_shape */
+								if (element_shape)
+								{
+									ACCESS(FE_element_shape)(element_shape);
+									/* create the initial template element for no fields */
+									element_identifier.type = CM_ELEMENT;
+									element_identifier.number = 0;
+									template_element = CREATE(FE_element)(&element_identifier,
+										element_shape, fe_region, (struct FE_element *)NULL);
+									ACCESS(FE_element)(template_element);
+								}
+								else
+								{
+									/* create the initial template node for no fields */
+									template_node = CREATE(FE_node)(0, fe_region,
+										(struct FE_node *)NULL);
+									ACCESS(FE_node)(template_node);
+								}
+								/* clear field_order_info */
+								if (field_order_info)
+								{
+									DESTROY(FE_field_order_info)(&field_order_info);
+								}
+								field_order_info = CREATE(FE_field_order_info)();
 							}
 							else
 							{
-								/* add element to the list of the elements in the file */
-								if (ADD_OBJECT_TO_GROUP(FE_element)(element,elements_in_file))
+								display_message(ERROR_MESSAGE,
+									"read_FE_element_group.  Error reading element shape");
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Group not set before Shape token in file.  Line %d",
+								get_line_number(input_file));
+							return_code = 0;
+						}
+					} break;
+					case '#':
+					{
+						if (fe_region)
+						{
+							/* clear node and element field information */
+							if (template_node)
+							{
+								DEACCESS(FE_node)(&template_node);
+							}
+							if (template_element)
+							{
+								DEACCESS(FE_element)(&template_element);
+							}
+							if (element_shape)
+							{
+								/* read new element field information and field_order_info */
+								if (template_element = read_FE_element_field_info(input_file,
+									fe_region, element_shape, &field_order_info))
 								{
-									if (existing_group)
-									{
-										/* check that element is in the existing group */
-										if (existing_group_empty||
-											(!FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-												element->identifier,existing_group)))
-										{
-											if (!existing_group_empty)
-											{
-												/* report on elements of different type added thus
-													far */
-												if ((0 <
-													Multi_range_get_number_of_ranges(new_cmiss_numbers))&&
-													(element->identifier->type != last_cm_element_type))
-												{
-													/* report element numbers added to existing group */
-													temp_string = (char *)NULL;
-													GET_NAME(GROUP(FE_element))(existing_group,
-														&temp_string);
-													display_message(WARNING_MESSAGE,"The following %s(s) "
-														"were added to group %s during read:",
-														CM_element_type_string(last_cm_element_type),
-														temp_string);
-													DEALLOCATE(temp_string);
-													Multi_range_display_ranges(new_cmiss_numbers);
-													Multi_range_clear(new_cmiss_numbers);
-												}
-												/* collate cmiss numbers of elements added to group */
-												Multi_range_add_range(new_cmiss_numbers,
-													element->identifier->number,
-													element->identifier->number);
-												last_cm_element_type = element->identifier->type;
-											}
-											if (!ADD_OBJECT_TO_GROUP(FE_element)(element,
-												existing_group))
-											{
-												display_message(ERROR_MESSAGE,"read_FE_element_group.  "
-													"Could not add element to existing_group");
-												REMOVE_OBJECT_FROM_GROUP(FE_element)(element,
-													elements_in_file);
-												REMOVE_OBJECT_FROM_MANAGER(FE_element)(element,
-													element_manager);
-												element=(struct FE_element *)NULL;
-												return_code=0;
-											}
-										}
-									}
+									ACCESS(FE_element)(template_element);
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"read_FE_element_group.  Could not add element to group");
-									DESTROY(FE_element)(&element);
-									return_code=0;
+										"Error reading element field information");
+									return_code = 0;
+								}
+							}
+							else
+							{
+								/* read new node field information and field_order_info */
+								if (template_node = read_FE_node_field_info(input_file,
+									fe_region, &field_order_info, time_index))
+								{
+									ACCESS(FE_node)(template_node);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Error reading node field information");
+									return_code = 0;
 								}
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"read_FE_element_group.  Error reading element");
-							return_code=0;
+								"Group not set before #Fields token in file.  Line %d",
+								get_line_number(input_file));
+							return_code = 0;
 						}
-					}
-					else
+					} break;
+					case 'N':
 					{
-						display_message(ERROR_MESSAGE,"read_FE_element_group.  "
-							"No current element field info for element");
-						return_code=0;
-					}
-				} break;
-				case 'V':
-				{
-					/* read in field values */
-					if (template_element&&field_order_info)
-					{
-						if (!read_FE_field_values(input_file,element_manager,
-							field_order_info))
+						if (fe_region)
 						{
-							display_message(ERROR_MESSAGE,
-								"read_FE_element_group.  Error reading field values");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"read_FE_element_group.  Unexpected V[alues] token in file");
-						return_code=0;
-					}
-				} break;
-				default:
-				{
-					if (read_string(input_file,"[^\n]",&temp_string))
-					{
-						display_message(ERROR_MESSAGE,
-							"Invalid flag \'%c\' in element file.  Line %d \'%c%s\'",
-							group_field_shape_element_flag,get_line_number(input_file),
-							group_field_shape_element_flag,temp_string);
-						DEALLOCATE(temp_string);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Invalid flag \'%c\' in element file.  Line %d",
-							group_field_shape_element_flag,get_line_number(input_file));
-					}
-					return_code=0;
-				} break;
-			}
-		}
-	}
-	/* deaccess shape and clear element field information */
-	DEACCESS(FE_element_shape)(&element_shape);
-	if (template_element)
-	{
-		DEACCESS(FE_element)(&template_element);
-	}
-	DESTROY(Multi_range)(&new_cmiss_numbers);
-	if (!return_code)
-	{
-		if (existing_group)
-		{
-			MANAGED_GROUP_END_CACHE(FE_element)(existing_group);
-		}
-		DESTROY_GROUP(FE_element)(&elements_in_file);
-	}
-	if (group_name)
-	{
-		DEALLOCATE(group_name);
-	}
-	MANAGER_END_CACHE(FE_element)(element_manager);
-#if defined (OLD_CODE)
-	MANAGER_END_CACHE(GROUP(FE_element))(element_group_manager);
-#endif /* defined (OLD_CODE)*/
-	if (field_order_info)
-  {
-		DESTROY(FE_field_order_info)(&field_order_info);
-  }
-	LEAVE;
-
-	return (return_code);
-} /* read_FE_element_group */
-
-int file_read_FE_element_group(char *file_name,void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 22 April 1999
-
-DESCRIPTION :
-Reads an element group from a file.
-==============================================================================*/
-{
-	FILE *input_file;
-	int return_code;
-	struct File_read_FE_element_group_data *data;
-
-	ENTER(file_read_FE_element_group);
-	if (data=(struct File_read_FE_element_group_data *)data_void)
-	{
-		/* open the input file */
-		if (file_name)
-		{
-			if (input_file=fopen(file_name,"r"))
-			{
-				return_code=read_FE_element_group(input_file,data->element_manager,
-					data->element_group_manager,data->fe_field_manager,data->fe_time,
-					data->node_manager,data->node_group_manager,
-					data->data_group_manager,data->basis_manager);
-				fclose(input_file);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Could not open element group file: %s",
-					file_name);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing element group file name");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"file_read_FE_element_group.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* file_read_FE_element_group */
-
-int read_exnode_or_exelem_file_from_string(char *exnode_string,
-	char *exelem_string,char *name,struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_time *fe_time, struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node))*node_group_manager,
-	struct MANAGER(GROUP(FE_node))*data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager)
-/*******************************************************************************
-LAST MODIFIED : 9 October 2000
-
-DESCRIPTION :
-Given a string <exnode_string> containing an entire exnode file,
-XOR a string <exelem_string> containing an entire exelem file, reads in the node
-or element group(s). Renames the first node or element group <name> 
-(i.e ignores the first node or element group name in
-<exnode_string>/<exelem_string>).  Does all this by writing out
-<exnode_string>/<exelem_string> to a temporary file, and reading it back in with
-read_FE_node_group/read_FE_element_group.  This is generally done so we can
-statically include an exnode or exelem file (in <exnode_string>/<exelem_string>)
-==============================================================================*/
-{
-	int string_len;
-	char group_name_str[]=" Group name: ";
-	char *exnode_or_exelem_string,*line_str,*outstr;		
-	FILE *input_file,*output_file;
-	int return_code;
-
-	ENTER(read_exnode_or_exelem_file_from_string);
-	input_file=(FILE *)NULL;
-	output_file=(FILE *)NULL;
-	outstr=(char *)NULL;
-	line_str=(char *)NULL;		
-	return_code=0;
-	/* exnode_string XOR exelem_string defined, other NULL*/
-	if(((exnode_string&&!exelem_string)||(!exnode_string&&exelem_string))&&
-		fe_field_manager&&node_manager&&element_manager&&node_group_manager&&
-		data_group_manager&&element_group_manager)
-	{	
-		if(exnode_string)
-		{
-			exnode_or_exelem_string=exnode_string;
-		}
-		else
-		/* exelem_string */
-		{
-			exnode_or_exelem_string=exelem_string;
-		}
-		/* set up the new node group name */	
-		string_len = strlen(group_name_str);
-		string_len++;
-		string_len+=strlen(name);
-		string_len++;
-		if(ALLOCATE(line_str,char,string_len))
-		{
-			strcpy(line_str,group_name_str);
-			strcat(line_str,name);
-			strcat(line_str,"\n");	
-			/* open a temp file to write to */
-			if(output_file=fopen("temp_exnode_or_exelem_file", "w"))
-			{
-				/* write out the new group name */
-				if (fwrite(line_str,1,strlen(line_str),output_file))
-				{
-					/* move the start of the string to to the start of the second line
-						(after the \n) (The first line is the group name and we've just
-						replaced this)x*/
-					outstr=exnode_or_exelem_string;
-					while (*outstr!='\n')
-					{		
-						outstr++;				
-					}
-					/* move past the \n */
-					outstr++;
-					/* write the string to the temp file*/
-					if (fwrite(outstr,1,strlen(outstr),output_file))
-					{
-						fclose(output_file);
-						/* read the temp file in to a node or element group */
-						if (input_file=fopen("temp_exnode_or_exelem_file","r"))
-						{
-							if (exnode_string)
-							{
-								return_code=read_FE_node_group(input_file,fe_field_manager,
-									fe_time,node_manager,element_manager,node_group_manager,
-									data_group_manager,element_group_manager);			
+							/* ensure we have node field information */
+							if (template_node)
+							{	
+								/* read node */
+								if (node = read_FE_node(input_file, template_node, fe_region,
+									root_region, field_order_info, time_index))
+								{
+									ACCESS(FE_node)(node);
+									if (!FE_region_merge_FE_node(fe_region, node))
+									{
+										display_message(ERROR_MESSAGE,
+											"read_exregion_file.  Could not merge node into region");
+										return_code = 0;
+									}
+									DEACCESS(FE_node)(&node);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"read_exregion_file.  Error reading node");
+									return_code = 0;
+								}
 							}
 							else
 							{
-								/* exelem_string */
-								return_code=read_FE_element_group(input_file,element_manager,
-									element_group_manager,fe_field_manager,fe_time,node_manager,
-									node_group_manager,data_group_manager,basis_manager);	
+								display_message(ERROR_MESSAGE,
+									"read_exregion_file.  No current node field info for node");
+								return_code = 0;
 							}
-							fclose(input_file);
 						}
-					}
-					else
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Group not set before Node token in file.  Line %d",
+								get_line_number(input_file));
+							return_code = 0;
+						}
+					} break;
+					case 'E':
 					{
-						return_code=0;
-						fclose(output_file);
-						display_message(ERROR_MESSAGE,
-							"read_exnode_or_exelem_file_from_string.  "
-							"Failed to write file");
-					}
-				}
-				else
-				{
-					return_code=0;
-					fclose(output_file);
-					display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string."
-						" failed to write name to file");
-				}			
-				/*remove the temp file*/						
-				remove("temp_exnode_or_exelem_file");				
-			}
-			else
+						if (fe_region)
+						{
+							/* ensure we have element field information */
+							if (template_element)
+							{	
+								/* read element */
+								if (element = read_FE_element(input_file, template_element,
+									fe_region, field_order_info))
+								{
+									ACCESS(FE_element)(element);
+									if (!FE_region_merge_FE_element(fe_region, element))
+									{
+										display_message(ERROR_MESSAGE, "read_exregion_file.  "
+											"Could not merge element into region");
+										return_code = 0;
+									}
+									DEACCESS(FE_element)(&element);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"read_exregion_file.  Error reading element");
+									return_code = 0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"read_FE_element_group.  "
+									"No current element field info for element");
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Group not set before Element token in file.  Line %d",
+								get_line_number(input_file));
+							return_code = 0;
+						}
+					} break;
+					case 'V':
+					{
+						/* read in field values */
+						if ((template_node || template_element) && field_order_info)
+						{
+							if (!read_FE_field_values(input_file, fe_region, root_region,
+								field_order_info))
+							{
+								display_message(ERROR_MESSAGE,
+									"read_exregion_file.  Error reading field values");
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"read_exregion_file.  Unexpected V[alues] token in file");
+							return_code = 0;
+						}
+					} break;
+					default:
+					{
+						if (read_string(input_file, "[^\n]", &temp_string))
+						{
+							display_message(ERROR_MESSAGE,
+								"Invalid flag \'%c\' in node file.  Line %d \'%c%s\'",
+								first_character_in_token, get_line_number(input_file),
+								first_character_in_token, temp_string);
+							DEALLOCATE(temp_string);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Invalid flag \'%c\' in node file.  Line %d",
+								first_character_in_token, get_line_number(input_file));
+						}
+						return_code = 0;
+					} break;
+				} /* switch (first_character_in_token) */
+			} /* if (1 == input_result) */
+		} /* while (return_code && (1 == input_result)) */
+		if (fe_region)
+		{
+			FE_region_end_change(fe_region);
+		}
+		if (region)
+		{
+			Cmiss_region_end_change(region);
+		}
+		if (root_region && root_fe_region)
+		{
+			FE_region_end_change(root_fe_region);
+			Cmiss_region_end_change(root_region);
+		}
+		if (template_node)
+		{
+			DEACCESS(FE_node)(&template_node);
+		}
+		if (template_element)
+		{
+			DEACCESS(FE_element)(&template_element);
+		}
+		if (element_shape)
+		{
+			DEACCESS(FE_element_shape)(&element_shape);
+		}
+		if (field_order_info)
+		{
+			DESTROY(FE_field_order_info)(&field_order_info);
+		}
+		if (!return_code)
+		{
+			if (root_region)
 			{
-				return_code=0;
-				display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string."
-					" failed to open file");
+				DESTROY(Cmiss_region)(&root_region);
+				root_region = (struct Cmiss_region *)NULL;
 			}
 		}
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string.  "
-				"Out of memory");
-		}
-		DEALLOCATE(line_str);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string.  "
-			"Invalid arguments");
+		display_message(ERROR_MESSAGE, "read_exregion_file.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* read_exnode_or_exelem_file_from_string */
+	return (root_region);
+} /* read_exregion_file */
 
-int read_exnode_and_exelem_file_from_string_and_offset(char *exnode_string,
-	char *exelem_string,char *name,int offset,
-	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node))*node_group_manager,
-	struct MANAGER(GROUP(FE_node))*data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager)
+struct Cmiss_region *read_exregion_file_of_name(char *file_name,
+	struct MANAGER(FE_basis) *basis_manager,
+	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 3 November 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
-Given a string <exnode_string> containing an entire exnode file,and a string 
-<exelem_string> containing an entire exelem file, reads in the node and 
-element group(s), names them <name>, and shifts the node and element identifier 
-numbers to <offset>
+Version of read_exregion_file that opens and closes file <file_name>.
+Up to the calling function to merge the returned cmiss_region.
 ==============================================================================*/
-{	
-	int return_code;
-
-	ENTER(read_exnode_and_exelem_file_from_string_and_offset);
-	if (exnode_string&&exelem_string&&fe_field_manager&&node_manager&&
-		element_manager&&node_group_manager&&data_group_manager&&
-		element_group_manager&&basis_manager)
-	{				
-		/* read in the default torso mesh nodes and elements */
-		/* (cleaned up when the program shuts down) */		
-		if ((return_code=read_exnode_or_exelem_file_from_string(exnode_string,
-			(char *)NULL,name,fe_field_manager,fe_time,node_manager,element_manager,
-			node_group_manager,data_group_manager,element_group_manager,
-			basis_manager))&&(return_code=read_exnode_or_exelem_file_from_string(
-			(char *)NULL,exelem_string,name,fe_field_manager,fe_time,node_manager,
-			element_manager,node_group_manager,data_group_manager,
-			element_group_manager,basis_manager)))
-		{
-			/* offset the nodea and elements */
-			return_code=offset_FE_node_and_element_identifiers_in_group(name,offset,
-				node_manager,element_manager,node_group_manager,
-				element_group_manager);
-		}								
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
-			" Invalid arguments");
-	}
-	LEAVE;
-	return(return_code);
-}
-
-char *get_first_group_name_from_FE_node_file(char *group_file_name)
-/*******************************************************************************
-LAST MODIFIED :2 November 2000
-
-DESCRIPTION :
-Allocates and returns the name of the first node group, in the exnode file refered 
-to by <group_file_name>. It is up to the user to DEALLOCATE the returned 
-group name.	
-Read in the group name by peering into the node file. This is a bit inelegant,
-and will only get the name of the FIRST group, so semi-assuming the exnode file 
-only has one group (although it'd be posible to get others). Do this as 
-read_FE_node_group doesn't (yet?) return info about the nodes, groups or 
-fields .
-==============================================================================*/
-{	
-	char *group_name,input_str[13];
+{
 	FILE *input_file;
+	struct Cmiss_region *root_region;
 
-	ENTER(get_first_group_name_from_FE_node_file);
-	group_name=(char *)NULL;
-	input_file=(FILE *)NULL;
-	if(group_file_name)
+	ENTER(read_exregion_file_of_name);
+	root_region = (struct Cmiss_region *)NULL;
+	if (file_name)
 	{
-		if (input_file=fopen(group_file_name,"r"))
-		{										
-			fscanf(input_file," ");
-			fscanf(input_file,"%12c",input_str);
-			/* NULL terminate for use with strcmp */	
-			input_str[12]='\0';
-			if(!strcmp("Group name: ",input_str))
-			{
-				read_string(input_file,"[^\n]",&group_name);			
-			}	
-			else
-			{			
-				display_message(ERROR_MESSAGE,
-					"get_first_group_name_from_FE_node_file."
-					" group name corrupt");
-			}	
+		if (input_file = fopen(file_name,"r"))
+		{
+			root_region = read_exregion_file(input_file, basis_manager, time_index);
 			fclose(input_file);
 		}
 		else
-		{		
-			display_message(ERROR_MESSAGE,
-				"get_first_group_name_from_FE_node_file. "
-				"failed to read group name from exnode file ");
-		}
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"get_first_group_name_from_FE_node_file. "
-			"invalid arguments ");
-	}
-	LEAVE;
-	return(group_name);
-}/* get_first_group_name_from_FE_node_file*/
-
-int read_FE_node_and_elem_groups_and_return_name_given_file_name(
-	char *group_file_name,struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_time *fe_time,struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_node))*node_group_manager,
-	struct MANAGER(GROUP(FE_node))*data_group_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager,char **group_name)
-/*******************************************************************************
-LAST MODIFIED : 2 November 2000
-
-DESCRIPTION :
-Given a string <group_file_name>  reads in the corresponding node and 
-element group(s)
-Eg if <group_file_name> is "/usr/bob/default_torso", reads in 
-"/usr/bob/default_torso.exnode" and "/usr/bob/default_torso.exelem".
-Also returns the name of the first node and element group, in <group_name>.
-It is up to the user to DEALLOCATE <group_name>.
-==============================================================================*/
-{	
-	char exnode_ext[]=".exnode";
-	char exelem_ext[]=".exelem";
-	char *exnode_name_str,*exelem_name_str;
-	FILE *input_file;
-	int exnode_name_str_len,exelem_name_str_len,return_code,string_len;
-
-	ENTER(read_FE_node_and_elem_groups_and_return_name_given_file_name);
-	input_file=(FILE *)NULL;
-	exnode_name_str=(char *)NULL;
-	exelem_name_str=(char *)NULL;
-	if(group_file_name&&fe_field_manager&&node_manager&&element_manager&&
-		node_group_manager&&data_group_manager&&element_group_manager&&
-		basis_manager)
-	{
-		/*construct full names for exnode and exelem files*/
-		string_len = strlen(group_file_name);
-		exnode_name_str_len = string_len +strlen(exnode_ext); 
-		exelem_name_str_len = string_len +strlen(exelem_ext);
-		if(ALLOCATE(exnode_name_str,char,exnode_name_str_len)&&
-			ALLOCATE(exelem_name_str,char,exelem_name_str_len))
 		{
-			return_code=1;
-			/* add the extensions to the file name */
-			strcpy(exnode_name_str,group_file_name);
-			strcat(exnode_name_str,exnode_ext);
-			strcpy(exelem_name_str,group_file_name);
-			strcat(exelem_name_str,exelem_ext);
-			/*get thenode and element  group name*/
-			*group_name=get_first_group_name_from_FE_node_file(exnode_name_str);
-			/* read in the node file */
-			if(*group_name)
-			{
-				if (input_file=fopen(exnode_name_str,"r"))
-				{
-					return_code=read_FE_node_group(input_file,fe_field_manager,fe_time,
-						node_manager,element_manager,node_group_manager,data_group_manager,
-						element_group_manager);
-				}
-				else
-				{
-					return_code=0;
-					display_message(ERROR_MESSAGE,
-						"read_FE_node_and_elem_groups_and_return_name_given_file_name."
-						" failed to open file exnode_name_str  ");
-				}
-				fclose(input_file);
-			}
-			else
-			{
-				return_code=0;
-			}
-			/* read in the element file */
-			if(return_code)
-			{
-				if (input_file=fopen(exelem_name_str,"r"))
-				{
-					return_code=read_FE_element_group(input_file,element_manager,
-						element_group_manager,fe_field_manager,fe_time,node_manager,
-						node_group_manager,data_group_manager,basis_manager);	
-				}
-				else
-				{
-					return_code=0;
-					display_message(ERROR_MESSAGE,
-						"read_FE_node_and_elem_groups_and_return_name_given_file_name. "
-						"failed to open file exnode_name_str  ");
-				}
-				fclose(input_file);
-			}		
+			display_message(ERROR_MESSAGE, "Could not open exregion file: %s",
+				file_name);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_FE_node_and_elem_groups_and_return_name_given_file_name. "
-				"out of memory for exnode_name_str ");
-			return_code=0;
-		}									
-		DEALLOCATE(exnode_name_str);
-		DEALLOCATE(exelem_name_str);	
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"read_FE_node_and_elem_groups_and_return_name_given_file_name. "
-			"invalid arguments ");
-		return_code=0;
-	}	
+			"read_exregion_file_of_name.  Invalid argument(s)");
+	}
 	LEAVE;
-	return(return_code);
-} /* read_FE_node_and_elem_groups_and_return_name_given_file_name */
+
+	return (root_region);
+} /* read_exregion_file_of_name */

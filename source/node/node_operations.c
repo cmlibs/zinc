@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : node_operations.c
 
-LAST MODIFIED : 21 June 2002
+LAST MODIFIED : 17 January 2003
 
 DESCRIPTION :
-Functions for mouse controlled node position and vector editing based on
-Scene input.
+FE_node functions that utilise non finite element data structures and therefore
+cannot reside in finite element modules.
 ==============================================================================*/
+#include <stdlib.h>
 #include <math.h>
 #include "general/debug.h"
 #include "node/node_operations.h"
@@ -17,6 +18,7 @@ Global functions
 ----------------
 */
 
+#if defined (OLD_CODE)
 int destroy_listed_nodes(struct LIST(FE_node) *node_list,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
@@ -135,3 +137,395 @@ Upon return <node_list> contains all the nodes that could not be destroyed.
 
 	return (return_code);
 } /* destroy_listed_nodes */
+#endif /* defined (OLD_CODE) */
+
+struct LIST(FE_node) *
+	FE_node_list_from_fe_region_selection_ranges_condition(
+		struct FE_region *fe_region, struct FE_node_selection *node_selection,
+		int selected_flag, struct Multi_range *node_ranges,
+		struct Computed_field *conditional_field, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 3 March 2003
+
+DESCRIPTION :
+Creates and returns an node list that is the intersection of:
+- all the nodes in <fe_region>;
+- all nodes in the <node_selection> if <selected_flag> is set;
+- all nodes in the given <node_ranges>, if any.
+- all nodes for which the <conditional_field> evaluates as "true"
+  in its centre at the specified <time>
+Up to the calling function to destroy the returned node list.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_conditional_data conditional_data;
+	struct LIST(FE_node) *node_list;
+
+	ENTER(FE_node_list_from_fe_region_selection_ranges_condition);
+	node_list = (struct LIST(FE_node) *)NULL;
+	if (fe_region && ((!selected_flag) || node_selection))
+	{
+		if (node_list = CREATE(LIST(FE_node))())
+		{
+			/* start with the list of nodes from fe_region */
+			if (return_code = FE_region_for_each_FE_node(fe_region,
+				add_FE_node_to_list, (void *)node_list))
+			{
+				if (selected_flag)
+				{
+					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+						FE_node_is_not_in_list,
+						(void *)FE_node_selection_get_node_list(node_selection),
+						node_list);
+				}
+				if (node_ranges &&
+					(0 < Multi_range_get_number_of_ranges(node_ranges)))
+				{
+					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+						FE_node_is_not_in_Multi_range, (void *)node_ranges, node_list);
+				}
+				if (conditional_field)
+				{
+					conditional_data.conditional_field = conditional_field;
+					conditional_data.time = time;
+					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+						FE_node_Computed_field_is_not_true_iterator, 
+						(void *)&conditional_data, node_list);
+				}
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_list_from_fe_region_selection_ranges_condition.  "
+					"Error building list");
+				DESTROY(LIST(FE_node))(&node_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_list_from_fe_region_selection_ranges_condition.  "
+				"Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_list_from_fe_region_selection_ranges_condition.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (node_list);
+} /* FE_node_list_from_fe_region_selection_ranges_condition */
+
+struct FE_node_values_number
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Data for changing node identifiers.
+==============================================================================*/
+{
+	struct FE_node *node;
+	int number_of_values;
+	FE_value *values;
+	int new_number;
+};
+
+static int compare_FE_node_values_number_values(
+	const void *node_values1_void, const void *node_values2_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Compares the values in <node_values1> and <node_values2> from the last to the
+first, returning -1 as soon as a value in <node_values1> is less than its
+counterpart in <node_values2>, or 1 if greater. 0 is returned if all values
+are identival. Used as a compare function for qsort.
+==============================================================================*/
+{
+	int i, number_of_values, return_code;
+	struct FE_node_values_number *node_values1, *node_values2;
+
+	ENTER(compare_FE_node_values_number_values);
+	return_code = 0;
+	if ((node_values1 = (struct FE_node_values_number *)node_values1_void) &&
+		(node_values2 = (struct FE_node_values_number *)node_values2_void) &&
+		(0 < (number_of_values = node_values1->number_of_values)) &&
+		(number_of_values == node_values2->number_of_values))
+	{
+		for (i = number_of_values - 1; (!return_code) && (0 <= i); i--)
+		{
+			if (node_values1->values[i] < node_values2->values[i])
+			{
+				return_code = -1;
+			}
+			else if (node_values1->values[i] > node_values2->values[i])
+			{
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"compare_FE_node_values_number_values.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compare_FE_node_values_number_values */
+
+struct FE_node_and_values_to_array_data
+{
+	FE_value time;
+	struct FE_node_values_number *node_values;
+	struct Computed_field *sort_by_field;
+}; /* FE_node_and_values_to_array_data */
+
+static int FE_node_and_values_to_array(struct FE_node *node,
+	void *array_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_and_values_to_array_data *array_data;
+
+	ENTER(FE_node_and_values_to_array);
+	if (node && (array_data =
+		(struct FE_node_and_values_to_array_data *)array_data_void) &&
+		array_data->node_values)
+	{
+		return_code = 1;
+		array_data->node_values->node = node;
+		if (array_data->sort_by_field)
+		{
+			if (!(array_data->node_values->values && Computed_field_evaluate_at_node(
+				array_data->sort_by_field, node, array_data->time,
+				array_data->node_values->values)))
+			{
+				display_message(ERROR_MESSAGE, "FE_node_and_values_to_array.  "
+					"sort_by field could not be evaluated at node");
+				return_code = 0;
+			}
+		}
+		(array_data->node_values)++;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_and_values_to_array.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_and_values_to_array */
+
+int FE_region_change_node_identifiers(struct FE_region *fe_region,
+	int node_offset, struct Computed_field *sort_by_field, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2003
+
+DESCRIPTION :
+Changes the identifiers of all nodes in <fe_region>.
+If <sort_by_field> is NULL, adds <node_offset> to the identifiers.
+If <sort_by_field> is specified, it is evaluated for all nodes
+in <fe_region> and they are sorted by it - changing fastest with the first
+component and keeping the current order where the field has the same values.
+Checks for and fails if attempting to give any of the nodes in <fe_region> an
+identifier already used by a node in the same master FE_region.
+Calls to this function should be enclosed in FE_region_begin_change/end_change.
+Note function avoids iterating through FE_region node lists as this is not
+allowed during identifier changes.
+==============================================================================*/
+{
+	int i, next_spare_node_number, number_of_nodes, number_of_values, return_code;
+	struct FE_node *node_with_identifier;
+	struct FE_node_and_values_to_array_data array_data;
+	struct FE_node_values_number *node_values;
+	struct FE_region *master_fe_region;
+
+	ENTER(FE_region_change_node_identifiers);
+	if (fe_region)
+	{
+		return_code = 1;
+		number_of_nodes = FE_region_get_number_of_FE_nodes(fe_region);
+		if (0 < number_of_nodes)
+		{
+			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+			if (sort_by_field)
+			{
+				number_of_values =
+					Computed_field_get_number_of_components(sort_by_field);
+			}
+			else
+			{
+				number_of_values = 0;
+			}
+			if (ALLOCATE(node_values, struct FE_node_values_number,
+				number_of_nodes))
+			{
+				for (i = 0; i < number_of_nodes; i++)
+				{
+					node_values[i].number_of_values = number_of_values;
+					node_values[i].values = (FE_value *)NULL;
+				}
+				if (sort_by_field)
+				{
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
+					{
+						if (!ALLOCATE(node_values[i].values, FE_value, number_of_values))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_region_change_node_identifiers.  "
+								"Not enough memory");
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* make a linear array of the nodes in the group in current order */
+					array_data.node_values = node_values;
+					array_data.sort_by_field = sort_by_field;
+					array_data.time = time;
+					if (!FE_region_for_each_FE_node(fe_region,
+						FE_node_and_values_to_array, (void *)&array_data))
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_region_change_node_identifiers.  "
+							"Could not build node/field values array");
+						return_code = 0;
+					}
+				}
+				if (return_code)
+				{
+					if (sort_by_field)
+					{
+						/* sort by field values with higher components more significant */
+						qsort(node_values, number_of_nodes,
+							sizeof(struct FE_node_values_number),
+							compare_FE_node_values_number_values);
+						/* give the nodes sequential values starting at node_offset */
+						for (i = 0; i < number_of_nodes; i++)
+						{
+							node_values[i].new_number = node_offset + i;
+						}
+					}
+					else
+					{
+						/* offset node numbers by node_offset */
+						for (i = 0; i < number_of_nodes; i++)
+						{
+							node_values[i].new_number =
+								get_FE_node_identifier(node_values[i].node) + node_offset;
+						}
+					}
+					/* check node numbers are positive and ascending */
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
+					{
+						if (0 >= node_values[i].new_number)
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_region_change_node_identifiers.  "
+								"node_offset would give negative node numbers");
+							return_code = 0;
+						}
+						else if ((0 < i) &&
+							(node_values[i].new_number <= node_values[i - 1].new_number))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_region_change_node_identifiers.  "
+								"Node numbers are not strictly increasing");
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* check no new numbers are in use by nodes not in node_group */
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
+					{
+						if ((node_with_identifier = FE_region_get_FE_node_from_identifier(
+							master_fe_region, node_values[i].new_number)) &&
+							(!FE_region_contains_FE_node(fe_region, node_with_identifier)))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_region_change_node_identifiers.  "
+								"Node using new number exists in master region");
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* change identifiers */
+					/* maintain next_spare_node_number to renumber nodes in same group
+						 which already have the same number as the new_number */
+					next_spare_node_number =
+						node_values[number_of_nodes - 1].new_number + 1;
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
+					{
+						node_with_identifier = FE_region_get_FE_node_from_identifier(
+							fe_region, node_values[i].new_number);
+						/* only modify if node doesn't already have correct identifier */
+						if (node_with_identifier != node_values[i].node)
+						{
+							if (node_with_identifier)
+							{
+								while ((struct FE_node *)NULL !=
+									FE_region_get_FE_node_from_identifier(fe_region,
+										next_spare_node_number))
+								{
+									next_spare_node_number++;
+								}
+								if (!FE_region_change_FE_node_identifier(master_fe_region,
+									node_with_identifier, next_spare_node_number))
+								{
+									return_code = 0;
+								}
+							}
+							if (!FE_region_change_FE_node_identifier(master_fe_region,
+								node_values[i].node, node_values[i].new_number))
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_region_change_node_identifiers.  "
+									"Could not change node identifier");
+								return_code = 0;
+							}
+						}
+					}
+				}
+				for (i = 0; i < number_of_nodes; i++)
+				{
+					if (node_values[i].values)
+					{
+						DEALLOCATE(node_values[i].values);
+					}
+				}
+				DEALLOCATE(node_values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_region_change_node_identifiers.  Not enough memory");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_change_node_identifiers.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_change_node_identifiers */
+

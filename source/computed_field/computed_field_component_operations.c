@@ -1253,7 +1253,7 @@ Evaluate the fields cache at the node.
 		(field->number_of_components == field->source_fields[1]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		element_dimension=element->shape->dimension;
+		element_dimension=get_FE_element_dimension(element);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, element,
 				xi, time, top_level_element, calculate_derivatives))
@@ -1944,7 +1944,7 @@ DESCRIPTION :
 	if (field && element && number_in_xi && values)
 	{
 		return_code=1;
-		element_dimension=element->shape->dimension;
+		element_dimension=get_FE_element_dimension(element);
 		number_of_points=1;
 		for (i=0;(i<element_dimension)&&return_code;i++)
 		{
@@ -2021,7 +2021,7 @@ Inherit result from first source field.
 
 static int Computed_field_scale_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group) 
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region) 
 /*******************************************************************************
 LAST MODIFIED : 15 February 2002
 
@@ -2057,7 +2057,7 @@ DESCRIPTION :
 			{
 				return_code=Computed_field_find_element_xi(
 					field->source_fields[0],source_values,number_of_values,element,
-					xi,search_element_group,/*propagate_field*/1);
+					xi,element_dimension,search_region,/*propagate_field*/1);
 			}
 			DEALLOCATE(source_values);
 		}
@@ -2732,7 +2732,7 @@ DESCRIPTION :
 	if (field && element && number_in_xi && values)
 	{
 		return_code=1;
-		element_dimension=element->shape->dimension;
+		element_dimension = get_FE_element_dimension(element);
 		number_of_points=1;
 		for (i=0;(i<element_dimension)&&return_code;i++)
 		{
@@ -3453,7 +3453,7 @@ DESCRIPTION :
 	if (field && element && number_in_xi && values)
 	{
 		return_code=1;
-		element_dimension=element->shape->dimension;
+		element_dimension = get_FE_element_dimension(element);
 		number_of_points=1;
 		for (i=0;(i<element_dimension)&&return_code;i++)
 		{
@@ -4146,7 +4146,7 @@ DESCRIPTION :
 	if (field && element && number_in_xi && values)
 	{
 		return_code=1;
-		element_dimension=element->shape->dimension;
+		element_dimension = get_FE_element_dimension(element);
 		number_of_points=1;
 		for (i=0;(i<element_dimension)&&return_code;i++)
 		{
@@ -4209,7 +4209,7 @@ Inherit result from first source field.
 
 static int Computed_field_offset_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group)
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2002
 
@@ -4233,7 +4233,7 @@ DESCRIPTION :
 			}
 			return_code=Computed_field_find_element_xi(
 				field->source_fields[0],source_values,number_of_values,element,
-				xi,search_element_group,/*propagate_field*/1);
+				xi,element_dimension,search_region,/*propagate_field*/1);
 			DEALLOCATE(source_values);
 		}
 		else
@@ -5507,7 +5507,7 @@ DESCRIPTION :
 	if (field && element && number_in_xi && values)
 	{
 		return_code = 1;
-		element_dimension = element->shape->dimension;
+		element_dimension = get_FE_element_dimension(element);
 		number_of_points = 1;
 		for (i = 0; (i < element_dimension) && return_code; i++)
 		{

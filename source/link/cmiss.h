@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 4 October 2001
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 This module keeps the data structures within CMISS and CMGUI 'in sync'.  It does
@@ -15,14 +15,17 @@ Note:  A connection comprises two wormholes - input and output.
 ==============================================================================*/
 #if !defined (CMISS_H)
 #define CMISS_H
+
 #include "finite_element/finite_element.h"
 #include "prompt/prompt_window.h"
+#include "region/cmiss_region.h"
 #include "user_interface/user_interface.h"
 
 /*
 Global types
 ------------
 */
+
 struct CMISS_connection;
 /*******************************************************************************
 LAST MODIFIED : 3 September 2001
@@ -35,18 +38,15 @@ Private structure representing the connection between cm and cmgui.
 Global Functions
 ----------------
 */
+
 struct CMISS_connection *CREATE(CMISS_connection)(char *machine,
-	enum Machine_type type,int attach,double wormhole_timeout,char mycm_flag,
-	char asynchronous_commands,struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(FE_node) *node_manager,struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	enum Machine_type type, int attach, double wormhole_timeout, char mycm_flag,
+	char asynchronous_commands, struct Cmiss_region *root_region,
+	struct Cmiss_region *data_root_region,
 	struct Prompt_window **prompt_window_address,char *parameters_file_name,
 	char *examples_directory_path,struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 3 October 2001
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 Creates a connection to the machine specified in <machine>.  If <attach> is

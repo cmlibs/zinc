@@ -109,7 +109,9 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 				time=0.0;
 				if (GT_object_has_time(graphics_object,time))
 				{
-					GT_object_delete_time(graphics_object,time);
+					GT_object_remove_primitives_at_time(graphics_object,time,
+						(GT_object_primitive_object_name_conditional_function *)NULL,
+						NULL);
 				}
 				if (!GT_OBJECT_ADD(GT_polyline)(graphics_object,time,polyline))
 				{

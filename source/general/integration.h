@@ -57,7 +57,7 @@ DESCRIPTION :
 Frees memory/deaccess objects in scheme at <*scheme_address>.
 ==============================================================================*/
 
-int integrate(struct Computed_field *field,struct GROUP(FE_element) *domain,
+int integrate(struct Computed_field *field, struct FE_region *domain,
 	struct Integration_scheme *scheme,FE_value time,FE_value *result);
 /*******************************************************************************
 LAST MODIFIED : 26 December 2002

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -11,6 +11,7 @@ Graphical element group data structure.
 
 #include "finite_element/finite_element.h"
 #include "graphics/element_group_settings.h"
+#include "region/cmiss_region.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -51,35 +52,25 @@ Controls how a list of selected objects is modified by a new list.
 Global functions
 ----------------
 */
+
 PROTOTYPE_OBJECT_FUNCTIONS(GT_element_group);
 
 struct GT_element_group *CREATE(GT_element_group)(
-	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group,
-	struct GROUP(FE_node) *data_group,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct Cmiss_region *cmiss_region,
+	struct Cmiss_region *data_cmiss_region,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection);
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
-the given <element_group>. Its partner <node_group> must also be supplied, and
-is expected to be of the same name. The rest of the application must ensure
-it contains at least the nodes referenced by the elements in the element group.
-Likewise, the <data_group> is expected to be supplied and of the same name.
-The GT_element_group does not access the element group, but it does access the
-node and data groups. It must therefore be destroyed in response to element
-group manager delete messages - currently handled by a Scene - which must
-precede removing the node and data groups from their respective managers.
+the given <cmiss_region> and <data_cmiss_region>. Neither region is accessed;
+instead the Scene is required to destroy GT_element_group if either region is
+destroyed.
 If supplied, callbacks are requested from the <element_selection> and
 <node_selection> to enable automatic highlighting of selected graphics.
 ==============================================================================*/
@@ -110,8 +101,6 @@ LAST MODIFIED : 14 November 2001
 DESCRIPTION :
 Returns true if <gt_element_group1> and <gt_element_group2> match in every way.
 ==============================================================================*/
-
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_element_group);
 
 int GT_element_group_begin_cache(struct GT_element_group *gt_element_group);
 /*******************************************************************************
@@ -310,31 +299,22 @@ from source. Used to apply the changed GT_element_group from the editor to the
 actual GT_element_group.
 ==============================================================================*/
 
-struct GROUP(FE_element) *GT_element_group_get_element_group(
+struct Cmiss_region *GT_element_group_get_Cmiss_region(
 	struct GT_element_group *gt_element_group);
 /*******************************************************************************
-LAST MODIFIED : 16 June 1998
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
-Returns the element_group used by <gt_element_group>.
+Returns the Cmiss_region used by <gt_element_group>.
 ==============================================================================*/
 
-struct GROUP(FE_node) *GT_element_group_get_node_group(
+struct Cmiss_region *GT_element_group_get_data_Cmiss_region(
 	struct GT_element_group *gt_element_group);
 /*******************************************************************************
-LAST MODIFIED : 16 June 1998
+LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
-Returns the node_group used by <gt_element_group>.
-==============================================================================*/
-
-struct GROUP(FE_node) *GT_element_group_get_data_group(
-	struct GT_element_group *gt_element_group);
-/*******************************************************************************
-LAST MODIFIED : 10 September 1998
-
-DESCRIPTION :
-Returns the data_group used by <gt_element_group>.
+Returns the data_Cmiss_region used by <gt_element_group>.
 ==============================================================================*/
 
 int GT_element_group_list_commands(struct GT_element_group *gt_element_group,
@@ -419,12 +399,14 @@ Returns true if <gt_element_group> contains settings which depend on time.
 ==============================================================================*/
 
 int build_GT_element_group(struct GT_element_group *gt_element_group,
-	FE_value time);
+	FE_value time, char *name_prefix);
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 25 March 2003
 
 DESCRIPTION :
 Builds any graphics objects for settings without them in <gt_element_group>.
+The <name_prefix> is used for the start of all names of graphics generated for
+the group.
 ==============================================================================*/
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,

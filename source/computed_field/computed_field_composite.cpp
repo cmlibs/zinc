@@ -574,9 +574,10 @@ Inherit result from first source field.
 
 static int Computed_field_composite_find_element_xi(
 	struct Computed_field *field, FE_value *values, int number_of_values, 
-	struct FE_element **element, FE_value *xi, struct GROUP(FE_element) *search_element_group)
+	struct FE_element **element, FE_value *xi, int element_dimension,
+	struct Cmiss_region *search_region)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Currently only tries to work if there is only one and exactly one source field.
@@ -614,7 +615,7 @@ Zero is used for any source field values that aren't set from the composite fiel
 				}
 				return_code=Computed_field_find_element_xi(
 					field->source_fields[source_field_number],source_values,
-					number_of_source_values,element, xi, search_element_group,
+					number_of_source_values,element, xi, element_dimension, search_region,
 					/*propagate_field*/1);
 				DEALLOCATE(source_values);
 			}

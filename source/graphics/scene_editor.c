@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_editor.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Widgets for editing scene, esp. changing visibility of members.
@@ -918,7 +918,7 @@ Function adds/removes highlighting of selected object by inverting colours.
 static int Scene_editor_set_current_object(struct Scene_editor *scene_editor,
 	struct Scene_editor_object *scene_editor_object)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Sets the current_object in the <scene_editor> for editing. Updates widgets.
@@ -1003,13 +1003,9 @@ Sets the current_object in the <scene_editor> for editing. Updates widgets.
 						} break;
 						case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 						{
-							full_name = duplicate_string("Graphical element: ");
+							full_name = duplicate_string("Graphical element");
 							gt_element_group = Scene_object_get_graphical_element_group(
 								scene_editor_object->scene_object);
-							GET_NAME(GROUP(FE_element))(
-								GT_element_group_get_element_group(gt_element_group), &name);
-							append_string(&full_name, name, &error);
-							DEALLOCATE(name);
 						} break;
 						case SCENE_OBJECT_SCENE:
 						{
@@ -1890,8 +1886,7 @@ struct Scene_editor *CREATE(Scene_editor)(
 	struct Scene_editor **scene_editor_address, Widget parent,
 	struct MANAGER(Scene) *scene_manager, struct Scene *scene,
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
 	struct LIST(GT_object) *glyph_list,
@@ -1900,7 +1895,7 @@ struct Scene_editor *CREATE(Scene_editor)(
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Note on successful return the dialog is put at <*scene_editor_address>.
@@ -1914,8 +1909,8 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 
 	ENTER(CREATE(Scene_editor));
 	scene_editor = (struct Scene_editor *)NULL;
-	if (scene_manager && scene && computed_field_package && element_manager &&
-		fe_field_manager && graphical_material_manager && default_material &&
+	if (scene_manager && scene && computed_field_package && root_region &&
+		graphical_material_manager && default_material &&
 		glyph_list && spectrum_manager && default_spectrum &&
 		volume_texture_manager && user_interface)
 	{
@@ -2235,7 +2230,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				&(scene_editor->graphical_element_editor),
 				scene_editor->child_form,
 				(struct GT_element_group *)NULL,
-				computed_field_package, element_manager, fe_field_manager,
+				computed_field_package, root_region,
 				graphical_material_manager, default_material, glyph_list,
 				spectrum_manager, default_spectrum,
 				volume_texture_manager, user_interface);

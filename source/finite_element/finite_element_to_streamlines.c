@@ -12,6 +12,7 @@ Functions for calculating streamlines in finite elements.
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element_to_graphics_object.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -25,51 +26,6 @@ Functions for calculating streamlines in finite elements.
 Module types
 ------------
 */
-
-#if defined (OLD_CODE)
-struct Interactive_streamline
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Interactive_streamline type is private.
-==============================================================================*/
-{
-	/* line/ribbon etc. */
-	enum Streamline_type type;
-	char *name;
-	/* The element in which the streamline starts */
-	struct FE_element *element;
-	/* The coordinate field which the streamline exists in */
-	struct Computed_field *coordinate_field;
-	/* The vector field which the streamline represents */
-	struct Computed_field *stream_vector_field;
-	/* data field */
-	enum Streamline_data_type data_type;
-	struct Computed_field *data_field;
-	/* The streamlines length */
-	float length;
-	/* The stream ribbon width */
-	float width;
-	/* The starting position of the streamline in the element */
-	FE_value xi[3];
-	int reverse_track;
-	/* The pointset which represents the streamline start in the window */
-	struct GT_object *graphics_object;
-	/* The polyline which is the graphical streamline object */
-	struct GT_object *streamline_graphics_object;
-	int selected;
-	FE_value previous_point[3];
-	FE_value previous_zdepth;
-	/* the number of structures that point to this spectrum.  The spectrum
-		cannot be destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct Interactive_streamline */
-
-FULL_DECLARE_LIST_TYPE(Interactive_streamline);
-
-FULL_DECLARE_MANAGER_TYPE(Interactive_streamline);
-#endif /* defined (OLD_CODE) */
 
 struct Streampoint
 {
@@ -100,292 +56,6 @@ Module functions
 ----------------
 */
 
-#if defined (OLD_CODE)
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Interactive_streamline)
-#endif /* defined (OLD_CODE) */
-
-static int parent_not_equal_to_element(struct FE_element_parent *object,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 21 October 1997
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(parent_not_equal_to_element);
-	if (object&&user_data )
-	{
-		if (object->parent!=(struct FE_element *)user_data)
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"parent_not_equal_to_element.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* parent_not_equal_to_element */
-
-static int change_element(struct FE_element **element,FE_value *xi,
-	FE_value time,int face_index,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-For changing between elements when the streamline reaches the interface. Swaps
-to the neighbouring element from <element> across the <face_index>. Need the
-coordinate_field for resolving problems when crossing polygon sides.
-==============================================================================*/
-{
-	FE_value *face_to_element,facexi[2],pointA[3],pointB[3];
-	int number_of_vertices,return_code;
-	struct FE_element *face;
-	struct FE_element_parent *parent_struct;
-
-	ENTER(change_element);
-	return_code=1;
-
-	/* check arguments */
-	if (element&&(*element)&&(*element)->shape)
-	{
-		face=((*element)->faces)[face_index];
-		if (face)
-		{
-			/* find the other parent */
-			parent_struct=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				parent_not_equal_to_element,(void *)*element,face->parent_list );
-			if (parent_struct)
-			{
-				/* go to the face * dimension ^ 2 position in face to element */
-				face_to_element=((*element)->shape->face_to_element)+face_index*9;
-				/* first column is translation, subtract from xi */
-				xi[0] -= face_to_element[0];
-				xi[1] -= face_to_element[3];
-				xi[2] -= face_to_element[6];
-				/* find the non zero entries in the second part, assuming one to one
-					mapping */
-				if (face_to_element[1])
-				{
-					facexi[0]=xi[0]/face_to_element[1];
-				}
-				else
-				{
-					if (face_to_element[4])
-					{
-						facexi[0]=xi[1]/face_to_element[4];
-					}
-					else
-					{
-						if (face_to_element[7])
-						{
-							facexi[0]=xi[2]/face_to_element[7];
-						}
-						else
-						{
-							facexi[0]=0.0;
-						}
-					}
-				}
-				if (face_to_element[2])
-				{
-					facexi[1]=xi[0]/face_to_element[2];
-				}
-				else
-				{
-					if (face_to_element[5])
-					{
-						facexi[1]=xi[1]/face_to_element[5];
-					}
-					else
-					{
-						if (face_to_element[8])
-						{
-							facexi[1]=xi[2]/face_to_element[8];
-						}
-						else
-						{
-							facexi[1]=0.0;
-						}
-					}
-				}
-				/* Fixup for incompatible circumferential xi coordinate in Polygons
-					(Part 1) */
-				if (POLYGON_SHAPE==(*element)->shape->type[0])
-				{
-					number_of_vertices=((*element)->shape->type)[1];
-					if (0==number_of_vertices)
-					{
-						number_of_vertices=((*element)->shape->type)[2];
-					}
-					if (face_index<number_of_vertices)
-					{
-						/* if polygon, need to check ordering of nodes to ensure that xi
-							coordinates will match, so store pointA now and compare at end */
-						xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-							face_to_element[2]*facexi[1];
-						xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-							face_to_element[5]*facexi[1];
-						xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-							face_to_element[8]*facexi[1];
-						if (!Computed_field_evaluate_in_element(coordinate_field,
-							*element,xi,time,(struct FE_element *)NULL,pointA,(FE_value*)NULL))
-						{
-							display_message(ERROR_MESSAGE,
-								"change_element.  Error calculating coordinate field");
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					if (POLYGON_SHAPE==(*element)->shape->type[3])
-					{
-						number_of_vertices=((*element)->shape->type)[4];
-						if (face_index<number_of_vertices)
-						{
-							/* if polygon, need to check ordering of nodes to
-								ensure that xi coordinates will match, so store pointA now
-								and compare at end */
-							xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-								face_to_element[2]*facexi[1];
-							xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-								face_to_element[5]*facexi[1];
-							xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-								face_to_element[8]*facexi[1];
-							if (!Computed_field_evaluate_in_element(coordinate_field,
-								*element,xi,time,(struct FE_element *)NULL,pointA,
-								(FE_value*)NULL))
-							{
-								display_message(ERROR_MESSAGE,
-									"change_element.  Error calculating coordinate field");
-								return_code = 0;
-							}
-						}
-					}
-				}
-				/* End Fixup for incompatible circumferential xi coorodinate in Polygons
-					(Part 1) */
-				if ( return_code )
-				{
-					*element=parent_struct->parent;
-					face_to_element=((*element)->shape->face_to_element)+
-						(parent_struct->face_number)*9;
-					xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-						face_to_element[2]*facexi[1];
-					xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-						face_to_element[5]*facexi[1];
-					xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-						face_to_element[8]*facexi[1];
-					/* Fixup for incompatible circumferential xi coorodinate in
-						 Polygons (Part 2) */
-					if (POLYGON_SHAPE==(*element)->shape->type[0])
-					{
-						number_of_vertices=((*element)->shape->type)[1];
-						if (0==number_of_vertices)
-						{
-							number_of_vertices=((*element)->shape->type)[2];
-						}
-						if (face_index<number_of_vertices)
-						{
-							/* if polygon, compare pointA and pointB */
-							if (!Computed_field_evaluate_in_element(coordinate_field,
-								*element,xi,time,(struct FE_element *)NULL,pointB,
-								(FE_value*)NULL))
-							{
-								display_message(ERROR_MESSAGE,
-									"change_element.  Error calculating coordinate field");
-								return_code=0;
-							}
-							if ((fabs(pointA[0]-pointB[0])>1e-5)||
-								(fabs(pointA[1]-pointB[1])>1e-5)||
-								(fabs(pointA[2]-pointB[2])>1e-5))
-							{
-								/* Assume that xi are valid other way round */
-								facexi[0]=1.0-facexi[0];
-								xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-									face_to_element[2]*facexi[1];
-								xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-									face_to_element[5]*facexi[1];
-								xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-									face_to_element[8]*facexi[1];
-								return_code=1;
-							}
-						}
-					}
-					else
-					{
-						if (POLYGON_SHAPE==(*element)->shape->type[3])
-						{
-							number_of_vertices=((*element)->shape->type)[4];
-							if (face_index<number_of_vertices)
-							{
-								/* if polygon, need to check ordering of nodes to
-									 ensure that xi coordinates will match, so store pointA
-									 now and compare at end */
-								if (!Computed_field_evaluate_in_element(coordinate_field,
-									*element,xi,time,(struct FE_element *)NULL,pointB,
-									(FE_value*)NULL))
-								{
-									display_message(ERROR_MESSAGE,
-										"change_element.  Error calculating coordinate field");
-									return_code = 0;
-								}
-								if ((fabs(pointA[0]-pointB[0])>1e-5)||
-									(fabs(pointA[1]-pointB[1])>1e-5)||
-									(fabs(pointA[2]-pointB[2])>1e-5))
-								{
-									/* Assume that xi are valid other way round */
-									facexi[0]=1.0-facexi[0];
-									xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-										face_to_element[2]*facexi[1];
-									xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-										face_to_element[5]*facexi[1];
-									xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-										face_to_element[8]*facexi[1];
-									return_code = 1;
-								}
-							}
-						}
-					}
-					/* End Fixup for incompatible circumferential xi coorodinate in
-						 Polygons (Part 2) */
-				}
-			}
-			else
-			{
-				/* reached edge of mesh, streamline stops */
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"change_element.  Face not found element %d for face index %d",
-				(*element)->cm.number, face_index);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"change_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* change_element */
-
 static int check_xi_limits(int change_xi, struct FE_element **element,
 	FE_value *xi,struct Computed_field *coordinate_field, FE_value time)
 /*******************************************************************************
@@ -397,13 +67,24 @@ boundary the element is changed and therefore this function should only be
 called if the integration has indicated that the direction changes element.
 ==============================================================================*/
 {
-	int face_index,return_code;
+	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
+	int face_index,return_code,xi_linkage_number;
+	struct FE_element_shape *element_shape;
 
 	ENTER(check_xi_limits);
+	USE_PARAMETER(coordinate_field);
+	USE_PARAMETER(time);
 	return_code=1;
+	get_FE_element_shape(*element, &element_shape);
+	get_FE_element_shape_xi_shape_type(element_shape,
+		0, &shape_type1);
+	get_FE_element_shape_xi_shape_type(element_shape,
+		1, &shape_type2);
+	get_FE_element_shape_xi_shape_type(element_shape,
+		2, &shape_type3);
 	if ((1==change_xi)&&(xi[0]<=0.0))
 	{
-		if (POLYGON_SHAPE==((*element)->shape->type)[0])
+		if (POLYGON_SHAPE==shape_type1)
 		{
 			/* Polygon */
 			xi[0]=xi[0]+1;
@@ -412,7 +93,7 @@ called if the integration has indicated that the direction changes element.
 		{
 			/* Line */
 			/*???SAB.  Could be improved to check shape->faces for the face */
-			if (POLYGON_SHAPE==((*element)->shape->type)[3])
+			if (POLYGON_SHAPE==shape_type2)
 			{
 				face_index=0;
 			}
@@ -420,14 +101,14 @@ called if the integration has indicated that the direction changes element.
 			{
 				face_index=0;
 			}
-			return_code=change_element(element,xi,time,face_index,coordinate_field);
+			return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
 		}
 	}
 	else
 	{
 		if ((1==change_xi)&&(xi[0]>=1.0))
 		{
-			if (POLYGON_SHAPE==((*element)->shape->type)[0])
+			if (POLYGON_SHAPE==shape_type1)
 			{
 				/* Polygon */
 				xi[0]=xi[0]-1;
@@ -436,7 +117,7 @@ called if the integration has indicated that the direction changes element.
 			{
 				/* Line */
 				/* SAB Could be improved to check shape->faces for the face */
-				if (POLYGON_SHAPE==((*element)->shape->type)[3])
+				if (POLYGON_SHAPE==shape_type2)
 				{
 					face_index=1;
 				}
@@ -444,16 +125,19 @@ called if the integration has indicated that the direction changes element.
 				{
 					face_index=1;
 				}
-				return_code=change_element(element,xi,time,face_index,coordinate_field);
+				return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
 			}
 		}
 	}
 	if ((2==change_xi)&&(xi[1]<=0))
 	{
-		if (POLYGON_SHAPE==((*element)->shape->type)[3])
+		if (POLYGON_SHAPE==shape_type2)
 		{
 			/* Polygon */
-			if (((*element)->shape->type)[1])
+			get_FE_element_shape_xi_linkage_number(
+				element_shape, /*xi_number1*/0, /*xi_number2*/1,
+				&xi_linkage_number);
+			if (xi_linkage_number)
 			{
 				/* radial xi */
 				/* Crude */
@@ -478,34 +162,35 @@ called if the integration has indicated that the direction changes element.
 		{
 			/* Line */
 			/* SAB Could be improved to check shape->faces for the face */
-			if (POLYGON_SHAPE==((*element)->shape->type)[0])
+			if (POLYGON_SHAPE==shape_type1)
 			{
-				face_index=((*element)->shape->type)[1];
-				if (0==face_index)
-				{
-					face_index=((*element)->shape->type)[2];
-				}
+				get_FE_element_shape_xi_linkage_number(
+					element_shape, /*xi_number1*/0, /*xi_number2*/2,
+					&face_index);
 			}
 			else
 			{
 				face_index=2;
 			}
-			return_code=change_element(element,xi,time,face_index,coordinate_field);
+			return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
 		}
 	}
 	else
 	{
 		if ((2==change_xi)&&(xi[1]>=1.0))
 		{
-			if (POLYGON_SHAPE==((*element)->shape->type)[3])
+			if (POLYGON_SHAPE==shape_type2)
 			{
 				/* Polygon */
-				if (((*element)->shape->type)[1])
+				get_FE_element_shape_xi_linkage_number(
+					element_shape, /*xi_number1*/0, /*xi_number2*/1,
+					&xi_linkage_number);
+				if (xi_linkage_number)
 				{
 					/* radial xi */
 					/* Assumes faces are stored in order of increasing xi0 */
-					face_index=(int)floor(xi[0]*(FE_value)((*element)->shape->type)[1]);
-					return_code=change_element(element,xi,time,face_index,coordinate_field);
+					face_index=(int)floor(xi[0]*(FE_value)xi_linkage_number);
+					return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
 				}
 				else
 				{
@@ -518,25 +203,24 @@ called if the integration has indicated that the direction changes element.
 			{
 				/* Line */
 				/* SAB Could be improved to check shape->faces for the face */
-				if (POLYGON_SHAPE==((*element)->shape->type)[0])
+				if (POLYGON_SHAPE==shape_type1)
 				{
-					face_index=((*element)->shape->type)[1]+1;
-					if (0==face_index)
-					{
-						face_index=((*element)->shape->type)[2]+1;
-					}
+					get_FE_element_shape_xi_linkage_number(
+						element_shape, /*xi_number1*/0, /*xi_number2*/2,
+						&face_index);
+					face_index++;
 				}
 				else
 				{
 					face_index=3;
 				}
-				return_code=change_element(element,xi,time,face_index,coordinate_field);
+				return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
 			}
 		}
 	}
 	if ((3==change_xi)&&(xi[2]<=0))
 	{
-		if (POLYGON_SHAPE==((*element)->shape->type)[5])
+		if (POLYGON_SHAPE==shape_type3)
 		{
 			/* Polygon */
 			/* Not done yet */
@@ -548,26 +232,24 @@ called if the integration has indicated that the direction changes element.
 			/* SAB Could be improved to check shape->faces for the
 				face, now it assumes the order of the faces, all other faces first,
 				then xi3 = 0 and then xi3 = 1 */
-			if (POLYGON_SHAPE==((*element)->shape->type)[0])
+			if (POLYGON_SHAPE==shape_type1)
 			{
-				face_index=((*element)->shape->type)[1];
-				if (0==face_index)
-				{
-					face_index=((*element)->shape->type)[2];
-				}
+				get_FE_element_shape_xi_linkage_number(
+					element_shape, /*xi_number1*/0, /*xi_number2*/1,
+					&face_index);
 			}
 			else
 			{
 				face_index=4;
 			}
-			return_code=change_element(element,xi,time,face_index,coordinate_field);
+			return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
 		}
 	}
 	else
 	{
 		if ((3==change_xi)&&(xi[2]>=1.0))
 		{
-			if (POLYGON_SHAPE==((*element)->shape->type)[5])
+			if (POLYGON_SHAPE==shape_type3)
 			{
 				/* Polygon */
 				/* Not done yet */
@@ -579,19 +261,18 @@ called if the integration has indicated that the direction changes element.
 				/* SAB Could be improved to check shape->faces for the
 					face, now it assumes the order of the faces, all other faces first,
 					then xi3 = 0 and then xi3 = 1 */
-				if (POLYGON_SHAPE==((*element)->shape->type)[0])
+				if (POLYGON_SHAPE==shape_type1)
 				{
-					face_index=((*element)->shape->type)[1]+1;
-					if (0==face_index)
-					{
-						face_index=((*element)->shape->type)[2]+1;
-					}
+					get_FE_element_shape_xi_linkage_number(
+						element_shape, /*xi_number1*/0, /*xi_number2*/1,
+						&face_index);
+					face_index++;
 				}
 				else
 				{
 					face_index=5;
 				}
-				return_code=change_element(element,xi,time,face_index,coordinate_field);
+				return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
 			}
 		}
 	}
@@ -965,7 +646,7 @@ accurate if small), also ensuring that the element is updated.
 
 	ENTER(update_interactive_streampoint);
 	/* check the arguments */
-	if ((*element)&&((*element)->shape)&&(3==(*element)->shape->dimension)&&
+	if ((*element)&&(3==get_FE_element_dimension(*element))&&
 		coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field)))
 	{
@@ -1071,209 +752,12 @@ accurate if small), also ensuring that the element is updated.
 		display_message(ERROR_MESSAGE,
 			"update_interactive_streampoint.  Invalid argument(s)");
 		display_message(ERROR_MESSAGE,"  element %p",*element);
-		if (*element)
-		{
-			display_message(ERROR_MESSAGE,"  element->shape  %p",(*element)->shape);
-		}
 		return_code=0;
 	}
 	LEAVE;
 
 	return(return_code);
 } /* update_interactive_streampoint */
-
-#if defined (OLD_CODE)
-struct Streamline_event
-{
-	struct MANAGER(Interactive_streamline) *streamline_manager;
-	Widget caller;
-	XmAnyCallbackStruct *caller_data;
-};
-
-#if defined(NEW_CODE)
-static int handle_interactive_streamline_event(
-	struct Interactive_streamline *streamline,void *streamline_event_void)
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Iterator function for updating interactive streamlines with mouse events
-==============================================================================*/
-{
-	Dimension height,width;
-	double cursor_x,cursor_y;
-	int event_type, return_code;
-	FE_value *point, translate[3];
-	float distance, select_radius = 0.01;
-	GLdouble model_matrix[16], new_point[3], projection_matrix[16],
-		window_x,window_y,window_z;
-	GLint default_viewport[4]={0,0,1,1};
-	struct GT_polyline *polyline;
-	struct GT_surface *surface;
-#if defined (OLD_GFX_WINDOW)
-	struct MANAGER_MESSAGE(Interactive_streamline) message;
-#endif
-	struct Streamline_event *streamline_event;
-	XButtonEvent *button_event;
-	XEvent *event;
-
-	ENTER(handle_interactive_streamline_event);
-	if (streamline&&streamline_event_void)
-	{
-		streamline_event=(struct Streamline_event *)streamline_event_void;
-		if (event=streamline_event->caller_data->event)
-		{
-			XtVaGetValues(streamline_event->caller,XtNheight,&height,XtNwidth,&width,
-				NULL);
-			event_type=event->type;
-			switch (event_type)
-			{
-				case ButtonPress:
-				{
-					button_event= &(event->xbutton);
-					cursor_x=(double)(button_event->x)/(double)width;
-					cursor_y=(double)(height-(button_event->y))/(double)height;
-					point=(FE_value *)
-						(*(streamline->graphics_object->gu.gt_pointset))->pointlist;
-					glGetDoublev(GL_MODELVIEW_MATRIX,model_matrix);
-					glGetDoublev(GL_PROJECTION_MATRIX,projection_matrix);
-					if (GL_TRUE==gluProject(point[0],point[1],point[2],
-						model_matrix,projection_matrix,default_viewport,
-						&window_x,&window_y,&window_z))
-					{
-						distance = fabs (window_x - cursor_x);
-						if ( fabs ( window_y - cursor_y ) > distance )
-						{
-							distance = fabs ( window_y - cursor_y );
-						}
-
-						if ( distance < select_radius )
-						{
-							streamline->selected = 1;
-							streamline->previous_zdepth = window_z;
-							streamline->previous_point[0] = point[0];
-							streamline->previous_point[1] = point[1];
-							streamline->previous_point[2] = point[2];
-						}
-					}
-				} break;
-				case MotionNotify:
-				case ButtonRelease:
-				{
-					button_event= &(event->xbutton);
-					cursor_x=(double)(button_event->x)/(double)width;
-					cursor_y=(double)(height-(button_event->y))/(double)height;
-
-					if ( streamline->selected )
-					{
-						if ( ButtonRelease == event_type )
-						{
-							streamline->selected = 0;
-						}
-
-						glGetDoublev(GL_MODELVIEW_MATRIX,model_matrix);
-						glGetDoublev(GL_PROJECTION_MATRIX,projection_matrix);
-
-						if (GL_TRUE==gluUnProject(cursor_x,cursor_y,
-							streamline->previous_zdepth,model_matrix,projection_matrix,
-							default_viewport,&(new_point[0]),&(new_point[1]),&(new_point[2])))
-						{
-							translate[0] = new_point[0] - (streamline->previous_point)[0];
-							translate[1] = new_point[1] - (streamline->previous_point)[1];
-							translate[2] = new_point[2] - (streamline->previous_point)[2];
-/*???debug */
-printf("Move in world coordinates %f %f %f\n",translate[0],translate[1],
-	translate[2]);
-							if (update_interactive_streampoint((FE_value *)
-								(*(streamline->graphics_object->gu.gt_pointset))->pointlist,
-								&(streamline->element), streamline->coordinate_field,
-								streamline->xi, translate ) )
-							{
-								/* rebuild the streamline */
-								if (STREAM_LINE==streamline->type)
-								{
-									if (polyline=create_GT_polyline_streamline_FE_element(
-										streamline->element,
-										streamline->xi,streamline->coordinate_field,
-										streamline->stream_vector_field,streamline->reverse_track,
-										streamline->length,streamline->data_type,
-										streamline->data_field))
-									{
-										if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
-											streamline->streamline_graphics_object,
-											/*time*/0.0,polyline)))
-										{
-											DESTROY(GT_polyline)(&polyline);
-										}
-									}
-									else
-									{
-										return_code=0;
-									}
-								}
-								else if ((streamline->type == STREAM_RIBBON)||
-									(streamline->type == STREAM_EXTRUDED_RECTANGLE)||
-									(streamline->type == STREAM_EXTRUDED_ELLIPSE)||
-									(streamline->type == STREAM_EXTRUDED_CIRCLE))
-								{
-									if (surface=create_GT_surface_streamribbon_FE_element(
-										streamline->element,
-										streamline->xi,streamline->coordinate_field,
-										streamline->stream_vector_field,streamline->reverse_track,
-										streamline->length,streamline->width,streamline->type,
-										streamline->data_type,streamline->data_field))
-									{
-										if (!(return_code=GT_OBJECT_ADD(GT_surface)(
-											streamline->streamline_graphics_object,
-											/*time*/0.0,surface)))
-										{
-											DESTROY(GT_surface)(&surface);
-										}
-									}
-									else
-									{
-										return_code=0;
-									}
-								}
-#if defined (OLD_GFX_WINDOW)
-								message.change=
-									MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Interactive_streamline);
-								message.object_changed = streamline;
-#endif /* defined (OLD_GFX_WINDOW) */
-/*???debug */
-printf("handle_interactive_streamline_event.  Temporarily disabled\n");
-display_message(WARNING_MESSAGE,
-	"handle_interactive_streamline_event.  Temporarily disabled");
-#if defined (OLD_GFX_WINDOW)
-								MANAGER_UPDATE(Interactive_streamline)(&message,
-									streamline_event->streamline_manager);
-#endif /* defined (OLD_GFX_WINDOW) */
-							}
-							if ( MotionNotify == event_type )
-							{
-								(streamline->previous_point)[0] = new_point[0];
-								(streamline->previous_point)[1] = new_point[1];
-								(streamline->previous_point)[2] = new_point[2];
-							}
-						}
-					}
-				} break;
-			}
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"handle_interactive_streamline_event.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return(return_code);
-} /* handle_interactive_streamline_event */
-#endif /* #if defined(NEW_CODE) */
-#endif /* defined (OLD_CODE) */
 
 static int track_streamline_from_FE_element(struct FE_element **element,
 	FE_value *xi,struct Computed_field *coordinate_field,
@@ -1322,14 +806,13 @@ following way:
 	int allocated_number_of_points,change_element,
 		i,keep_tracking,previous_change_element,
 		number_of_stream_vector_components,return_code;
-	struct FE_element_shape *shape;
 	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples;
 
 	ENTER(track_streamline_from_FE_element);
 	/*	step_size of zero indicates first step */
 	step_size = 0;
 	total_stepped = 0.0;
-	if (element&&(*element)&&(shape=(*element)->shape)&&(3==shape->dimension)&&
+	if (element&&(*element)&&(3==get_FE_element_dimension(*element))&&
 		xi&&(0.0 <= xi[0])&&(1.0 >= xi[0])&&(0.0 <= xi[1])&&(1.0 >= xi[1])&&
 		(0.0 <= xi[2])&&(1.0 >= xi[2])&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
@@ -1842,504 +1325,6 @@ following way:
 Global functions
 ----------------
 */
-#if defined (OLD_CODE)
-DECLARE_OBJECT_FUNCTIONS(Interactive_streamline)
-
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Interactive_streamline)
-
-DECLARE_LIST_FUNCTIONS(Interactive_streamline)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_streamline,name,char *,
-	strcmp)
-
-DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Interactive_streamline,name)
-
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Interactive_streamline,name)
-{
-	char *name;
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Interactive_streamline,name));
-	/* check arguments */
-	if (source&&destination)
-	{
-		if (source->name)
-		{
-			if (ALLOCATE(name,char,strlen(source->name)+1))
-			{
-				strcpy(name,source->name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Interactive_streamline,name).  Insufficient memory");
-				return_code=0;
-			}
-		}
-		else
-		{
-			name=(char *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			if (MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_streamline,name)(
-				destination,source))
-			{
-				/* copy values */
-				DEALLOCATE(destination->name);
-				destination->name=name;
-			}
-			else
-			{
-				DEALLOCATE(name);
-				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Interactive_streamline,name).  Could not copy without identifier");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Interactive_streamline,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Interactive_streamline,name) */
-
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Interactive_streamline,name)
-{
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_streamline,name));
-	/* check arguments */
-	if (source&&destination)
-	{
-		/* copy values */
-		destination->element = source->element;
-		destination->coordinate_field = source->coordinate_field;
-		destination->stream_vector_field = source->stream_vector_field;
-		destination->length = source->length;
-		destination->xi[0] = source->xi[0];
-		destination->xi[1] = source->xi[1];
-		destination->xi[2] = source->xi[2];
-		destination->previous_point[0] = source->previous_point[0];
-		destination->previous_point[1] = source->previous_point[1];
-		destination->previous_point[2] = source->previous_point[2];
-		destination->selected = 0;
-		destination->graphics_object = (struct GT_object *)NULL;
-		destination->streamline_graphics_object = (struct GT_object *)NULL;
-		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_streamline,name).  Not copying graphics objects yet");
-/*		return_code=0;*/
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_streamline,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_streamline,name) */
-
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Interactive_streamline,name,char *)
-{
-	char *destination_name;
-	int return_code;
-
-	ENTER(MANAGER_COPY_IDENTIFIER(Interactive_streamline,name));
-	/* check arguments */
-	if (name&&destination)
-	{
-		if (name)
-		{
-			if (ALLOCATE(destination_name,char,strlen(name)+1))
-			{
-				strcpy(destination_name,name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-	"MANAGER_COPY_IDENTIFIER(Interactive_streamline,name).  Insufficient memory");
-				return_code=0;
-			}
-		}
-		else
-		{
-			name=(char *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			/* copy name */
-			DEALLOCATE(destination->name);
-			destination->name=destination_name;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-	"MANAGER_COPY_IDENTIFIER(Interactive_streamline,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Interactive_streamline,name) */
-
-DECLARE_MANAGER_FUNCTIONS(Interactive_streamline)
-
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_streamline,name,char *)
-
-void interactive_streamline_callback (Widget caller,
-	XtPointer window_void,
-	XtPointer caller_data)
-/*******************************************************************************
-LAST MODIFIED : 16 May 1998
-
-DESCRIPTION :
-Handles the mouse events which may affect interactive streamlines.
-==============================================================================*/
-{
-#if defined (OLD_GFX_WINDOW)
-	struct Graphics_window *window;
-	struct MANAGER_MESSAGE(Interactive_streamline) message;
-	struct Streamline_event streamline_event;
-#endif
-	ENTER(interactive_streamline_callback);
-	if ( window_void )
-	{
-#if defined (OLD_GFX_WINDOW)
-		window = (struct Graphics_window *) window_void;
-		streamline_event.caller_data = (XmAnyCallbackStruct *) caller_data;
-		streamline_event.caller = caller;
-#else
-		USE_PARAMETER(caller_data);
-		USE_PARAMETER(caller);
-#endif
-/*???debug */
-printf("interactive_streamline_callback.  Temporarily disabled\n");
-display_message(WARNING_MESSAGE,
-	"interactive_streamline_callback.  Temporarily disabled");
-#if defined (OLD_GFX_WINDOW)
-		if (window->streamline_manager)
-		{
-			FOR_EACH_OBJECT_IN_MANAGER(Interactive_streamline)(
-				handle_interactive_streamline_event,
-				(void *) &streamline_event,
-				window->streamline_manager );
-			message.change = MANAGER_CHANGE_ALL(Interactive_streamline);
-			message.object_changed = (struct Interactive_streamline *)NULL;
-			MANAGER_UPDATE(Interactive_streamline)(&message, streamline_manager);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-					"interactive_streamline_callback.  Invalid streamline manager");
-		}
-#endif /* defined (OLD_GFX_WINDOW) */
-
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-				"interactive_streamline_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* interactive_streamline_callback */
-
-int update_interactive_streamline(struct Interactive_streamline *streamline,
-	FE_value *new_point,
-	struct MANAGER(Interactive_streamline) *streamline_manager )
-/*******************************************************************************
-LAST MODIFIED : 23 May 2001
-
-DESCRIPTION :
-Moves a streampoint to the new_point position.  This function works by an
-incremental step change to allow it to calculate the correct element and the
-xi coordinates.  To be accurate the change in position must be small.
-==============================================================================*/
-{
-	FE_value translate[3];
-	int return_code; 
-	struct GT_polyline *polyline;
-	struct GT_surface *surface;
-
-	ENTER(update_interactive_streamline);
-	if (streamline&&new_point)
-	{
-		translate[0]=new_point[0]-(streamline->previous_point)[0];
-		translate[1]=new_point[1]-(streamline->previous_point)[1];
-		translate[2]=new_point[2]-(streamline->previous_point)[2];
-#if defined (DEBUG)
-		/*???debug */
-		printf("Move in world coordinates %f %f %f\n",translate[0],translate[1],
-			translate[2]);
-		/*???debug end */
-#endif /* defined (DEBUG) */
-		if (update_interactive_streampoint((FE_value *)
-			(*(streamline->graphics_object->gu.gt_pointset))->pointlist,
-			&(streamline->element), streamline->coordinate_field,
-			streamline->xi, translate ) )
-		{
-			(streamline->previous_point)[0]=
-				((*(streamline->graphics_object->gu.gt_pointset))->pointlist)[0][0];
-			(streamline->previous_point)[1]=
-				((*(streamline->graphics_object->gu.gt_pointset))->pointlist)[0][1];
-			(streamline->previous_point)[2]=
-				((*(streamline->graphics_object->gu.gt_pointset))->pointlist)[0][2];
-			/* rebuild the streamline */
-			if (STREAM_LINE==streamline->type)
-			{
-				if (polyline=create_GT_polyline_streamline_FE_element(
-					streamline->element,streamline->xi,streamline->coordinate_field,
-					streamline->stream_vector_field,streamline->reverse_track,
-					streamline->length,streamline->data_type,streamline->data_field))
-				{
-					if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
-						streamline->streamline_graphics_object,
-						/*time*/0.0,polyline)))
-					{
-						DESTROY(GT_polyline)(&polyline);
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else if ((streamline->type == STREAM_RIBBON)||
-				(streamline->type == STREAM_EXTRUDED_RECTANGLE)||
-				(streamline->type == STREAM_EXTRUDED_ELLIPSE)||
-				(streamline->type == STREAM_EXTRUDED_CIRCLE))
-			{
-				if (surface=create_GT_surface_streamribbon_FE_element(
-					streamline->element,streamline->xi,streamline->coordinate_field,
-					streamline->stream_vector_field,streamline->reverse_track,
-					streamline->length,streamline->width,streamline->type,
-					streamline->data_type,streamline->data_field))
-				{
-					if (!(return_code=GT_OBJECT_ADD(GT_surface)(
-						streamline->streamline_graphics_object,
-						/*time*/0.0,surface)))
-					{
-						DESTROY(GT_surface)(&surface);
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			/*???RC Review Manager Messages Here */
-			MANAGER_BEGIN_CHANGE(Interactive_streamline)(streamline_manager,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Interactive_streamline),
-				streamline);
-			MANAGER_END_CHANGE(Interactive_streamline)(streamline_manager);
-			return_code = 1;
-		}
-		else
-		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,
-				"update_interactive_streamline.  Could not update streampoint");
-		}
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,
-			"update_interactive_streamline.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return ( return_code );
-} /* update_interactive_streamline */
-
-int interactive_streamline_set_changed ( struct Interactive_streamline *streamline)
-/*******************************************************************************
-LAST MODIFIED : 29 October 1997
-
-DESCRIPTION :
-Sets the graphics object status as uncreated so that they get regenrated when
-window is updated.
-==============================================================================*/
-{
-	int return_code;
-
-	if ( streamline )
-	{
-		GT_object_changed(streamline->graphics_object);
-		GT_object_changed(streamline->streamline_graphics_object);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-				"interactive_streamline_set_changed.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	LEAVE;
-	return (return_code);
-} /* interactive_streamline_set_changed */
-
-struct Interactive_streamline *CREATE(Interactive_streamline)(char *name,
-	enum Streamline_type type,struct FE_element *element,FE_value *xi,
-	struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,int reverse_track,
-	float length,float width,enum Streamline_data_type data_type,
-	struct Computed_field *data_field,struct GT_object *graphics_object,
-	struct GT_object *streamline_graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Allocates memory and assigns fields for a Interactive_streamline object.
-???RC Changed to access Computed_fields so that wrappers were not destroyed.
-Should also access other objects.
-==============================================================================*/
-{
-	struct Interactive_streamline *streamline;
-
-	ENTER(CREATE(Interactive_streamline));
-	if (ALLOCATE(streamline,struct Interactive_streamline,1))
-	{
-		if (name)
-		{
-			if (ALLOCATE(streamline->name,char,strlen(name)+1))
-			{
-				strcpy(streamline->name,name);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-				"CREATE(Interactive_streamline).  Could not allocate streamline->name");
-				DEALLOCATE(streamline);
-			}
-		}
-		else
-		{
-			streamline->name=(char *)NULL;
-		}
-		if (streamline)
-		{
-			streamline->type=type;
-			streamline->element=element;
-			streamline->coordinate_field=ACCESS(Computed_field)(coordinate_field);
-			streamline->stream_vector_field=
-				ACCESS(Computed_field)(stream_vector_field);
-			streamline->reverse_track=reverse_track;
-			streamline->length=length;
-			streamline->width=width;
-			streamline->xi[0]=xi[0];
-			streamline->xi[1]=xi[1];
-			streamline->xi[2]=xi[2];
-			streamline->data_type=data_type;
-			streamline->data_field=data_field;
-			if (data_field)
-			{
-				ACCESS(Computed_field)(data_field);
-			}
-			streamline->graphics_object=graphics_object;
-			streamline->streamline_graphics_object=streamline_graphics_object;
-			if (streamline->graphics_object)
-			{
-				(streamline->previous_point)[0]=
-					((*(streamline->graphics_object->gu.gt_pointset))->pointlist)[0][0];
-				(streamline->previous_point)[1]=
-					((*(streamline->graphics_object->gu.gt_pointset))->pointlist)[0][1];
-				(streamline->previous_point)[2]=
-					((*(streamline->graphics_object->gu.gt_pointset))->pointlist)[0][2];
-			}
-			streamline->selected=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Interactive_streamline).  Could not allocate streamline");
-	}
-	LEAVE;
-
-	return (streamline);
-} /* CREATE(Interactive_streamline) */
-
-int DESTROY(Interactive_streamline)(
-	struct Interactive_streamline **streamline_ptr)
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Frees the memory for the fields of <**streamline>, frees the memory for
-<**streamline> and sets <*streamline> to NULL.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(DESTROY(Interactive_streamline));
-	if (streamline_ptr)
-	{
-		if (*streamline_ptr)
-		{
-			DEACCESS(Computed_field)(&((*streamline_ptr)->coordinate_field));
-			DEACCESS(Computed_field)(&((*streamline_ptr)->stream_vector_field));
-			if ((*streamline_ptr)->data_field)
-			{
-				DEACCESS(Computed_field)(&((*streamline_ptr)->data_field));
-			}
-			DEALLOCATE(*streamline_ptr);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Interactive_streamline).  Invalid argument");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Interactive_streamline) */
-
-int get_streamline_gt_object( struct Interactive_streamline *streamline,
-	struct GT_object **gt_object )
-/*******************************************************************************
-LAST MODIFIED : 28 October 1997
-
-DESCRIPTION :
-Returns the GT_object which represents the streamline.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(interactive_streamline_callback);
-
-	if ( streamline )
-	{
-		*gt_object = streamline->graphics_object;
-		return_code = 1;
-	}
-	else
-	{
-		*gt_object = (struct GT_object *)NULL;
-		display_message(ERROR_MESSAGE,
-				"get_streamline_gt_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	LEAVE;
-	return ( return_code );
-} /* get_streamline_gt_object */
-#endif /* defined (OLD_CODE) */
 
 struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
@@ -2364,7 +1349,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 	Triple *stream_points,*stream_normals,*stream_vectors;
 
 	ENTER(create_GT_polyline_streamline_FE_element);
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&start_xi&&
+	if (element&&(3==get_FE_element_dimension(element))&&start_xi&&
 		coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		stream_vector_field&&((3==(number_of_stream_vector_components=
@@ -2456,7 +1441,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 		stream_unit_vector,stream_vector,*stream_vectors;
 
 	ENTER(create_GT_surface_streamribbon_FE_element);
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&start_xi&&
+	if (element&&(3==get_FE_element_dimension(element))&&start_xi&&
 		coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		stream_vector_field&&((3==(number_of_stream_vector_components=
@@ -2829,7 +1814,7 @@ Creates a <GT_pointset> streampoint which can be manipulated with the mouse.
 	ENTER(create_interactive_streampoint);
 	point_size=length/100;
 	/* check the arguments */
-	if (element&&(element->shape)&&(3==element->shape->dimension)&&(length>0.0)&&
+	if (element&&(3==get_FE_element_dimension(element))&&(length>0.0)&&
 		coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field)))
 	{
@@ -3070,7 +2055,7 @@ Converts a 3-D element into an array of streamlines.
 		(struct Element_to_streamline_data *)void_element_to_streamline_data))
 	{
 		/* determine if the element is required */
-		if ((element->shape)&&(3==element->shape->dimension))
+		if (3==get_FE_element_dimension(element))
 		{
 			/* use local copy of seed_xi since tracking function updates it */
 			initial_xi[0]=element_to_streamline_data->seed_xi[0];
@@ -3176,12 +2161,12 @@ Converts a 3-D element into an array of streamlines.
 		if (FE_field_is_defined_at_node(fe_field, node) &&
 			get_FE_nodal_element_xi_value(node, fe_field, 0 /* component_number */,
 				0 /*  version */, FE_NODAL_VALUE, &element, initial_xi) && element &&
-			(element->shape)&&(3==element->shape->dimension) &&
+			(3==get_FE_element_dimension(element)) &&
 			((!node_to_streamline_data->seed_element)|| 
 				(element==node_to_streamline_data->seed_element)) &&
-			((!node_to_streamline_data->element_group) ||
-				IS_OBJECT_IN_GROUP(FE_element)(element,
-					node_to_streamline_data->element_group)))
+			((!node_to_streamline_data->fe_region) ||
+			FE_region_contains_FE_element(node_to_streamline_data->fe_region,
+			element)))
 		{
 #if defined (DEBUG)
 			/*???debug*/
@@ -3278,9 +2263,9 @@ Converts a 3-D element into an array of particles.
 		(struct Element_to_particle_data *)void_element_to_particle_data))
 	{
 		/* determine if the element is required */
-		if ((element->shape)&&(3==element->shape->dimension)&&
+		if ((3==get_FE_element_dimension(element))&&
 			((!element_to_particle_data->element_number)||
-			(element_to_particle_data->element_number==element->cm.number)))
+			(element_to_particle_data->element_number==FE_element_get_cm_number(element))))
 		{
 			if (add_flow_particle(element_to_particle_data->list, 
 				element_to_particle_data->xi,element,

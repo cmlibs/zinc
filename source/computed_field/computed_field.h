@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 22 April 2002
+LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -37,6 +37,7 @@ if a value is already known.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
+#include "region/cmiss_region.h"
 #include "user_interface/message.h"
 
 /*
@@ -183,6 +184,16 @@ Computed_field conditional function version of
 Computed_field_is_defined_at_node.
 ==============================================================================*/
 
+int Computed_field_is_in_list(struct Computed_field *field,
+	void *field_list_void);
+/*******************************************************************************
+LAST MODIFIED : 5 February 2003
+
+DESCRIPTION :
+Computed_field conditional/iterator function returning true if <field> is in the
+computed <field_list>.
+==============================================================================*/
+
 int Computed_field_is_true_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time);
 /*******************************************************************************
@@ -231,10 +242,42 @@ determine if the field in use needs updating.
 int Computed_field_depends_on_Computed_field_in_list(
 	struct Computed_field *field, struct LIST(Computed_field) *field_list);
 /*******************************************************************************
-LAST MODIFIED : 28 May 2001
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Returns true if <field> depends on any field in <field_list>.
+==============================================================================*/
+
+int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
+	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
+	void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 5 February 2003
+
+DESCRIPTION :
+Returns true if <field> satisfies <conditional_function> with <user_data>. If
+not, recursively calls this function for each of its source fields until one
+satisfies the function for a true result, or all have failed for false.
+==============================================================================*/
+
+int Computed_field_for_each_ancestor(struct Computed_field *field,
+	LIST_ITERATOR_FUNCTION(Computed_field) *iterator_function, void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 2 April 2003
+
+DESCRIPTION :
+For <field> and all of its source Computed_fields, calls <iterator_function>
+with <user_data>. Iteration stops if a single iterator_function call returns 0.
+==============================================================================*/
+
+int Computed_field_add_to_list_if_depends_on_list(
+	struct Computed_field *field, void *field_list_void);
+/*******************************************************************************
+LAST MODIFIED : 23 January 2003
+
+DESCRIPTION :
+If <field> depends on a field in <field_list> it is added to the list.
+Checks to see if it is already in the list.
 ==============================================================================*/
 
 char *Computed_field_evaluate_as_string_in_element(
@@ -352,10 +395,10 @@ should not be managed at the time it is modified by this function.
 ???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
 
-int Computed_field_set_values_at_managed_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values,struct MANAGER(FE_node) *node_manager);
+int Computed_field_set_values_at_node_in_FE_region(struct Computed_field *field,
+	struct FE_node *node,FE_value *values, struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 10 March 2003
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -370,12 +413,12 @@ continues until the actual FE_field values at the node are changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
 
 This function works by making a copy of the node, then performing all
-modifications to it. If these are successful then MANAGER_MODIFY_NOT_IDENTIFIER
-is called to effect the change on the real <node>, thus sending manager messages
+modifications to it.  If these are successful then this node is merged back into
+the main one in the region, thus sending manager messages
 to the rest of the program. Because all changes are made on a temporary copy of
 the node, all current cache values will be ignored. For safety, however, the
 cache is always cleared after calling.
-It is up to calling function to begin/end node manager cache if more than one
+It is up to calling function to begin/end node FE_region cache if more than one
 node is being modified.
 Note that the values array will not be modified by this function.
 ==============================================================================*/
@@ -424,11 +467,11 @@ Note that the values array will not be modified by this function. Also,
 ???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
 
-int Computed_field_set_values_in_managed_element(struct Computed_field *field,
+int Computed_field_set_values_in_element_in_FE_region(struct Computed_field *field,
 	struct FE_element *element,int *number_in_xi,FE_value *values,
-	struct MANAGER(FE_element) *element_manager);
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 10 March 2003
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -450,13 +493,13 @@ points X number_of_components, cycling fastest through number of grid points in
 xi1, number of grid points in xi2 etc. and lastly components.
 
 This function works by making a copy of the element, then performing all
-modifications to it. If these are successful then MANAGER_MODIFY_NOT_IDENTIFIER
-is called to effect the change on the real <element>, thus sending manager
+modifications to it. If these are successful then this node is merged back into
+the main one in the region, thus sending manager
 messages to the rest of the program. Because all changes are made on a temporary
 copy of the element, all current cache values will be ignored. For safety,
 however, the cache is always cleared after calling.
-It is up to calling function to begin/end node manager cache if more than one
-node is being modified.
+It is up to calling function to begin/end region cache if more than one
+element is being modified.
 Note that the values array will not be modified by this function.
 ==============================================================================*/
 
@@ -688,10 +731,10 @@ to modify and destroy it.
 
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group,
-	int propagate_field);
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
+   int propagate_field);
 /*******************************************************************************
-LAST MODIFIED : 22 April 2002
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -707,6 +750,8 @@ is called to undo its field calculation and resume the search on its source
 field. This can be result in less computation, but can fail if the source field
 is multivalued, a common case being when it is in a polar coordinate system
 since valid values may be a multiple of  2*PI out.
+An <element_dimension> of 0 searches in elements of all dimension, any other
+value searches just elements of that dimension.
 If <propagate_field> is not set or there is no <find_element_xi_function> this
 function searches all elements in <search_element_group> trying to find a point
 at which the field evaluates to the <values>.
@@ -830,14 +875,12 @@ components, coordinate system and type.
 
 struct Computed_field_package *CREATE(Computed_field_package)(void);
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 7 March 2003
 
 DESCRIPTION :
 Creates a Computed_field_package which is used by the rest of the program to
 access everything to do with computed fields. The computed_field_manager is
-created here, and callbacks for changes in the fe_field_manager are established
-so that wrapper Computed_fields are automatically created and updated to match
-FE_fields.
+created as part of the package.
 ==============================================================================*/
 
 int DESTROY(Computed_field_package)(
@@ -847,7 +890,7 @@ LAST MODIFIED : 3 February 1999
 
 DESCRIPTION :
 Frees memory/deaccess objects in computed_field_package at <*package_address>.
-Cancels any further messages from the MANAGER(FE_field).
+Cancels any further messages from the root_region.
 ==============================================================================*/
 
 struct MANAGER(Computed_field)

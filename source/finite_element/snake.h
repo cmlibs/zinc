@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : snake.h
 
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 14 January 2003
 
 DESCRIPTION :
 Functions for making a snake of 1-D cubic Hermite elements from a chain of
@@ -11,18 +11,14 @@ data points.
 #define SNAKE_H
 
 int create_FE_element_snake_from_data_points(
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct GROUP(FE_element) *element_group,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_basis) *basis_manager,
+	struct FE_region *fe_region,
 	struct FE_field *coordinate_field,
 	struct LIST(FE_node) *data_list,
 	int number_of_elements,
 	FE_value density_factor,
 	FE_value stiffness);
 /*******************************************************************************
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 14 January 2003
 
 DESCRIPTION :
 Creates a snake out of <number_of_elements> 1-D cubic Hermite elements in

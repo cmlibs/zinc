@@ -108,8 +108,9 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 	char *cmiss_number_string, *new_value_string, *old_value_string,
 		temp_value_string[VALUE_STRING_SIZE];
 	FE_value *values, time;
-	int i, j, num_children, number_of_components;
+	int element_dimension, i, j, num_children, number_of_components;
 	struct Computed_field *field;
+	struct CM_element_information cm_identifier;
 	struct FE_field *fe_field;
 	struct FE_field_component fe_field_component;
 	struct FE_node *node;
@@ -181,12 +182,14 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 									struct FE_element *element;
 
 									if (get_FE_nodal_element_xi_value(
-										node_field_viewer->current_node, fe_field,
+										node, fe_field,
 										nodal_value_information->component_number,
 										nodal_value_information->version,
 										nodal_value_information->type, &element, xi))
 									{
-										switch (element->cm.type)
+										get_FE_element_identifier(element,
+											&cm_identifier);
+										switch (cm_identifier.type)
 										{
 											case CM_FACE:
 											{
@@ -201,9 +204,10 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 												element_char = 'E';
 											} break;
 										}
+										element_dimension = get_FE_element_dimension(element);
 										sprintf(temp_value_string, " %c %d %d", element_char,
-											element->cm.number, element->shape->dimension);
-										for (j = 0; j < element->shape->dimension; j++)
+											cm_identifier.number, element_dimension);
+										for (j = 0; j < element_dimension; j++)
 										{
 											sprintf(xi_string," %g",xi[j]);
 											strcat(temp_value_string, xi_string);
@@ -215,7 +219,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 								{
 									FE_value fe_value_value;
 
-									get_FE_nodal_FE_value_value(node_field_viewer->current_node,
+									get_FE_nodal_FE_value_value(node,
 										&fe_field_component,nodal_value_information->version,
 										nodal_value_information->type,time,&fe_value_value);
 									sprintf(temp_value_string, FE_VALUE_INPUT_STRING,
@@ -226,7 +230,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 								{
 									int int_value;
 
-									get_FE_nodal_int_value(node_field_viewer->current_node,
+									get_FE_nodal_int_value(node,
 										&fe_field_component,nodal_value_information->version,
 										nodal_value_information->type,time,&int_value);
 									sprintf(temp_value_string, "%d", int_value);
@@ -234,7 +238,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 								} break;
 								case STRING_VALUE:
 								{
-									get_FE_nodal_string_value(node_field_viewer->current_node,
+									get_FE_nodal_string_value(node,
 										fe_field,nodal_value_information->component_number,
 										nodal_value_information->version,
 										nodal_value_information->type, &new_value_string);
@@ -336,7 +340,7 @@ DESCRIPTION :
 static void node_field_viewer_widget_destroy_CB(Widget widget,
 	void *node_field_viewer_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Callback for when the node_field_viewer widget is destroyed. Tidies up all
@@ -351,6 +355,10 @@ dynamic memory allocations and pointers.
 	if (node_field_viewer=
 		(struct Node_field_viewer_widget_struct *)node_field_viewer_void)
 	{
+		REACCESS(FE_node)(&(node_field_viewer->current_node),
+			(struct FE_node *)NULL);
+		REACCESS(Computed_field)(&(node_field_viewer->current_field),
+			(struct Computed_field *)NULL);
 		if (node_field_viewer->nodal_value_types)
 		{
 			DEALLOCATE(node_field_viewer->nodal_value_types);
@@ -447,7 +455,7 @@ data, and then changes the correct value in the array structure.
 							fe_field_component.field=fe_field;
 							fe_field_component.number=
 								nodal_value_information->component_number;
-							set_FE_nodal_FE_value_value(node_field_viewer->current_node,
+							set_FE_nodal_FE_value_value(node,
 								&fe_field_component,nodal_value_information->version,
 								nodal_value_information->type, time, fe_value_value);
 						} break;
@@ -459,7 +467,7 @@ data, and then changes the correct value in the array structure.
 							fe_field_component.field=fe_field;
 							fe_field_component.number=
 								nodal_value_information->component_number;
-							set_FE_nodal_int_value(node_field_viewer->current_node,
+							set_FE_nodal_int_value(node,
 								&fe_field_component,nodal_value_information->version,
 								nodal_value_information->type,time, int_value);
 						} break;
@@ -1077,7 +1085,7 @@ Returns the node/field being edited in the <node_field_viewer_widget>.
 int node_field_viewer_widget_set_node_field(Widget node_field_viewer_widget,
 	struct FE_node *node,struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Sets the node/field being edited in the <node_field_viewer_widget>. Note that
@@ -1105,27 +1113,19 @@ unmanaged nodes to this widget.
 				(field&&(node_field_viewer->number_of_components !=
 					Computed_field_get_number_of_components(field))))
 			{
-				setup_components=1;
+				setup_components = 1;
 			}
 			else
 			{
-				setup_components=0;
+				setup_components = 0;
 			}
-			if (node&&field)
-			{
-				node_field_viewer->current_node=node;
-				node_field_viewer->current_field=field;
-			}
-			else
-			{
-				node_field_viewer->current_node=(struct FE_node *)NULL;
-				node_field_viewer->current_field=(struct Computed_field *)NULL;
-			}
+			REACCESS(FE_node)(&(node_field_viewer->current_node), node);
+			REACCESS(Computed_field)(&(node_field_viewer->current_field), field);
 			if (setup_components)
 			{
 				node_field_viewer_widget_setup_components(node_field_viewer);
 			}
-			if (node&&field)
+			if (node && field)
 			{
 				if (node_field_viewer->time_object)
 				{

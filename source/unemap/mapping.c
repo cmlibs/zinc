@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 22 September 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -71,13 +71,6 @@ typedef struct Map Map_settings;
 typedef struct Map_drawing_information Map_drawing_information_settings;
 
 #if defined (UNEMAP_USE_3D)
-struct Define_fit_field_at_torso_element_nodes_data
-{
-	struct GROUP(FE_element) *quad_element_group;
-	struct FE_field *fit_field;
-	struct MANAGER(FE_node) *node_manager;
-}; /* define_fit_field_at_torso_element_nodes_data */
-
 struct Map_value_torso_data
 /*******************************************************************************
 LAST MODIFIED : 16 October 2000
@@ -94,14 +87,14 @@ used by set_map_fit_field_at_torso_node
 
 struct Element_torso_data
 /*******************************************************************************
-LAST MODIFIED : 19 October 2000
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 used by add_torso_elements_if_nodes_in_z_range
 ==============================================================================*/
 {
 	struct LIST(FE_node) *torso_nodes_in_z_range;
-	struct GROUP(FE_element) *mapped_torso_element_group;
+	struct FE_region *mapped_torso_group;
 };
 
 
@@ -119,14 +112,14 @@ DESCRIPTION :
 
 struct merge_fit_field_template_element_data
 /*******************************************************************************
-LAST MODIFIED : 24 October 2000
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int count;
 	struct FE_element *template_element;
-	struct MANAGER(FE_element) *element_manager;
+	struct FE_region *fe_region;
 };
 #endif /* defined (UNEMAP_USE_3D)*/
 
@@ -1007,7 +1000,7 @@ Sets a node's values storage with the values  potential<f> and derivatives
 
 #if defined (UNEMAP_USE_3D)
 static struct FE_node *create_and_set_mapping_FE_node(struct FE_node *template_node,
-	struct MANAGER(FE_node) *node_manager,
+	struct FE_region *fe_region,
 	enum Region_type	region_type,int node_number,
 	struct FE_field_order_info *field_order_info,
 	int coords_comp_0_num_versions,int coords_comp_1_num_versions,
@@ -1027,41 +1020,44 @@ and the field_order_info.
 	struct FE_field *field;
 
 	ENTER(create_and_set_mapping_FE_node);
-	if (template_node&&node_manager&&field_order_info&&coords_comp_0&&
-		coords_comp_1&&coords_comp_2)
+	node = (struct FE_node *)NULL;
+	if (template_node && fe_region && field_order_info && coords_comp_0 &&
+		coords_comp_1 && coords_comp_2)
 	{
-		node=(struct FE_node *)NULL;
-		field=(struct FE_field *)NULL;
-		if (node=CREATE(FE_node)(node_number,template_node))
+		if (FE_region_get_FE_node_from_identifier(fe_region, node_number))
 		{
-			/*	set up the type dependent values	*/
-			/* 1st field is position field*/
-			field=get_FE_field_order_info_field(field_order_info,0);
-			set_mapping_FE_node_coord_values(node,field,
-				coords_comp_0_num_versions,coords_comp_1_num_versions,
-				coords_comp_2_num_versions,coords_comp_0,coords_comp_1,coords_comp_2,
-				region_type);
-			/*Set fields which are identical in all nodes*/
-			/* 2nd field contains fit */
-			field=get_FE_field_order_info_field(field_order_info,1);
-			set_mapping_FE_node_fit_values(node,field,0/*component_number*/,f,dfdx,dfdy,d2fdxdy);
-			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
-				cm_node_identifier)(node_number,node_manager))
-			{
-				display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node. Node already exists!");
-				node=(struct FE_node *)NULL;
-			}
+			display_message(ERROR_MESSAGE,
+				"create_and_set_mapping_FE_node.  Node already exists!");
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node.  Error creating node");
-			node=(struct FE_node *)NULL;
+			field = (struct FE_field *)NULL;
+			if (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+				template_node))
+			{
+				/*	set up the type dependent values	*/
+				/* 1st field is position field*/
+				field=get_FE_field_order_info_field(field_order_info,0);
+				set_mapping_FE_node_coord_values(node,field,
+					coords_comp_0_num_versions,coords_comp_1_num_versions,
+					coords_comp_2_num_versions,coords_comp_0,coords_comp_1,coords_comp_2,
+					region_type);
+				/*Set fields which are identical in all nodes*/
+				/* 2nd field contains fit */
+				field=get_FE_field_order_info_field(field_order_info,1);
+				set_mapping_FE_node_fit_values(node,field,0/*component_number*/,f,
+					dfdx,dfdy,d2fdxdy);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"create_and_set_mapping_FE_node.  Error creating node");
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_and_set_mapping_FE_node.  Invalid argument(s)");
-		node=(struct FE_node *)NULL;
 	}
 	LEAVE;
 	
@@ -1073,22 +1069,21 @@ and the field_order_info.
 static struct FE_field_order_info *create_mapping_fields(
 	enum Region_type region_type,FE_value focus,struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
 Creates the mapping fields, returns them in a FE_field_order_info.
 ==============================================================================*/
 {
 #define NUM_MAPPING_FIELDS 2 /* position_field,fit_field*/
-
-	struct MANAGER(FE_field) *fe_field_manager;
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_field_order_info *the_field_order_info =
 		(struct FE_field_order_info *)NULL;
+	struct FE_region *root_fe_region;
 	int success, string_length;
 	char *fit_point_name,*map_type_str;
 	struct Coordinate_system coordinate_system;
 	struct FE_field *position_field,*potential_field;
-	struct FE_time *fe_time;
 
 	char *patch_str = "patch";
 	char *sock_str = "sock";
@@ -1111,8 +1106,8 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 	{
 		success = 1;
 		fit_point_name = (char *)NULL;
-		fe_field_manager=get_unemap_package_FE_field_manager(package);
-		fe_time=get_unemap_package_FE_time(package);
+		root_cmiss_region = get_unemap_package_root_Cmiss_region(package);
+		root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
 		switch (region_type)
 		{
 			case SOCK:
@@ -1154,9 +1149,9 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 						coordinate_system.parameters.focus = focus;
 						/* create the fit point position field, add it to the node and
 							create */
-						if (!(position_field=get_FE_field_manager_matched_field(
-							fe_field_manager,fit_point_name,
-							GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (!(position_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,fit_point_name,
+							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,sock_fit_point_component_names,
@@ -1184,9 +1179,9 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 						/* set up the info needed to create the  fit point position field */
 						coordinate_system.type=CYLINDRICAL_POLAR;
 						/* create the fit point position field, add it to the node */
-						if (!(position_field=get_FE_field_manager_matched_field(
-							fe_field_manager,fit_point_name,
-							GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (!(position_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,fit_point_name,
+							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/3,torso_fit_point_component_names,
@@ -1214,9 +1209,9 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 						/* set up the info needed to create the  fit point position field */
 						coordinate_system.type=RECTANGULAR_CARTESIAN;
 						/* create the fit point position field, add it to the node */
-						if (!(position_field=get_FE_field_manager_matched_field(
-							fe_field_manager,fit_point_name,
-							GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
+						if (!(position_field=FE_region_get_FE_field_with_properties(
+							root_fe_region,fit_point_name,
+							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/2,patch_fit_point_component_names,
@@ -1291,7 +1286,7 @@ static struct FE_node *create_mapping_template_node(enum Region_type region_type
 	struct Unemap_package *package,int coords_comp_0_num_versions,
 	int coords_comp_1_num_versions,int coords_comp_2_num_versions)
 /*******************************************************************************
-LAST MODIFIED : 26 August 1999
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Creates and returns a mapping template node for interpolation_function_to_node_group.
@@ -1300,15 +1295,19 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 {
 	struct FE_node *node;
 	int success;
+	struct Cmiss_region *root_cmiss_region;
+	struct FE_region *root_fe_region;
 	struct FE_field *position_field,*fit_field;
 	struct FE_node_field_creator *node_field_creator;
 
 	ENTER(create_mapping_template_node);
 	if (package)
 	{
+		root_cmiss_region = get_unemap_package_root_Cmiss_region(package);
+		root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
 		success = 1;
 		/* create the node */
-		if (node=CREATE(FE_node)(0,(struct FE_node *)NULL))
+		if (node=CREATE(FE_node)(0,root_fe_region,(struct FE_node *)NULL))
 		{
 			/* first field in field_order_info is fit_point_position_field */
 			position_field=get_FE_field_order_info_field(field_order_info,0);
@@ -1414,14 +1413,14 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static struct GROUP(FE_node) *interpolation_function_to_node_group(
+static struct FE_region *interpolation_function_to_node_group(
 	struct FE_node_order_info **the_node_order_info,
 	struct FE_field_order_info *field_order_info,
 	struct Interpolation_function *function,struct Unemap_package *package,
 	char *name,FE_value sock_lambda,FE_value torso_major_r,
 	FE_value torso_minor_r,FE_value patch_z,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 Constructs a node group from the <function> and <package>
@@ -1448,28 +1447,25 @@ i.e sock is a hemisphere, torso is a cylinder.
 ==============================================================================*/
 {
 	enum Region_type region_type;
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_field *map_position_field,*map_fit_field;
 	struct FE_node *template_node,*node;
 	struct FE_node_order_info *node_order_info;
 	FE_value dfdx,dfdy,d2fdxdy,f,lambda,mu,r_value_and_derivatives[4],theta,x,y,z;
 	int count,f_index,i,j,last_node_number,node_number,number_of_columns,number_of_nodes,
 		number_of_rows;
-	struct GROUP(FE_node) *interpolation_node_group;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct FE_region *interpolation_node_group;
 	struct Map_3d_package *map_3d_package;
 #if !defined(ROUND_TORSO)
 	FE_value c,dr_dt,/*dt_ds,*/dt_dxi,r,s,t,torso_x,torso_y;
 #endif /* !defined(ROUND_TORSO)*/
+
 	ENTER(interpolation_function_to_node_group);
 #if defined(ROUND_TORSO)
 	USE_PARAMETER(torso_minor_r);
 #endif /* !defined(ROUND_TORSO)*/
 	node_order_info =(struct FE_node_order_info *)NULL;
-	interpolation_node_group =(struct GROUP(FE_node) *)NULL;
+	interpolation_node_group = (struct FE_region *)NULL;
 	template_node = (struct FE_node *)NULL;
 	map_position_field= (struct FE_field *)NULL;
 	map_fit_field= (struct FE_field *)NULL;
@@ -1480,421 +1476,356 @@ i.e sock is a hemisphere, torso is a cylinder.
 		region_type=function->region_type;
 		number_of_rows=function->number_of_rows;
 		number_of_columns=function->number_of_columns;
-		element_group_manager=get_unemap_package_element_group_manager(package);
-		node_manager=get_unemap_package_node_manager(package);
-		element_manager=get_unemap_package_element_manager(package);
-		data_group_manager=get_unemap_package_data_group_manager(package);
-		node_group_manager= get_unemap_package_node_group_manager(package);
-
-		MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+		root_cmiss_region = get_unemap_package_root_Cmiss_region(package);
 		/* make the node group */
-		interpolation_node_group=make_node_and_element_and_data_groups(
-			node_group_manager,node_manager,element_manager,element_group_manager,
-			data_group_manager,name);
-		MANAGED_GROUP_BEGIN_CACHE(FE_node)(interpolation_node_group);
-		/* create the node_order_info */
-		switch (region_type)
+		if (interpolation_node_group = Cmiss_region_get_or_create_child_FE_region(
+			root_cmiss_region, name,
+			/*master_fe_region*/Cmiss_region_get_FE_region(root_cmiss_region),
+			(struct MANAGER(FE_basis) *)NULL))
 		{
-			case SOCK:
-			{
-				number_of_nodes = (number_of_rows*number_of_columns)+1;
-			} break;
-			case TORSO:
-			{
-				number_of_nodes = (number_of_rows+1)*number_of_columns;
-			} break;
-			case PATCH:
-			{
-				number_of_nodes = (number_of_rows+1)*(number_of_columns+1);
-			} break;
-		}
-		if (node_order_info=CREATE(FE_node_order_info)(number_of_nodes))
-		{
-			/* create the template node, based upon the region_type */
+			FE_region_begin_change(interpolation_node_group);
+			FE_region_clear(interpolation_node_group, /*destroy_in_master*/1);
 			switch (region_type)
 			{
 				case SOCK:
 				{
-					node_number = get_next_FE_node_number(node_manager,last_node_number);
-					/* Do apex, one node, lots of number_of_columns versions of theta */
-					if (template_node)
-					{
-						DESTROY(FE_node)(&template_node);
-					}
-					template_node = create_mapping_template_node(SOCK,field_order_info,
-						package,1,1,number_of_columns);
-					theta = function->x_mesh[0];
-					mu = 0;
-					lambda = sock_lambda;
-					f=function->f[0];
-					dfdx=function->dfdx[0];
-					dfdy=function->dfdy[0];
-					d2fdxdy=function->d2fdxdy[0];
-					if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,
-						region_type,node_number,field_order_info,1,1,number_of_columns,
-						&lambda,&mu,function->x_mesh,f,dfdx,dfdy,d2fdxdy)))
-					{
-						display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
-							" Error creating node");
-					}
-					if (node)
-					{
-						if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
-						{
-							if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
-							{
-								set_FE_node_order_info_node(node_order_info,0,
-									node);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"interpolation_function_to_node_group."
-									" Could not add node to node_group");
-								REMOVE_OBJECT_FROM_GROUP(FE_node)(node,interpolation_node_group);
-								REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-								node=(struct FE_node *)NULL;
-							}
-						}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"interpolation_function_to_node_group. Could not add node to node_manager");
-							REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-							node=(struct FE_node *)NULL;
-						}
-					}/*	if (node) */
-					last_node_number = node_number;
-					count=1;
-					if (template_node)
-					{
-						DESTROY(FE_node)(&template_node);
-					}
-					template_node = create_mapping_template_node(region_type,field_order_info,
-						package,1,1,1);
-					while(count<number_of_nodes)
-					{
-						/* done apex, so skip first row */
-						for(i=1;i<number_of_rows+1;i++)
-						{
-							/* skip last column, as same as first*/
-							for(j=0;j<number_of_columns;j++)
-							{
-								node_number = get_next_FE_node_number(node_manager,last_node_number);
-								theta=function->x_mesh[j];
-								mu=function->y_mesh[i];
-								lambda=sock_lambda;
-								f_index=j+(i*(number_of_columns+1));
-								f=function->f[f_index];
-								dfdx=function->dfdx[f_index];
-								dfdy=function->dfdy[f_index];
-								d2fdxdy=function->d2fdxdy[f_index];
-								if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
-									node_number,field_order_info,1,1,1,&lambda,&mu,&theta,f,
-									dfdx,dfdy,d2fdxdy)))
-								{
-									display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
-										" Error creating node");
-								}
-								last_node_number = node_number;
-								if (node)
-								{
-									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
-									{
-										if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
-										{
-											set_FE_node_order_info_node(node_order_info,count,
-												node);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"interpolation_function_to_node_group."
-												" Could not add node to node_group");
-											REMOVE_OBJECT_FROM_GROUP(FE_node)(node,interpolation_node_group);
-											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-											node=(struct FE_node *)NULL;
-										}
-									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"interpolation_function_to_node_group. "
-											"Could not add node to node_manager");
-										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-										node=(struct FE_node *)NULL;
-									}
-								}/*	if (node) */
-								count++;
-							} /* for(j= */
-						} /* for(i= */
-					} /* while(count */
+					number_of_nodes = (number_of_rows*number_of_columns)+1;
 				} break;
 				case TORSO:
 				{
-					count=0;
-					if (template_node)
-					{
-						DESTROY(FE_node)(&template_node);
-					}
-					template_node = create_mapping_template_node(TORSO,field_order_info,
-						package,1,1,1);
-					r_value_and_derivatives[0]=0;
-					r_value_and_derivatives[1]=0;
-					r_value_and_derivatives[2]=0;
-					r_value_and_derivatives[3]=0;
-					while(count<number_of_nodes)
-					{
-						/* do all rows */
-						for(i=0;i<number_of_rows+1;i++)
-						{
-							/* skip last column, as same as first*/
-							for(j=0;j<number_of_columns;j++)
-							{
-								node_number = get_next_FE_node_number(node_manager,last_node_number);
-								theta=function->x_mesh[j];
-								z=function->y_mesh[i];
-								/* ROUND_TORSO defined in rig_node.h */
-#if defined (ROUND_TORSO) /*FOR AJP*/
-								r_value_and_derivatives[0]= torso_major_r;
-#else
-								t=function->x_mesh[j];
-								c=cos(t);
-								s=sin(t);
-								torso_x=torso_major_r*c;
-								torso_y=torso_minor_r*s;
-#if defined (NEW_CODE2)
-								theta=atan2(torso_y,torso_x);
-#else /* defined (NEW_CODE2) */
-								theta=t;
-#endif /* defined (NEW_CODE2) */
-								r=sqrt((torso_x*torso_x)+(torso_y*torso_y));
-								r_value_and_derivatives[0]= r;
-								dr_dt= (s*c*(torso_major_r+torso_minor_r)*
-									(torso_minor_r-torso_major_r))/r;
-#if defined (NEW_CODE)
-								dt_ds=1/sqrt(torso_major_r*torso_major_r*s*s+
-									torso_minor_r*torso_minor_r*c*c);
-								r_value_and_derivatives[1]=dr_dt*dt_ds;
-#else /* defined (NEW_CODE) */
-								if (0==j)
-								{
-									dt_dxi=((function->x_mesh)[1]-
-										(function->x_mesh)[number_of_columns-1])/2;
-								}
-								else
-								{
-									if (j==number_of_columns-1)
-									{
-										dt_dxi=(8*atan(1)+(function->x_mesh)[0]-
-											(function->x_mesh)[number_of_columns-2])/2;
-									}
-									else
-									{
-										dt_dxi=((function->x_mesh)[j+1]-
-											(function->x_mesh)[j-1])/2;
-									}
-								}
-								r_value_and_derivatives[1]=dr_dt*dt_dxi;
-#endif /* defined (NEW_CODE) */
-								r_value_and_derivatives[2]= 0;
-								r_value_and_derivatives[3]= 0;
-#if defined (DEBUG)
-								if (0==i)
-								{
-									printf("j= %d ",j);
-									printf("torso_major_r= %g ",torso_major_r);
-									printf("torso_minor_r= %g ",torso_minor_r);
-									printf("theta= %g\n",theta);
-									printf("c= %g ",c);
-									printf("s= %g ",s);
-									printf("torso_x= %g\n",torso_x);
-									printf("torso_y= %g ",torso_y);
-									printf("r= %g\n",r);
-									printf("dr_dt=%g, dt_ds=%g, dr_ds=%g\n",
-										dr_dt,dt_ds,r_value_and_derivatives[1]);
-								}
-#endif /* defined (DEBUG)	*/
-#endif /* defined (ROUND_TORSO) */
-								f_index=j+(i*(number_of_columns+1));
-								f=function->f[f_index];
-								dfdx=function->dfdx[f_index];
-								dfdy=function->dfdy[f_index];
-								d2fdxdy=function->d2fdxdy[f_index];
-								if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
-									node_number,field_order_info,1,1,1,r_value_and_derivatives,&theta,&z,f,dfdx,
-									dfdy,d2fdxdy)))
-								{
-									display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
-										" Error creating node");
-								}
-								last_node_number = node_number;
-								if (node)
-								{
-									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
-									{
-										if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
-										{
-											set_FE_node_order_info_node(node_order_info,count,
-												node);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"interpolation_function_to_node_group. Could not add "
-												"node to node_group");
-											REMOVE_OBJECT_FROM_GROUP(FE_node)(node,interpolation_node_group);
-											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-											node=(struct FE_node *)NULL;
-										}
-									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"interpolation_function_to_node_group. Could not add node "
-											"to node_manager");
-										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-										node=(struct FE_node *)NULL;
-									}
-								}/*	if (node) */
-								count++;
-							} /* for(j= */
-						} /* for(i= */
-					} /* while(count */
+					number_of_nodes = (number_of_rows+1)*number_of_columns;
 				} break;
 				case PATCH:
 				{
-					count=0;
-					if (template_node)
+					number_of_nodes = (number_of_rows+1)*(number_of_columns+1);
+				} break;
+			}
+			if (node_order_info=CREATE(FE_node_order_info)(number_of_nodes))
+			{
+				/* create the template node, based upon the region_type */
+				switch (region_type)
+				{
+					case SOCK:
 					{
-						DESTROY(FE_node)(&template_node);
-					}
-					template_node = create_mapping_template_node(PATCH,field_order_info,
-						package,1,1,1);
-					while(count<number_of_nodes)
-					{
-						/* do all rows */
-						for(i=0;i<number_of_rows+1;i++)
+						node_number = FE_region_get_next_FE_node_identifier(
+							interpolation_node_group, last_node_number);
+						/* Do apex, one node, lots of number_of_columns versions of theta */
+						if (template_node)
 						{
-							/* do all columns */
-							for(j=0;j<number_of_columns+1;j++)
+							DESTROY(FE_node)(&template_node);
+						}
+						template_node = create_mapping_template_node(SOCK,field_order_info,
+							package,1,1,number_of_columns);
+						theta = function->x_mesh[0];
+						mu = 0;
+						lambda = sock_lambda;
+						f=function->f[0];
+						dfdx=function->dfdx[0];
+						dfdy=function->dfdy[0];
+						d2fdxdy=function->d2fdxdy[0];
+						if (!(node=create_and_set_mapping_FE_node(template_node,
+							interpolation_node_group,
+							region_type,node_number,field_order_info,1,1,number_of_columns,
+							&lambda,&mu,function->x_mesh,f,dfdx,dfdy,d2fdxdy)))
+						{
+							display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
+								" Error creating node");
+						}
+						if (FE_region_merge_FE_node(interpolation_node_group, node))
+						{
+							set_FE_node_order_info_node(node_order_info, 0, node);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"interpolation_function_to_node_group.  "
+								"Could not merge node into region");
+							node = (struct FE_node *)NULL;
+						}
+						last_node_number = node_number;
+						count=1;
+						if (template_node)
+						{
+							DESTROY(FE_node)(&template_node);
+						}
+						template_node = create_mapping_template_node(region_type,
+							field_order_info,package,1,1,1);
+						while (count < number_of_nodes)
+						{
+							/* done apex, so skip first row */
+							for(i=1;i<number_of_rows+1;i++)
 							{
-								node_number = get_next_FE_node_number(node_manager,last_node_number);
-								x=function->x_mesh[j];
-								y=function->y_mesh[i];
-								z=patch_z;
-								f=function->f[count];
-								dfdx=function->dfdx[count];
-								dfdy=function->dfdy[count];
-								d2fdxdy=function->d2fdxdy[count];
-								if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,
-									region_type,node_number,field_order_info,1,1,1,&x,&y,&z,f,dfdx,dfdy,
-									d2fdxdy)))
+								/* skip last column, as same as first*/
+								for(j=0;j<number_of_columns;j++)
 								{
-									display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
-										" Error creating node");
-								}
-								last_node_number = node_number;
-								if (node)
-								{
-									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
+									node_number = FE_region_get_next_FE_node_identifier(
+										interpolation_node_group, last_node_number);
+									theta=function->x_mesh[j];
+									mu=function->y_mesh[i];
+									lambda=sock_lambda;
+									f_index=j+(i*(number_of_columns+1));
+									f=function->f[f_index];
+									dfdx=function->dfdx[f_index];
+									dfdy=function->dfdy[f_index];
+									d2fdxdy=function->d2fdxdy[f_index];
+									if (!(node = create_and_set_mapping_FE_node(template_node,
+										interpolation_node_group,region_type,
+										node_number,field_order_info,1,1,1,&lambda,&mu,&theta,f,
+										dfdx,dfdy,d2fdxdy)))
 									{
-										if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
-										{
-											set_FE_node_order_info_node(node_order_info,count,
-												node);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"interpolation_function_to_node_group. Could not add node to"
-												" node_group");
-											REMOVE_OBJECT_FROM_GROUP(FE_node)(node,interpolation_node_group);
-											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-											node=(struct FE_node *)NULL;
-										}
-									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
+										display_message(ERROR_MESSAGE,
+											"interpolation_function_to_node_group.  "
+											"Error creating node");
+									}
+									last_node_number = node_number;
+									if (FE_region_merge_FE_node(interpolation_node_group, node))
+									{
+										set_FE_node_order_info_node(node_order_info, count, node);
+									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"interpolation_function_to_node_group."
-											" Could not add node to node_manager");
-										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
-										node=(struct FE_node *)NULL;
+											"interpolation_function_to_node_group.  "
+											"Could not merge node into region");
+										node = (struct FE_node *)NULL;
 									}
-								}/*	if (node) */
-								count++;
-							} /* for(j= */
-						} /* for(i= */
-					} /* while(count */
-				} break; /* case PATCH:*/
-			} /* switch (region_type) */
-			/* 1st field is map position*/
-			map_position_field=get_FE_field_order_info_field(field_order_info,0);
-			/* 2nd field is map fit*/
-			map_fit_field=get_FE_field_order_info_field(field_order_info,1);
-			/* store map info to use next time and so can free it */
-			/* Create the new Map_3d_package*/
-			map_3d_package=CREATE(Map_3d_package)(
-				get_unemap_package_FE_field_manager(package),
-				get_unemap_package_element_group_manager(package),
-				get_unemap_package_data_manager(package),
-				get_unemap_package_data_group_manager(package),
-				get_unemap_package_node_manager(package),
-				get_unemap_package_node_group_manager(package),
-				get_unemap_package_element_manager(package),
-				get_unemap_package_Computed_field_manager(package));
-			set_map_3d_package_number_of_map_rows(map_3d_package,number_of_rows);
-			set_map_3d_package_number_of_map_columns(map_3d_package,number_of_columns);
-			set_map_3d_package_fit_name(map_3d_package,name);
-			set_map_3d_package_node_order_info(map_3d_package,node_order_info);
-			set_map_3d_package_position_field(map_3d_package,map_position_field);
-			set_map_3d_package_fit_field(map_3d_package,map_fit_field);
-			set_map_3d_package_node_group(map_3d_package,interpolation_node_group);
-			set_Region_map_3d_package(region,map_3d_package);
-		} /* if (node_order_info=CREATE(FE */
+									count++;
+								} /* for(j= */
+							} /* for(i= */
+						} /* while(count */
+					} break;
+					case TORSO:
+					{
+						count=0;
+						if (template_node)
+						{
+							DESTROY(FE_node)(&template_node);
+						}
+						template_node = create_mapping_template_node(TORSO,field_order_info,
+							package,1,1,1);
+						r_value_and_derivatives[0]=0;
+						r_value_and_derivatives[1]=0;
+						r_value_and_derivatives[2]=0;
+						r_value_and_derivatives[3]=0;
+						while(count<number_of_nodes)
+						{
+							/* do all rows */
+							for(i=0;i<number_of_rows+1;i++)
+							{
+								/* skip last column, as same as first*/
+								for(j=0;j<number_of_columns;j++)
+								{
+									node_number = FE_region_get_next_FE_node_identifier(
+										interpolation_node_group, last_node_number);
+									theta=function->x_mesh[j];
+									z=function->y_mesh[i];
+									/* ROUND_TORSO defined in rig_node.h */
+#if defined (ROUND_TORSO) /*FOR AJP*/
+									r_value_and_derivatives[0]= torso_major_r;
+#else
+									t=function->x_mesh[j];
+									c=cos(t);
+									s=sin(t);
+									torso_x=torso_major_r*c;
+									torso_y=torso_minor_r*s;
+#if defined (NEW_CODE2)
+									theta=atan2(torso_y,torso_x);
+#else /* defined (NEW_CODE2) */
+									theta=t;
+#endif /* defined (NEW_CODE2) */
+									r=sqrt((torso_x*torso_x)+(torso_y*torso_y));
+									r_value_and_derivatives[0]= r;
+									dr_dt= (s*c*(torso_major_r+torso_minor_r)*
+										(torso_minor_r-torso_major_r))/r;
+#if defined (NEW_CODE)
+									dt_ds=1/sqrt(torso_major_r*torso_major_r*s*s+
+										torso_minor_r*torso_minor_r*c*c);
+									r_value_and_derivatives[1]=dr_dt*dt_ds;
+#else /* defined (NEW_CODE) */
+									if (0==j)
+									{
+										dt_dxi=((function->x_mesh)[1]-
+											(function->x_mesh)[number_of_columns-1])/2;
+									}
+									else
+									{
+										if (j==number_of_columns-1)
+										{
+											dt_dxi=(8*atan(1)+(function->x_mesh)[0]-
+												(function->x_mesh)[number_of_columns-2])/2;
+										}
+										else
+										{
+											dt_dxi=((function->x_mesh)[j+1]-
+												(function->x_mesh)[j-1])/2;
+										}
+									}
+									r_value_and_derivatives[1]=dr_dt*dt_dxi;
+#endif /* defined (NEW_CODE) */
+									r_value_and_derivatives[2]= 0;
+									r_value_and_derivatives[3]= 0;
+#if defined (DEBUG)
+									if (0==i)
+									{
+										printf("j= %d ",j);
+										printf("torso_major_r= %g ",torso_major_r);
+										printf("torso_minor_r= %g ",torso_minor_r);
+										printf("theta= %g\n",theta);
+										printf("c= %g ",c);
+										printf("s= %g ",s);
+										printf("torso_x= %g\n",torso_x);
+										printf("torso_y= %g ",torso_y);
+										printf("r= %g\n",r);
+										printf("dr_dt=%g, dt_ds=%g, dr_ds=%g\n",
+											dr_dt,dt_ds,r_value_and_derivatives[1]);
+									}
+#endif /* defined (DEBUG)	*/
+#endif /* defined (ROUND_TORSO) */
+									f_index=j+(i*(number_of_columns+1));
+									f=function->f[f_index];
+									dfdx=function->dfdx[f_index];
+									dfdy=function->dfdy[f_index];
+									d2fdxdy=function->d2fdxdy[f_index];
+									if (!(node=create_and_set_mapping_FE_node(template_node,
+										interpolation_node_group,region_type,
+										node_number,field_order_info,1,1,1,r_value_and_derivatives,&theta,&z,f,dfdx,
+										dfdy,d2fdxdy)))
+									{
+										display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
+											" Error creating node");
+									}
+									last_node_number = node_number;
+									if (FE_region_merge_FE_node(interpolation_node_group, node))
+									{
+										set_FE_node_order_info_node(node_order_info, count, node);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"interpolation_function_to_node_group.  "
+											"Could not merge node into region");
+										node = (struct FE_node *)NULL;
+									}
+									count++;
+								} /* for(j= */
+							} /* for(i= */
+						} /* while(count */
+					} break;
+					case PATCH:
+					{
+						count=0;
+						if (template_node)
+						{
+							DESTROY(FE_node)(&template_node);
+						}
+						template_node = create_mapping_template_node(PATCH,field_order_info,
+							package,1,1,1);
+						while(count<number_of_nodes)
+						{
+							/* do all rows */
+							for(i=0;i<number_of_rows+1;i++)
+							{
+								/* do all columns */
+								for(j=0;j<number_of_columns+1;j++)
+								{
+									node_number = FE_region_get_next_FE_node_identifier(
+										interpolation_node_group, last_node_number);
+									x=function->x_mesh[j];
+									y=function->y_mesh[i];
+									z=patch_z;
+									f=function->f[count];
+									dfdx=function->dfdx[count];
+									dfdy=function->dfdy[count];
+									d2fdxdy=function->d2fdxdy[count];
+									if (!(node=create_and_set_mapping_FE_node(template_node,
+										interpolation_node_group, region_type, node_number,
+										field_order_info,1,1,1,&x,&y,&z,f,dfdx,dfdy,d2fdxdy)))
+									{
+										display_message(ERROR_MESSAGE,
+											"interpolation_function_to_node_group.  "
+											"Error creating node");
+									}
+									last_node_number = node_number;
+									if (FE_region_merge_FE_node(interpolation_node_group, node))
+									{
+										set_FE_node_order_info_node(node_order_info, count, node);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"interpolation_function_to_node_group.  "
+											"Could not merge node into region");
+										node = (struct FE_node *)NULL;
+									}
+									count++;
+								} /* for(j= */
+							} /* for(i= */
+						} /* while(count */
+					} break; /* case PATCH:*/
+				} /* switch (region_type) */
+				/* 1st field is map position*/
+				map_position_field=get_FE_field_order_info_field(field_order_info,0);
+				/* 2nd field is map fit*/
+				map_fit_field=get_FE_field_order_info_field(field_order_info,1);
+				/* store map info to use next time and so can free it */
+				/* Create the new Map_3d_package*/
+				map_3d_package = CREATE(Map_3d_package)(
+					get_unemap_package_root_Cmiss_region(package),
+					get_unemap_package_data_root_Cmiss_region(package),
+					get_unemap_package_Computed_field_manager(package));
+				set_map_3d_package_number_of_map_rows(map_3d_package,number_of_rows);
+				set_map_3d_package_number_of_map_columns(map_3d_package,number_of_columns);
+				set_map_3d_package_fit_name(map_3d_package,name);
+				set_map_3d_package_node_order_info(map_3d_package,node_order_info);
+				set_map_3d_package_position_field(map_3d_package,map_position_field);
+				set_map_3d_package_fit_field(map_3d_package,map_fit_field);
+				set_map_3d_package_group(map_3d_package,interpolation_node_group);
+				set_Region_map_3d_package(region,map_3d_package);
+			} /* if (node_order_info=CREATE(FE */
+			else
+			{
+				display_message(ERROR_MESSAGE,"interpolation_function_to_node_group "
+					"CREATE(FE_node_order_info) failed ");
+			}
+			FE_region_end_change(interpolation_node_group);
+			if (template_node)
+			{
+				DESTROY(FE_node)(&template_node);
+			}
+		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"interpolation_function_to_node_group "
-				"CREATE(FE_node_order_info) failed ");
-		}
-		MANAGER_END_CACHE(FE_node)(node_manager);
-		if (interpolation_node_group)
-		{
-			MANAGED_GROUP_END_CACHE(FE_node)(interpolation_node_group);
-		}
-		if (template_node)
-		{
-			DESTROY(FE_node)(&template_node);
+			display_message(ERROR_MESSAGE,
+				"interpolation_function_to_node_group.  Could not create group");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
-			" Invalid arguments");
-		interpolation_node_group =(struct GROUP(FE_node) *)NULL;
+		display_message(ERROR_MESSAGE,
+			"interpolation_function_to_node_group.  Invalid argument(s)");
 	}
-	*the_node_order_info = node_order_info;
+	if (the_node_order_info)
+	{
+		*the_node_order_info = node_order_info;
+	}
 	LEAVE;
 
 	return (interpolation_node_group);
-}/*interpolation_function_to_node_group */
+} /* interpolation_function_to_node_group */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static struct GROUP(FE_element) *make_fit_elements(char *group_name,
-	struct FE_node_order_info *node_order_info,
+static int make_fit_elements(struct FE_node_order_info *node_order_info,
 	struct FE_field_order_info *field_order_info,
-	struct MANAGER(GROUP(FE_element))	*element_group_manager,
+	struct FE_region	*fe_region,
 	struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,enum Region_type region_type,
-	int number_of_rows,int number_of_columns,FE_value *x_mesh,FE_value *y_mesh,
-	struct Region *region)
+	enum Region_type region_type,
+	int number_of_rows,int number_of_columns,FE_value *x_mesh,FE_value *y_mesh)
 /*******************************************************************************
-LAST MODIFIED : 1 February 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
-Make the elements for the 3d map surface.
+Make the elements for the 3d map surface and merges them into <fe_region>.
 ==============================================================================*/
 {
 	int addition,count,base_scale_factor_offset,dest_index,i,index,j,k,l,m,
@@ -1907,13 +1838,11 @@ Make the elements for the 3d map surface.
 	struct CM_element_information element_identifier;
 	struct FE_basis *basis,*linear_lagrange_basis,*cubic_hermite_basis;
 	struct FE_element *element,*template_element;
-	struct GROUP(FE_element) *element_group;
 	struct FE_element_shape *shape;
 	struct FE_node **element_nodes;
 	struct FE_field *field;
 	struct FE_element_field_component **components;
-	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
-	struct Standard_node_to_element_map **standard_node_map;
+	struct Standard_node_to_element_map *standard_node_map;
 	void **scale_factor_set_identifiers,**temp_scale_factor_set_identifiers;
 	int linear_lagrange_basis_type[4]=
 	{
@@ -1925,14 +1854,14 @@ Make the elements for the 3d map surface.
 	};
 	int shape_type[3]=
 	{
-		LINE_SHAPE,0,0
+		LINE_SHAPE,0,LINE_SHAPE
 	};
 
 	ENTER(make_fit_elements);
-	element_group=(struct GROUP(FE_element) *)NULL;
-	if (basis_manager&&element_manager&&(map_3d_package=get_Region_map_3d_package(region)))
+	return_code = 0;
+	if (fe_region && basis_manager)
 	{
-		return_code=1;
+		return_code = 1;
 		number_of_nodes=4;
 		/* Arrange the nodes into an array,where the 1st number_of_columns+1 nodes
 			are the first row, the 2nd the 2nd row, etc, for number_of_row+1 rows.
@@ -2077,13 +2006,6 @@ Make the elements for the 3d map surface.
 		{
 			return_code=0;
 		}
-		if (!(element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-			(group_name,element_group_manager)))
-		{
-			display_message(ERROR_MESSAGE,
-				"make_fit_elements.  Couldn't find element group");
-			return_code=0;
-		}
 		/* create the scale_factor sets */
 		number_of_scale_factor_sets=0;
 		numbers_in_scale_factor_sets=(int *)NULL;
@@ -2154,21 +2076,22 @@ Make the elements for the 3d map surface.
 			}
 			i++;
 		}
-		template_element=(struct FE_element *)NULL;
+		template_element = (struct FE_element *)NULL;
 		if (return_code)
 		{
 			/* create the template element */
 			element_identifier.type=CM_ELEMENT;
 			element_identifier.number=1;
-			if (template_element=CREATE(FE_element)(&element_identifier,
-				(struct FE_element *)NULL))
+			if (template_element = CREATE(FE_element)(&element_identifier, shape,
+				fe_region, (struct FE_element *)NULL))
 			{
 				ACCESS(FE_element)(template_element);
-				/* set the element shape and node scale field info */
-				if (set_FE_element_shape(template_element,shape)&&
-					set_FE_element_node_scale_field_info(template_element,
-					number_of_scale_factor_sets,scale_factor_set_identifiers,
-						numbers_in_scale_factor_sets,number_of_nodes))
+				/* set the element node scale field info */
+				if (set_FE_element_number_of_nodes(template_element,
+						number_of_nodes) &&
+					set_FE_element_number_of_scale_factor_sets(template_element,
+						number_of_scale_factor_sets, scale_factor_set_identifiers,
+						numbers_in_scale_factor_sets))
 				{
 					/* define the fields over the elements */
 					i=0;
@@ -2222,40 +2145,46 @@ Make the elements for the 3d map surface.
 									STANDARD_NODE_TO_ELEMENT_MAP,number_of_nodes,basis,modify))
 								{
 									/* create node map*/
-									standard_node_map=(components[j])->
-										map.standard_node_based.node_to_element_maps;
-									m=0;
-									for (k=0;k<number_of_nodes;k++)
+									m = 0;
+									for (k = 0; k < number_of_nodes; k++)
 									{
-										if (*standard_node_map=CREATE(Standard_node_to_element_map)(
-											/*node_index*/k,
-											/*number_of_values*/1+number_of_derivatives))
+										if (standard_node_map =
+											CREATE(Standard_node_to_element_map)(/*node_index*/k,
+												/*number_of_values*/1 + number_of_derivatives))
 										{
 											for (l=0;l<(1+number_of_derivatives);l++)
 											{
-												(*standard_node_map)->nodal_value_indices[l]=l;
-												(*standard_node_map)->scale_factor_indices[l]=
-													base_scale_factor_offset+m;
+												Standard_node_to_element_map_set_nodal_value_index(
+													standard_node_map, l, l);
+												Standard_node_to_element_map_set_scale_factor_index(
+													standard_node_map, l, base_scale_factor_offset + m);
 												/* set scale_factors to 1 */
-												template_element->information->scale_factors[
-													(*standard_node_map)->scale_factor_indices[l]]=1.0;
+												set_FE_element_scale_factor(template_element, l, 1.0);
 												m++;
+											}
+											if (!FE_element_field_component_set_standard_node_map(
+												components[j], /*node_number*/k, standard_node_map))
+											{
+												display_message(ERROR_MESSAGE, "make_fit_elements.  "
+													"Error setting standard_node_to_element_map");
+												DESTROY(Standard_node_to_element_map)(
+													&standard_node_map);
+												return_code = 0;
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,"make_fit_elements.  "
 												"Could not create Standard_node_to_element_map");
-											return_code=0;
+											return_code = 0;
 										}
-										standard_node_map++;
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
 										"make_fit_elements.  Could not create component");
-									return_code=0;
+									return_code = 0;
 								}
 								j++;
 							}
@@ -2303,11 +2232,10 @@ Make the elements for the 3d map surface.
 		/* now have template_element. Make those elements! */
 		if (return_code)
 		{
-			MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-			MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);
+			FE_region_begin_change(fe_region);
 			/* work through all elements */
-			element_identifier.type=CM_ELEMENT;
-			element_identifier.number=1;
+			element_identifier.type = CM_ELEMENT;
+			element_identifier.number = 1;
 			/* the coordinate field */
 			field=get_FE_field_order_info_field(field_order_info,0);
 			for (i=0;i<number_of_rows;i++)
@@ -2315,12 +2243,11 @@ Make the elements for the 3d map surface.
 				for (j=0;j<number_of_columns;j++)
 				{
 					index = (i*(number_of_columns+1))+j;
-					while (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-						&element_identifier,element_manager))
-					{
-						element_identifier.number++;
-					}
-					if (element=CREATE(FE_element)(&element_identifier,template_element))
+					element_identifier.number = FE_region_get_next_FE_element_identifier(
+						fe_region, element_identifier.type, element_identifier.number);
+					if (element = CREATE(FE_element)(&element_identifier,
+						(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+						template_element))
 					{
 						if (set_FE_element_node(element,0,element_nodes[index])&&
 							set_FE_element_node(element,1,element_nodes[index+1])&&
@@ -2385,25 +2312,13 @@ Make the elements for the 3d map surface.
 							FE_element_set_scale_factor_for_nodal_value(element,
 								element_nodes[index+number_of_columns+2],field,
 								0/*component_number*/,FE_NODAL_D2_DS1DS2,width*height);
-							/* add element to manager*/
-							if (ADD_OBJECT_TO_MANAGER(FE_element)(element,element_manager))
-							{
-								if (!ADD_OBJECT_TO_GROUP(FE_element)(element,element_group))
-								{
-									display_message(ERROR_MESSAGE,"make_fit_elements.  "
-										"Could not add element to element_group");
-									/* remove element from manager to destroy it */
-									REMOVE_OBJECT_FROM_MANAGER(FE_element)(element,
-										element_manager);
-									return_code=0;
-								}
-							}
-							else
+							/* add element to fe_region */
+							if (!FE_region_merge_FE_element(fe_region, element))
 							{
 								display_message(ERROR_MESSAGE,"make_fit_elements.  "
-									"Could not add element to element_manager");
+									"Could not add element to fe_region");
 								DESTROY(FE_element)(&element);
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
@@ -2422,16 +2337,7 @@ Make the elements for the 3d map surface.
 					}
 				}
 			}
-			MANAGED_GROUP_END_CACHE(FE_element)(element_group);
-			MANAGER_END_CACHE(FE_element)(element_manager);
-		}
-		if (return_code)
-		{
-			set_map_3d_package_element_group(map_3d_package,element_group);
-		}
-		else
-		{
-			element_group =(struct GROUP(FE_element) *)NULL;
+			FE_region_end_change(fe_region);
 		}
 
 		/* clean up */
@@ -2466,259 +2372,238 @@ Make the elements for the 3d map surface.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_fit_elements."
-			" Invalid arguments");
-		element_group =(struct GROUP(FE_element) *)NULL;
+		display_message(ERROR_MESSAGE, "make_fit_elements.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (element_group);
+	return (return_code);
 } /* make_fit_elements */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 static int change_fit_node_group_values(struct FE_node_order_info
 	*node_order_info,struct FE_field *fit_field,
-	struct Interpolation_function *function,char *name,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(GROUP(FE_element))	*element_group_manager,
-	struct MANAGER(FE_node) *node_manager)
+	struct Interpolation_function *function,
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED :14 November 2000
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
-Given the <function> and <package>  <node_order_info> and <name>,
-Checks that a node group of name <name> exists, searches the node group for the
-nodes in <node_order_info>, and fills them in with values from <function>.
+Given the <function> and <package>, <node_order_info> and <name>, searches
+<fe_region> for the nodes in <node_order_info>, and fills them in with values
+from <function>.
 *******************************************************************************/
 {
 	enum Region_type region_type;
-	int count,f_index,i,j,number_of_columns,number_of_nodes,
+	int count,f_index,i,j,node_number, number_of_columns,number_of_nodes,
 		number_of_rows,return_code;
 	FE_value dfdx,dfdy,d2fdxdy,f;
-	struct GROUP(FE_node) *existing_node_group;
 	struct FE_node *node_managed,*node;
 
 	ENTER(change_fit_node_group_value);
 	return_code=1;
-	if (node_order_info&&function&&name&&node_group_manager&&element_group_manager)
+	if (node_order_info && function && fe_region)
 	{
 		region_type=function->region_type;
 		number_of_rows=function->number_of_rows;
 		number_of_columns=function->number_of_columns;
 		number_of_nodes=node_order_info->number_of_nodes;
-
-		if ((existing_node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-			name,node_group_manager))&&(FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-				(name,element_group_manager)))
+		FE_region_begin_change(fe_region);
+		switch (region_type)
 		{
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-			switch (region_type)
+			case SOCK:
 			{
-				case SOCK:
+				f=function->f[0];
+				dfdx=function->dfdx[0];
+				dfdy=function->dfdy[0];
+				d2fdxdy=function->d2fdxdy[0];
+				/* set node values here. */
+				/* get the apex node from the node_order_info, check it is in group */
+				node_managed = get_FE_node_order_info_node(node_order_info,0);
+				node_number = get_FE_node_identifier(node_managed);
+				if (node_managed =
+					FE_region_get_FE_node_from_identifier(fe_region, node_number))
 				{
-					f=function->f[0];
-					dfdx=function->dfdx[0];
-					dfdy=function->dfdy[0];
-					d2fdxdy=function->d2fdxdy[0];
-					/* set node values here. */
-					/* get the apex node from the node_order_info, check  it's in the group */
-					node_managed=get_FE_node_order_info_node(node_order_info,0);
-					if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-						get_FE_node_cm_node_identifier(node_managed),existing_node_group))
+					/* create a copy of the node to work with */
+					if (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+						node_managed))
 					{
-						/* create a node to work with */
-						node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-						/* copy it from the manager */
-						if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-							(node,node_managed))
-						{
-							set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
-								f,dfdx,dfdy,d2fdxdy);
-							/* copy it back into the manager */
-							MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-								(node_managed,node,node_manager);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"change_fit_node_group_values. MANAGER_COPY_WITH_IDENTIFIER failed ");
-							return_code=0;
-						}
+						set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
+							f,dfdx,dfdy,d2fdxdy);
+						/* copy it back into the manager */
+						FE_region_merge_FE_node(fe_region, node);
 						/* destroy the working copy */
 						DESTROY(FE_node)(&node);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-								"change_fit_node_group_values. Can't find node in group ");
-							return_code=0;
+							"change_fit_node_group_values.  Could not create node copy");
+						return_code=0;
 					}
-					count=1;
-					while((count<number_of_nodes)&&return_code)
-					{
-						/* done apex, so skip first row */
-						for(i=1;i<number_of_rows+1;i++)
-						{
-							/* skip last column, as same as first */
-							for(j=0;j<number_of_columns;j++)
-							{
-								f_index=j+(i*(number_of_columns+1));
-								f=function->f[f_index];
-								dfdx=function->dfdx[f_index];
-								dfdy=function->dfdy[f_index];
-								d2fdxdy=function->d2fdxdy[f_index];
-								/* set node values here.  */
-								node_managed=get_FE_node_order_info_node(node_order_info,count);
-								if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-									get_FE_node_cm_node_identifier(node_managed),existing_node_group))
-								{
-									/* create a node to work with */
-									node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-									/*copy it from the manager */
-									if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-										(node,node_managed))
-									{
-										set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
-											f,dfdx,dfdy,d2fdxdy);
-										/* copy it back into the manager */
-										MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-											(node_managed,node,node_manager);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"change_fit_node_group_values. MANAGER_COPY_WITH_IDENTIFIER failed ");
-										return_code=0;
-									}
-									/* destroy the working copy */
-									DESTROY(FE_node)(&node);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"change_fit_node_group_values. Can't find node in group");
-									return_code=0;
-								}
-								count++;
-							} /* for(j= */
-						} /* for(i= */
-					} /* while(count */
-				} break;
-				case TORSO:
+				}
+				else
 				{
-					count=0;
-					while((count<number_of_nodes)&&return_code)
-					{
-						/* do all rows */
-						for(i=0;i<number_of_rows+1;i++)
-						{
-							/* skip last column, as same as first*/
-							for(j=0;j<number_of_columns;j++)
-							{
-								f_index=j+(i*(number_of_columns+1));
-								f=function->f[f_index];
-								dfdx=function->dfdx[f_index];
-								dfdy=function->dfdy[f_index];
-								d2fdxdy=function->d2fdxdy[f_index];
-								/* set node values here.  */
-								node_managed=get_FE_node_order_info_node(node_order_info,count);
-								if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-									get_FE_node_cm_node_identifier(node_managed),existing_node_group))
-								{
-									/* create a node to work with */
-									node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-									/*copy it from the manager */
-									if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-										(node,node_managed))
-									{
-										set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
-											f,dfdx,dfdy,d2fdxdy);
-										/* copy it back into the manager */
-										MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-											(node_managed,node,node_manager);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"change_fit_node_group_values. MANAGER_COPY_WITH_IDENTIFIER failed ");
-										return_code=0;
-									}
-									/* destroy the working copy */
-									DESTROY(FE_node)(&node);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"change_fit_node_group_values. Can't find node in group");
-									return_code=0;
-								}
-								count++;
-							} /* for(j= */
-						} /* for(i= */
-					} /* while(count */
-				} break;
-				case PATCH:
+					display_message(ERROR_MESSAGE,
+						"change_fit_node_group_values. Can't find node in group ");
+					return_code=0;
+				}
+				count=1;
+				while((count<number_of_nodes)&&return_code)
 				{
-					count=0;
-					while((count<number_of_nodes)&&return_code)
+					/* done apex, so skip first row */
+					for(i=1;i<number_of_rows+1;i++)
 					{
-						/* do all rows */
-						for(i=0;i<number_of_rows+1;i++)
+						/* skip last column, as same as first */
+						for(j=0;j<number_of_columns;j++)
 						{
-							/* do all columns */
-							for(j=0;j<number_of_columns+1;j++)
+							f_index=j+(i*(number_of_columns+1));
+							f=function->f[f_index];
+							dfdx=function->dfdx[f_index];
+							dfdy=function->dfdy[f_index];
+							d2fdxdy=function->d2fdxdy[f_index];
+							/* set node values here.  */
+							node_managed =
+								get_FE_node_order_info_node(node_order_info, count);
+							node_number = get_FE_node_identifier(node_managed);
+							if (node_managed =
+								FE_region_get_FE_node_from_identifier(fe_region, node_number))
 							{
-								f=function->f[count];
-								dfdx=function->dfdx[count];
-								dfdy=function->dfdy[count];
-								d2fdxdy=function->d2fdxdy[count];
-								/* set node values here.  */
-								node_managed=get_FE_node_order_info_node(node_order_info,count);
-								if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-									get_FE_node_cm_node_identifier(node_managed),existing_node_group))
+								/* create a copy of the node to work with */
+								if (node = CREATE(FE_node)(node_number,
+									(struct FE_region *)NULL, node_managed))
 								{
-									/* create a node to work with */
-									node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-									/*copy it from the manager */
-									if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-										(node,node_managed))
-									{
-										set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
-											f,dfdx,dfdy,d2fdxdy);
-										/* copy it back into the manager */
-										MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-											(node_managed,node,node_manager);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"change_fit_node_group_values MANAGER_COPY_WITH_IDENTIFIER failed ");
-										return_code=0;
-									}
+									set_mapping_FE_node_fit_values(node,fit_field,
+										0/*component_number*/,f,dfdx,dfdy,d2fdxdy);
+									/* copy it back into the manager */
+									FE_region_merge_FE_node(fe_region, node);
 									/* destroy the working copy */
 									DESTROY(FE_node)(&node);
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"change_fit_node_group_values. Can't find node in group");
+										"change_fit_node_group_values.  Could not create node copy");
 									return_code=0;
 								}
-								count++;
-							} /* for(j= */
-						} /* for(i= */
-					} /* while(count */
-				} break; /* case PATCH:*/
-			} /* switch (region_type) */
-			MANAGER_END_CACHE(FE_node)(node_manager);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"change_fit_node_group_values."
-			" can't find node/elemet groups");
-			return_code=0;
-		}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"change_fit_node_group_values. Can't find node in group ");
+								return_code=0;
+							}
+							count++;
+						} /* for(j= */
+					} /* for(i= */
+				} /* while(count */
+			} break;
+			case TORSO:
+			{
+				count=0;
+				while((count<number_of_nodes)&&return_code)
+				{
+					/* do all rows */
+					for(i=0;i<number_of_rows+1;i++)
+					{
+						/* skip last column, as same as first*/
+						for(j=0;j<number_of_columns;j++)
+						{
+							f_index=j+(i*(number_of_columns+1));
+							f=function->f[f_index];
+							dfdx=function->dfdx[f_index];
+							dfdy=function->dfdy[f_index];
+							d2fdxdy=function->d2fdxdy[f_index];
+							/* set node values here */
+							node_managed =
+								get_FE_node_order_info_node(node_order_info, count);
+							node_number = get_FE_node_identifier(node_managed);
+							if (node_managed =
+								FE_region_get_FE_node_from_identifier(fe_region, node_number))
+							{
+								/* create a copy of the node to work with */
+								if (node = CREATE(FE_node)(node_number,
+									(struct FE_region *)NULL, node_managed))
+								{
+									set_mapping_FE_node_fit_values(node,fit_field,
+										0/*component_number*/,f,dfdx,dfdy,d2fdxdy);
+									/* copy it back into the manager */
+									FE_region_merge_FE_node(fe_region, node);
+									/* destroy the working copy */
+									DESTROY(FE_node)(&node);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"change_fit_node_group_values.  Could not create node copy");
+									return_code=0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"change_fit_node_group_values. Can't find node in group ");
+								return_code=0;
+							}
+							count++;
+						} /* for(j= */
+					} /* for(i= */
+				} /* while(count */
+			} break;
+			case PATCH:
+			{
+				count=0;
+				while((count<number_of_nodes)&&return_code)
+				{
+					/* do all rows */
+					for(i=0;i<number_of_rows+1;i++)
+					{
+						/* do all columns */
+						for(j=0;j<number_of_columns+1;j++)
+						{
+							f=function->f[count];
+							dfdx=function->dfdx[count];
+							dfdy=function->dfdy[count];
+							d2fdxdy=function->d2fdxdy[count];
+							/* set node values here.  */
+							node_managed =
+								get_FE_node_order_info_node(node_order_info, count);
+							node_number = get_FE_node_identifier(node_managed);
+							if (node_managed =
+								FE_region_get_FE_node_from_identifier(fe_region, node_number))
+							{
+								/* create a copy of the node to work with */
+								if (node = CREATE(FE_node)(node_number,
+									(struct FE_region *)NULL, node_managed))
+								{
+									set_mapping_FE_node_fit_values(node,fit_field,
+										0/*component_number*/,f,dfdx,dfdy,d2fdxdy);
+									/* copy it back into the manager */
+									FE_region_merge_FE_node(fe_region, node);
+									/* destroy the working copy */
+									DESTROY(FE_node)(&node);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"change_fit_node_group_values.  Could not create node copy");
+									return_code=0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"change_fit_node_group_values. Can't find node in group ");
+								return_code=0;
+							}
+							count++;
+						} /* for(j= */
+					} /* for(i= */
+				} /* while(count */
+			} break; /* case PATCH:*/
+		} /* switch (region_type) */
+		FE_region_end_change(fe_region);
 	}
 	else
 	{
@@ -2776,7 +2661,7 @@ Conditional function returning true if <node>  in the z range of <data_void>.
 static int add_torso_elements_if_nodes_in_z_range(
 	struct FE_element *torso_element,void *element_torso_data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 Get list of nodes in <torso_element>.
@@ -2787,6 +2672,7 @@ Also sets the fit field at the torso nodes
 ==============================================================================*/
 {
 	int i,number_of_nodes,return_code;
+	struct CM_element_information cm;
 	struct Element_torso_data *element_torso_data;
 	struct FE_node **nodes_in_element;
 
@@ -2797,11 +2683,13 @@ Also sets the fit field at the torso nodes
 		=(struct Element_torso_data *)element_torso_data_void))
 	{
 		/* only deal with elements, not lines */
-		if (CM_ELEMENT==torso_element->cm.type)
+		get_FE_element_identifier(torso_element, &cm);
+		if (CM_ELEMENT == cm.type)
 		{
 			/* get all nodes in element */
 			if (calculate_FE_element_field_nodes(torso_element,
-				(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element))
+				(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element,
+				/*top_level_element*/(struct FE_element *)NULL))
 			{
 				/* do nothing if not 4 nodes */
 				if (4==number_of_nodes)
@@ -2816,8 +2704,9 @@ Also sets the fit field at the torso nodes
 					if (i>=number_of_nodes)
 					{
 						/* add torso element to group*/
-						ADD_OBJECT_TO_GROUP(FE_element)(torso_element,
-							element_torso_data->mapped_torso_element_group);
+						/*???RC should this add nodes? */
+						FE_region_merge_FE_element_and_faces_and_nodes(
+							element_torso_data->mapped_torso_group, torso_element);
 					}
 				}
 				for (i=0;i<number_of_nodes;i++)
@@ -2844,7 +2733,7 @@ Also sets the fit field at the torso nodes
 static int make_mapped_torso_node_and_element_groups(struct Region *region,
 	struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 Makes the node and element groups for the mapped torso.
@@ -2857,59 +2746,43 @@ nodes z values are defined by the electrodes.
 	char *default_torso_group_name;
 	char mapped_torso_group_name[]="mapped_torso";
 	FE_value min_x,max_x,min_y,max_y,min_z,max_z;
+	struct Cmiss_region *default_torso_cmiss_region,
+		*root_cmiss_region;
 	struct Element_torso_data element_torso_data;
 	struct FE_field *electrode_position_field,*torso_position_field;
 	struct FE_node *torso_node;
 	struct FE_node_list_conditional_data list_conditional_data;
-	struct GROUP(FE_element) *default_torso_element_group,
-		*mapped_torso_element_group;
-	struct GROUP(FE_node) *node_group,*mapped_torso_node_group,
-		*default_torso_node_group;
+	struct FE_region *default_torso_group, *mapped_torso_group, *node_group;
 	struct LIST(FE_node) *torso_correct_z_node_list;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_node) *node_manager;
-
 	struct Map_3d_package *map_3d_package;
 	struct Z_value_data z_value_data;
 
 	ENTER(make_mapped_torso_node_and_element_groups);
-	element_manager=(struct MANAGER(FE_element) *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
-	node_group=(struct GROUP(FE_node) *)NULL;
-	default_torso_node_group=(struct GROUP(FE_node) *)NULL;
 	electrode_position_field=(struct FE_field *)NULL;
 	torso_position_field=(struct FE_field *)NULL;
 	torso_node=(struct FE_node *)NULL;
-	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	default_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
+	mapped_torso_group=(struct FE_region *)NULL;
 	torso_correct_z_node_list=(struct LIST(FE_node) *)NULL;
 	if (region&&(default_torso_group_name=
-		get_unemap_package_torso_group_name(unemap_package))
-		&&(element_group_manager=get_unemap_package_element_group_manager(unemap_package))
-		&&(node_group_manager=get_unemap_package_node_group_manager(unemap_package))
-		&&(node_manager=get_unemap_package_node_manager(unemap_package))
-		&&(element_manager=get_unemap_package_element_manager(unemap_package))
-		&&(data_group_manager=get_unemap_package_data_group_manager(unemap_package))
-		&&(default_torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),
-		name)(default_torso_group_name,element_group_manager)))
+		get_unemap_package_torso_group_name(unemap_package)) &&
+		(root_cmiss_region =
+			get_unemap_package_root_Cmiss_region(unemap_package)) &&
+		(default_torso_cmiss_region = Cmiss_region_get_child_region_from_name(
+			root_cmiss_region, default_torso_group_name)) &&
+		(default_torso_group =
+			Cmiss_region_get_FE_region(default_torso_cmiss_region)))
 	{
 		return_code=1;
 		map_3d_package=get_Region_map_3d_package(region);
 		/* get min and max of cylinder */
-		node_group=get_Region_unrejected_node_group(region);
+		node_group = get_Region_unrejected_node_group(region);
 		electrode_position_field=get_Region_electrode_position_field(region);
 		get_node_group_position_min_max(node_group,electrode_position_field,
 			&min_x,&max_x,&min_y,&max_y,&min_z,&max_z);
 		/* now have min,max z to work with */
-		default_torso_node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
-			name)(default_torso_group_name,node_group_manager);
-		torso_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-			((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,default_torso_node_group);
+		torso_node = FE_region_get_first_FE_node_that(default_torso_group,
+			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL);
 		torso_position_field=get_FE_node_default_coordinate_field(torso_node);
 		/* compile a list of torso nodes with the right z range */
 		z_value_data.map_min_z=min_z;
@@ -2919,43 +2792,37 @@ nodes z values are defined by the electrodes.
 		list_conditional_data.node_list=torso_correct_z_node_list;
 		list_conditional_data.function=torso_node_is_in_z_range;
 		list_conditional_data.user_data=(void *)(&z_value_data);
-		FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_list_conditional,
-			(void *)&list_conditional_data,default_torso_node_group);
+		FE_region_for_each_FE_node(default_torso_group,
+			ensure_FE_node_is_in_list_conditional, (void *)&list_conditional_data);
 		/* create same name node,element,data groups so can do graphics */
-		mapped_torso_node_group=make_node_and_element_and_data_groups(
-			node_group_manager,node_manager,element_manager,element_group_manager,
-			data_group_manager,mapped_torso_group_name);
-		MANAGED_GROUP_BEGIN_CACHE(FE_node)(mapped_torso_node_group);
-		mapped_torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-			(mapped_torso_group_name,element_group_manager);
-		MANAGED_GROUP_BEGIN_CACHE(FE_element)(mapped_torso_element_group);
-		set_map_3d_package_electrodes_max_z(map_3d_package,max_z);
-		set_map_3d_package_electrodes_min_z(map_3d_package,min_z);
-		element_torso_data.torso_nodes_in_z_range=torso_correct_z_node_list;
-		element_torso_data.mapped_torso_element_group=mapped_torso_element_group;
-		/* add torso elements to group if all nodes have are in z range */
-		FOR_EACH_OBJECT_IN_GROUP(FE_element)(add_torso_elements_if_nodes_in_z_range,
-			(void *)&element_torso_data,default_torso_element_group);
-		/* did we get any matches?*/
-		if (0==NUMBER_IN_GROUP(FE_element)(mapped_torso_element_group))
+		if (mapped_torso_group = Cmiss_region_get_or_create_child_FE_region(
+			root_cmiss_region, mapped_torso_group_name,
+			/*master_fe_region*/Cmiss_region_get_FE_region(root_cmiss_region),
+			(struct MANAGER(FE_basis) *)NULL))
 		{
-			/* this is more of a warning than an error, I've made it an ERROR_MESSAGE */
-			/* to ensure the user notices it! (warning messages go to the console) */
-			display_message(ERROR_MESSAGE,
-				"None of the rig's torso electrodes match the Default Torso");
+			FE_region_begin_change(mapped_torso_group);
+			FE_region_clear(mapped_torso_group, /*destroy_in_master*/1);
+			set_map_3d_package_electrodes_max_z(map_3d_package,max_z);
+			set_map_3d_package_electrodes_min_z(map_3d_package,min_z);
+			element_torso_data.torso_nodes_in_z_range=torso_correct_z_node_list;
+			element_torso_data.mapped_torso_group = mapped_torso_group;
+			/* add torso elements to group if all nodes have are in z range */
+			FE_region_for_each_FE_element(default_torso_group,
+				add_torso_elements_if_nodes_in_z_range, (void *)&element_torso_data);
+			/* did we get any matches?*/
+			if (0 == FE_region_get_number_of_FE_elements(mapped_torso_group))
+			{
+				/* this is more of a warning than an error, I've made it an ERROR_MESSAGE */
+				/* to ensure the user notices it! (warning messages go to the console) */
+				display_message(ERROR_MESSAGE,
+					"None of the rig's torso electrodes match the Default Torso");
+			}
+			set_map_3d_package_mapped_torso_group(map_3d_package,
+				mapped_torso_group);
+			FE_region_end_change(mapped_torso_group);
 		}
 		/* no longer needed, so destroy */
 		DESTROY_LIST(FE_node)(&torso_correct_z_node_list);
-		/* to fill node group */
-		FOR_EACH_OBJECT_IN_GROUP(FE_element)
-			(ensure_top_level_FE_element_nodes_are_in_group,
-				(void *)mapped_torso_node_group,mapped_torso_element_group);
-		set_map_3d_package_mapped_torso_node_group(map_3d_package,
-			mapped_torso_node_group);
-		set_map_3d_package_mapped_torso_element_group(map_3d_package,
-			mapped_torso_element_group);
-		MANAGED_GROUP_END_CACHE(FE_node)(mapped_torso_node_group);
-		MANAGED_GROUP_END_CACHE(FE_element)(mapped_torso_element_group);
 	}
 	else
 	{
@@ -2974,11 +2841,11 @@ static int set_map_fit_field_at_torso_node(struct FE_node *torso_node,
 	struct FE_element *torso_element,struct Map_3d_package *map_3d_package,
 	int first_torso_element_number)
 /*******************************************************************************
-LAST MODIFIED : 16 October 2000
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 Defines and sets the value of the fit field at <torso_node>.
-===============================================================================*/
+==============================================================================*/
 {
 	FE_value cylinder_jacobian[2],cylinder_xi_coords[2],df_ds1,df_ds2,d2f_ds1ds2,
 		df_du1,df_du2,df_dxi1,df_dxi2,d2f_dxi1dxi2,dx_dxi1,dx_dxi2,dy_dxi1,dy_dxi2,
@@ -2990,12 +2857,13 @@ Defines and sets the value of the fit field at <torso_node>.
 
 	int element_number,Nz,Ntheta,return_code;
 	struct CM_element_information element_information;
+	struct Cmiss_region *root_cmiss_region;
 	struct FE_element *cylinder_element;
-	struct FE_element_field_values element_field_values;
+	struct FE_element_field_values *element_field_values;
 	struct FE_field_component component;
 	struct FE_field *map_fit_field,*torso_position_field;
 	struct FE_node *node;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *root_fe_region;
 
 	ENTER(set_map_fit_field_at_torso_node);
 	return_code=1;
@@ -3003,10 +2871,11 @@ Defines and sets the value of the fit field at <torso_node>.
 	map_fit_field=(struct FE_field *)NULL;
 	torso_position_field=(struct FE_field *)NULL;
 	node=(struct FE_node *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	if (torso_node&&(torso_position_field=
-		get_FE_node_default_coordinate_field(torso_node))&&map_3d_package&&torso_element&&
-		(node_manager=map_3d_package->node_manager))
+	if (torso_node && (torso_position_field =
+		get_FE_node_default_coordinate_field(torso_node)) &&
+		map_3d_package && torso_element &&
+		(root_cmiss_region = map_3d_package->root_cmiss_region) &&
+		(root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region)))
 	{
 		map_min_z=get_map_3d_package_electrodes_min_z(map_3d_package);
 		map_max_z=get_map_3d_package_electrodes_max_z(map_3d_package);
@@ -3057,39 +2926,46 @@ Defines and sets the value of the fit field at <torso_node>.
 			/* get map element, and value at element */
 			element_information.type=CM_ELEMENT;
 			element_information.number=element_number+first_torso_element_number-1;
-			cylinder_element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)
-				(&element_information,map_3d_package->element_group);
-			if (cylinder_element)
+			cylinder_element = FE_region_get_FE_element_from_identifier(
+				map_3d_package->group, &element_information);
+			if (!cylinder_element)
+			{
+				display_message(ERROR_MESSAGE, "set_map_fit_field_at_torso_node.  "
+					"Can't find cylinder_element");
+				return_code = 0;
+			}
+			if (return_code &&
+				(element_field_values = CREATE(FE_element_field_values)()))
 			{
 				/* get the cylinder fit value and jacobian */
 				if (calculate_FE_element_field_values(cylinder_element,map_fit_field,
-					/*time*/0,/*calculate_derivatives */1,&element_field_values,
+					/*time*/0,/*calculate_derivatives */1, element_field_values,
 					/*top_level_element*/(struct FE_element *)NULL))
 				{
 					/* calculate the value for the element field */
 					return_code=calculate_FE_element_field(0,/*component_number*/
-						&element_field_values,cylinder_xi_coords,&fit,cylinder_jacobian);
+						element_field_values,cylinder_xi_coords,&fit,cylinder_jacobian);
 					df_du1=cylinder_jacobian[0];
 					df_du2=cylinder_jacobian[1];
-					clear_FE_element_field_values(&element_field_values);
+					clear_FE_element_field_values(element_field_values);
 				}
 				/* get the torso position and jacobian */
 				torso_xi_coords[0]=0;
 				torso_xi_coords[1]=0;
 				if (calculate_FE_element_field_values(torso_element,
 					torso_position_field,/*time*/0,/*calculate_derivatives */1,
-					&element_field_values,/*top_level_element*/(struct FE_element *)NULL))
+					element_field_values,/*top_level_element*/(struct FE_element *)NULL))
 				{
 					/* calculate the value for the element field */
 					return_code=calculate_FE_element_field(/*component_number*/-1,
-					&element_field_values,torso_xi_coords,torso_pos,torso_jacobian);
+					element_field_values,torso_xi_coords,torso_pos,torso_jacobian);
 					dx_dxi1=torso_jacobian[0];
 					dx_dxi2=torso_jacobian[1];
 					dy_dxi1=torso_jacobian[2];
 					dy_dxi2=torso_jacobian[3];
 					dz_dxi1=torso_jacobian[4];
 					dz_dxi2=torso_jacobian[5];
-					clear_FE_element_field_values(&element_field_values);
+					clear_FE_element_field_values(element_field_values);
 				}
 				X2plusY2=(torso_node_x*torso_node_x)+(torso_node_y*torso_node_y);
 				minusY_div_X2plusY2=-torso_node_y/X2plusY2;
@@ -3140,32 +3016,24 @@ Defines and sets the value of the fit field at <torso_node>.
 				printf(" d2f_ds1ds2 = %f \n",d2f_ds1ds2);
 #endif /* defined (DEBUG)*/
 				/* and set the nodal values  */
-
 				/* create a node to work with */
-				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
-				/* copy it from the manager */
-				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-					(node,torso_node))
+				if (node = CREATE(FE_node)(get_FE_node_identifier(torso_node),
+					(struct FE_region *)NULL, torso_node))
 				{
-					set_mapping_FE_node_fit_values(node,map_fit_field,0/*component_number*/,
-					fit,df_ds1,df_ds2,d2f_ds1ds2);
-					/* copy it back into the manager */
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-						(torso_node,node,node_manager);
+					set_mapping_FE_node_fit_values(node,map_fit_field,
+						0/*component_number*/,fit,df_ds1,df_ds2,d2f_ds1ds2);
+					/* merge it back into the FE_region */
+					FE_region_merge_FE_node(root_fe_region, node);
+					/* destroy the working copy */
+					DESTROY(FE_node)(&node);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"set_map_fit_field_at_torso_node. MANAGER_COPY_WITH_IDENTIFIER failed ");
-					return_code=0;
+						"set_map_fit_field_at_torso_node.  Could not copy node");
+					return_code = 0;
 				}
-				/* destroy the working copy */
-				DESTROY(FE_node)(&node);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node."
-					" can't find element");
+				DESTROY(FE_element_field_values)(&element_field_values);
 			}
 		}
 		else
@@ -3233,10 +3101,10 @@ already set.
 static int set_map_fit_field_at_torso_element_nodes(
 	struct FE_element *torso_element,void *map_value_torso_data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
-Set the  nodal values of the fit field at the <torso_element> nodes
+Set the nodal values of the fit field at the <torso_element> nodes
 ==============================================================================*/
 {
 	int i,number_of_nodes,return_code;
@@ -3250,8 +3118,11 @@ Set the  nodal values of the fit field at the <torso_element> nodes
 		(struct Map_value_torso_data *)map_value_torso_data_void))
 	{
 		/* get all nodes in element */
+		/*???RC would be more efficient to work with nodes directly stored in the
+			element... not sure why this is done like this so won't change */
 		if (calculate_FE_element_field_nodes(torso_element,
-			(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element))
+			(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element,
+			/*top_level_element*/(struct FE_element *)NULL))
 		{
 			/* for each node, set fit field value, if haven't done so already */
 			map_value_torso_data->torso_element=torso_element;
@@ -3283,7 +3154,7 @@ Set the  nodal values of the fit field at the <torso_element> nodes
 #if defined (UNEMAP_USE_3D)
 static int set_torso_fit_field_values(struct Map_3d_package *map_3d_package)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 set the nodal values of the fit field at the nodes of the elements in
@@ -3293,35 +3164,31 @@ set the nodal values of the fit field at the nodes of the elements in
 	int first_element_number,return_code;
 	struct CM_element_information element_information;
 	struct FE_element *first_element;
-	struct GROUP(FE_element) *mapped_torso_element_group,*element_group;
+	struct FE_region *mapped_torso_group, *group;
 	struct Map_value_torso_data map_value_torso_data;
 
 	ENTER(set_torso_fit_field_values);
-	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	element_group=(struct GROUP(FE_element) *)NULL;
-	first_element=(struct FE_element *)NULL;
 	if (map_3d_package)
 	{
 		return_code=1;
 		/* find the identifier of the first element */
-		element_group=get_map_3d_package_element_group(map_3d_package);
-		first_element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(FE_element_is_top_level,
-				NULL,element_group);
-		element_information=first_element->cm;
-		first_element_number=element_information.number;
+		group = get_map_3d_package_group(map_3d_package);
+		first_element = FE_region_get_first_FE_element_that(group,
+			FE_element_is_top_level, NULL);
+		get_FE_element_identifier(first_element, &element_information);
+		first_element_number = element_information.number;
 
-		mapped_torso_element_group=
-			get_map_3d_package_mapped_torso_element_group(map_3d_package);
+		mapped_torso_group = get_map_3d_package_mapped_torso_group(map_3d_package);
 		/*  set the element's nodal values  */
 		map_value_torso_data.map_3d_package=map_3d_package;
 		map_value_torso_data.first_torso_element_number=first_element_number;
 		/* torso_element set up later, in set_map_fit_field_at_torso_element_nodes */
 		map_value_torso_data.torso_element=(struct FE_element *)NULL;
 		map_value_torso_data.processed_nodes=CREATE_LIST(FE_node)();
-		MANAGER_BEGIN_CACHE(FE_node)(map_3d_package->node_manager);
-		FOR_EACH_OBJECT_IN_GROUP(FE_element)(set_map_fit_field_at_torso_element_nodes,
-			(void *)&map_value_torso_data,mapped_torso_element_group);
-		MANAGER_END_CACHE(FE_node)(map_3d_package->node_manager);
+		FE_region_begin_change(mapped_torso_group);
+		FE_region_for_each_FE_element(mapped_torso_group,
+			set_map_fit_field_at_torso_element_nodes, (void *)&map_value_torso_data);
+		FE_region_end_change(mapped_torso_group);
 		DESTROY_LIST(FE_node)(&map_value_torso_data.processed_nodes);
 	}
 	else
@@ -3410,37 +3277,37 @@ static int make_fit_node_and_element_groups(
 	FE_value torso_minor_r,FE_value patch_z,struct Region *region,
 	int nodes_rejected_or_accepted)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
-Given the <function> and <package>, determines if  identical node and element
+Given the <function> and <package>, determines if identical node and element
 groups will already exist for the values in <function> and <package>.
 If the identical groups already exist, simply change the values stored at the nodes, with
 change_fit_node_group_values.
 If the identical groups don't exist, create the groups and fill them in, with
 interpolation_function_to_node_group and make_fit_elements
 If <region>->type is TORSO, and we have a default torso loaded,
-do similar with the mapped torso node group
+do similar with the mapped torso node group.
 *******************************************************************************/
 {
 	char *fit_name;
 	int return_code;
+	struct Cmiss_region *child_cmiss_region, *root_cmiss_region;
 	struct FE_node_order_info *node_order_info;
 	struct Map_3d_package *map_3d_package;
-	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
-		*delaunay_torso_element_group;
+	struct FE_region *fe_region;
+	struct FE_region *group, *mapped_torso_group, *delaunay_torso_group;
 
 	ENTER(make_fit_node_and_element_groups);
-	fit_name=(char *)NULL;
 	node_order_info = (struct FE_node_order_info *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
-	element_group=(struct GROUP(FE_element) *)NULL;
-	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	group=(struct FE_region *)NULL;
+	mapped_torso_group=(struct FE_region *)NULL;
+	delaunay_torso_group=(struct FE_region *)NULL;
 	if (function&&package&&name)
 	{
 		return_code=1;
-		if (fit_name=make_fit_name(region,name))
+		if (fit_name = make_fit_name(region,name))
 		{
 			/* check if the function properties are the same as the last one, i.e */
 			/* identical node and element groups should already exist, and that no */
@@ -3448,26 +3315,30 @@ do similar with the mapped torso node group
 			map_3d_package=get_Region_map_3d_package(region);
 			if (map_3d_package)
 			{
-				element_group=get_map_3d_package_element_group(map_3d_package);
-				mapped_torso_element_group=
-					get_map_3d_package_mapped_torso_element_group(map_3d_package);
-				delaunay_torso_element_group=
-					get_map_3d_package_delaunay_torso_element_group(map_3d_package);
+				group=get_map_3d_package_group(map_3d_package);
+				mapped_torso_group=
+					get_map_3d_package_mapped_torso_group(map_3d_package);
+				delaunay_torso_group=
+					get_map_3d_package_delaunay_torso_group(map_3d_package);
 			}
 			if (map_3d_package&&(get_map_3d_package_number_of_map_rows(map_3d_package)
 					==function->number_of_rows)&&
 				(get_map_3d_package_number_of_map_columns(map_3d_package)
 					==function->number_of_columns)&&(region->type
 					==function->region_type)&&(!nodes_rejected_or_accepted)&&
-				(element_group||mapped_torso_element_group||delaunay_torso_element_group)&&
+				(group||mapped_torso_group||delaunay_torso_group)&&
 				(!strcmp(get_map_3d_package_fit_name(map_3d_package),fit_name)))
 			{
+				/* get the cmiss_region / fe_region with_fit_name */
+				root_cmiss_region = get_unemap_package_root_Cmiss_region(package);
+				child_cmiss_region = Cmiss_region_get_child_region_from_name(
+					root_cmiss_region, fit_name);
+				fe_region = Cmiss_region_get_FE_region(child_cmiss_region);
 				/* just have to alter the nodal values */
-				change_fit_node_group_values(get_map_3d_package_node_order_info(map_3d_package),
-					get_map_3d_package_fit_field(map_3d_package),function,fit_name,
-					get_unemap_package_node_group_manager(package),
-					get_unemap_package_element_group_manager(package),
-					get_unemap_package_node_manager(package));
+				change_fit_node_group_values(
+					get_map_3d_package_node_order_info(map_3d_package),
+					get_map_3d_package_fit_field(map_3d_package), function,
+					fe_region);
 
 				/* if the region is a torso, and loaded a default torso, set it's fit field values */
 				if ((region->type==TORSO)&&(get_unemap_package_torso_group_name(package)))
@@ -3482,17 +3353,22 @@ do similar with the mapped torso node group
 					/*this will do a deaccess*/
 					set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 				}
-				/* rebuild  map & node and element groups */
+				/* rebuild map & node and element groups */
 				interpolation_function_to_node_group(&node_order_info,field_order_info,
 					function,package,fit_name,sock_lambda,torso_major_r,
 					torso_minor_r,patch_z,region);
-				make_fit_elements(fit_name,node_order_info,field_order_info,
-					get_unemap_package_element_group_manager(package),
-					get_unemap_package_basis_manager(package),
-					get_unemap_package_element_manager(package),
+				/* get the cmiss_region / fe_region with_fit_name */
+				root_cmiss_region = get_unemap_package_root_Cmiss_region(package);
+				child_cmiss_region = Cmiss_region_get_child_region_from_name(
+					root_cmiss_region, fit_name);
+				fe_region = Cmiss_region_get_FE_region(child_cmiss_region);
+				make_fit_elements(node_order_info,field_order_info,
+					fe_region, get_unemap_package_basis_manager(package),
 					function->region_type,function->number_of_rows,
 					function->number_of_columns,
-					function->x_mesh,function->y_mesh,region);
+					function->x_mesh,function->y_mesh);
+				set_map_3d_package_group(get_Region_map_3d_package(region), fe_region);
+
 				/* if have loaded  a default_torso and if the region is a torso*/
 				if ((get_unemap_package_torso_group_name(package))&&(region->type==TORSO))
 				{
@@ -3504,25 +3380,25 @@ do similar with the mapped torso node group
 					set_torso_fit_field_values(map_3d_package);
 				}
 			}
-		}/* if (ALLOCATE( */
+			DEALLOCATE(fit_name);
+		} /* if (ALLOCATE( */
 		else
 		{
-			display_message(ERROR_MESSAGE,"make_fit_node_and_element_groups."
-			"make_fit_name failed");
-			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"make_fit_node_and_element_groups.  make_fit_name failed");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"make_fit_node_and_element_groups."
 			" Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
-	DEALLOCATE(fit_name);
 	LEAVE;
 	
 	return (return_code);
-}/*make_fit_node_and_element_groups */
+} /* make_fit_node_and_element_groups */
 
 #endif /* #if defined (UNEMAP_USE_3D) */
 
@@ -3533,7 +3409,7 @@ static int map_draw_constant_thickness_contours(struct Scene *scene,
 	int number_of_contours,FE_value contour_minimum,FE_value contour_maximum,
 	struct Region *region,int default_torso_loaded,int delaunay_map)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 Removes any existing contours, draw <number_of_contours> map contours, evenly
@@ -3542,10 +3418,11 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 ==============================================================================*/
 {
 	int i,old_number_of_contours,return_code;
+	struct Cmiss_region *cmiss_region;
 	struct Colour colour;
 	struct Graphical_material *contour_material,*default_selected_material;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
-	struct GROUP(FE_element) *element_group;
+	struct FE_region *group;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings **contour_settings,**old_contour_settings;
 	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
@@ -3558,7 +3435,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	contour_material=(struct Graphical_material *)NULL;
 	default_selected_material=(struct Graphical_material *)NULL;
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
-	element_group=(struct GROUP(FE_element) *)NULL;
+	group=(struct FE_region *)NULL;
 	if ((!number_of_contours)||(data_field&&scene&&map_drawing_information&&region))
 	{
 		map_3d_package=get_Region_map_3d_package(region);
@@ -3569,27 +3446,27 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 			if (delaunay_map) /* the interpolation_type, stored in the map?*/
 			{
 				/* do contour on delaunay*/
-				element_group=get_map_3d_package_delaunay_torso_element_group(map_3d_package);
+				group=get_map_3d_package_delaunay_torso_group(map_3d_package);
 			}
 			else
 			{
 				if (default_torso_loaded&&(region->type==TORSO))
 				{
 					/* do contour on torso surface*/
-					element_group=get_map_3d_package_mapped_torso_element_group(map_3d_package);
+					group=get_map_3d_package_mapped_torso_group(map_3d_package);
 				}
 				else
 				{
 					/* do contour on cylinder surface */
-					element_group=get_map_3d_package_element_group(map_3d_package);
+					group=get_map_3d_package_group(map_3d_package);
 				}
 			}
 			/* not an error if no element group, this is case with NO_INTERPOLATION, ie no surface*/
-			if (element_group)
+			if (group && FE_region_get_Cmiss_region(group, &cmiss_region))
 			{
 				graphical_material_manager=
 					get_map_drawing_information_Graphical_material_manager(map_drawing_information);
-				gt_element_group=Scene_get_graphical_element_group(scene,element_group);
+				gt_element_group=Scene_get_graphical_element_group(scene, cmiss_region);
 				default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 					("default_selected",graphical_material_manager);
 				/* do nothing if the number of contours is the same */
@@ -3662,7 +3539,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 
 #if defined (UNEMAP_USE_3D)
 static int map_show_surface(struct Scene *scene,
-	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
+	struct FE_region *group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
 	struct Colour *no_interpolation_colour, struct Time_object *time_object,
@@ -3670,7 +3547,7 @@ static int map_show_surface(struct Scene *scene,
 	int autoranging_spectrum,struct Texture *skin_texture,
 	struct Computed_field *skin_texture_coords)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 Adds map's surfaces in the given <material> to the graphical finite element for
@@ -3686,6 +3563,7 @@ Also applies <number_of_contours> contours to surface.
 {
 	int existing_autorange_spectrum_flag,maximum_discretization,
 		required_discretization,return_code,update_settings;
+	struct Cmiss_region *cmiss_region;
 	struct Colour white;
 	struct Element_discretization discretization;
 	struct GT_element_group *gt_element_group;
@@ -3709,12 +3587,13 @@ Also applies <number_of_contours> contours to surface.
 	default_selected_material=(struct Graphical_material *)NULL;
 	existing_data_field=(struct Computed_field *)NULL;
 	existing_spectrum=(struct Spectrum *)NULL;
-	if (scene&&element_group&&material&&user_interface&&
+	if (scene && group && FE_region_get_Cmiss_region(group, &cmiss_region) &&
+		material&&user_interface&&
 		((spectrum&&data_field&&!no_interpolation_colour&&!skin_texture&&!skin_texture_coords)
 		||(!spectrum&&!data_field&&no_interpolation_colour&&!skin_texture&&!skin_texture_coords)
 			||(spectrum&&!data_field&&direct_interpolation&&skin_texture&&skin_texture_coords)))
 	{
-		if ((scene_object=Scene_get_scene_object_with_element_group(scene,element_group))&&
+		if ((scene_object=Scene_get_scene_object_with_Cmiss_region(scene,cmiss_region))&&
 			(gt_element_group=Scene_object_get_graphical_element_group(scene_object))&&
 			(default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 			("default_selected",graphical_material_manager)))
@@ -3890,9 +3769,9 @@ Also applies <number_of_contours> contours to surface.
 #define FIT_PATCH_Z 0.0
 static int make_and_add_map_electrode_position_field(
 	struct Unemap_package *unemap_package,
-	struct GROUP(FE_node) *rig_node_group,struct Region *region,int delaunay_map)
+	struct FE_region *rig_node_group,struct Region *region,int delaunay_map)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 if  necessaty makes maps electrode position field, and adds to the nodes in the
@@ -3913,13 +3792,13 @@ map_electode_position field
 	enum CM_field_type cm_field_type;
 	int i,number_of_components,number_of_indexed_values,number_of_times,
 		return_code,string_length;
+	struct Cmiss_region *root_cmiss_region;
 	struct Coordinate_system *coordinate_system=(struct Coordinate_system *)NULL;
 	struct FE_field *map_electrode_position_field=(struct FE_field *)NULL;
 	struct FE_field *map_position_field=(struct FE_field *)NULL;
 	struct FE_field *indexer_field=(struct FE_field *)NULL;
-	struct MANAGER(FE_field) *field_manager=(struct MANAGER(FE_field) *)NULL;
+	struct FE_region *root_fe_region;
 	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
-	struct FE_time *fe_time;
 	component_names=(char **)NULL;
 
 	ENTER(make_and_add_map_electrode_position_fields);
@@ -3970,9 +3849,10 @@ map_electode_position field
 					/* get the map position field,  */
 					map_3d_package=get_Region_map_3d_package(region);
 					map_position_field=get_map_3d_package_position_field(map_3d_package);
-					field_manager=get_unemap_package_FE_field_manager(unemap_package);
-					fe_time=get_unemap_package_FE_time(unemap_package);
-					/* assemble all info for get_FE_field_manager_matched_field */
+					root_cmiss_region =
+						get_unemap_package_root_Cmiss_region(unemap_package);
+					root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
+					/* assemble all info for FE_region_get_FE_field_with_properties */
 					/* ??JW what if map_position_field hasn't been created?  */
 					cm_field_type=get_FE_field_CM_field_type(map_position_field);
 					if ((coordinate_system=get_FE_field_coordinate_system(
@@ -4000,15 +3880,16 @@ map_electode_position field
 							indexer_field=(struct FE_field *)NULL;
 							number_of_indexed_values=0;
 						}
-						/* find or create the new field in the fe_field_manager */
+						/* find or create the new field in the root_fe_region */
 						if ((map_electrode_position_field=
-							get_FE_field_manager_matched_field(field_manager,field_name,
-							field_type,fe_time,indexer_field,number_of_indexed_values,
+							FE_region_get_FE_field_with_properties(root_fe_region,field_name,
+							field_type,indexer_field,number_of_indexed_values,
 							cm_field_type,coordinate_system,value_type,
 							number_of_components,component_names,number_of_times,
 							time_value_type,(struct FE_field_external_information *)NULL)))
 						{
 							struct FE_field *old_map_electrode_position_field;
+
 							old_map_electrode_position_field=
 								get_Region_map_electrode_position_field(region);
 							if (old_map_electrode_position_field!=map_electrode_position_field)
@@ -4236,9 +4117,10 @@ Gets or creates the computed fields necessary for the map colour.
 			(package)))
 		{
 			/* Fetch the wrapper fo the fe_field from the manager */
-			if (signal_value_at_time_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_is_read_only_with_fe_field,(void *)
-				(signal_field),computed_field_manager),get_unemap_package_FE_field_manager(package))
+			if (signal_value_at_time_field =
+				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_is_read_only_with_fe_field, (void *)signal_field,
+					computed_field_manager))
 			{
 				set_unemap_package_signal_value_at_time_field(package,signal_value_at_time_field);
 			}
@@ -4336,26 +4218,25 @@ the scaled_offset_signal and assigns that field to the <settings>.
 static int map_show_map_electrodes(struct Unemap_package *package,
 	struct GT_object *glyph,struct Map *map,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 Construct the settings and build the graphics objects for the glyphs.
 ==============================================================================*/
 {
-	char *group_name;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	int return_code;
+	struct Cmiss_region *rig_cmiss_region;
 	struct Computed_field *computed_coordinate_field,*computed_field,*label_field,
 		*orientation_scale_field, *variable_scale_field;
 	struct FE_field *map_electrode_position_field,*field;
 	struct Graphical_material *electrode_selected_material,*electrode_material;
-	struct GROUP(FE_element) *rig_element_group;
-	struct GROUP(FE_node) *unrejected_node_group;
+	struct FE_region *rig_element_group;
+	struct FE_region *unrejected_node_group;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *unselected_settings,*selected_settings;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
 	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
 	struct Map_drawing_information *drawing_information=
 		(struct Map_drawing_information *)NULL;
@@ -4371,11 +4252,9 @@ Construct the settings and build the graphics objects for the glyphs.
 	electrode_material=(struct Graphical_material *)NULL;
 	electrode_selected_material=(struct Graphical_material *)NULL;
 	scene=(struct Scene *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
-	rig_element_group=(struct GROUP(FE_element) *)NULL;
-	group_name=(char *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
+	rig_element_group=(struct FE_region *)NULL;
 	map_electrode_position_field=(struct FE_field *)NULL;
-	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
 	unselected_settings=(struct GT_element_settings *)NULL;
 	selected_settings=(struct GT_element_settings *)NULL;
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
@@ -4388,20 +4267,19 @@ Construct the settings and build the graphics objects for the glyphs.
 		(scene=get_map_drawing_information_scene(drawing_information))&&
 		(computed_field_manager=
 			get_unemap_package_Computed_field_manager(package))&&
-		(element_group_manager=
-			get_unemap_package_element_group_manager(package))&&
 		(unrejected_node_group=get_Region_unrejected_node_group(region))&&
 		(map_electrode_position_field=
 			get_Region_map_electrode_position_field(region)))
 	{
 		return_code=0;
-		GET_NAME(GROUP(FE_node))(unrejected_node_group,&group_name);
-		rig_element_group=
-			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-			(group_name,element_group_manager);
-		if (rig_element_group&&(scene_object=Scene_get_scene_object_with_element_group
-			(scene,rig_element_group))&&(gt_element_group=
-			Scene_object_get_graphical_element_group(scene_object)))
+		/*???RC FE_region now contains both the nodes and elements; I'm not sure
+			why this code had a different name for the node and element groups, so
+			I am just using the two names as aliases */
+		rig_element_group = unrejected_node_group;
+		if (FE_region_get_Cmiss_region(rig_element_group, &rig_cmiss_region) &&
+			(scene_object=Scene_get_scene_object_with_Cmiss_region(
+				scene,rig_cmiss_region))&&(gt_element_group=
+					Scene_object_get_graphical_element_group(scene_object)))
 		{
 			/* do nothing if already have these settings in this group*/
 			if (!(unselected_settings=first_settings_in_GT_element_group_that(gt_element_group,
@@ -4529,7 +4407,6 @@ Construct the settings and build the graphics objects for the glyphs.
 			"map_show_map_electrodes. Invalid argument(s)");
 		return_code=0;
 	}
-	DEALLOCATE(group_name);
 	LEAVE;
 	
 	return (return_code);
@@ -4540,7 +4417,7 @@ Construct the settings and build the graphics objects for the glyphs.
 static int map_remove_map_electrode_glyphs(
 	struct Map_drawing_information *drawing_information,
 	struct Unemap_package *package,
-	struct Map_3d_package *map_3d_package,struct GROUP(FE_node) *rig_node_group)
+	struct Map_3d_package *map_3d_package,struct FE_region *rig_node_group)
 /*******************************************************************************
 LAST MODIFIED : 22 October 1999
 
@@ -4791,7 +4668,7 @@ haven't
 static int map_draw_map_electrodes(struct Unemap_package *unemap_package,
 	struct Map *map)
 /*******************************************************************************
-LAST MODIFIED :  11 July 2000
+LAST MODIFIED :  9 May 2003
 
 DESCRIPTION :
 Removes the map electrodes if they've changed, then redraws them for the current
@@ -4799,7 +4676,7 @@ region(s)
 ==============================================================================*/
 {
 	int display_all_regions,electrodes_properties_changed,return_code;
-	struct GROUP(FE_node)	 *unrejected_node_group;
+	struct FE_region *unrejected_node_group;
 	struct Map_3d_package *map_3d_package;
 	struct Map_drawing_information *drawing_information;
 	struct Region_list_item *region_item;
@@ -4808,7 +4685,7 @@ region(s)
 	struct Rig *rig;
 
 	ENTER(map_draw_map_electrodes);
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	region_item=(struct Region_list_item *)NULL;
@@ -5018,7 +4895,7 @@ Creates a pair of arm labels, and adds to the scene.
 #if defined (UNEMAP_USE_3D)
 static int map_remove_all_electrodes(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 9 May 2003
 
 DESCRIPTION :
 removes all the electrode glyphs used by the map, but DOESN'T  remove the
@@ -5027,7 +4904,7 @@ time computed fields used by the glyphs.
 {
 	int return_code;
 	struct Rig *rig;
-	struct GROUP(FE_node) *unrejected_node_group;
+	struct FE_region *unrejected_node_group;
 	struct Region_list_item *region_item;
 	struct Region *region;
 	struct Map_3d_package *map_3d_package;
@@ -5037,7 +4914,7 @@ time computed fields used by the glyphs.
 	ENTER(map_remove_all_electrodes);
 
 	rig=(struct Rig *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
 	region_item=(struct Region_list_item *)NULL;
 	region=(struct Region *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
@@ -5080,79 +4957,80 @@ time computed fields used by the glyphs.
 static int merge_fit_field_template_element(struct FE_element *element,
 	void *merge_fit_field_template_element_void)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Merges the template_element containing the fit field in
 <merge_fit_field_template_element_void> with <element>
 ==============================================================================*/
 {
-	int i,return_code;
-	struct FE_element *template_element, *unmanaged_element;
+	int i, number_of_nodes, return_code;
+	struct FE_element *template_element;
 	struct CM_element_information cm;
-	struct MANAGER(FE_element) *element_manager;
+	struct FE_region *fe_region;
 	struct merge_fit_field_template_element_data *merge_fit_field_template_element_data;
 	struct FE_node *node;
 
 	ENTER(merge_fit_field_template_element);
 	merge_fit_field_template_element_data=
 		(struct merge_fit_field_template_element_data *)NULL;
-	if (element&&merge_fit_field_template_element_void&&
+	if (element && merge_fit_field_template_element_void&&
 		(merge_fit_field_template_element_data=
 		(struct merge_fit_field_template_element_data *)
 		(merge_fit_field_template_element_void))&&
 		(template_element=merge_fit_field_template_element_data->template_element)&&
-		(element_manager=merge_fit_field_template_element_data->element_manager))
+		(fe_region = merge_fit_field_template_element_data->fe_region))
 	{
 		return_code=1;
 		/* only operate on top level (quad elements, not lines */
-		if (element->cm.type==CM_ELEMENT)
+		/* only deal with elements, not lines */
+		get_FE_element_identifier(element, &cm);
+		if ((CM_ELEMENT == cm.type) &&
+			get_FE_element_number_of_nodes(element, &number_of_nodes))
 		{
-			/* make template element use nodes from global element */
-			i=0;
-			while (return_code&&(i<4))
+			/* only quad elements are dealt with; the apex elements are ignored */
+			if (4 == number_of_nodes)
 			{
-				if (get_FE_element_node(element,i,&node))
+				/* set template_element identifier to match that of element
+					 so it can be merged into it */
+				if (!set_FE_element_identifier(template_element, &cm))
 				{
-					return_code=set_FE_element_node(template_element,i,node);
+					return_code = 0;
 				}
-				else
+				/* make template element use nodes from global element */
+				i=0;
+				while (return_code&&(i<4))
 				{
-					return_code=0;
-				}
-				i++;
-			}
-			if (return_code)
-			{
-				cm.type = CM_ELEMENT;
-				cm.number = 0;
-				if (unmanaged_element=CREATE(FE_element)(&cm,element))
-				{
-					if (return_code=
-						merge_FE_element(unmanaged_element,template_element))
+					if (get_FE_element_node(element,i,&node))
 					{
-						/* copy the merged element back into the manager */
-						return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
-							element,unmanaged_element,element_manager);
+						return_code=set_FE_element_node(template_element,i,node);
 					}
-					DESTROY(FE_element)(&unmanaged_element);
+					else
+					{
+						return_code=0;
+					}
+					i++;
 				}
-				else
+				if (return_code)
 				{
-					return_code=0;
+					if (!FE_region_merge_FE_element(fe_region, template_element))
+					{
+						return_code = 0;
+					}
 				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,
+						"merge_fit_field_template_element.  Failed");
+				}
+				merge_fit_field_template_element_data->count++;
 			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,"merge_fit_field_template_element.  Failed");
-			}
-			merge_fit_field_template_element_data->count++;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"merge_fit_field_template_element. "
-			" Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"merge_fit_field_template_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -5160,11 +5038,10 @@ Merges the template_element containing the fit field in
 	return (return_code);
 } /* merge_fit_field_template_element */
 
-static int set_up_fitted_potential_on_torso(struct GROUP(FE_element) *torso_group,
-	struct FE_field *potential_field,struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager)
+static int set_up_fitted_potential_on_torso(struct FE_region *torso_group,
+	struct FE_field *potential_field)
 /*******************************************************************************
-LAST MODIFIED :
+LAST MODIFIED : 10 May 2003
 
 DESCRIPTION :
 Adds the <potential_field> to the elements in <torso_group>.
@@ -5180,7 +5057,7 @@ and merging the template element with the elements in <torso_group>.
 	};
 	int shape_type[3]=
 	{
-		LINE_SHAPE,0,0
+		LINE_SHAPE,0,LINE_SHAPE
 	};
 	struct CM_element_information element_identifier;
 	struct FE_basis *cubic_hermite_basis;
@@ -5188,7 +5065,7 @@ and merging the template element with the elements in <torso_group>.
 	struct FE_element_field_component **components;
 	struct FE_element_shape *shape;
 	struct merge_fit_field_template_element_data merge_fit_field_template_element_data;
-	struct Standard_node_to_element_map **standard_node_map;
+	struct Standard_node_to_element_map *standard_node_map;
 	void **scale_factor_set_identifiers;
 
 	ENTER(set_up_fitted_potential_on_torso);
@@ -5197,11 +5074,12 @@ and merging the template element with the elements in <torso_group>.
 	shape=(struct FE_element_shape *)NULL;
 	template_element=(struct FE_element *)NULL;
 	components=(struct FE_element_field_component **)NULL;
-	standard_node_map=(struct Standard_node_to_element_map **)NULL;
+	standard_node_map=(struct Standard_node_to_element_map *)NULL;
 	numbers_in_scale_factor_sets=(int *)NULL;
-	if (torso_group&&potential_field)
+	if (torso_group && potential_field)
 	{
-		if (cubic_hermite_basis=make_FE_basis(cubic_hermite_basis_type,basis_manager))
+		if (cubic_hermite_basis = make_FE_basis(cubic_hermite_basis_type,
+			FE_region_get_basis_manager(torso_group)))
 		{
 			ACCESS(FE_basis)(cubic_hermite_basis);
 			if (shape=CREATE(FE_element_shape)(2,shape_type))
@@ -5214,8 +5092,8 @@ and merging the template element with the elements in <torso_group>.
 					element_identifier.number=1;
 					number_of_scale_factor_sets=1;
 					number_of_derivatives=3;
-					if ((template_element=CREATE(FE_element)(&element_identifier,
-						(struct FE_element *)NULL))&&
+					if ((template_element = CREATE(FE_element)(&element_identifier,
+						shape, torso_group, (struct FE_element *)NULL))&&
 						(ALLOCATE(scale_factor_set_identifiers,void *,number_of_scale_factor_sets))
 						&&(ALLOCATE(numbers_in_scale_factor_sets,int,number_of_scale_factor_sets)))
 					{
@@ -5223,11 +5101,12 @@ and merging the template element with the elements in <torso_group>.
 						numbers_in_scale_factor_sets[0]=16;
 						scale_factor_set_identifiers[0]=cubic_hermite_basis;
 						number_of_nodes=4;
-						if (set_FE_element_shape(template_element,shape)&&
-							set_FE_element_node_scale_field_info(template_element,
-							number_of_scale_factor_sets,scale_factor_set_identifiers,
-							numbers_in_scale_factor_sets,number_of_nodes)&&
-							(ALLOCATE(components,struct FE_element_field_component *,1)))
+						if (set_FE_element_number_of_nodes(template_element,
+								number_of_nodes) &&
+							set_FE_element_number_of_scale_factor_sets(template_element,
+								number_of_scale_factor_sets, scale_factor_set_identifiers,
+								numbers_in_scale_factor_sets) &&
+							(ALLOCATE(components, struct FE_element_field_component *, 1)))
 						{
 							/* define the potential field over the template element */
 							if (components[0]=CREATE(FE_element_field_component)(
@@ -5235,33 +5114,42 @@ and merging the template element with the elements in <torso_group>.
 								(FE_element_field_component_modify)NULL))
 							{
 								/* create node map */
-								standard_node_map=(components[0])->
-									map.standard_node_based.node_to_element_maps;
 								m=0;
 								k=0;
 								return_code=1;
 								while (return_code&&(k<number_of_nodes))
 								{
-									if (*standard_node_map=CREATE(Standard_node_to_element_map)(
-										/*node_index*/k,/*number_of_values*/4))
+									if (standard_node_map = CREATE(Standard_node_to_element_map)(
+										/*node_index*/k, /*number_of_values*/4))
 									{
 										for (l=0;l<(1+number_of_derivatives);l++)
 										{
-											(*standard_node_map)->nodal_value_indices[l]=l;
-											(*standard_node_map)->scale_factor_indices[l]=m;
+											Standard_node_to_element_map_set_nodal_value_index(
+												standard_node_map, l, l);
+											Standard_node_to_element_map_set_scale_factor_index(
+												standard_node_map, l, m);
 											/* set scale_factors to 1 */
-											template_element->information->scale_factors[
-												(*standard_node_map)->scale_factor_indices[l]]=1.0;
+											set_FE_element_scale_factor(template_element, l, 1.0);
 											m++;
+										}
+										if (!FE_element_field_component_set_standard_node_map(
+											components[0], /*node_number*/k, standard_node_map))
+										{
+											display_message(ERROR_MESSAGE,
+												"set_up_fitted_potential_on_torso.  "
+												"Error setting standard_node_to_element_map");
+											DESTROY(Standard_node_to_element_map)(
+												&standard_node_map);
+											return_code = 0;
 										}
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE,"set_up_fitted_potential_on_torso "
-											" could not create Standard_node_to_element_map");
+										display_message(ERROR_MESSAGE,
+											"set_up_fitted_potential_on_torso.  "
+											"Could not create Standard_node_to_element_map");
 										return_code=0;
 									}
-									standard_node_map++;
 									k++;
 								}
 								if (return_code)
@@ -5272,12 +5160,12 @@ and merging the template element with the elements in <torso_group>.
 										/* add potential field to element */
 										merge_fit_field_template_element_data.template_element=
 											template_element;
-										merge_fit_field_template_element_data.element_manager=
-											element_manager;
+										merge_fit_field_template_element_data.fe_region =
+											torso_group;
 										merge_fit_field_template_element_data.count=0;
-										FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+										FE_region_for_each_FE_element(torso_group,
 											merge_fit_field_template_element,
-											(void *)(&merge_fit_field_template_element_data),torso_group);
+											(void *)(&merge_fit_field_template_element_data));
 									}
 									else
 									{
@@ -5351,108 +5239,68 @@ and merging the template element with the elements in <torso_group>.
 
 #if defined (UNEMAP_USE_3D)
 static int define_fit_field_at_torso_element_nodes(
-	struct FE_element *torso_element,
-	void *define_fit_field_at_torso_element_nodes_data_void)
+	struct FE_element *torso_element, void *fit_field_void)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 10 May 2003
 
 DESCRIPTION :
 Get list of nodes in <torso_element>.
 If <torso_element> is a CM_ELEMENT  AND has 4 nodes then
 (
 defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
-<torso_element>, adds  <torso_element> to quad_element_group in
+<torso_element> in <torso_group> from
 <define_fit_field_at_torso_element_nodes_data>
 )
-===============================================================================*/
+==============================================================================*/
 {
-	int i,number_of_nodes,return_code;
-	struct Define_FE_field_at_node_data define_FE_field_at_node_data;
-	struct Define_fit_field_at_torso_element_nodes_data
-		*define_fit_field_at_torso_element_nodes_data;
+	int i, number_of_nodes, return_code;
+	struct CM_element_information cm;
 	struct FE_field *fit_field;
-	struct GROUP(FE_element) *quad_element_group;
-	struct FE_node **nodes_in_element;
+	struct FE_region *fe_region;
+	struct FE_node *node;
 	struct FE_node_field_creator *node_field_creator;
-	struct MANAGER(FE_node) *node_manager;
 
 	ENTER(define_fit_field_at_torso_element_nodes);
-	return_code=0;
-	fit_field=(struct FE_field *)NULL;
-	quad_element_group=(struct GROUP(FE_element) *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	define_fit_field_at_torso_element_nodes_data=
-		(struct Define_fit_field_at_torso_element_nodes_data *)NULL;
-	if (torso_element&&(define_fit_field_at_torso_element_nodes_data_void)&&
-		(define_fit_field_at_torso_element_nodes_data=
-			(struct Define_fit_field_at_torso_element_nodes_data *)
-			define_fit_field_at_torso_element_nodes_data_void)&&
-		(quad_element_group=
-			define_fit_field_at_torso_element_nodes_data->quad_element_group)&&
-		(fit_field=define_fit_field_at_torso_element_nodes_data->fit_field)
-		&&(node_manager=define_fit_field_at_torso_element_nodes_data->node_manager))
+	if (torso_element && (fe_region = FE_element_get_FE_region(torso_element)) &&
+		(fit_field = (struct FE_field *)fit_field_void) &&
+		get_FE_element_number_of_nodes(torso_element, &number_of_nodes))
 	{
+		return_code = 1;
 		/* only deal with elements, not lines */
-		if (CM_ELEMENT==torso_element->cm.type)
+		get_FE_element_identifier(torso_element, &cm);
+		if ((CM_ELEMENT == cm.type) && (4 == number_of_nodes))
 		{
-			/* get all nodes in element */
-			if (calculate_FE_element_field_nodes(torso_element,
-				(struct FE_field *)NULL,&number_of_nodes,&nodes_in_element))
+			node_field_creator = CREATE(FE_node_field_creator)(
+				/*number_of_components*/1);
+			FE_node_field_creator_define_derivative(node_field_creator,
+				/*component_number*/0, FE_NODAL_D_DS1);
+			FE_node_field_creator_define_derivative(node_field_creator,
+				/*component_number*/0, FE_NODAL_D_DS2);
+			FE_node_field_creator_define_derivative(node_field_creator,
+				/*component_number*/0, FE_NODAL_D2_DS1DS2);
+			for (i = 0; (i < number_of_nodes) && return_code; i++)
 			{
-				return_code=1;
-				/* do nothing if not 4 nodes */
-				if (4==number_of_nodes)
+				if (return_code = get_FE_element_node(torso_element, i, &node))
 				{
-					node_field_creator = CREATE(FE_node_field_creator)(
-						/*number_of_components*/1);
-					FE_node_field_creator_define_derivative(node_field_creator,
-						/*component_number*/0, FE_NODAL_D_DS1);
-					FE_node_field_creator_define_derivative(node_field_creator,
-						/*component_number*/0, FE_NODAL_D_DS2);
-					FE_node_field_creator_define_derivative(node_field_creator,
-						/*component_number*/0, FE_NODAL_D2_DS1DS2);
-					/* define the fit field at the element's nodes*/
-					define_FE_field_at_node_data.field=fit_field;
-					define_FE_field_at_node_data.node_field_creator=
-						node_field_creator;
-					define_FE_field_at_node_data.node_manager=node_manager;
-					define_FE_field_at_node_data.time_version=
-						(struct FE_time_version *)NULL;
-					i=0;
-					while ((i<number_of_nodes)&&
-						(return_code=iterative_define_FE_field_at_node(nodes_in_element[i],
-						(void *)(&define_FE_field_at_node_data))))
-					{
-						i++;
-					}
-					if (i>=number_of_nodes)
-					{
-						/* Add the element to the group */
-						return_code=ADD_OBJECT_TO_GROUP(FE_element)(torso_element,
-							quad_element_group);
-					}
-					for (i=0;i<number_of_nodes;i++)
-					{
-						DEACCESS(FE_node)(nodes_in_element+i);
-					}
-					DEALLOCATE(nodes_in_element);
-					DESTROY(FE_node_field_creator)(&node_field_creator);
+					return_code = FE_region_define_FE_field_at_FE_node(fe_region,
+						node, fit_field, (struct FE_time_version *)NULL,
+						node_field_creator);
 				}
 			}
+			DESTROY(FE_node_field_creator)(&node_field_creator);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"define_fit_field_at_torso_element_nodes. "
-			"Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"define_fit_field_at_torso_element_nodes.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 	
 	return (return_code);
 } /* define_fit_field_at_torso_element_nodes*/
 #endif /* defined (UNEMAP_USE_3D) */
-
 
 #if defined (UNEMAP_USE_3D)
 struct Vertices_data
@@ -5524,12 +5372,11 @@ vertices_data->vertices we've filled in.
 }/* put_electrode_pos_into_vertices */
 
 static struct FE_element *make_delaunay_template_element(
-	struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,struct FE_field *data_field,
+	struct FE_region *fe_region, struct FE_field *data_field,
 	struct FE_field *coordinate_field, struct FE_field *gain_field,
 	struct FE_field *offset_field)
 /*******************************************************************************
-LAST MODIFIED :17 November 2000
+LAST MODIFIED : 10 May 2003
 
 DESCRIPTION :
 Makes and accesses and returns the template element for the delaunay
@@ -5555,7 +5402,7 @@ Therefore must deaccess the returned element outside this function
 	struct FE_element_shape *shape;
 	struct FE_element *template_element;
 	struct FE_element_field_component **data_components,**coord_components;
-	struct Standard_node_to_element_map **standard_node_map;
+	struct Standard_node_to_element_map *standard_node_map;
 	void **scale_factor_set_identifiers;
 
 	ENTER(make_delaunay_template_element);
@@ -5564,14 +5411,13 @@ Therefore must deaccess the returned element outside this function
 	template_element=(struct FE_element *)NULL;
 	data_components=(struct FE_element_field_component **)NULL;
 	coord_components=(struct FE_element_field_component **)NULL;
-	standard_node_map=(struct Standard_node_to_element_map **)NULL;
+	standard_node_map=(struct Standard_node_to_element_map *)NULL;
 	scale_factor_set_identifiers=(void **)NULL;
 	coordinate_system=(struct Coordinate_system *)NULL;
 	data_coordinate_system=(struct Coordinate_system *)NULL;
-
-	if (basis_manager&&element_manager&&data_field&&coordinate_field)
+	if (fe_region && data_field && coordinate_field)
 	{
-		if (basis=make_FE_basis(basis_type,basis_manager))
+		if (basis=make_FE_basis(basis_type,FE_region_get_basis_manager(fe_region)))
 		{
 			ACCESS(FE_basis)(basis);
 			if (shape=CREATE(FE_element_shape)(2,shape_type))
@@ -5591,7 +5437,7 @@ Therefore must deaccess the returned element outside this function
 					element_identifier.number=1;
 					number_of_scale_factor_sets=1;
 					if ((template_element=CREATE(FE_element)(&element_identifier,
-						(struct FE_element *)NULL))&&
+						shape, fe_region, (struct FE_element *)NULL)) &&
 						(ALLOCATE(scale_factor_set_identifiers,void *,number_of_scale_factor_sets))
 						&&(ALLOCATE(numbers_in_scale_factor_sets,int,number_of_scale_factor_sets)))
 					{
@@ -5599,11 +5445,12 @@ Therefore must deaccess the returned element outside this function
 						numbers_in_scale_factor_sets[0]=3;
 						scale_factor_set_identifiers[0]=basis;
 						number_of_nodes=3;
-						if (set_FE_element_shape(template_element,shape)&&
-							set_FE_element_node_scale_field_info(template_element,
-								number_of_scale_factor_sets,scale_factor_set_identifiers,
-								numbers_in_scale_factor_sets,number_of_nodes)&&
-							(ALLOCATE(coord_components,struct FE_element_field_component *,3))&&
+						if (set_FE_element_number_of_nodes(template_element,
+								number_of_nodes) &&
+							set_FE_element_number_of_scale_factor_sets(template_element,
+								number_of_scale_factor_sets, scale_factor_set_identifiers,
+								numbers_in_scale_factor_sets) &&
+							(ALLOCATE(coord_components, struct FE_element_field_component *,3)) &&
 							(ALLOCATE(data_components,struct FE_element_field_component *,1)))
 						{
 							/* do things for data field*/
@@ -5612,28 +5459,37 @@ Therefore must deaccess the returned element outside this function
 								(FE_element_field_component_modify)NULL))
 							{
 								/* create node map */
-								standard_node_map=(data_components[0])->
-									map.standard_node_based.node_to_element_maps;
 								m=0;
 								k=0;
 								success=1;
 								while (success&&(k<number_of_nodes))
 								{
-									if (*standard_node_map=CREATE(Standard_node_to_element_map)(
+									if (standard_node_map = CREATE(Standard_node_to_element_map)(
 										/*node_index*/k,/*number_of_values*/1))
 									{
-										(*standard_node_map)->nodal_value_indices[0]=0;
-										(*standard_node_map)->scale_factor_indices[0]=m;
+										Standard_node_to_element_map_set_nodal_value_index(
+											standard_node_map, 0, 0);
+										Standard_node_to_element_map_set_scale_factor_index(
+											standard_node_map, 0, m);
 										/* scale_factors set when actual element created from template */
 										m++;
+										if (!FE_element_field_component_set_standard_node_map(
+											data_components[0], /*node_number*/k, standard_node_map))
+										{
+											display_message(ERROR_MESSAGE,
+												"make_delaunay_template_element.  "
+												"Error setting data standard_node_to_element_map");
+											DESTROY(Standard_node_to_element_map)(&standard_node_map);
+											success = 0;
+										}
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE,"make_delaunay_template_element could not create "
-											"Standard_node_to_element_map");
+										display_message(ERROR_MESSAGE,
+											"make_delaunay_template_element.  "
+											"Could not create data Standard_node_to_element_map");
 										success=0;
 									}
-									standard_node_map++;
 									k++;
 								}
 							}
@@ -5652,28 +5508,40 @@ Therefore must deaccess the returned element outside this function
 									(FE_element_field_component_modify)NULL))
 								{
 									/* create node map */
-									standard_node_map=(coord_components[p])->
-										map.standard_node_based.node_to_element_maps;
 									m=0;
 									k=0;
 									success=1;
 									while (success&&(k<number_of_nodes))
 									{
-										if (*standard_node_map=CREATE(Standard_node_to_element_map)(
-											/*node_index*/k,/*number_of_values*/1))
+										if (standard_node_map =
+											CREATE(Standard_node_to_element_map)(
+												/*node_index*/k,/*number_of_values*/1))
 										{
-											(*standard_node_map)->nodal_value_indices[0]=0;
-											(*standard_node_map)->scale_factor_indices[0]=m;
+											Standard_node_to_element_map_set_nodal_value_index(
+												standard_node_map, 0, 0);
+											Standard_node_to_element_map_set_scale_factor_index(
+												standard_node_map, 0, m);
 											/* scale_factors set when actual element created from template */
 											m++;
+											if (!FE_element_field_component_set_standard_node_map(
+												coord_components[p], /*node_number*/k,
+												standard_node_map))
+											{
+												display_message(ERROR_MESSAGE,
+													"make_delaunay_template_element.  "
+													"Error setting coord standard_node_to_element_map");
+												DESTROY(Standard_node_to_element_map)(
+													&standard_node_map);
+												success = 0;
+											}
 										}
 										else
 										{
-											display_message(ERROR_MESSAGE,"make_delaunay_template_element could not create "
-												"Standard_node_to_element_map");
+											display_message(ERROR_MESSAGE,
+												"make_delaunay_template_element.  "
+												"Could not create coord Standard_node_to_element_map");
 											success=0;
 										}
-										standard_node_map++;
 										k++;
 									}
 								}
@@ -5765,276 +5633,223 @@ Therefore must deaccess the returned element outside this function
 	return (template_element);
 }/* make_delaunay_template_element */
 
-static int make_delaunay_node_and_element_group(struct GROUP(FE_node) *source_nodes,
-	struct FE_field *electrode_postion_field,struct FE_field *delaunay_signal_field,
-	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
-	struct Unemap_package *unemap_package,struct Region *region)
+static int make_delaunay_node_and_element_group(
+	struct FE_region *source_nodes,
+	struct FE_field *electrode_postion_field,
+	struct FE_field *delaunay_signal_field,
+	struct FE_field *channel_gain_field,
+	struct FE_field *channel_offset_field,
+	struct Unemap_package *unemap_package, struct Region *region)
 /*******************************************************************************
-LAST MODIFIED :17 November 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Given the <source_nodes>, performs delaunay triangularisation on them,
-and produces elements (and an element group) from these triangles.
-Produces same name node and data groups for graphics. Defines the
-<electrode_postion_field> and a data field at the elements.
+and produces elements in a new Cmiss/FE_region from these triangles.
+Defines the <electrode_postion_field> and a data field at the elements.
 
-Requires (and checks) that <electrode_postion_field>  and the data fields
+Requires (and checks) that <electrode_postion_field> and the data fields
 are already defined at the nodes.
 
-Stores node and element groups in region <map_3d_package>
+Stores group in Region <map_3d_package>
 ==============================================================================*/
 {
 	char delaunay_group_name[]="delaunay";
 	int i,j,number_of_triangles,number_of_vertices,return_code,*triangles,
 		*vertex_number;
 	float *vertices;
+	struct Cmiss_region *root_cmiss_region;
 	struct CM_element_information element_identifier;
 	struct FE_element *template_element,*element;
 	struct FE_node *triangle_nodes[3],*vertex_node;
 	struct FE_node_order_info *node_order_info;
-	struct GROUP(FE_element) *delaunay_element_group;
-	struct GROUP(FE_node) *delaunay_node_group;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_basis) *basis_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct FE_region *delaunay_group, *root_fe_region;
 	struct Vertices_data vertices_data;
 	struct Map_3d_package *map_3d_package;
 
 	ENTER(make_delaunay_node_and_element_group);
 	vertices=(float *)NULL;
 	triangles =(int *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
 	vertex_node=(struct FE_node *)NULL;
-	delaunay_element_group=(struct GROUP(FE_element) *)NULL;
-	delaunay_node_group=(struct GROUP(FE_node) *)NULL;
 	template_element=(struct FE_element *)NULL;
 	element=(struct FE_element *)NULL;
 	node_order_info=(struct FE_node_order_info *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
-	if (source_nodes&&electrode_postion_field&&delaunay_signal_field&&unemap_package
-		&&region&&(element_group_manager=
-			get_unemap_package_element_group_manager(unemap_package))&&
-		(node_group_manager=
-			get_unemap_package_node_group_manager(unemap_package))&&
-		(data_group_manager=
-			get_unemap_package_data_group_manager(unemap_package))&&
-		(basis_manager=get_unemap_package_basis_manager(unemap_package))&&
-		(node_manager=get_unemap_package_node_manager(unemap_package))&&
-		(element_manager=get_unemap_package_element_manager(unemap_package)))
+	if (source_nodes && electrode_postion_field && delaunay_signal_field &&
+		unemap_package && region && (root_cmiss_region =
+			get_unemap_package_root_Cmiss_region(unemap_package)) &&
+		(root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region)))
 	{
 		/* check fields defined at all nodes*/
-		if (!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
-			(void *)delaunay_signal_field,source_nodes))&&
-			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
-				(void *)electrode_postion_field,source_nodes))&&
-			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
-			(void *)channel_gain_field,source_nodes))&&
-			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
-				(void *)channel_offset_field,source_nodes))&&
+		if (!(FE_region_get_first_FE_node_that(source_nodes,
+			FE_node_field_is_not_defined, (void *)delaunay_signal_field)) &&
+			!(FE_region_get_first_FE_node_that(source_nodes,
+				FE_node_field_is_not_defined, (void *)electrode_postion_field)) &&
+			!(FE_region_get_first_FE_node_that(source_nodes,
+				FE_node_field_is_not_defined, (void *)channel_gain_field)) &&
+			!(FE_region_get_first_FE_node_that(source_nodes,
+				FE_node_field_is_not_defined, (void *)channel_offset_field)) &&
 			/*create template element*/
-			(template_element=make_delaunay_template_element(basis_manager,element_manager,
+			(template_element = make_delaunay_template_element(root_fe_region,
 				delaunay_signal_field,electrode_postion_field,channel_gain_field,
 				channel_offset_field)))
 		{
 			element_identifier.type=CM_ELEMENT;
 			element_identifier.number=1;
-			number_of_vertices=(NUMBER_IN_GROUP(FE_node)(source_nodes));
+			number_of_vertices = FE_region_get_number_of_FE_nodes(source_nodes);
 			if (ALLOCATE(vertices,float,3*number_of_vertices))
 			{
 				/* put the nodal position field data into the vertex array*/
 				vertices_data.current_element=0;
 				vertices_data.vertices=vertices;
 				vertices_data.position_field=electrode_postion_field;
-				if ((return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(put_electrode_pos_into_vertices,
-					(void *)&vertices_data,source_nodes))&&
+				if ((return_code = FE_region_for_each_FE_node(source_nodes,
+					put_electrode_pos_into_vertices, (void *)&vertices_data)) &&
 					/*perform the delaunay triangularisation*/
-					(return_code=cylinder_delaunay(number_of_vertices,vertices,
+					(return_code = cylinder_delaunay(number_of_vertices,vertices,
 						&number_of_triangles,&triangles)))
 				{
-					return_code=1;
-					/* create same name node,element,data groups so can do graphics */
-					delaunay_node_group=make_node_and_element_and_data_groups(
-						node_group_manager,node_manager,element_manager,element_group_manager,
-						data_group_manager,delaunay_group_name);
-					MANAGED_GROUP_BEGIN_CACHE(FE_node)(delaunay_node_group);
-					delaunay_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-						(delaunay_group_name,element_group_manager);
-					MANAGED_GROUP_BEGIN_CACHE(FE_element)(delaunay_element_group);
-					if (delaunay_element_group&&delaunay_node_group)
+					return_code = 1;
+					/* create delaunay region so can do graphics */
+					if (delaunay_group = Cmiss_region_get_or_create_child_FE_region(
+						root_cmiss_region, delaunay_group_name,
+						/*master_fe_region*/root_fe_region,
+						(struct MANAGER(FE_basis) *)NULL))
 					{
-						return_code=1;
-						if (return_code)
+						FE_region_begin_change(delaunay_group);
+						FE_region_clear(delaunay_group, /*destroy_in_master*/1);
+						/* make a node_order_info, so can match nodes to vertices  */
+						if ((node_order_info = CREATE(FE_node_order_info)(0)) &&
+							(FE_region_for_each_FE_node(source_nodes, fill_FE_node_order_info,
+								(void *)node_order_info)))
 						{
-							/* make a node_order_info, so can match nodes to vertices  */
-							if ((node_order_info=CREATE(FE_node_order_info)(0))&&
-								(FOR_EACH_OBJECT_IN_GROUP(FE_node)(fill_FE_node_order_info,
-									(void *)node_order_info,source_nodes)))
+							/* find nodes from triangle info, put in node group */
+							/* when full, delaunay_node_group should match source_nodes group,
+								 but a future mapping may not. */
+							vertex_number=triangles;
+							i=0;
+							while((i<number_of_triangles)&&(return_code))
 							{
-								/* find nodes from triangle info, put in node group*/
-								/* when full, delaunay_node_group should match source_nodes group */
-								/* but a future mapping may not, and want own same name data and element */
-								/* groups for graphics */
-								vertex_number=triangles;
-								i=0;
-								while((i<number_of_triangles)&&(return_code))
+								/* do all 3 nodes of triangle*/
+								j=0;
+								while((j<3)&&(return_code))
 								{
-									/* do all 3 nodes of triangle*/
-									j=0;
-									while((j<3)&&(return_code))
+									vertex_node = get_FE_node_order_info_node(node_order_info,
+										*vertex_number);
+									if (vertex_node)
 									{
-										vertex_node=get_FE_node_order_info_node(node_order_info,
-											*vertex_number);
-										if (vertex_node)
-										{
-											/* store triangle nodes to make element*/
-											triangle_nodes[j]=vertex_node;
-											if ((!IS_OBJECT_IN_GROUP(FE_node)(vertex_node,
-												delaunay_node_group))&&
-												(!ADD_OBJECT_TO_GROUP(FE_node)(vertex_node,
-													delaunay_node_group)))
-											{
-												display_message(ERROR_MESSAGE,
-													"make_delaunay_node_and_element_group."
-													" failed to add node to group");
-												REMOVE_OBJECT_FROM_GROUP(FE_node)(vertex_node,
-													delaunay_node_group);
-												return_code=0;
-											}
-										}
-										else
+										/* store triangle nodes to make element */
+										triangle_nodes[j] = vertex_node;
+										/* make sure vertex_node is in delaunay_group */
+										if (!FE_region_merge_FE_node(delaunay_group, vertex_node))
 										{
 											display_message(ERROR_MESSAGE,
-												"make_delaunay_node_and_element_group."
-												" vertex node not found");
-											return_code=0;
-										}
-										vertex_number++;
-										j++;
-									}	/* while((j<3)&&(return_code))	*/
-									/* find first free element identifier  */
-									while (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-										identifier)(&element_identifier,element_manager))
-									{
-										element_identifier.number++;
-									}
-									/* create element with template, add nodes */
-									if (element=CREATE(FE_element)(&element_identifier,
-										template_element))
-									{
-										if (set_FE_element_node(element,0,triangle_nodes[0])&&
-											set_FE_element_node(element,1,triangle_nodes[1])&&
-											set_FE_element_node(element,2,triangle_nodes[2]))
-										{
-											/*set the scale factors */
-											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[0],
-												delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
-											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[1],
-												delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
-											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[2],
-												delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
-											/* add element to manager*/
-											if (ADD_OBJECT_TO_MANAGER(FE_element)(element,element_manager))
-											{
-												/* add element to group */
-												if (!ADD_OBJECT_TO_GROUP(FE_element)(element,
-													delaunay_element_group))
-												{
-													display_message(ERROR_MESSAGE,
-														"make_delaunay_node_and_element_group.  "
-														"Could not add element to element_group");
-													/* remove element from manager to destroy it */
-													REMOVE_OBJECT_FROM_MANAGER(FE_element)(element,
-														element_manager);
-													return_code=0;
-												}
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-													"make_delaunay_node_and_element_group.  "
-													"Could not add element to element_manager");
-												DESTROY(FE_element)(&element);
-												return_code=0;
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"make_delaunay_node_and_element_group. "
-												"Could not set element nodes");
-											DESTROY(FE_element)(&element);
-											return_code=0;
+												"make_delaunay_node_and_element_group.  "
+												"Failed to add node to group");
+											return_code = 0;
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											" make_delaunay_node_and_element_group. "
-											"Could not create element");
+											"make_delaunay_node_and_element_group.  "
+											"vertex node not found");
+										return_code = 0;
+									}
+									vertex_number++;
+									j++;
+								}	/* while((j<3)&&(return_code))	*/
+								/* find first free element identifier  */
+								element_identifier.number =
+									FE_region_get_next_FE_element_identifier(delaunay_group,
+										element_identifier.type, element_identifier.number);
+								/* create element with template, add nodes */
+								if (element = CREATE(FE_element)(&element_identifier,
+									(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+									template_element))
+								{
+									if (set_FE_element_node(element,0,triangle_nodes[0])&&
+										set_FE_element_node(element,1,triangle_nodes[1])&&
+										set_FE_element_node(element,2,triangle_nodes[2]))
+									{
+										/*set the scale factors */
+										FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[0],
+											delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
+										FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[1],
+											delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
+										FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[2],
+											delaunay_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
+										/* merge element into delaunay_group */
+										if (!FE_region_merge_FE_element(delaunay_group, element))
+										{
+											display_message(ERROR_MESSAGE,
+												"make_delaunay_node_and_element_group.  "
+												"Could not merge element to delaunay_group");
+											DESTROY(FE_element)(&element);
+											return_code = 0;
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"make_delaunay_node_and_element_group. "
+											"Could not set element nodes");
+										DESTROY(FE_element)(&element);
 										return_code=0;
 									}
-									i++;
-								}	/* while((i<number_of_triangles)&&(return_code)) */
-								/* store the created groups */
-								if (return_code)
-								{
-									/* create map_3d_package, if necessary */
-									map_3d_package=get_Region_map_3d_package(region);
-									if (!map_3d_package)
-									{
-										map_3d_package=CREATE(Map_3d_package)(
-											get_unemap_package_FE_field_manager(unemap_package),
-											get_unemap_package_element_group_manager(unemap_package),
-											get_unemap_package_data_manager(unemap_package),
-											get_unemap_package_data_group_manager(unemap_package),
-											get_unemap_package_node_manager(unemap_package),
-											get_unemap_package_node_group_manager(unemap_package),
-											get_unemap_package_element_manager(unemap_package),
-											get_unemap_package_Computed_field_manager(unemap_package));
-										set_Region_map_3d_package(region,map_3d_package);
-									}
-									set_map_3d_package_delaunay_torso_node_group(map_3d_package,
-										delaunay_node_group);
-									set_map_3d_package_delaunay_torso_element_group(map_3d_package,
-										delaunay_element_group);
 								}
-							}
-							else
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										" make_delaunay_node_and_element_group. "
+										"Could not create element");
+									return_code=0;
+								}
+								i++;
+							}	/* while((i<number_of_triangles)&&(return_code)) */
+							/* store the created groups */
+							if (return_code)
 							{
-								display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
-									"Could not make node_order_info");
-								return_code=0;
+								/* create map_3d_package, if necessary */
+								map_3d_package=get_Region_map_3d_package(region);
+								if (!map_3d_package)
+								{
+									map_3d_package = CREATE(Map_3d_package)(
+										get_unemap_package_root_Cmiss_region(unemap_package),
+										get_unemap_package_data_root_Cmiss_region(unemap_package),
+										get_unemap_package_Computed_field_manager(unemap_package));
+									set_Region_map_3d_package(region,map_3d_package);
+								}
+								set_map_3d_package_delaunay_torso_group(map_3d_package,
+									delaunay_group);
 							}
-
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
-								"Could not add groups to managers");
-
+							display_message(ERROR_MESSAGE,
+								"make_delaunay_node_and_element_group.  "
+								"Could not make node_order_info");
+							return_code = 0;
 						}
+						if (node_order_info)
+						{
+							DESTROY(FE_node_order_info)(&node_order_info);
+						}
+						FE_region_end_change(delaunay_group);
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
-							"Could not make groups");
-
+						display_message(ERROR_MESSAGE,
+							"make_delaunay_node_and_element_group.  Could not make group");
+						return_code = 0;
 					}
-					MANAGED_GROUP_END_CACHE(FE_node)(delaunay_node_group);
-					MANAGED_GROUP_END_CACHE(FE_element)(delaunay_element_group);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE," make_delaunay_node_and_element_group. "
-						"Could not do delaunay triangularisation ");
-					return_code=0;
-				}
-				if (node_order_info)
-				{
-					DESTROY(FE_node_order_info)(&node_order_info);
+					display_message(ERROR_MESSAGE,
+						"make_delaunay_node_and_element_group.  "
+						"Could not do delaunay triangularisation");
+					return_code = 0;
 				}
 				if (template_element)
 				{
@@ -6059,15 +5874,16 @@ Stores node and element groups in region <map_3d_package>
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				" make_delaunay_node_and_element_group. failed to make template element");
-			return_code=0;
+				"make_delaunay_node_and_element_group.  "
+				"Failed to make template element");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			" make_delaunay_node_and_element_group. Can't find element group");
-		return_code=0;
+			"make_delaunay_node_and_element_group.  Can't find element group");
+		return_code = 0;
 	}
 	LEAVE;
 	
@@ -6224,7 +6040,7 @@ static int make_and_set_delaunay(struct Region *region,
 	struct Unemap_package *unemap_package,FE_value time,
 	int nodes_rejected_or_accepted)
 /*******************************************************************************
-LAST MODIFIED : 8 December 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Makes and/or sets the nodal values in the delaunay node and element groups
@@ -6233,16 +6049,8 @@ Makes and/or sets the nodal values in the delaunay node and element groups
 	int return_code;
 	struct FE_field *electrode_postion_field,*delaunay_signal_field,
 		*channel_gain_field, *channel_offset_field;
-#if defined (OLD_CODE)
-	struct FE_node *node;
-	struct GROUP(FE_node) *rig_node_group;
-	struct MANAGER(FE_node) *node_manager;
-#endif /* defined (OLD_CODE) */
-	struct GROUP(FE_node) *unrejected_nodes;
+	struct FE_region *unrejected_nodes;
 	struct Map_3d_package *map_3d_package;
-#if defined (OLD_CODE)
-	struct Set_delaunay_signal_data set_delaunay_signal_data;
-#endif /* defined (OLD_CODE) */
 
 	ENTER(make_and_set_delaunay);
 	USE_PARAMETER(time);
@@ -6250,12 +6058,7 @@ Makes and/or sets the nodal values in the delaunay node and element groups
 	delaunay_signal_field=(struct FE_field *)NULL;
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
-#if defined (OLD_CODE)
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	node=(struct FE_node *)NULL;
-#endif /* defined (OLD_CODE) */
-	unrejected_nodes=(struct GROUP(FE_node) *)NULL;
+	unrejected_nodes=(struct FE_region *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
 	if (region&&unemap_package&&
 		(electrode_postion_field=get_Region_electrode_position_field(region)))
@@ -6269,26 +6072,26 @@ Makes and/or sets the nodal values in the delaunay node and element groups
 						"signal field, gain field or offset field not found ");
 			return_code=0;
 		}
-		/* check if haven't made delaunay groups yet, or for newly rejected/accpted */
-		/*electrodes to see if remake delaunay groups */
+		/* check if haven't made delaunay groups yet, or for newly rejected/accpted
+			 electrodes to see if remake delaunay groups */
 		map_3d_package=get_Region_map_3d_package(region);
 		if (nodes_rejected_or_accepted||(!map_3d_package)||(map_3d_package&&
-			(!get_map_3d_package_delaunay_torso_node_group(map_3d_package))))
+			(!get_map_3d_package_delaunay_torso_group(map_3d_package))))
 		{
-
 			if (map_3d_package)
 			{
 				/*this will do a deaccess*/
 				set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 			}
 			/*  make delaunay groups */
-			if ((!map_3d_package)||(map_3d_package&&
-				(!get_map_3d_package_delaunay_torso_node_group(map_3d_package))))
+			if ((!map_3d_package) || (map_3d_package &&
+				(!get_map_3d_package_delaunay_torso_group(map_3d_package))))
 			{
-				if (return_code&&(unrejected_nodes=get_Region_unrejected_node_group(region)))
+				if (return_code &&
+					(unrejected_nodes=get_Region_unrejected_node_group(region)))
 				{
 					return_code=make_delaunay_node_and_element_group(unrejected_nodes,
-						electrode_postion_field,delaunay_signal_field,
+						electrode_postion_field, delaunay_signal_field,
 						channel_gain_field,channel_offset_field,unemap_package,region);
 				}
 				else
@@ -6298,36 +6101,6 @@ Makes and/or sets the nodal values in the delaunay node and element groups
 				}
 			}/* if ((!map_3d_package)||(map_3d_package&& */
 		}/* (nodes_rejected_or_accepted) */
-#if defined (OLD_CODE)
-		/* map_3d_package may have changed*/
-		map_3d_package=get_Region_map_3d_package(region);
-		if (map_3d_package&&(delaunay_torso_node_group=
-			get_map_3d_package_delaunay_torso_node_group(map_3d_package)))
-		{
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-			/*set the delaunay_signal_field at the nodes from time */
-			set_delaunay_signal_data.delaunay_signal_field=
-				delaunay_signal_field;
-			set_delaunay_signal_data.signal_field=
-				get_unemap_package_signal_field(unemap_package);
-			set_delaunay_signal_data.channel_gain_field=
-				get_unemap_package_channel_gain_field(unemap_package);
-			set_delaunay_signal_data.channel_offset_field=
-				get_unemap_package_channel_offset_field(unemap_package);
-			set_delaunay_signal_data.time=time;
-			set_delaunay_signal_data.node_manager=node_manager;
-			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
-				(iterative_set_delaunay_signal_nodal_value,
-					(void *)(&set_delaunay_signal_data),delaunay_torso_node_group);
-			MANAGER_END_CACHE(FE_node)(node_manager);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"make_and_set_delaunay."
-				" no group to set");
-			return_code=0;
-		}
-#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -6351,7 +6124,7 @@ Global functions
 int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2001
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Draws (or erases) the map contours
@@ -6364,7 +6137,7 @@ Draws (or erases) the map contours
 	struct Map_3d_package *map_3d_package;
 	struct Scene *scene;
 	struct Rig *rig;
-	struct GROUP(FE_node) *unrejected_node_group;
+	struct FE_region *unrejected_node_group;
 	struct Region_list_item *region_item;
 	struct Region *region;
 
@@ -6373,7 +6146,7 @@ Draws (or erases) the map contours
 	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	scene=(struct Scene *)NULL;
 	rig=(struct Rig *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
 	region_item=(struct Region_list_item *)NULL;
 	region=(struct Region *)NULL;
 	/*data_field can be NULL*/
@@ -8114,7 +7887,7 @@ static struct Texture *make_gouraud_texture_from_torso_map(struct Map *map,
 	float minimum,float maximum,int texture_x_length,int texture_y_length,
 	int draw_skin)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Given <map>,<region>,<time>, <z_min> and <z_range>, <minimum> and <maximum>
@@ -8141,7 +7914,7 @@ opengl texture reasons (at least on the SGI).
 	struct FE_node *electrode_node;
 	struct FE_node_order_info *node_order_info;
 	struct Graphical_material *material;
-	struct GROUP(FE_node) *unrejected_node_group;
+	struct FE_region *unrejected_node_group;
 	struct Map_3d_package *map_3d_package;
 	struct Map_drawing_information *drawing_information;
 	struct MANAGER(Texture) *texture_manager;
@@ -8160,7 +7933,7 @@ opengl texture reasons (at least on the SGI).
 	electrode_node=(struct FE_node *)NULL;
 	material=(struct Graphical_material *)NULL;
 	texture_manager=(struct MANAGER(Texture) *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
 	spectrum=(struct Spectrum *)NULL;
 	spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
@@ -8207,7 +7980,8 @@ opengl texture reasons (at least on the SGI).
 			y_offset=-((z_min*(texture_y_length))/z_range);
 			electrode_postion_field=get_Region_electrode_position_field(region);
 			component.field=electrode_postion_field;
-			number_of_electrodes=(NUMBER_IN_GROUP(FE_node)(unrejected_node_group));
+			number_of_electrodes =
+				FE_region_get_number_of_FE_nodes(unrejected_node_group);
 			if (ALLOCATE(vertices,float,/*x,y,z*/3*number_of_electrodes)&&
 				ALLOCATE(map->electrode_tex_x,int,number_of_electrodes)&&
 				ALLOCATE(map->electrode_tex_y,int,number_of_electrodes)&&
@@ -8221,17 +7995,16 @@ opengl texture reasons (at least on the SGI).
 				vertices_data.current_element=0;
 				vertices_data.vertices=vertices;
 				vertices_data.position_field=electrode_postion_field;
-				if ((success=FOR_EACH_OBJECT_IN_GROUP(FE_node)
-					(put_electrode_pos_into_vertices,
-						(void *)&vertices_data,unrejected_node_group))&&
+				if ((success = FE_region_for_each_FE_node(unrejected_node_group,
+					put_electrode_pos_into_vertices, (void *)&vertices_data)) &&
 					/*perform the delaunay triangularisation*/
 					(success=cylinder_delaunay(number_of_electrodes,vertices,
 						&map->number_of_gouraud_triangles,&map->triangle_electrode_indices)))
 				{
 					/* make a node_order_info, so can match nodes to vertices  */
 					if ((node_order_info=CREATE(FE_node_order_info)(0))&&
-						(FOR_EACH_OBJECT_IN_GROUP(FE_node)(fill_FE_node_order_info,
-							(void *)node_order_info,unrejected_node_group)))
+						(FE_region_for_each_FE_node(unrejected_node_group,
+							fill_FE_node_order_info, (void *)node_order_info)))
 					{
 						set_map_3d_package_node_order_info(map_3d_package,node_order_info);
 						/* set up array of  map->electrode_tex_x,y */
@@ -8262,7 +8035,7 @@ opengl texture reasons (at least on the SGI).
 							"CREATE(FE_node_order_info/"
 							"fill_FE_node_order_info failed");
 					}
-				}	/* if ((success=FOR_EACH_OBJECT_IN_GROUP(FE_node)	 */
+				}	/* if ((success=FOR_EACH_OBJECT_IN_FE_region	 */
 			}	/*	if (ALLOCATE(vertices,float, */
 			else
 			{
@@ -8631,7 +8404,7 @@ the name of the cylindrical polar computed field, <z_min> and <z_range>
 #if defined (UNEMAP_USE_3D)
 static int draw_map_3d(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
@@ -8665,9 +8438,8 @@ Removes 3d drawing for non-current region(s).
 	struct Texture *skin_texture;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
-	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
-		*delaunay_torso_element_group;
-	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
+	struct FE_region *group,*mapped_torso_group, *delaunay_torso_group;
+	struct FE_region *rig_node_group,*unrejected_node_group;
 
 	ENTER(draw_map_3d);
 	buffer=(struct Signal_buffer *)NULL;
@@ -8690,11 +8462,11 @@ Removes 3d drawing for non-current region(s).
 	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	times=(int *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
-	element_group=(struct GROUP(FE_element) *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
-	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	group=(struct FE_region *)NULL;
+	rig_node_group=(struct FE_region *)NULL;
+	unrejected_node_group=(struct FE_region *)NULL;
+	mapped_torso_group = (struct FE_region *)NULL;
+	delaunay_torso_group = (struct FE_region *)NULL;
 	if (map&&(drawing_information=map->drawing_information))
 	{
 		/*destroy the (2d) sub_maps */
@@ -8792,25 +8564,20 @@ Removes 3d drawing for non-current region(s).
 							map_3d_package=get_Region_map_3d_package(region);
 							if (map_3d_package)
 							{
-								element_group=get_map_3d_package_element_group(map_3d_package);
-								mapped_torso_element_group=
-									get_map_3d_package_mapped_torso_element_group(map_3d_package);
-								delaunay_torso_element_group=
-									get_map_3d_package_delaunay_torso_element_group(map_3d_package);
+								group=get_map_3d_package_group(map_3d_package);
+								mapped_torso_group=
+									get_map_3d_package_mapped_torso_group(map_3d_package);
+								delaunay_torso_group=
+									get_map_3d_package_delaunay_torso_group(map_3d_package);
 							}
 							/* if no map_3d_package or last one wasn't NO_INTERPOLATION, */
 							/* create a map_3d_package and destroy the any old one*/
-							if ((!map_3d_package)||(map_3d_package&&(element_group||
-								mapped_torso_element_group||delaunay_torso_element_group)))
+							if ((!map_3d_package)||(map_3d_package&&(group||
+								mapped_torso_group||delaunay_torso_group)))
 							{
-								map_3d_package=CREATE(Map_3d_package)(
-									get_unemap_package_FE_field_manager(unemap_package),
-									get_unemap_package_element_group_manager(unemap_package),
-									get_unemap_package_data_manager(unemap_package),
-									get_unemap_package_data_group_manager(unemap_package),
-									get_unemap_package_node_manager(unemap_package),
-									get_unemap_package_node_group_manager(unemap_package),
-									get_unemap_package_element_manager(unemap_package),
+								map_3d_package = CREATE(Map_3d_package)(
+									get_unemap_package_root_Cmiss_region(unemap_package),
+									get_unemap_package_data_root_Cmiss_region(unemap_package),
 									get_unemap_package_Computed_field_manager(unemap_package));
 								fit_name=make_fit_name(region,rig->name);
 								set_map_3d_package_fit_name(map_3d_package,fit_name);
@@ -8836,14 +8603,9 @@ Removes 3d drawing for non-current region(s).
 										set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 									}
 									/* Create the new Map_3d_package*/
-									map_3d_package=CREATE(Map_3d_package)(
-										get_unemap_package_FE_field_manager(unemap_package),
-										get_unemap_package_element_group_manager(unemap_package),
-										get_unemap_package_data_manager(unemap_package),
-										get_unemap_package_data_group_manager(unemap_package),
-										get_unemap_package_node_manager(unemap_package),
-										get_unemap_package_node_group_manager(unemap_package),
-										get_unemap_package_element_manager(unemap_package),
+									map_3d_package = CREATE(Map_3d_package)(
+										get_unemap_package_root_Cmiss_region(unemap_package),
+										get_unemap_package_data_root_Cmiss_region(unemap_package),
 										get_unemap_package_Computed_field_manager(unemap_package));
 									set_Region_map_3d_package(region,map_3d_package);
 									/*  set up the mapped torso node and element groups */
@@ -8914,8 +8676,7 @@ Removes 3d drawing for non-current region(s).
 							if (delaunay_map)
 							{
 								/* do gouraud torso surface*/
-								element_group=
-									get_map_3d_package_delaunay_torso_element_group(map_3d_package);
+								group = get_map_3d_package_delaunay_torso_group(map_3d_package);
 							}
 							else
 							{
@@ -8923,13 +8684,12 @@ Removes 3d drawing for non-current region(s).
 								if (((region->type==TORSO)&&default_torso_loaded)||direct_on_smooth_torso)
 								{
 									/* do smooth torso surface*/
-									element_group=
-										get_map_3d_package_mapped_torso_element_group(map_3d_package);
+									group = get_map_3d_package_mapped_torso_group(map_3d_package);
 								}
 								else
 								{
 									/* do cylinder surface */
-									element_group=get_map_3d_package_element_group(map_3d_package);
+									group = get_map_3d_package_group(map_3d_package);
 								}
 							}
 							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
@@ -8937,7 +8697,7 @@ Removes 3d drawing for non-current region(s).
 								(map->colour_option==HIDE_COLOUR))
 							{
 								/* No Spectrum or computed field used.*/
-								map_show_surface(scene,element_group,
+								map_show_surface(scene, group,
 									get_map_drawing_information_map_graphical_material
 									(drawing_information),
 									get_map_drawing_information_Graphical_material_manager
@@ -8953,7 +8713,7 @@ Removes 3d drawing for non-current region(s).
 							else if (direct_on_smooth_torso)
 							{
 								/* texture on smooth torso*/
-								map_show_surface(scene,element_group,
+								map_show_surface(scene, group,
 									get_map_drawing_information_map_graphical_material
 									(drawing_information),
 									get_map_drawing_information_Graphical_material_manager
@@ -8969,7 +8729,7 @@ Removes 3d drawing for non-current region(s).
 							{
 								/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
 								data_field = map_get_data_field_for_3d_map(map, map_3d_package);
-								map_show_surface(scene,element_group,
+								map_show_surface(scene, group,
 									get_map_drawing_information_map_graphical_material
 									(drawing_information),
 									get_map_drawing_information_Graphical_material_manager
@@ -13435,9 +13195,12 @@ Construct a colour map image for colour map or contours or  values  in the
 					map->number_of_contour_areas=0;
 					map->number_of_contour_areas_in_x=0;
 					/* free memory */
-					DEALLOCATE(frame->image->data);
-					XFree((char *)(frame->image));
-					frame->image=(XImage *)NULL;
+					if (frame->image)
+					{
+						DEALLOCATE(frame->image->data);
+						XFree((char *)(frame->image));
+						frame->image=(XImage *)NULL;
+					}
 					DEALLOCATE(frame->contour_x);
 					DEALLOCATE(frame->contour_y);
 					DEALLOCATE(frame->pixel_values);
@@ -14666,7 +14429,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(FE_node) *data_manager,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct LIST(GT_object) *glyph_list,
 	struct Graphical_material *graphical_material,
 	struct Computed_field_package *computed_field_package,
@@ -14675,7 +14438,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 #endif /* defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 3 May 2001
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -14831,7 +14594,7 @@ DESCRIPTION :
 			element_selection&&node_selection&&data_selection&&texture_manager&&
 			interactive_tool_manager&&scene_manager&&light_model_manager&&
 			light_manager&&spectrum_manager&&graphical_material_manager&&
-			data_manager&&glyph_list&&graphical_material&&
+			data_root_cmiss_region && glyph_list&&graphical_material&&
 			computed_field_package&&light&&light_model
 #endif /* defined (UNEMAP_USE_3D) */
 		)
@@ -14922,7 +14685,7 @@ visual=default_visual;
 			map_drawing_information->light_model_manager=light_model_manager;
 			map_drawing_information->spectrum_manager=spectrum_manager;
 			map_drawing_information->graphical_material_manager=graphical_material_manager;
-			map_drawing_information->data_manager=data_manager;
+			map_drawing_information->data_root_cmiss_region = data_root_cmiss_region;
 			map_drawing_information->glyph_list=glyph_list; /* like a manager, so don't access*/
 			set_map_drawing_information_map_graphical_material(map_drawing_information,
 				graphical_material);
@@ -15263,16 +15026,11 @@ to 1 if <accep_rej> >0,
 DECLARE_OBJECT_FUNCTIONS(Map_3d_package)
 
 struct Map_3d_package *CREATE(Map_3d_package)(
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(GROUP(FE_element))	*element_group_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 8 September 1999
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION:
 Create and  and set it's components
@@ -15282,8 +15040,7 @@ Create and  and set it's components
 
 	ENTER(CREATE(Map_3d_package));
 	map_3d_package=(struct Map_3d_package *)NULL;
-	if (fe_field_manager&&element_group_manager&&data_manager&&data_group_manager&&
-		node_manager&&node_group_manager&&element_manager&&computed_field_manager)
+	if (root_cmiss_region && data_root_cmiss_region && computed_field_manager)
 	{
 		if (ALLOCATE(map_3d_package,struct Map_3d_package,1))
 		{
@@ -15295,15 +15052,10 @@ Create and  and set it's components
 			map_3d_package->map_fit_field=(struct FE_field *)NULL;
 			map_3d_package->number_of_contours=0;
 			map_3d_package->contour_settings=(struct GT_element_settings **)NULL;
-			map_3d_package->fe_field_manager=fe_field_manager;
-			map_3d_package->node_group=(struct GROUP(FE_node) *)NULL;
-			map_3d_package->element_group=(struct GROUP(FE_element) *)NULL;
-			map_3d_package->element_group_manager=element_group_manager;
-			map_3d_package->data_manager=data_manager;
-			map_3d_package->node_manager=node_manager;
-			map_3d_package->data_group_manager=data_group_manager;
-			map_3d_package->node_group_manager=node_group_manager;
-			map_3d_package->element_manager=element_manager;
+			map_3d_package->root_cmiss_region =
+				ACCESS(Cmiss_region)(root_cmiss_region);
+			map_3d_package->data_root_cmiss_region =
+				ACCESS(Cmiss_region)(data_root_cmiss_region);
 			map_3d_package->computed_field_manager=computed_field_manager;
 			map_3d_package->electrode_glyph=(struct GT_object *)NULL;
 			map_3d_package->electrode_size=0;
@@ -15311,12 +15063,10 @@ Create and  and set it's components
 			map_3d_package->colour_electrodes_with_signal=1;
 			map_3d_package->electrodes_min_z=0;
 			map_3d_package->electrodes_max_z=0;
-			map_3d_package->mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
-			map_3d_package->mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
-			map_3d_package->delaunay_torso_node_group=(struct GROUP(FE_node) *)NULL;
-			map_3d_package->delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
+			map_3d_package->group=(struct FE_region *)NULL;
+			map_3d_package->mapped_torso_group=(struct FE_region *)NULL;
+			map_3d_package->delaunay_torso_group=(struct FE_region *)NULL;
 			map_3d_package->access_count=0.0;
-
 		}
 		else
 		{
@@ -15370,37 +15120,23 @@ Frees the array of map contour GT_element_settings stored in the <map_3d_package
 
 int DESTROY(Map_3d_package)(struct Map_3d_package **map_3d_package_address)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
 Frees the memory for the Map_3d_package and sets <*package_address>
 to NULL.
 ==============================================================================*/
 {
-	char *group_name;
 	int return_code;
-	struct FE_field *temp_field;
+	struct Cmiss_region *child_cmiss_region, *root_cmiss_region;
 	struct Map_3d_package *map_3d_package;
-	struct GROUP(FE_element) *map_element_group,*temp_map_element_group;
-	struct GROUP(FE_node) *temp_map_node_group,*data_group;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(FE_node) *node_manager,*data_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
-	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(DESTROY(Map_3d_package));
-	group_name=(char *)NULL;
 	if ((map_3d_package_address)&&(map_3d_package= *map_3d_package_address))
 	{
-		element_manager=map_3d_package->element_manager;
-		element_group_manager=map_3d_package->element_group_manager;
-		node_manager=map_3d_package->node_manager;
-		data_manager=map_3d_package->data_manager;
-		data_group_manager=map_3d_package->data_group_manager;
-		node_group_manager=map_3d_package->node_group_manager;
-		fe_field_manager=map_3d_package->fe_field_manager;
+		root_cmiss_region = map_3d_package->root_cmiss_region;
+		Cmiss_region_begin_change(root_cmiss_region);
 		computed_field_manager=map_3d_package->computed_field_manager;
 		return_code=1;
 		/* electrode_glyph*/
@@ -15410,103 +15146,55 @@ to NULL.
 		/* contours*/
 		free_map_3d_package_map_contours(map_3d_package);
 		/* map_group */
-		map_element_group=map_3d_package->element_group;
-		/* deaccess map_element_group. map_node_group deaccessed in */
-		/*free_node_and_element_and_data_groups*/
-		if (map_element_group)
+		if (map_3d_package->group)
 		{
-			temp_map_element_group=map_element_group;
-			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
-			free_node_and_element_and_data_groups(&(map_3d_package->node_group),
-				element_manager,element_group_manager,data_manager,
-				data_group_manager,node_manager,node_group_manager);
+			FE_region_get_Cmiss_region(map_3d_package->group, &child_cmiss_region);
+			FE_region_clear(map_3d_package->group, /*destroy_in_master*/1);
+			Cmiss_region_remove_child_region(root_cmiss_region, child_cmiss_region);
+			DEACCESS(FE_region)(&(map_3d_package->group));
 		}
-		/* mapped torso groups. The contained nodes and elements will remain, in */
-		/* the default_torso_groups, whose name is stored in the unemap_package->default_torso_name*/
-		/* mapped_torso_element_group,mapped_torso_node_group accesssed by map_3d_package, but */
-		/* corresponding data group isn't */
-		temp_map_element_group=map_3d_package->mapped_torso_element_group;
-		if (temp_map_element_group)
+		/* mapped torso group. The contained nodes and elements will remain, in
+			 the default_torso_groups, whose name is stored in the
+			 unemap_package->default_torso_name */
+		if (map_3d_package->mapped_torso_group)
 		{
-			GET_NAME(GROUP(FE_element))(temp_map_element_group,&group_name);
-			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
-			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_element))(
-				map_3d_package->mapped_torso_element_group, element_group_manager))
-			{
-				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))
-					(map_3d_package->mapped_torso_element_group,
-						element_group_manager);
-			}
-		}
-		temp_map_node_group=map_3d_package->mapped_torso_node_group;
-		if (temp_map_node_group)
-		{
-			DEACCESS(GROUP(FE_node))(&temp_map_node_group);
-
-			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_node))(
-				map_3d_package->mapped_torso_node_group, node_group_manager))
-			{
-				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))
-					(map_3d_package->mapped_torso_node_group,
-						node_group_manager);
-			}
+			FE_region_get_Cmiss_region(map_3d_package->mapped_torso_group,
+				&child_cmiss_region);
+			Cmiss_region_remove_child_region(root_cmiss_region, child_cmiss_region);
+			DEACCESS(FE_region)(&(map_3d_package->mapped_torso_group));
 		}
 
-		map_element_group=map_3d_package->delaunay_torso_element_group;
-		if (map_element_group)
+		if (map_3d_package->delaunay_torso_group)
 		{
-			/* deaccess delaunay_torso_element_group. delaunay_torso_node_group deaccessed in */
-			/*free_node_and_element_and_data_groups*/
-			temp_map_element_group=map_element_group;
-			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
-			/* this will destroy the elements, but not the nodes, as they're accessed elsewhere*/
-			free_node_and_element_and_data_groups(&(map_3d_package->delaunay_torso_node_group),
-				element_manager,element_group_manager,data_manager,
-				data_group_manager,node_manager,node_group_manager);
-		}
-		if (group_name&&(data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
-			(group_name,data_group_manager)))
-		{
-			if (MANAGED_OBJECT_NOT_IN_USE(GROUP(FE_node))(
-				data_group, data_group_manager))
-			{
-				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(data_group,
-					data_group_manager);
-			}
-		}
-		DEALLOCATE(group_name);
-		/* computed_fields */
-		if (map_3d_package->map_fit_field)
-		{
-			remove_computed_field_from_manager_given_FE_field(
-				computed_field_manager,map_3d_package->map_fit_field);
-		}
-		if (map_3d_package->map_position_field)
-		{
-			remove_computed_field_from_manager_given_FE_field(computed_field_manager,
-				map_3d_package->map_position_field);
+			FE_region_get_Cmiss_region(map_3d_package->delaunay_torso_group,
+				&child_cmiss_region);
+			FE_region_clear(map_3d_package->delaunay_torso_group,
+				/*destroy_in_master*/1);
+			Cmiss_region_remove_child_region(root_cmiss_region, child_cmiss_region);
+			DEACCESS(FE_region)(&(map_3d_package->delaunay_torso_group));
 		}
 		/* map_fit_field */
 		if (map_3d_package->map_fit_field)
 		{
-			temp_field=map_3d_package->map_fit_field;
-			DEACCESS(FE_field)(&temp_field);
-			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
 				map_3d_package->map_fit_field);
-			map_3d_package->map_fit_field=(struct FE_field *)NULL;
+			DEACCESS(FE_field)(&(map_3d_package->map_fit_field));
+			map_3d_package->map_fit_field = (struct FE_field *)NULL;
 		}
 		/* map_position_field */
 		if (map_3d_package->map_position_field)
 		{
-			temp_field=map_3d_package->map_position_field;
-			DEACCESS(FE_field)(&temp_field);
-			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
 				map_3d_package->map_position_field);
-			map_3d_package->map_position_field=(struct FE_field *)NULL;
+			DEACCESS(FE_field)(&(map_3d_package->map_position_field));
+			map_3d_package->map_position_field = (struct FE_field *)NULL;
 		}
 		DEALLOCATE(map_3d_package->contour_settings);
 		/* fit_name */
 		DEALLOCATE(map_3d_package->fit_name);
+		Cmiss_region_end_change(root_cmiss_region);
+		DEACCESS(Cmiss_region)(&(map_3d_package->data_root_cmiss_region));
+		DEACCESS(Cmiss_region)(&(map_3d_package->root_cmiss_region));
 		DEALLOCATE(*map_3d_package_address);
 	}
 	else
@@ -16258,339 +15946,173 @@ sets the map_fit_field for map_3d_package
 	return (return_code);
 } /* set_map_3d_package_fit_field */
 
-struct GROUP(FE_node) *get_map_3d_package_node_group(struct Map_3d_package *map_3d_package)
-/*******************************************************************************
-LAST MODIFIED : 6 July 2000
-
-DESCRIPTION :
-gets the node_group for map_3d_package
-==============================================================================*/
-{
-	struct GROUP(FE_node) *map_node_group;
-
-	ENTER(get_map_3d_package_node_group);
-	if (map_3d_package)
-	{
-		map_node_group=map_3d_package->node_group;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_node_group."
-			" invalid arguments");
-		map_node_group=(struct GROUP(FE_node) *)NULL;
-	}
-	LEAVE;
-	
-	return (map_node_group);
-}/* get_map_3d_package_node_group */
-
-int set_map_3d_package_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *map_node_group)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2000
-
-DESCRIPTION :
-sets the node_group for map_3d_package
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_map_3d_package_node_group);
-	if (map_3d_package)
-	{
-		REACCESS(GROUP(FE_node))(&(map_3d_package->node_group),map_node_group);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_node_group."
-			" invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	
-	return (return_code);
-}/* set_map_3d_package_node_group */
-
-struct GROUP(FE_element) *get_map_3d_package_element_group(
+struct FE_region *get_map_3d_package_group(
 	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-gets the element_group for map_3d_package
+gets the group for map_3d_package
 ==============================================================================*/
 {
-	struct GROUP(FE_element) *map_element_group;
+	struct FE_region *map_group;
 
-	ENTER(get_map_3d_package_element_group);
+	ENTER(get_map_3d_package_group);
 	if (map_3d_package)
 	{
-		map_element_group=map_3d_package->element_group;
+		map_group=map_3d_package->group;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_element_group."
+		display_message(ERROR_MESSAGE,"get_map_3d_package_group."
 			" invalid arguments");
-		map_element_group=(struct GROUP(FE_element) *)NULL;
+		map_group=(struct FE_region *)NULL;
 	}
 	LEAVE;
 	
-	return (map_element_group);
-}/* get_map_3d_package_element_group */
+	return (map_group);
+}/* get_map_3d_package_group */
 
-int set_map_3d_package_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *map_element_group)
+int set_map_3d_package_group(struct Map_3d_package *map_3d_package,
+	struct FE_region *map_group)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-Sets the element_group for map_3d_package
+Sets the group for map_3d_package
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_map_3d_package_element_group);
+	ENTER(set_map_3d_package_group);
 	if (map_3d_package)
 	{
 		return_code =1;
-		REACCESS(GROUP(FE_element))
-			(&(map_3d_package->element_group),map_element_group);
+		REACCESS(FE_region)
+			(&(map_3d_package->group),map_group);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_element_group."
+		display_message(ERROR_MESSAGE,"set_map_3d_package_group."
 			" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	
 	return (return_code);
-}/* set_map_3d_package_element_group */
+}/* set_map_3d_package_group */
 
-struct GROUP(FE_element) *get_map_3d_package_mapped_torso_element_group(
+struct FE_region *get_map_3d_package_mapped_torso_group(
 	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-gets the mapped_torso_element_group for map_3d_package
+gets the mapped_torso_group for map_3d_package
 ==============================================================================*/
 {
-	struct GROUP(FE_element) *mapped_torso_element_group;
+	struct FE_region *mapped_torso_group;
 
-	ENTER(get_map_3d_package_mapped_torso_element_group);
+	ENTER(get_map_3d_package_mapped_torso_group);
 	if (map_3d_package)
 	{
-		mapped_torso_element_group=map_3d_package->mapped_torso_element_group;
+		mapped_torso_group=map_3d_package->mapped_torso_group;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_mapped_torso_element_group."
+		display_message(ERROR_MESSAGE,"get_map_3d_package_mapped_torso_group."
 			" invalid arguments");
-		mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
+		mapped_torso_group=(struct FE_region *)NULL;
 	}
 	LEAVE;
 	
-	return (mapped_torso_element_group);
-}/* get_map_3d_package_mapped_torso_element_group */
+	return (mapped_torso_group);
+}/* get_map_3d_package_mapped_torso_group */
 
-int set_map_3d_package_mapped_torso_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *mapped_torso_element_group)
+int set_map_3d_package_mapped_torso_group(struct Map_3d_package *map_3d_package,
+	struct FE_region *mapped_torso_group)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-Sets the mapped_torso_element_group for map_3d_package
+Sets the mapped_torso_group for map_3d_package
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_map_3d_package_mapped_torso_element_group);
+	ENTER(set_map_3d_package_mapped_torso_group);
 	if (map_3d_package)
 	{
 		return_code =1;
-		REACCESS(GROUP(FE_element))
-			(&(map_3d_package->mapped_torso_element_group),mapped_torso_element_group);
+		REACCESS(FE_region)
+			(&(map_3d_package->mapped_torso_group),mapped_torso_group);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_mapped_torso_element_group."
+		display_message(ERROR_MESSAGE,"set_map_3d_package_mapped_torso_group."
 			" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	
 	return (return_code);
-}/* set_map_3d_package_mapped_torso_element_group */
+}/* set_map_3d_package_mapped_torso_group */
 
-struct GROUP(FE_node) *get_map_3d_package_mapped_torso_node_group(
+struct FE_region *get_map_3d_package_delaunay_torso_group(
 	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-gets the mapped_torso_node_group for map_3d_package
+gets the delaunay_torso_group for map_3d_package
 ==============================================================================*/
 {
-	struct GROUP(FE_node) *mapped_torso_node_group;
+	struct FE_region *delaunay_torso_group;
 
-	ENTER(get_map_3d_package_mapped_torso_node_group);
+	ENTER(get_map_3d_package_delaunay_torso_group);
 	if (map_3d_package)
 	{
-		mapped_torso_node_group=map_3d_package->mapped_torso_node_group;
+		delaunay_torso_group=map_3d_package->delaunay_torso_group;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_mapped_torso_node_group."
+		display_message(ERROR_MESSAGE,"get_map_3d_package_delaunay_torso_group."
 			" invalid arguments");
-		mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
+		delaunay_torso_group=(struct FE_region *)NULL;
 	}
 	LEAVE;
 	
-	return (mapped_torso_node_group);
-}/* get_map_3d_package_mapped_torso_node_group */
+	return (delaunay_torso_group);
+}/* get_map_3d_package_delaunay_torso_group */
 
-int set_map_3d_package_mapped_torso_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *mapped_torso_node_group)
+int set_map_3d_package_delaunay_torso_group(struct Map_3d_package *map_3d_package,
+	struct FE_region *delaunay_torso_group)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
-Sets the mapped_torso_node_group for map_3d_package
+Sets the delaunay_torso_group for map_3d_package
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_map_3d_package_mapped_torso_node_group);
+	ENTER(set_map_3d_package_delaunay_torso_group);
 	if (map_3d_package)
 	{
 		return_code =1;
-		REACCESS(GROUP(FE_node))
-			(&(map_3d_package->mapped_torso_node_group),mapped_torso_node_group);
+		REACCESS(FE_region)
+			(&(map_3d_package->delaunay_torso_group),delaunay_torso_group);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_mapped_torso_node_group."
+		display_message(ERROR_MESSAGE,"set_map_3d_package_delaunay_torso_group."
 			" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	
 	return (return_code);
-}/* set_map_3d_package_mapped_torso_node_group */
-
-struct GROUP(FE_element) *get_map_3d_package_delaunay_torso_element_group(
-	struct Map_3d_package *map_3d_package)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2000
-
-DESCRIPTION :
-gets the delaunay_torso_element_group for map_3d_package
-==============================================================================*/
-{
-	struct GROUP(FE_element) *delaunay_torso_element_group;
-
-	ENTER(get_map_3d_package_delaunay_torso_element_group);
-	if (map_3d_package)
-	{
-		delaunay_torso_element_group=map_3d_package->delaunay_torso_element_group;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_delaunay_torso_element_group."
-			" invalid arguments");
-		delaunay_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	}
-	LEAVE;
-	
-	return (delaunay_torso_element_group);
-}/* get_map_3d_package_delaunay_torso_element_group */
-
-int set_map_3d_package_delaunay_torso_element_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_element) *delaunay_torso_element_group)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2000
-
-DESCRIPTION :
-Sets the delaunay_torso_element_group for map_3d_package
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_map_3d_package_delaunay_torso_element_group);
-	if (map_3d_package)
-	{
-		return_code =1;
-		REACCESS(GROUP(FE_element))
-			(&(map_3d_package->delaunay_torso_element_group),delaunay_torso_element_group);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_delaunay_torso_element_group."
-			" invalid arguments");
-		return_code =0;
-	}
-	LEAVE;
-	
-	return (return_code);
-}/* set_map_3d_package_delaunay_torso_element_group */
-
-struct GROUP(FE_node) *get_map_3d_package_delaunay_torso_node_group(
-	struct Map_3d_package *map_3d_package)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2000
-
-DESCRIPTION :
-gets the delaunay_torso_node_group for map_3d_package
-==============================================================================*/
-{
-	struct GROUP(FE_node) *delaunay_torso_node_group;
-
-	ENTER(get_map_3d_package_delaunay_torso_node_group);
-	if (map_3d_package)
-	{
-		delaunay_torso_node_group=map_3d_package->delaunay_torso_node_group;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_map_3d_package_delaunay_torso_node_group."
-			" invalid arguments");
-		delaunay_torso_node_group=(struct GROUP(FE_node) *)NULL;
-	}
-	LEAVE;
-	
-	return (delaunay_torso_node_group);
-}/* get_map_3d_package_delaunay_torso_node_group */
-
-int set_map_3d_package_delaunay_torso_node_group(struct Map_3d_package *map_3d_package,
-	struct GROUP(FE_node) *delaunay_torso_node_group)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2000
-
-DESCRIPTION :
-Sets the delaunay_torso_node_group for map_3d_package
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_map_3d_package_delaunay_torso_node_group);
-	if (map_3d_package)
-	{
-		return_code =1;
-		REACCESS(GROUP(FE_node))
-			(&(map_3d_package->delaunay_torso_node_group),delaunay_torso_node_group);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_map_3d_package_delaunay_torso_node_group."
-			" invalid arguments");
-		return_code =0;
-	}
-	LEAVE;
-	
-	return (return_code);
-}/* set_map_3d_package_delaunay_torso_node_group */
+}/* set_map_3d_package_delaunay_torso_group */
 
 int get_map_drawing_information_viewed_scene(
 	struct Map_drawing_information *map_drawing_information)
@@ -17409,9 +16931,9 @@ Sets the Time_keeper of the <map_drawing_information>.
 
 int map_drawing_information_make_map_scene(
 	struct Map_drawing_information *map_drawing_information,
-	struct Unemap_package *package)
+	struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Creates the map_drawing_information scene, if isn't already present.
@@ -17422,7 +16944,7 @@ Creates the map_drawing_information scene, if isn't already present.
 
 	ENTER(map_drawing_information_make_map_scene);
 	map_scene=(struct Scene *)NULL;
-	if (map_drawing_information&&package)
+	if (map_drawing_information&&unemap_package)
 	{
 		/* create the map scene, if haven't already got one */
 		if (!(map_drawing_information->scene))
@@ -17440,13 +16962,8 @@ Creates the map_drawing_information scene, if isn't already present.
 				Scene_set_graphical_element_mode(map_scene,GRAPHICAL_ELEMENT_EMPTY,
 					Computed_field_package_get_computed_field_manager(
 					map_drawing_information->computed_field_package),
-					package->element_manager,
-					package->element_group_manager,
-					package->fe_field_manager,
-					package->node_manager,
-					package->node_group_manager,
-					map_drawing_information->data_manager,
-					package->data_group_manager,
+					get_unemap_package_root_Cmiss_region(unemap_package),
+					get_unemap_package_data_root_Cmiss_region(unemap_package),
 					map_drawing_information->element_point_ranges_selection,
 					map_drawing_information->element_selection,
 					map_drawing_information->node_selection,
@@ -17698,45 +17215,40 @@ Should be in Scene_viewer? RC doesn't think so.
 
 #if defined (UNEMAP_USE_3D)
 int define_fit_field_at_quad_elements_and_nodes(
-	struct GROUP(FE_element) *torso_element_group,
-	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *node_manager)
+	struct FE_region *torso_group, struct FE_field *fit_field)
 /*******************************************************************************
-LAST MODIFIED : 7 December 2000
+LAST MODIFIED : 10 May 2003
 
 DESCRIPTION :
-Finds all the elements in <torso_element_group> with 4 nodes,
-for these elements defines <fit_field> at the element, and it's nodes.
-===============================================================================*/
+Finds all the elements in <torso_group> with 4 nodes,
+for these elements defines <fit_field> at the element, and its nodes.
+==============================================================================*/
 {
 	int return_code;
-	struct Define_fit_field_at_torso_element_nodes_data
-		define_fit_field_at_torso_element_nodes_data;
 
 	ENTER(define_fit_field_at_quad_elements_and_nodes);
-	if (torso_element_group&&fit_field)
+	if (torso_group && fit_field)
 	{
-		define_fit_field_at_torso_element_nodes_data.quad_element_group=
-			CREATE(GROUP(FE_element))("quad");
-		define_fit_field_at_torso_element_nodes_data.fit_field=fit_field;
-		define_fit_field_at_torso_element_nodes_data.node_manager=node_manager;
-		/* set up the quad element group, and add the fit field to the nodes*/
-		FOR_EACH_OBJECT_IN_GROUP(FE_element)(define_fit_field_at_torso_element_nodes,
-			(void *)(&define_fit_field_at_torso_element_nodes_data),torso_element_group);
-		/* put the fit field on the quad group elements */
-		return_code=set_up_fitted_potential_on_torso(
-			define_fit_field_at_torso_element_nodes_data.quad_element_group,
-			fit_field,basis_manager,element_manager);
-		/* have altered the elements, but no longer need the group */
-		DESTROY(GROUP(FE_element))
-			(&define_fit_field_at_torso_element_nodes_data.quad_element_group);
+		return_code = 1;
+		FE_region_begin_change(torso_group);
+		/* define the fit field on the quad element nodes */
+		if (!FE_region_for_each_FE_element(torso_group,
+			define_fit_field_at_torso_element_nodes, (void *)fit_field))
+		{
+			return_code = 0;
+		}
+		/* define the fit field on the quad elements */
+		if (!set_up_fitted_potential_on_torso(torso_group, fit_field))
+		{
+			return_code = 0;
+		}
+		FE_region_end_change(torso_group);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"define_fit_field_at_quad_elements_and_nodes."
-			" Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"define_fit_field_at_quad_elements_and_nodes.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -17746,12 +17258,12 @@ for these elements defines <fit_field> at the element, and it's nodes.
 
 #if defined (UNEMAP_USE_3D)
 struct FE_field *create_mapping_type_fe_field(char *field_name,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time)
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2001
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
-creates a 1 component  <field_name>
+creates a 1 component <field_name>
 ==============================================================================*/
 {
 	struct FE_field *map_fit_field;
@@ -17759,13 +17271,13 @@ creates a 1 component  <field_name>
 
 	ENTER(create_mapping_type_fe_field);
 	map_fit_field=(struct FE_field *)NULL;
-	if (field_name&&fe_field_manager)
+	if (field_name && fe_region)
 	{
 		/* set up the info needed to create the potential field */
 		coordinate_system.type=NOT_APPLICABLE;
 		/* create the potential  field, add it to the node */
-		if (!(map_fit_field=get_FE_field_manager_matched_field(fe_field_manager,
-			field_name,GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
+		if (!(map_fit_field=FE_region_get_FE_field_with_properties(fe_region,
+			field_name,GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 			/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
 			&coordinate_system,FE_VALUE_VALUE,
 			/*number_of_components*/1,fit_comp_name,
@@ -17793,7 +17305,7 @@ struct Torso_node_data
 	struct Computed_field *cylindrical_polar_coords_wrapper,
 		*transformed_rect_cart_coords,*rect_cart_coords_wrapper;
 	struct FE_field *cylindrical_polar_coords,*rect_cart_coords;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_region *fe_region;
 	struct FE_time_version *time_version;
 	struct LIST(Computed_field) *computed_field_list;
 }; /* Torso_node_data */
@@ -17801,7 +17313,7 @@ struct Torso_node_data
 int iterative_add_cylindrical_info_to_cartesian_torso_node(
 	struct FE_node *torso_node,void *torso_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 February 2002
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Add cylindrical polar information to a node of the the default torso,
@@ -17822,8 +17334,8 @@ Called by
 	struct FE_field *cylindrical_polar_coords,*rect_cart_coords;
 	struct FE_node *node_copy;
 	struct FE_node_field_creator *node_field_creator;
+	struct FE_region *fe_region;
 	struct FE_time_version *time_version;
-	struct MANAGER(FE_node) *node_manager;
 	struct Torso_node_data  *torso_node_data;
 	struct LIST(Computed_field) *computed_field_list;
 
@@ -17838,7 +17350,7 @@ Called by
 	cylindrical_polar_coords=(struct FE_field *)NULL;
 	node_copy=(struct FE_node *)NULL;
 	torso_node_data=(struct Torso_node_data  *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
+	fe_region = (struct FE_region *)NULL;
 	time_version = (struct FE_time_version *)NULL;
 	computed_field_list=(struct LIST(Computed_field) *)NULL;
 	if (torso_node&&torso_node_data_void&&(torso_node_data=
@@ -17851,12 +17363,13 @@ Called by
 		transformed_rect_cart_coords=torso_node_data->transformed_rect_cart_coords;
 		cylindrical_polar_coords=torso_node_data->cylindrical_polar_coords;
 		cylindrical_polar_coords_wrapper=torso_node_data->cylindrical_polar_coords_wrapper;
-		node_manager=torso_node_data->node_manager;
+		fe_region = torso_node_data->fe_region;
 		time_version=torso_node_data->time_version;
 		if (FE_field_is_defined_at_node(rect_cart_coords,torso_node))
 		{
-			/* create a node to work with */
-			if (node_copy = CREATE(FE_node)(0, torso_node))
+			/* create a copy of the torso_node to work with */
+			if (node_copy = CREATE(FE_node)(get_FE_node_identifier(torso_node),
+				(struct FE_region *)NULL, torso_node))
 			{
 				/*define the cylindrical_polar_coords at the node*/
 				if (node_field_creator = create_FE_node_field_creator_from_node_field(
@@ -18049,9 +17562,8 @@ Called by
 						"Could not create node field creator");
 					return_code = 0;
 				}
-				/* copy it back into the manager */
-				MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-					(torso_node,node_copy,node_manager);
+				/* merge it back into the region */
+				FE_region_merge_FE_node(fe_region, node_copy);
 				DESTROY(FE_node)(&node_copy);
 			}
 			else
@@ -18078,14 +17590,113 @@ Called by
 	
 	return (return_code);
 } /* iterative_add_cylindrical_info_to_cartesian_torso_node*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
+struct FE_element_define_clone_FE_field_data
+/*******************************************************************************
+LAST MODIFIED : 12 May 2003
+
+DESCRIPTION :
+Data for passing to FE_element_define_clone_FE_field.
+==============================================================================*/
+{
+	struct FE_field *fe_field;
+	struct FE_field *template_fe_field;
+	struct FE_region *fe_region;
+	/* for cylindrical_polar fields, the modify function for the cloned theta
+		 component can be customised */
+	int set_theta_modify;
+	FE_element_field_component_modify theta_modify;
+};
+
+int FE_element_define_clone_FE_field(struct FE_element *element,
+	void *clone_data_void)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2003
+
+DESCRIPTION :
+If <element> is of type CM_ELEMENT, gets copies of the copies of the
+element field components for <template_field>, and uses them to define
+<fe_field>. If <fe_field> has a polar coordinate system and <set_theta_modify>
+is true, the modify function on the theta component is set to <theta_modify>.
+The new field is directly defined on <element> in <fe_region>.
+<clone_data_void> points at a struct FE_element_define_clone_FE_field_data.
+==============================================================================*/
+{	
+	int i, number_of_components, return_code;
+	struct CM_element_information cm;
+	struct Coordinate_system *coordinate_system;
+	struct FE_element_define_clone_FE_field_data *clone_data;
+	struct FE_element_field_component **components;
+	struct FE_field *fe_field, *template_fe_field;
+	struct FE_region *fe_region;
+
+	ENTER(FE_element_define_clone_FE_field);
+	if (element && (clone_data =
+		(struct FE_element_define_clone_FE_field_data *)clone_data_void) &&
+		(fe_field = clone_data->fe_field) &&
+		(template_fe_field = clone_data->template_fe_field) &&
+		(fe_region = clone_data->fe_region) &&
+		((number_of_components = get_FE_field_number_of_components(fe_field)) ==
+			get_FE_field_number_of_components(template_fe_field)) &&
+		(coordinate_system = get_FE_field_coordinate_system(fe_field)))
+	{
+		return_code = 1;
+		get_FE_element_identifier(element, &cm);
+		if (cm.type == CM_ELEMENT)
+		{
+			if (FE_element_field_get_copy_components(element, template_fe_field,
+				&components))
+			{
+				if (clone_data->set_theta_modify &&
+					(CYLINDRICAL_POLAR == coordinate_system->type) &&
+					(1 < number_of_components))
+				{
+					/* make theta/2nd component modify function theta_closest_in_xi1 */
+					FE_element_field_component_set_modify(components[1],
+						theta_closest_in_xi1);
+				}
+				if (!FE_region_define_FE_field_at_element(fe_region, element, fe_field,
+					components))
+				{
+					return_code = 0;
+				}
+				/* clean up the components */
+				for (i = 0; i < number_of_components; i++)
+				{
+					DESTROY(FE_element_field_component)(&(components[i]));
+				}
+				DEALLOCATE(components);
+			}
+			else
+			{
+				return_code = 0;
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_define_clone_FE_field.  Failed");
+			}
+		}
+	}	
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_define_clone_FE_field.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}/* FE_element_define_clone_FE_field */
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 int add_cylindrical_info_to_cartesian_torso(char *torso_name,
 	struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 5 February 2002
+LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Add cylindrical polar information to the default torso, so can do a seamless
@@ -18097,54 +17708,36 @@ texture map.
 		"r","theta","z"
 	};
 	int return_code;
+	struct Cmiss_region *root_cmiss_region, *torso_cmiss_region;
 	struct Coordinate_system coordinate_system;
-	struct Computed_field *torso_position_field_wrapper,*transformed_rect_cart_coords;
+	struct Computed_field *torso_position_field_wrapper,
+		*transformed_rect_cart_coords;
 	struct FE_field *cylindrical_polar_coords,*torso_position_field;
 	struct FE_node *torso_node;
-	struct FE_time *fe_time;
-	struct GROUP(FE_node) *torso_node_group;
-	struct GROUP(FE_element) *torso_element_group;
+	struct FE_region *torso_group;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct Torso_node_data  torso_node_data;
+	struct Torso_node_data torso_node_data;
 
 	ENTER(add_cylindrical_info_to_cartesian_torso);
-	torso_element_group=(struct GROUP(FE_element) *)NULL;
+	torso_group=(struct FE_region *)NULL;
 	torso_node=(struct FE_node *)NULL;
-	node_manager=(struct MANAGER(FE_node) *)NULL;
-	element_manager=(struct MANAGER(FE_element) *)NULL;
 	cylindrical_polar_coords=(struct FE_field *)NULL;
-	fe_time=(struct FE_time *)NULL;
-	torso_node_group=(struct GROUP(FE_node)  *)NULL;
-	fe_field_manager=(struct  MANAGER(FE_field) *)NULL;
-	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 	torso_position_field_wrapper=(struct Computed_field *)NULL;
 	transformed_rect_cart_coords=(struct Computed_field *)NULL;
-	if (torso_name&&
-		(fe_field_manager=get_unemap_package_FE_field_manager(unemap_package))
-		&&(node_manager=get_unemap_package_node_manager(unemap_package))
-		&&(element_manager=get_unemap_package_element_manager(unemap_package))
-		&&(node_group_manager=get_unemap_package_node_group_manager(unemap_package))
-		&&(element_group_manager=get_unemap_package_element_group_manager(unemap_package))
-		&&(computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package))
-		&&(torso_node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
-			(torso_name,node_group_manager))
-		&&(torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-			(torso_name,element_group_manager)))
+	if (torso_name && (computed_field_manager =
+		get_unemap_package_Computed_field_manager(unemap_package)) &&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(unemap_package))&&
+		(torso_cmiss_region = Cmiss_region_get_child_region_from_name(
+			root_cmiss_region, torso_name)) &&
+		(torso_group = Cmiss_region_get_FE_region(torso_cmiss_region)))
 	{
 		return_code=1;
-		fe_time=get_unemap_package_FE_time(unemap_package);
 		coordinate_system.type=CYLINDRICAL_POLAR;
 		/* create the cylindrical_polar_coords field, */
-		if (!(cylindrical_polar_coords=get_FE_field_manager_matched_field(
-			fe_field_manager,"um_cylindrical_polar_coords",
-			GENERAL_FE_FIELD,fe_time,/*indexer_field*/(struct FE_field *)NULL,
+		if (!(cylindrical_polar_coords=FE_region_get_FE_field_with_properties(
+			torso_group, "um_cylindrical_polar_coords",
+			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 			/*number_of_indexed_values*/0,CM_COORDINATE_FIELD,
 			&coordinate_system,FE_VALUE_VALUE,
 			/*number_of_components*/3,cylindrical_polar_component_names,
@@ -18155,13 +17748,14 @@ texture map.
 				"add_cylindrical_info_to_cartesian_torso. Could not retrieve um_cylindrical_polar_coords");
 			return_code=0;
 		}
-		if ((torso_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-			((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,torso_node_group))&&
-		(torso_position_field=get_FE_node_default_coordinate_field(torso_node)))
+		if ((torso_node = FE_region_get_first_FE_node_that(torso_group,
+			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL)) &&
+			(torso_position_field=get_FE_node_default_coordinate_field(torso_node)))
 		{
-			if (torso_position_field_wrapper=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)
-				(Computed_field_is_read_only_with_fe_field,(void *)
-					(torso_position_field),computed_field_manager))
+			if (torso_position_field_wrapper =
+				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_is_read_only_with_fe_field,
+					(void *)torso_position_field, computed_field_manager))
 			{
 				return_code=1;
 			}
@@ -18176,7 +17770,8 @@ texture map.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"add_cylindrical_info_to_cartesian_torso. erro finding torso_node/field");
+				"add_cylindrical_info_to_cartesian_torso.  "
+				"Error finding torso_node/field");
 			return_code=0;
 		}
 		if (return_code)
@@ -18194,25 +17789,24 @@ texture map.
 			torso_node_data.rect_cart_coords=torso_position_field;
 			torso_node_data.rect_cart_coords_wrapper=torso_position_field_wrapper;
 			torso_node_data.cylindrical_polar_coords=cylindrical_polar_coords;
-			torso_node_data.node_manager=node_manager;
+			torso_node_data.fe_region = torso_group;
 			torso_node_data.time_version=
 				(struct FE_time_version *)NULL;
 			torso_node_data.cylindrical_polar_coords_wrapper=
-				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)
-				(Computed_field_is_read_only_with_fe_field,(void *)
-					(cylindrical_polar_coords),computed_field_manager);
+				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_is_read_only_with_fe_field,
+					(void *)cylindrical_polar_coords, computed_field_manager);
 			torso_node_data.transformed_rect_cart_coords=transformed_rect_cart_coords;
 			torso_node_data.computed_field_list=CREATE(LIST(Computed_field))();
+			FE_region_begin_change(torso_group);
 			if (torso_node_data.transformed_rect_cart_coords &&
 				torso_node_data.cylindrical_polar_coords_wrapper &&
 				torso_node_data.computed_field_list)
 			{
 				/*define the cylindrical_polar_coords field at all the torso nodes*/
-				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+				return_code = FE_region_for_each_FE_node(torso_group,
 					iterative_add_cylindrical_info_to_cartesian_torso_node,
-					(void *)(&torso_node_data),torso_node_group);
-				MANAGER_END_CACHE(FE_node)(node_manager);
+					(void *)&torso_node_data);
 			}
 			else
 			{
@@ -18225,26 +17819,25 @@ texture map.
 			DESTROY(LIST(Computed_field))(&(torso_node_data.computed_field_list));
 			if (return_code)
 			{
-				/*add the cylindrical_polar_coords field to the elements*/
-				struct Dfn_FE_field_at_elem_frm_template_data
-					dfn_FE_field_at_elem_frm_template_data;
+				/* add the cylindrical_polar_coords field to the elements */
+				struct FE_element_define_clone_FE_field_data clone_data;
 
-				dfn_FE_field_at_elem_frm_template_data.field=cylindrical_polar_coords;
-				dfn_FE_field_at_elem_frm_template_data.template_field=torso_position_field;
-				dfn_FE_field_at_elem_frm_template_data.element_manager=element_manager;
-				MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-				FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-					iterative_define_FE_field_cp_at_element_from_template_field_modify_theta,
-					(void *)&dfn_FE_field_at_elem_frm_template_data,torso_element_group);
-				MANAGER_END_CACHE(FE_element)(element_manager);
-			}/* if (return_code)*/
+				clone_data.fe_field = cylindrical_polar_coords;
+				clone_data.template_fe_field = torso_position_field;
+				clone_data.fe_region = torso_group;
+				clone_data.set_theta_modify = 1;
+				clone_data.theta_modify = theta_closest_in_xi1;
+				FE_region_for_each_FE_element(torso_group,
+					FE_element_define_clone_FE_field, (void *)&clone_data);
+			}
+			FE_region_end_change(torso_group);
 		}
 	}
 	else
 	{
-		return_code=0;
 		display_message(ERROR_MESSAGE,
-				"add_cylindrical_info_to_cartesian_torso. invalid argument");
+			"add_cylindrical_info_to_cartesian_torso.  Invalid argument");
+		return_code = 0;
 	}
 	LEAVE;
 	

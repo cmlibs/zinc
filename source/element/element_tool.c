@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -18,6 +18,7 @@ Interactive tool for selecting elements with mouse and other devices.
 #include "element/element_tool.h"
 #include "element/element_tool.uidh"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
 #include "help/help_interface.h"
@@ -25,6 +26,7 @@ Interactive tool for selecting elements with mouse and other devices.
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
 #include "motif/image_utilities.h"
+#include "region/cmiss_region.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -48,7 +50,7 @@ Module types
 
 struct Element_tool
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Object storing all the parameters for interactively selecting elements.
@@ -58,8 +60,7 @@ Object storing all the parameters for interactively selecting elements.
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
 	/* needed for destroy button */
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct Cmiss_region *region;
 	struct FE_element_selection *element_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Computed_field_package *computed_field_package;
@@ -287,7 +288,7 @@ Callback for change of url_field.
 static void Element_tool_destroy_selected_CB(Widget widget,
 	void *element_tool_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Attempts to destroy all the top-level elements currently in the global
@@ -295,8 +296,9 @@ selection. ???RC could change to allow faces and lines to be destroyed, but
 need other safeguard controls before allowing this.
 ==============================================================================*/
 {
+	int number_not_destroyed;
 	struct Element_tool *element_tool;
-	struct FE_element_list_CM_element_type_data element_list_type_data;
+	struct FE_region *fe_region;
 	struct LIST(FE_element) *destroy_element_list;
 
 	ENTER(Element_tool_destroy_selected_CB);
@@ -306,16 +308,20 @@ need other safeguard controls before allowing this.
 	{
 		if (destroy_element_list = CREATE(LIST(FE_element))())
 		{
-			element_list_type_data.cm_element_type = CM_ELEMENT;
-			element_list_type_data.element_list = destroy_element_list;
-			FOR_EACH_OBJECT_IN_LIST(FE_element)(
-				add_FE_element_of_CM_element_type_to_list,
-				(void *)&element_list_type_data,
-				FE_element_selection_get_element_list(element_tool->element_selection));
-			destroy_listed_elements(destroy_element_list,
-				element_tool->element_manager,element_tool->element_group_manager,
-				element_tool->element_selection,
-				element_tool->element_point_ranges_selection);
+			COPY_LIST(FE_element)(destroy_element_list,
+				FE_element_selection_get_element_list(
+					element_tool->element_selection));
+			fe_region = Cmiss_region_get_FE_region(element_tool->region);
+			FE_region_begin_change(fe_region);
+			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
+			if (0 < (number_not_destroyed =
+				NUMBER_IN_LIST(FE_element)(destroy_element_list)))
+			{
+				display_message(WARNING_MESSAGE,
+					"%d of the selected element(s) could not be destroyed",
+					number_not_destroyed);
+			}
+			FE_region_end_change(fe_region);
 			DESTROY(LIST(FE_element))(&destroy_element_list);
 		}
 	}
@@ -377,7 +383,7 @@ release.
 						{
 							element_tool->picked_element_was_unselected=0;
 							if (picked_element=Scene_picked_object_list_get_nearest_element(
-								scene_picked_object_list,(struct GROUP(FE_element) *)NULL,
+								scene_picked_object_list,(struct Cmiss_region *)NULL,
 								element_tool->select_elements_enabled,
 								element_tool->select_faces_enabled,
 								element_tool->select_lines_enabled,
@@ -655,8 +661,7 @@ Global functions
 
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct Cmiss_region *region,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Computed_field_package *computed_field_package,
@@ -665,7 +670,7 @@ struct Element_tool *CREATE(Element_tool)(
 	struct Time_keeper *time_keeper,
 	struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
@@ -708,7 +713,7 @@ Selects elements in <element_selection> in response to interactive_events.
 
 	ENTER(CREATE(Element_tool));
 	element_tool=(struct Element_tool *)NULL;
-	if (interactive_tool_manager&&element_manager&&element_group_manager&&
+	if (interactive_tool_manager && region &&
 		element_selection&&computed_field_package&&(computed_field_manager=
 			Computed_field_package_get_computed_field_manager(computed_field_package))
 		&&rubber_band_material&&user_interface&&execute_command)
@@ -721,8 +726,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				element_tool->display = User_interface_get_display(user_interface);
 				element_tool->execute_command=execute_command;
 				element_tool->interactive_tool_manager=interactive_tool_manager;
-				element_tool->element_manager=element_manager;
-				element_tool->element_group_manager=element_group_manager;
+				element_tool->region = region;
 				element_tool->element_selection=element_selection;
 				element_tool->element_point_ranges_selection=
 					element_point_ranges_selection;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_command.c
 
-LAST MODIFIED : 1 August 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Functions and for executing unemap commands.
@@ -25,7 +25,7 @@ Module types
 
 struct Unemap_command_data
 /*******************************************************************************
-LAST MODIFIED : 17 July 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Data required for Unemap commands.
@@ -42,16 +42,12 @@ Data required for Unemap commands.
 #endif /* defined (MOTIF) */
 	/* list of glyphs = simple graphics objects with only geometry */
 	struct LIST(GT_object) *glyph_list;
-	struct FE_time *fe_time;
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(FE_basis) *basis_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *data_manager,*node_manager;
+	struct Cmiss_region *root_cmiss_region;
+	struct Cmiss_region *data_root_cmiss_region;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_graphical_material;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
@@ -201,17 +197,11 @@ Executes a UNEMAP OPEN command.
 #if defined (UNEMAP_USE_3D)
 						unemap_command_data->element_point_ranges_selection,
 						unemap_command_data->element_selection,
-						unemap_command_data->fe_field_manager,
 						unemap_command_data->node_selection,
 						unemap_command_data->data_selection,
-						unemap_command_data->fe_time,
 						unemap_command_data->basis_manager,
-						unemap_command_data->element_manager,
-						unemap_command_data->data_manager,
-						unemap_command_data->node_manager,
-						unemap_command_data->element_group_manager,
-						unemap_command_data->data_group_manager,
-						unemap_command_data->node_group_manager,
+						unemap_command_data->root_cmiss_region,
+						unemap_command_data->data_root_cmiss_region,
 						unemap_command_data->texture_manager,
 						unemap_command_data->interactive_tool_manager,
 						unemap_command_data->scene_manager,
@@ -241,13 +231,8 @@ Executes a UNEMAP OPEN command.
 								GRAPHICAL_ELEMENT_EMPTY,
 								Computed_field_package_get_computed_field_manager(
 									unemap_command_data->computed_field_package),
-								unemap_command_data->element_manager,
-								unemap_command_data->element_group_manager,
-								unemap_command_data->fe_field_manager,
-								unemap_command_data->node_manager,
-								unemap_command_data->node_group_manager,
-								unemap_command_data->data_manager,
-								unemap_command_data->data_group_manager,
+								unemap_command_data->root_cmiss_region,
+								unemap_command_data->data_root_cmiss_region,
 								unemap_command_data->element_point_ranges_selection,
 								unemap_command_data->element_selection,
 								unemap_command_data->node_selection,
@@ -309,18 +294,12 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct Interactive_tool *transform_tool,
 #endif /* defined (MOTIF) */
 	struct LIST(GT_object) *glyph_list,
-	struct FE_time *fe_time,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -341,7 +320,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 1 August 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Creates a Unemap_command_data structure containing pointers to the passed
@@ -359,10 +338,9 @@ will be destroyed with it.
 	if (execute_command &&
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D)
-		glyph_list && fe_time && computed_field_package && basis_manager &&
-		element_manager && fe_field_manager && data_manager && node_manager &&
+		glyph_list && computed_field_package && basis_manager &&
+		root_cmiss_region && data_root_cmiss_region &&
 		graphical_material_manager && default_graphical_material &&
-		element_group_manager && data_group_manager && node_group_manager &&
 		interactive_tool_manager && light_manager && default_light &&
 		light_model_manager && default_light_model && texture_manager &&
 		scene_manager && spectrum_manager && element_point_ranges_selection &&
@@ -395,20 +373,15 @@ will be destroyed with it.
 			unemap_command_data->transform_tool = transform_tool;
 #endif /* defined (MOTIF) */
 			unemap_command_data->glyph_list = glyph_list;
-			unemap_command_data->fe_time = fe_time;
 			unemap_command_data->computed_field_package = computed_field_package;
 			unemap_command_data->basis_manager = basis_manager;
-			unemap_command_data->element_manager = element_manager;
-			unemap_command_data->fe_field_manager = fe_field_manager;
-			unemap_command_data->data_manager = data_manager;
-			unemap_command_data->node_manager = node_manager;
+			unemap_command_data->root_cmiss_region = ACCESS(Cmiss_region)(root_cmiss_region);
+			unemap_command_data->data_root_cmiss_region =
+				ACCESS(Cmiss_region)(data_root_cmiss_region);
 			unemap_command_data->graphical_material_manager =
 				graphical_material_manager;
 			unemap_command_data->default_graphical_material =
 				default_graphical_material;
-			unemap_command_data->element_group_manager = element_group_manager;
-			unemap_command_data->data_group_manager = data_group_manager;
-			unemap_command_data->node_group_manager = node_group_manager;
 			unemap_command_data->interactive_tool_manager = interactive_tool_manager;
 			unemap_command_data->light_manager = light_manager;
 			unemap_command_data->default_light = default_light;
@@ -449,7 +422,7 @@ will be destroyed with it.
 int DESTROY(Unemap_command_data)(
 	struct Unemap_command_data **unemap_command_data_address)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Destroys the Unemap_command_data at <unemap_command_data_address>.
@@ -467,9 +440,9 @@ Destroys the Unemap_command_data at <unemap_command_data_address>.
 		{
 			DESTROY(System_window)(&(unemap_command_data->unemap_system_window));
 		}
-#else /* defined (NOT_ACQUISITION_ONLY) */
-		USE_PARAMETER(unemap_command_data);
 #endif /* defined (NOT_ACQUISITION_ONLY) */
+		DEACCESS(Cmiss_region)(&(unemap_command_data->root_cmiss_region));
+		DEACCESS(Cmiss_region)(&(unemap_command_data->data_root_cmiss_region));
 		DEALLOCATE(*unemap_command_data_address);
 		*unemap_command_data_address = (struct Unemap_command_data *)NULL;
 		return_code = 1;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 18 April 2003
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -12,8 +12,7 @@ This should only be included in cmgui.c and command/cmiss.c
 #define COMMAND_CMISS_H
 
 #include "command/command.h"
-#include "finite_element/finite_element.h"
-#include "graphics/graphics_object.h"
+#include "region/cmiss_region.h"
 
 /*
 Global types
@@ -82,6 +81,15 @@ LAST MODIFIED : 19 December 2002
 
 DESCRIPTION :
 Clean up the command_data, deallocating all the associated memory and resources.
+==============================================================================*/
+
+struct Cmiss_region *Cmiss_command_data_get_root_region(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 18 April 2003
+
+DESCRIPTION :
+Returns the root region from the <command_data>.
 ==============================================================================*/
 
 #endif /* !defined (COMMAND_CMISS_H) */

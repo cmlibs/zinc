@@ -237,7 +237,7 @@ release.
 							element_point_tool->picked_element_point_was_unselected=0;
 							if (picked_element_point=
 								Scene_picked_object_list_get_nearest_element_point(
-									scene_picked_object_list,(struct GROUP(FE_element) *)NULL,
+									scene_picked_object_list,(struct Cmiss_region *)NULL,
 									(struct Scene_picked_object **)NULL,
 									(struct GT_element_group **)NULL,
 									(struct GT_element_settings **)NULL))

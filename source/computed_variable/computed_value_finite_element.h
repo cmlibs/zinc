@@ -1,14 +1,14 @@
 /*******************************************************************************
 FILE : computed_value_finite_element.h
 
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 21 April 2003
 
 DESCRIPTION :
 Implements computed values which interface to finite elements:
 - element_xi
 ==============================================================================*/
-#if !defined (COMPUTED_VALUE_FINITE_ELEMENT_H)
-#define COMPUTED_VALUE_FINITE_ELEMENT_H
+#if !defined (__CMISS_VALUE_FINITE_ELEMENT_H__)
+#define __CMISS_VALUE_FINITE_ELEMENT_H__
 
 #include "finite_element/finite_element.h"
 #include "computed_variable/computed_value.h"
@@ -17,7 +17,7 @@ Implements computed values which interface to finite elements:
 Global functions
 ----------------
 */
-int Computed_value_set_type_element_xi(struct Computed_value *value,
+int Cmiss_value_element_xi_set_type(Cmiss_value_id value,
 	struct FE_element *element,FE_value *xi);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
@@ -30,9 +30,9 @@ success, the <value> is responsible for DEALLOCATEing <xi>.
 ???DB.  Is it necessary to add a dimension or insist on non-NULL element?
 ==============================================================================*/
 
-PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(element_xi);
+PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(element_xi);
 
-int Computed_value_get_type_element_xi(struct Computed_value *value,
+int Cmiss_value_element_xi_get_type(Cmiss_value_id value,
 	struct FE_element **element_address,FE_value **xi_address);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
@@ -42,4 +42,4 @@ If <value> is of type element_xi, gets its <*element_address> and <*xi_address).
 
 The calling program must not DEALLOCATE the returned <*xi_address>.
 ==============================================================================*/
-#endif /* !defined (COMPUTED_VALUE_FINITE_ELEMENT_H) */
+#endif /* !defined (__CMISS_VALUE_FINITE_ELEMENT_H__) */

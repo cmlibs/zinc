@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texturemap.c
 
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 ???MS.  Uses SGI gl/image.h library for reading and writing to .rgb files
@@ -329,7 +329,7 @@ int generate_textureimage_from_FE_element(
 	struct FE_element *element,double ximax[3],
 	struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates texture map segment (range[0,ximax[3]]) SGI rgb image <out_image> from
@@ -352,7 +352,7 @@ image space
 	{
 /*???debug */
 printf("Create texmap: input image = %s, output = %s:  seed_element = %d <cf = %p>. Extent = %lf %lf %lf\n ",
-	infile,outfile,element->cm.number,coordinate_field,ximax[0],ximax[1],ximax[2]);
+	infile,outfile,FE_element_get_cm_number(element),coordinate_field,ximax[0],ximax[1],ximax[2]);
 		if (in_image=read_texturemap_image(infile))
 		{
 			xsize=in_image->xsize;

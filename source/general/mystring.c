@@ -1,7 +1,7 @@
 /******************************************************************************
 FILE : mystring.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 29 April 2003
 
 DESCRIPTION :
 Function definitions for some general purpose string functions.
@@ -24,6 +24,7 @@ Function definitions for some general purpose string functions.
 Functions
 ---------
 */
+
 void cvt_string_to_ints(char *string, int array[100], int *number)
 /*******************************************************************************
 DESCRIPTION:
@@ -729,6 +730,60 @@ in <match_string>. Whitespace characters (space,tab) are only allowed in
 
 	return (return_code);
 } /* string_matches_without_whitespace */
+
+int is_standard_object_name(char *name)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2003
+
+DESCRIPTION :
+Returns true if <name> is a valid name for an object.
+Names may start with a letter and contain only alphanumeric characters,
+underscore '_' or spaces and may not end in a space.
+???RC OK, it's allowed to start with a number and have dots in it, since
+CM already has group names called 1..945.
+???RC OK, unemap uses colons in some groups names. Oh well.
+==============================================================================*/
+{
+	int i, length, return_code;
+
+	ENTER(is_standard_object_name);
+	if (name)
+	{
+		if (isalnum(name[0]))
+		{
+			return_code = 1;
+			length = strlen(name);
+			for (i = 1; (i < length) && return_code; i++)
+			{
+				if (name[i] == ' ')
+				{
+					if (i == (length - 1))
+					{
+						return_code = 0;
+					}
+				}
+				else if ((name[i] != '_') && (name[i] != '.') && (name[i] != ':') &&
+					(!isalnum(name[i])))
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"is_standard_object_name.  Missing name");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* is_standard_object_name */
 
 int make_valid_token(char **token_address)
 /*******************************************************************************

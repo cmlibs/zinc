@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer_widget.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 24 January 2003
 
 DESCRIPTION :
 Widget for editing the contents of a node with multiple text fields, visible
@@ -46,6 +46,7 @@ deaccess it.
 {
 	struct Computed_field_package *computed_field_package;
 	void *computed_field_manager_callback_id;
+	struct FE_region *fe_region;
 	struct FE_node *current_node,*template_node;
 	struct Callback_data update_callback;
 	Widget choose_field_form,choose_field_widget,field_viewer_form,
@@ -238,15 +239,16 @@ Global functions
 
 Widget create_node_viewer_widget(Widget *node_viewer_widget_address,
 	Widget parent,struct Computed_field_package *computed_field_package,
-	struct FE_node *initial_node, struct Time_object *time_object,
-	struct User_interface *user_interface)
+	struct FE_region *fe_region, struct FE_node *initial_node,
+	struct Time_object *time_object, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
-Creates a widget for displaying and editing the contents of <initial_node>. Can
-also pass a NULL node here and use the Node_viewer_widget_set_node function
-instead. <initial_node> should be a local copy of a global node; up to the
+Creates a widget for displaying and editing the contents of <initial_node> from
+region <fe_region>. Can also pass a NULL node here and use the
+Node_viewer_widget_set_node function instead. 
+<initial_node> should be a local copy of a global node; up to the
 parent dialog to make changes global.
 ==============================================================================*/
 {
@@ -302,13 +304,14 @@ parent dialog to make changes global.
 				node_viewer->current_node=initial_node;
 				if (initial_node)
 				{
-					node_viewer->template_node=ACCESS(FE_node)(
-						CREATE(FE_node)(0,initial_node));
+					node_viewer->template_node = ACCESS(FE_node)(
+						CREATE(FE_node)(0, (struct FE_region *)NULL, initial_node));
 				}
 				else
 				{
-					node_viewer->template_node=(struct FE_node *)NULL;
+					node_viewer->template_node = (struct FE_node *)NULL;
 				}
+				node_viewer->fe_region = fe_region;
 				node_viewer->update_callback.procedure=(Callback_procedure *)NULL;
 				node_viewer->update_callback.data=NULL;
 				/* initialise the widgets */
@@ -507,9 +510,10 @@ Returns the node being edited in the <node_viewer_widget>.
 	return (node);
 } /* node_viewer_widget_get_node */
 
-int node_viewer_widget_set_node(Widget node_viewer_widget,struct FE_node *node)
+int node_viewer_widget_set_node(Widget node_viewer_widget,
+	struct FE_region *fe_region, struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Sets the node being edited in the <node_viewer_widget>. Note that the viewer
@@ -551,7 +555,7 @@ this widget.
 							Computed_field_package_get_computed_field_manager(
 								node_viewer->computed_field_package));
 					}
-					template_node=CREATE(FE_node)(0,node);
+					template_node = CREATE(FE_node)(0, (struct FE_region *)NULL, node);
 				}
 			}
 			else
@@ -566,6 +570,7 @@ this widget.
 				}
 			}
 			node_viewer->current_node=node;
+			node_viewer->fe_region=fe_region;
 			if (change_conditional_function)
 			{
 				REACCESS(FE_node)(&(node_viewer->template_node),template_node);

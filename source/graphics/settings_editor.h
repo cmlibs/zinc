@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.h
 
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Provides the widgets to manipulate point settings.
@@ -25,14 +25,13 @@ Global Functions
 Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	Widget parent,struct GT_element_settings *settings,
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
+	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct LIST(GT_object) *glyph_list,struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates a settings_editor widget.

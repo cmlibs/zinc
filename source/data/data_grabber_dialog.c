@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_grabber_dialog.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 9 January 2003
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -9,7 +9,8 @@ data is accepted - pos,tangent,normal.
 ==============================================================================*/
 #include <stdio.h>
 #include <math.h>
-#include "choose/choose_node_group.h"
+#include "region/cmiss_region_chooser.h"
+#include "command/command.h"
 #include "data/data_grabber_dialog.h"
 #include "data/data_grabber_dialog.uidh"
 #include "data/data_grabber.h"
@@ -24,12 +25,64 @@ data is accepted - pos,tangent,normal.
 Module constants
 ----------------
 */
+
 #define COORDINATES_3D_FIELD_NAME "coordinates"
+
+/*
+UIL Identifiers
+---------------
+*/
+
+#define data_grabber_dialog_grabber_form_ID (1)
+#define data_grabber_dialog_ok_ID (2)
+#define data_grabber_dialog_record_ID (3)
+#define data_grabber_dialog_toggle_form_ID (4)
+#define data_grabber_dialog_mode_form_ID (5)
+#define data_grabber_dialog_tangent_form_ID (6)
+#define data_grabber_dialog_type_form_ID (7)
+#define data_grabber_dialog_node_group_form_ID (8)
+
+/*
+Module Types
+------------
+*/
+
+enum data_grabber_dialog_data_type
+/*******************************************************************************
+LAST MODIFIED : 03 April 1995
+
+DESCRIPTION :
+Contains the different types of data items that are valid for the data_grabber
+widget.
+==============================================================================*/
+{
+	DATA_GRABBER_DIALOG_MODE
+}; /* data_grabber_dialog_data_type */
+
+struct DG_dialog_struct
+/*******************************************************************************
+LAST MODIFIED : 9 January 2003
+
+DESCRIPTION :
+Contains all the information carried by the data_grabber_dialog widget.
+Note that we just hold a pointer to the data_grabber_dialog, and must access and
+deaccess it.
+==============================================================================*/
+{
+	int current_mode,tangent_mode,type_mode;
+	Widget grabber_form,grabber_widget,ok_button,record_button,toggle_form,
+		mode_form,data_group_chooser, node_group_chooser, 
+		node_group_form, tangent_form,type_form;
+	Widget *dialog_address,dialog,widget,dialog_parent;
+	struct Execute_command *execute_command;
+	struct Cmiss_region *current_region, *root_region;
+}; /* data_grabber_dialog_struct */
 
 /*
 Module variables
 ----------------
 */
+
 #if defined (MOTIF)
 static int data_grabber_hierarchy_open=0;
 static MrmHierarchy data_grabber_hierarchy;

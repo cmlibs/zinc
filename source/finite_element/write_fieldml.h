@@ -11,38 +11,8 @@ Functions for exporting finite element data to a fieldml file.
 
 #include <stdio.h>
 #include "finite_element/finite_element.h"
-#if defined (CMGUI_REGIONS)
 #include "finite_element/finite_element_region.h"
-#endif /* defined (CMGUI_REGIONS) */
 #include "general/enumerator.h"
-
-#if ! defined (CMGUI_REGIONS)
-/* Temporary declarations until this is merged into the real Cmiss_region code
-   till end */
-struct FE_region
-/*******************************************************************************
-LAST MODIFIED : 29 January 2003
-
-DESCRIPTION :
-A quick FE_region for the time being.
-
-AUTHOR : Shane Blackett
-==============================================================================*/
-{
-	struct MANAGER(FE_basis) *basis_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct GROUP(FE_node) *node_group;
-	struct GROUP(FE_element) *element_group;
-};
-
-struct Cmiss_region
-{
-	struct FE_region *fe_region;
-};
-/* end Temporary declarations until this is merged into the real Cmiss_region code */
-#endif /* ! defined (CMGUI_REGIONS) */
 
 /*
 Global/Public functions

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_selection.h
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 3 April 2000
 
 DESCRIPTION :
 Global store of selected nodes for group actions and highlighting.
@@ -10,6 +10,7 @@ Global store of selected nodes for group actions and highlighting.
 #define NODE_SELECTION_H
 
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "general/callback.h"
 #include "general/object.h"
 
@@ -50,12 +51,16 @@ DECLARE_CMISS_CALLBACK_TYPES(FE_node_selection_change,struct FE_node_selection *
 Global functions
 ----------------
 */
-struct FE_node_selection *CREATE(FE_node_selection)(void);
+
+struct FE_node_selection *CREATE(FE_node_selection)(
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 15 March 2000
+LAST MODIFIED : 3 April 2003
 
 DESCRIPTION :
 Creates the global store of selected nodes for group actions and highlighting.
+Nodes from the <fe_region> are selectable by this object.
+???RC In use <fe_region> should be its own master but this is not enforced.
 ==============================================================================*/
 
 int DESTROY(FE_node_selection)(

@@ -1111,23 +1111,18 @@ Calls the prescribed system_window's close_callback.
 Global functions
 ----------------
 */
+
 struct System_window *CREATE(System_window)(Widget shell,
 	Unemap_system_window_close_callback_procedure *close_callback,
 	void *close_callback_data,
 #if defined (UNEMAP_USE_3D)
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
-	struct MANAGER(FE_field) *fe_field_manager,
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection,
-	struct FE_time *fe_time,
 	struct MANAGER(FE_basis) *fe_basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Scene) *scene_manager,
@@ -1144,7 +1139,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct Time_keeper *time_keeper,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -1404,7 +1399,8 @@ as a standalone application.
 		node_selection && data_selection && texture_manager &&
 		interactive_tool_manager && scene_manager && light_model_manager &&
 		light_manager && spectrum_manager && graphical_material_manager &&
-		data_manager && glyph_list && graphical_material &&
+		fe_basis_manager && root_cmiss_region && data_root_cmiss_region &&
+		glyph_list && graphical_material &&
 		computed_field_package && light && light_model &&
 #endif /* defined (UNEMAP_USE_3D) */
 		time_keeper && user_interface)
@@ -1427,7 +1423,7 @@ as a standalone application.
 						node_selection, data_selection, texture_manager,
 						interactive_tool_manager, scene_manager, light_model_manager,
 						light_manager, spectrum_manager, graphical_material_manager,
-						data_manager, glyph_list, graphical_material,
+						data_root_cmiss_region, glyph_list, graphical_material,
 						computed_field_package, light, light_model
 #endif /* defined (UNEMAP_USE_3D) */
 						);
@@ -1658,9 +1654,7 @@ as a standalone application.
 							/*!!!!*/
 #if defined (UNEMAP_USE_3D)
 							if (system->unemap_package = CREATE(Unemap_package)(
-								fe_field_manager, fe_time, element_group_manager, node_manager,
-								data_manager, data_group_manager, node_group_manager,
-								fe_basis_manager, element_manager,
+								fe_basis_manager, root_cmiss_region, data_root_cmiss_region,
 								Computed_field_package_get_computed_field_manager(
 									computed_field_package),
 								interactive_tool_manager, node_selection))
@@ -1668,7 +1662,7 @@ as a standalone application.
 								ACCESS(Unemap_package)(system->unemap_package);
 								/* create and store the map fit field  */
 								map_fit_field = create_mapping_type_fe_field("fit",
-									fe_field_manager, fe_time);
+									Cmiss_region_get_FE_region(root_cmiss_region));
 								set_unemap_package_map_fit_field(
 									system->unemap_package, map_fit_field);
 #if defined (MOTIF)		

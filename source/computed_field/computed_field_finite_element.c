@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -12,6 +12,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -33,15 +34,14 @@ Global types
 */
 struct Computed_field_finite_element_package
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	void *fe_field_manager_callback_id;
-	struct FE_time *fe_time;
+	struct Cmiss_region *cmiss_region;
+	struct FE_region *fe_region;
 }; /* struct Computed_field_finite_element_package */
 
 /*
@@ -59,7 +59,7 @@ DESCRIPTION :
 	struct FE_element_field_values *fe_element_field_values;
 	/* need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
 		 Computed_field_finite_element_not_in_use */
-	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_region *fe_region;
 }; /* struct Computed_field_finite_element_type_specific_data */
 
 /*******************************************************************************
@@ -148,7 +148,7 @@ Clear the type specific data used by this type.
 	struct Computed_field_finite_element_type_specific_data *data;
 
 	ENTER(Computed_field_finite_element_clear_type_specific);
-	if (field&& (data = 
+	if (field && (data = 
 		(struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -239,11 +239,9 @@ DESCRIPTION :
 		(struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
-		if(data->fe_element_field_values&&data->fe_element_field_values->element)
+		if(data->fe_element_field_values)
 		{
 			clear_FE_element_field_values(data->fe_element_field_values);
-			/* clear element to indicate that values are clear */
-			data->fe_element_field_values->element=(struct FE_element *)NULL;
 		}
 		return_code = 1;
 	}
@@ -419,7 +417,7 @@ DESCRIPTION :
 static int Computed_field_finite_element_not_in_use(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
 The FE_field must also not be in use.
@@ -427,7 +425,7 @@ The FE_field must also not be in use.
 {
 	int return_code;
 	struct Computed_field_finite_element_type_specific_data *data;
-	struct FE_field *temp_fe_field;
+	struct FE_region *fe_region;
 
 	ENTER(Computed_field_finite_element_not_in_use);
 	if (field && (data = 
@@ -435,17 +433,30 @@ The FE_field must also not be in use.
 		field->type_specific_data))
 	{
 		/* check the fe_field can be destroyed */
-		temp_fe_field=data->fe_field;
-		DEACCESS(FE_field)(&temp_fe_field);
-		return_code = MANAGED_OBJECT_NOT_IN_USE(FE_field)(data->fe_field,
-			data->fe_field_manager);
-		ACCESS(FE_field)(data->fe_field);
+		if (fe_region = FE_field_get_FE_region(data->fe_field))
+		{
+			/* ask owning FE_region if fe_field is used in nodes and elements */
+			if (FE_region_is_FE_field_in_use(fe_region, data->fe_field))
+			{
+				return_code = 0;
+			}
+			else
+			{
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_finite_element_not_in_use.  Missing FE_region");
+			return_code = 0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_finite_element_not_in_use.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -485,29 +496,19 @@ is already set up in the correct way, does nothing.
 			(!FE_element_field_values_are_for_element_and_time(
 				data->fe_element_field_values,element,time,top_level_element))||
 			(calculate_derivatives&&
-				(!data->fe_element_field_values->derivatives_calculated)))
+				(!FE_element_field_values_have_derivatives_calculated(data->fe_element_field_values))))
 		{
 			if (!data->fe_element_field_values)
 			{
-				if (ALLOCATE(data->fe_element_field_values,
-					struct FE_element_field_values,1))
-				{
-					/* clear element to indicate that values are clear */
-					data->fe_element_field_values->element=
-						(struct FE_element *)NULL;
-				}
-				else
+				if (!(data->fe_element_field_values = CREATE(FE_element_field_values)()))
 				{
 					return_code=0;
 				}
 			}
 			else
 			{
-				if (data->fe_element_field_values->element)
-				{
-					/* following clears fe_element_field_values->element */
-					clear_FE_element_field_values(data->fe_element_field_values);
-				}
+				/* following clears fe_element_field_values->element */
+				clear_FE_element_field_values(data->fe_element_field_values);
 			}
 			if (return_code)
 			{
@@ -517,7 +518,6 @@ is already set up in the correct way, does nothing.
 					top_level_element))
 				{
 					/* clear element to indicate that values are clear */
-					data->fe_element_field_values->element=(struct FE_element *)NULL;
 					return_code=0;
 				}
 			}
@@ -741,13 +741,14 @@ Evaluate the fields cache at the node.
 static char *Computed_field_finite_element_evaluate_as_string_at_node(struct Computed_field *field,
 	int component_number, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 1 May 2003
 
 DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 {
-	char *return_string, *temp_string;
+	char *return_string, start_component_number, stop_component_number,
+		*temp_string;
 	int error, i;
 	struct Computed_field_finite_element_type_specific_data *data;
 
@@ -768,31 +769,26 @@ Print the values calculated in the cache.
 		{
 			if (-1 == component_number)
 			{
-				if (get_FE_nodal_value_as_string(node,data->fe_field,
-					/*component_number*/0,/*version_number*/0,
-					/*nodal_value_type*/FE_NODAL_VALUE, time, &return_string))
-				{
-					error=0;
-					for (i=1;i<field->number_of_components;i++)
-					{
-						if (get_FE_nodal_value_as_string(node,data->fe_field,
-							i,/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
-							time, &temp_string))
-						{
-							append_string(&return_string,",",&error);
-							append_string(&return_string,temp_string,&error);
-							DEALLOCATE(temp_string);
-						}
-					}
-				}
+				start_component_number = 0;
+				stop_component_number = field->number_of_components - 1;
 			}
 			else
 			{
-				if (get_FE_nodal_value_as_string(node,data->fe_field,
-					component_number,/*version_number*/0,
-					/*nodal_value_type*/FE_NODAL_VALUE,time,&return_string))
+				start_component_number = stop_component_number = component_number;
+			}
+			error = 0;
+			for (i = start_component_number; i <= stop_component_number; i++)
+			{
+				if (get_FE_nodal_value_as_string(node, data->fe_field,
+					i, /*version_number*/0, /*nodal_value_type*/FE_NODAL_VALUE,
+					time, &temp_string))
 				{
-					error=0;
+					append_string(&return_string, temp_string, &error);
+					if (i < stop_component_number)
+					{
+						append_string(&return_string, ",", &error);
+					}
+					DEALLOCATE(temp_string);
 				}
 			}
 		}
@@ -969,12 +965,12 @@ Sets the <values> of the computed <field> over the <element>.
 	struct Computed_field_finite_element_type_specific_data *data;
 
 	ENTER(Computed_field_finite_element_set_values_in_element);
-	if (field&&element&&element->shape&&number_in_xi&&values && (data = 
+	if (field&&element&&number_in_xi&&values && (data = 
 		(struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
 		return_code=1;
-		element_dimension=element->shape->dimension;
+		element_dimension=get_FE_element_dimension(element);
 		number_of_points=1;
 		for (i=0;(i<element_dimension)&&return_code;i++)
 		{
@@ -1112,8 +1108,8 @@ Returns 0 with no errors if the field is not grid-based.
 	struct Computed_field_finite_element_type_specific_data *data;
 
 	ENTER(Computed_field_get_native_discretization_in_element);
-	if (field&&element&&number_in_xi&&element->shape&&
-		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=element->shape->dimension) && (data = 
+	if (field&&element&&number_in_xi&&
+		(MAXIMUM_ELEMENT_XI_DIMENSIONS>=get_FE_element_dimension(element)) && (data = 
 		(struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
@@ -1142,9 +1138,9 @@ Returns 0 with no errors if the field is not grid-based.
 static int Computed_field_finite_element_find_element_xi(
 	struct Computed_field *field, 
 	FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, struct GROUP(FE_element) *search_element_group)
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
 /*******************************************************************************
-LAST MODIFIED : 21 August 2002
+LAST MODIFIED : 11 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1153,10 +1149,10 @@ DESCRIPTION :
 
 	ENTER(Computed_field_find_element_xi);
 	if (field && values && (number_of_values == field->number_of_components) &&
-		element && xi && search_element_group)
+		element && xi && search_region)
 	{
 		return_code = Computed_field_perform_find_element_xi(field,
-			values, number_of_values, element, xi, search_element_group);	
+			values, number_of_values, element, xi, element_dimension, search_region);	
 	}
 	else
 	{
@@ -1172,7 +1168,7 @@ DESCRIPTION :
 static int list_Computed_field_finite_element(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 2 May 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1263,7 +1259,7 @@ Returns allocated command string for reproducing field. Includes type.
 static int define_Computed_field_type_finite_element(struct Parse_state *state,
 	void *field_void,void *computed_field_finite_element_package_void)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Creates FE_fields with the given name, coordinate_system, value_type,
@@ -1281,7 +1277,7 @@ FE_field being made and/or modified.
 	struct Computed_field *field;
 	struct Computed_field_finite_element_package *computed_field_finite_element_package;
 	struct Coordinate_system *coordinate_system;
-	struct FE_field *existing_fe_field,*fe_field,*temp_fe_field;
+	struct FE_field *existing_fe_field,*fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
@@ -1446,17 +1442,15 @@ FE_field being made and/or modified.
 				STRING_TO_ENUMERATOR(CM_field_type)(cm_field_type_string,
 					&cm_field_type);
 				/* now make an FE_field to match the options entered */
-				if (fe_field = CREATE(FE_field)(
-					computed_field_finite_element_package->fe_time))
+				if (fe_field = CREATE(FE_field)(field->name,
+					computed_field_finite_element_package->fe_region))
 				{
-					/* get the name from the computed field */
-					return_code=set_FE_field_name(fe_field,field->name);
 					ACCESS(FE_field)(fe_field);
 					if (return_code&&existing_fe_field)
 					{
 						/* copy existing field to get as much in common with it as
 							 possible */
-						return_code=MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name)(fe_field,
+						return_code=FE_field_copy_without_identifier(fe_field,
 							existing_fe_field);
 					}
 					if (return_code&&set_FE_field_value_type(fe_field,value_type)&&
@@ -1472,37 +1466,29 @@ FE_field being made and/or modified.
 								set_FE_field_component_name(fe_field,i,component_names[i]);
 							}
 						}
-						if (existing_fe_field)
+						if ((!existing_fe_field) ||
+							FE_fields_match_fundamental(fe_field, existing_fe_field))
 						{
-							/* since cannot modify contents of FE_field while it is in use,
-								 deaccess temp_copy of it for duration of modify. Actually,
-								 it is accessed twice, once by the wrapper field in the
-								 manager, and once by "field", hence: */
-							temp_fe_field=existing_fe_field;
-							DEACCESS(FE_field)(&temp_fe_field);
-							temp_fe_field=existing_fe_field;
-							DEACCESS(FE_field)(&temp_fe_field);
-							if (MANAGED_OBJECT_NOT_IN_USE(FE_field)(existing_fe_field,
-								computed_field_finite_element_package->fe_field_manager))
+							if (FE_region_merge_FE_field(
+								computed_field_finite_element_package->fe_region, fe_field))
 							{
-								return_code = MANAGER_MODIFY_NOT_IDENTIFIER(FE_field,name)(
-									existing_fe_field, fe_field,
-									computed_field_finite_element_package->fe_field_manager);
+								return_code = 1;
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"Cannot redefine finite_element field while it is in use");
-								display_parse_state_location(state);
+									"define_Computed_field_type_finite_element.  "
+									"Unable to merge FE_field");
 								return_code = 0;
 							}
-							ACCESS(FE_field)(existing_fe_field);
-							ACCESS(FE_field)(existing_fe_field);
 						}
 						else
 						{
-							return_code = ADD_OBJECT_TO_MANAGER(FE_field)(fe_field,
-								computed_field_finite_element_package->fe_field_manager);
+							display_message(ERROR_MESSAGE,
+								"Cannot fundamentally redefine finite_element field "
+								"while it is in use");
+							display_parse_state_location(state);
+							return_code = 0;
 						}
 					}
 					else
@@ -1518,7 +1504,7 @@ FE_field being made and/or modified.
 							 FINITE_ELEMENT for correct handling in define_Computed_field */
 						if (return_code =
 							Computed_field_set_type_finite_element(field, fe_field,
-								computed_field_finite_element_package->fe_field_manager))
+								computed_field_finite_element_package->fe_region))
 						{
 							Computed_field_set_coordinate_system(field,
 								get_FE_field_coordinate_system(fe_field));
@@ -1651,7 +1637,7 @@ Evaluate the fields cache at the node.
 	if (field && node)
 	{
 		/* simply convert the node number into an FE_value */
-		field->values[0]=(FE_value)get_FE_node_cm_node_identifier(node);
+		field->values[0]=(FE_value)get_FE_node_identifier(node);
 		return_code = 1;
 	}
 	else
@@ -1677,6 +1663,7 @@ Evaluate the fields cache in the element.
 ==============================================================================*/
 {
 	int element_dimension, i, return_code;
+	struct CM_element_information cm_identifier;
 
 	ENTER(Computed_field_cmiss_number_evaluate_cache_in_element);
 	USE_PARAMETER(time);
@@ -1684,16 +1671,24 @@ Evaluate the fields cache in the element.
 	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi)
 	{
-	  /* simply convert the element number into an FE_value */
-	  field->values[0] = (FE_value)element->cm.number;
+		/* simply convert the element number into an FE_value */
+		if (get_FE_element_identifier(element, &cm_identifier))
+		{
+			field->values[0] = cm_identifier.number;
+			return_code = 1;
+		}
+		else
+		{
+			field->values[0] = 0;
+			return_code = 0;
+		}
 		/* derivatives are always zero for this type, hence always calculated */
 		element_dimension = get_FE_element_dimension(element);
 		for (i = 0; i < element_dimension; i++)
 		{
 			field->derivatives[i] = 0.0;
 		}
-	  field->derivatives_valid = 1;
-	  return_code = 1;
+		field->derivatives_valid = 1;
 	}
 	else
 	{
@@ -1728,7 +1723,7 @@ Print the values calculated in the cache.
 	{
 		error=0;
 		/* put out the cmiss number as a string */
-		sprintf(tmp_string,"%d",get_FE_node_cm_node_identifier(node));
+		sprintf(tmp_string,"%d",get_FE_node_identifier(node));
 		append_string(&return_string,tmp_string,&error);
 	}
 	else
@@ -1753,6 +1748,7 @@ Print the values calculated in the cache.
 ==============================================================================*/
 {
 	char *return_string,tmp_string[50];
+	struct CM_element_information cm_identifier;
 
 	ENTER(Computed_field_cmiss_number_evaluate_as_string_in_element);
 	USE_PARAMETER(top_level_element);
@@ -1762,8 +1758,11 @@ Print the values calculated in the cache.
 		(component_number < field->number_of_components))
 	{
 	  /* put out the cmiss number as a string */
-	  sprintf(tmp_string,"%d",element->cm.number);
-	  return_string=duplicate_string(tmp_string);
+		if (get_FE_element_identifier(element, &cm_identifier))
+		{
+			sprintf(tmp_string, "%d", cm_identifier.number);
+			return_string=duplicate_string(tmp_string);
+		}
 	}
 	else
 	{
@@ -3043,13 +3042,14 @@ static char *Computed_field_node_value_evaluate_as_string_at_node(
 	struct Computed_field *field, int component_number, struct FE_node *node, 
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 1 May 2003
 
 DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 {
-	char *return_string, *temp_string;
+	char *return_string, start_component_number, stop_component_number,
+		*temp_string;
 	int error, i;
 	struct Computed_field_node_value_type_specific_data *data;
 
@@ -3070,31 +3070,26 @@ Print the values calculated in the cache.
 		{
 			if (-1 == component_number)
 			{
-				if (get_FE_nodal_value_as_string(node,data->fe_field,
-					/*component_number*/0,data->version_number,
-					data->nodal_value_type,time,&return_string))
-				{
-					error=0;
-					for (i=1;i<field->number_of_components;i++)
-					{
-						if (get_FE_nodal_value_as_string(node,data->fe_field,
-							i, data->version_number, data->nodal_value_type,
-							time,&temp_string))
-						{
-							append_string(&return_string,",",&error);
-							append_string(&return_string,temp_string,&error);
-							DEALLOCATE(temp_string);
-						}
-					}
-				}
+				start_component_number = 0;
+				stop_component_number = field->number_of_components - 1;
 			}
 			else
 			{
-				if (get_FE_nodal_value_as_string(node,data->fe_field,
-					component_number, data->version_number,
-					data->nodal_value_type,time,&return_string))
+				start_component_number = stop_component_number = component_number;
+			}
+			error = 0;
+			for (i = start_component_number; i <= stop_component_number; i++)
+			{
+				if (get_FE_nodal_value_as_string(node, data->fe_field,
+					i, data->version_number, data->nodal_value_type,
+					time, &temp_string))
 				{
-					error=0;
+					append_string(&return_string, temp_string, &error);
+					if (i < stop_component_number)
+					{
+						append_string(&return_string, ",", &error);
+					}
+					DEALLOCATE(temp_string);
 				}
 			}
 		}
@@ -3463,7 +3458,7 @@ If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
 static int define_Computed_field_type_node_value(struct Parse_state *state,
 	void *field_void,void *computed_field_finite_element_package_void)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_NODE_VALUE (if it is not already)
@@ -3523,9 +3518,9 @@ and allows its contents to be modified.
 				{
 					option_table=CREATE(Option_table)();
 					/* fe_field */
-					Option_table_add_entry(option_table,"fe_field", &fe_field,
-					  computed_field_finite_element_package->fe_field_manager,
-					  set_FE_field);
+					Option_table_add_set_FE_field_from_FE_region(
+						option_table, "fe_field" ,&fe_field,
+					  computed_field_finite_element_package->fe_region);
 					/* nodal_value_type */
 					nodal_value_type_string=nodal_value_type_strings[0];
 					Option_table_add_enumerator(option_table,
@@ -3546,9 +3541,9 @@ and allows its contents to be modified.
 				{
 					option_table=CREATE(Option_table)();
 					/* fe_field */
-					Option_table_add_entry(option_table,"fe_field", &fe_field,
-					  computed_field_finite_element_package->fe_field_manager,
-					  set_FE_field);
+					Option_table_add_set_FE_field_from_FE_region(
+						option_table, "fe_field" ,&fe_field,
+					  computed_field_finite_element_package->fe_region);
 					if (return_code=Option_table_parse(option_table,state))
 					{
 						if (!fe_field)
@@ -3794,11 +3789,9 @@ DESCRIPTION :
 		(struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
-		if(data->fe_element_field_values&&data->fe_element_field_values->element)
+		if(data->fe_element_field_values)
 		{
 			clear_FE_element_field_values(data->fe_element_field_values);
-			/* clear element to indicate that values are clear */
-			data->fe_element_field_values->element=(struct FE_element *)NULL;
 		}
 		return_code = 1;
 	}
@@ -4338,8 +4331,9 @@ and allows its contents to be modified.
 			}
 			option_table = CREATE(Option_table)();
 			/* element_xi FE_field */
-			Option_table_add_entry(option_table, "element_xi", &element_xi_fe_field,
-				computed_field_finite_element_package->fe_field_manager, set_FE_field);
+			Option_table_add_set_FE_field_from_FE_region(option_table, "element_xi", 
+				&element_xi_fe_field,
+				computed_field_finite_element_package->fe_region);
 			set_field_data.conditional_function =
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data = (void *)NULL;
@@ -4388,9 +4382,9 @@ and allows its contents to be modified.
 
 static int Computed_field_manager_update_wrapper(
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct Computed_field *wrapper, int identifier_changed, int contents_changed)
+	struct Computed_field *wrapper, enum CHANGE_LOG_CHANGE(FE_field) change)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 2 May 2003
 
 DESCRIPTION :
 Searches the <computed_field_manager> for an existing field which matches
@@ -4403,13 +4397,9 @@ and <contents_changed>, it is modified appropriately to match the new <wrapper>.
 {
 	int return_code;
 	struct Computed_field *existing_wrapper;
-	struct Computed_field_finite_element_type_specific_data *data;
-	struct FE_field *temp_fe_field;
 
 	ENTER(Computed_field_manager_update_wrapper);
-	if (computed_field_manager && wrapper && (data =
-		(struct Computed_field_finite_element_type_specific_data *)
-		wrapper->type_specific_data))
+	if (computed_field_manager && wrapper)
 	{
 		return_code = 1;
 		/* find existing wrapper first of same name, then matching contents */
@@ -4421,13 +4411,9 @@ and <contents_changed>, it is modified appropriately to match the new <wrapper>.
 		}
 		if (existing_wrapper)
 		{
-			/* Must deaccess fe_field in wrapper for modify to work; fe_field in
-				 existing_wrapper will be daccessed in not_in_use function */
-			temp_fe_field = data->fe_field;
-			DEACCESS(FE_field)(&temp_fe_field);
-			if (identifier_changed)
+			if (change & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field))
 			{
-				if (contents_changed)
+				if (change & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))
 				{
 					return_code = MANAGER_MODIFY(Computed_field,name)(
 						existing_wrapper, wrapper, computed_field_manager);
@@ -4438,12 +4424,11 @@ and <contents_changed>, it is modified appropriately to match the new <wrapper>.
 						existing_wrapper, wrapper->name, computed_field_manager);
 				}
 			}
-			else if (contents_changed)
+			else if (change & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))
 			{
 				return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
 					existing_wrapper, wrapper, computed_field_manager);
 			}
-			ACCESS(FE_field)(data->fe_field);
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
@@ -4475,14 +4460,14 @@ and <contents_changed>, it is modified appropriately to match the new <wrapper>.
 struct FE_field_to_Computed_field_change_data
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	int contents_changed, identifier_changed;
+	struct FE_region_changes *changes;
+	struct FE_region *fe_region;
 };
 
 static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 	void *field_change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 24 March 2003
 
 DESCRIPTION :
 From <fe_field>, creates one, and for certain types of fields more than one
@@ -4494,6 +4479,7 @@ function.
 ==============================================================================*/
 {
 	char *extra_field_name, *field_name;
+	enum CHANGE_LOG_CHANGE(FE_field) change;
 	enum Value_type value_type;
 	int return_code;
 	struct Computed_field *default_coordinate_field, *wrapper;
@@ -4503,95 +4489,104 @@ function.
 	if (fe_field && (field_change_data =
 		(struct FE_field_to_Computed_field_change_data *)field_change_data_void))
 	{
-		return_code = 1;
-		if (GET_NAME(FE_field)(fe_field, &field_name))
+		if (CHANGE_LOG_QUERY(FE_field)(field_change_data->changes->fe_field_changes,
+			fe_field, &change))
 		{
-			/* establish up-to-date wrapper for the fe_field */
-			if (wrapper = CREATE(Computed_field)(field_name))
+			return_code = 1;
+			if (change != CHANGE_LOG_OBJECT_UNCHANGED(FE_field))
 			{
-				ACCESS(Computed_field)(wrapper);
-				if (Computed_field_set_coordinate_system(wrapper,
-					get_FE_field_coordinate_system(fe_field)) &&
-					Computed_field_set_type_finite_element(wrapper, fe_field,
-						field_change_data->fe_field_manager) &&
-					Computed_field_set_read_only(wrapper))
+				if (GET_NAME(FE_field)(fe_field, &field_name))
 				{
-					if (!Computed_field_manager_update_wrapper(
-						field_change_data->computed_field_manager, wrapper,
-						field_change_data->identifier_changed,
-						field_change_data->contents_changed))
+					/* establish up-to-date wrapper for the fe_field */
+					if (wrapper = CREATE(Computed_field)(field_name))
 					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-				DEACCESS(Computed_field)(&wrapper);
-			}
-			else
-			{
-				return_code = 0;
-			}
-
-			/* For ELEMENT_XI_VALUE also make a default embedded coordinate field */
-			value_type = get_FE_field_value_type(fe_field);
-			switch(value_type)
-			{
-				case ELEMENT_XI_VALUE:
-				{
-					if (ALLOCATE(extra_field_name, char, strlen(field_name) + 15))
-					{
-						sprintf(extra_field_name, "%s_coordinate", field_name);
-						/* establish up-to-date wrapper for the fe_field */
-						if (wrapper = CREATE(Computed_field)(extra_field_name))
+						ACCESS(Computed_field)(wrapper);
+						if (Computed_field_set_coordinate_system(wrapper,
+							get_FE_field_coordinate_system(fe_field)) &&
+							Computed_field_set_type_finite_element(wrapper, fe_field,
+								field_change_data->fe_region) &&
+							Computed_field_set_read_only(wrapper))
 						{
-							ACCESS(Computed_field)(wrapper);
-							if ((default_coordinate_field =
-								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-								Computed_field_has_coordinate_fe_field,
-								(void *)NULL, field_change_data->computed_field_manager)))
-							{
-								if (Computed_field_set_coordinate_system(wrapper,
-									Computed_field_get_coordinate_system(
-										default_coordinate_field)) &&
-									Computed_field_set_type_embedded(wrapper, fe_field,
-							  		default_coordinate_field) &&
-									Computed_field_set_read_only(wrapper))
-								{
-									if (!Computed_field_manager_update_wrapper(
-										field_change_data->computed_field_manager, wrapper,
-										field_change_data->identifier_changed,
-										field_change_data->contents_changed))
-									{
-										return_code = 0;
-									}
-								}
-								else
-								{
-									return_code = 0;
-								}
-							}
-							else
+							if (!Computed_field_manager_update_wrapper(
+								field_change_data->computed_field_manager, wrapper,
+								change))
 							{
 								return_code = 0;
 							}
-							DEACCESS(Computed_field)(&wrapper);
 						}
 						else
 						{
 							return_code = 0;
 						}
-						DEALLOCATE(extra_field_name);
+						DEACCESS(Computed_field)(&wrapper);
 					}
 					else
 					{
 						return_code = 0;
 					}
-				} break;
+
+					/* For ELEMENT_XI_VALUE also make a default embedded coordinate field */
+					value_type = get_FE_field_value_type(fe_field);
+					switch(value_type)
+					{
+						case ELEMENT_XI_VALUE:
+						{
+							if (ALLOCATE(extra_field_name, char, strlen(field_name) + 15))
+							{
+								sprintf(extra_field_name, "%s_coordinate", field_name);
+								/* establish up-to-date wrapper for the fe_field */
+								if (wrapper = CREATE(Computed_field)(extra_field_name))
+								{
+									ACCESS(Computed_field)(wrapper);
+									if ((default_coordinate_field =
+										FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+											Computed_field_has_coordinate_fe_field,
+											(void *)NULL, field_change_data->computed_field_manager)))
+									{
+										if (Computed_field_set_coordinate_system(wrapper,
+											Computed_field_get_coordinate_system(
+												default_coordinate_field)) &&
+											Computed_field_set_type_embedded(wrapper, fe_field,
+												default_coordinate_field) &&
+											Computed_field_set_read_only(wrapper))
+										{
+											if (!Computed_field_manager_update_wrapper(
+												field_change_data->computed_field_manager, wrapper,
+												change))
+											{
+												return_code = 0;
+											}
+										}
+										else
+										{
+											return_code = 0;
+										}
+									}
+									else
+									{
+										return_code = 0;
+									}
+									DEACCESS(Computed_field)(&wrapper);
+								}
+								else
+								{
+									return_code = 0;
+								}
+								DEALLOCATE(extra_field_name);
+							}
+							else
+							{
+								return_code = 0;
+							}
+						} break;
+					}
+					DEALLOCATE(field_name);
+				}
+				else
+				{
+					return_code = 0;
+				}
 			}
-			DEALLOCATE(field_name);
 		}
 		else
 		{
@@ -4614,11 +4609,11 @@ function.
 	return (return_code);
 } /* FE_field_to_Computed_field_change */
 
-static void Computed_field_FE_field_change(
-	struct MANAGER_MESSAGE(FE_field) *message,
+static void Computed_field_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes,
 	void *computed_field_finite_element_package_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2001
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Updates definitions of Computed_field wrappers for changed FE_fields in the
@@ -4628,57 +4623,45 @@ that may result from this process.
 ???RC Review Manager Messages Here
 ==============================================================================*/
 {
+	enum CHANGE_LOG_CHANGE(FE_field) change_summary;
 	struct Computed_field_finite_element_package
 		*computed_field_finite_element_package;
 	struct FE_field_to_Computed_field_change_data field_change_data;
 
-	ENTER(Computed_field_FE_field_change);
-	if (message && (computed_field_finite_element_package=
+	ENTER(Computed_field_FE_region_change);
+	if (changes && (computed_field_finite_element_package=
 		(struct Computed_field_finite_element_package *)
-		computed_field_finite_element_package_void))
+		computed_field_finite_element_package_void) &&
+		(fe_region == computed_field_finite_element_package->fe_region))
 	{
-		switch (message->change)
+		field_change_data.computed_field_manager = 
+			computed_field_finite_element_package->computed_field_manager;
+		field_change_data.changes = changes;
+		field_change_data.fe_region = fe_region;
+		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
+			&change_summary);
+		if ((change_summary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)) || 
+			(change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)) || 
+			(change_summary & CHANGE_LOG_OBJECT_ADDED(FE_field)))
 		{
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field):
-			case MANAGER_CHANGE_OBJECT(FE_field):
-			case MANAGER_CHANGE_IDENTIFIER(FE_field):
-			case MANAGER_CHANGE_ADD(FE_field):
-			{
-				field_change_data.computed_field_manager =
-					computed_field_finite_element_package->computed_field_manager;
-				field_change_data.fe_field_manager =
-					computed_field_finite_element_package->fe_field_manager;
-				field_change_data.identifier_changed = 
-					(MANAGER_CHANGE_IDENTIFIER(FE_field) == message->change) ||
-					(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
-				field_change_data.contents_changed = 
-					(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field) == message->change) ||
-					(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
-				MANAGER_BEGIN_CACHE(Computed_field)(
-					computed_field_finite_element_package->computed_field_manager);
-				if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(
-					FE_field_to_Computed_field_change, (void *)&field_change_data,
-					message->changed_object_list))
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_FE_field_change.  Unable to propagate change(s)");
-				}
-				MANAGER_END_CACHE(Computed_field)(
-					computed_field_finite_element_package->computed_field_manager);
-			} break;
-			case MANAGER_CHANGE_REMOVE(FE_field):
-			{
-				/* do nothing */
-			} break;
+			/* Ensure there is an updated Computed_field for each FE_field */
+			FE_region_for_each_FE_field(field_change_data.fe_region,
+				FE_field_to_Computed_field_change, (void *)&field_change_data);
+		}
+		if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
+		{
+			/* Currently we do nothing as the computed field wrapper is destroyed
+				before the FE_field is removed from the manager.  This is not necessary
+				and this response could be to delete the wrapper. */
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_FE_field_change.  Invalid argument(s)");
+			"Computed_field_FE_region_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Computed_field_FE_field_change */
+} /* Computed_field_FE_region_change */
 
 /*
 Global functions
@@ -4688,30 +4671,31 @@ Global functions
 struct Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time)
+	struct Cmiss_region *cmiss_region)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2001
+LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 This function registers the finite_element related types of Computed_fields and
-also registers with the <fe_field_manager> so that any fe_fields are
+also attached to the <cmiss_region> so that any fe_fields are
 automatically wrapped in corresponding computed_fields.
 ==============================================================================*/
 {
 	struct Computed_field_finite_element_package *return_ptr;
+	struct FE_region *fe_region;
 	static struct Computed_field_finite_element_package 
 		computed_field_finite_element_package;
 
 	ENTER(Computed_field_register_types_finite_element);
-	if (computed_field_package&&fe_field_manager)
+	if (computed_field_package && cmiss_region &&
+		(fe_region = Cmiss_region_get_FE_region(cmiss_region)))
 	{
 		computed_field_finite_element_package.computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
-		computed_field_finite_element_package.fe_field_manager =
-			fe_field_manager;
-		computed_field_finite_element_package.fe_time =
-			ACCESS(FE_time)(fe_time);
+			Computed_field_package_get_computed_field_manager(computed_field_package);
+		computed_field_finite_element_package.cmiss_region =
+			ACCESS(Cmiss_region)(cmiss_region);
+		computed_field_finite_element_package.fe_region =
+			ACCESS(FE_region)(fe_region);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_finite_element_type_string,
 			define_Computed_field_type_finite_element,
@@ -4738,9 +4722,8 @@ automatically wrapped in corresponding computed_fields.
 			computed_field_embedded_type_string,
 			define_Computed_field_type_embedded,
 			&computed_field_finite_element_package);
-		if (computed_field_finite_element_package.fe_field_manager_callback_id=
-			MANAGER_REGISTER(FE_field)(Computed_field_FE_field_change,
-				(void *)&computed_field_finite_element_package,fe_field_manager))
+		if (FE_region_add_callback(fe_region, Computed_field_FE_region_change, 
+			(void *)&computed_field_finite_element_package))
 		{
 			return_ptr = &computed_field_finite_element_package;
 		}
@@ -4764,7 +4747,7 @@ int Computed_field_deregister_types_finite_element(
 	struct Computed_field_finite_element_package
 	*computed_field_finite_element_package)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4774,10 +4757,12 @@ DESCRIPTION :
 	ENTER(Computed_field_deregister_types_finite_element);
 	if (computed_field_finite_element_package)
 	{
-		DEACCESS(FE_time)(&(computed_field_finite_element_package->fe_time));
-		MANAGER_DEREGISTER(FE_field)(
-			computed_field_finite_element_package->fe_field_manager_callback_id,
-			computed_field_finite_element_package->fe_field_manager);
+		FE_region_remove_callback(computed_field_finite_element_package->fe_region, 
+			Computed_field_FE_region_change, 
+			(void *)computed_field_finite_element_package);
+		DEACCESS(FE_region)(&(computed_field_finite_element_package->fe_region));
+		DEACCESS(Cmiss_region)(
+			&(computed_field_finite_element_package->cmiss_region));
 		return_code=1;
 	}
 	else
@@ -4816,9 +4801,9 @@ DESCRIPTION :
 } /* Computed_field_is_type_finite_element */
 
 int Computed_field_set_type_finite_element(struct Computed_field *field,
-	struct FE_field *fe_field, struct MANAGER(FE_field) *fe_field_manager)
+	struct FE_field *fe_field, struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 11 March 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
@@ -4834,7 +4819,7 @@ Computed_field_finite_element_not_in_use.
 	struct Computed_field_finite_element_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_finite_element);
-	if (field && fe_field && fe_field_manager)
+	if (field && fe_field && fe_region)
 	{
 		return_code=1;
 		number_of_components = get_FE_field_number_of_components(fe_field);
@@ -4865,7 +4850,7 @@ Computed_field_finite_element_not_in_use.
 			field->type_specific_data = (void *)data;
 			data->fe_field = ACCESS(FE_field)(fe_field);
 			data->fe_element_field_values = (struct FE_element_field_values *)NULL;
-			data->fe_field_manager = fe_field_manager;
+			data->fe_region = fe_region;
 
 			/* Set all the methods */
 			COMPUTED_FIELD_ESTABLISH_METHODS(finite_element);
@@ -4926,87 +4911,143 @@ If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 	return (return_code);
 } /* Computed_field_get_type_finite_element */
 
-struct Computed_field_add_defining_FE_field_to_list_data
-{
-	struct Computed_field *field;
-	struct LIST(FE_field) *fe_field_list;
-};
-
-static int Computed_field_add_defining_FE_field_to_list(
-	struct Computed_field *field,void *add_data_void)
+int Computed_field_contains_changed_FE_field(
+	struct Computed_field *field, void *fe_field_change_log_void)
 /*******************************************************************************
-LAST MODIFIED : 11 September 2000
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
-If <field> is finite_element type and the <add_data->field> depends on it, add
-the FE_field it wraps to the <add_data->fe_field_list>.
+Returns true if <field> directly contains an FE_field and it is listed as
+changed, added or removed in <fe_field_change_log>.
+<fe_field_change_log_void> must point at a struct CHANGE_LOG<FE_field>.
 ==============================================================================*/
 {
-	int return_code;
-	struct Computed_field_add_defining_FE_field_to_list_data *add_data;
+	enum CHANGE_LOG_CHANGE(FE_field) fe_field_change;
+	enum FE_nodal_value_type nodal_value_type;
+	int return_code, version_number;
+	struct CHANGE_LOG(FE_field) *fe_field_change_log;
+	struct Computed_field *source_field;
 	struct FE_field *fe_field;
 
-	ENTER(Computed_field_add_defining_FE_field_to_list);
-	if (field&&(add_data=
-		(struct Computed_field_add_defining_FE_field_to_list_data *)add_data_void))
+	ENTER(Computed_field_contains_changed_FE_field);
+	if (field && (fe_field_change_log =
+		(struct CHANGE_LOG(FE_field) *)fe_field_change_log_void))
 	{
-		if (Computed_field_is_type_finite_element(field) &&
-			Computed_field_depends_on_Computed_field(add_data->field,field))
+		if (field->type_string == computed_field_finite_element_type_string)
 		{
-			if (Computed_field_get_type_finite_element(field,&fe_field) &&
-				ADD_OBJECT_TO_LIST(FE_field)(fe_field,add_data->fe_field_list))
-			{
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_add_defining_FE_field_to_list.  Failed");
-				return_code=0;
-			}
+			return_code = Computed_field_get_type_finite_element(field, &fe_field);
+		}
+		else if (field->type_string == computed_field_embedded_type_string)
+		{
+			return_code = Computed_field_get_type_embedded(field, &fe_field,
+				&source_field);
+		}
+		else if (field->type_string == computed_field_node_value_type_string)
+		{
+			return_code = Computed_field_get_type_node_value(field, &fe_field,
+				&nodal_value_type, &version_number);
 		}
 		else
 		{
-			return_code=1;
+			return_code = 0;
+		}
+		if (return_code)
+		{
+			return_code = CHANGE_LOG_QUERY(FE_field)(fe_field_change_log, fe_field,
+				&fe_field_change) &&
+				(fe_field_change != CHANGE_LOG_OBJECT_UNCHANGED(FE_field));
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_add_defining_FE_field_to_list.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_contains_changed_FE_field.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_add_defining_FE_field_to_list */
+} /* Computed_field_contains_changed_FE_field */
 
-struct LIST(FE_field) *Computed_field_get_defining_FE_field_list(
-	struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager)
+static int Computed_field_add_source_FE_field_to_list(
+	struct Computed_field *field, void *fe_field_list_void)
 /*******************************************************************************
-LAST MODIFIED : 11 September 2000
+LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
-Returns the list of FE_fields that <field> depends on, by sorting through the
-<computed_field_manager>.
+If <field> has a source FE_field, ensures it is in <fe_field_list>.
 ==============================================================================*/
 {
-	struct Computed_field_add_defining_FE_field_to_list_data add_data;
+	enum FE_nodal_value_type nodal_value_type;
+	int return_code, version_number;
+	struct Computed_field *source_field;
+	struct FE_field *fe_field;
+	struct LIST(FE_field) *fe_field_list;
+
+	ENTER(Computed_field_add_source_FE_field_to_list);
+	if (field && (fe_field_list = (struct LIST(FE_field) *)fe_field_list_void))
+	{
+		fe_field = (struct FE_field *)NULL;
+		if (field->type_string == computed_field_finite_element_type_string)
+		{
+			return_code = Computed_field_get_type_finite_element(field, &fe_field);
+		}
+		else if (field->type_string == computed_field_embedded_type_string)
+		{
+			return_code = Computed_field_get_type_embedded(field, &fe_field,
+				&source_field);
+		}
+		else if (field->type_string == computed_field_node_value_type_string)
+		{
+			return_code = Computed_field_get_type_node_value(field, &fe_field,
+				&nodal_value_type, &version_number);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		if (return_code && fe_field)
+		{
+			if (!IS_OBJECT_IN_LIST(FE_field)(fe_field, fe_field_list))
+			{
+				return_code = ADD_OBJECT_TO_LIST(FE_field)(fe_field, fe_field_list);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_add_source_FE_field_to_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_add_source_FE_field_to_list */
+
+struct LIST(FE_field)
+	*Computed_field_get_defining_FE_field_list(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 2 April 2003
+
+DESCRIPTION :
+Returns the list of FE_fields that <field> depends on.
+==============================================================================*/
+{
+	struct LIST(FE_field) *fe_field_list;
 
 	ENTER(Computed_field_get_defining_FE_field_list);
-	if (field&&computed_field_manager)
+	fe_field_list = (struct LIST(FE_field) *)NULL;
+	if (field)
 	{
-		if (add_data.fe_field_list=CREATE(LIST(FE_field))())
+		if (fe_field_list = CREATE(LIST(FE_field))())
 		{
-			add_data.field=field;
-			if (!FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-				Computed_field_add_defining_FE_field_to_list,(void *)&add_data,
-				computed_field_manager))
+			if (!Computed_field_for_each_ancestor(field,
+				Computed_field_add_source_FE_field_to_list, (void *)fe_field_list))
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_get_defining_FE_field_list.  Failed");
-				DESTROY(LIST(FE_field))(&add_data.fe_field_list);
+				DESTROY(LIST(FE_field))(&fe_field_list);
 			}
 		}
 	}
@@ -5014,11 +5055,10 @@ Returns the list of FE_fields that <field> depends on, by sorting through the
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_defining_FE_field_list.  Invalid argument(s)");
-		add_data.fe_field_list = (struct LIST(FE_field) *)NULL;
 	}
 	LEAVE;
 
-	return (add_data.fe_field_list);
+	return (fe_field_list);
 } /* Computed_field_get_defining_FE_field_list */
 
 int Computed_field_is_type_cmiss_number(struct Computed_field *field)
@@ -5099,11 +5139,15 @@ although its cache may be lost.
 int Computed_field_is_read_only_with_fe_field(
 	struct Computed_field *field,void *fe_field_void)
 /*******************************************************************************
-LAST MODIFIED : 3 February 1999
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Iterator/conditional function returning true if <field> is read only and a
 wrapper for <fe_field>.
+???RC This looks ready for an overhaul since other fields in this module can
+contain FE_fields.
+???RC Note however that this function is used to find the finite_element
+wrapper for a given FE_field, so must make sure this still works!
 ==============================================================================*/
 {
 	int return_code;
@@ -5148,7 +5192,7 @@ coordinate type fe_field.
 	int return_code;
 	struct Computed_field_finite_element_type_specific_data *data;
 
-	ENTER(Computed_field_is_read_only_with_fe_field);
+	ENTER(Computed_field_has_coordinate_fe_field);
 	USE_PARAMETER(dummy);
 	if (field)
 	{
@@ -5166,13 +5210,13 @@ coordinate type fe_field.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_read_only_with_fe_field.  Invalid argument(s)");
+			"Computed_field_has_coordinate_fe_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_is_read_only_with_fe_field */
+} /* Computed_field_has_coordinate_fe_field */
 
 int Computed_field_is_scalar_integer(struct Computed_field *field,
 	void *dummy_void)
@@ -5343,107 +5387,74 @@ fields which are or an embedded type.
 	return (return_code);
 } /* Computed_field_depends_on_embedded_field */
 
-int remove_computed_field_from_manager_given_FE_field(
-	struct MANAGER(Computed_field) *computed_field_manager,struct FE_field *field)
+int Computed_field_manager_destroy_FE_field(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_field *fe_field)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
-Frees the computed fields from the computed field manager, given the FE_field
+Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
 ==============================================================================*/
 {
 	int return_code;
 	struct Computed_field *computed_field;
+	struct FE_region *fe_region;
 
-	ENTER(remove_computed_field_from_manager_given_FE_field);
-	if(field && computed_field_manager)
+	ENTER(Computed_field_manager_destroy_FE_field);
+	if (computed_field_manager && fe_field &&
+		(fe_region = FE_field_get_FE_region(fe_field)))
 	{
-		return_code=1;
-		computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-			Computed_field_is_read_only_with_fe_field,
-			(void *)(field),
-			computed_field_manager);
-		if (computed_field)
+		return_code = 1;
+		if (FE_region_is_FE_field_in_use(fe_region, fe_field))
 		{
-			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
-				computed_field_manager))
-			{
-				REMOVE_OBJECT_FROM_MANAGER(Computed_field)(computed_field,
-					computed_field_manager);			
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"remove_computed_field_from_manager_given_FE_field."
-			" invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* remove_computed_field_from_manager_given_FE_field */
-
-int destroy_computed_field_given_fe_field(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 17 May 2000
-
-DESCRIPTION :
-Given <fe_field>, destroys the associated computed field, and fe_field
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *computed_field=(struct Computed_field *)NULL;
-
-	ENTER(destroy_computed_field_given_fe_field);
-	if (computed_field_manager && fe_field_manager && fe_field)
-	{
-		if (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-			Computed_field_is_read_only_with_fe_field,(void *)(fe_field),
-			computed_field_manager))
-		{
-			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
-				computed_field_manager))
-			{
-				/* also want to destroy (wrapped) FE_field */	
-				if (return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
-					computed_field, computed_field_manager))
-				{								
-					return_code = REMOVE_OBJECT_FROM_MANAGER(FE_field)(
-						fe_field, fe_field_manager);
-				}
-				if (!return_code)
-				{
-					display_message(ERROR_MESSAGE,
-						"destroy_computed_field_given_fe_field.  Could not destroy field");
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,
-					"destroy_computed_field_given_fe_field.  "
-					"Cannot destroy field in use ");
-				return_code = 0;
-			}
+			display_message(ERROR_MESSAGE,
+				"Computed_field_manager_destroy_FE_field.  "
+				"FE_field %s (%p) is in use (accessed %d times)",
+				get_FE_field_name(fe_field), fe_field, get_FE_field_access_count(fe_field));
+			return_code = 0;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field."
-				"Field does not exist");	
-			return_code = 0;
+			/* Computed_field wrapper does not need to exist to remove FE_field */
+			if (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_is_read_only_with_fe_field, (void *)(fe_field),
+				computed_field_manager))
+			{
+				if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
+					computed_field_manager))
+				{
+					if (!REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
+						computed_field, computed_field_manager))
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_manager_destroy_FE_field.  "
+						"Computed_field %s is in use (accessed %d times)",
+						computed_field->name, computed_field->access_count);
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				return_code = FE_region_remove_FE_field(fe_region, fe_field);
+			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field "
-			"invalid arguements ");
+		display_message(ERROR_MESSAGE,
+			"Computed_field_manager_destroy_FE_field.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
+
 	return(return_code);
-}/* destroy_computed_field_given_fe_field */
+} /* Computed_field_manager_destroy_FE_field */
 
 #define Computed_field_xi_coordinates_has_multiple_times \
 	Computed_field_default_has_multiple_times

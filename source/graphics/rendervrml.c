@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -2232,7 +2232,7 @@ DESCRIPTION :
 int makevrml(FILE *vrml_file,gtObject *object,float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -2241,7 +2241,7 @@ Only writes the geometry field.
 ==============================================================================*/
 {
 	float proportion,*times;
-	int group, itime,return_code;
+	int group, itime, number_of_times, return_code;
 	/* struct GT_nurbs *nurbs; */
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_point *point;
@@ -2250,13 +2250,16 @@ Only writes the geometry field.
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
 	/* struct GT_userdef *userdef; */
 	struct GT_voltex *voltex;
+	union GT_primitive_list *primitive_list1, *primitive_list2;
 
 	ENTER(makevrml);
 	return_code=1;
 	if (vrml_file&&object)
 	{
-		if ((itime=object->number_of_times)>0)
+		number_of_times = object->number_of_times;
+		if (0 < number_of_times)
 		{
+			itime = number_of_times;
 			group = 0;
 			if ((itime>1)&&(times=object->times))
 			{
@@ -2296,11 +2299,37 @@ Only writes the geometry field.
 				itime=0;
 				proportion=0;
 			}
+			if (object->primitive_lists &&
+				(primitive_list1 = object->primitive_lists + itime))
+			{
+				if (proportion > 0)
+				{
+					if (!(primitive_list2 = object->primitive_lists + itime + 1))
+					{
+						display_message(ERROR_MESSAGE,
+							"makevrml.  Invalid primitive_list");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					primitive_list2 = (union GT_primitive_list *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"makevrml.  Invalid primitive_lists");
+				return_code = 0;
+			}
+		}
+		if ((0 < number_of_times) && return_code)
+		{
 			switch (object->object_type)
 			{
 				case g_GLYPH_SET:
 				{
-					if (glyph_set=(object->gu.gt_glyph_set)[itime])
+					if (glyph_set = primitive_list1->gt_glyph_set.first)
 					{
 						if (glyph_set->ptrnext)
 						{
@@ -2310,7 +2339,7 @@ Only writes the geometry field.
 						}
 						if (proportion>0)
 						{
-							glyph_set_2=(object->gu.gt_glyph_set)[itime+1];
+							glyph_set_2 = primitive_list2->gt_glyph_set.first;
 							while (glyph_set&&glyph_set_2)
 							{
 								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
@@ -2367,7 +2396,7 @@ Only writes the geometry field.
 				case g_NURBS:
 				{
 #if defined (OLD_CODE)
-					if (nurbs=(object->gu.gt_nurbs)[itime])
+					if (nurbs = primitive_list1->gt_nurbs.first)
 					{
 						/*???SAB.  To be done */
 						return_code = 1;
@@ -2386,7 +2415,7 @@ Only writes the geometry field.
 				} break;
 				case g_POINT:
 				{
-					if (point=(object->gu.gt_point)[itime])
+					if (point = primitive_list1->gt_point.first)
 					{
 						draw_point_set_vrml(vrml_file,
 							1, point->position, &(point->text), point->marker_type,
@@ -2402,7 +2431,7 @@ Only writes the geometry field.
 				} break;
 				case g_POINTSET:
 				{
-					if (point_set=(object->gu.gt_pointset)[itime])
+					if (point_set = primitive_list1->gt_pointset.first)
 					{
 						if (point_set->ptrnext)
 						{
@@ -2412,11 +2441,11 @@ Only writes the geometry field.
 						}
 						if (proportion>0)
 						{
-							point_set_2=(object->gu.gt_pointset)[itime+1];
+							point_set_2 = primitive_list2->gt_pointset.first;
 							while (point_set&&point_set_2)
 							{
 								if (interpolate_point_set=morph_GT_pointset(proportion,
-									point_set,(object->gu.gt_pointset)[itime+1]))
+									point_set, point_set_2))
 								{
 									draw_point_set_vrml(vrml_file,
 										interpolate_point_set->n_pts,
@@ -2456,7 +2485,7 @@ Only writes the geometry field.
 				} break;
 				case g_POLYLINE:
 				{
-					if (line=(object->gu.gt_polyline)[itime])
+					if (line = primitive_list1->gt_polyline.first)
 					{
 						if (line->ptrnext)
 						{
@@ -2466,7 +2495,7 @@ Only writes the geometry field.
 						}
 						if (0<proportion)
 						{
-							line_2=(object->gu.gt_polyline)[itime+1];
+							line_2 = primitive_list2->gt_polyline.first;
 							while (line&&line_2)
 							{
 								if (interpolate_line=
@@ -2508,7 +2537,7 @@ Only writes the geometry field.
 				} break;
 				case g_SURFACE:
 				{
-					if (surface=(object->gu.gt_surface)[itime])
+					if (surface = primitive_list1->gt_surface.first)
 					{
 						if (surface->ptrnext)
 						{
@@ -2518,7 +2547,7 @@ Only writes the geometry field.
 						}
 						if (0<proportion)
 						{
-							surface_2=(object->gu.gt_surface)[itime+1];
+							surface_2 = primitive_list2->gt_surface.first;
 							while (surface&&surface_2)
 							{
 								if (interpolate_surface=morph_GT_surface(proportion,
@@ -2569,7 +2598,7 @@ Only writes the geometry field.
 				} break;
 				case g_VOLTEX:
 				{
-					if (voltex=(object->gu.gt_voltex)[itime])
+					if (voltex = primitive_list1->gt_voltex.first)
 					{
 						if (voltex->ptrnext)
 						{

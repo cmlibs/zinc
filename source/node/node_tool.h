@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -45,9 +45,7 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_node) *node_manager,int use_data,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *root_region, int use_data,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
@@ -55,7 +53,7 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Time_keeper *time_keeper,
 	struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -203,21 +201,25 @@ Sets flag controlling whether node edits are updated during motion_notify
 events, not just at the end of a mouse gesture.
 ==============================================================================*/
 
-struct GROUP(FE_node) *Node_tool_get_node_group(struct Node_tool *node_tool);
+int Node_tool_get_region_path(struct Node_tool *node_tool,
+	char **path_address);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
-Returns the node group new nodes are created in by <node_tool>.
+Returns in <path_address> the path to the Cmiss_region where nodes created by
+the <node_tool> are put.
+Up to the calling function to DEALLOCATE the returned path.
 ==============================================================================*/
 
-int Node_tool_set_node_group(struct Node_tool *node_tool,
-	struct GROUP(FE_node) *node_group);
+int Node_tool_set_region_path(struct Node_tool *node_tool,
+	char *path);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
-Sets the node group new nodes are created in by <node_tool>.
+Sets the <path> to the region/FE_region where nodes created by
+<node_tool> are placed.
 ==============================================================================*/
 
 int Node_tool_get_select_enabled(struct Node_tool *node_tool);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 7 August 2002
+LAST MODIFIED : 25 March 2003
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -18,7 +18,6 @@ gtObject/gtWindow management routines.
 #include <math.h>
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
-#include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
@@ -49,6 +48,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(GT_object);
 Module functions
 ----------------
 */
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,char *,strcmp)
 
 static int GT_object_get_time_number(struct GT_object *graphics_object,
@@ -64,31 +64,31 @@ found or there is an error.
 ==============================================================================*/
 {
 	float *times;
-	int time_no;
+	int time_number;
 
 	ENTER(GT_object_get_time_number);
 	if (graphics_object)
 	{
-		if (0<(time_no=graphics_object->number_of_times))
+		if (0<(time_number=graphics_object->number_of_times))
 		{
 			if (times=graphics_object->times)
 			{
-				times += time_no-1;
-				while ((time_no>0)&&(time< *times))
+				times += time_number-1;
+				while ((time_number>0)&&(time< *times))
 				{
 					times--;
-					time_no--;
+					time_number--;
 				}
-				if ((time_no>0)&&(time != *times))
+				if ((time_number>0)&&(time != *times))
 				{
-					time_no=0;
+					time_number=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"GT_object_get_time_number.  Invalid times array");
-				time_no=0;
+				time_number=0;
 			}
 		}
 	}
@@ -96,11 +96,11 @@ found or there is an error.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_object_get_time_number.  Invalid arguments");
-		time_no=0;
+		time_number=0;
 	}
 	LEAVE;
 
-	return (time_no);
+	return (time_number);
 } /* GT_object_get_time_number */
 
 static int GT_object_get_less_than_or_equal_time_number(
@@ -116,27 +116,27 @@ returned if <time> is lower than any times in the array or an error occurs.
 ==============================================================================*/
 {
 	float *times;
-	int time_no;
+	int time_number;
 
 	ENTER(GT_object_get_less_than_or_equal_time_number);
 	if (graphics_object)
 	{
-		if (0<(time_no=graphics_object->number_of_times))
+		if (0<(time_number=graphics_object->number_of_times))
 		{
 			if (times=graphics_object->times)
 			{
-				times += time_no-1;
-				while ((time_no>0)&&(time< *times))
+				times += time_number-1;
+				while ((time_number>0)&&(time< *times))
 				{
 					times--;
-					time_no--;
+					time_number--;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"GT_object_get_less_than_or_equal_time_number.  Invalid times array");
-				time_no=0;
+				time_number=0;
 			}
 		}
 	}
@@ -144,179 +144,315 @@ returned if <time> is lower than any times in the array or an error occurs.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_object_get_less_than_or_equal_time_number.  Invalid arguments");
-		time_no=0;
+		time_number=0;
 	}
 	LEAVE;
 
-	return (time_no);
+	return (time_number);
 } /* GT_object_get_less_than_or_equal_time_number */
 
 #if defined (FULL_NAMES)
-#define GT_OBJECT_DELETE_TIME_NUMBER_(primitive_type) \
-	GT_object_delete_time_number_ ## primitive_type
+#define GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type) \
+	GT_object_remove_primitives_at_time_number_ ## primitive_type
 #else
-#define GT_OBJECT_DELETE_TIME_NUMBER_(primitive_type) \
-	godtn_ ## primitive_type
+#define GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type) \
+	gorptn_ ## primitive_type
 #endif
-#define GT_OBJECT_DELETE_TIME_NUMBER(primitive_type) \
-	GT_OBJECT_DELETE_TIME_NUMBER_(primitive_type)
 
-#define DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(primitive_type, \
-	gt_object_type,primitive_var,primitive_destroy_function) \
-static int GT_OBJECT_DELETE_TIME_NUMBER(primitive_type)( \
-	struct GT_object *graphics_object,int time_no) \
+#define DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	primitive_type,gt_object_type,primitive_var) \
+static int GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type)( \
+	struct GT_object *graphics_object, int time_number, \
+	GT_object_primitive_object_name_conditional_function *conditional_function, \
+	void *user_data) \
 /***************************************************************************** \
-LAST MODIFIED : 28 August 2000 \
+LAST MODIFIED : 17 March 2003 \
 \
 DESCRIPTION : \
-Removes time<time_no> and all the primitives in it from <graphics_object>. \
+Removes all primitives from <graphics_object> at <time_number>. \
+The optional <conditional_function> allows a subset of the primitives to \
+be removed. This function is called with the object_name integer associated \
+with each primitive plus the void *<user_data> supplied here. A true result \
+from the conditional_function causes the primitive to be removed. \
 ============================================================================*/ \
 { \
 	float *times; \
-	struct primitive_type *primitive,**primitive_ptr; \
-	int return_code,i; \
+	int i, return_code; \
+	struct primitive_type *last_primitive, *primitive, **primitive_ptr; \
+	union GT_primitive_list *primitive_list; \
 \
-	ENTER(GT_OBJECT_DELETE_TIME_NUMBER(primitive_type)); \
-	/* check arguments */ \
-	if (graphics_object&&(gt_object_type==graphics_object->object_type)&& \
-		(0<time_no)&&(time_no <= graphics_object->number_of_times)) \
+	ENTER(GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type)); \
+	if (graphics_object && (gt_object_type == graphics_object->object_type) && \
+		(0 < time_number) && (time_number <= graphics_object->number_of_times)) \
 	{ \
-		if (times=graphics_object->times) \
+		if (times = graphics_object->times) \
 		{ \
-			if (primitive_ptr=graphics_object->gu.primitive_var) \
+			if (graphics_object->primitive_lists) \
 			{ \
-				primitive_ptr += time_no-1; \
-				times += time_no-1; \
-				/* Remove primitives at this time */ \
-				while (primitive= *primitive_ptr) \
+				primitive_list = graphics_object->primitive_lists + time_number - 1; \
+				last_primitive = (struct primitive_type *)NULL; \
+				primitive_ptr = &(primitive_list->primitive_var.first); \
+				/* remove primitives at this time */ \
+				while (primitive = *primitive_ptr) \
 				{ \
-					*primitive_ptr=primitive->ptrnext; \
-					primitive_destroy_function(&primitive); \
+					if ((!conditional_function) || \
+						(conditional_function)(primitive->object_name, user_data)) \
+					{ \
+						*primitive_ptr = primitive->ptrnext; \
+						DESTROY(primitive_type)(&primitive); \
+					} \
+					else \
+					{ \
+						last_primitive = primitive; \
+						primitive_ptr = &(primitive->ptrnext); \
+					} \
 				} \
-				/* Shift following times and primitives down */ \
-				for (i=(graphics_object->number_of_times)-time_no;i>0;i--) \
+				primitive_list->primitive_var.last = last_primitive; \
+				/* must remove time if no primitives left there */ \
+				if ((struct primitive_type *)NULL == primitive_list->primitive_var.first) \
 				{ \
-					*times = *(times+1); \
-					times++; \
-					*primitive_ptr = *(primitive_ptr+1); \
-					primitive_ptr++; \
+					times += time_number - 1; \
+					/* Shift following times and primitives down */ \
+					for (i = (graphics_object->number_of_times)-time_number; i > 0; i--) \
+					{ \
+						*times = *(times + 1); \
+						times++; \
+						primitive_list->primitive_var.first = primitive_list[1].primitive_var.first; \
+						primitive_list->primitive_var.last = primitive_list[1].primitive_var.last; \
+						primitive_ptr++; \
+					} \
+					graphics_object->number_of_times--; \
+					/* do not reallocate to make times and primitive_var arrays smaller \
+						 since this function is most often called by DESTROY(GT_object), \
+						 or just before primitives are to be added again at the same time. \
+						 However, must deallocate if there are no times left so DESTROY \
+						 function can rely on this function to clean up. */ \
+					if (0 == graphics_object->number_of_times) \
+					{ \
+						DEALLOCATE(graphics_object->times); \
+						graphics_object->times = (float *)NULL; \
+						DEALLOCATE(graphics_object->primitive_lists); \
+					} \
 				} \
-				graphics_object->number_of_times--; \
-				/* do not reallocate to make times and primitive_var arrays smaller \
-					 since this function is most often called by DESTROY(GT_object), or \
-					 just before primitives are to be added again at the same time. \
-					 However, must deallocate if there are no times left so DESTROY \
-					 function can rely on this function to clean up. */ \
-				if (0 >= graphics_object->number_of_times) \
-				{ \
-					DEALLOCATE(graphics_object->times); \
-					DEALLOCATE(graphics_object->gu.primitive_var); \
-				} \
-				return_code=1; \
+				return_code = 1; \
 			} \
 			else \
 			{ \
-				display_message(ERROR_MESSAGE,"GT_OBJECT_DELETE_TIME_NUMBER(" \
-					#primitive_type ").  Invalid primitives array"); \
-				return_code=0; \
+				display_message(ERROR_MESSAGE, \
+					"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
+					#primitive_type ").  Invalid primitive lists"); \
+				return_code = 0; \
 			} \
 		} \
 		else \
 		{ \
-			display_message(ERROR_MESSAGE,"GT_OBJECT_DELETE_TIME_NUMBER(" \
+			display_message(ERROR_MESSAGE, \
+				"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
 				#primitive_type ").  Invalid times array"); \
-			return_code=0; \
+			return_code = 0; \
 		} \
 	} \
 	else \
 	{ \
-		display_message(ERROR_MESSAGE,"GT_OBJECT_DELETE_TIME_NUMBER(" \
+		display_message(ERROR_MESSAGE, \
+	 		"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
 	 		#primitive_type ").  Invalid arguments"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* GT_OBJECT_DELETE_TIME_NUMBER(primitive_type) */
+} /* GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type) */
 
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_glyph_set, \
-	g_GLYPH_SET,gt_glyph_set,DESTROY(GT_glyph_set))
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_nurbs, \
-	g_NURBS,gt_nurbs,DESTROY(GT_nurbs))
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_point, \
-	g_POINT,gt_point,DESTROY(GT_point))
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_pointset, \
-	g_POINTSET,gt_pointset,DESTROY(GT_pointset))
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_polyline, \
-	g_POLYLINE,gt_polyline,DESTROY(GT_polyline))
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_surface, \
-	g_SURFACE,gt_surface,DESTROY(GT_surface))
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_userdef, \
-	g_USERDEF,gt_userdef,DESTROY(GT_userdef))
-DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_voltex, \
-	g_VOLTEX,gt_voltex,DESTROY(GT_voltex))
+#define DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_AUXILIARY_FUNCTION( \
+	primitive_type,gt_object_type,primitive_var) \
+int GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type)( \
+	struct GT_object *graphics_object, int time_number, \
+	GT_object_primitive_object_name_conditional_function *conditional_function, \
+	void *user_data) \
+/***************************************************************************** \
+LAST MODIFIED : 17 March 2003 \
+\
+DESCRIPTION : \
+Version of GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER for primitives with \
+both an <object_name> and an <auxiliary_object_name> that may satisfy the \
+conditional_function. \
+============================================================================*/ \
+{ \
+	float *times; \
+	int i, return_code; \
+	struct primitive_type *last_primitive, *primitive, **primitive_ptr; \
+	union GT_primitive_list *primitive_list; \
+\
+	ENTER(GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type)); \
+	if (graphics_object && (gt_object_type == graphics_object->object_type) && \
+		(0 < time_number) && (time_number <= graphics_object->number_of_times)) \
+	{ \
+		if (times = graphics_object->times) \
+		{ \
+			if (graphics_object->primitive_lists) \
+			{ \
+				primitive_list = graphics_object->primitive_lists + time_number - 1; \
+				last_primitive = (struct primitive_type *)NULL; \
+				primitive_ptr = &(primitive_list->primitive_var.first); \
+				/* remove primitives at this time */ \
+				while (primitive = *primitive_ptr) \
+				{ \
+					if ((!conditional_function) || \
+						(conditional_function)(primitive->object_name, user_data) || \
+						(conditional_function)(primitive->auxiliary_object_name, \
+							user_data)) \
+					{ \
+						*primitive_ptr = primitive->ptrnext; \
+						DESTROY(primitive_type)(&primitive); \
+					} \
+					else \
+					{ \
+						last_primitive = primitive; \
+						primitive_ptr = &(primitive->ptrnext); \
+					} \
+				} \
+				primitive_list->primitive_var.last = last_primitive; \
+				/* must remove time if no primitives left there */ \
+				if ((struct primitive_type *)NULL == primitive_list->primitive_var.first) \
+				{ \
+					times += time_number - 1; \
+					/* Shift following times and primitives down */ \
+					for (i = (graphics_object->number_of_times)-time_number; i > 0; i--) \
+					{ \
+						*times = *(times + 1); \
+						times++; \
+						primitive_list->primitive_var.first = primitive_list[1].primitive_var.first; \
+						primitive_list->primitive_var.last = primitive_list[1].primitive_var.last; \
+						primitive_ptr++; \
+					} \
+					graphics_object->number_of_times--; \
+					/* do not reallocate to make times and primitive_var arrays smaller \
+						 since this function is most often called by DESTROY(GT_object), \
+						 or just before primitives are to be added again at the same time. \
+						 However, must deallocate if there are no times left so DESTROY \
+						 function can rely on this function to clean up. */ \
+					if (0 == graphics_object->number_of_times) \
+					{ \
+						DEALLOCATE(graphics_object->times); \
+						graphics_object->times = (float *)NULL; \
+						DEALLOCATE(graphics_object->primitive_lists); \
+					} \
+				} \
+				return_code = 1; \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
+					#primitive_type ").  Invalid primitive lists"); \
+				return_code = 0; \
+			} \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
+				#primitive_type ").  Invalid times array"); \
+			return_code = 0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+	 		"GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(" \
+	 		#primitive_type ").  Invalid arguments"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type) */
 
-static int GT_object_delete_time_number(struct GT_object *graphics_object,
-	int time_no)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_AUXILIARY_FUNCTION( \
+	GT_glyph_set,g_GLYPH_SET,gt_glyph_set)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	GT_nurbs,g_NURBS,gt_nurbs)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	GT_point,g_POINT,gt_point)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	GT_pointset,g_POINTSET,gt_pointset)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	GT_polyline,g_POLYLINE,gt_polyline)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	GT_surface,g_SURFACE,gt_surface)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	GT_userdef,g_USERDEF,gt_userdef)
+DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	GT_voltex,g_VOLTEX,gt_voltex)
+
+static int GT_object_remove_primitives_at_time_number(
+	struct GT_object *graphics_object, int time_number,
+	GT_object_primitive_object_name_conditional_function *conditional_function,
+	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 6 July 1998
+LAST MODIFIED : 5 February 2003
 
 DESCRIPTION :
-Type-less version of GT_OBJECT_DELETE_TIME_NUMBER macro.
+Removes primitives at <time_number> from <graphics_object>.
+The optional <conditional_function> allows a subset of the primitives to
+be removed. This function is called with the object_name integer associated
+with each primitive plus the void *<user_data> supplied here. A true result
+from the conditional_function causes the primitive to be removed.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(GT_object_delete_time_number);
+	ENTER(GT_object_remove_primitives_at_time_number);
 	if (graphics_object)
 	{
 		switch (graphics_object->object_type)
 		{
 			case g_GLYPH_SET:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_glyph_set)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_glyph_set)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			case g_NURBS:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_nurbs)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_nurbs)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			case g_POINT:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_point)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_point)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			case g_POINTSET:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_pointset)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_pointset)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			case g_POLYLINE:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_polyline)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_polyline)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			case g_SURFACE:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_surface)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_surface)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			case g_USERDEF:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_userdef)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_userdef)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			case g_VOLTEX:
 			{
-				return_code=GT_OBJECT_DELETE_TIME_NUMBER(GT_voltex)(
-					graphics_object,time_no);
+				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_voltex)(
+					graphics_object, time_number, conditional_function, user_data);
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"GT_object_delete_time_number.  Unknown object type");
-				return_code=0;
+					"GT_object_remove_primitives_at_time_number.  Unknown object type");
+				return_code = 0;
 			}
 		}
 		GT_object_changed(graphics_object);
@@ -324,13 +460,13 @@ Type-less version of GT_OBJECT_DELETE_TIME_NUMBER macro.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_object_delete_time_number.  Invalid arguments");
-		return_code=0;
+			"GT_object_remove_primitives_at_time_number.  Invalid arguments");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_object_delete_time_number */
+} /* GT_object_remove_primitives_at_time_number */
 
 /*
 Global functions
@@ -1421,113 +1557,143 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 gtObject *morph_gtObject(char *name,float proportion,gtObject *initial,
 	gtObject *final)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Creates a new gtObject which is the interpolation of two gtObjects.
 ==============================================================================*/
 {
+	float time;
 	gtObject *graphics_object;
-	struct GT_polyline **polyline_address,*polyline_final,*polyline_initial;
-	struct GT_pointset **pointset_address,*pointset_final,*pointset_initial;
-	struct GT_surface **surface_address,*surface_final,*surface_initial;
+	int i, number_of_times, return_code;
+	struct GT_polyline *polyline, *polyline_final, *polyline_initial;
+	struct GT_pointset *pointset, *pointset_final, *pointset_initial;
+	struct GT_surface *surface, *surface_final, *surface_initial;
 
 	ENTER(morph_gtObject);
-	/* check arguments */
+	graphics_object = (struct GT_object *)NULL;
 	if ((0<=proportion)&&(proportion<=1)&&initial&&final&&
-		(initial->object_type==final->object_type)/*&&
-		(initial->default_material==final->default_material)*/)
+		(initial->object_type==final->object_type) &&
+		(0 < (number_of_times = initial->number_of_times)) &&
+		(number_of_times == final->number_of_times) &&
+		initial->times && initial->primitive_lists &&
+		final->times && final->primitive_lists /*&&
+		(initial->default_material == final->default_material)*/)
 	{
-#if defined (OLD_CODE)
-		/*???SAB.  The matrix is no longer part of the graphics object so it isn't
-			interpolated */
-		/* interpolate matrix */
-		for (i=0;i<4;i++)
-		{
-			for (j=0;j<4;j++)
-			{
-				transform_matrix[i][j]=(1.0-proportion)*(initial->transform)[i][j]+
-					proportion*(final->transform)[i][j];
-			}
-		}
-#endif /* defined (OLD_CODE) */
 		if (graphics_object=CREATE(GT_object)(name,initial->object_type,
 			initial->default_material))
 		{
-			switch (initial->object_type)
+			return_code = 1;
+			for (i = 0; (i < number_of_times) && return_code; i++)
 			{
-				case g_POINTSET:
+				if (initial->times[i] == final->times[i])
 				{
-					pointset_address=graphics_object->gu.gt_pointset;
-					pointset_initial= *(initial->gu.gt_pointset);
-					pointset_final= *(final->gu.gt_pointset);
-					while (pointset_initial&&pointset_final&&
-						(*pointset_address=morph_GT_pointset(proportion,pointset_initial,
-						pointset_final)))
+					time = initial->times[i];
+					switch (initial->object_type)
 					{
-						pointset_initial=pointset_initial->ptrnext;
-						pointset_final=pointset_final->ptrnext;
-						pointset_address= &((*pointset_address)->ptrnext);
+						case g_POINTSET:
+						{
+							pointset_initial = initial->primitive_lists[i].gt_pointset.first;
+							pointset_final = final->primitive_lists[i].gt_pointset.first;
+							while (pointset_initial && pointset_final && return_code)
+							{
+								if (pointset = morph_GT_pointset(proportion, pointset_initial,
+									pointset_final))
+								{
+									if (!GT_OBJECT_ADD(GT_pointset)(graphics_object, time,
+										pointset))
+									{
+										DESTROY(GT_pointset)(&pointset);
+										return_code = 0;
+									}
+								}
+								else
+								{
+									return_code = 0;
+								}
+								pointset_initial = pointset_initial->ptrnext;
+								pointset_final = pointset_final->ptrnext;
+							}
+							if (pointset_initial || pointset_final)
+							{
+								return_code = 0;
+							}
+						} break;
+						case g_POLYLINE:
+						{
+							polyline_initial = initial->primitive_lists[i].gt_polyline.first;
+							polyline_final= final->primitive_lists[i].gt_polyline.first;
+							while (polyline_initial && polyline_final && return_code)
+							{
+								if (polyline = morph_GT_polyline(proportion, polyline_initial,
+									polyline_final))
+								{
+									if (!GT_OBJECT_ADD(GT_polyline)(graphics_object, time,
+										polyline))
+									{
+										DESTROY(GT_polyline)(&polyline);
+										return_code = 0;
+									}
+								}
+								else
+								{
+									return_code = 0;
+								}
+								polyline_initial = polyline_initial->ptrnext;
+								polyline_final = polyline_final->ptrnext;
+						}
+							if (polyline_initial || polyline_final)
+							{
+								return_code = 0;
+							}
+						} break;
+						case g_SURFACE:
+						{
+							surface_initial = initial->primitive_lists[i].gt_surface.first;
+							surface_final= final->primitive_lists[i].gt_surface.first;
+							while (surface_initial && surface_final && return_code)
+							{
+								if (surface = morph_GT_surface(proportion, surface_initial,
+									surface_final))
+								{
+									if (!GT_OBJECT_ADD(GT_surface)(graphics_object, time,
+										surface))
+									{
+										DESTROY(GT_surface)(&surface);
+										return_code = 0;
+									}
+								}
+								else
+								{
+									return_code = 0;
+								}
+								surface_initial = surface_initial->ptrnext;
+								surface_final = surface_final->ptrnext;
+							}
+							if (surface_initial || surface_final)
+							{
+								return_code = 0;
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"morph_gtObject.  Invalid graphics element type");
+							return_code = 0;
+						} break;
 					}
-					if (pointset_initial||pointset_final)
-					{
-						DESTROY(GT_object)(&graphics_object);
-					}
-					else
-					{
-						graphics_object->number_of_times=1;
-					}
-				} break;
-				case g_POLYLINE:
-				{
-					polyline_address=graphics_object->gu.gt_polyline;
-					polyline_initial= *(initial->gu.gt_polyline);
-					polyline_final= *(final->gu.gt_polyline);
-					while (polyline_initial&&polyline_final&&
-						(*polyline_address=morph_GT_polyline(proportion,polyline_initial,
-						polyline_final)))
-					{
-						polyline_initial=polyline_initial->ptrnext;
-						polyline_final=polyline_final->ptrnext;
-						polyline_address= &((*polyline_address)->ptrnext);
-					}
-					if (polyline_initial||polyline_final)
-					{
-						DESTROY(GT_object)(&graphics_object);
-					}
-					else
-					{
-						graphics_object->number_of_times=1;
-					}
-				} break;
-				case g_SURFACE:
-				{
-					surface_address=graphics_object->gu.gt_surface;
-					surface_initial= *(initial->gu.gt_surface);
-					surface_final= *(final->gu.gt_surface);
-					while (surface_initial&&surface_final&&
-						(*surface_address=morph_GT_surface(proportion,surface_initial,
-						surface_final)))
-					{
-						surface_initial=surface_initial->ptrnext;
-						surface_final=surface_final->ptrnext;
-						surface_address= &((*surface_address)->ptrnext);
-					}
-					if (surface_initial||surface_final)
-					{
-						DESTROY(GT_object)(&graphics_object);
-					}
-					else
-					{
-						graphics_object->number_of_times=1;
-					}
-				} break;
-				default:
+				}
+				else
 				{
 					display_message(ERROR_MESSAGE,
-						"morph_gtObject.  Invalid graphics element type");
-					DESTROY(GT_object)(&graphics_object);
-				} break;
+						"morph_gtObject.  Graphics object have different times");
+					return_code = 0;
+				}
+			}
+			if (!return_code)
+			{
+				DESTROY(GT_object)(&graphics_object);
+				graphics_object = (struct GT_object *)NULL;
 			}
 		}
 		else
@@ -1540,7 +1706,6 @@ Creates a new gtObject which is the interpolation of two gtObjects.
 	{
 		display_message(ERROR_MESSAGE,
 			"morph_gtObject.  Initial and final objects do not match");
-		graphics_object=(gtObject *)NULL;
 	}
 	LEAVE;
 
@@ -1747,7 +1912,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 struct GT_object *transform_GT_object(struct GT_object *object,
 	float *transformation)
 /*******************************************************************************
-LAST MODIFIED : 8 July 1999
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Creates a new GT_object which is the transformation of <object>.
@@ -1755,43 +1920,65 @@ Only surfaces are implemented at the moment.
 Normals are not updated (wavefront export doesn't use normals anyway).
 ==============================================================================*/
 {
+	int i, number_of_times, return_code;
 	struct GT_object *graphics_object;
 	struct GT_surface *surface_input;
+	union GT_primitive_list *primitive_list;
 
 	ENTER(transform_GT_object);
-	/* check arguments */
+	graphics_object = (struct GT_object *)NULL;
 	if (object)
 	{
 		if (graphics_object=CREATE(GT_object)(object->name,object->object_type,
 			object->default_material))
 		{
-			switch (object->object_type)
+			return_code = 1;
+			number_of_times = object->number_of_times;
+			if ((0 == number_of_times) || object->primitive_lists)
 			{
-#if defined (OLD_CODE)
-				/* To be done, wavefront files don't do points or lines anyway */
-				case g_POINTSET:
+				for (i = 0; (i < number_of_times) && return_code; i++)
 				{
-				} break;
-				case g_POLYLINE:
-				{
-				} break;
-#endif /* defined (OLD_CODE) */
-				case g_SURFACE:
-				{
-					surface_input = *(object->gu.gt_surface);
-					while (surface_input && GT_OBJECT_ADD(GT_surface)(
-						graphics_object, /*time*/0.0,
-						transform_GT_surface(surface_input,	transformation)))
+					primitive_list = object->primitive_lists + i;
+					switch (object->object_type)
 					{
-						surface_input=surface_input->ptrnext;
+#if defined (OLD_CODE)
+						/* To be done, wavefront files don't do points or lines anyway */
+						case g_POINTSET:
+						{
+						} break;
+						case g_POLYLINE:
+						{
+						} break;
+#endif /* defined (OLD_CODE) */
+						case g_SURFACE:
+						{
+							surface_input = primitive_list->gt_surface.first;
+							while (surface_input && GT_OBJECT_ADD(GT_surface)(
+								graphics_object, /*time*/0.0,
+								transform_GT_surface(surface_input,	transformation)))
+							{
+								surface_input = surface_input->ptrnext;
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"transform_GT_object.  Invalid graphics element type");
+							return_code = 0;
+						} break;
 					}
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"transform_GT_object.  Invalid graphics element type");
-					DESTROY(GT_object)(&graphics_object);
-				} break;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"transform_GT_object.  Invalid primitive_lists");
+				return_code = 0;
+			}
+			if (!return_code)
+			{
+				DESTROY(GT_object)(&graphics_object);
+				graphics_object = (struct GT_object *)NULL;
 			}
 		}
 		else
@@ -1804,7 +1991,6 @@ Normals are not updated (wavefront export doesn't use normals anyway).
 	{
 		display_message(ERROR_MESSAGE,
 			"transform_GT_object.  Initial and final objects do not match");
-		graphics_object=(gtObject *)NULL;
 	}
 	LEAVE;
 
@@ -2245,9 +2431,10 @@ texture coordinates.
 } /* GT_nurbs_set_texture_control_points */
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
-	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data)
+	gtMarkerType marker_type,float marker_size,int n_data_components,
+	int object_name, GTDATA *data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_point.  When the <marker_type> is
@@ -2270,6 +2457,7 @@ derivative in that xi direction.
 			point->marker_size=marker_size;
 			point->n_data_components=n_data_components;
 			point->data=data;
+			point->object_name = object_name;
 			point->ptrnext=(struct GT_point *)NULL;
 		}
 		else
@@ -2329,7 +2517,7 @@ struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data,
 	int *names)
 /*******************************************************************************
-LAST MODIFIED : 1 June 1999
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a GT_pointset.  When the <marker_type>
@@ -2354,6 +2542,7 @@ point it is assumed that there isn't a derivative in that xi direction.
 			point_set->n_data_components=n_data_components;
 			point_set->data=data;
 			point_set->ptrnext=(struct GT_pointset *)NULL;
+			point_set->object_name = 0;
 			point_set->names=names;
 		}
 		else
@@ -2569,7 +2758,7 @@ Frees the memory for <**surface> and sets <*surface> to NULL.
 struct GT_userdef *CREATE(GT_userdef)(void *data,
 	int (*destroy_function)(void **),int (*render_function)(void *))
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a user-defined primitive.
@@ -2589,6 +2778,7 @@ parameter to render the user-defined primitive.
 			userdef->data=data;
 			userdef->destroy_function=destroy_function;
 			userdef->render_function=render_function;
+			userdef->object_name = 0;
 			userdef->ptrnext=(struct GT_userdef *)NULL;
 		}
 		else
@@ -2940,7 +3130,7 @@ Handles conversion to an indexed look-up into a non-repeating material array.
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics object.
@@ -2952,48 +3142,29 @@ Allocates memory and assigns fields for a graphics object.
 	ENTER(CREATE(GT_object));
 	if (name)
 	{
-		if (ALLOCATE(object,gtObject,1)&&ALLOCATE(object->name,char,strlen(name)+1)
-			&&(object->selected_graphic_list=CREATE(LIST(Selected_graphic))()))
+		if (ALLOCATE(object, gtObject, 1) &&
+			(object->name = duplicate_string(name)) &&
+			(object->selected_graphic_list = CREATE(LIST(Selected_graphic))()))
 		{
 			object->select_mode=GRAPHICS_NO_SELECT;
-			object->times=(float *)NULL;
-			object->access_count=0;
-			strcpy(object->name,name);
-			object->update_callback_list=(struct Graphics_object_callback_data *)NULL;
-			return_code=1;
+			object->times = (float *)NULL;
+			object->primitive_lists = (union GT_primitive_list *)NULL;
+			object->update_callback_list =
+				(struct Graphics_object_callback_data *)NULL;
+			object->access_count = 0;
+			return_code = 1;
 			switch (object_type)
 			{
 				case g_GLYPH_SET:
-				{
-					object->gu.gt_glyph_set=(struct GT_glyph_set **)NULL;
-				} break;
 				case g_NURBS:
-				{
-					object->gu.gt_nurbs=(struct GT_nurbs **)NULL;
-				} break;
 				case g_POINT:
-				{
-					object->gu.gt_point=(struct GT_point **)NULL;
-				} break;
 				case g_POINTSET:
-				{
-					object->gu.gt_pointset=(struct GT_pointset **)NULL;
-				} break;
 				case g_POLYLINE:
-				{
-					object->gu.gt_polyline=(struct GT_polyline **)NULL;
-				} break;
 				case g_SURFACE:
-				{
-					object->gu.gt_surface=(struct GT_surface **)NULL;
-				} break;
 				case g_USERDEF:
-				{
-					object->gu.gt_userdef=(struct GT_userdef **)NULL;
-				} break;
 				case g_VOLTEX:
 				{
-					object->gu.gt_voltex=(struct GT_voltex **)NULL;
+					/* these are valid object_types */
 				} break;
 				default:
 				{
@@ -3061,7 +3232,7 @@ Allocates memory and assigns fields for a graphics object.
 
 int DESTROY(GT_object)(struct GT_object **object_ptr)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2000
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Frees the memory for the fields of <**object>, frees the memory for <**object>
@@ -3087,7 +3258,9 @@ and sets <*object> to NULL.
 			DESTROY(LIST(Selected_graphic))(&(object->selected_graphic_list));
 			for (i=object->number_of_times;0<i;i--)
 			{
-				GT_object_delete_time_number(object,i);
+				GT_object_remove_primitives_at_time_number(object, i,
+					(GT_object_primitive_object_name_conditional_function *)NULL,
+					(void *)NULL);
 			}
 			DEALLOCATE(object->name);
 			if (object->default_material)
@@ -3137,49 +3310,60 @@ and sets <*object> to NULL.
 
 int compile_GT_voltex_materials(struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Compiles display list of any Graphical_materials used by the voltexes in
 <graphics_object>.
 ==============================================================================*/
 {
-	int i, j, k, return_code;
+	int i, j, k, number_of_times, return_code;
 	struct Environment_map *environment_map;
+	union GT_primitive_list *primitive_list;
 	struct GT_voltex *voltex;
 
 	ENTER(compile_GT_voltex_materials);
-	if (graphics_object && (g_VOLTEX == graphics_object->object_type) &&
-		(graphics_object->gu.gt_voltex))
+	if (graphics_object && (g_VOLTEX == graphics_object->object_type))
 	{
-		for (j = 0; j < graphics_object->number_of_times; j++)
+		return_code = 1;
+		number_of_times = graphics_object->number_of_times;
+		if ((0 == number_of_times) || graphics_object->primitive_lists)
 		{
-			voltex = graphics_object->gu.gt_voltex[j];
-			while (voltex)
+			for (j = 0; j < number_of_times; j++)
 			{
-				for (k = 0; k < voltex->number_of_per_vertex_environment_maps; k++)
+				primitive_list = graphics_object->primitive_lists + j;
+				voltex = primitive_list->gt_voltex.first;
+				while (voltex)
 				{
-					if (environment_map = voltex->per_vertex_environment_maps[k])
+					for (k = 0; k < voltex->number_of_per_vertex_environment_maps; k++)
 					{
-						for (i = 0; i < 6; i++)
+						if (environment_map = voltex->per_vertex_environment_maps[k])
 						{
-							if (environment_map->face_material[i])
+							for (i = 0; i < 6; i++)
 							{
-								compile_Graphical_material(environment_map->face_material[i],
-									(void *)NULL);
+								if (environment_map->face_material[i])
+								{
+									compile_Graphical_material(environment_map->face_material[i],
+										(void *)NULL);
+								}
 							}
 						}
 					}
+					for (i = 0; i < voltex->number_of_per_vertex_materials; i++)
+					{
+						compile_Graphical_material(voltex->per_vertex_materials[i],
+							(void *)NULL);
+					}
+					voltex = voltex->ptrnext;
 				}
-				for (i = 0; i < voltex->number_of_per_vertex_materials; i++)
-				{
-					compile_Graphical_material(voltex->per_vertex_materials[i],
-						(void *)NULL);
-				}
-				voltex = voltex->ptrnext;
 			}
 		}
-		return_code = 1;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"compile_GT_voltex_materials.  Invalid primitive_lists");
+			return_code = 0;
+		}
 	}
 	else
 	{
@@ -3194,7 +3378,7 @@ Compiles display list of any Graphical_materials used by the voltexes in
 
 int compile_GT_object(struct GT_object *graphics_object_list,void *time_void)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
@@ -3203,8 +3387,8 @@ pointed to by <time_void>.
 ==============================================================================*/
 {
 	float *time;
-	int return_code;
-	struct GT_object *graphics_object;
+	int i, return_code;
+	struct GT_object *glyph, *graphics_object;
 
 	ENTER(compile_GT_object);
 	if (graphics_object_list&&(time = (float *)time_void))
@@ -3232,10 +3416,24 @@ pointed to by <time_void>.
 					{
 						struct GT_glyph_set *glyph_set;
 
-						/* Use first time to compile glyph object */
-						if (glyph_set = (graphics_object->gu.gt_glyph_set)[0])
+						/* find first glyph and compile it */
+						/*???RC later may have to compile all of them if different */
+						if (graphics_object->primitive_lists)
 						{
-							compile_GT_object(glyph_set->glyph, time_void);
+							glyph = (struct GT_object *)NULL;
+							for (i = 0; (i < graphics_object->number_of_times) && (!glyph);
+								i++)
+							{
+								if (glyph_set =
+									graphics_object->primitive_lists[i].gt_glyph_set.first)
+								{
+									glyph = glyph_set->glyph;
+								}
+							}
+							if (glyph)
+							{
+								compile_GT_object(glyph, time_void);
+							}
 						}
 					} break;
 					case g_VOLTEX:
@@ -3666,6 +3864,107 @@ Returns 1 if the time parameter is used by the graphics_object.
 	return (return_code);
 } /* GT_object_has_time */
 
+int GT_object_has_primitives_at_time(struct GT_object *graphics_object,
+	float time)
+/*******************************************************************************
+LAST MODIFIED : 17 March 2003
+
+DESCRIPTION :
+Returns true if <graphics_object> has primitives stored exactly at <time>.
+==============================================================================*/
+{
+	int return_code, time_number;
+	union GT_primitive_list *primitive_list;
+
+	ENTER(GT_object_has_primitives_at_time);
+	return_code = 0;
+	if (graphics_object)
+	{
+		if (graphics_object->times && graphics_object->primitive_lists)
+		{
+			if (0 < (time_number = GT_object_get_time_number(graphics_object, time)))
+			{
+				/*???RC Note exact real number comparison; could be problematic */
+				if (graphics_object->times[time_number - 1] == time)
+				{
+					primitive_list = graphics_object->primitive_lists + time_number;
+					switch (graphics_object->object_type)
+					{
+						case g_GLYPH_SET:
+						{
+							if (primitive_list->gt_glyph_set.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						case g_NURBS:
+						{
+							if (primitive_list->gt_nurbs.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						case g_POINT:
+						{
+							if (primitive_list->gt_point.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						case g_POINTSET:
+						{
+							if (primitive_list->gt_pointset.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						case g_POLYLINE:
+						{
+							if (primitive_list->gt_polyline.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						case g_SURFACE:
+						{
+							if (primitive_list->gt_surface.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						case g_USERDEF:
+						{
+							if (primitive_list->gt_userdef.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						case g_VOLTEX:
+						{
+							if (primitive_list->gt_voltex.first)
+							{
+								return_code = 1;
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"GT_object_remove_primitives_at_time.  Unknown object type");
+						} break;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"GT_object_has_primitives_at_time.  Invalid arguments");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_has_primitives_at_time */
+
 int GT_object_get_number_of_times(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
@@ -3693,12 +3992,12 @@ Returns the number of times/primitive lists in the graphics_object.
 	return (number_of_times);
 } /* GT_object_get_number_of_times */
 
-float GT_object_get_time(struct GT_object *graphics_object,int time_no)
+float GT_object_get_time(struct GT_object *graphics_object,int time_number)
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
 
 DESCRIPTION :
-Returns the time at <time_no> from the graphics_object.
+Returns the time at <time_number> from the graphics_object.
 Note that time numbers range from 1 to number_of_times.
 ==============================================================================*/
 {
@@ -3707,11 +4006,11 @@ Note that time numbers range from 1 to number_of_times.
 	ENTER(GT_object_get_time);
 	if (graphics_object)
 	{
-		if ((0 <= time_no)&&(time_no < graphics_object->number_of_times))
+		if ((0 <= time_number)&&(time_number < graphics_object->number_of_times))
 		{
 			if (times=graphics_object->times)
 			{
-				return_time=times[time_no-1];
+				return_time=times[time_number-1];
 			}
 			else
 			{
@@ -3755,23 +4054,23 @@ routines updated to use this, may be changed to get actual nearest time.
 ==============================================================================*/
 {
 	float return_time,*times;
-	int time_no;
+	int time_number;
 
 	ENTER(GT_object_get_nearest_time);
 	if (graphics_object)
 	{
-		if (0<(time_no=graphics_object->number_of_times))
+		if (0<(time_number=graphics_object->number_of_times))
 		{
 			if (times=graphics_object->times)
 			{
-				time_no--;
-				times += time_no;
-				while ((time_no>0)&&(time< *times))
+				time_number--;
+				times += time_number;
+				while ((time_number>0)&&(time< *times))
 				{
 					times--;
-					time_no--;
+					time_number--;
 				}
-				return_time=times[time_no];
+				return_time=times[time_number];
 			}
 			else
 			{
@@ -3801,7 +4100,7 @@ routines updated to use this, may be changed to get actual nearest time.
 int get_graphics_object_range(struct GT_object *graphics_object,
 	void *graphics_object_range_void)
 /*******************************************************************************
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Returns the range of the coordinates in <graphics_object> or 0 if object empty
@@ -3813,15 +4112,17 @@ will produce the range of all the graphics objects.
 ==============================================================================*/
 {
 	float temp,*maximum,*minimum;
-	int *first,number_of_positions,i,number_of_times,position_offset,return_code;
+	int *first, i, j, number_of_positions, number_of_times, position_offset,
+		return_code;
 	struct Graphics_object_range_struct *graphics_object_range;
-	struct GT_glyph_set *glyph_set,**glyph_set_ptr;
-	struct GT_point *point,**point_ptr;
-	struct GT_pointset *pointset,**pointset_ptr;
-	struct GT_polyline *line,**line_ptr;
-	struct GT_surface *surface,**surface_ptr;
-	struct GT_voltex *voltex,**voltex_ptr;
+	struct GT_glyph_set *glyph_set;
+	struct GT_point *point;
+	struct GT_pointset *pointset;
+	struct GT_polyline *polyline;
+	struct GT_surface *surface;
+	struct GT_voltex *voltex;
 	Triple *position;
+	union GT_primitive_list *primitive_list;
 
 	ENTER(get_graphics_object_range);
 	if (graphics_object&&(graphics_object_range=
@@ -3830,16 +4131,18 @@ will produce the range of all the graphics objects.
 		(minimum=graphics_object_range->minimum)&&
 		(first=&(graphics_object_range->first)))
 	{
-		switch (graphics_object->object_type)
+		return_code = 1;
+		number_of_times = graphics_object->number_of_times;
+		if ((0 == number_of_times) || graphics_object->primitive_lists)
 		{
-			case g_POINT:
+			for (j = 0; (j < number_of_times) && return_code; j++)
 			{
-				if ((point_ptr=(graphics_object->gu).gt_point)&&
-					(0<(number_of_times=graphics_object->number_of_times)))
+				primitive_list = graphics_object->primitive_lists + j;
+				switch (graphics_object->object_type)
 				{
-					while (number_of_times>0)
+					case g_POINT:
 					{
-						point= *point_ptr;
+						point = primitive_list->gt_point.first;
 						while (point)
 						{
 							number_of_positions=1;
@@ -3901,19 +4204,10 @@ will produce the range of all the graphics objects.
 							}
 							point=point->ptrnext;
 						}
-						point_ptr++;
-						number_of_times--;
-					}
-				}
-			} break;
-			case g_GLYPH_SET:
-			{
-				if ((glyph_set_ptr=(graphics_object->gu).gt_glyph_set)&&
-					(0<(number_of_times=graphics_object->number_of_times)))
-				{
-					while (number_of_times>0)
+					} break;
+					case g_GLYPH_SET:
 					{
-						glyph_set= *glyph_set_ptr;
+						glyph_set = primitive_list->gt_glyph_set.first;
 						while (glyph_set)
 						{
 							number_of_positions=glyph_set->number_of_points;
@@ -3975,19 +4269,10 @@ will produce the range of all the graphics objects.
 							}
 							glyph_set=glyph_set->ptrnext;
 						}
-						glyph_set_ptr++;
-						number_of_times--;
-					}
-				}
-			} break;
-			case g_POINTSET:
-			{
-				if ((pointset_ptr=(graphics_object->gu).gt_pointset)&&
-					(0<(number_of_times=graphics_object->number_of_times)))
-				{
-					while (number_of_times>0)
+					} break;
+					case g_POINTSET:
 					{
-						pointset= *pointset_ptr;
+						pointset = primitive_list->gt_pointset.first;
 						while (pointset)
 						{
 							number_of_positions=pointset->n_pts;
@@ -4049,41 +4334,32 @@ will produce the range of all the graphics objects.
 							}
 							pointset=pointset->ptrnext;
 						}
-						pointset_ptr++;
-						number_of_times--;
-					}
-				}
-			} break;
-			case g_POLYLINE:
-			{
-				if ((line_ptr=(graphics_object->gu).gt_polyline)&&
-					(0<(number_of_times=graphics_object->number_of_times)))
-				{
-					while (number_of_times>0)
+					} break;
+					case g_POLYLINE:
 					{
-						line= *line_ptr;
-						while (line)
+						polyline = primitive_list->gt_polyline.first;
+						while (polyline)
 						{
-							switch (line->polyline_type)
+							switch (polyline->polyline_type)
 							{
 								case g_PLAIN:
 								{
-									number_of_positions=line->n_pts;
+									number_of_positions=polyline->n_pts;
 									position_offset=1;
 								} break;
 								case g_NORMAL:
 								{
-									number_of_positions=line->n_pts;
+									number_of_positions=polyline->n_pts;
 									position_offset=2;
 								} break;
 								case g_PLAIN_DISCONTINUOUS:
 								{
-									number_of_positions=2*(line->n_pts);
+									number_of_positions=2*(polyline->n_pts);
 									position_offset=1;
 								} break;
 								case g_NORMAL_DISCONTINUOUS:
 								{
-									number_of_positions=2*(line->n_pts);
+									number_of_positions=2*(polyline->n_pts);
 									position_offset=2;
 								} break;
 								default:
@@ -4091,7 +4367,7 @@ will produce the range of all the graphics objects.
 									number_of_positions=0;
 								} break;
 							}
-							if ((position=line->pointlist)&&(0<number_of_positions))
+							if ((position=polyline->pointlist)&&(0<number_of_positions))
 							{
 								if (*first)
 								{
@@ -4147,22 +4423,13 @@ will produce the range of all the graphics objects.
 									position += position_offset;
 								}
 							}
-							line=line->ptrnext;
+							polyline = polyline->ptrnext;
 						}
-						line_ptr++;
-						number_of_times--;
-					}
-				}
-			} break;
-			case g_SURFACE:
-			{
-				/* We will ignore range of morph point lists for morphing types */
-				if ((surface_ptr=(graphics_object->gu).gt_surface)&&
-					(0<(number_of_times=graphics_object->number_of_times)))
-				{
-					while (number_of_times>0)
+					} break;
+					case g_SURFACE:
 					{
-						surface= *surface_ptr;
+						/* We will ignore range of morph point lists for morphing types */
+						surface = primitive_list->gt_surface.first;
 						while (surface)
 						{
 							switch(surface->polygon)
@@ -4235,20 +4502,11 @@ will produce the range of all the graphics objects.
 							}
 							surface=surface->ptrnext;
 						}
-						surface_ptr++;
-						number_of_times--;
-					}
-				}
-			} break;
-			case g_VOLTEX:
-			{
-				/* We will ignore range of morph point lists for morphing types */
-				if ((voltex_ptr=(graphics_object->gu).gt_voltex)&&
-					(0<(number_of_times=graphics_object->number_of_times)))
-				{
-					while (number_of_times>0)
+					} break;
+					case g_VOLTEX:
 					{
-						voltex= *voltex_ptr;
+						/* We will ignore range of morph point lists for morphing types */
+						voltex = primitive_list->gt_voltex.first;
 						while (voltex)
 						{
 							number_of_positions=(voltex->n_vertices);
@@ -4312,13 +4570,22 @@ will produce the range of all the graphics objects.
 							}
 							voltex=voltex->ptrnext;
 						}
-						voltex_ptr++;
-						number_of_times--;
-					}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"get_graphics_object_range.  Invalid graphics object type");
+						return_code = 0;
+					} break;
 				}
-			} break;
+			}
 		}
-		return_code=1;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"get_graphics_object_range.  Invalid primitive_lists");
+			return_code = 0;
+		}
 	}
 	else
 	{
@@ -4334,7 +4601,7 @@ will produce the range of all the graphics objects.
 int get_graphics_object_data_range(struct GT_object *graphics_object,
 	void *graphics_object_data_range_void)
 /*******************************************************************************
-LAST MODIFIED : 7 July 1998
+LAST MODIFIED : 17 March 2003
 
 DESCRIPTION :
 Returns the range of the data values stored in the graphics object.
@@ -4344,287 +4611,277 @@ for combining several spectrums.
 ==============================================================================*/
 {
 	float maximum,minimum;
-	int i,j,return_code,first;
+	int i, j, number_of_times, return_code, first;
 	struct Graphics_object_data_range_struct *graphics_object_data_range;
 	GTDATA *field_data;
-	struct GT_glyph_set *glyph_set,**glyph_set_ptr;
-	struct GT_pointset *pointset,**pointset_ptr;
-	struct GT_polyline *polyline,**polyline_ptr;
-	struct GT_surface *surface,**surface_ptr;
-	struct GT_voltex *voltex,**voltex_ptr;
+	struct GT_glyph_set *glyph_set;
+	struct GT_pointset *pointset;
+	struct GT_polyline *polyline;
+	struct GT_surface *surface;
+	struct GT_voltex *voltex;
 	struct VT_iso_vertex *vertex;
+	union GT_primitive_list *primitive_list;
 
 	ENTER(get_graphics_object_data_range);
-	/* check arguments */
-	if (graphics_object&&(graphics_object_data_range=(struct
-		Graphics_object_data_range_struct *)graphics_object_data_range_void))
+	if (graphics_object && (graphics_object_data_range = (
+		struct Graphics_object_data_range_struct *)graphics_object_data_range_void))
 	{
+		return_code = 1;
 		first=graphics_object_data_range->first;
 		minimum=graphics_object_data_range->minimum;
 		maximum=graphics_object_data_range->maximum;
-		return_code=1;
-		switch (graphics_object->object_type)
+		number_of_times = graphics_object->number_of_times;
+		if ((0 == number_of_times) || graphics_object->primitive_lists)
 		{
-			case g_GLYPH_SET:
+			for (j = 0; (j < number_of_times) && return_code; j++)
 			{
-				glyph_set_ptr=graphics_object->gu.gt_glyph_set;
-				for (j=graphics_object->number_of_times;j>0;j--)
+				primitive_list = graphics_object->primitive_lists + j;
+				switch (graphics_object->object_type)
 				{
-					glyph_set= *glyph_set_ptr;
-					while (glyph_set)
+					case g_GLYPH_SET:
 					{
-						if (field_data=glyph_set->data)
+						glyph_set = primitive_list->gt_glyph_set.first;
+						while (glyph_set)
 						{
-							if (first)
+							if (field_data=glyph_set->data)
 							{
-								minimum= *field_data;
-								maximum=minimum;
-								first=0;
-							}
-							for (i=glyph_set->number_of_points;i>0;i--)
-							{
-								if (*field_data<minimum)
+								if (first)
 								{
 									minimum= *field_data;
+									maximum=minimum;
+									first=0;
 								}
-								else
+								for (i=glyph_set->number_of_points;i>0;i--)
 								{
-									if (*field_data>maximum)
+									if (*field_data<minimum)
 									{
-										maximum= *field_data;
+										minimum= *field_data;
 									}
-								}
-								field_data++;
-							}
-						}
-						glyph_set=glyph_set->ptrnext;
-					}
-					glyph_set_ptr++;
-				}
-			} break;
-			case g_POINTSET:
-			{
-				pointset_ptr=graphics_object->gu.gt_pointset;
-				for (j=graphics_object->number_of_times;j>0;j--)
-				{
-					pointset= *pointset_ptr;
-					while (pointset)
-					{
-						if (field_data=pointset->data)
-						{
-							if (first)
-							{
-								minimum= *field_data;
-								maximum=minimum;
-								first=0;
-							}
-							for (i=pointset->n_pts;i>0;i--)
-							{
-								if (*field_data<minimum)
-								{
-									minimum= *field_data;
-								}
-								else
-								{
-									if (*field_data>maximum)
+									else
 									{
-										maximum= *field_data;
-									}
-								}
-								field_data++;
-							}
-						}
-						pointset=pointset->ptrnext;
-					}
-					pointset_ptr++;
-				}
-			} break;
-			case g_POLYLINE:
-			{
-				polyline_ptr=graphics_object->gu.gt_polyline;
-				for (j=graphics_object->number_of_times;j>0;j--)
-				{
-					polyline= *polyline_ptr;
-					while (polyline)
-					{
-						if (field_data=polyline->data)
-						{
-							if (first)
-							{
-								minimum= *field_data;
-								maximum=minimum;
-								first=0;
-							}
-							for (i=polyline->n_pts;i>0;i--)
-							{
-								if (*field_data<minimum)
-								{
-									minimum= *field_data;
-								}
-								else
-								{
-									if (*field_data>maximum)
-									{
-										maximum= *field_data;
-									}
-								}
-								field_data++;
-							}
-						}
-						polyline=polyline->ptrnext;
-					}
-					polyline_ptr++;
-				}
-			} break;
-			case g_SURFACE:
-			{
-				surface_ptr=graphics_object->gu.gt_surface;
-				for (j=graphics_object->number_of_times;j>0;j--)
-				{
-					/*???RC must have a first surface to get its type */
-					if (surface= *surface_ptr)
-					{
-						switch (surface->surface_type)
-						{
-							case g_SH_DISCONTINUOUS:
-							case g_SH_DISCONTINUOUS_TEXMAP:
-							{
-								while (surface)
-								{
-									if (field_data=surface->data)
-									{
-										if (first)
+										if (*field_data>maximum)
 										{
-											minimum= *field_data;
-											maximum=minimum;
-											first=0;
+											maximum= *field_data;
 										}
-										for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
+									}
+									field_data++;
+								}
+							}
+							glyph_set=glyph_set->ptrnext;
+						}
+					} break;
+					case g_POINTSET:
+					{
+						pointset = primitive_list->gt_pointset.first;
+						while (pointset)
+						{
+							if (field_data=pointset->data)
+							{
+								if (first)
+								{
+									minimum= *field_data;
+									maximum=minimum;
+									first=0;
+								}
+								for (i=pointset->n_pts;i>0;i--)
+								{
+									if (*field_data<minimum)
+									{
+										minimum= *field_data;
+									}
+									else
+									{
+										if (*field_data>maximum)
 										{
-											if (*field_data<minimum)
+											maximum= *field_data;
+										}
+									}
+									field_data++;
+								}
+							}
+							pointset=pointset->ptrnext;
+						}
+					} break;
+					case g_POLYLINE:
+					{
+						polyline = primitive_list->gt_polyline.first;
+						while (polyline)
+						{
+							if (field_data=polyline->data)
+							{
+								if (first)
+								{
+									minimum= *field_data;
+									maximum=minimum;
+									first=0;
+								}
+								for (i=polyline->n_pts;i>0;i--)
+								{
+									if (*field_data<minimum)
+									{
+										minimum= *field_data;
+									}
+									else
+									{
+										if (*field_data>maximum)
+										{
+											maximum= *field_data;
+										}
+									}
+									field_data++;
+								}
+							}
+							polyline=polyline->ptrnext;
+						}
+					} break;
+					case g_SURFACE:
+					{
+						surface = primitive_list->gt_surface.first;
+						/*???RC must have a first surface to get its type */
+						if (surface)
+						{
+							switch (surface->surface_type)
+							{
+								case g_SH_DISCONTINUOUS:
+								case g_SH_DISCONTINUOUS_TEXMAP:
+								{
+									while (surface)
+									{
+										if (field_data=surface->data)
+										{
+											if (first)
 											{
 												minimum= *field_data;
+												maximum=minimum;
+												first=0;
 											}
-											else
+											for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
 											{
-												if (*field_data>maximum)
+												if (*field_data<minimum)
 												{
-													maximum= *field_data;
+													minimum= *field_data;
 												}
+												else
+												{
+													if (*field_data>maximum)
+													{
+														maximum= *field_data;
+													}
+												}
+												field_data++;
 											}
-											field_data++;
 										}
+										surface=surface->ptrnext;
 									}
-									surface=surface->ptrnext;
-								}
-								surface_ptr++;
-							} break;
-							default:
-							{
-								while (surface)
+								} break;
+								default:
 								{
-									if (field_data=surface->data)
+									while (surface)
 									{
-										if (first)
+										if (field_data=surface->data)
 										{
-											minimum= *field_data;
-											maximum=minimum;
-											first=0;
-										}
-										switch (surface->polygon)
-										{
-											case g_QUADRILATERAL:
+											if (first)
 											{
-												for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
-												{
-													if (*field_data<minimum)
-													{
-														minimum= *field_data;
-													}
-													else
-													{
-														if (*field_data>maximum)
-														{
-															maximum= *field_data;
-														}
-													}
-													field_data++;
-												}
-											} break;
-											case g_TRIANGLE:
+												minimum= *field_data;
+												maximum=minimum;
+												first=0;
+											}
+											switch (surface->polygon)
 											{
-												for (i=(((surface->n_pts1)+1)*(surface->n_pts1))/2;i>0;
-														 i--)
+												case g_QUADRILATERAL:
 												{
-													if (*field_data<minimum)
+													for (i=(surface->n_pts1)*(surface->n_pts2);i>0;i--)
 													{
-														minimum= *field_data;
-													}
-													else
-													{
-														if (*field_data>maximum)
+														if (*field_data<minimum)
 														{
-															maximum= *field_data;
+															minimum= *field_data;
 														}
+														else
+														{
+															if (*field_data>maximum)
+															{
+																maximum= *field_data;
+															}
+														}
+														field_data++;
 													}
-													field_data++;
-												}
-											} break;
+												} break;
+												case g_TRIANGLE:
+												{
+													for (i=(((surface->n_pts1)+1)*(surface->n_pts1))/2;i>0;
+															 i--)
+													{
+														if (*field_data<minimum)
+														{
+															minimum= *field_data;
+														}
+														else
+														{
+															if (*field_data>maximum)
+															{
+																maximum= *field_data;
+															}
+														}
+														field_data++;
+													}
+												} break;
+											}
 										}
+										surface=surface->ptrnext;
 									}
-									surface=surface->ptrnext;
-								}
-								surface_ptr++;
-							} break;
+								} break;
+							}
 						}
-					}
-				}
-			} break;
-			case g_VOLTEX:
-			{
-				voltex_ptr=graphics_object->gu.gt_voltex;
-				if (first)
-				{
-					minimum=(*voltex_ptr)->data[(*voltex_ptr)->vertex_list->data_index];
-					maximum=minimum;
-					first=0;
-				}
-				for (j=graphics_object->number_of_times;j>0;j--)
-				{
-					voltex= *voltex_ptr;
-					while (voltex)
+					} break;
+					case g_VOLTEX:
 					{
-						vertex=voltex->vertex_list;
-						for (i=(voltex->n_vertices)*(voltex->n_rep);i>0;i--)
+						voltex = primitive_list->gt_voltex.first;
+						if (first && voltex)
 						{
-							if ((*voltex_ptr)->data[vertex->data_index]<minimum)
-							{
-								minimum=(*voltex_ptr)->data[vertex->data_index];
-							}
-							else
-							{
-								if ((*voltex_ptr)->data[vertex->data_index]>maximum)
-								{
-									maximum=(*voltex_ptr)->data[vertex->data_index];
-								}
-							}
-							vertex++;
+							minimum = voltex->data[voltex->vertex_list->data_index];
+							maximum = minimum;
+							first = 0;
 						}
-						voltex=voltex->ptrnext;
-					}
-					voltex_ptr++;
+						while (voltex)
+						{
+							vertex=voltex->vertex_list;
+							for (i=(voltex->n_vertices)*(voltex->n_rep);i>0;i--)
+							{
+								if (voltex->data[vertex->data_index]<minimum)
+								{
+									minimum = voltex->data[vertex->data_index];
+								}
+								else
+								{
+									if (voltex->data[vertex->data_index]>maximum)
+									{
+										maximum = voltex->data[vertex->data_index];
+									}
+								}
+								vertex++;
+							}
+							voltex = voltex->ptrnext;
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"get_graphics_object_data_range.  "
+							"Invalid graphics object type");
+						return_code = 0;
+					} break;
 				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"get_graphics_object_data_range.  Invalid graphics object type");
-				return_code=0;
-			} break;
+			}
 		}
-		graphics_object_data_range->first=first;
-		graphics_object_data_range->minimum=minimum;
-		graphics_object_data_range->maximum=maximum;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"get_graphics_object_data_range.  Invalid primitive_lists");
+			return_code=0;
+		}
+		graphics_object_data_range->first = first;
+		graphics_object_data_range->minimum = minimum;
+		graphics_object_data_range->maximum = maximum;
 	}
 	else
 	{
@@ -4703,91 +4960,116 @@ Enlarges the minimum and maximum time range by that of the graphics_object.
 	gt_object_type,primitive_var) \
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(primitive_type) \
 /***************************************************************************** \
-LAST MODIFIED : 22 October 1998 \
+LAST MODIFIED : 30 April 2003 \
 \
 DESCRIPTION : \
 Adds <primitive> to <graphics_object> at <time>, creating the new time if it \
 does not already exist. If the <primitive> is NULL an empty time is added if \
-there is not already one. \
+there is not already one. <primitive> is a NULL-terminated linked-list. \
 ============================================================================*/ \
 { \
 	float *times; \
-	struct primitive_type **primitive_ptr; \
-	int return_code,time_no,i; \
+	int return_code, time_number, i; \
+	union GT_primitive_list *primitive_list; \
 \
 	ENTER(GT_OBJECT_ADD(primitive_type)); \
-	if (graphics_object&&(gt_object_type==graphics_object->object_type)) \
+	if (graphics_object && (gt_object_type == graphics_object->object_type)) \
 	{ \
-		time_no= \
+		return_code = 1; \
+		time_number= \
 			GT_object_get_less_than_or_equal_time_number(graphics_object,time); \
-		if ((0<time_no)&&(time==graphics_object->times[time_no-1])) \
+		if ((0 < time_number) && (time==graphics_object->times[time_number-1])) \
 		{ \
-			/* add primitive to start of list at existing time */ \
-			if (primitive_ptr=graphics_object->gu.primitive_var) \
-			{ \
-				if (primitive) \
-				{ \
-					primitive_ptr += time_no-1; \
-					primitive->ptrnext=*primitive_ptr; \
-					*primitive_ptr=primitive; \
-				} \
-            GT_object_changed(graphics_object); \
-				return_code=1; \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"GT_OBJECT_ADD(" #primitive_type ").  Invalid primitives array"); \
-				return_code=0; \
-			} \
+			primitive_list = graphics_object->primitive_lists + time_number - 1; \
 		} \
 		else \
 		{ \
-			/* make a new time for the primitive */ \
-			if (REALLOCATE(times,graphics_object->times,float, \
-				graphics_object->number_of_times+1)) \
+			/* make a new time & primitive_list */ \
+			if (REALLOCATE(times, graphics_object->times, float, \
+				graphics_object->number_of_times + 1)) \
 			{ \
-				graphics_object->times=times; \
-				if (REALLOCATE(primitive_ptr,(graphics_object->gu).primitive_var, \
-					struct primitive_type *,graphics_object->number_of_times+1)) \
+				graphics_object->times = times; \
+				if (REALLOCATE(primitive_list, (graphics_object->primitive_lists), \
+					union GT_primitive_list, graphics_object->number_of_times + 1)) \
 				{ \
-					(graphics_object->gu).primitive_var=primitive_ptr; \
+					(graphics_object->primitive_lists) = primitive_list; \
 					times += graphics_object->number_of_times; \
-					primitive_ptr += graphics_object->number_of_times; \
+					primitive_list += graphics_object->number_of_times; \
 					(graphics_object->number_of_times)++; \
-					for (i=(graphics_object->number_of_times)-time_no-1;i>0;i--) \
+					for (i = (graphics_object->number_of_times)-time_number-1; i>0; i--) \
 					{ \
 						times--; \
-						times[1]=times[0]; \
-						primitive_ptr--; \
-						primitive_ptr[1]=primitive_ptr[0]; \
+						times[1] = times[0]; \
+						primitive_list--; \
+						primitive_list[1].primitive_var.first = primitive_list->primitive_var.first; \
+						primitive_list[1].primitive_var.last = primitive_list->primitive_var.last; \
 					} \
-					*times=time; \
-					*primitive_ptr=primitive; \
-               GT_object_changed(graphics_object); \
-					return_code=1; \
+					*times = time; \
+					primitive_list->primitive_var.first = (struct primitive_type *)NULL; \
+					primitive_list->primitive_var.last = (struct primitive_type *)NULL; \
 				} \
 				else \
 				{ \
-					display_message(ERROR_MESSAGE,"GT_OBJECT_ADD(" #primitive_type \
-						").  Could not reallocate primitives"); \
-					return_code=0; \
+					return_code = 0; \
 				} \
 			} \
 			else \
 			{ \
-				display_message(ERROR_MESSAGE, \
-					"GT_OBJECT_ADD(" #primitive_type ").  Could not reallocate times"); \
-				(graphics_object->number_of_times)--; \
-				return_code=0; \
+				return_code = 0; \
 			} \
+		} \
+		if (return_code) \
+		{ \
+			/*???RC FORWARD PRIMITIVE_ORDER -- Can handle linked primitives */ \
+			/* \
+			if (primitive_list->primitive_var.last) \
+			{ \
+				primitive_list->primitive_var.last->ptrnext = primitive; \
+			} \
+			else \
+			{ \
+				primitive_list->primitive_var.first = primitive; \
+				primitive_list->primitive_var.last = primitive; \
+			} \
+			*/ \
+			/* advance last pointer to last primitive in linked-list */ \
+			/* \
+			if (primitive_list->primitive_var.last) \
+			{ \
+				while (primitive_list->primitive_var.last->ptrnext) \
+				{ \
+					primitive_list->primitive_var.last = \
+						primitive_list->primitive_var.last->ptrnext; \
+				} \
+			} \
+			*/ \
+\
+			/*???RC REVERSE PRIMITIVE_ORDER -- Assumes only one primitive */ \
+			/*???RC remove as soon as possible for graphics object editing */ \
+			if (primitive_list->primitive_var.last) \
+			{ \
+				primitive->ptrnext = primitive_list->primitive_var.first; \
+				primitive_list->primitive_var.first = primitive; \
+			} \
+			else \
+			{ \
+				primitive_list->primitive_var.first = primitive; \
+				primitive_list->primitive_var.last = primitive; \
+			} \
+\
+			GT_object_changed(graphics_object); \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"GT_OBJECT_ADD(" #primitive_type ").  Failed"); \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"GT_OBJECT_ADD(" #primitive_type ").  Invalid arguments"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -4807,252 +5089,360 @@ DECLARE_GT_OBJECT_ADD_FUNCTION(GT_voltex,g_VOLTEX,gt_voltex)
 	gt_object_type,primitive_var) \
 PROTOTYPE_GT_OBJECT_GET_FUNCTION(primitive_type) \
 /***************************************************************************** \
-LAST MODIFIED : 19 June 1998 \
+LAST MODIFIED : 17 March 2003 \
 \
 DESCRIPTION : \
 Returns pointer to the primitive at the given time in graphics_object. \
 ============================================================================*/ \
 { \
 	struct primitive_type *primitive; \
-	int time_no; \
+	int time_number; \
 \
 	ENTER(GT_OBJECT_GET(primitive_type)); \
-	/* check arguments */ \
+	primitive = (struct primitive_type *)NULL; \
 	if (graphics_object&&(gt_object_type==graphics_object->object_type)) \
 	{ \
-		if (0<(time_no=GT_object_get_time_number(graphics_object,time))) \
+		if (0 < (time_number = GT_object_get_time_number(graphics_object,time))) \
 		{ \
-			if (graphics_object->gu.primitive_var) \
+			if (graphics_object->primitive_lists) \
 			{ \
-				primitive=graphics_object->gu.primitive_var[time_no-1]; \
+				primitive = graphics_object->primitive_lists[time_number - 1]. \
+					primitive_var.first; \
 			} \
 			else \
 			{ \
 				display_message(ERROR_MESSAGE, \
-					"GT_OBJECT_GET(" #primitive_type ").  Invalid primitives array"); \
-				primitive=(struct primitive_type *)NULL; \
+					"GT_OBJECT_GET(" #primitive_type ").  Invalid primitive_lists"); \
 			} \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"GT_OBJECT_GET(" #primitive_type ").  No primitives at time %g",time); \
-			primitive=(struct primitive_type *)NULL; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"GT_OBJECT_GET(" #primitive_type ").  Invalid arguments"); \
-		primitive=(struct primitive_type *)NULL; \
 	} \
 	LEAVE; \
 \
 	return (primitive); \
 } /* GT_OBJECT_GET(primitive_type) */
 
-DECLARE_GT_OBJECT_GET_FUNCTION(GT_glyph_set,g_GLYPH_SET,gt_glyph_set)
-DECLARE_GT_OBJECT_GET_FUNCTION(GT_nurbs,g_NURBS,gt_nurbs)
-DECLARE_GT_OBJECT_GET_FUNCTION(GT_point,g_POINT,gt_point)
 DECLARE_GT_OBJECT_GET_FUNCTION(GT_pointset,g_POINTSET,gt_pointset)
 DECLARE_GT_OBJECT_GET_FUNCTION(GT_polyline,g_POLYLINE,gt_polyline)
 DECLARE_GT_OBJECT_GET_FUNCTION(GT_surface,g_SURFACE,gt_surface)
-DECLARE_GT_OBJECT_GET_FUNCTION(GT_userdef,g_USERDEF,gt_userdef)
-DECLARE_GT_OBJECT_GET_FUNCTION(GT_voltex,g_VOLTEX,gt_voltex)
 
-int GT_object_delete_time(struct GT_object *graphics_object,float time)
+int GT_object_remove_primitives_at_time(
+	struct GT_object *graphics_object, float time,
+	GT_object_primitive_object_name_conditional_function *conditional_function,
+	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 25 March 2003
 
 DESCRIPTION :
-Removes all primitive at <time> from <graphics_object>.
+Removes primitives at <time> from <graphics_object>.
+The optional <conditional_function> allows a subset of the primitives to
+be removed. This function is called with the object_name integer associated
+with each primitive plus the void *<user_data> supplied here. A true result
+from the conditional_function causes the primitive to be removed.
 ==============================================================================*/
 {
-	int return_code,time_no;
+	int return_code, time_number;
 
-	ENTER(GT_object_delete_time);
+	ENTER(GT_object_remove_primitives_at_time);
 	if (graphics_object)
 	{
-		if (0<(time_no=GT_object_get_time_number(graphics_object,time)))
+		if (0 < (time_number = GT_object_get_time_number(graphics_object, time)))
 		{
-			return_code=GT_object_delete_time_number(graphics_object,time_no);
+			return_code = GT_object_remove_primitives_at_time_number(graphics_object,
+				time_number, conditional_function, user_data);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"GT_object_delete_time.  No primatives at time %g",time);
-			return_code=0;
+			/* graphics_object does not have that time, so no need to remove */
+			return_code = 1;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"GT_object_delete_time.  Invalid arguments");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"GT_object_remove_primitives_at_time.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_object_delete_time */
+} /* GT_object_remove_primitives_at_time */
 
-#define DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION( \
-	primitive_type,gt_object_type,primitive_var,primitive_destroy_function) \
-PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(primitive_type)\
+#if defined (FULL_NAMES)
+#define GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_(primitive_type) \
+	GT_object_transfer_primitives_at_time_number_ ## primitive_type
+#else
+#define GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_(primitive_type) \
+	gotptn_ ## primitive_type
+#endif
+#define GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(primitive_type) \
+	GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_(primitive_type)
+
+#define DECLARE_GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_FUNCTION( \
+	primitive_type,gt_object_type,primitive_var) \
+static int GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(primitive_type)( \
+	struct GT_object *destination, struct GT_object *source, \
+	int time_number, float time) \
 /***************************************************************************** \
-LAST MODIFIED : 1 February 2000 \
+LAST MODIFIED : 18 March 2003 \
 \
 DESCRIPTION : \
-Removes all primitives from <graphics_object> at <time> for which the \
-object_name member matches the given <object_name>. \
+Transfers the primitives stored at <time_number> in <source> to <time> in \
+<destination>. Primitives are added after any in <destination> at <time>. \
 ============================================================================*/ \
 { \
-	struct primitive_type *primitive,**primitive_ptr; \
-	int return_code,time_no; \
+	int return_code; \
+	struct primitive_type *primitive; \
+	union GT_primitive_list *primitive_list; \
 \
-	ENTER(GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(primitive_type)); \
-	if (graphics_object&&(gt_object_type==graphics_object->object_type))\
+	ENTER(GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(primitive_type)); \
+	return_code = 0; \
+	if (destination && (gt_object_type == destination->object_type) && \
+		source && (gt_object_type == source->object_type) && \
+		source->primitive_lists && \
+		(0 < time_number) && (time_number <= source->number_of_times)) \
 	{ \
-		if (0<(time_no=GT_object_get_time_number(graphics_object,time))) \
+		primitive_list = source->primitive_lists + time_number - 1; \
+		primitive = primitive_list->primitive_var.first; \
+		if (GT_OBJECT_ADD(primitive_type)(destination, time, primitive)) \
 		{ \
-			if (primitive_ptr=graphics_object->gu.primitive_var) \
-			{ \
-				primitive_ptr += time_no-1; \
-				/* Remove primitives with object_name at this time */ \
-				while (primitive= *primitive_ptr) \
-				{ \
-					if ((primitive->object_name)==object_name) \
-					{ \
-						*primitive_ptr=primitive->ptrnext; \
-						primitive_destroy_function(&primitive); \
-					} \
-					else \
-					{ \
-						primitive_ptr=&(primitive->ptrnext); \
-					} \
-				} \
-				/* must remove time if no primitives left there */ \
-				/*???RC.  Not needed now that empty times are allowed? */ \
-				if ((struct primitive_type *)NULL == \
-					graphics_object->gu.primitive_var[time_no-1]) \
-				{ \
-					return_code=GT_OBJECT_DELETE_TIME_NUMBER(primitive_type)( \
-						graphics_object,time_no); \
-				} \
-				else \
-				{ \
-					return_code=1; \
-				} \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(" #primitive_type \
-					").  Invalid primitives array"); \
-				return_code=0; \
-			} \
-		} \
-		else \
-		{ \
-			return_code=1; \
+			primitive_list->primitive_var.first = (struct primitive_type *)NULL; \
+			primitive_list->primitive_var.last = (struct primitive_type *)NULL; \
+			GT_object_changed(source); \
+			return_code = 1; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(" #primitive_type \
+			"GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(" #primitive_type \
 			").  Invalid arguments"); \
-		return_code=0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(primitive_type) */
+} /* GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(primitive_type) */
 
-DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_glyph_set, \
-	g_GLYPH_SET,gt_glyph_set,DESTROY(GT_glyph_set))
-DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_polyline, \
-	g_POLYLINE,gt_polyline,DESTROY(GT_polyline))
-DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_surface, \
-	g_SURFACE,gt_surface,DESTROY(GT_surface))
-DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_nurbs, \
-	g_NURBS,gt_nurbs,DESTROY(GT_nurbs))
-DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex, \
-	g_VOLTEX,gt_voltex,DESTROY(GT_voltex))
+DECLARE_GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_FUNCTION(GT_glyph_set, \
+	g_GLYPH_SET,gt_glyph_set)
+DECLARE_GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_FUNCTION(GT_polyline, \
+	g_POLYLINE,gt_polyline)
+DECLARE_GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_FUNCTION(GT_surface, \
+	g_SURFACE,gt_surface)
+DECLARE_GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_FUNCTION(GT_voltex, \
+	g_VOLTEX,gt_voltex)
 
-#define DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( \
-	primitive_type,gt_object_type,primitive_var,primitive_destroy_function) \
-PROTOTYPE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION(primitive_type)\
+int GT_object_transfer_primitives_at_time(struct GT_object *destination,
+	struct GT_object *source, float time)
+/*******************************************************************************
+LAST MODIFIED : 18 March 2003
+
+DESCRIPTION :
+Transfers the primitives stored at exactly <time> in <source> to <time> in
+<destination>. Should already have called GT_object_has_primitives_at_time
+with <source> to verify it has primitives at that time.
+Primitives are added after any in <destination> at <time>.
+==============================================================================*/
+{
+	int return_code, time_number;
+
+	ENTER(GT_object_transfer_primitives_at_time);
+	return_code = 0;
+	if (destination && source &&
+		(destination->object_type == source->object_type) && source->times &&
+		(0 < (time_number = GT_object_get_time_number(source, time))) &&
+		(source->times[time_number - 1] == time))
+	{
+		switch (source->object_type)
+		{
+			case g_GLYPH_SET:
+			{
+				return_code=GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(GT_glyph_set)(
+					destination, source, time_number, time);
+			} break;
+			case g_POLYLINE:
+			{
+				return_code=GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(GT_polyline)(
+					destination, source, time_number, time);
+			} break;
+			case g_SURFACE:
+			{
+				return_code=GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(GT_surface)(
+					destination, source, time_number, time);
+			} break;
+			case g_VOLTEX:
+			{
+				return_code=GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(GT_voltex)(
+					destination, source, time_number, time);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_object_remove_primitives_at_time_number.  "
+					"Not enabled for this object_type");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_transfer_primitives_at_time.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_transfer_primitives_at_time */
+
+#define DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION( \
+	primitive_type,gt_object_type,primitive_var) \
+PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION( \
+	primitive_type) \
 /***************************************************************************** \
-LAST MODIFIED : 7 June 2001 \
+LAST MODIFIED : 18 March 2003 \
 \
 DESCRIPTION : \
-Removes all primitives from <graphics_object> at <time> for which the \
-auxiliary_object_name member matches the given <auxiliary_object_name>. \
+Returns the first primitives in <graphics_object> at <time> that have the \
+given <object_name>, or NULL if there are no primitives or none with the name. \
+The extracted primitives are returned in a linked-list. \
 ============================================================================*/ \
 { \
-	struct primitive_type *primitive,**primitive_ptr; \
-	int return_code,time_no; \
+	int time_number; \
+	struct primitive_type *last_primitive, *primitive; \
+	union GT_primitive_list *primitive_list; \
 \
-	ENTER(GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type)); \
-	if (graphics_object&&(gt_object_type==graphics_object->object_type))\
+	ENTER(GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(primitive_type)); \
+	primitive = (struct primitive_type *)NULL; \
+	if (graphics_object && (gt_object_type == graphics_object->object_type)) \
 	{ \
-		if (0<(time_no=GT_object_get_time_number(graphics_object,time))) \
+		if (graphics_object->primitive_lists && \
+			(0 < (time_number = GT_object_get_time_number(graphics_object, time)))) \
 		{ \
-			if (primitive_ptr=graphics_object->gu.primitive_var) \
+			primitive_list = graphics_object->primitive_lists + time_number - 1; \
+			if (primitive = primitive_list->primitive_var.first) \
 			{ \
-				primitive_ptr += time_no-1; \
-				/* Remove primitives with auxiliary_object_name at this time */ \
-				while (primitive= *primitive_ptr) \
+				if (primitive->object_name == object_name) \
 				{ \
-					if ((primitive->auxiliary_object_name)==auxiliary_object_name) \
+					last_primitive = primitive; \
+					while ((last_primitive->ptrnext) && \
+						(last_primitive->ptrnext->object_name == object_name)) \
 					{ \
-						*primitive_ptr=primitive->ptrnext; \
-						primitive_destroy_function(&primitive); \
+						last_primitive = last_primitive->ptrnext; \
+					} \
+					primitive_list->primitive_var.first = last_primitive->ptrnext; \
+					if (last_primitive->ptrnext) \
+					{ \
+						last_primitive->ptrnext = (struct primitive_type *)NULL; \
 					} \
 					else \
 					{ \
-						primitive_ptr=&(primitive->ptrnext); \
+						primitive_list->primitive_var.last = \
+							(struct primitive_type *)NULL; \
 					} \
-				} \
-				/* must remove time if no primitives left there */ \
-				/*???RC.  Not needed now that empty times are allowed? */ \
-				if ((struct primitive_type *)NULL == \
-					graphics_object->gu.primitive_var[time_no-1]) \
-				{ \
-					return_code=GT_OBJECT_DELETE_TIME_NUMBER(primitive_type)( \
-						graphics_object,time_no); \
+					GT_object_changed(graphics_object); \
 				} \
 				else \
 				{ \
-					return_code=1; \
+					primitive = (struct primitive_type *)NULL; \
 				} \
 			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(" \
-					#primitive_type ").  Invalid primitives array"); \
-				return_code=0; \
-			} \
-		} \
-		else \
-		{ \
-			return_code=1; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(" \
-			#primitive_type ").  Invalid arguments"); \
-		return_code=0; \
+			"GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(" #primitive_type \
+			").  Invalid arguments"); \
 	} \
 	LEAVE; \
 \
-	return (return_code); \
-} /* GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(primitive_type) */
+	return (primitive); \
+} /* GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(primitive_type) */
 
-DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME_FUNCTION( \
-	GT_glyph_set, g_GLYPH_SET, gt_glyph_set, DESTROY(GT_glyph_set))
+DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_polyline, \
+	g_POLYLINE,gt_polyline)
+DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_surface, \
+	g_SURFACE,gt_surface)
+DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_voltex, \
+	g_VOLTEX,gt_voltex)
+
+#define DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY_FUNCTION( \
+	primitive_type,gt_object_type,primitive_var) \
+PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION( \
+	primitive_type) \
+/***************************************************************************** \
+LAST MODIFIED : 18 March 2003 \
+\
+DESCRIPTION : \
+Returns the first primitives in <graphics_object> at <time> that have the \
+given <object_name>, or NULL if there are no primitives or none with the name. \
+The extracted primitives are returned in a linked-list. \
+Version for objects using the auxiliary_object_name in place of object_name. \
+============================================================================*/ \
+{ \
+	int time_number; \
+	struct primitive_type *last_primitive, *primitive; \
+	union GT_primitive_list *primitive_list; \
+\
+	ENTER(GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY(primitive_type)); \
+	primitive = (struct primitive_type *)NULL; \
+	if (graphics_object && (gt_object_type == graphics_object->object_type)) \
+	{ \
+		if (graphics_object->primitive_lists && \
+			(0 < (time_number = GT_object_get_time_number(graphics_object, time)))) \
+		{ \
+			primitive_list = graphics_object->primitive_lists + time_number - 1; \
+			if (primitive = primitive_list->primitive_var.first) \
+			{ \
+				if (primitive->auxiliary_object_name == object_name) \
+				{ \
+					last_primitive = primitive; \
+					while ((last_primitive->ptrnext) && \
+						(last_primitive->ptrnext->auxiliary_object_name == object_name)) \
+					{ \
+						last_primitive = last_primitive->ptrnext; \
+					} \
+					primitive_list->primitive_var.first = last_primitive->ptrnext; \
+					if (last_primitive->ptrnext) \
+					{ \
+						last_primitive->ptrnext = (struct primitive_type *)NULL; \
+					} \
+					else \
+					{ \
+						primitive_list->primitive_var.last = \
+							(struct primitive_type *)NULL; \
+					} \
+					GT_object_changed(graphics_object); \
+				} \
+				else \
+				{ \
+					primitive = (struct primitive_type *)NULL; \
+				} \
+			} \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY(" #primitive_type \
+			").  Invalid arguments"); \
+	} \
+	LEAVE; \
+\
+	return (primitive); \
+} /* GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY(primitive_type) */
+
+DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY_FUNCTION( \
+	GT_glyph_set,g_GLYPH_SET,gt_glyph_set)
 
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)
@@ -5361,6 +5751,42 @@ Sets the default_material of a GT_object.
 
 	return (return_code);
 } /* set_GT_object_default_material */
+
+int GT_object_set_name(struct GT_object *graphics_object, char *name)
+/*******************************************************************************
+LAST MODIFIED : 30 April 2003
+
+DESCRIPTION :
+Changes the name of <graphics_object> to a copy of <name>.
+==============================================================================*/
+{
+	char *temp_name;
+	int return_code;
+
+	ENTER(GT_object_set_name);
+	if (graphics_object && name)
+	{
+		if (temp_name = duplicate_string(name))
+		{
+			DEALLOCATE(graphics_object->name);
+			graphics_object->name = temp_name;
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_name.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_set_name */
 
 struct Graphical_material *get_GT_object_selected_material
 	(struct GT_object *graphics_object)

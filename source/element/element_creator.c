@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 May 2003
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -14,7 +14,7 @@ selections. Elements are created in this way while dialog is open.
 #include <Xm/TextF.h>
 #include <Xm/ToggleBG.h>
 #include "choose/choose_fe_field.h"
-#include "choose/choose_element_group.h"
+#include "region/cmiss_region_chooser.h"
 #include "element/element_creator.h"
 #include "element/element_creator.uidh"
 #include "finite_element/finite_element.h"
@@ -40,7 +40,7 @@ Module types
 
 struct Element_creator
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 10 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -63,21 +63,18 @@ DESCRIPTION :
 	/* number of nodes that have been set in the element being created */
 	int number_of_clicked_nodes;
 
-	/* the element and node groups new objects are put in */
-	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *node_group;
-	/* node and element managers */
-	struct MANAGER(FE_basis) *basis_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	/* root_region and region/fe_region to put new elements in */
+	struct Cmiss_region *region, *root_region;
+	struct FE_region *fe_region;
+
+	/* selections */
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
 
+	struct Cmiss_region_chooser *region_chooser;
+
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
-		element_dimension_text,element_group_form,element_group_widget,
+		element_dimension_text, region_form,
 		node_list_widget;
 	Widget widget,window_shell;
 }; /* struct Element_creator */
@@ -90,7 +87,7 @@ Module functions
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
 	create_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
-	element_group_form)
+	region_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
 	element_dimension_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
@@ -101,7 +98,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
 static int Element_creator_make_template_node(
 	struct Element_creator *element_creator)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Ensures there is a template node defined with the coordinate_field in the
@@ -116,20 +113,19 @@ Ensures there is a template node defined with the coordinate_field in the
 	{
 		if (element_creator->coordinate_field)
 		{
-			if (element_creator->node_group)
+			if (element_creator->fe_region)
 			{
-				return_code=1;
+				return_code = 1;
 				if (!element_creator->template_node)
 				{
 					if ((node_field_creator = CREATE(FE_node_field_creator)(
 						/*number_of_components*/3))&&
-						(element_creator->template_node=CREATE(FE_node)(
-						/*node_number*/0,(struct FE_node *)NULL)))
+						(element_creator->template_node = CREATE(FE_node)(/*node_number*/0,
+							element_creator->fe_region, (struct FE_node *)NULL)))
 					{
 						/* template_node is accessed by element_creator but not managed */
 						ACCESS(FE_node)(element_creator->template_node);
-						if (!define_FE_field_at_node(
-							element_creator->template_node,
+						if (!define_FE_field_at_node(element_creator->template_node,
 							element_creator->coordinate_field,
 							(struct FE_time_version *)NULL, node_field_creator))
 						{
@@ -154,7 +150,7 @@ Ensures there is a template node defined with the coordinate_field in the
 			{
 				display_message(ERROR_MESSAGE,
 					"Element_creator_make_template_node.  "
-					"Must specify a node group first");
+					"Must specify a region first");
 				return_code=0;
 			}
 		}
@@ -179,7 +175,7 @@ Ensures there is a template node defined with the coordinate_field in the
 static int Element_creator_make_template_element(
 	struct Element_creator *element_creator)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 4 November 2002
 
 DESCRIPTION :
 This function checks if <element_creator> has a coordinate_field, element shape,
@@ -193,7 +189,7 @@ generating 2-D bilinear elements.
 	struct FE_basis *element_basis;
 	struct FE_element_field_component *component,**components;
 			struct FE_element_shape *element_shape;
-	struct Standard_node_to_element_map **standard_node_map;
+	struct Standard_node_to_element_map *standard_node_map;
 
 	ENTER(Element_creator_make_template_element);
 	if (element_creator)
@@ -273,8 +269,9 @@ generating 2-D bilinear elements.
 							xi_basis_type++;
 						}
 					}
-					if (element_basis=
-						make_FE_basis(basis_type,element_creator->basis_manager))
+					if (element_basis =
+						make_FE_basis(basis_type,
+							FE_region_get_basis_manager(element_creator->fe_region)))
 					{
 						ACCESS(FE_basis)(element_basis);
 					}
@@ -298,24 +295,24 @@ generating 2-D bilinear elements.
 			{
 				element_identifier.type=CM_ELEMENT;
 				element_identifier.number=0;
-				if (element_creator->template_element=CREATE(FE_element)(
-					&element_identifier,(struct FE_element *)NULL))
+				if (element_creator->template_element = CREATE(FE_element)(
+					&element_identifier, element_shape, element_creator->fe_region,
+					(struct FE_element *)NULL))
 				{
 					number_of_nodes=1;
 					for (i=0;i<element_dimension;i++)
 					{
 						number_of_nodes *= 2;
 					}
-					if (set_FE_element_shape(element_creator->template_element,
-						element_shape)&&
-						set_FE_element_node_scale_field_info(
+					if (set_FE_element_number_of_nodes(element_creator->template_element,
+							number_of_nodes) &&
+						set_FE_element_number_of_scale_factor_sets(
 							element_creator->template_element,
 							/*number_of_scale_factor_sets*/1,
 							/*scale_factor_set_identifiers*/(void *)&element_basis,
-							/*numbers_in_scale_factor_sets*/&number_of_nodes,
-							number_of_nodes))
+							/*numbers_in_scale_factor_sets*/&number_of_nodes))
 					{
-						number_of_components=get_FE_field_number_of_components(
+						number_of_components = get_FE_field_number_of_components(
 							element_creator->coordinate_field);
 						if (ALLOCATE(components,struct FE_element_field_component *,
 							number_of_components))
@@ -330,26 +327,32 @@ generating 2-D bilinear elements.
 									STANDARD_NODE_TO_ELEMENT_MAP,number_of_nodes,
 									element_basis,(FE_element_field_component_modify)NULL))
 								{
-									standard_node_map=
-										component->map.standard_node_based.node_to_element_maps;
 									for (j=0;j<number_of_nodes;j++)
 									{
-										if (*standard_node_map=
+										if (standard_node_map =
 											CREATE(Standard_node_to_element_map)(
-												/*node_index*/j,/*number_of_values*/1))
+												/*node_index*/j, /*number_of_values*/1))
 										{
-											(*standard_node_map)->nodal_value_indices[0]=0;
-											(*standard_node_map)->scale_factor_indices[0]=j;
-											/* set scale_factors to 1 */
-											element_creator->template_element->information->
-												scale_factors[(*standard_node_map)->
-													scale_factor_indices[0]]=1.0;
+											if (!(Standard_node_to_element_map_set_nodal_value_index(
+												standard_node_map, 0, 0) &&
+												Standard_node_to_element_map_set_scale_factor_index(
+													standard_node_map, 0, j) &&
+												/* set scale_factors to 1 */
+												set_FE_element_scale_factor(
+													element_creator->template_element,
+													/*scale_factor_number*/j, 1.0) &&
+												FE_element_field_component_set_standard_node_map(
+													component, /*node_number*/j, standard_node_map)))
+											{
+												DESTROY(Standard_node_to_element_map)(
+													&standard_node_map);
+												return_code = 0;
+											}
 										}
 										else
 										{
 											return_code=0;
 										}
-										standard_node_map++;
 									}
 								}
 								else
@@ -441,7 +444,7 @@ generating 2-D bilinear elements.
 static int Element_creator_end_element_creation(
 	struct Element_creator *element_creator)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 13 January 2003
 
 DESCRIPTION :
 DEACCESSes the element being created, if any, and if it is unmanaged, warns that
@@ -456,8 +459,8 @@ Call this function whether element is successfully created or not.
 	{
 		if (element_creator->element)
 		{
-			if (!IS_MANAGED(FE_element)(element_creator->element,
-				element_creator->element_manager))
+			if (!FE_region_contains_FE_element(element_creator->fe_region,
+				element_creator->element))
 			{
 				display_message(WARNING_MESSAGE,
 					"Element_creator: destroying incomplete element");
@@ -480,80 +483,30 @@ Call this function whether element is successfully created or not.
 
 static int Element_creator_add_element(struct Element_creator *element_creator)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 14 May 2003
 
 DESCRIPTION :
-Adds the just created element to the manager and group, adding faces to these
-as necessary.
-Note: It is up to the calling function to call
-Element_creator_release_input.
+Adds the just created element to the fe_region, adding faces as necessary.
 ==============================================================================*/
 {
 	int return_code;
-	struct Add_FE_element_and_faces_to_manager_data *add_element_data;
 
 	ENTER(Element_creator_add_element);
-	if (element_creator&&element_creator->element&&
-		(element_creator->number_of_clicked_nodes ==
-			element_creator->element->information->number_of_nodes))
+	if (element_creator && element_creator->fe_region && element_creator->element)
 	{
-		/* create user_data for add_FE_element_and_faces_to_manager, which
-			 helps efficiently find existing faces to fit new element. Don't
-			 forget to destroy it afterwards as it can be huge! */
-		if (add_element_data=CREATE(Add_FE_element_and_faces_to_manager_data)(
-			element_creator->element_manager))
-		{
-			MANAGER_BEGIN_CACHE(FE_element)(element_creator->element_manager);
-			if (element_creator->element_group)
-			{
-				MANAGED_GROUP_BEGIN_CACHE(FE_element)(
-					element_creator->element_group);
-			}
-			if (add_FE_element_and_faces_to_manager(element_creator->element,
-				(void *)add_element_data)&&((!element_creator->element_group)||
-					add_FE_element_and_faces_to_group(element_creator->element,
-						element_creator->element_group)))
-			{
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Element_creator_add_element.  "
-					"Error adding element to element_manager or element_group");
-				if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-					element_creator->element->identifier,
-					element_creator->element_manager))
-				{
-					if (element_creator->element_group&&
-						FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
-							element_creator->element->identifier,
-							element_creator->element_group))
-					{
-						remove_FE_element_and_faces_from_group(element_creator->element,
-							element_creator->element_group,
-							RECURSIVE_REMOVE_ELEMENT_AND_PARENTLESS_FACES);
-					}
-					remove_FE_element_and_faces_from_manager(element_creator->element,
-						element_creator->element_manager);
-				}
-				return_code=0;
-			}
-			MANAGER_END_CACHE(FE_element)(element_creator->element_manager);
-			if (element_creator->element_group)
-			{
-				MANAGED_GROUP_END_CACHE(FE_element)(element_creator->element_group);
-			}
-			/* Destroy add_element_data without fail - it can be huge! */
-			DESTROY(Add_FE_element_and_faces_to_manager_data)(&add_element_data);
-		}
+		FE_region_begin_change(element_creator->fe_region);
+		FE_region_begin_define_faces(element_creator->fe_region);
+		return_code = FE_region_merge_FE_element_and_faces_and_nodes(
+			element_creator->fe_region, element_creator->element);
+		FE_region_end_define_faces(element_creator->fe_region);
+		FE_region_end_change(element_creator->fe_region);
 		Element_creator_end_element_creation(element_creator);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Element_creator_add_element.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -564,13 +517,14 @@ static void Element_creator_node_selection_change(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *changes,void *element_creator_void)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Callback for change in the global node selection.
 ==============================================================================*/
 {
 	char temp_string[50];
+	int number_of_nodes;
 	struct CM_element_information element_identifier;
 	struct Element_creator *element_creator;
 	struct FE_node *node;
@@ -583,24 +537,21 @@ Callback for change in the global node selection.
 		/* if exactly 1 node selected, add it to element */
 		if (1==NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))
 		{
-			/* get the last selected node and check it is in node_group */
-			node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+			/* get the last selected node and check it is in the FE_region */
+			node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
 				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
 				changes->newly_selected_node_list);
-			if (IS_OBJECT_IN_GROUP(FE_node)(node,element_creator->node_group))
+			if (FE_region_contains_FE_node(element_creator->fe_region, node))
 			{
 				if (!element_creator->element)
 				{
-					element_identifier.type=CM_ELEMENT;
-					element_identifier.number=1;
-					while (element_creator->element=
-						FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
-							&element_identifier,element_creator->element_manager))
-					{
-						element_identifier.number++;
-					}
-					if (Element_creator_make_template_element(element_creator)&&
-						(element_creator->element=CREATE(FE_element)(&element_identifier,
+					/* get next unused element identifier from fe_region */
+					element_identifier.type = CM_ELEMENT;
+					element_identifier.number = FE_region_get_next_FE_element_identifier(
+						element_creator->fe_region, CM_ELEMENT, 1);
+					if (Element_creator_make_template_element(element_creator) &&
+						(element_creator->element = CREATE(FE_element)(&element_identifier,
+							(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
 							element_creator->template_element)))
 					{
 						ACCESS(FE_element)(element_creator->element);
@@ -618,13 +569,14 @@ Callback for change in the global node selection.
 						{
 							sprintf(temp_string,"%d. Node %d",
 								element_creator->number_of_clicked_nodes+1,
-								get_FE_node_cm_node_identifier(node));
+								get_FE_node_identifier(node));
 							new_string=XmStringCreateSimple(temp_string);
 							XmListAddItem(element_creator->node_list_widget,new_string,0);
 							XmStringFree(new_string);
 							element_creator->number_of_clicked_nodes++;
-							if (element_creator->number_of_clicked_nodes ==
-								element_creator->element->information->number_of_nodes)
+							if (get_FE_element_number_of_nodes(element_creator->element,
+								&number_of_nodes) &&
+								(element_creator->number_of_clicked_nodes == number_of_nodes))
 							{
 								Element_creator_add_element(element_creator);
 							}
@@ -650,7 +602,7 @@ Callback for change in the global node selection.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Element creator: Selected node not from current group");
+					"Element creator: Selected node not from current region");
 			}
 		}
 	}
@@ -661,6 +613,51 @@ Callback for change in the global node selection.
 	}
 	LEAVE;
 } /* Element_creator_node_selection_change */
+
+static int Element_creator_set_region(struct Element_creator *element_creator,
+	struct Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 14 January 2003
+
+DESCRIPTION :
+Sets the <region> containing the FE_region where elements created by
+<element_creator> are placed.
+The <element_creator> assumes its nodes are to come from the same FE_region.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_creator_set_region);
+	if (element_creator)
+	{
+		return_code = 1;
+		if (region != element_creator->region)
+		{
+			Element_creator_end_element_creation(element_creator);
+			element_creator->region = region;
+			/* lose the current template element and node, if any */
+			REACCESS(FE_element)(&(element_creator->template_element),
+			(struct FE_element *)NULL);
+			if (region)
+			{
+				element_creator->fe_region = Cmiss_region_get_FE_region(region);
+			}
+			else
+			{
+				element_creator->fe_region = (struct FE_region *)NULL;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_set_region.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_creator_set_region */
 
 static int Element_creator_refresh_element_dimension_text(
 	struct Element_creator *element_creator)
@@ -729,32 +726,32 @@ response to node selection.
 	LEAVE;
 } /* Element_creator_create_button_CB */
 
-static void Element_creator_update_element_group(Widget widget,
-	void *element_creator_void,void *element_group_void)
+static void Element_creator_update_region(Widget widget,
+	void *element_creator_void,void *region_void)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 13 January 2003
 
 DESCRIPTION :
-Callback for change of element group to put the new elements in.
+Callback for change of region to put the new elements in.
 ==============================================================================*/
 {
-	struct GROUP(FE_element) *element_group;
+	struct Cmiss_region *region;
 	struct Element_creator *element_creator;
 
-	ENTER(Element_creator_update_element_group);
+	ENTER(Element_creator_update_region);
 	USE_PARAMETER(widget);
 	if (element_creator=(struct Element_creator *)element_creator_void)
 	{
-		element_group=(struct GROUP(FE_element) *)element_group_void;
-		Element_creator_set_element_group(element_creator,element_group);
+		region = (struct Cmiss_region *)region_void;
+		Element_creator_set_region(element_creator, region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_creator_update_element_group.  Invalid argument(s)");
+			"Element_creator_update_region.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Element_creator_update_element_group */
+} /* Element_creator_update_region */
 
 static void Element_creator_element_dimension_text_CB(Widget widget,
 	void *element_creator_void,void *call_data)
@@ -886,34 +883,26 @@ Global functions
 
 struct Element_creator *CREATE(Element_creator)(
 	struct Element_creator **element_creator_address,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct Cmiss_region *root_region, char *initial_region_path,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 14 January 2003
 
 DESCRIPTION :
-Creates a Element_creator, giving it the element_manager to put new
-elements in, and the node_manager for new nodes, and the fe_field_manager to
-enable the creation of a coordinate field.
+Creates an Element_creator.
 ==============================================================================*/
 {
 	Atom WM_DELETE_WINDOW;
-	char *group_name;
 	int init_widgets;
 	MrmType element_creator_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
 		{"elem_cre_id_create_btn",(XtPointer)
 			DIALOG_IDENTIFY(element_creator,create_button)},
-		{"elem_cre_id_element_group_form",(XtPointer)
-			DIALOG_IDENTIFY(element_creator,element_group_form)},
+		{"elem_cre_id_region_form",(XtPointer)
+			DIALOG_IDENTIFY(element_creator,region_form)},
 		{"elem_cre_id_dimension_text",(XtPointer)
 			DIALOG_IDENTIFY(element_creator,element_dimension_text)},
 		{"elem_cre_id_coord_field_form",(XtPointer)
@@ -932,138 +921,121 @@ enable the creation of a coordinate field.
 		{"elem_cre_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
+	struct Cmiss_region *region;
 	struct Element_creator *element_creator;
 
 	ENTER(CREATE(Element_creator));
-	element_creator=(struct Element_creator *)NULL;
-	if (element_creator_address&&basis_manager&&element_manager&&
-		element_group_manager&&fe_field_manager&&node_manager&&node_group_manager&&
-		element_selection&&node_selection&&user_interface)
+	element_creator = (struct Element_creator *)NULL;
+	if (element_creator_address && root_region && initial_region_path &&
+		element_selection && node_selection && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(element_creator_uidh,
-			&element_creator_hierarchy,&element_creator_hierarchy_open))
+			&element_creator_hierarchy, &element_creator_hierarchy_open))
 		{
-			if (ALLOCATE(element_creator,struct Element_creator,1))
+			if (ALLOCATE(element_creator, struct Element_creator, 1))
 			{
-				element_creator->element_creator_address=
-					element_creator_address;
-				element_creator->user_interface=user_interface;
-				element_creator->coordinate_field=
-					FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(FE_field_is_coordinate_field,
-						(void *)NULL,fe_field_manager);
-				element_creator->template_node=(struct FE_node *)NULL;
+				element_creator->element_creator_address = element_creator_address;
+				element_creator->user_interface = user_interface;
+				element_creator->coordinate_field = (struct FE_field *)NULL;
+				element_creator->template_node = (struct FE_node *)NULL;
 				/* by default create 2-D elements */
-				element_creator->element_dimension=2;
-				element_creator->template_element=(struct FE_element *)NULL;
-				element_creator->create_enabled=0;
+				element_creator->element_dimension = 2;
+				element_creator->template_element = (struct FE_element *)NULL;
+				element_creator->create_enabled = 0;
 
-				element_creator->element=(struct FE_element *)NULL;
-				element_creator->number_of_clicked_nodes=0;
+				element_creator->element = (struct FE_element *)NULL;
+				element_creator->number_of_clicked_nodes = 0;
 
-				element_creator->element_group=
-					FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
-						(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
-						(void *)NULL,element_group_manager);
-				if (element_creator->element_group&&GET_NAME(GROUP(FE_element))(
-					element_creator->element_group,&group_name))
-				{
-					element_creator->node_group=
-						FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-							group_name,node_group_manager);
-					DEALLOCATE(group_name);
-				}
-				else
-				{
-					element_creator->node_group=(struct GROUP(FE_node) *)NULL;
-				}
-				element_creator->basis_manager=basis_manager;
-				element_creator->element_manager=element_manager;
-				element_creator->element_group_manager=element_group_manager;
-				element_creator->fe_field_manager=fe_field_manager;
-				element_creator->node_manager=node_manager;
-				element_creator->node_group_manager=node_group_manager;
-				element_creator->element_selection=element_selection;
-				element_creator->node_selection=node_selection;
+				element_creator->root_region = root_region;
+				element_creator->region = (struct Cmiss_region *)NULL;
+				element_creator->fe_region = (struct FE_region *)NULL;
+				element_creator->element_selection = element_selection;
+				element_creator->node_selection = node_selection;
 				/* initialise widgets */
-				element_creator->create_button=(Widget)NULL;
-				element_creator->element_group_form=(Widget)NULL;
-				element_creator->element_group_widget=(Widget)NULL;
-				element_creator->element_dimension_text=(Widget)NULL;
-				element_creator->coordinate_field_form=(Widget)NULL;
-				element_creator->coordinate_field_widget=(Widget)NULL;
-				element_creator->node_list_widget=(Widget)NULL;
-				element_creator->widget=(Widget)NULL;
-				element_creator->window_shell=(Widget)NULL;
+				element_creator->region_chooser = (struct Cmiss_region_chooser *)NULL;
+				element_creator->create_button = (Widget)NULL;
+				element_creator->region_form = (Widget)NULL;
+				element_creator->element_dimension_text = (Widget)NULL;
+				element_creator->coordinate_field_form = (Widget)NULL;
+				element_creator->coordinate_field_widget = (Widget)NULL;
+				element_creator->node_list_widget = (Widget)NULL;
+				element_creator->widget = (Widget)NULL;
+				element_creator->window_shell = (Widget)NULL;
 				/* make the dialog shell */
-				if (element_creator->window_shell=
+				if (element_creator->window_shell =
 					XtVaCreatePopupShell("Element Creator",
 						topLevelShellWidgetClass,
 						User_interface_get_application_shell(user_interface),
-						XmNdeleteResponse,XmDO_NOTHING,
-						XmNmwmDecorations,MWM_DECOR_ALL,
-						XmNmwmFunctions,MWM_FUNC_ALL,
-						/*XmNtransient,FALSE,*/
-						XmNallowShellResize,False,
-						XmNtitle,"Element Creator",
+						XmNdeleteResponse, XmDO_NOTHING,
+						XmNmwmDecorations, MWM_DECOR_ALL,
+						XmNmwmFunctions, MWM_FUNC_ALL,
+						/*XmNtransient, FALSE,*/
+						XmNallowShellResize, False,
+						XmNtitle, "Element Creator",
 						NULL))
 				{
 					/* Set up window manager callback for close window message */
-					WM_DELETE_WINDOW=
+					WM_DELETE_WINDOW =
 						XmInternAtom(XtDisplay(element_creator->window_shell),
-							"WM_DELETE_WINDOW",False);
+							"WM_DELETE_WINDOW", False);
 					XmAddWMProtocolCallback(element_creator->window_shell,
-						WM_DELETE_WINDOW,Element_creator_close_CB,
+						WM_DELETE_WINDOW, Element_creator_close_CB,
 						element_creator);
 					/* Register the shell with the busy signal list */
 					create_Shell_list_item(&(element_creator->window_shell),
 						user_interface);
 					/* register the callbacks */
-					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-						element_creator_hierarchy,callback_list,XtNumber(callback_list)))
+					if (MrmSUCCESS == MrmRegisterNamesInHierarchy(
+						element_creator_hierarchy,callback_list, XtNumber(callback_list)))
 					{
 						/* assign and register the identifiers */
-						identifier_list[0].value=(XtPointer)element_creator;
-						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-							element_creator_hierarchy,identifier_list,
+						identifier_list[0].value = (XtPointer)element_creator;
+						if (MrmSUCCESS == MrmRegisterNamesInHierarchy(
+							element_creator_hierarchy, identifier_list,
 							XtNumber(identifier_list)))
 						{
 							/* fetch element creator widgets */
-							if (MrmSUCCESS==MrmFetchWidget(element_creator_hierarchy,
-								"element_creator",element_creator->window_shell,
-								&(element_creator->widget),
-								&element_creator_dialog_class))
+							if (MrmSUCCESS == MrmFetchWidget(element_creator_hierarchy,
+								"element_creator", element_creator->window_shell,
+								&(element_creator->widget), &element_creator_dialog_class))
 							{
-								init_widgets=1;
-								if (element_creator->element_group_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_element))(
-										element_creator->element_group_form,
-										element_creator->element_group,element_group_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
-										(void *)NULL, user_interface))
+								init_widgets = 1;
+								if (element_creator->region_chooser =
+									CREATE(Cmiss_region_chooser)(element_creator->region_form,
+										root_region, initial_region_path))
 								{
-									callback.data=(void *)element_creator;
-									callback.procedure=Element_creator_update_element_group;
-									CHOOSE_OBJECT_SET_CALLBACK(GROUP(FE_element))(
-										element_creator->element_group_widget,&callback);
+									if (Cmiss_region_chooser_get_region(
+										element_creator->region_chooser, &region))
+									{
+										Element_creator_set_region(element_creator, region);
+									}
+									Cmiss_region_chooser_set_callback(
+										element_creator->region_chooser,
+										Element_creator_update_region, (void *)element_creator);
 								}
 								else
 								{
-									init_widgets=0;
+									init_widgets = 0;
 								}
-								if (element_creator->coordinate_field_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
+								if (element_creator->coordinate_field_widget =
+									CREATE_FE_REGION_CHOOSE_OBJECT_WIDGET(FE_field)(
 										element_creator->coordinate_field_form,
-										element_creator->coordinate_field,fe_field_manager,
-										FE_field_is_coordinate_field, (void *)NULL, user_interface))
+										element_creator->fe_region,
+										element_creator->coordinate_field,
+										FE_field_is_coordinate_field, (void *)NULL,
+										user_interface))
 								{
-									callback.data=(void *)element_creator;
-									callback.procedure=Element_creator_update_coordinate_field;
-									CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
-										element_creator->coordinate_field_widget,&callback);
+									element_creator->coordinate_field =
+										FE_REGION_CHOOSE_OBJECT_GET_OBJECT(FE_field)(
+											element_creator->coordinate_field_widget);
+									callback.data = (void *)element_creator;
+									callback.procedure = Element_creator_update_coordinate_field;
+									FE_REGION_CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
+										element_creator->coordinate_field_widget, &callback);
 								}
 								else
 								{
-									init_widgets=0;
+									init_widgets = 0;
 								}
 								if (init_widgets)
 								{
@@ -1253,7 +1225,7 @@ Sets the coordinate field interpolated by elements created with
 				REACCESS(FE_node)(&(element_creator->template_node),
 					(struct FE_node *)NULL);
 				/* make sure the current field is shown on the widget */
-				CHOOSE_OBJECT_SET_OBJECT(FE_field)(
+				FE_REGION_CHOOSE_OBJECT_SET_OBJECT(FE_field)(
 					element_creator->coordinate_field_widget,
 					element_creator->coordinate_field);
 			}
@@ -1436,85 +1408,68 @@ Sets the <element_dimension> of elements to be created by <element_creator>.
 	return (return_code);
 } /* Element_creator_set_element_dimension */
 
-struct GROUP(FE_element) *Element_creator_get_element_group(
-	struct Element_creator *element_creator)
+int Element_creator_get_region_path(struct Element_creator *element_creator,
+	char **path_address)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 13 January 2003
 
 DESCRIPTION :
-Returns the group where elements created by the <element_creator> are put.
-???RC Eventually this will get the Region.
+Returns in <path_address> the path to the Cmiss_region where elements created by
+the <element_creator> are put.
+Up to the calling function to DEALLOCATE the returned path.
 ==============================================================================*/
 {
-	struct GROUP(FE_element) *element_group;
-
-	ENTER(Element_creator_get_element_group);
-	if (element_creator)
-	{
-		element_group=element_creator->element_group;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_creator_get_element_group.  Invalid argument(s)");
-		element_group=(struct GROUP(FE_element) *)NULL;
-	}
-	LEAVE;
-
-	return (element_group);
-} /* Element_creator_get_element_group */
-
-int Element_creator_set_element_group(struct Element_creator *element_creator,
-	struct GROUP(FE_element) *element_group)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2000
-
-DESCRIPTION :
-Sets the <element_group> where elements created by <element_creator> are placed.
-The <element_creator> will assume its nodes are to be in the node group of the
-same name, which enables the nodes and elements to be exported as a group.
-???RC Eventually this will set the Region.
-==============================================================================*/
-{
-	char *group_name;
 	int return_code;
 
-	ENTER(Element_creator_set_element_group);
-	if (element_creator)
+	ENTER(Element_creator_get_region_path);
+	if (element_creator && path_address)
 	{
-		return_code=1;
-		if (element_group != element_creator->element_group)
-		{
-			Element_creator_end_element_creation(element_creator);
-			element_creator->element_group=element_group;
-			if (element_creator->element_group&&GET_NAME(GROUP(FE_element))(
-				element_creator->element_group,&group_name))
-			{
-				element_creator->node_group=
-					FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						group_name,element_creator->node_group_manager);
-				DEALLOCATE(group_name);
-			}
-			else
-			{
-				element_creator->node_group=(struct GROUP(FE_node) *)NULL;
-			}
-			/* make sure the current group is shown */
-			CHOOSE_OBJECT_SET_OBJECT(GROUP(FE_element))(
-				element_creator->element_group_widget,
-				element_creator->element_group);
-		}
+		return_code = Cmiss_region_chooser_get_path(element_creator->region_chooser,
+			path_address);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_creator_set_element_group.  Invalid argument(s)");
-		return_code=0;
+			"Element_creator_get_region_path.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Element_creator_set_element_group */
+} /* Element_creator_get_region_path */
+
+int Element_creator_set_region_path(struct Element_creator *element_creator,
+	char *path)
+/*******************************************************************************
+LAST MODIFIED : 13 January 2003
+
+DESCRIPTION :
+Sets the <path> to the region/FE_region where elements created by
+<element_creator> are placed.
+The <element_creator> assumes its nodes are to come from the same FE_region.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_region *region;
+
+	ENTER(Element_creator_set_region_path);
+	if (element_creator && path)
+	{
+		Cmiss_region_chooser_set_path(element_creator->region_chooser, path);
+		region = (struct Cmiss_region *)NULL;
+		Cmiss_region_chooser_get_region(element_creator->region_chooser, &region);
+		return_code = Element_creator_set_region(element_creator, region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_set_region_path.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_creator_set_region_path */
 
 int Element_creator_bring_window_to_front(
 	struct Element_creator *element_creator)

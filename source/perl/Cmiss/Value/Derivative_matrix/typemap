@@ -1,0 +1,6 @@
+Cmiss::Value T_PTROBJ
+Cmiss::Value * T_PTROBJ
+Cmiss::Value::Derivative_matrix T_PTROBJ
+Cmiss::Value::Matrix T_PTROBJ
+Cmiss::Variable T_PTROBJ
+FE_value T_FLOAT

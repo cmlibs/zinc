@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -42,7 +42,7 @@ static MrmHierarchy element_point_viewer_hierarchy;
 
 struct Element_point_viewer
 /*******************************************************************************
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Contains all the information carried by the element_point_viewer widget.
@@ -51,10 +51,8 @@ Contains all the information carried by the element_point_viewer widget.
 	/* global data */
 	struct Computed_field_package *computed_field_package;
 	struct Element_point_viewer **element_point_viewer_address;
-	struct MANAGER(FE_element) *element_manager;
-	void *element_manager_callback_id;
-	struct MANAGER(FE_node) *node_manager;
-	void *node_manager_callback_id;
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct Time_object *time_object;
 	struct User_interface *user_interface;
@@ -211,7 +209,7 @@ Ensures xi is correct for the currently selected element point, if any.
 static int Element_point_viewer_set_viewer_element_point(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Gets the current element_point, makes a copy of its element if not NULL,
@@ -219,6 +217,7 @@ and passes it to the element_point_viewer_widget.
 ==============================================================================*/
 {
 	int i,number_of_faces,temp_element_point_number,return_code;
+	struct CM_element_information element_identifier;
 	struct Element_point_ranges_identifier temp_element_point_identifier;
 
 	ENTER(Element_point_viewer_set_viewer_element_point);
@@ -238,18 +237,22 @@ and passes it to the element_point_viewer_widget.
 					&temp_element_point_number);
 			}
 			/* copy the element - now guaranteed to be top-level */
-			if (element_point_viewer->element_copy=ACCESS(FE_element)(
-				CREATE(FE_element)(temp_element_point_identifier.element->identifier,
-					temp_element_point_identifier.element)))
+			get_FE_element_identifier(temp_element_point_identifier.element,
+				&element_identifier);
+			if (element_point_viewer->element_copy = ACCESS(FE_element)(
+				CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
+					(struct FE_region *)NULL, temp_element_point_identifier.element)))
 			{
 				/* clear the faces of element_copy as messes up exterior calculations
 					 for graphics created from them */
-				number_of_faces=
-					element_point_viewer->element_copy->shape->number_of_faces;
-				for (i=0;i<number_of_faces;i++)
+				if (get_FE_element_number_of_faces(element_point_viewer->element_copy,
+					&number_of_faces))
 				{
-					set_FE_element_face(element_point_viewer->element_copy,i,
-						(struct FE_element *)NULL);
+					for (i = 0; i < number_of_faces; i++)
+					{
+						set_FE_element_face(element_point_viewer->element_copy,i,
+							(struct FE_element *)NULL);
+					}
 				}
 			}
 		}
@@ -353,10 +356,10 @@ Updates the element shown in the chooser to match that for the current point.
 	if (element_point_viewer)
 	{
 		return_code=1;
-		TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+		TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 			element_point_viewer->element_widget,
 			element_point_viewer->element_point_identifier.element);
-		TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+		TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 			element_point_viewer->top_level_element_widget,
 			element_point_viewer->element_point_identifier.top_level_element);
 	}
@@ -922,9 +925,9 @@ Callback for change of element.
 					FE_element_get_top_level_element_conversion(
 						element_point_viewer->element_point_identifier.element,
 						element_point_viewer->element_point_identifier.top_level_element,
-						(struct GROUP(FE_element) *)NULL,/*face_number*/-1,
+						(struct LIST(FE_element) *)NULL,/*face_number*/-1,
 						element_to_top_level);
-				TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+				TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 					element_point_viewer->top_level_element_widget,
 					element_point_viewer->element_point_identifier.top_level_element);
 				element_point_viewer->element_point_number=0;
@@ -977,12 +980,11 @@ Callback for change of top_level_element.
 				}
 				else
 				{
-					element_point_viewer->element_point_identifier.top_level_element=
-						FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
+					element_point_viewer->element_point_identifier.top_level_element =
+						FE_region_get_first_FE_element_that(element_point_viewer->fe_region,
 							FE_element_is_top_level_parent_of_element,
-							(void *)element_point_viewer->element_point_identifier.element,
-							element_point_viewer->element_manager);
-					TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+							(void *)element_point_viewer->element_point_identifier.element);
+					TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 						element_point_viewer->top_level_element_widget,
 						element_point_viewer->element_point_identifier.top_level_element);
 				}
@@ -992,7 +994,7 @@ Callback for change of top_level_element.
 				/* use the top_level_element for the element too */
 				element_point_viewer->element_point_identifier.element=
 					top_level_element;
-				TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+				TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 					element_point_viewer->element_widget,
 					element_point_viewer->element_point_identifier.element);
 				element_point_viewer->element_point_identifier.top_level_element=
@@ -1382,11 +1384,10 @@ Called when entry is made into the grid_value_text field.
 								CREATE(LIST(Element_point_ranges))())
 							{
 								grid_to_list_data.grid_fe_field=grid_fe_field;
-								/* inefficient: go through every element in manager */
-								FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+								/* inefficient: go through every element in FE_region */
+								FE_region_for_each_FE_element(element_point_viewer->fe_region,
 									FE_element_grid_to_Element_point_ranges_list,
-									(void *)&grid_to_list_data,
-									element_point_viewer->element_manager);
+									(void *)&grid_to_list_data);
 								if (0<NUMBER_IN_LIST(Element_point_ranges)(
 									grid_to_list_data.element_point_ranges_list))
 								{
@@ -1624,10 +1625,10 @@ Furthermore, if the <element_point_viewer>
 								grid_to_list_data.grid_value_ranges=
 									grid_to_multi_range_data.multi_range;
 								/* inefficient: go through every element in manager */
-								return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+								return_code = FE_region_for_each_FE_element(
+									element_point_viewer->fe_region,
 									FE_element_grid_to_Element_point_ranges_list,
-									(void *)&grid_to_list_data,
-									element_point_viewer->element_manager);
+									(void *)&grid_to_list_data);
 							}
 							DESTROY(Multi_range)(&(grid_to_multi_range_data.multi_range));
 						}
@@ -1671,14 +1672,12 @@ Furthermore, if the <element_point_viewer>
 							set_grid_values_data.field_component_ranges_list=
 								element_point_viewer->modified_field_components;
 							/* ... and the manager to modify them in */
-							set_grid_values_data.element_manager=
-								element_point_viewer->element_manager;
+							set_grid_values_data.fe_region =
+								element_point_viewer->fe_region;
 							/* if following flag is cleared it means that some of the selected
 								 element points are not grid points */
 							set_grid_values_data.all_points_native=1;
-							/* cache manager modifies when more than one being changed */
-							MANAGER_BEGIN_CACHE(FE_element)(
-								element_point_viewer->element_manager);
+							FE_region_begin_change(element_point_viewer->fe_region);
 							return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
 								Element_point_ranges_set_grid_values,
 								(void *)&set_grid_values_data,element_point_ranges_list);
@@ -1687,8 +1686,7 @@ Furthermore, if the <element_point_viewer>
 								display_message(WARNING_MESSAGE,
 									"Values only set at element points on grid");
 							}
-							MANAGER_END_CACHE(FE_element)(
-								element_point_viewer->element_manager);
+							FE_region_end_change(element_point_viewer->fe_region);
 						}
 						if (!return_code)
 						{
@@ -1841,135 +1839,76 @@ function in response to the close command. See CREATE for more details.
 	LEAVE;
 } /* Element_point_viewer_close_CB */
 
-static void Element_point_viewer_element_change(
-	struct MANAGER_MESSAGE(FE_element) *message,
-	void *element_point_viewer_void)
+static void Element_point_viewer_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes, void *element_point_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
-Callback from the element manager for changes to elements. If the element
-currently being viewed has changed, re-send to viewer.
+Callback for changes from the FE_region. If the element currently being viewed
+has changed, re-send to viewer.
 Note that we do not have to handle add, delete and identifier change messages
 here as the select widget does this for us. Only changes to the content of the
 object cause updates.
 ==============================================================================*/
 {
-	struct Element_point_viewer *element_point_viewer;
-
-	ENTER(Element_point_viewer_element_change);
-	if (message&&(element_point_viewer=
-		(struct Element_point_viewer *)element_point_viewer_void))
-	{
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_OBJECT(FE_element):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
-			{
-				if (IS_OBJECT_IN_LIST(FE_element)(
-					element_point_viewer->element_point_identifier.element,
-					message->changed_object_list))
-				{
-					/* update grid_text in case number changed */
-					Element_point_viewer_refresh_grid_value_text(element_point_viewer);
-					Element_point_viewer_set_viewer_element_point(element_point_viewer);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(FE_element):
-			case MANAGER_CHANGE_NONE(FE_element):
-			case MANAGER_CHANGE_REMOVE(FE_element):
-			case MANAGER_CHANGE_IDENTIFIER(FE_element):
-			{
-				/* do nothing */
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_viewer_element_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_viewer_element_change */
-
-static void Element_point_viewer_node_change(
-	struct MANAGER_MESSAGE(FE_node) *message, void *element_point_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 23 May 2001
-
-DESCRIPTION :
-Callback from the node manager for changes to nodes. If the element
-currently being viewed is affected by the change, re-send to viewer.
-==============================================================================*/
-{
-	int i, number_of_nodes, refresh, return_code;
+	enum CHANGE_LOG_CHANGE(FE_element) fe_element_change;
+	enum CHANGE_LOG_CHANGE(FE_node) fe_node_change;
+	int i, number_of_nodes, refresh;
 	struct Element_point_viewer *element_point_viewer;
 	struct FE_element *top_level_element;
 	struct FE_node *node;
 
-	ENTER(Element_point_viewer_node_change);
-	if (message&&(element_point_viewer=
+	ENTER(Element_point_viewer_FE_region_change);
+	if (fe_region && changes && (element_point_viewer =
 		(struct Element_point_viewer *)element_point_viewer_void))
 	{
 		if (element_point_viewer->element_point_identifier.element)
 		{
-			switch (message->change)
+			refresh = 0;
+			/* check if contents of this element changed */
+			if (CHANGE_LOG_QUERY(FE_element)(changes->fe_element_changes,
+				element_point_viewer->element_point_identifier.element,
+				&fe_element_change) && (fe_element_change &
+					CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element)))
 			{
-				case MANAGER_CHANGE_OBJECT(FE_node):
-				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
+				refresh = 1;
+			}
+			else
+			{
+				/* check if nodes in this element have changed */
+				if ((top_level_element =
+					element_point_viewer->element_point_identifier.top_level_element) &&
+					get_FE_element_number_of_nodes(top_level_element, &number_of_nodes) &&
+					(0 < number_of_nodes))
 				{
-					/* refresh editor if any node in the top_level_element has changed */
-					if ((top_level_element =
-						element_point_viewer->element_point_identifier.top_level_element) &&
-						top_level_element->information &&
-						(number_of_nodes = top_level_element->information->number_of_nodes))
+					for (i = 0; (i < number_of_nodes) && (!refresh); i++)
 					{
-						return_code = 1;
-						refresh = 0;
-						for (i = 0; (i < number_of_nodes) && (!refresh) && return_code; i++)
+						if (get_FE_element_node(top_level_element, i, &node) && node &&
+							CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes, node,
+								&fe_node_change) && (fe_node_change &
+									CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_node)))
 						{
-							if (get_FE_element_node(top_level_element, i, &node))
-							{
-								refresh = IS_OBJECT_IN_LIST(FE_node)(node,
-									message->changed_object_list);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Element_point_viewer_node_change.  "
-									"Could not get element node");
-								return_code = 0;
-							}
-						}
-						if (refresh)
-						{
-							Element_point_viewer_set_viewer_element_point(
-								element_point_viewer);
+							refresh = 1;
 						}
 					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Element_point_viewer_node_change.  Bad top_level_element");
-					}
-				} break;
-				case MANAGER_CHANGE_ADD(FE_node):
-				case MANAGER_CHANGE_NONE(FE_node):
-				case MANAGER_CHANGE_REMOVE(FE_node):
-				case MANAGER_CHANGE_IDENTIFIER(FE_node):
-				{
-					/* do nothing */
-				} break;
+				}
+			}
+			if (refresh)
+			{
+				/* update grid_text in case number changed */
+				Element_point_viewer_refresh_grid_value_text(element_point_viewer);
+				Element_point_viewer_set_viewer_element_point(element_point_viewer);
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_point_viewer_node_change.  Invalid argument(s)");
+			"Element_point_viewer_FE_region_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Element_point_viewer_node_change */
+} /* Element_point_viewer_FE_region_change */
 
 /*
 Global functions
@@ -1978,15 +1917,13 @@ Global functions
 
 struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct Element_point_viewer **element_point_viewer_address,
-	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(FE_node) *node_manager,
+	struct Cmiss_region *region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_field) *fe_field_manager,
 	struct Time_object *time_object,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -2000,10 +1937,12 @@ fields.
 	MrmType element_point_viewer_dialog_class;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Callback_data callback;
+	struct CM_element_information element_identifier;
+	struct Computed_field *grid_field;
 	struct Element_point_ranges_identifier temp_element_point_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_viewer *element_point_viewer;
-	struct Computed_field *grid_field;
+	struct FE_region *fe_region;
 	struct Multi_range *ranges;
 	static MrmRegisterArg callback_list[]=
 	{
@@ -2061,10 +2000,11 @@ fields.
 
 	ENTER(CREATE(Element_point_viewer));
 	element_point_viewer=(struct Element_point_viewer *)NULL;
-	if (element_point_viewer_address&&element_manager&&node_manager&&
-		element_point_ranges_selection&&computed_field_package&&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			computed_field_package))&&fe_field_manager&&user_interface)
+	if (element_point_viewer_address && region &&
+		(fe_region = Cmiss_region_get_FE_region(region)) &&
+		element_point_ranges_selection&&computed_field_package &&
+		(computed_field_manager = Computed_field_package_get_computed_field_manager(
+			computed_field_package)) && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(element_point_viewer_uidh,
 			&element_point_viewer_hierarchy,&element_point_viewer_hierarchy_open))
@@ -2077,10 +2017,8 @@ fields.
 				element_point_viewer->computed_field_package=computed_field_package;
 				element_point_viewer->element_point_viewer_address=
 					element_point_viewer_address;
-				element_point_viewer->element_manager=element_manager;
-				element_point_viewer->element_manager_callback_id=(void *)NULL;
-				element_point_viewer->node_manager=node_manager;
-				element_point_viewer->node_manager_callback_id=(void *)NULL;
+				element_point_viewer->region = region;
+				element_point_viewer->fe_region = fe_region;
 				element_point_viewer->element_point_ranges_selection=
 					element_point_ranges_selection;
 				element_point_viewer->user_interface=user_interface;
@@ -2143,9 +2081,9 @@ fields.
 				}
 				else
 				{
-					if (element_point_viewer->element_point_identifier.element=
-						FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
-							FE_element_is_top_level,(void *)NULL,element_manager))
+					if (element_point_viewer->element_point_identifier.element =
+						FE_region_get_first_FE_element_that(fe_region,
+							FE_element_is_top_level, (void *)NULL))
 					{
 						element_point_viewer->element_point_identifier.top_level_element=
 							element_point_viewer->element_point_identifier.element;
@@ -2161,20 +2099,25 @@ fields.
 				Element_point_viewer_calculate_xi(element_point_viewer);
 				if (element_point_viewer->element_point_identifier.top_level_element)
 				{
-					if (element_point_viewer->element_copy=ACCESS(FE_element)(
-						CREATE(FE_element)(element_point_viewer->
-							element_point_identifier.top_level_element->identifier,
-							element_point_viewer->
-							element_point_identifier.top_level_element)))
+					if (get_FE_element_identifier(
+						element_point_viewer->element_point_identifier.top_level_element,
+						&element_identifier) &&
+						(element_point_viewer->element_copy = ACCESS(FE_element)(
+							CREATE(FE_element)(&element_identifier,
+								(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+								element_point_viewer->
+								element_point_identifier.top_level_element))))
 					{
 						/* clear the faces of element_copy as messes up exterior
 							 calculations for graphics created from them */
-						number_of_faces=
-							element_point_viewer->element_copy->shape->number_of_faces;
-						for (i=0;i<number_of_faces;i++)
+						if (get_FE_element_number_of_faces(
+							element_point_viewer->element_copy, &number_of_faces))
 						{
-							set_FE_element_face(element_point_viewer->element_copy,i,
-								(struct FE_element *)NULL);
+							for (i=0;i<number_of_faces;i++)
+							{
+								set_FE_element_face(element_point_viewer->element_copy,i,
+									(struct FE_element *)NULL);
+							}
 						}
 					}
 				}
@@ -2251,25 +2194,25 @@ fields.
 								XtManageChild(element_point_viewer->widget);
 								init_widgets=1;
 								if (!(element_point_viewer->element_widget=
-									CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
+									CREATE_TEXT_CHOOSE_FROM_FE_REGION_WIDGET(FE_element)(
 										element_point_viewer->element_form,
 										element_point_viewer->element_point_identifier.element,
-										element_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(FE_element) *)NULL,
+										fe_region,
+										(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,
 										(void *)NULL,
 										FE_element_to_any_element_string,
-										any_element_string_to_FE_element)))
+										FE_region_any_element_string_to_FE_element)))
 								{
 									init_widgets=0;
 								}
 								if (!(element_point_viewer->top_level_element_widget=
-									CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
+									CREATE_TEXT_CHOOSE_FROM_FE_REGION_WIDGET(FE_element)(
 										element_point_viewer->top_level_element_form,
 										element_point_viewer->
 										element_point_identifier.top_level_element,
-										element_manager,FE_element_is_top_level,(void *)NULL,
+										fe_region,FE_element_is_top_level,(void *)NULL,
 										FE_element_to_element_string,
-										element_string_to_FE_element)))
+										FE_region_element_string_to_FE_element)))
 								{
 									init_widgets=0;
 								}
@@ -2350,11 +2293,11 @@ fields.
 										element_point_viewer->xi_discretization_mode_widget,
 										&callback);
 									callback.procedure=Element_point_viewer_update_element;
-									TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+									TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
 										element_point_viewer->element_widget,&callback);
 									callback.procedure=
 										Element_point_viewer_update_top_level_element;
-									TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+									TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
 										element_point_viewer->top_level_element_widget,&callback);
 									Element_point_viewer_refresh_chooser_widgets(
 										element_point_viewer);
@@ -2365,13 +2308,9 @@ fields.
 										&callback);
 									Element_point_viewer_refresh_match_grid_field(
 										element_point_viewer);
-									element_point_viewer->element_manager_callback_id=
-										MANAGER_REGISTER(FE_element)(
-											Element_point_viewer_element_change,
-											(void *)element_point_viewer,element_manager);
-									element_point_viewer->node_manager_callback_id=
-										MANAGER_REGISTER(FE_node)(Element_point_viewer_node_change,
-											(void *)element_point_viewer,node_manager);
+									FE_region_add_callback(fe_region,
+										Element_point_viewer_FE_region_change,
+										(void *)element_point_viewer);
 									XtRealizeWidget(element_point_viewer->window_shell);
 									XtPopup(element_point_viewer->window_shell,XtGrabNone);
 								}
@@ -2458,18 +2397,9 @@ Destroys the Element_point_viewer. See also Element_point_viewer_close_CB.
 	{
 		DESTROY(LIST(Field_value_index_ranges))(
 			&(element_point_viewer->modified_field_components));
-		if (element_point_viewer->element_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_element)(
-				element_point_viewer->element_manager_callback_id,
-				element_point_viewer->element_manager);
-		}
-		if (element_point_viewer->node_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_node)(
-				element_point_viewer->node_manager_callback_id,
-				element_point_viewer->node_manager);
-		}
+		FE_region_remove_callback(element_point_viewer->fe_region,
+			Element_point_viewer_FE_region_change,
+			(void *)element_point_viewer);
 		DEACCESS(Time_object)(&(element_point_viewer->time_object));
 		/* end callbacks from global element_point selection */
 		Element_point_ranges_selection_remove_callback(

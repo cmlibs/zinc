@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer_widget.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Widget for editing field values stored at an element point with multiple text
@@ -266,7 +266,7 @@ Widget create_element_point_viewer_widget(
 	int initial_element_point_number, struct Time_object *time_object,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of the element point
@@ -281,6 +281,7 @@ changes global.
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
 		*choose_field_conditional_function;
 	MrmType element_point_viewer_dialog_class;
+	struct CM_element_information element_identifier;
 	struct Computed_field *initial_field;
 	struct Callback_data callback;
 	struct Element_point_viewer_widget_struct *element_point_viewer=NULL;
@@ -338,10 +339,13 @@ changes global.
 					&(element_point_viewer->element_point_identifier),
 					initial_element_point_identifier);
 				element_point_viewer->element_point_number=initial_element_point_number;
-				if (initial_element)
+				if (initial_element &&
+					get_FE_element_identifier(initial_element, &element_identifier))
 				{
-					element_point_viewer->template_element=ACCESS(FE_element)(
-						CREATE(FE_element)(initial_element->identifier,initial_element));
+					element_point_viewer->template_element = ACCESS(FE_element)(
+						CREATE(FE_element)(&element_identifier,
+							(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+							initial_element));
 				}
 				else
 				{
@@ -572,7 +576,7 @@ int element_point_viewer_widget_set_element_point(
 	struct Element_point_ranges_identifier *element_point_identifier,
 	int element_point_number)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Sets the element point being edited in the <element_point_viewer_widget>. Note
@@ -583,6 +587,7 @@ unmanaged elements in the identifier to this widget.
 	int change_conditional_function,return_code;
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
 		*choose_field_conditional_function;
+	struct CM_element_information element_identifier;
 	struct Computed_field *field;
 	struct FE_element *element,*template_element;
 	struct Element_point_viewer_widget_struct *element_point_viewer;
@@ -600,11 +605,11 @@ unmanaged elements in the identifier to this widget.
 		if (element_point_viewer)
 		{
 			change_conditional_function=0;
-			if (element=element_point_identifier->element)
+			if (element = element_point_identifier->element)
 			{
 				field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					element_point_viewer->choose_field_widget);
-				if (!(element_point_viewer->template_element)||
+				if (!(element_point_viewer->template_element) ||
 					(!equivalent_computed_fields_at_elements(element,
 						element_point_viewer->template_element)))
 				{
@@ -619,7 +624,9 @@ unmanaged elements in the identifier to this widget.
 							Computed_field_package_get_computed_field_manager(
 								element_point_viewer->computed_field_package));
 					}
-					template_element=CREATE(FE_element)(element->identifier,element);
+					get_FE_element_identifier(element, &element_identifier);
+					template_element = CREATE(FE_element)(&element_identifier,
+						(struct FE_element_shape *)NULL, (struct FE_region *)NULL, element);
 				}
 			}
 			else

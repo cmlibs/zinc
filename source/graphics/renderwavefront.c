@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : renderwavefront.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Renders gtObjects to Wavefront OBJ file
@@ -899,30 +899,32 @@ DESCRIPTION :
 static int makewavefront(FILE *wavefront_file, int full_comments,
 	gtObject *object, float time)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 20 March 2003
 
 DESCRIPTION :
 Convert graphical object into Wavefront object file.
 ==============================================================================*/
 {
 	float proportion,*times;
-	int itime,return_code;
+	int itime, number_of_times, return_code;
 	struct Graphical_material *current_material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_nurbs *nurbs;
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
 	struct GT_voltex *voltex;
 	struct LIST(Wavefront_vertex) *vertex_list;
+	union GT_primitive_list *primitive_list1, *primitive_list2;
 
 	ENTER(makewavefront);
-
 	/* check arguments */
 	return_code = 1;
 	current_material = (struct Graphical_material *)NULL;
 	if (object)
 	{
-		if ((itime=object->number_of_times)>0)
+		number_of_times = object->number_of_times;
+		if (0 < number_of_times)
 		{
+			itime = number_of_times;
 			if ((itime>1)&&(times=object->times))
 			{
 				itime--;
@@ -961,15 +963,41 @@ Convert graphical object into Wavefront object file.
 				itime=0;
 				proportion=0;
 			}
+			if (object->primitive_lists &&
+				(primitive_list1 = object->primitive_lists + itime))
+			{
+				if (proportion > 0)
+				{
+					if (!(primitive_list2 = object->primitive_lists + itime + 1))
+					{
+						display_message(ERROR_MESSAGE,
+							"makewavefront.  Invalid primitive_list");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					primitive_list2 = (union GT_primitive_list *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"makewavefront.  Invalid primitive_lists");
+				return_code = 0;
+			}
+		}
+		if ((0 < number_of_times) && return_code)
+		{
 			switch (object->object_type)
 			{
 				case g_GLYPH_SET:
 				{
-					if (glyph_set=(object->gu.gt_glyph_set)[itime])
+					if (glyph_set = primitive_list1->gt_glyph_set.first)
 					{
 						if (proportion>0)
 						{
-							glyph_set_2=(object->gu.gt_glyph_set)[itime+1];
+							glyph_set_2 = primitive_list2->gt_glyph_set.first;
 							while (glyph_set&&glyph_set_2)
 							{
 								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
@@ -1017,7 +1045,7 @@ Convert graphical object into Wavefront object file.
 				} break;
 				case g_VOLTEX:
 				{
-					if (voltex=(object->gu.gt_voltex)[itime])
+					if (voltex = primitive_list1->gt_voltex.first)
 					{
 						while (voltex)
 						{
@@ -1043,11 +1071,11 @@ Convert graphical object into Wavefront object file.
 				} break;
 				case g_SURFACE:
 				{
-					if (surface=(object->gu.gt_surface)[itime])
+					if (surface = primitive_list1->gt_surface.first)
 					{
 						if (proportion>0)
 						{
-							surface_2=(object->gu.gt_surface)[itime+1];
+							surface_2 = primitive_list2->gt_surface.first;
 						}
 						switch (surface->surface_type)
 						{
@@ -1180,7 +1208,7 @@ Convert graphical object into Wavefront object file.
 				} break;
 				case g_NURBS:
 				{
-					if (nurbs=(object->gu.gt_nurbs)[itime])
+					if (nurbs = primitive_list1->gt_nurbs.first)
 					{
 						return_code=1;
 						while(return_code && nurbs)

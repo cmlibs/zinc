@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_finite_element.c
 
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 25 April 2003
 
 DESCRIPTION :
 Implements computed values which interface to finite elements:
@@ -16,11 +16,11 @@ Implements computed values which interface to finite elements:
 Module methods
 --------------
 */
-static char computed_value_element_xi_type_string[]="element/xi";
+static char Cmiss_value_element_xi_type_string[]="Element_xi";
 	/*???DB.  End up with same pointer as
 		computed_variable_element_xi_type_string? */
 
-struct Computed_value_element_xi_type_specific_data
+struct Cmiss_value_element_xi_type_specific_data
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
 
@@ -31,9 +31,9 @@ DESCRIPTION :
 {
 	FE_value *xi;
 	struct FE_element *element;
-}; /* struct Computed_value_element_xi_type_specific_data */
+}; /* struct Cmiss_value_element_xi_type_specific_data */
 
-static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(element_xi)
+static START_CMISS_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(element_xi)
 {
 	DEALLOCATE(data->xi);
 	if (data->element)
@@ -42,9 +42,9 @@ static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(element_xi)
 	}
 	return_code=1;
 }
-END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(element_xi)
+END_CMISS_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(element_xi)
 
-static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
+static START_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
 {
 	FE_value *destination_xi,*source_xi;
 	int number_of_values;
@@ -90,22 +90,22 @@ static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
 		}
 	}
 }
-END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
+END_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
 
-static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
+static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	element_xi)
 {
 	FE_value *xi_total,*xi_1,*xi_2;
 	int number_of_xi;
-	struct Computed_value_element_xi_type_specific_data *data_total,*data_1,
+	struct Cmiss_value_element_xi_type_specific_data *data_total,*data_1,
 		*data_2;
 
-	data_1=(struct Computed_value_element_xi_type_specific_data *)
-		Computed_value_get_type_specific_data(value_1);
-	data_2=(struct Computed_value_element_xi_type_specific_data *)
-		Computed_value_get_type_specific_data(value_2);
-	data_total=(struct Computed_value_element_xi_type_specific_data *)
-		Computed_value_get_type_specific_data(total);
+	data_1=(struct Cmiss_value_element_xi_type_specific_data *)
+		Cmiss_value_get_type_specific_data(value_1);
+	data_2=(struct Cmiss_value_element_xi_type_specific_data *)
+		Cmiss_value_get_type_specific_data(value_2);
+	data_total=(struct Cmiss_value_element_xi_type_specific_data *)
+		Cmiss_value_get_type_specific_data(total);
 	ASSERT_IF(data_1&&data_2&&data_total,return_code,0)
 	{
 		if ((data_1->element)&&(xi_1=data_1->xi)&&(0<(number_of_xi=
@@ -128,21 +128,21 @@ static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_value_element_xi_multiply_and_accumulate_type_specific. "
+				"Cmiss_value_element_xi_multiply_and_accumulate_type_specific. "
 				"Inconsistent element/xi");
 		}
 	}
 }
-END_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(element_xi)
+END_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(element_xi)
 
-static START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
+static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 {
-	struct Computed_value_element_xi_type_specific_data *data_1,*data_2;
+	struct Cmiss_value_element_xi_type_specific_data *data_1,*data_2;
 
-	data_1=(struct Computed_value_element_xi_type_specific_data *)
-		Computed_value_get_type_specific_data(value_1);
-	data_2=(struct Computed_value_element_xi_type_specific_data *)
-		Computed_value_get_type_specific_data(value_2);
+	data_1=(struct Cmiss_value_element_xi_type_specific_data *)
+		Cmiss_value_get_type_specific_data(value_1);
+	data_2=(struct Cmiss_value_element_xi_type_specific_data *)
+		Cmiss_value_get_type_specific_data(value_2);
 	ASSERT_IF(data_1&&data_2,return_code,0)
 	{
 		if (data_1->element)
@@ -165,16 +165,16 @@ static START_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 		}
 	}
 }
-END_COMPUTED_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
+END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 
 /*
 Global functions
 ----------------
 */
-int Computed_value_set_type_element_xi(struct Computed_value *value,
+int Cmiss_value_element_xi_set_type(Cmiss_value_id value,
 	struct FE_element *element,FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 9 April 2003
 
 DESCRIPTION :
 Makes <value> of type element_xi and sets its <element> and <xi).  After
@@ -185,21 +185,21 @@ success, the <value> is responsible for DEALLOCATEing <xi>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_value_element_xi_type_specific_data *data;
+	struct Cmiss_value_element_xi_type_specific_data *data;
 
-	ENTER(Computed_value_set_type_element_xi);
+	ENTER(Cmiss_value_element_xi_set_type);
 	return_code=0;
 	/* check arguments */
 	if (value)
 	{
 		/* 1.  Make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(data,struct Computed_value_element_xi_type_specific_data,1))
+		if (ALLOCATE(data,struct Cmiss_value_element_xi_type_specific_data,1))
 		{
 			/* 2.  Clear current type-specific data */
-			Computed_value_clear_type(value);
+			Cmiss_value_clear_type(value);
 			/* 3.  Establish the new type */
-			Computed_value_set_type_specific_information(value,
-				computed_value_element_xi_type_string,(void *)data);
+			Cmiss_value_set_type_specific_information(value,
+				Cmiss_value_element_xi_type_string,(void *)data);
 			if (element)
 			{
 				data->element=ACCESS(FE_element)(element);
@@ -210,27 +210,27 @@ success, the <value> is responsible for DEALLOCATEing <xi>.
 			}
 			data->xi=xi;
 			/* set all the methods */
-			return_code=COMPUTED_VALUE_ESTABLISH_METHODS(value,element_xi);
+			return_code=CMISS_VALUE_ESTABLISH_METHODS(value,element_xi);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Computed_value_set_type_element_xi.  "
+			display_message(ERROR_MESSAGE,"Cmiss_value_element_xi_set_type.  "
 				"Could not ALLOCATE type specific data");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Computed_value_set_type_element_xi.  "
+		display_message(ERROR_MESSAGE,"Cmiss_value_element_xi_set_type.  "
 			"Missing value");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_value_set_type_element_xi */
+} /* Cmiss_value_element_xi_set_type */
 
-DECLARE_COMPUTED_VALUE_IS_TYPE_FUNCTION(element_xi)
+DECLARE_CMISS_VALUE_IS_TYPE_FUNCTION(element_xi)
 
-int Computed_value_get_type_element_xi(struct Computed_value *value,
+int Cmiss_value_element_xi_get_type(Cmiss_value_id value,
 	struct FE_element **element_address,FE_value **xi_address)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
@@ -242,15 +242,15 @@ The calling program must not DEALLOCATE the returned <*xi_address>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_value_element_xi_type_specific_data *data;
+	struct Cmiss_value_element_xi_type_specific_data *data;
 
-	ENTER(Computed_value_get_type_element_xi);
+	ENTER(Cmiss_value_element_xi_get_type);
 	return_code=0;
 	/* check arguments */
 	if (value&&(element_address||xi_address))
 	{
-		data=(struct Computed_value_element_xi_type_specific_data *)
-			Computed_value_get_type_specific_data(value);
+		data=(struct Cmiss_value_element_xi_type_specific_data *)
+			Cmiss_value_get_type_specific_data(value);
 		ASSERT_IF(data,return_code,0)
 		{
 			if (element_address)
@@ -266,10 +266,10 @@ The calling program must not DEALLOCATE the returned <*xi_address>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Computed_value_get_type_element_xi.  "
+		display_message(ERROR_MESSAGE,"Cmiss_value_element_xi_get_type.  "
 			"Invalid argument(s).  %p %p %p",value,element_address,xi_address);
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_value_get_type_element_xi */
+} /* Cmiss_value_element_xi_get_type */

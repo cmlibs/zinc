@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 5 September 2002
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -21,6 +21,7 @@ different parameter choices can be compared in dfn.
 #include "computed_field/computed_field_finite_element.h"
 #endif /* defined (UNEMAP_USE_NODES) */
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "general/geometry.h"
 
 /* Now using */
@@ -258,7 +259,7 @@ DESCRIPTION :
 
 struct Region
 /*******************************************************************************
-LAST MODIFIED : 19 January 2001
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -278,8 +279,8 @@ DESCRIPTION :
 	int number_of_devices;
 #if defined (UNEMAP_USE_3D)
 	struct Unemap_package *unemap_package;
-	struct GROUP(FE_node) *rig_node_group; /* all the nodes */	
-	struct GROUP(FE_node) *unrejected_node_group;/* the unrejected  nodes */
+	struct FE_region *rig_node_group; /* all the nodes */	
+	struct FE_region *unrejected_node_group;/* the unrejected nodes */
 	struct Map_3d_package *map_3d_package;
 	/* these fields stored here as each region can have a different one,*/ 
 	/* unlike fields in unemap_package,which are constant per rig  */
@@ -520,7 +521,7 @@ DESCRIPTION :
 
 struct Rig
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -540,7 +541,7 @@ DESCRIPTION :
 	struct Region *current_region;
 #if defined (UNEMAP_USE_3D)
 	struct Unemap_package *unemap_package;
-	struct GROUP(FE_node) *all_devices_rig_node_group;
+	struct FE_region *all_devices_rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
 	/* the name of the file containing the signal data (if appropriate) */
 	char *signal_file_name;
@@ -909,9 +910,9 @@ Gets  unemap_package of <region>
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *get_Region_rig_node_group(struct Region *region);
+struct FE_region *get_Region_rig_node_group(struct Region *region);
 /*******************************************************************************
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Gets  rig_node_group of <region> 
@@ -920,9 +921,9 @@ Gets  rig_node_group of <region>
 
 #if defined (UNEMAP_USE_3D)
 int set_Region_rig_node_group(struct Region *region,
-	struct GROUP(FE_node) *rig_node_group);
+	struct FE_region *rig_node_group);
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Sets (and accesses) rig_node_group of <region> to <rig_node_group>
@@ -930,9 +931,9 @@ Sets (and accesses) rig_node_group of <region> to <rig_node_group>
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *get_Region_unrejected_node_group(struct Region *region);
+struct FE_region *get_Region_unrejected_node_group(struct Region *region);
 /*******************************************************************************
-LAST MODIFIED : 19 January 2001
+LAST MODIFIED : 8 May 2003
 
 DESCRIPTION :
 Gets  unrejected_node_group of <region> 
@@ -941,7 +942,7 @@ Gets  unrejected_node_group of <region>
 
 #if defined (UNEMAP_USE_3D)
 int set_Region_unrejected_node_group(struct Region *region,
-	struct GROUP(FE_node) *unrejected_node_group);
+	struct FE_region *unrejected_node_group);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2001
 
@@ -1069,7 +1070,7 @@ Gets  unemap_package of <rig>
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct GROUP(FE_node) *get_Rig_all_devices_rig_node_group(struct Rig *rig);
+struct FE_region *get_Rig_all_devices_rig_node_group(struct Rig *rig);
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
 
@@ -1080,7 +1081,7 @@ Gets  all_devices_rig_node_group of <rig>
 
 #if defined (UNEMAP_USE_3D)
 int set_Rig_all_devices_rig_node_group(struct Rig *rig,
-	struct GROUP(FE_node) *rig_node_group);
+	struct FE_region *rig_node_group);
 /*******************************************************************************
 LAST MODIFIED : 27 June 2000
 

@@ -38,7 +38,7 @@ static MrmHierarchy grid_field_calculator_hierarchy;
 
 struct Grid_field_calculator
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Contains all the information needed for the grid_field_calculator dialog.
@@ -47,7 +47,8 @@ Contains all the information needed for the grid_field_calculator dialog.
 	struct Computed_field_package *computed_field_package;
 	Widget *control_curve_editor_dialog_address;
 	struct MANAGER(Control_curve) *control_curve_manager;
-	struct MANAGER(FE_element) *element_manager;
+	struct Cmiss_region *region;
+	struct FE_region *fe_region;
 	struct User_interface *user_interface;
 	Widget coord_field_form,coord_field_widget,
 		grid_field_form,grid_field_widget,
@@ -432,8 +433,7 @@ Applies the computed field to the grid field.
 					{
 						ACCESS(Computed_field)(source_field);
 						return_code=Computed_field_update_element_values_from_source(
-							grid_field,source_field,(struct GROUP(FE_element) *)NULL,
-							grid_calc->element_manager,
+							grid_field,source_field, grid_calc->region,
 							(struct Element_point_ranges_selection *)NULL,
 							(struct FE_element_selection *)NULL, /*time*/0);
 						DEACCESS(Computed_field)(&source_field);
@@ -590,7 +590,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 				Computed_field_get_type_integration(coordinate_field,
 					&seed_element,&integration_integrand,&integration_coordinate_field))
 			{
-				TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+				TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 					grid_calc->seed_element_widget,seed_element);
 			}
 		}
@@ -608,13 +608,13 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 				Computed_field_set_type_constant(integration_integrand,1,&value);
 			}
 			ACCESS(Computed_field)(integration_integrand);
-			if (seed_element=TEXT_CHOOSE_OBJECT_GET_OBJECT(FE_element)(
+			if (seed_element=TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_element)(
 				grid_calc->seed_element_widget))
 			{
 				if (coordinate_field=CREATE(Computed_field)("xi_texture_coordinates"))
 				{
 					if (!(Computed_field_set_type_integration(
-						coordinate_field,seed_element,grid_calc->element_manager,
+						coordinate_field,seed_element,grid_calc->fe_region,
 						integration_integrand,integration_coordinate_field)&&
 						ADD_OBJECT_TO_MANAGER(Computed_field)(coordinate_field,
 							computed_field_manager)))
@@ -747,7 +747,7 @@ Callback for change of coordinate field.
 			Computed_field_get_type_integration(coordinate_field,
 				&seed_element, &integration_integrand, &integration_coordinate_field))
 		{
-			TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+			TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 				grid_calc->seed_element_widget,seed_element);
 		}
 		XtSetSensitive(grid_calc->seed_element_entry,
@@ -802,7 +802,7 @@ Callback for change of seed_element.
 			if (temp_field=CREATE(Computed_field)("temp"))
 			{
 				if (Computed_field_set_type_integration(temp_field,
-					seed_element,grid_calc->element_manager,integration_integrand,
+					seed_element,grid_calc->fe_region,integration_integrand,
 					integration_coordinate_field))
 				{
 					MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
@@ -828,10 +828,10 @@ static Widget create_grid_field_calculator(
 	struct Computed_field_package *computed_field_package,
 	Widget *control_curve_editor_dialog_address,
 	struct MANAGER(Control_curve) *control_curve_manager,
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *region,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 December 1999
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Creates an editor for setting values of grid fields in elements based on
@@ -891,7 +891,7 @@ control curve variation over coordinates - usually integration.
 	if (grid_field_calculator_address&&parent&&computed_field_package&&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
 			computed_field_package))&&
-		control_curve_manager&&element_manager&&user_interface&&
+		control_curve_manager&&region&&user_interface&&
 		control_curve_editor_dialog_address)
 	{
 		if (MrmOpenHierarchy_base64_string(grid_field_calculator_uidh,
@@ -907,7 +907,8 @@ control curve variation over coordinates - usually integration.
 				grid_calc->control_curve_manager = control_curve_manager;
 				grid_calc->control_curve_editor_dialog_address =
 					control_curve_editor_dialog_address;
-				grid_calc->element_manager = element_manager;
+				grid_calc->region = region;
+				grid_calc->fe_region = Cmiss_region_get_FE_region(region);
 				grid_calc->user_interface = user_interface;
 				grid_calc->axis1_curve_entry = (Widget)NULL;
 				grid_calc->axis1_curve_form = (Widget)NULL;
@@ -969,12 +970,12 @@ control curve variation over coordinates - usually integration.
 									init_widgets=0;
 								}
 								if (!(grid_calc->seed_element_widget=
-									CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
+									CREATE_TEXT_CHOOSE_FROM_FE_REGION_WIDGET(FE_element)(
 										grid_calc->seed_element_form,
-										(struct FE_element *)NULL,element_manager,
+										(struct FE_element *)NULL,grid_calc->fe_region,
 										FE_element_is_top_level,(void *)NULL,
 										FE_element_to_element_string,
-										element_string_to_FE_element)))
+										FE_region_any_element_string_to_FE_element)))
 								{
 									init_widgets=0;
 								}
@@ -1016,7 +1017,7 @@ control curve variation over coordinates - usually integration.
 										grid_calc->coord_field_widget,&callback);
 									callback.procedure=
 										grid_field_calculator_update_seed_element;
-									TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+									TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
 										grid_calc->seed_element_widget,&callback);
 									/* register for control curve manager callbacks */
 									XtRealizeWidget(grid_calc->dialog);
@@ -1093,11 +1094,11 @@ int bring_up_grid_field_calculator(
 	Widget *grid_field_calculator_address,Widget parent,
 	struct Computed_field_package *computed_field_package,
 	Widget *control_curve_editor_dialog_address,
+	struct Cmiss_region *region, 
 	struct MANAGER(Control_curve) *control_curve_manager,
-	struct MANAGER(FE_element) *element_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 If there is a grid field calculator in existence, then bring it to the
@@ -1119,7 +1120,7 @@ front, else create a new one.
 			if (create_grid_field_calculator(
 				grid_field_calculator_address,parent,computed_field_package,
 				control_curve_editor_dialog_address,control_curve_manager,
-				element_manager,user_interface))
+				region,user_interface))
 			{
 				return_code=1;
 			}

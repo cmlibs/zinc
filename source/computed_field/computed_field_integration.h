@@ -16,10 +16,10 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Computed_field_set_type_integration(struct Computed_field *field,
-	struct FE_element *seed_element, struct MANAGER(FE_element) *fe_element_manager,
+	struct FE_element *seed_element, struct FE_region *fe_region,
 	struct Computed_field *integrand, struct Computed_field *coordinate_field);
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 13 March 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_INTEGRATION.
@@ -42,9 +42,9 @@ the seed element used for the mapping is returned - otherwise an error is report
 
 int Computed_field_register_type_integration(
 	struct Computed_field_package *computed_field_package,
-	struct MANAGER(FE_element) *fe_element_manager);
+	struct Cmiss_region *root_region);
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 7 March 2003
 
 DESCRIPTION :
 ==============================================================================*/

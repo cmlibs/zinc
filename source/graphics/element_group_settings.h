@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 14 November 2001
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -117,7 +117,7 @@ Structure modified by g_element modify routines.
 
 struct G_element_command_data
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 6 March 2003
 
 DESCRIPTION :
 Subset of command data passed to g_element modify routines.
@@ -126,8 +126,7 @@ Subset of command data passed to g_element modify routines.
 	struct Graphical_material *default_material;
 	struct LIST(GT_object *) glyph_list;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
+	struct Cmiss_region *region;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Spectrum *default_spectrum;
@@ -139,32 +138,33 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 28 May 2001
+LAST MODIFIED : 30 April 2003
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
 object.
 ==============================================================================*/
 {
+	/* graphics object names are preceded by this */
+	char *name_prefix;
 	/* default_rc_coordinate_field to use if NULL in any settings */
 	struct Computed_field *rc_coordinate_field,*default_rc_coordinate_field,
 		*wrapper_orientation_scale_field,*wrapper_stream_vector_field;
-	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *node_group,*data_group;
+	struct FE_region *fe_region;
+	struct FE_region *data_fe_region; /*???RC temporary */
 	struct Element_discretization *element_discretization;
 	struct FE_field *native_discretization_field;
 	int circle_discretization;
 	FE_value time;
-	/* objects changed which require editing of existing graphics_objects. Note
-		 either or both lists can be NULL */
-	struct LIST(FE_element) *changed_element_list;
-	struct LIST(FE_node) *changed_node_list;
-	/* flag indicating that graphics_objects be build for all visible settings
+	/* flag indicating that graphics_objects be built for all visible settings
 		 currently without them */
 	int build_graphics;
-	/* flag indicating we are editing the graphics in question, not building from
-		 scratch */
-	int edit_mode;
+	/* graphics object in which existing graphics that do not need rebuilding
+		 are stored. They are transferred from the settings->graphics_object and
+		 matched by object_name. Note that the update of existing graphics
+		 relies on them being stored in the same order as the new additions.
+		 Set to NULL to turn off */
+	struct GT_object *existing_graphics;
 	/* for highlighting of selected objects */
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	struct LIST(FE_element) *selected_element_list;
@@ -176,20 +176,21 @@ object.
 
 struct GT_element_settings_Computed_field_change_data
 /*******************************************************************************
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 User data for function GT_element_settings_computed_field_change.
 ==============================================================================*/
 {
+	FE_value time;
 	/* rebuild_graphics flag should start at 0, and is set if any graphics
 		 objects must be rebuilt as a result of this change */
-	int rebuild_graphics;
+	int graphics_changed;
 	/* the default coordinate field for the whole GT_element_group for when
 		 not overridden by settings->coordinate_field */
 	struct Computed_field *default_coordinate_field;
-	/* the list of fields that have changed; must check if fields in use
-		 depend on them */
+	/* the list of fields that have changed
+		 before passing, enlarge to include all other fields that depend on them */
 	struct LIST(Computed_field) *changed_field_list;
 }; /* struct GT_element_settings_Computed_field_change_data */
 
@@ -314,7 +315,18 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 <**settings_ptr> and sets <*settings_ptr> to NULL.
 ==============================================================================*/
 
-PROTOTYPE_COPY_OBJECT_FUNCTION(GT_element_settings);
+int GT_element_settings_copy_without_graphics_object(
+	struct GT_element_settings *destination, struct GT_element_settings *source);
+/*******************************************************************************
+LAST MODIFIED : 2 April 2003
+
+DESCRIPTION :
+Copies the GT_element contents from source to destination.
+Notes:
+destination->access_count is not changed by COPY.
+graphics_object is NOT copied; destination->graphics_object is cleared.
+==============================================================================*/
+
 PROTOTYPE_LIST_FUNCTIONS(GT_element_settings);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_element_settings,position,int);
 
@@ -337,7 +349,6 @@ Sets the <coordinate_field> used by <settings>. If the coordinate field is
 NULL, the settings uses the default coordinate_field from the graphical element
 group.
 ==============================================================================*/
-
 
 struct Computed_field *GT_element_settings_get_texture_coordinate_field(
 	struct GT_element_settings *settings);
@@ -901,25 +912,6 @@ is used by an iterator to see if any one of the settings in a graphical element
 group are time dependent.
 ==============================================================================*/
 
-int GT_element_settings_remove_graphics_object_if_embedded_field(
-	struct GT_element_settings *settings,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 29 April 1999
-
-DESCRIPTION :
-Removes the graphics object from this <settings> if the <settings> use
-any embedded_fields.
-==============================================================================*/
-
-int GT_element_settings_remove_graphics_object(
-	struct GT_element_settings *settings,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 10 June 1998
-
-DESCRIPTION :
-Ensures the <settings> accesses no graphics object.
-==============================================================================*/
-
 int GT_element_settings_default_coordinate_field_change(
 	struct GT_element_settings *settings,void *dummy_void);
 /*******************************************************************************
@@ -950,44 +942,56 @@ Deaccesses any graphics_object in <settings> if it would have to be rebuilt
 due to a change in element discretization.
 ==============================================================================*/
 
-int GT_element_settings_node_change(
-	struct GT_element_settings *settings, void *dummy_void);
+struct GT_element_settings_FE_region_change_data
 /*******************************************************************************
-LAST MODIFIED : 25 May 2001
+LAST MODIFIED : 4 February 2003
 
 DESCRIPTION :
-Deaccesses any graphics_object in <settings> if it would have to be rebuilt
-due to a change in node positions.
+Data for passing to GT_element_settings_FE_region_change.
+==============================================================================*/
+{
+	/* changes to fields with summary */
+	enum CHANGE_LOG_CHANGE(FE_field) fe_field_change_summary;
+	struct CHANGE_LOG(FE_field) *fe_field_changes;
+	/* changes to nodes with summary and number_of_changes */
+	enum CHANGE_LOG_CHANGE(FE_node) fe_node_change_summary;
+	int number_of_fe_node_changes;
+	struct CHANGE_LOG(FE_node) *fe_node_changes;
+	/* changes to elements with summary and number_of_changes */
+	enum CHANGE_LOG_CHANGE(FE_element) fe_element_change_summary;
+	int number_of_fe_element_changes;
+	struct CHANGE_LOG(FE_element) *fe_element_changes;
+	FE_value time;
+	/* following set if changes affect any of the graphics */
+	int graphics_changed;
+	/* the default coordinate field for the whole GT_element_group for when
+		 not overridden by settings->coordinate_field */
+	struct Computed_field *default_coordinate_field;
+	/* the FE_region the settings apply to */
+	struct FE_region *fe_region;
+}; /* struct GT_element_settings_FE_region_change_data */
+
+int GT_element_settings_FE_region_change(
+	struct GT_element_settings *settings, void *data_void);
+/*******************************************************************************
+LAST MODIFIED : 23 January 2003
+
+DESCRIPTION :
+Tells <settings> about changes to the FE_region it is operating. If changes
+affects its graphics, sets them up to be rebuilt.
+<data_void> points at a struct GT_element_settings_FE_region_change_data.
 ==============================================================================*/
 
-int GT_element_settings_node_group_change(
-	struct GT_element_settings *settings, void *dummy_void);
+int GT_element_settings_data_FE_region_change(
+	struct GT_element_settings *settings, void *data_void);
 /*******************************************************************************
-LAST MODIFIED : 25 May 2001
+LAST MODIFIED : 23 January 2003
 
 DESCRIPTION :
-Deaccesses any graphics_object in <settings> if it would have to be rebuilt
-due to a change of nodes in the group.
-==============================================================================*/
-
-int GT_element_settings_data_change(
-	struct GT_element_settings *settings,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 10 September 1998
-
-DESCRIPTION :
-Deaccesses any graphics_object in <settings> if it would have to be rebuilt
-due to a change in node positions.
-==============================================================================*/
-
-int GT_element_settings_element_change(
-	struct GT_element_settings *settings,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 10 September 1998
-
-DESCRIPTION :
-Deaccesses any graphics_object in <settings> if it would have to be rebuilt
-due to a change in elements.
+Tells <settings> about changes to the FE_region it is operating. If changes
+affects its graphics, sets them up to be rebuilt.
+<data_void> points at a struct GT_element_settings_FE_region_change_data.
+???RC Temporary until data_root_region/data_hack removed.
 ==============================================================================*/
 
 int GT_element_settings_time_change(
@@ -1265,17 +1269,14 @@ is put out as a name to identify the object in OpenGL picking.
 int GT_element_settings_Computed_field_change(
 	struct GT_element_settings *settings, void *change_data_void);
 /*******************************************************************************
-LAST MODIFIED : 28 May 2001
+LAST MODIFIED : 22 January 2003
 
 DESCRIPTION :
 Iterator function telling the <settings> that the computed fields in the
-<changed_field_list> have changed. If any fields in the settings match or are
-dependent on the changed fields, then the graphics_object is cleared for
-rebuilding later.
-Note: <change_data_void> should point to a
-struct GT_element_settings_computed_field_change_data.
-???RC This depends on list business is pretty expensive. I hope in the long term
-we can sort out these dependencies before the manager message is sent out.
+<changed_field_list> have changed.
+Clears graphics for settings affected by the change.
+<change_data_void> points at a
+struct GT_element_settings_Computed_field_change_data.
 ==============================================================================*/
 
 int GT_element_settings_Graphical_material_change(

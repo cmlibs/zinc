@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -10,20 +10,24 @@ Contains function definitions for unemap package.
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
+#include "element/element_operations.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/import_finite_element.h"
 #include "general/mystring.h"
+#include "general/debug.h"
+#include "graphics/colour.h"
+#include "node/node_operations.h"
+#include "region/cmiss_region.h"
+#include "time/time.h"
+#include "unemap/unemap_package.h"
+#include "user_interface/message.h"
+#include "user_interface/user_interface.h"
 #if defined (UNEMAP_USE_NODES)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "graphics/graphical_element.h"
 #endif /* defined (UNEMAP_USE_NODES) */
-#include "general/debug.h"
-#include "graphics/colour.h"
-#include "time/time.h"
-#include "unemap/unemap_package.h"
-#include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 
 /*
 Module functions
@@ -79,43 +83,32 @@ Global functions
 DECLARE_OBJECT_FUNCTIONS(Unemap_package)
 
 struct Unemap_package *CREATE(Unemap_package)(
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_node) *node_manager,
-	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_basis) *fe_basis_manager,
-	struct MANAGER(FE_element) *element_manager,
+	struct Cmiss_region *root_cmiss_region,
+	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct FE_node_selection *node_selection)
 /*******************************************************************************
-LAST MODIFIED : 31 AUGUST 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
-The fields are filed in with set_unemap_package_fields()
+The fields are filled in with set_unemap_package_fields()
 ==============================================================================*/
 {	
 	struct Unemap_package *package;
 
 	ENTER(CREATE(Unemap_package));
-	if (fe_field_manager&&element_group_manager&&node_manager&&
-		data_group_manager&&node_group_manager&&fe_basis_manager&&element_manager&&		
+	if (fe_basis_manager && root_cmiss_region && data_root_cmiss_region &&		
 		computed_field_manager&&interactive_tool_manager&&node_selection)
 	{
 		if (ALLOCATE(package,struct Unemap_package,1))
 		{
-			package->fe_field_manager=fe_field_manager;
-			package->fe_time = ACCESS(FE_time)(fe_time);
-			package->element_group_manager=element_group_manager;
-			package->node_manager=node_manager;
-			package->data_manager=data_manager;
-			package->data_group_manager=data_group_manager;
-			package->node_group_manager=node_group_manager;
 			package->fe_basis_manager=fe_basis_manager;	
-			package->element_manager=element_manager;
+			package->root_cmiss_region = ACCESS(Cmiss_region)(root_cmiss_region);
+			package->data_root_cmiss_region =
+				ACCESS(Cmiss_region)(data_root_cmiss_region);
 			package->computed_field_manager=computed_field_manager;
 			package->interactive_tool_manager=interactive_tool_manager;
 			package->node_selection=node_selection;
@@ -166,7 +159,7 @@ The fields are filed in with set_unemap_package_fields()
 
 int DESTROY(Unemap_package)(struct Unemap_package **package_address)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Frees the memory for the Unemap_package node field and sets <*package_address>
@@ -174,14 +167,25 @@ to NULL.
 ==============================================================================*/
 {
 	int return_code;
+	struct Cmiss_region *torso_cmiss_region;
 	struct Unemap_package *package;
-	struct GROUP(FE_node) *torso_node_group;
-	ENTER(DESTROY(Unemap_package));
 
-	torso_node_group=(struct GROUP(FE_node) *)NULL;
+	ENTER(DESTROY(Unemap_package));
+	torso_cmiss_region = (struct Cmiss_region *)NULL;
 	if ((package_address)&&(package= *package_address))
 	{		
-		DEACCESS(FE_time)(&(package->fe_time));
+		if ((package->torso_group_name) && (torso_cmiss_region =
+			Cmiss_region_get_child_region_from_name(package->root_cmiss_region,
+				package->torso_group_name)))
+		{
+			FE_region_clear(Cmiss_region_get_FE_region(torso_cmiss_region),
+				/*destroy_in_master*/1);
+			Cmiss_region_remove_child_region(package->root_cmiss_region,
+				torso_cmiss_region);
+		}
+
+		DEACCESS(Cmiss_region)(&(package->root_cmiss_region));
+		DEACCESS(Cmiss_region)(&(package->data_root_cmiss_region));
 		DEACCESS(FE_field)(&(package->device_name_field));
 		DEACCESS(FE_field)(&(package->device_type_field));
 		DEACCESS(FE_field)(&(package->channel_number_field));
@@ -193,19 +197,6 @@ to NULL.
 		/* Note: Unemap and Cmgui don't destroy the rig (but should!). (The rig contains */
 		/* map_3d_packages which contain mapped_torso_node{element}_groups */
 		/* which contain a subset of the nodes,elements in torso_node_group */					
-		if ((package->torso_group_name)&&(torso_node_group=
-			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
-			(package->torso_group_name,package->node_group_manager)))
-		{	
-			/*access as free_node_and_element_and_data_groups assumes node group */
-			/* has been accesssed */
-			ACCESS(GROUP(FE_node))(torso_node_group);
-			free_node_and_element_and_data_groups(&torso_node_group,
-				package->element_manager,package->element_group_manager,
-				package->data_manager,package->data_group_manager,
-				package->node_manager,package->node_group_manager);		
-		}
-		
 		DEALLOCATE(package->torso_group_name);
 		DEACCESS(FE_field)(&(package->read_order_field));
 		DEACCESS(FE_field)(&(package->map_fit_field));
@@ -448,6 +439,64 @@ Sets the potential time object.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_potential_time_object */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct Cmiss_region *get_unemap_package_root_Cmiss_region(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2003
+
+DESCRIPTION :
+Gets the root_cmiss_region from the unemap package.
+==============================================================================*/
+{
+	struct Cmiss_region *root_cmiss_region;
+
+	ENTER(get_unemap_package_root_Cmiss_region);
+	if(package)
+	{
+		root_cmiss_region = package->root_cmiss_region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_unemap_package_root_Cmiss_region.  Invalid argument(s)");
+		root_cmiss_region = (struct Cmiss_region *)NULL;
+	}
+	LEAVE;
+
+	return (root_cmiss_region);
+}/* get_unemap_package_root_Cmiss_region */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct Cmiss_region *get_unemap_package_data_root_Cmiss_region(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2003
+
+DESCRIPTION :
+Gets the data_root_cmiss_region from the unemap package.
+==============================================================================*/
+{
+	struct Cmiss_region *data_root_cmiss_region;
+
+	ENTER(get_unemap_package_data_root_Cmiss_region);
+	if(package)
+	{
+		data_root_cmiss_region = package->data_root_cmiss_region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_unemap_package_data_root_Cmiss_region.  Invalid argument(s)");
+		data_root_cmiss_region = (struct Cmiss_region *)NULL;
+	}
+	LEAVE;
+
+	return (data_root_cmiss_region);
+}/* get_unemap_package_data_root_Cmiss_region */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_NODES)
@@ -1273,61 +1322,6 @@ Sets the field of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_field) *get_unemap_package_FE_field_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(FE_field) *fe_field_manager;
-
-	ENTER(get_unemap_package_FE_field_manager);
-	if(package)
-	{
-		fe_field_manager=package->fe_field_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_FE_field_manager."
-			" invalid arguments");
-		fe_field_manager = (struct MANAGER(FE_field) *)NULL;
-	}
-	LEAVE;
-	return(fe_field_manager);
-}/* get_unemap_package_FE_field_manager */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct FE_time *get_unemap_package_FE_time(struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : 15 November 2001
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct FE_time *fe_time;
-
-	ENTER(get_unemap_package_FE_time);
-	if(package)
-	{
-		fe_time=package->fe_time;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_FE_time."
-			" invalid arguments");
-		fe_time = (struct FE_time *)NULL;
-	}
-	LEAVE;
-	return(fe_time);
-}/* get_unemap_package_FE_time */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
 struct MANAGER(Computed_field) *get_unemap_package_Computed_field_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1384,118 +1378,6 @@ gets a FE_node_selection of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-struct MANAGER(GROUP(FE_element)) *get_unemap_package_element_group_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-
-	ENTER(get_unemap_package_element_group_manager);
-	if(package)
-	{
-		element_group_manager=package->element_group_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_element_group_manager."
-			" invalid arguments");
-		element_group_manager = (struct MANAGER(GROUP(FE_element)) *)NULL;
-	}
-	LEAVE;
-	return(element_group_manager);
-}/* get_unemap_package_element_group_manager */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_node) *get_unemap_package_node_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(FE_node) *node_manager;
-
-	ENTER(get_unemap_package_node_manager);
-	if(package)
-	{
-		node_manager=package->node_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_node_manager."
-			" invalid arguments");
-		node_manager = (struct MANAGER(FE_node) *)NULL;
-	}
-	LEAVE;
-	return(node_manager);
-}/* get_unemap_package_node_manager */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_node) *get_unemap_package_data_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(FE_node) *data_manager;
-
-	ENTER(get_unemap_package_data_manager);
-	if(package)
-	{
-		data_manager=package->data_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_data_manager."
-			" invalid arguments");
-		data_manager = (struct MANAGER(FE_node) *)NULL;
-	}
-	LEAVE;
-	return(data_manager);
-}/* get_unemap_package_data_manager */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(FE_element) *get_unemap_package_element_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(FE_element) *element_manager;
-
-	ENTER(get_unemap_package_element_manager);
-	if(package)
-	{
-		element_manager=package->element_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_element_manager."
-			" invalid arguments");
-		element_manager = (struct MANAGER(FE_element) *)NULL;
-	}
-	LEAVE;
-	return(element_manager);
-}/* get_unemap_package_element_manager */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
 struct MANAGER(Interactive_tool) *get_unemap_package_interactive_tool_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1549,70 +1431,13 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(basis_manager);
 }/* get_unemap_package_basis_manager */
-
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(GROUP(FE_node)) *get_unemap_package_data_group_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-
-	ENTER(get_unemap_package_data_group_manager);
-	if(package)
-	{
-		data_group_manager=package->data_group_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_data_group_manager."
-			" invalid arguments");
-		data_group_manager = (struct MANAGER(GROUP(FE_node)) *)NULL;
-	}
-	LEAVE;
-	return(data_group_manager);
-}/* get_unemap_package_data_group_manager */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct MANAGER(GROUP(FE_node)) *get_unemap_package_node_group_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : July 8 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-
-	ENTER(get_unemap_package_node_group_manager);
-	if(package)
-	{
-		node_group_manager=package->node_group_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_node_group_manager."
-			" invalid arguments");
-		node_group_manager = (struct MANAGER(GROUP(FE_node)) *)NULL;
-	}
-	LEAVE;
-	return(node_group_manager);
-}/* get_unemap_package_node_group_manager */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
 int unemap_package_rig_node_group_has_electrodes(struct Unemap_package *package,
-	struct GROUP(FE_node) *rig_node_group)
+	struct FE_region *rig_node_group)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :determines if the  <rig_node group> 
  contains at least one node with a device_type field
@@ -1628,8 +1453,8 @@ set to "ELECTRODE". See also rig_node_has_electrode_defined
 	{
 		if(package->device_type_field)
 		{				
-			node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(rig_node_has_electrode_defined, 
-				(void *)package,rig_node_group);
+			node = FE_region_get_first_FE_node_that(rig_node_group,
+				rig_node_has_electrode_defined, (void *)package);
 			if(node)
 			{
 				/*we've found one!*/
@@ -1655,7 +1480,7 @@ set to "ELECTRODE". See also rig_node_has_electrode_defined
 #if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_fields(struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :
 Frees the <unemap_package> rig's computed and fe fields
@@ -1666,147 +1491,104 @@ the rig.
 	int return_code;
 	struct MANAGER(Computed_field) *computed_field_manager=
 		(struct MANAGER(Computed_field) *)NULL;
-	struct MANAGER(FE_field) *fe_field_manager=
-		(struct MANAGER(FE_field) *)NULL;
-	struct FE_field *temp_field=(struct FE_field *)NULL;
 
 	ENTER(free_unemap_package_rig_fields)
-	if(unemap_package)
+	if (unemap_package)
 	{
 		return_code=1;
 		computed_field_manager=unemap_package->computed_field_manager;
-		fe_field_manager=unemap_package->fe_field_manager;
-		if(unemap_package->device_name_field)
+		if (unemap_package->device_name_field)
 		{		 
-			temp_field=unemap_package->device_name_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,
-				fe_field_manager,unemap_package->device_name_field))
-			{
-				unemap_package->device_name_field=(struct FE_field *)NULL;
-			}
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->device_name_field);
+			DEACCESS(FE_field)(&(unemap_package->device_name_field));
+			unemap_package->device_name_field = (struct FE_field *)NULL;
 		}
-		if(unemap_package->device_type_field)
-		{
-			temp_field=unemap_package->device_type_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->device_type_field))
-			{
-				unemap_package->device_type_field=(struct FE_field *)NULL;
-			}
+		if (unemap_package->device_type_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->device_type_field);
+			DEACCESS(FE_field)(&(unemap_package->device_type_field));
+			unemap_package->device_type_field = (struct FE_field *)NULL;
 		}
-		if(unemap_package->channel_number_field)
-		{
-			temp_field=unemap_package->channel_number_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->channel_number_field))
-			{
-				unemap_package->channel_number_field=(struct FE_field *)NULL;
-			}
-		}	
+		if (unemap_package->channel_number_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->channel_number_field);
+			DEACCESS(FE_field)(&(unemap_package->channel_number_field));
+			unemap_package->channel_number_field = (struct FE_field *)NULL;
+		}
 #if  defined (UNEMAP_USE_NODES)
-		if(unemap_package->display_start_time_field)
-		{
-			temp_field=unemap_package->display_start_time_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->display_start_time_field))
-			{
-				unemap_package->display_start_time_field=(struct FE_field *)NULL;
-			}
-		}	
-		if(unemap_package->display_end_time_field)
-		{
-			temp_field=unemap_package->display_end_time_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->display_end_time_field))
-			{
-				unemap_package->display_end_time_field=(struct FE_field *)NULL;
-			}
-		}	
-		if(unemap_package->highlight_field)
-		{
-			temp_field=unemap_package->highlight_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->highlight_field))
-			{
-				unemap_package->highlight_field=(struct FE_field *)NULL;
-			}
-		}	
+		if (unemap_package->display_start_time_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->display_start_time_field);
+			DEACCESS(FE_field)(&(unemap_package->display_start_time_field));
+			unemap_package->display_start_time_field = (struct FE_field *)NULL;
+		}
+		if (unemap_package->display_end_time_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->display_end_time_field);
+			DEACCESS(FE_field)(&(unemap_package->display_end_time_field));
+			unemap_package->display_end_time_field = (struct FE_field *)NULL;
+		}
+		if (unemap_package->highlight_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->highlight_field);
+			DEACCESS(FE_field)(&(unemap_package->highlight_field));
+			unemap_package->highlight_field = (struct FE_field *)NULL;
+		}
 #endif /* defined (UNEMAP_USE_NODES) */		
-		if(unemap_package->read_order_field)
-		{
-			temp_field=unemap_package->read_order_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->read_order_field))
-			{
-				unemap_package->read_order_field=(struct FE_field *)NULL;
-			}
-		}				
-		if(unemap_package->signal_field)
-		{
-			temp_field=unemap_package->signal_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->signal_field))
-			{
-				unemap_package->signal_field=(struct FE_field *)NULL;
-			}
+		if (unemap_package->read_order_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->read_order_field);
+			DEACCESS(FE_field)(&(unemap_package->read_order_field));
+			unemap_package->read_order_field = (struct FE_field *)NULL;
 		}
-		if(unemap_package->signal_minimum_field)
-		{
-			temp_field=unemap_package->signal_minimum_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->signal_minimum_field))
-			{
-				unemap_package->signal_minimum_field=(struct FE_field *)NULL;
-			}
+		if (unemap_package->signal_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->signal_field);
+			DEACCESS(FE_field)(&(unemap_package->signal_field));
+			unemap_package->signal_field = (struct FE_field *)NULL;
 		}
-		if(unemap_package->signal_maximum_field)
-		{
-			temp_field=unemap_package->signal_maximum_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->signal_maximum_field))
-			{
-				unemap_package->signal_maximum_field=(struct FE_field *)NULL;
-			}
-		}	
-		if(unemap_package->signal_status_field)
-		{
-			temp_field=unemap_package->signal_status_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->signal_status_field))
-			{
-				unemap_package->signal_status_field=(struct FE_field *)NULL;
-			}
-		}	
-		if(unemap_package->channel_gain_field)
-		{
-			temp_field=unemap_package->channel_gain_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->channel_gain_field))
-			{
-				unemap_package->channel_gain_field=(struct FE_field *)NULL;
-			}
+		if (unemap_package->signal_minimum_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->signal_minimum_field);
+			DEACCESS(FE_field)(&(unemap_package->signal_minimum_field));
+			unemap_package->signal_minimum_field = (struct FE_field *)NULL;
 		}
-		if(unemap_package->channel_offset_field)
-		{
-			temp_field=unemap_package->channel_offset_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->channel_offset_field))
-			{
-				unemap_package->channel_offset_field=(struct FE_field *)NULL;
-			}
+		if (unemap_package->signal_maximum_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->signal_maximum_field);
+			DEACCESS(FE_field)(&(unemap_package->signal_maximum_field));
+			unemap_package->signal_maximum_field = (struct FE_field *)NULL;
+		}
+		if (unemap_package->signal_status_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->signal_status_field);
+			DEACCESS(FE_field)(&(unemap_package->signal_status_field));
+			unemap_package->signal_status_field = (struct FE_field *)NULL;
+		}
+		if (unemap_package->channel_gain_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->channel_gain_field);
+			DEACCESS(FE_field)(&(unemap_package->channel_gain_field));
+			unemap_package->channel_gain_field = (struct FE_field *)NULL;
+		}
+		if (unemap_package->channel_offset_field)
+		{		 
+			Computed_field_manager_destroy_FE_field(computed_field_manager,
+				unemap_package->channel_offset_field);
+			DEACCESS(FE_field)(&(unemap_package->channel_offset_field));
+			unemap_package->channel_offset_field = (struct FE_field *)NULL;
 		}
 	}
 	else
@@ -1823,7 +1605,7 @@ the rig.
 #if defined (UNEMAP_USE_3D)
 int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Frees the time related computed fields (used by the map electrode glyphs) 
@@ -1834,7 +1616,6 @@ stored in the unemap package. Also frees any associated fe_fields
 	struct Computed_field *computed_field;
 	struct FE_field *fe_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
 
 	ENTER(free_unemap_package_time_computed_fields);
 	if(unemap_package)
@@ -1842,91 +1623,101 @@ stored in the unemap package. Also frees any associated fe_fields
 		computed_field=(struct Computed_field *)NULL;	
 		fe_field=(struct FE_field *)NULL;
 		computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-		fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 		return_code=1;
-		computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
-		computed_field=get_unemap_package_scaled_offset_signal_value_at_time_field(
-			unemap_package);
+		computed_field_manager =
+			get_unemap_package_Computed_field_manager(unemap_package);
+		computed_field =
+			get_unemap_package_scaled_offset_signal_value_at_time_field(
+				unemap_package);
 		/* following does deaccess*/
 		set_unemap_package_scaled_offset_signal_value_at_time_field
 						(unemap_package,(struct Computed_field *)NULL);
-		if(computed_field)
+		if (computed_field)
 		{				
 			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
 				computed_field_manager))
 			{			
 				/* also want to destroy any wrapped FE_field */
-				fe_field=(struct FE_field *)NULL;
 				if (Computed_field_is_type_finite_element(computed_field))
 				{
-				  Computed_field_get_type_finite_element(computed_field,
-					 &fe_field);
-				}
-				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
-					(computed_field,computed_field_manager))
-				{
-					if (fe_field)
+				  if (!(Computed_field_get_type_finite_element(computed_field,
+						&fe_field) &&
+						Computed_field_manager_destroy_FE_field(computed_field_manager,
+							fe_field)))
 					{
-						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
-							fe_field,fe_field_manager);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
-						" Couldn't remove scaled_offset_signal_value_at_time_field from manager");
+					if (!REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
+						computed_field, computed_field_manager))
+					{
+						return_code = 0;
+					}
 				}
-				
+				if (!return_code)
+				{
+					display_message(WARNING_MESSAGE,
+						"free_unemap_package_time_computed_fields.  "
+						"Couldn't remove scaled_offset_signal_value_at_time_field from manager");
+				}
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+				display_message(WARNING_MESSAGE,
+					"free_unemap_package_time_computed_fields.  "
 					"Couldn't destroy scaled_offset_signal_value_at_time_field");
 			}				
 		}/* if(computed_field) */
-		computed_field=get_unemap_package_offset_signal_value_at_time_field
-			(unemap_package);
+		computed_field =
+			get_unemap_package_offset_signal_value_at_time_field(unemap_package);
 		/* following does deaccess*/
-		set_unemap_package_offset_signal_value_at_time_field
-						(unemap_package,(struct Computed_field *)NULL);
-		if(computed_field)
-		{				
+		set_unemap_package_offset_signal_value_at_time_field(
+			unemap_package,(struct Computed_field *)NULL);
+		if (computed_field)
+		{
 			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
 				computed_field_manager))
 			{			
 				/* also want to destroy any wrapped FE_field */
-				fe_field=(struct FE_field *)NULL;
 				if (Computed_field_is_type_finite_element(computed_field))
 				{
-				  Computed_field_get_type_finite_element(computed_field,
-					 &fe_field);
-				}
-				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
-					(computed_field,computed_field_manager))
-				{
-					if (fe_field)
+				  if (!(Computed_field_get_type_finite_element(computed_field,
+						&fe_field) &&
+						Computed_field_manager_destroy_FE_field(computed_field_manager,
+							fe_field)))
 					{
-						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
-							fe_field,fe_field_manager);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
-						" Couldn't remove offset_signal_value_at_time_field from manager");
+					if (!REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
+						computed_field, computed_field_manager))
+					{
+						return_code = 0;
+					}
+				}
+				if (!return_code)
+				{
+					display_message(WARNING_MESSAGE,
+						"free_unemap_package_time_computed_fields.  "
+						"Couldn't remove offset_signal_value_at_time_field from manager");
 				}				
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
+				display_message(WARNING_MESSAGE,
+					"free_unemap_package_time_computed_fields.  "
 					"Couldn't destroy offset_signal_value_at_time_field");
 			}				
 		}/* if(computed_field) */
 		/* signal_value_at_time_field is now just a pointer to an fe_field wrapper and
 			so we no longer destroy it here, just deaccess it */
 		/* following does deaccess*/
-		set_unemap_package_signal_value_at_time_field
-						(unemap_package,(struct Computed_field *)NULL);
+		set_unemap_package_signal_value_at_time_field(
+			unemap_package, (struct Computed_field *)NULL);
 		/* and the time_field has gone altogether */
 	}/* if(unemap_package) */
 	else
@@ -1944,39 +1735,31 @@ stored in the unemap package. Also frees any associated fe_fields
 int free_unemap_package_rig_node_group_glyphs(
 	struct Map_drawing_information *drawing_information,
 	struct Unemap_package *package,
-	struct GROUP(FE_node) *rig_node_group)
+	struct FE_region *rig_node_group)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Frees up any glyphs used by the nodes in the rig_node_group
 ==============================================================================*/
 {
-	char *group_name;
 	int return_code;
+	struct Cmiss_region *rig_node_cmiss_region;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	struct Scene *scene;
-	struct GROUP(FE_element) *rig_element_group;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
 
 	ENTER(free_unemap_package_rig_node_group_glyphs);	
 	gt_element_group=(struct GT_element_group *)NULL;
 	settings=(struct GT_element_settings *)NULL;
 	scene=(struct Scene *)NULL;
-	rig_element_group=(struct GROUP(FE_element) *)NULL;
-	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-	if (package&&rig_node_group&&drawing_information)
+	if (package && rig_node_group && drawing_information)
 	{
-		if((scene=get_map_drawing_information_scene(drawing_information))&&
-			(element_group_manager=
-				get_unemap_package_element_group_manager(package)))
+		if ((scene = get_map_drawing_information_scene(drawing_information)) &&
+			(FE_region_get_Cmiss_region(rig_node_group, &rig_node_cmiss_region)))
 		{
-			GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);	 
-			rig_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-				(group_name,element_group_manager);
-			if (rig_element_group&&(gt_element_group=
-				Scene_get_graphical_element_group(scene,rig_element_group)))
+			if (gt_element_group =
+				Scene_get_graphical_element_group(scene, rig_node_cmiss_region))
 			{
 				return_code=1;
 				while (return_code&&(settings=first_settings_in_GT_element_group_that(
@@ -1993,8 +1776,8 @@ Frees up any glyphs used by the nodes in the rig_node_group
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"free_unemap_package_rig_node_group_glyphs. rig_element_group/gt_element_group"
-						"not found");
+					"free_unemap_package_rig_node_group_glyphs.  "
+					"gt_element_group not found");
 				return_code=0;
 			}
 		}
@@ -2005,7 +1788,6 @@ Frees up any glyphs used by the nodes in the rig_node_group
 			"free_unemap_package_rig_node_group_glyphs.  Invalid argument(s)");
 		return_code=0;
 	}
-	DEALLOCATE(group_name);	
 	LEAVE;
 
 	return (return_code);
@@ -2014,25 +1796,26 @@ Frees up any glyphs used by the nodes in the rig_node_group
 
 #if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_node_group(struct Unemap_package *package,	
-	struct GROUP(FE_node) **rig_node_group)
+	struct FE_region **rig_node_group)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000 
+LAST MODIFIED : 13 May 2003
 
 DESCRIPTION :Frees the node, element and data groups of <rig_node_group>
 Note: DOESN't free the glyphs of the node group. See 
 free_unemap_package_rig_node_group_glyphs for this
 ==============================================================================*/
 {
-	int return_code;	
+	int return_code;
+	struct Cmiss_region *rig_node_cmiss_region;
 	
 	ENTER(free_unemap_package_rig_node_group);
-	if(package&&rig_node_group&&(*rig_node_group))
-	{			
-		return_code=free_node_and_element_and_data_groups(
-			rig_node_group,package->element_manager,
-			package->element_group_manager,package->data_manager,
-			package->data_group_manager,package->node_manager,
-			package->node_group_manager);	
+	if (package && rig_node_group && (*rig_node_group) &&
+		(FE_region_get_Cmiss_region(*rig_node_group, &rig_node_cmiss_region)))
+	{
+		FE_region_clear(*rig_node_group, /*destroy_in_master*/1);
+		return_code = Cmiss_region_remove_child_region(package->root_cmiss_region,
+			rig_node_cmiss_region);
+		DEACCESS(FE_region)(rig_node_group);
 	}
 	else
 	{
@@ -2046,7 +1829,7 @@ free_unemap_package_rig_node_group_glyphs for this
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-char *get_unemap_package_torso_group_name(	struct Unemap_package *package)
+char *get_unemap_package_torso_group_name(struct Unemap_package *package)
 /*******************************************************************************
 LAST MODIFIED : 16 July 2002
 
@@ -2075,62 +1858,138 @@ Returns the <torso_group_name> of the unemap_package.
 int unemap_package_read_torso_file(struct Unemap_package *package,
 	char *torso_file_name)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 12 May 2003
 
 DESCRIPTION :
 Reads in the default torso node and element groups from <torso_file_name>.
 The group name is then stored in the unemap_package.
 ==============================================================================*/
 {
-	char *torso_group_name;
-	int return_code;
-	struct GROUP(FE_element) *torso_element_group;
+	char exnode_ext[] = ".exnode";
+	char exelem_ext[] = ".exelem";
+	char *exnode_name_str, *exelem_name_str, *torso_group_name;
+	int exnode_name_str_len, exelem_name_str_len, last_identifier,
+		number_of_elements, number_of_nodes, return_code, string_len;
+	struct Cmiss_region *element_root_cmiss_region, *torso_root_cmiss_region,
+		*root_cmiss_region;
+	struct Computed_field *cmiss_number_field;
+	struct FE_region *torso_root_fe_region, *torso_element_group;
+	struct MANAGER(FE_basis) *basis_manager;
 
 	ENTER(unemap_package_read_torso_file);
-	if (package && torso_file_name)
+	if (package && torso_file_name &&
+		(root_cmiss_region = get_unemap_package_root_Cmiss_region(package)) &&
+		(basis_manager = get_unemap_package_basis_manager(package)))
 	{
+		return_code = 1;
 		if (package->torso_group_name)
 		{
 			DEALLOCATE(package->torso_group_name);
 			package->torso_group_name = (char *)NULL;
 		}
-		if (read_FE_node_and_elem_groups_and_return_name_given_file_name(
-			torso_file_name,
-			package->fe_field_manager,
-			package->fe_time,
-			package->node_manager,
-			package->element_manager,
-			package->node_group_manager,
-			package->data_group_manager,
-			package->element_group_manager,
-			package->fe_basis_manager,
-			&torso_group_name))
+		/* construct full names for exnode and exelem files */
+		string_len = strlen(torso_file_name);
+		exnode_name_str_len = string_len + strlen(exnode_ext) + 1; 
+		exelem_name_str_len = string_len + strlen(exelem_ext) + 1;
+		ALLOCATE(exnode_name_str, char, exnode_name_str_len);
+		ALLOCATE(exelem_name_str, char, exelem_name_str_len);
+		if (exnode_name_str && exelem_name_str)
 		{
-			/* offset default torso node and element groups */
-			offset_FE_node_and_element_identifiers_in_group(
-				torso_group_name, (INT_MAX/2), package->node_manager,
-				package->element_manager, package->node_group_manager,
-				package->element_group_manager);
-			/* store the group name in the unemap_package */
-			package->torso_group_name = duplicate_string(torso_group_name);
-			/* define the fit field on  the default torso */
-			torso_element_group =
-				FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)(
-					torso_group_name, package->element_group_manager);
-			define_fit_field_at_quad_elements_and_nodes(torso_element_group,
-				package->map_fit_field, package->fe_basis_manager,
-				package->element_manager, package->node_manager);
-			/* add cylindrical field info for texture mapping to default torso */
-			add_cylindrical_info_to_cartesian_torso(torso_group_name, package);
-			return_code = 1;
+			/* add the extensions to the file name */
+			strcpy(exnode_name_str, torso_file_name);
+			strcat(exnode_name_str, exnode_ext);
+			strcpy(exelem_name_str, torso_file_name);
+			strcat(exelem_name_str, exelem_ext);
+			/* read the node and element files */
+			torso_root_cmiss_region = read_exregion_file_of_name(exnode_name_str,
+				basis_manager, (struct FE_import_time_index *)NULL);
+			element_root_cmiss_region = read_exregion_file_of_name(exelem_name_str,
+				basis_manager, (struct FE_import_time_index *)NULL);
+			/* check the elements merge into the nodes and get the first child name */
+			if (torso_root_cmiss_region && element_root_cmiss_region &&
+				Cmiss_regions_FE_regions_can_be_merged(torso_root_cmiss_region,
+					element_root_cmiss_region) &&
+				Cmiss_regions_merge_FE_regions(torso_root_cmiss_region,
+					element_root_cmiss_region) &&
+				Cmiss_region_get_child_region_name(torso_root_cmiss_region,
+					/*child_number*/0, &torso_group_name))
+			{
+				/* offset torso node and element numbers to be hard against INT_MAX/2,
+					 the internal limit imposed for the benefit of encoding element
+					 numbers in a single integer including type */
+				if ((cmiss_number_field = CREATE(Computed_field)("cmiss_number")) &&
+					Computed_field_set_type_cmiss_number(cmiss_number_field))
+				{
+					torso_root_fe_region =
+						Cmiss_region_get_FE_region(torso_root_cmiss_region);
+					last_identifier = INT_MAX/2;
+					FE_region_begin_change(torso_root_fe_region);
+					number_of_nodes =
+						FE_region_get_number_of_FE_nodes(torso_root_fe_region);
+					/* offset default torso node and element groups */
+					FE_region_change_node_identifiers(torso_root_fe_region,
+						/*node_offset*/(last_identifier - number_of_nodes),
+						/*sort_by_field*/cmiss_number_field, /*time*/0.0);
+					number_of_elements =
+						FE_region_get_number_of_FE_elements(torso_root_fe_region);
+					FE_region_change_element_identifiers(torso_root_fe_region, CM_ELEMENT,
+						/*element_offset*/(last_identifier - number_of_elements),
+						/*sort_by_field*/cmiss_number_field, /*time*/0.0);
+					FE_region_change_element_identifiers(torso_root_fe_region, CM_FACE,
+						/*element_offset*/(last_identifier - number_of_elements),
+						/*sort_by_field*/cmiss_number_field, /*time*/0.0);
+					FE_region_change_element_identifiers(torso_root_fe_region, CM_LINE,
+						/*element_offset*/(last_identifier - number_of_elements),
+						/*sort_by_field*/cmiss_number_field, /*time*/0.0);
+					FE_region_end_change(torso_root_fe_region);
+				}
+				DESTROY(Computed_field)(&cmiss_number_field);
+
+				/* merge into the root_cmiss_region */
+				if (Cmiss_regions_FE_regions_can_be_merged(root_cmiss_region,
+					torso_root_cmiss_region) &&
+					Cmiss_regions_merge_FE_regions(root_cmiss_region,
+						torso_root_cmiss_region))
+				{
+					/* store the group name in the unemap_package */
+					package->torso_group_name = torso_group_name;
+					/* define the fit field on the default torso */
+					torso_element_group = Cmiss_region_get_FE_region(
+						Cmiss_region_get_child_region_from_name(root_cmiss_region,
+							torso_group_name));
+					define_fit_field_at_quad_elements_and_nodes(torso_element_group,
+						package->map_fit_field);
+					/* add cylindrical field info for texture mapping to default torso */
+					add_cylindrical_info_to_cartesian_torso(torso_group_name, package);
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "unemap_package_read_torso_file.  "
+						"Torso file '%s' not compatible with global objects",
+						torso_file_name);
+					DEALLOCATE(torso_group_name);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_package_read_torso_file.  Invalid torso file '%s'",
+					torso_file_name);
+				return_code = 0;
+			}
+			DESTROY(Cmiss_region)(&element_root_cmiss_region);
+			DESTROY(Cmiss_region)(&torso_root_cmiss_region);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_package_read_torso_file.  Could not read torso file '%s'",
-				torso_file_name);
+				"unemap_package_read_torso_file.  Could not allocate filenames");
 			return_code = 0;
 		}
+		DEALLOCATE(exelem_name_str);
+		DEALLOCATE(exnode_name_str);
 	}
 	else
 	{
@@ -2142,5 +2001,5 @@ The group name is then stored in the unemap_package.
 
 	return (return_code);
 } /* unemap_package_read_torso_file */
-
 #endif /* defined (UNEMAP_USE_3D)*/
+

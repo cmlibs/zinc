@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_graphics_object.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 Functions for reading graphics object data from a file.
@@ -212,7 +212,7 @@ int file_read_graphics_objects(char *file_name,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct LIST(GT_object) *object_list)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2002
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 ???RC.  26 June 97.  Added nurbs_type for NURBS. NURBSMORPH are NURBS with
@@ -358,7 +358,9 @@ DESCRIPTION :
 								display_message(WARNING_MESSAGE,
 									"Overwriting time %g in graphics object '%s'",time,
 									objname);
-								return_code=GT_object_delete_time(obj,time);
+								return_code = GT_object_remove_primitives_at_time(obj, time,
+									(GT_object_primitive_object_name_conditional_function *)NULL,
+									(void *)NULL);
 							}
 						}
 						else
@@ -383,7 +385,8 @@ DESCRIPTION :
 								}
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
 								point = CREATE(GT_point)(pointlist,(char *)NULL,
-									g_PLUS_MARKER,global_point_size,g_NO_DATA,(GTDATA *)NULL);
+									g_PLUS_MARKER,global_point_size,g_NO_DATA,
+									/*object_name*/0,(GTDATA *)NULL);
 								GT_OBJECT_ADD(GT_point)(obj,time,point);
 							} break;
 							case g_POINTSET:
@@ -812,7 +815,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct Graphical_material *default_material,
 	struct LIST(GT_object) *object_list)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2002
+LAST MODIFIED : 19 March 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -877,7 +880,9 @@ DESCRIPTION :
 									display_message(WARNING_MESSAGE,
 										"Overwriting time %g in graphics object '%s'",
 										time, objname);
-									return_code=GT_object_delete_time(obj, time);
+									return_code = GT_object_remove_primitives_at_time(obj, time,
+										(GT_object_primitive_object_name_conditional_function *)NULL,
+										(void *)NULL);
 								}
 							}
 							else
