@@ -4923,42 +4923,119 @@ tight around the objects in the scene.
 int Scene_viewer_get_view_angle(struct Scene_viewer *scene_viewer,
 	double *view_angle)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 6 April 2001
 
 DESCRIPTION :
 Gets the diagonal view angle, in radians, of the <scene_viewer>.
+View angle is measured across the normalized device coordinates - NDCs.
 For PARALLEL and PERSPECTIVE projection modes only.
 ==============================================================================*/
 {
-	double diagonal,eye_distance,view[3];
+	double diagonal, eye_distance, view[3];
 	int return_code;
 
 	ENTER(Scene_viewer_get_view_angle);
-	if (scene_viewer&&view_angle&&(
-		(SCENE_VIEWER_PARALLEL==scene_viewer->projection_mode)||
-		(SCENE_VIEWER_PERSPECTIVE==scene_viewer->projection_mode)))
+	if (scene_viewer && view_angle && (
+		(SCENE_VIEWER_PARALLEL == scene_viewer->projection_mode) ||
+		(SCENE_VIEWER_PERSPECTIVE == scene_viewer->projection_mode)))
 	{
-		diagonal=sqrt((scene_viewer->right-scene_viewer->left)*
-			(scene_viewer->right-scene_viewer->left)+
-			(scene_viewer->top-scene_viewer->bottom)*
-			(scene_viewer->top-scene_viewer->bottom));
-		view[0]=scene_viewer->eyex - scene_viewer->lookatx;
-		view[1]=scene_viewer->eyey - scene_viewer->lookaty;
-		view[2]=scene_viewer->eyez - scene_viewer->lookatz;
-		eye_distance=normalize3(view);
-		*view_angle=2.0*atan(diagonal/(2.0*eye_distance));
-		return_code=1;
+		diagonal = sqrt((scene_viewer->right - scene_viewer->left)*
+			(scene_viewer->right - scene_viewer->left) +
+			(scene_viewer->top - scene_viewer->bottom)*
+			(scene_viewer->top - scene_viewer->bottom));
+		view[0] = scene_viewer->eyex - scene_viewer->lookatx;
+		view[1] = scene_viewer->eyey - scene_viewer->lookaty;
+		view[2] = scene_viewer->eyez - scene_viewer->lookatz;
+		eye_distance = norm3(view);
+		*view_angle = 2.0*atan(diagonal/(2.0*eye_distance));
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_get_view_angle.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* Scene_viewer_get_view_angle */
+
+int Scene_viewer_get_horizontal_view_angle(struct Scene_viewer *scene_viewer,
+	double *horizontal_view_angle)
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Gets the horizontal view angle, in radians, of the <scene_viewer>.
+View angle is measured across the normalized device coordinates - NDCs.
+For PARALLEL and PERSPECTIVE projection modes only.
+==============================================================================*/
+{
+	double eye_distance, view[3];
+	int return_code;
+
+	ENTER(Scene_viewer_get_horizontal_view_angle);
+	if (scene_viewer && horizontal_view_angle && (
+		(SCENE_VIEWER_PARALLEL == scene_viewer->projection_mode) ||
+		(SCENE_VIEWER_PERSPECTIVE == scene_viewer->projection_mode)))
+	{
+		view[0] = scene_viewer->eyex - scene_viewer->lookatx;
+		view[1] = scene_viewer->eyey - scene_viewer->lookaty;
+		view[2] = scene_viewer->eyez - scene_viewer->lookatz;
+		eye_distance = norm3(view);
+		*horizontal_view_angle =
+			2.0*atan((scene_viewer->right - scene_viewer->left)/(2.0*eye_distance));
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_horizontal_view_angle.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_horizontal_view_angle */
+
+int Scene_viewer_get_vertical_view_angle(struct Scene_viewer *scene_viewer,
+	double *vertical_view_angle)
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Gets the vertical view angle, in radians, of the <scene_viewer>.
+View angle is measured across the normalized device coordinates - NDCs.
+For PARALLEL and PERSPECTIVE projection modes only.
+==============================================================================*/
+{
+	double eye_distance, view[3];
+	int return_code;
+
+	ENTER(Scene_viewer_get_vertical_view_angle);
+	if (scene_viewer && vertical_view_angle && (
+		(SCENE_VIEWER_PARALLEL == scene_viewer->projection_mode) ||
+		(SCENE_VIEWER_PERSPECTIVE == scene_viewer->projection_mode)))
+	{
+		view[0] = scene_viewer->eyex - scene_viewer->lookatx;
+		view[1] = scene_viewer->eyey - scene_viewer->lookaty;
+		view[2] = scene_viewer->eyez - scene_viewer->lookatz;
+		eye_distance = norm3(view);
+		*vertical_view_angle =
+			2.0*atan((scene_viewer->top - scene_viewer->bottom)/(2.0*eye_distance));
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_vertical_view_angle.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_vertical_view_angle */
 
 int Scene_viewer_set_view_angle(struct Scene_viewer *scene_viewer,
 	double view_angle)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 29 September 2000
+LAST MODIFIED : 6 April 2001
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -688,10 +688,33 @@ tight around the objects in the scene.
 int Scene_viewer_get_view_angle(struct Scene_viewer *scene_viewer,
 	double *view_angle);
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 6 March 2001
 
 DESCRIPTION :
 Gets the diagonal view angle, in radians, of the <scene_viewer>.
+View angle is measured across the normalized device coordinates - NDCs.
+For PARALLEL and PERSPECTIVE projection modes only.
+==============================================================================*/
+
+int Scene_viewer_get_horizontal_view_angle(struct Scene_viewer *scene_viewer,
+	double *horizontal_view_angle);
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Gets the horizontal view angle, in radians, of the <scene_viewer>.
+View angle is measured across the normalized device coordinates - NDCs.
+For PARALLEL and PERSPECTIVE projection modes only.
+==============================================================================*/
+
+int Scene_viewer_get_vertical_view_angle(struct Scene_viewer *scene_viewer,
+	double *vertical_view_angle);
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Gets the vertical view angle, in radians, of the <scene_viewer>.
+View angle is measured across the normalized device coordinates - NDCs.
 For PARALLEL and PERSPECTIVE projection modes only.
 ==============================================================================*/
 
