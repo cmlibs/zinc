@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_interface.c
 
-LAST MODIFIED : 04 April 2001
+LAST MODIFIED : 18 April 2001
 
 DESCRIPTION :
 The Cell Interface.

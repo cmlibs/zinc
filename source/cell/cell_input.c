@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_input.c
 
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 21 April 2001
 
 DESCRIPTION :
 Input routines for the cell interface.
@@ -47,7 +47,7 @@ Module functions
 */
 void create_Cell_unit_abbreviation_table(void *parent)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Creates a look-up table for all the unit abbreviations stored in the <parent>
@@ -56,15 +56,18 @@ element of the DOM tree.
 {
   int position;
   void *abbreviation;
+  char *abbr,*expand;
 
   position = 0;
   while (abbreviation = XMLParser_get_child_node_by_name(parent,"units",
     position))
   {
+    abbr = XMLParser_get_attribute_value(abbreviation,"abbreviation");
+    expand = XMLParser_get_attribute_value(abbreviation,"expanded");
     display_message(INFORMATION_MESSAGE,
-      "Found abbreviation, \"%s\" => \"%s\"\n",
-      XMLParser_get_attribute_value(abbreviation,"abbreviation"),
-      XMLParser_get_attribute_value(abbreviation,"expanded"));
+      "Found abbreviation, \"%s\" => \"%s\"\n",abbr,expand);
+    if (abbr) free(abbr);
+    if (expand) free(expand);
     position++;
   } /* while (abbreviation) */
 } /* create_Cell_unit_abbreviation_table() */
@@ -73,7 +76,7 @@ static int create_Cell_variables_from_dom(void *parent,
   struct Cell_component *cell_component,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Creates all the variable objects found as children of the given <parent>
@@ -84,6 +87,7 @@ element in the DOM tree.
   int position;
   void *variable;
   struct Cell_variable *cell_variable;
+  char *name,*display_name,*value;
 
   ENTER(create_Cell_variables_from_dom);
   if (parent && cell_component && variable_list)
@@ -96,22 +100,24 @@ element in the DOM tree.
       /* Create the cell variable object and add it to the global variable list,
        * and add the variable to the component's variable list.
        */
-      if ((cell_variable = CREATE(Cell_variable)(
-        XMLParser_get_attribute_value(variable,"name"))) &&
+      name = XMLParser_get_attribute_value(variable,"name");
+      if ((cell_variable = CREATE(Cell_variable)(name)) &&
         ADD_OBJECT_TO_LIST(Cell_variable)(cell_variable,variable_list) &&
         Cell_component_add_variable_to_variable_list(cell_component,
           cell_variable))
       {
-        Cell_variable_set_display_name(cell_variable,
-          XMLParser_get_attribute_value(variable,"display_name"));
+        display_name = XMLParser_get_attribute_value(variable,"display_name");
+        Cell_variable_set_display_name(cell_variable,display_name);
+        if (display_name) free(display_name);
+        value = XMLParser_get_attribute_value(variable,"value");
         if (!(Cell_variable_set_value_type(cell_variable,CELL_REAL_VALUE) &&
-          Cell_variable_set_value_from_string(cell_variable,
-            XMLParser_get_attribute_value(variable,"value"))))
+          Cell_variable_set_value_from_string(cell_variable,value)))
         {
           display_message(WARNING_MESSAGE,"create_Cell_variables_from_dom. "
             "Unable to set the value for variable: %s",
             XMLParser_get_attribute_value(variable,"name"));
         }
+        if (value) free(value);
         position++;
       }
       else
@@ -120,6 +126,7 @@ element in the DOM tree.
           "Unable to create the variable and add it to the variable list");
         return_code = 0;
       }
+      if (name) free(name);
     } /* while (return_code && variable) */
   }
   else
@@ -419,7 +426,7 @@ static int create_Cell_components_from_dom(void *parent,
   struct LIST(Cell_component) *component_list,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Creates all the component objects found as children of the given <parent>
@@ -432,6 +439,7 @@ element in the DOM tree.
   int position;
   void *component;
   struct Cell_component *cell_component;
+  char *name,*display_name;
 
   ENTER(create_Cell_components_from_dom);
   if (parent && component_list && variable_list)
@@ -445,12 +453,13 @@ element in the DOM tree.
       /*display_message(INFORMATION_MESSAGE,
         "Found subspace: \"%s\"\n",
         XMLParser_get_attribute_value(subspace,"name"));*/
-      if ((cell_component = CREATE(Cell_component)(parent_component,
-        XMLParser_get_attribute_value(component,"name"))) &&
+      name = XMLParser_get_attribute_value(component,"name");
+      if ((cell_component = CREATE(Cell_component)(parent_component,name)) &&
         ADD_OBJECT_TO_LIST(Cell_component)(cell_component,component_list))
       {
-        Cell_component_set_display_name(cell_component,
-          XMLParser_get_attribute_value(component,"display_name"));
+        display_name = XMLParser_get_attribute_value(component,"display_name");
+        Cell_component_set_display_name(cell_component,display_name);
+        if (display_name) free(display_name);
         if (create_Cell_variables_from_dom(component,cell_component,
           variable_list))
         {
@@ -480,6 +489,7 @@ element in the DOM tree.
           "Unable to create the component and add it to the component list");
         return_code = 0;
       }
+      if (name) free(name);
     } /* while (return_code && component) */
   }
   else
@@ -503,7 +513,7 @@ Adds specified CMISS interface information to variables
 {
   int return_code = 0;
   int position;
-  char *name,*string;
+  char *name,*string,*array,*position_string;
   void *map_variable;
   struct Cell_component *cell_component;
   struct Cell_variable *cell_variable;
@@ -521,7 +531,7 @@ Adds specified CMISS interface information to variables
       {
         cell_component =
           FIND_BY_IDENTIFIER_IN_LIST(Cell_component,name)(name,component_list);
-        DEALLOCATE(name);
+        free(name);
       }
       else
       {
@@ -536,16 +546,20 @@ Adds specified CMISS interface information to variables
           if (cell_variable =
             Cell_component_get_cell_variable_by_name(cell_component,name))
           {
-            Cell_variable_set_cmiss_interface(cell_variable,
-              XMLParser_get_attribute_value(map_variable,"array"),
-              XMLParser_get_attribute_value(map_variable,"position"));
+            array = XMLParser_get_attribute_value(map_variable,"array");
+            position_string = XMLParser_get_attribute_value(map_variable,
+              "position");
+            Cell_variable_set_cmiss_interface(cell_variable,array,
+              position_string);
+            if (array) free(array);
+            if (position_string) free(position_string);
             if (string = XMLParser_get_attribute_value(map_variable,"plot"))
             {
               if (fuzzy_string_compare_same_length(string,"unemap"))
               {
                 Cell_variable_set_unemap_interface(cell_variable);
               }
-              DEALLOCATE(string);
+              free(string);
             }
             if (string = XMLParser_get_attribute_value(map_variable,"ode"))
             {
@@ -553,7 +567,7 @@ Adds specified CMISS interface information to variables
               {
                 Cell_variable_set_ode(cell_variable);
               }
-              DEALLOCATE(string);
+              free(string);
             }
           }
           else
@@ -561,7 +575,7 @@ Adds specified CMISS interface information to variables
             display_message(ERROR_MESSAGE,"build_cmiss_interface_information.  "
               "Unable to find the coresponding cell variable object");
           }
-          DEALLOCATE(name);
+          free(name);
         }
         else
         {
@@ -588,58 +602,70 @@ Adds specified CMISS interface information to variables
 } /* build_cmiss_interface_information() */
 
 static int build_calculation_information(void *parent,
-  struct Cell_calculate *cell_calculate)
+  struct Cell_calculate *cell_calculate,char *base_path)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Sets information in the <cell_calculate> object.
 ==============================================================================*/
 {
   int return_code = 0;
-  char *value_string;
+  char *value_string,*model_routine_name,*model_dso_name;
+  char *intg_routine_name,*intg_dso_name;
+  char *model_dso_path,*intg_dso_path;
 
   ENTER(build_calculation_information);
   if (parent && cell_calculate)
   {
     /* Set the model routine name */
-    if (Cell_calculate_set_model_routine_name(cell_calculate,
-      XMLParser_get_attribute_value(parent,"model_routine_name")))
+    model_routine_name = XMLParser_get_attribute_value(parent,
+      "model_routine_name");
+    model_dso_name = XMLParser_get_attribute_value(parent,
+      "model_dso_name");
+    intg_routine_name = XMLParser_get_attribute_value(parent,
+      "integrator_routine_name");
+    intg_dso_name = XMLParser_get_attribute_value(parent,
+      "integrator_dso_name");
+    model_dso_path = XMLParser_get_full_path(model_dso_name,base_path);
+    intg_dso_path = XMLParser_get_full_path(intg_dso_name,base_path);
+    if (Cell_calculate_set_model_routine_name(cell_calculate,model_routine_name))
     {
       /* Set the DSO file name */
-      if (Cell_calculate_set_dso_name(cell_calculate,
-        XMLParser_get_attribute_value(parent,"model_dso_name")))
+      if (Cell_calculate_set_dso_name(cell_calculate,model_dso_path))
       {
         /* Set the integrator routine name */
         if (Cell_calculate_set_intg_routine_name(cell_calculate,
-          XMLParser_get_attribute_value(parent,"integrator_routine_name")))
+          intg_routine_name))
         {
           /* Set the integrator DSO file name */
-          if (Cell_calculate_set_intg_dso_name(cell_calculate,
-            XMLParser_get_attribute_value(parent,"integrator_dso_name")))
+          if (Cell_calculate_set_intg_dso_name(cell_calculate,intg_dso_path))
           {
             /* Set the time integration parameters */
             if (value_string = XMLParser_get_attribute_value(parent,"tstart"))
             {
               Cell_calculate_set_start_time_from_string(cell_calculate,
                 value_string);
+              free(value_string);
             }
             if (value_string = XMLParser_get_attribute_value(parent,"tend"))
             {
               Cell_calculate_set_end_time_from_string(cell_calculate,
                 value_string);
+              free(value_string);
             }
             if (value_string = XMLParser_get_attribute_value(parent,"dt"))
             {
               Cell_calculate_set_dt_from_string(cell_calculate,
                 value_string);
+              free(value_string);
             }
             if (value_string = XMLParser_get_attribute_value(parent,"tabt"))
             {
               Cell_calculate_set_tabt_from_string(cell_calculate,
                 value_string);
+              free(value_string);
             }
-          
           }
           else
           {
@@ -668,6 +694,12 @@ Sets information in the <cell_calculate> object.
         "Unable to set the model routine name");
       return_code = 0;
     }
+    if (model_routine_name) free(model_routine_name);
+    if (model_dso_name) free(model_dso_name);
+    if (intg_routine_name) free(intg_routine_name);
+    if (intg_dso_name) free(intg_dso_name);
+    if (model_dso_path) free(model_dso_path);
+    if (intg_dso_path) free(intg_dso_path);
   }
   else
   {
@@ -682,7 +714,7 @@ Sets information in the <cell_calculate> object.
 static int modify_variables(void *parent,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Modifies the values for the variables given in the varaible modification
@@ -727,7 +759,7 @@ element in the Cell configuration file.
                 "The value \"%s\" is invalid for the variable \"%s\"",
                 value_string,name_ref);
             }
-            DEALLOCATE(value_string);
+            free(value_string);
           }
           else
           {
@@ -740,7 +772,7 @@ element in the Cell configuration file.
           display_message(WARNING_MESSAGE,"modify_variables.  "
             "No variable found with the name: \"%s\"",name_ref);
         }
-        DEALLOCATE(name_ref);
+        free(name_ref);
       }
       else
       {
@@ -763,19 +795,21 @@ element in the Cell configuration file.
 
 static int build_graphics(void *parent,
   struct Cell_cmgui_interface *cmgui_interface,
-  struct LIST(Cell_graphic) *graphic_list)
+  struct LIST(Cell_graphic) *graphic_list,char *base_path)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Uses the information contained in the <parent> DOM element to create any
 graphics specified in the config file.
 ==============================================================================*/
 {
-  int return_code = 0,position;
+  int return_code = 0,position,i;
   char *name;
   void *graphic,*diffuse,*ambient,*emission,*specular;
   struct Cell_graphic *cell_graphic;
+  char *obj_file,*obj_path;
+  char *dif[3],*amb[3],*emi[3],*spe[3],*alpha,*shininess;
 
   ENTER(build_graphics);
   if (parent && graphic_list)
@@ -793,8 +827,12 @@ graphics specified in the config file.
           ADD_OBJECT_TO_LIST(Cell_graphic)(cell_graphic,graphic_list))
         {
           /* Create the graphic's graphical object */
+          obj_file = XMLParser_get_attribute_value(graphic,"obj_file");
+          obj_path = XMLParser_get_full_path(obj_file,base_path);
           Cell_graphic_create_graphical_object(cell_graphic,cmgui_interface,
-            XMLParser_get_attribute_value(graphic,"obj_file"));
+            obj_path);
+          if (obj_file) free(obj_file);
+          if (obj_path) free(obj_path);
           /* Create the graphic's and graphical material */
           /* ???? DPN - do you need to really have all 4 of these ???
            */
@@ -807,21 +845,35 @@ graphics specified in the config file.
             (specular = XMLParser_get_child_node_by_name(graphic,
               "specular",0)))
           {
+            dif[0] = XMLParser_get_attribute_value(diffuse,"red");
+            dif[1] = XMLParser_get_attribute_value(diffuse,"green");
+            dif[2] = XMLParser_get_attribute_value(diffuse,"blue");
+            amb[0] = XMLParser_get_attribute_value(ambient,"red");
+            amb[1] = XMLParser_get_attribute_value(ambient,"green");
+            amb[2] = XMLParser_get_attribute_value(ambient,"blue");
+            emi[0] = XMLParser_get_attribute_value(emission,"red");
+            emi[1] = XMLParser_get_attribute_value(emission,"green");
+            emi[2] = XMLParser_get_attribute_value(emission,"blue");
+            spe[0] = XMLParser_get_attribute_value(specular,"red");
+            spe[1] = XMLParser_get_attribute_value(specular,"green");
+            spe[2] = XMLParser_get_attribute_value(specular,"blue");
+            alpha = XMLParser_get_attribute_value(graphic,"alpha");
+            shininess = XMLParser_get_attribute_value(graphic,"shininess");
             Cell_graphic_create_graphical_material(cell_graphic,cmgui_interface,
-              XMLParser_get_attribute_value(diffuse,"red"),
-              XMLParser_get_attribute_value(diffuse,"green"),
-              XMLParser_get_attribute_value(diffuse,"blue"),
-              XMLParser_get_attribute_value(ambient,"red"),
-              XMLParser_get_attribute_value(ambient,"green"),
-              XMLParser_get_attribute_value(ambient,"blue"),
-              XMLParser_get_attribute_value(emission,"red"),
-              XMLParser_get_attribute_value(emission,"green"),
-              XMLParser_get_attribute_value(emission,"blue"),
-              XMLParser_get_attribute_value(specular,"red"),
-              XMLParser_get_attribute_value(specular,"green"),
-              XMLParser_get_attribute_value(specular,"blue"),
-              XMLParser_get_attribute_value(graphic,"alpha"),
-              XMLParser_get_attribute_value(graphic,"shininess"));
+              dif[0],dif[1],dif[2],
+              amb[0],amb[1],amb[2],
+              emi[0],emi[1],emi[2],
+              spe[0],spe[1],spe[2],
+              alpha,shininess);
+            for (i=0;i<3;i++)
+            {
+              if (dif[i]) free(dif[i]);
+              if (amb[i]) free(amb[i]);
+              if (emi[i]) free(emi[i]);
+              if (spe[i]) free(spe[i]);
+            }
+            if (alpha) free(alpha);
+            if (shininess) free(shininess);
           }
           else
           {
@@ -838,7 +890,7 @@ graphics specified in the config file.
             DESTROY(Cell_graphic)(&cell_graphic);
           }
         }
-        DEALLOCATE(name);
+        free(name);
       }
       else
       {
@@ -861,20 +913,21 @@ graphics specified in the config file.
 static int build_graphical_display(void *parent,
   struct Cell_cmgui_interface *cmgui_interface,
   struct LIST(Cell_component) *component_list,
-  struct LIST(Cell_graphic) *graphic_list)
+  struct LIST(Cell_graphic) *graphic_list,char *base_path)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Uses the information contained in the <parent> DOM element to set-up the
 graphical representation of CellML components.
 ==============================================================================*/
 {
-  int return_code = 0,dom_position;
+  int return_code = 0,dom_position,i;
   char *name;
   void *display,*element,*position,*direction,*scale;
   struct Cell_component *component;
   struct Cell_graphic *graphic;
+  char *pos[3],*dir[3],*sca[3];
 
   ENTER(build_graphical_display);
   if (parent && component_list)
@@ -892,7 +945,7 @@ graphical representation of CellML components.
         {
           component = FIND_BY_IDENTIFIER_IN_LIST(Cell_component,name)(
             name,component_list);
-          DEALLOCATE(name);
+          free(name);
           if ((position = XMLParser_get_child_node_by_name(display,
             "position",0)) &&
             (direction = XMLParser_get_child_node_by_name(display,
@@ -900,17 +953,20 @@ graphical representation of CellML components.
             (scale = XMLParser_get_child_node_by_name(display,
               "scale",0)))
           {
+            pos[0] = XMLParser_get_attribute_value(position,"x");
+            pos[1] = XMLParser_get_attribute_value(position,"y");
+            pos[2] = XMLParser_get_attribute_value(position,"z");
+            dir[0] = XMLParser_get_attribute_value(direction,"x");
+            dir[1] = XMLParser_get_attribute_value(direction,"y");
+            dir[2] = XMLParser_get_attribute_value(direction,"z");
+            sca[0] = XMLParser_get_attribute_value(scale,"x");
+            sca[1] = XMLParser_get_attribute_value(scale,"y");
+            sca[2] = XMLParser_get_attribute_value(scale,"z");
             /* Set-up the graphical transformation matrix */
             if (Cell_component_set_graphical_transformation(component,
-              XMLParser_get_attribute_value(position,"x"),
-              XMLParser_get_attribute_value(position,"y"),
-              XMLParser_get_attribute_value(position,"z"),
-              XMLParser_get_attribute_value(direction,"x"),
-              XMLParser_get_attribute_value(direction,"y"),
-              XMLParser_get_attribute_value(direction,"z"),
-              XMLParser_get_attribute_value(scale,"x"),
-              XMLParser_get_attribute_value(scale,"y"),
-              XMLParser_get_attribute_value(scale,"z")))
+              pos[0],pos[1],pos[2],
+              dir[0],dir[1],dir[2],
+              sca[0],sca[1],sca[2]))
             {
               /* Now need to associate the component with its graphic */
               if (element = XMLParser_get_child_node_by_name(display,
@@ -921,7 +977,7 @@ graphical representation of CellML components.
                   graphic = FIND_BY_IDENTIFIER_IN_LIST(Cell_graphic,name)(
                     name,graphic_list);
                   Cell_component_set_graphic(component,graphic);
-                  DEALLOCATE(name);
+                  free(name);
                 }
               }
               else
@@ -932,13 +988,14 @@ graphical representation of CellML components.
                   "graphic",0))
                 {
                   /* build the graphic */
-                  build_graphics(display,cmgui_interface,graphic_list);
+                  build_graphics(display,cmgui_interface,graphic_list,
+                    base_path);
                   if (name = XMLParser_get_attribute_value(element,"name"))
                   {
                     graphic = FIND_BY_IDENTIFIER_IN_LIST(Cell_graphic,name)(
                       name,graphic_list);
                     Cell_component_set_graphic(component,graphic);
-                    DEALLOCATE(name);
+                    free(name);
                   }
                 }
                 else
@@ -953,6 +1010,12 @@ graphical representation of CellML components.
             {
               display_message(WARNING_MESSAGE,"build_graphical_display.  "
                 "Unable to set the graphical transformation");
+            }
+            for (i=0;i<3;i++)
+            {
+              if (pos[i]) free(pos[i]);
+              if (dir[i]) free(dir[i]);
+              if (sca[i]) free(sca[i]);
             }
           }
           else
@@ -989,7 +1052,7 @@ static void build_from_dom(void *root,
   struct LIST(Cell_component) *component_list,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2001
+LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Main routine to build the Cell data objects from the DOM tree with the given
@@ -1258,7 +1321,7 @@ char *Cell_input_read_model(struct Cell_input *cell_input,char *filename,
   struct LIST(Cell_graphic) *graphic_list,struct Cell_calculate *cell_calculate,
   struct Cell_cmgui_interface *cmgui_interface)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 18 April 2001
 
 DESCRIPTION :
 Reads in the cell model specified in <filename>. <XMLParser_initialised> is a
@@ -1270,6 +1333,8 @@ Returns the display name of the model.
 {
   void *cellml_element,*root_element,*element;
   char *display_name = (char *)NULL;
+  char *base_path = (char *)NULL;
+  char *display_name_xml;
   
   ENTER(Cell_input_read_model);
   if (cell_input && filename && variable_list && component_list &&
@@ -1290,11 +1355,20 @@ Returns the display name of the model.
     }
     if (*XMLParser_initialised)
     {
+      /* Destroy any existing document */
+      if (cell_input->crim_document)
+      {
+        CRIM_destroy_document(cell_input->crim_document);
+        cell_input->crim_document = (void *)NULL;
+      }
       /* Do a CRIM parse of the model file */
-      if (cell_input->crim_document = CRIMParse(filename,cell_input->copy_tags,
-        cell_input->ref_tags,cell_input->do_validation,
+      if (cell_input->crim_document = CRIMParse(filename,
+        cell_input->copy_tags,cell_input->ref_tags,cell_input->do_validation,
         cell_input->do_namespaces,cell_input->do_expand))
       {
+        /* ??? A NULL base path is OK if the document gets through the parse ???
+         */
+        base_path = CRIM_get_base_path(cell_input->crim_document);
         /* Get the root element of the CellML information - could be either
          * the root element of the CellML DOM document or simply the top
          * element of the CellML description contained in the CELL input file
@@ -1304,8 +1378,6 @@ Returns the display name of the model.
         {
           /* Build the cell data objects */
           build_from_dom(cellml_element,component_list,variable_list);
-          /* grab the display name of the model/experiment - if no display
-           * name found, try just the name */
           if (root_element =
             CRIM_get_root_element(cell_input->crim_document,filename))
           {
@@ -1319,7 +1391,7 @@ Returns the display name of the model.
             if (element = CRIM_get_element(cell_input->crim_document,
               "model_calculation",/*refAllowed*/0))
             {
-              build_calculation_information(element,cell_calculate);
+              build_calculation_information(element,cell_calculate,base_path);
             }
             /* Get any variable modification information */
             if (element = CRIM_get_element(cell_input->crim_document,
@@ -1333,25 +1405,42 @@ Returns the display name of the model.
             {
               /* First need to build any "global" graphics so that they can
                  be used in the building of the graphical display */
-              build_graphics(element,cmgui_interface,graphic_list);
+              build_graphics(element,cmgui_interface,graphic_list,base_path);
               /* And then set-up all the component graphical representation */
               build_graphical_display(element,cmgui_interface,
-                component_list,graphic_list);
+                component_list,graphic_list,base_path);
             }
-            if (!(display_name = XMLParser_get_attribute_value(root_element,
+            /* grab the display name of the model/experiment - if no display
+             * name found, try just the name - need to return a copy of the
+             * value returned from the XML library to avoid DEALLOCATE'ing some
+             * malloc'ed memory */
+            if (!(display_name_xml = XMLParser_get_attribute_value(root_element,
               "display_name")))
             {
-              if (!(display_name = XMLParser_get_attribute_value(root_element,
-                "name")))
+              display_name_xml = XMLParser_get_attribute_value(
+                root_element,"name");
+            }
+            if (display_name_xml)
+            {
+              if (ALLOCATE(display_name,char,strlen(display_name_xml)+1))
               {
-                if (ALLOCATE(display_name,char,strlen("Unknown Model")+1))
-                {
-                  sprintf(display_name,"Unknown Model");
-                }
-                else
-                {
-                  display_name = (char *)NULL;
-                }
+                strcpy(display_name,display_name_xml);
+              }
+              else
+              {
+                display_name = (char *)NULL;
+              }
+              free(display_name_xml);
+            }
+            else
+            {
+              if (ALLOCATE(display_name,char,strlen("Unknown Model")+1))
+              {
+                sprintf(display_name,"Unknown Model");
+              }
+              else
+              {
+                display_name = (char *)NULL;
               }
             }
           }
@@ -1367,6 +1456,10 @@ Returns the display name of the model.
           ??
         */
         /* tidy-up */
+        if (base_path)
+        {
+          DEALLOCATE(base_path);
+        }
         /* CRIM_destroy_document(cell_input->crim_document);
          * cell_input->crim_document = (void *)NULL;
          */
