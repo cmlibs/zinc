@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 6 June 2000
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -847,15 +847,14 @@ static void process_keyboard(
 	FILE *report,*settings;
 	float a,b,calibrate_amplitude_1,calibrate_amplitude_2,
 		calibrate_voltage_1[5000],calibrate_voltage_2[5000],db_per_decade,
-		db_reduction,decay_constant,filter_frequency,gain,
-		maximum_voltage,mean[MAXIMUM_NUMBER_OF_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD],mean_x,mean_y,minimum_voltage,
-		post_filter_gain,pre_filter_gain,r,rms,
+		db_reduction,decay_constant,filter_frequency,gain,maximum_voltage,
+		mean[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],mean_x,
+		mean_y,minimum_voltage,post_filter_gain,pre_filter_gain,r,rms,
 		rms_save[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],
 		signal_rms,sorted_mean[MAXIMUM_NUMBER_OF_NI_CARDS*
 		NUMBER_OF_CHANNELS_ON_NI_CARD],sum_x,sum_xx,sum_xy,sum_y,sum_yy,
-		switching_time,temp,tol_calibrate_gain,tol_correlation_coefficient,tol_db,
-		tol_decay_constant,tol_gain,tol_offset,tol_offset_spread,tol_rms,
+		switching_time,temp,tol_calibrate_gain,tol_correlation_coefficient,tol_db1,
+		tol_db2,tol_decay_constant,tol_gain,tol_offset,tol_offset_spread,tol_rms,
 		tol_settling,tol_signal_form,tol_signal_value,x,y;
 	int battA_state,battGood_state,card_used[MAXIMUM_NUMBER_OF_NI_CARDS],
 		channel_check[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],
@@ -1325,11 +1324,9 @@ static void process_keyboard(
 							tol_decay_constant=(float)0.04;
 							tol_correlation_coefficient=(float)0.01;
 							db_per_decade=(float)100;
-#if defined (OLD_CODE)
-							tol_db=(float)0.20;
-#endif /* defined (OLD_CODE) */
-							tol_db=(float)0.1; /* proportion */
-							tol_gain=(float)0.01; /* proportion */
+							tol_db1=(float)0.2;
+							tol_db2=(float)0.15; /* proportion */
+							tol_gain=(float)0.005; /* proportion */
 							tol_calibrate_gain=(float)0.05; /* proportion */
 							if (hardware_directory=getenv("UNEMAP_HARDWARE"))
 							{
@@ -1380,7 +1377,8 @@ static void process_keyboard(
 									fscanf(settings," tol_correlation_coefficient = %f ",
 										&tol_correlation_coefficient);
 									fscanf(settings," db_per_decade = %f ",&db_per_decade);
-									fscanf(settings," tol_db = %f ",&tol_db);
+									fscanf(settings," tol_db1 = %f ",&tol_db1);
+									fscanf(settings," tol_db2 = %f ",&tol_db2);
 									fscanf(settings," tol_gain = %f ",&tol_gain);
 									fscanf(settings," tol_calibrate_gain = %f ",
 										&tol_calibrate_gain);
@@ -1406,7 +1404,8 @@ static void process_keyboard(
 							fprintf(report,"tol_correlation_coefficient=%g\n",
 								tol_correlation_coefficient);
 							fprintf(report,"db_per_decade=%g\n",db_per_decade);
-							fprintf(report,"tol_db=%g\n",tol_db);
+							fprintf(report,"tol_db1=%g\n",tol_db1);
+							fprintf(report,"tol_db2=%g\n",tol_db2);
 							fprintf(report,"tol_gain=%g\n",tol_gain);
 							fprintf(report,"tol_calibrate_gain=%g\n",tol_calibrate_gain);
 							fprintf(report,"\n");
@@ -3726,10 +3725,7 @@ static void process_keyboard(
 																	rms);
 																fprintf(report,"  dB reduction=%g",
 																	db_reduction);
-#if defined (OLD_CODE)
-																if (!(fabs(db_reduction-3)<tol_db))
-#endif /* defined (OLD_CODE) */
-																if (!(fabs(db_reduction-3)<3*tol_db))
+																if (!(fabs(db_reduction-3)<tol_db1))
 																{
 																	printf("channel %d\n",temp_c_number+i+1);
 																	printf(
@@ -3961,12 +3957,12 @@ static void process_keyboard(
 																			fprintf(report,"  dB reduction=%g",
 																				db_reduction);
 #if defined (OLD_CODE)
-																			if (!(fabs(db_reduction-
-																				db_per_decade*log10(400/250))<tol_db))
+																			if (!(fabs(db_reduction-db_per_decade*
+																				log10(400./250.))<tol_db2))
 #endif /* defined (OLD_CODE) */
 																			if (!(fabs(db_reduction-
-																				db_per_decade*log10(400/250))<tol_db*
-																				db_per_decade*log10(400/250)))
+																				db_per_decade*log10(400./250.))<tol_db2*
+																				db_per_decade*log10(400./250.)))
 																			{
 																				printf("channel %d\n",
 																					temp_c_number+i+1);
