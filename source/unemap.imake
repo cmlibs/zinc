@@ -452,6 +452,7 @@ GRAPHICS_SRCS = \
 	graphics/graphics_window.c \
 	graphics/scene_viewer.c \
 	graphics/scene.c \
+	graphics/selected_graphic.c \
 	graphics/spectrum_settings.c \
  	graphics/texture.c
 POSITION_SRCS = \
