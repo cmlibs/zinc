@@ -1,16 +1,17 @@
 /*******************************************************************************
 FILE : example_path.c
 
-LAST MODIFIED : 3 January 2002
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 ==============================================================================*/
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <fcntl.h>
 #include "general/debug.h"
@@ -40,12 +41,15 @@ returns a string for it.  This too must be DEALLOCATED by the calling function.
 	char *return_string;
 #if defined (UNIX)
 #define BLOCKSIZE (100)
-	char end[3] = {04, 10, 00}, *filename, last_char, *new_string, *space_offset;
+	char end[3] = {04, 10, 00}, *error_message, *filename, last_char, *new_string,
+		*space_offset;
 	fd_set readfds;
-	int flags, index, string_size, stdin_filedes[2], stdout_filedes[2], 
+	int flags, stdin_filedes[2], stdout_filedes[2], 
 		timeout;
 	pid_t process_id;
+	size_t index, string_size;
 	ssize_t number_read;
+	struct stat buf;
 	struct timeval timeout_struct;
 #endif /* defined (UNIX) */
 
@@ -61,7 +65,22 @@ returns a string for it.  This too must be DEALLOCATED by the calling function.
 		{
 			sprintf(filename, "%s/common/resolve_example_path", example_path);
 
-			if ((!pipe(stdin_filedes)) && (!pipe(stdout_filedes)))
+			if (-1 == stat(filename,&buf))
+			  {
+			    if (!ALLOCATE(error_message, char, strlen(filename) + strlen("resolve_example_path. File %s does not exist")))
+			      {
+				display_message(ERROR_MESSAGE,"resolve_example_path. Unable to allocate string");
+			      }
+			    else
+			      {
+				sprintf(error_message, "resolve_example_path. File %s does not exist", filename);
+				display_message(ERROR_MESSAGE,error_message);
+				DEALLOCATE(error_message);
+			      }
+			    return_string = (char *)NULL;
+			  }
+ 
+			else if ((!pipe(stdin_filedes)) && (!pipe(stdout_filedes)))
 			{
 				if (-1 != (process_id = fork()))
 				{
@@ -216,3 +235,43 @@ returns a string for it.  This too must be DEALLOCATED by the calling function.
 
 	return (return_string);
 } /* resolve_example_path */
+
+void destroy_example_path(char **example_path, char**comfile_name)
+/*******************************************************************************
+CREATED : KAT 19 April 2000
+LAST MODIFIED : 19 April 2000
+
+DESCRIPTION :
+Destroys the example path created by resolve_example_path.
+==============================================================================*/
+{
+  ENTER(destroy_example_path);
+
+  if(example_path && comfile_name)
+    {
+      if(*example_path)
+	{
+	  DEALLOCATE(*example_path);
+	  *example_path = NULL;
+	}
+      else
+	{
+	  display_message(WARNING_MESSAGE,"destroy_example_path.  Example path does not exist");
+	}
+      if(*comfile_name)
+	{
+	  DEALLOCATE(*comfile_name);
+	  *comfile_name = NULL;
+	}
+    }
+  else
+    {
+      display_message(ERROR_MESSAGE,"destroy_example_path.  Invalid argument(s).");
+    }
+
+  LEAVE;
+}
+
+/* Local Variables:  */
+/* tab-width: 4 */
+/* End:  */
