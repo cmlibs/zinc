@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 24 July 2001
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -139,6 +139,8 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 	if (mapping)
 	{
 		if (mapping->potential_time_object&&(map=mapping->map)&&
+			(*(map->rig_pointer))&&((*(map->rig_pointer))->devices)&&
+			((*((*(map->rig_pointer))->devices))->signal)&&
 			(buffer=(*((*(map->rig_pointer))->devices))->signal->buffer))
 		{
 			switch (*mapping->map->type)
@@ -2020,9 +2022,13 @@ new rig.
 	int return_code;
 	struct Mapping_window *mapping;	
 #if defined (UNEMAP_USE_3D)
+	struct FE_node_order_info *all_devices_node_order_info;
 	struct Unemap_package *unemap_package;		
 #endif
 	ENTER(mapping_read_configuration_file);
+#if defined (UNEMAP_USE_3D)
+	all_devices_node_order_info=(struct FE_node_order_info *)NULL;
+#endif/* defined (UNEMAP_USE_3D) */		
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(mapping->map))
 	{
 #if defined (UNEMAP_USE_3D)
@@ -2039,8 +2045,14 @@ new rig.
 			 ))
 		{
 #if defined (UNEMAP_USE_3D)
-			/* read the configuration file into nodes */		
+			convert_config_rig_to_nodes(*(mapping->map->rig_pointer),
+				&all_devices_node_order_info);
+			/* not needed */
+			DEACCESS(FE_node_order_info)(&all_devices_node_order_info);		
+#if defined (OLD_CODE)
+			/* used to read the configuration file into nodes. Now convert. See above */
 			file_read_config_FE_node_group(file_name,unemap_package,*(mapping->map->rig_pointer));
+#endif /* defined (OLD_CODE) */
 #endif /* defined (UNEMAP_USE_3D) */
 			/* unghost the save configuration and set default configuration buttons */
 			XtSetSensitive(mapping->file_menu.save_configuration_button,True);
@@ -3184,7 +3196,9 @@ Sets the projection to be the Hammer projection.
 				mapping->map->projection_type=HAMMER_PROJECTION;	
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
-			}
+				/*need to regenerate maps if change projection type*/
+				XtSetSensitive(mapping->animate_button,False);
+			}	
 		}
 		else
 		{
@@ -3223,6 +3237,8 @@ Sets the projection to be the polar projection.
 				mapping->map->projection_type=POLAR_PROJECTION;				
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
+				/*need to regenerate maps if change projection type*/
+				XtSetSensitive(mapping->animate_button,False);
 			}
 		}
 		else
@@ -3261,7 +3277,9 @@ drawing
 			/*must set the rojection_type to something*/
 			mapping->map->projection_type=CYLINDRICAL_PROJECTION;
 			Mapping_window_make_drawing_area_2d(mapping);
-			update_mapping_drawing_area(mapping,2);		
+			update_mapping_drawing_area(mapping,2);	
+			/*need to regenerate maps if change projection type*/
+			XtSetSensitive(mapping->animate_button,False);	
 		}
 		else
 		{
@@ -3299,6 +3317,8 @@ Sets the projection to be the cylinder projection.
 				mapping->map->projection_type=CYLINDRICAL_PROJECTION;				
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
+				/*need to regenerate maps if change projection type*/
+				XtSetSensitive(mapping->animate_button,False);
 			}
 		}
 		else
@@ -3338,6 +3358,8 @@ Sets the projection to be the 3D projection.
 				mapping->map->projection_type=THREED_PROJECTION;			
 				Mapping_window_make_drawing_area_3d(mapping);
 				update_mapping_drawing_area(mapping,2);
+				/*need to regenerate maps if change projection type*/
+				XtSetSensitive(mapping->animate_button,False);
 			}
 		}
 		else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : edf.c
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 Functions for reading EDF (European Data Format) data files, as output by the
@@ -1105,11 +1105,15 @@ configuration (electrode information is not available).
 	struct EDF_to_rig_map *edf_to_rig_map;
 	struct EDF_header_record *edf_header_record;
 	struct Rig *rig;
+	struct Region *current_region;
+	struct Region_list_item *region_item;
 	struct Signal_buffer *buffer;
 	unsigned char *twos_comp;
 
 	ENTER(read_edf_file);
 	return_code=0;
+	region_item=(struct Region_list_item *)NULL;
+	current_region=(struct Region *)NULL;
 	edf_header_record=(struct EDF_header_record *)NULL;
 	config_file_name=(char *)NULL;
 	edf_data=(char *)NULL;
@@ -1159,7 +1163,15 @@ configuration (electrode information is not available).
 				}
 				if(return_code)
 				{
-					rig=*rig_pointer;	
+					rig=*rig_pointer;
+					/*if no current region, make the first region the current region*/
+					current_region=get_Rig_current_region(rig);
+					if (!current_region)
+					{
+						region_item=get_Rig_region_list(rig);
+						current_region=get_Region_list_item_region(region_item);
+						set_Rig_current_region(rig,current_region);
+					}
 					number_of_edf_signals=edf_header_record->number_of_signals;
 					number_of_records=edf_header_record->number_of_records;
 					sampling_duration=edf_header_record->record_duration;									
@@ -1251,6 +1263,18 @@ configuration (electrode information is not available).
 										(*device)->channel->gain_correction=(float)1;
 										(*device)->channel->gain=gain;
 										(*device)->channel->offset=offset;
+#if defined (NEW_CODE)
+										/*??JW*/
+										/* this is correct,setting the display min and max to the */
+										/* resolution limits, however, many signals are much smaller than  */
+										/* this (at least until we get active electrodes) so we'll */
+										/* make it find it's own, by setting minimum=1,maximum=0 */
+										(*device)->signal_display_minimum=gain*(dig_min-offset);
+										(*device)->signal_display_maximum=gain*(dig_max-offset);
+#else
+										(*device)->signal_display_minimum=1;
+										(*device)->signal_display_maximum=0;
+#endif /* defined (NEW_CODE) */
 										if (ELECTRODE==(*device)->description->type)
 										{
 											if (!((*device)->signal=
@@ -1274,6 +1298,7 @@ configuration (electrode information is not available).
 												return_code=0;
 											}
 										} /* if (ELECTRODE==(*device)->description->type) */
+										
 									}/* if ((*device)->channel) */
 									device++;
 								}/* for(i=0;i<number_of_devices;i++) */

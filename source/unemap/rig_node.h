@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.h
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 Essentially the same functionality as rig.h, but using nodes and fields to store
@@ -821,10 +821,9 @@ cf file_read_FE_node_group() in import_finite_element.c
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-int file_read_signal_FE_node_group(char *file_name,
-	struct Unemap_package *unemap_package,struct Rig *rig);
+int file_read_signal_FE_node_group(char *file_name,struct Rig *rig);
 /*******************************************************************************
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 18 October 2001
 
 DESCRIPTION :
 Reads  node group(s) from a signal file into rig . Signal file includes the
@@ -1002,6 +1001,20 @@ Returns 1 if the <signal_status_field> at the <node> does NOT return the string
 "REJECTED".
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+int convert_config_rig_to_nodes(struct Rig *rig,
+	struct FE_node_order_info **the_all_devices_node_order_info);
+/*******************************************************************************
+LAST MODIFIED :15 October 2001
+
+DESCRIPTION : 
+Convert a the configuration file information of a rig into nodes/elements/fields.
+Creates and returns <the_all_devices_node_order_info>, with the created nodes.
+Creates nodes/elements/fields.
+cf read_binary_config_FE_node_group.
+==============================================================================*/
+#endif
 
 #if defined (UNEMAP_USE_3D)
 int convert_rig_to_nodes(struct Rig *rig);

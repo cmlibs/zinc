@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -204,7 +204,8 @@ Associate the mapping window with the acquisition work area
 				&(system->mapping.window_shell),&(system->mapping.outer_form),
 				&(system->mapping.current_mapping_window),
 				&(system->mapping.open),&(system->mapping.associate),
-				(enum Map_type *)NULL,HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,
+				&(system->analysis.map_type),/* (enum Map_type *)NULL,*/
+				HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,
 				HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,maintain_aspect_ratio,1,
 				HAMMER_PROJECTION,VARIABLE_THICKNESS,&(system->acquisition.rig),
 				(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,(int *)NULL,
@@ -882,7 +883,7 @@ Opens the windows associated with the mapping work area.
 							&(system->mapping.window_shell),&(system->mapping.outer_form),
 							&(system->mapping.current_mapping_window),
 							&(system->mapping.open),&(system->mapping.associate),
-							(enum Map_type *)NULL,HIDE_COLOUR,HIDE_CONTOURS,
+							&(system->analysis.map_type),HIDE_COLOUR,HIDE_CONTOURS,
 							SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,HIDE_EXTREMA,
 							maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
 							&(system->acquisition.rig),(int *)NULL,(int *)NULL,(int *)NULL,

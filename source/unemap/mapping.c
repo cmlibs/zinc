@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 17 October 2001
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4857,7 +4857,7 @@ Creates a pair of arm labels, and adds to the scene.
 		if ((!(graphics_object=
 				get_map_drawing_information_torso_arm_labels(drawing_information)))&&
 			  get_node_group_position_min_max(
-				get_Region_rig_node_group(region),
+				get_Region_unrejected_node_group(region),
 				get_Region_map_electrode_position_field(region),
 				&min_x,&max_x,&min_y,&max_y,&min_z,&max_z))
 		{				
@@ -7053,7 +7053,7 @@ update_colour_map_unemap_original again, as  fix_minimum, fix_maximum cause prob
 	struct Map_drawing_information *drawing_information;
 
 	return_code=update_colour_map_unemap_original(map,drawing);
-	/*!!jw this is a problem! for BLUE_WHITE_RED_SPECTRUM need to do*/
+	/*??JW this is a problem! for BLUE_WHITE_RED_SPECTRUM need to do*/
 	/* (something in) update_colour_map_unemap_original again, as */
 	/* fix_minimum, fix_maximum cause problems */
 	{	
@@ -7062,7 +7062,7 @@ update_colour_map_unemap_original again, as  fix_minimum, fix_maximum cause prob
 			drawing_information->spectrum))
 		{
 			return_code=update_colour_map_unemap_original(map,drawing);					
-		}/*!!jw*/
+		}
 	}
 	LEAVE;
 	return (return_code);
@@ -7119,19 +7119,18 @@ Removes 3d drawing for non-current region(s).
 	struct Computed_field *data_field;
 	float frame_time,minimum,maximum;
 	int default_torso_loaded,delauney_map,display_all_regions,
-		nodes_rejected_or_accepted,range_set,return_code,*times;
+		nodes_rejected_or_accepted,range_set,return_code;
 	enum Map_type map_type;
 	char undecided_accepted;
+	struct FE_field *signal_field;
 	struct Map_drawing_information *drawing_information;
 	struct Rig *rig;
 	struct Region_list_item *region_item;
 	struct Region *current_region,*region;
-	struct Signal_buffer *buffer;
 	struct Interpolation_function *function;
 	struct Unemap_package *unemap_package;
 	struct Scene *scene;
-	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;
-	struct Sub_map *sub_map;
+	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;	
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
 	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
@@ -7139,6 +7138,7 @@ Removes 3d drawing for non-current region(s).
 	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
 
 	ENTER(draw_map_3d);
+	signal_field=(struct FE_field *)NULL;
 	fit_name=(char *)NULL;
 	field_order_info=(struct FE_field_order_info *)NULL;	
 	map_position_field=(struct FE_field *)NULL;
@@ -7161,11 +7161,12 @@ Removes 3d drawing for non-current region(s).
 	unrejected_node_group=(struct GROUP(FE_node) *)NULL;		
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	sub_map=(struct Sub_map *)NULL;
 	if (map&&(drawing_information=map->drawing_information))
-	{		
-		range_set=0;
-		sub_map=map->sub_map[0];/*!!jw more than one sub map? */
+	{
+		/*destroy the (2d) sub_maps */
+		/*??JW need to sort out sub maps for 3D*/		
+		map_destroy_Sub_maps(map); 		
+		range_set=0;		
 		display_all_regions=0;
 		unemap_package=map->unemap_package;
 		/* do we have a default torso loaded ? */
@@ -7217,25 +7218,9 @@ Removes 3d drawing for non-current region(s).
 		{					
 			return_code=1;				
 			undecided_accepted=map->undecided_accepted;
-			if (sub_map->use_potential_time)
-			{
-				if ((map->potential_time)&&(*(map->potential_time))&&(rig->devices)&&
-					(*(rig->devices))&&((*(rig->devices))->signal)&&
-					(buffer=(*(rig->devices))->signal->buffer)&&(times=buffer->times))
-				{
-					frame_time=(float)((times)[*(map->potential_time)])*1000./
-						(buffer->frequency);
-				}
-				else
-				{
-					frame_time=0;
-				}
-				sub_map->frame_time=frame_time;
-			}
-			else
-			{
-				frame_time=sub_map->frame_time; 
-			}
+			signal_field=get_unemap_package_signal_field(unemap_package);
+			get_FE_field_time_FE_value(signal_field,*(map->potential_time),&frame_time);
+			frame_time*=1000;
 			current_region=get_Rig_current_region(rig);				
 			/*if current_region NULL, displaying all regions*/
 			if (!current_region)
@@ -7246,7 +7231,7 @@ Removes 3d drawing for non-current region(s).
 			{						
 				scene=get_map_drawing_information_scene(drawing_information);			
 				region_item=get_Rig_region_list(rig);
-				time=sub_map->frame_time/1000;/* ms to s*/
+				time=frame_time/1000;/* ms to s*/
 				while(region_item)
 				{						
 					region=get_Region_list_item_region(region_item);
@@ -10039,8 +10024,7 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	enum Map_type map_type;
 	float a,*float_value,frame_time,frame_time_freq,proportion;
 	int after,before,buffer_index,datum,end_search_interval,event_number,found,i,
-		middle,number_of_signals,return_code,start_search_interval,time_index,
-		*times;
+		middle,number_of_signals,return_code,start_search_interval,*times;
 	short int	*short_int_value;
 	struct Event *event;
 	struct Signal *signal;
@@ -11999,7 +11983,7 @@ on the page.
 {
 	float end_time,start_time,frame_time;
 	int frame_number,number_of_frames,map_width,map_height,map_x_offset,
-		map_y_offset,return_code,*times;			 	
+		map_y_offset,return_code;			 	
 
 	ENTER(draw_map_2d);
 	return_code=0;
@@ -12058,10 +12042,10 @@ on the page.
 			/* could have changed from above */
 			if (!map->number_of_movie_frames)
 			{
+				map->number_of_movie_frames=0;	
 				/* set the (single) sub_map's times from the map. map times
 					controlled from the time object */
 				frame_time=0;
-				map->number_of_movie_frames=0;
 				map->start_time=frame_time;
 				map->end_time=map->start_time;	
 				/* Destroy any existing sub maps */
@@ -12073,13 +12057,22 @@ on the page.
 				map_y_offset=0;
 				map->sub_map_number=0;			
 				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
-					map_height,map_x_offset,map_y_offset,frame_time,1);
-				if (recalculate>1)
+					map_height,map_x_offset,map_y_offset,frame_time,/*use_potential_time*/1);
+				if(return_code)
 				{
-					set_map_2d_map_min_max(map);
+					/*??JW What has DB done with the frame_time/use potential time thing?*/
+					/*need to update the map->start_time,end_time from sub_map->frame_time */
+					/* (where it's now generated) for map_dialog, at least if mapping with */
+					/* potential_time where it's now generated */
+					map->start_time=map->sub_map[0]->frame_time;
+					map->end_time=map->start_time;				
+					if (recalculate>1)
+					{
+						set_map_2d_map_min_max(map);
+					}
+					update_colour_map_unemap(map,drawing);
+					draw_2d_show_map(map,0,recalculate,drawing);
 				}
-				update_colour_map_unemap(map,drawing);
-				draw_2d_show_map(map,0,recalculate,drawing);
 			}
 		}
 	}
@@ -15347,7 +15340,13 @@ Should be in Scene_viewer? RC doesn't think so.
 		if (Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
 			&centre[0],&centre[1],&centre[2],&size[0],&size[1],&size[2]))
 		{	
-			radius=0.5*sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);		
+			radius=0.5*sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
+			/*set radius to 1, so don't get error with Scene_viewer_set_view_simple,*/
+			/*just an empty scene*/
+			if(radius<1)
+			{
+				radius=1;
+			}
 			/* enlarge radius to keep image within edge of window */
 			/*???RC width_factor should be read in from defaults file */
 			width_factor=1.05;

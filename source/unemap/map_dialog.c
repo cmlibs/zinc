@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2391,9 +2391,9 @@ Opens the <map_dialog>.
 					False);
 			}
 			/* set animation options */
-			/*!!jw this will incorretly report the number of frames for*/
+			/*??JW this will incorretly report the number of frames for*/
 			/*a 3D animations. Need to sort out the sub_maps for 3D */
-			/* 3D animation still work */
+			/* 3D animation still works */
 			map_dialog->number_of_frames=map->number_of_sub_maps;	
 			sprintf(value_string,"%d",map->number_of_sub_maps);
 

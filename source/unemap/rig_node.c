@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 4 September 2001
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -602,9 +602,9 @@ created electrode_position_field.
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static struct FE_node *set_config_FE_node(FILE *input_file,
-	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
-	enum Config_node_type	config_node_type,int node_number,int read_order_number,
+static struct FE_node *set_config_FE_node(struct FE_node *template_node,
+	struct MANAGER(FE_node) *node_manager,enum Config_node_type	config_node_type,
+	int node_number,int read_order_number,
 #if  defined (UNEMAP_USE_NODES)
 	int highlight,
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -628,7 +628,7 @@ create_config_template_node, and the field_order_info.
 
 	ENTER(set_config_FE_node);
 	field_number = 0;
-	if (input_file&&template_node&&node_manager&&field_order_info)
+	if (template_node&&node_manager&&field_order_info)
 	{	 							
 		if (node=CREATE(FE_node)(node_number,template_node))
 		{								
@@ -1101,7 +1101,7 @@ cf read_FE_node() in import_finite_element.c
 			}
 			if (success)
 			{
-				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
+				if (!(node=set_config_FE_node(template_node,node_manager,
 					config_node_type,node_number,read_order_number,
 #if  defined (UNEMAP_USE_NODES)
 					0/*highlight*/,
@@ -1202,6 +1202,8 @@ cf read_FE_node() in import_finite_element.c
 							array of node numbers and an array of coefficients).  Put
 							channel number 0 at node for now */
 						channel_number=0;
+						/*??JW Don't handle the linear combiation auxiliaries as nodes yet*/
+						/* so don't do anything with these coefficients,node numbers */
 						ALLOCATE(coefficients,FE_value,number_of_electrodes);
 						ALLOCATE(node_numbers,int,number_of_electrodes);
 						if (coefficients&&node_numbers)
@@ -1224,7 +1226,7 @@ cf read_FE_node() in import_finite_element.c
 			}
 			if (success)
 			{
-				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
+				if (!(node=set_config_FE_node(template_node,node_manager,
 					config_node_type,node_number,read_order_number,
 #if  defined (UNEMAP_USE_NODES)
 					0/*highlight*/,
@@ -1244,6 +1246,7 @@ cf read_FE_node() in import_finite_element.c
 			}
 			DEALLOCATE(coefficients);
 			DEALLOCATE(node_numbers);
+			DEALLOCATE(name);
 		}
 		else
 		{
@@ -1394,7 +1397,7 @@ cf read_FE_node_group() in import_finite_element.c, and read_configuration()
 in rig.c
 ==============================================================================*/
 {	
-	char *device_name,*page_name,*rig_name,*region_name;
+	char *page_name,*rig_name,*region_name;
 	char region_num_string[10];	
 	enum Config_node_type config_node_type;	
 	enum Device_type device_type;
@@ -1421,7 +1424,6 @@ in rig.c
 	return_code = 1;
 	rig_name =(char *)NULL;	
 	region_name =(char *)NULL;
-	device_name =(char *)NULL;
 	page_name =(char *)NULL;	
 	template_node = (struct FE_node *)NULL;	
 	field_order_info = (struct FE_field_order_info *)NULL;
@@ -1732,11 +1734,7 @@ in rig.c
 										node=(struct FE_node *)NULL;
 										return_code=0;
 									}
-								}/*	if (node) */		
-								if (device_name)
-								{
-									DEALLOCATE(device_name);
-								}
+								}/*	if (node) */									
 							}/* if ((ELECTRODE==device_type)||(AUXILIARY==device_type)) */
 							else
 							{
@@ -1842,14 +1840,9 @@ in rig.c
 		{
 			DEALLOCATE(region_name);
 		}
-		if (device_name)
-		{
-			DEALLOCATE(device_name);
-
-		}		
 		if (page_name)
 		{
-			DEALLOCATE(device_name);
+			DEALLOCATE(page_name);
 		}	
 	}
 	else
@@ -6514,10 +6507,9 @@ The extraction arguments are:
 } /* extract_signal_information */
 
 #if defined (UNEMAP_USE_3D)
-int file_read_signal_FE_node_group(char *file_name,
-	struct Unemap_package *unemap_package,struct Rig *rig)
+int file_read_signal_FE_node_group(char *file_name,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 18 October 2001
 
 DESCRIPTION :
 Reads  node group(s) from a signal file into rig . Signal file includes the
@@ -6537,7 +6529,9 @@ configuration info.
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Region *region;
 	struct Region_list_item *region_item;
+	struct Unemap_package *unemap_package;
 	ENTER(file_read_signal_FE_node_group);	
+	unemap_package=(struct Unemap_package *)NULL;
 	signal_status_field = (struct FE_field *)NULL;
 	unrejected_node_group= (struct GROUP(FE_node) *)NULL;
 	rig_node_group= (struct GROUP(FE_node) *)NULL;	
@@ -6549,7 +6543,7 @@ configuration info.
 	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
 	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-	if (file_name&&unemap_package)
+	if (file_name&&(unemap_package=rig->unemap_package))
 	{					
 		if (input_file=fopen(file_name,"rb"))
 		{
@@ -7749,31 +7743,1091 @@ Returns 1 if the <signal_status_field> at the <node> does NOT return the string
 } /* node_signal_is_unrejected  */
 #endif /* defined (UNEMAP_USE_3D) */
 
-
 #if defined (UNEMAP_USE_3D)
-int convert_rig_to_nodes(struct Rig *rig)
+static struct FE_node *create_config_FE_node_from_device(struct Device *device,
+	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
+	enum Config_node_type	config_node_type,int node_number,int read_order_number,
+	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED :15 October 2001
+LAST MODIFIED : 17 October 2001
 
-DESCRIPTION : 
-Convert a rig into nodes/elements/fields
+DESCRIPTION :
+Creates a config FE_node from <device>, <template_node> and other passed 
+information.
+cf read_binary_config_FE_node
 ==============================================================================*/
 {
-	int return_code;
+	char *name;
+	int channel_number,number_of_electrodes,success;
+	FE_value xpos,ypos,zpos;
+	struct FE_node *node;
+	struct Device_description *description;
 
-	ENTER(convert_rig_to_nodes);
-	return_code=0;
-	if (rig)
+	ENTER(create_config_FE_node_from_device);
+	node=(struct FE_node *)NULL;
+	description=(struct Device_description *)NULL;
+	success=0;
+	if (device&&(description=device->description)&&template_node&&
+		node_manager&&field_order_info)
 	{
-
+		/* read in name */
+		name=description->name;
+		/* read channel number */
+		if(device->channel)
+		{
+			channel_number=device->channel->number;
+		}
+		else
+		{ 
+			/* linear combiation auxiliaries */
+			channel_number=-1;
+		}
+		number_of_electrodes=0;
+		switch (config_node_type)
+		{
+			case SOCK_ELECTRODE_TYPE:
+			case TORSO_ELECTRODE_TYPE:
+			{
+				xpos=(description->properties).electrode.position.x;
+				ypos=(description->properties).electrode.position.y;
+				zpos=(description->properties).electrode.position.z;
+				success=1;
+			} break;
+			case PATCH_ELECTRODE_TYPE:
+			{
+				xpos=(description->properties).electrode.position.x;
+				ypos=(description->properties).electrode.position.y;	
+				success=1;
+			} break;
+			case AUXILIARY_TYPE:
+			{
+				if (channel_number<0)
+				{
+					/* linear combination */
+					number_of_electrodes= -channel_number;
+					/*???DB.  Haven't decided how to store at node (could have an
+						array of node numbers and an array of coefficients).  Put
+						channel number 0 at node for now */
+					channel_number=0;
+					success=1;
+					/*??JW Don't handle the linear combiation auxiliaries as nodes yet*/
+					USE_PARAMETER(number_of_electrodes);
+				}
+				else
+				{
+					/* single channel */
+					success=1;
+				}
+			} break;
+		}
+		if (success)
+		{
+			if (!(node=set_config_FE_node(template_node,node_manager,
+				config_node_type,node_number,read_order_number,
+#if  defined (UNEMAP_USE_NODES)
+				0/*highlight*/,
+#endif /*  defined (UNEMAP_USE_NODES) */
+				field_order_info,name,channel_number,xpos,ypos,zpos)))
+			{
+				display_message(ERROR_MESSAGE,
+					"create_config_FE_node_from_device.  Error creating node");
+				node=(struct FE_node *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_config_FE_node_from_device.  Error reading device type specific information from file ");
+			node=(struct FE_node *)NULL;
+		}	 
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"convert_rig_to_nodes.  Invalid argument(s)");
+			"create_config_FE_node_from_device.  Invalid argument(s)");
+		node=(struct FE_node *)NULL;
+	}
+	LEAVE;
+
+	return (node);
+} /* create_config_FE_node_from_device */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int convert_config_rig_to_nodes(struct Rig *rig,
+	struct FE_node_order_info **the_all_devices_node_order_info)
+/*******************************************************************************
+LAST MODIFIED :15 October 2001
+
+DESCRIPTION : 
+Convert a the configuration file information of a rig into nodes/elements/fields.
+Creates and returns <the_all_devices_node_order_info>, with the created nodes.
+Creates nodes/elements/fields.
+cf read_binary_config_FE_node_group.
+==============================================================================*/
+{
+	char *region_name,region_num_string[10];
+	enum Config_node_type config_node_type;	
+	enum Region_type region_type;
+	FE_value focus;
+	int count,device_count,last_node_number,node_number,number_of_regions,
+		read_order_number,region_number,region_number_of_devices,return_code,
+		rig_number_of_devices,string_error,string_length;
+	struct Device **device;	
+	struct Device_description *description;
+	struct FE_field *electrode_position_field;	
+	struct FE_field_order_info *field_order_info;	
+	struct FE_node *node,*template_node;
+	struct FE_node_order_info *all_devices_node_order_info;		
+	struct GROUP(FE_node) *all_devices_node_group,*node_group;
+	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
+	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;	
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_node) *node_manager;	
+	struct Region *region;
+	struct Region_list_item *region_item;
+	struct Unemap_package *package;
+
+	ENTER(convert_config_rig_to_nodes);
+	description=(struct Device_description *)NULL;
+	device=(struct Device **)NULL;
+	electrode_position_field = (struct FE_field *)NULL;
+	field_order_info = (struct FE_field_order_info *)NULL;
+	template_node = (struct FE_node *)NULL;
+	node= (struct FE_node *)NULL;
+	region_name=(char *)NULL;
+	region=(struct Region *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	package=(struct Unemap_package *)NULL;
+	all_devices_node_group=(struct GROUP(FE_node) *)NULL;
+	all_devices_node_order_info =(struct FE_node_order_info *)NULL;	
+	node_group=(struct GROUP(FE_node) *)NULL;
+	if (rig&&(device=rig->devices)&&(package=rig->unemap_package)&&
+		(element_group_manager=get_unemap_package_element_group_manager(package))&&
+		(node_manager=get_unemap_package_node_manager(package))&&
+		(element_manager=get_unemap_package_element_manager(package))&&
+		(data_group_manager=get_unemap_package_data_group_manager(package))&&
+		(node_group_manager= get_unemap_package_node_group_manager(package)))
+	{	
+		return_code=1;
+		device_count =0;
+		rig_number_of_devices=rig->number_of_devices;
+		number_of_regions=rig->number_of_regions;
+		MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
+		/*make all_devices_node_group */
+		all_devices_node_group	= make_node_and_element_and_data_groups(
+			node_group_manager,node_manager,element_manager,element_group_manager,
+			data_group_manager,"all_devices");
+		MANAGED_GROUP_BEGIN_CACHE(FE_node)(all_devices_node_group);
+		set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
+		last_node_number = 1;	
+		region_number=0;
+		/* for all the regions..*/
+		if (region_item=get_Rig_region_list(rig))
+		{
+			while((region_number<number_of_regions)&&return_code)
+			{
+				if (!(region=get_Region_list_item_region(region_item)))
+				{
+					display_message(ERROR_MESSAGE,
+						"convert_config_rig_to_nodes region_item->region is NULL ");
+					return_code=0;
+				}
+				region_type=region->type;
+				/*get the focus*/
+				if(region_type==SOCK)
+				{
+					focus=(region->properties).sock.focus;
+				}
+				else
+				{
+					focus=0.0;
+				}
+				/*get the name */
+				string_length=strlen(region->name);
+				string_length++;
+				if (ALLOCATE(region_name,char,string_length+1))
+				{
+					strcpy(region_name,region->name);
+					region_name[string_length]='\0';
+					/*append the region number to the name, to ensure it's unique*/
+					sprintf(region_num_string,"%d",region_number);
+					append_string(&region_name,region_num_string,&string_error);
+					if (node_group) /* stop caching the current group,(if any) */
+					{
+						MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+					}								
+					/* Get group */
+					node_group=CREATE(GROUP(FE_node))(region_name);
+					ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(node_group,node_group_manager);
+					MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
+					set_Region_rig_node_group(region,node_group);
+					/*destroy any exisiting template,field_order_info*/
+					/* create the template node,(but may change it to auxiliary later*/	
+					DESTROY(FE_node)(&template_node);
+					DESTROY(FE_field_order_info)(&field_order_info);
+					switch (region_type)
+					{							
+						case SOCK:
+						{
+							config_node_type = SOCK_ELECTRODE_TYPE;
+							template_node = create_config_template_node(
+								config_node_type,focus,&field_order_info,package,
+								&electrode_position_field);
+							set_Region_electrode_position_field(region,electrode_position_field);
+						} break;
+						case TORSO:
+						{
+							config_node_type = TORSO_ELECTRODE_TYPE;
+							template_node = create_config_template_node(
+								config_node_type,0,&field_order_info,package,
+								&electrode_position_field);
+							set_Region_electrode_position_field(region,electrode_position_field);
+						} break;
+						case PATCH:
+						{
+							config_node_type = PATCH_ELECTRODE_TYPE;
+							template_node = create_config_template_node(
+									config_node_type,0,&field_order_info,package,
+								&electrode_position_field);
+							set_Region_electrode_position_field(region,electrode_position_field);
+						} break;
+						case MIXED:
+						default :
+						{
+							display_message(ERROR_MESSAGE,"convert_config_rig_to_nodes."
+								"invalid region type ");
+							return_code=0;
+						} break;
+					}	/* switch (config_node_type) */
+					region_number_of_devices=region->number_of_devices;
+					/* create or reallocate the all_devices_node_order_info */
+					if (!all_devices_node_order_info)
+					{
+						all_devices_node_order_info =CREATE(FE_node_order_info)
+							(region_number_of_devices);
+						*the_all_devices_node_order_info = all_devices_node_order_info;						
+						if (!all_devices_node_order_info)
+						{
+							display_message(ERROR_MESSAGE,"convert_config_rig_to_nodes."
+								"CREATE(FE_node_order_info) failed ");
+							return_code=0;						
+							DESTROY_GROUP(FE_node)(&node_group);
+							node_group = (struct GROUP(FE_node) *)NULL;					
+						}
+					}
+					else
+					{ 
+						if (!(return_code =add_nodes_FE_node_order_info(
+							region_number_of_devices,all_devices_node_order_info)))
+						{			
+							return_code=0;					
+							DESTROY_GROUP(FE_node)(&node_group);
+							node_group = (struct GROUP(FE_node) *)NULL;	
+						}
+					}/* if (!all_devices_node_order_info) */
+					/* read in the inputs */
+					read_order_number=0;					
+					count=rig_number_of_devices;
+					/* for all the devices in the rig*/
+					device=rig->devices;
+					while((count>0)&&return_code)
+					{	
+						description=(*device)->description;
+						/*if the device is in the current region */
+						if(description->region==region)
+						{
+							node_number = get_next_FE_node_number(node_manager,
+								last_node_number);
+							/* create a node from the device */
+							switch (description->type)
+							{
+								case ELECTRODE:
+								{
+									node=create_config_FE_node_from_device(*device,template_node,
+										node_manager,config_node_type,node_number,read_order_number,
+										field_order_info);
+									last_node_number = node_number;	
+								} break;
+								case AUXILIARY:
+								{	
+									config_node_type = AUXILIARY_TYPE;									
+									DESTROY(FE_node)(&template_node);
+									DESTROY(FE_field_order_info)(&field_order_info);	
+									template_node = create_config_template_node(config_node_type,
+										0,&field_order_info,package,&electrode_position_field);
+									node=create_config_FE_node_from_device(*device,template_node,
+										node_manager,config_node_type,node_number,read_order_number,
+										field_order_info);
+									last_node_number = node_number;										
+								} break;
+							}	/* switch (device_type) */
+							if (node)
+							{ 
+								if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
+								{						
+									if (ADD_OBJECT_TO_GROUP(FE_node)(node,node_group))
+									{
+										if (ADD_OBJECT_TO_GROUP(FE_node)(node,
+											all_devices_node_group))
+										{
+											/* add the node to the node_order_info*/
+											set_FE_node_order_info_node(all_devices_node_order_info,
+												device_count,node);
+											device_count++;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"convert_config_rig_to_nodes."
+												" Could not add node to all_devices_node_group");
+											REMOVE_OBJECT_FROM_GROUP(FE_node)(node,
+												all_devices_node_group);
+											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
+											node=(struct FE_node *)NULL;
+											return_code=0;
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"convert_config_rig_to_nodes. Could not add node "
+											"to node_group");
+										REMOVE_OBJECT_FROM_GROUP(FE_node)(node,node_group);
+										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
+										node=(struct FE_node *)NULL;
+										return_code=0;
+									}							
+								}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"convert_config_rig_to_nodes. Could not add node to"
+										" node_manager");
+									REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
+									node=(struct FE_node *)NULL;
+									return_code=0;
+								}
+							}/*	if (node) */								
+							read_order_number++;
+						}
+						device++;
+						count--;						
+					} /*	while (count>0)&&return_code) */		
+
+
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"convert_config_rig_to_nodes. failed to allocate region_name");
+					return_code =0;	
+				}		
+				if (return_code)
+				{
+				/* move to the next region */
+					region_number++;				
+				}
+				if (region_name)
+				{
+					DEALLOCATE(region_name);
+				}			
+				region_item=get_Region_list_item_next(region_item);							
+			}/*	while((region_number<number_of_regions)&&return_code) */	
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"convert_config_rig_to_nodes. rig->region_list is NULL");
+			return_code =0;		
+		}	
+		/* We've finished. Clean up */	
+		if (template_node)
+		{
+			DESTROY(FE_node)(&template_node);
+		}	
+		MANAGER_END_CACHE(FE_node)(node_manager);
+		if (node_group)
+		{
+			MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+		}	
+		if (all_devices_node_group)
+		{
+			MANAGED_GROUP_END_CACHE(FE_node)(all_devices_node_group);
+		}	
+		if (field_order_info)
+		{
+			DESTROY(FE_field_order_info)(&field_order_info);
+		}		
+		if (region_name)
+		{
+			DEALLOCATE(region_name);
+		}			
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"convert_config_rig_to_nodes.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code);
-} /* convert_rig_to_nodes*/
+} /* convert_config_rig_to_nodes*/
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int convert_signal_rig_to_nodes(struct Rig *rig,
+	struct FE_node_order_info *all_devices_node_order_info)
+/*******************************************************************************
+LAST MODIFIED :18 October 2001
+
+DESCRIPTION : 
+Converts the signals of a rig into nodes/fields.
+Assumes that convert_config_rig_to_nodes has been called first.
+==============================================================================*/
+{
+	char
+	*channel_gain_component_names[1]=
+	{
+		"gain_value"
+	},	
+	*channel_offset_component_names[1]=
+	{
+		"offset_value"
+	},
+	*signal_maximum_component_names[1]=
+	{
+		"maximum_value"
+	},
+	*signal_minimum_component_names[1]=
+	{
+		"minimum_value"
+	},	
+	*signal_component_names[1]=
+	{
+		"signal_value"
+	},	
+	*signal_status_component_names[1]=
+	{
+		"status"
+	};
+	enum FE_nodal_value_type
+	*signal_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	},	
+	*channel_gain_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	},
+	*signal_maximum_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	},
+	*signal_minimum_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	},	
+	*channel_offset_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	},
+	*signal_status_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	};
+	int channel_gain_components_number_of_derivatives[1]={0},
+	  channel_gain_components_number_of_versions[1]={1},
+		channel_offset_components_number_of_derivatives[1]={0},
+	  channel_offset_components_number_of_versions[1]={1},
+		signal_components_number_of_derivatives[1]={0},
+	  signal_components_number_of_versions[1]={1},
+		signal_minimum_components_number_of_derivatives[1]={0},
+	  signal_minimum_components_number_of_versions[1]={1},
+		signal_maximum_components_number_of_derivatives[1]={0},
+	  signal_maximum_components_number_of_versions[1]={1},	
+		signal_status_components_number_of_derivatives[1]={0},
+	  signal_status_components_number_of_versions[1]={1};
+
+	char *device_type_string;
+	enum Signal_value_type signal_value_type;
+	FE_value channel_gain,channel_offset,*node_signals_fe_value,period,*times;
+	float *buffer_signals_float,frequency;
+	int *buffer_times,i,j,number_of_nodes,number_of_samples,
+		number_of_signals,return_code;
+	short int *buffer_signals_short,*node_signals_short;	
+	struct Coordinate_system coordinate_system;	
+	struct Device **device;	
+	struct FE_node *node,*node_managed;
+	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field,
+		*signal_maximum_field,*signal_minimum_field,*signal_status_field;
+	struct FE_field_component component;
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct Signal_buffer *buffer;
+	struct Unemap_package *package;
+
+	ENTER(convert_signal_rig_to_nodes);
+	device_type_string=(char *)NULL;
+	node=(struct FE_node *)NULL;
+	node_managed=(struct FE_node *)NULL;
+	buffer_signals_float=(float *)NULL;
+	signal_field=(struct FE_field *)NULL;
+	channel_gain_field=(struct FE_field *)NULL;
+	channel_offset_field=(struct FE_field *)NULL;
+	signal_minimum_field=(struct FE_field *)NULL;
+	signal_maximum_field=(struct FE_field *)NULL;
+	buffer_signals_short=(short int *)NULL;
+	node_signals_short=(short int *)NULL;	
+	buffer_times=(int *)NULL;
+	times=(FE_value *)NULL;
+	node_signals_fe_value=(FE_value *)NULL;
+	device=(struct Device **)NULL;
+	fe_field_manager=(struct MANAGER(FE_field) *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
+	package=(struct Unemap_package *)NULL;
+	/*assumes all devices share the same signal buffer*/
+	/*is this necessarily true for multiple regions? */
+	/*read_signal_file makes this assumption.*/
+	if (rig&&all_devices_node_order_info&&(device=rig->devices)&&
+		((*device)->signal)&&(buffer=(*device)->signal->buffer)&&
+		(package=rig->unemap_package)&&
+		(node_manager=get_unemap_package_node_manager(package))&&
+		(fe_field_manager=get_unemap_package_FE_field_manager(package)))
+	{
+		return_code=1;					
+		coordinate_system.type=NOT_APPLICABLE;	
+		number_of_signals=buffer->number_of_signals;
+		number_of_samples=buffer->number_of_samples;
+		frequency=buffer->frequency;
+		signal_value_type=buffer->value_type;
+		buffer_times=buffer->times;																
+		/* Do node stuff here */
+		if (return_code)
+		{	
+			period = 1/frequency;									
+			/* allocate memory for times, and fill in */
+			if (ALLOCATE(times,FE_value,number_of_samples))
+			{								
+				for(j=0;j<number_of_samples;j++)
+				{
+					times[j] = buffer_times[j]*period;										
+				}											
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"convert_signal_rig_to_nodes. No memory for times ");	
+				return_code =0;
+			}
+			/* allocate memory for signals to be stored at node, 
+				 create signal field */
+			switch (signal_value_type)
+			{
+				case SHORT_INT_VALUE:
+				{
+					buffer_signals_short=buffer->signals.short_int_values;
+					if (ALLOCATE(node_signals_short,short int,number_of_samples))
+					{
+						if (!(signal_field=get_FE_field_manager_matched_field(
+							fe_field_manager,"signal",
+							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
+							&coordinate_system,SHORT_ARRAY_VALUE,
+							/*number_of_components*/1,signal_component_names,
+							/*number_of_times*/number_of_samples,/*time_value_type*/
+							FE_VALUE_VALUE,
+							(struct FE_field_external_information *)NULL)))
+						{
+							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+								"error getting signal field");	
+							return_code =0;
+						}													
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"convert_signal_rig_to_nodes. No memory for node_signals_short ");
+						return_code =0;
+					}
+				} break;
+				case FLOAT_VALUE:
+				{
+					buffer_signals_float=buffer->signals.float_values;
+					if (ALLOCATE(node_signals_fe_value,float,number_of_samples))
+					{
+						if (!(signal_field=get_FE_field_manager_matched_field(
+							fe_field_manager,"signal",
+							GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
+							&coordinate_system,FE_VALUE_ARRAY_VALUE,
+							/*number_of_components*/1,signal_component_names,
+							number_of_samples,/*time_value_type*/FE_VALUE_VALUE,
+							(struct FE_field_external_information *)NULL)))
+						{
+							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+								"error getting signal field");	
+							return_code =0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"convert_signal_rig_to_nodes. No memory for "
+							"node_signals_fe_value");
+						return_code =0;
+					}
+				} break;
+			}	/* switch (signal_value_type) */									
+			/* fill in field based time values*/
+			if (signal_field)
+			{
+				for(j=0;j<number_of_samples;j++)
+				{
+					set_FE_field_time_FE_value(signal_field,j,times[j]);
+				}
+			}
+		}							
+		if (return_code)
+		{		
+			number_of_nodes=get_FE_node_order_info_number_of_nodes(
+				all_devices_node_order_info);
+			device=rig->devices;
+			MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
+			for(i=0;i<number_of_nodes;i++)
+			{								
+				/* copy data from buffer to node_signals. Channels are interlaced */
+				/* assumes that all nodes (devices) have the same number of signals */
+				for(j=0;j<number_of_samples;j++)
+				{
+					switch (signal_value_type)
+					{
+						case SHORT_INT_VALUE:
+						{
+							node_signals_short[j] = 
+								buffer_signals_short[(j*number_of_signals)+i];
+						} break;
+						case FLOAT_VALUE:
+						{
+							node_signals_fe_value[j] = 
+								buffer_signals_float[(j*number_of_signals)+i];
+						} break;
+					}	/* switch (signal_value_type) */
+				}	/* for(j=0;j<number_of_samples) */
+				/* convert short to FE_value if necessary*/
+				node_managed =get_FE_node_order_info_node(all_devices_node_order_info,i);
+				/* create a node to work with */
+				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
+				/*copy it from the manager */
+				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+					(node,node_managed))
+				{									
+					/* add channel_gain and channel_offset fields to node*/
+					if (channel_gain_field=get_FE_field_manager_matched_field(
+						fe_field_manager,"channel_gain",
+						GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
+						&coordinate_system,FE_VALUE_VALUE,
+						/*number_of_components*/1,channel_gain_component_names,
+						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+						(struct FE_field_external_information *)NULL))
+					{
+						if (define_FE_field_at_node(node,channel_gain_field,
+							channel_gain_components_number_of_derivatives
+							,channel_gain_components_number_of_versions,
+							channel_gain_components_nodal_value_types))
+						{	
+							/* add it to the unemap package */
+							set_unemap_package_channel_gain_field(package,
+								channel_gain_field);
+							/* set the values*/
+							component.number = 0;
+							component.field = channel_gain_field; 
+							if((*device)->channel)
+							{
+								channel_gain=(*device)->channel->gain;
+							}
+							else
+							{
+								/*a linear combination auxiliary. Not handled properly yet*/
+								channel_gain=1;
+							}
+							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								channel_gain);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+								"error defining channel_gain_field");	
+							return_code =0;
+						}	
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+							"error getting  channel_gain_field");	
+						return_code =0;
+					}	
+					if (channel_offset_field=get_FE_field_manager_matched_field(
+						fe_field_manager,"channel_offset",
+						GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
+						&coordinate_system,FE_VALUE_VALUE,
+						/*number_of_components*/1,channel_offset_component_names,
+						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+						(struct FE_field_external_information *)NULL))
+					{ 
+						if (define_FE_field_at_node(node,channel_offset_field,
+							channel_offset_components_number_of_derivatives
+							,channel_offset_components_number_of_versions,
+							channel_offset_components_nodal_value_types))
+						{	
+							/* add it to the unemap package */
+							set_unemap_package_channel_offset_field(package,
+								channel_offset_field);
+							/* set the values*/
+							component.number = 0;
+							component.field = channel_offset_field; 
+							if((*device)->channel)
+							{
+								channel_offset=(*device)->channel->offset;
+							}
+							else
+							{
+								/*a linear combination auxiliary. Not handled properly yet*/
+								channel_offset=0;
+							}
+							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								channel_offset);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+								"error defining channel_offset_field");	
+							return_code =0;
+						}											
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+							"error getting channel_offset_field");	
+						return_code =0;
+					}	
+					/* add signal_minimum field to node. Set to default (1.0)*/
+					/* Value set up in draw_signal()*/
+					if (signal_minimum_field=get_FE_field_manager_matched_field(
+						fe_field_manager,"signal_minimum",
+						GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
+						&coordinate_system,FE_VALUE_VALUE,
+						/*number_of_components*/1,signal_minimum_component_names,
+						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+						(struct FE_field_external_information *)NULL))
+					{
+						if (define_FE_field_at_node(node,signal_minimum_field,
+							signal_minimum_components_number_of_derivatives
+							,signal_minimum_components_number_of_versions,
+							signal_minimum_components_nodal_value_types))
+						{	
+							/* add it to the unemap package */
+							set_unemap_package_signal_minimum_field(package,
+								signal_minimum_field);
+							/*set the signal_minimum_field and signal_maximum_field fields */
+							component.number = 0;
+							component.field = signal_minimum_field;												
+							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+								(*device)->signal_display_minimum);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+								"error defining signal_minimum_field");	
+							return_code =0;
+						}	
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+							"error getting  signal_minimum_field");	
+						return_code =0;
+					}	
+					/* add signal_maximum field to node.Set to default (0.0)*/
+					/* Value set up in draw_signal()*/
+					if (signal_maximum_field=get_FE_field_manager_matched_field(
+						fe_field_manager,"signal_maximum",
+						GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
+						&coordinate_system,FE_VALUE_VALUE,
+						/*number_of_components*/1,signal_maximum_component_names,
+						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+						(struct FE_field_external_information *)NULL))
+					{
+						if (define_FE_field_at_node(node,signal_maximum_field,
+							signal_maximum_components_number_of_derivatives
+							,signal_maximum_components_number_of_versions,
+							signal_maximum_components_nodal_value_types))
+						{	
+							/* add it to the unemap package */
+							set_unemap_package_signal_maximum_field(package,
+								signal_maximum_field);
+							component.number = 0;
+							component.field = signal_maximum_field; 
+							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+							(*device)->signal_display_maximum);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+								"error defining signal_maximum_field");	
+							return_code =0;
+						}	
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+							"error getting  signal_maximum_field");	
+						return_code =0;
+					}	
+					/* add signal_status field to node. The contents of this may be */
+					/*overwritten if loaded in in */
+					/*read_event_settings_and_signal_status_FE_node_group*/	
+					if (signal_status_field=get_FE_field_manager_matched_field(
+						fe_field_manager,"signal_status",
+						GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+						/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
+						&coordinate_system,STRING_VALUE,
+						/*number_of_components*/1,signal_status_component_names,
+						/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE,
+						(struct FE_field_external_information *)NULL))
+					{ 
+						if (define_FE_field_at_node(node,signal_status_field,
+							signal_status_components_number_of_derivatives
+							,signal_status_components_number_of_versions,
+							signal_status_components_nodal_value_types))
+						{	
+							/* add it to the unemap package */													
+							set_unemap_package_signal_status_field(package,
+								signal_status_field);
+							/* need to set status based upon the nodal device_type */ 							
+							get_FE_nodal_string_value(node,
+								get_unemap_package_device_type_field(package),
+								0,0,FE_NODAL_VALUE,&device_type_string);
+							if (strcmp(device_type_string,"ELECTRODE"))
+							{
+								set_FE_nodal_string_value(node,signal_status_field,0,0,
+									FE_NODAL_VALUE,
+									"REJECTED");
+							}
+							else
+							{
+								switch((*device)->signal->status)
+								{
+									case ACCEPTED: 
+									{
+										set_FE_nodal_string_value(node,signal_status_field,0,0,
+											FE_NODAL_VALUE,
+											"UNDECIDED");
+									}break;
+									case REJECTED: 
+									{
+										set_FE_nodal_string_value(node,signal_status_field,0,0,
+											FE_NODAL_VALUE,
+											"REJECTED");
+									}break;
+									default:
+									case UNDECIDED: 
+									{
+										set_FE_nodal_string_value(node,signal_status_field,0,0,
+											FE_NODAL_VALUE,
+											"UNDECIDED");
+									}break;
+								}
+							}
+							DEALLOCATE(device_type_string);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+								"error defining signal_status_field");	
+							return_code =0;
+						}					
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+							"error getting  signal_status_field");	
+						return_code =0;
+					}				
+					/* add signal field to the node */
+					if (define_FE_field_at_node(node,signal_field,
+						signal_components_number_of_derivatives
+						,signal_components_number_of_versions,
+						signal_components_nodal_value_types))
+					{	
+						/* add it to the unemap package */
+						set_unemap_package_signal_field(package,signal_field);
+						/* set the values */
+						component.number = 0;
+						component.field = signal_field; 
+						switch (signal_value_type)
+						{
+							case SHORT_INT_VALUE:
+							{
+								set_FE_nodal_short_array(node,&component,0,FE_NODAL_VALUE,
+									node_signals_short,number_of_samples);
+							} break;
+							case FLOAT_VALUE:
+							{
+								set_FE_nodal_FE_value_array(node,&component,0,FE_NODAL_VALUE,
+									node_signals_fe_value,number_of_samples);
+							} break;
+						}	/* switch (signal_value_type) */											
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
+							" define_field_at_node failed");							
+						return_code=0;
+					}
+					/* copy node back into the manager */
+					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+						(node_managed,node,node_manager);
+				}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"convert_signal_rig_to_nodes.  MANAGER_COPY_WITH_IDENTIFIER failed");
+					return_code=0;
+				}
+				/* destroy the working copy */
+				DESTROY(FE_node)(&node);
+				device++;
+			} /* for(i=0;i<number_of_nodes;i++) */
+			MANAGER_END_CACHE(FE_node)(node_manager);								
+		}	/* if (return_code)	*/																		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"convert_signal_rig_to_nodes.  Invalid argument(s)");
+		return_code=0;
+	}	
+	/* clean up */
+	DEALLOCATE(node_signals_fe_value);
+	DEALLOCATE(node_signals_short);	
+	DEALLOCATE(times);	
+	LEAVE;
+	return (return_code);
+}/* convert_signal_rig_to_nodes */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int convert_rig_to_nodes(struct Rig *rig)
+/*******************************************************************************
+LAST MODIFIED :18 October 2001
+
+DESCRIPTION : 
+Converts a rig, including it's signals to nodes and fields.
+cf file_read_signal_FE_node_group
+==============================================================================*/
+{
+	int return_code;
+	struct FE_field *signal_status_field;
+	struct FE_node_order_info *all_devices_node_order_info;
+	struct GROUP(FE_node) *unrejected_node_group,*rig_node_group;	
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(FE_element) *element_manager;	
+	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct Region *region;
+	struct Region_list_item *region_item;
+	struct Unemap_package *unemap_package;
+
+	ENTER(convert_rig_to_nodes);	
+	node_manager=(struct MANAGER(FE_node) *)NULL;	
+	element_manager=(struct MANAGER(FE_element) *)NULL;
+	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
+	node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+	unemap_package=(struct Unemap_package *)NULL;
+	signal_status_field = (struct FE_field *)NULL;
+	unrejected_node_group= (struct GROUP(FE_node) *)NULL;
+	rig_node_group= (struct GROUP(FE_node) *)NULL;	
+	region=(struct Region *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	all_devices_node_order_info=(struct FE_node_order_info *)NULL;
+	return_code=0;
+	if(rig&&(unemap_package=rig->unemap_package))
+	{
+		if(return_code=convert_config_rig_to_nodes(rig,&all_devices_node_order_info))
+		{										
+		  if(return_code=convert_signal_rig_to_nodes(rig,all_devices_node_order_info))
+		  {				
+				/* set up the unrejected_node_groups*/
+				region_item=get_Rig_region_list(rig);
+				while (region_item)
+				{	
+					region=get_Region_list_item_region(region_item);
+					rig_node_group=get_Region_rig_node_group(region);
+					if ((signal_status_field=
+						get_unemap_package_signal_status_field(unemap_package))&&
+						(node_manager=get_unemap_package_node_manager(unemap_package))&&
+						(element_manager=get_unemap_package_element_manager(unemap_package))&&
+						(node_group_manager=
+							get_unemap_package_node_group_manager(unemap_package))&&
+						(element_group_manager=
+							get_unemap_package_element_group_manager(unemap_package))&&
+						(data_group_manager=
+							get_unemap_package_data_group_manager(unemap_package))&&
+						(unrejected_node_group=make_unrejected_node_group(node_manager,
+							element_manager,node_group_manager,element_group_manager,
+							data_group_manager,rig_node_group,signal_status_field)))
+					{									
+						set_Region_unrejected_node_group(region,unrejected_node_group);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes failed."
+							"can't set_Region_unrejected_node_group");
+					}
+					region_item=get_Region_list_item_next(region_item);							
+				}/* while (region_item) */		
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					" convert_rig_to_nodes. convert_signal_rig_to_nodes failed");	
+			}
+		}			
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"convert_rig_to_nodes. convert_signal_rig_to_nodes failed");	
+		}					
+		/* no longer needed */
+		DEACCESS(FE_node_order_info)(&all_devices_node_order_info);
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"convert_rig_to_nodes. Invalid argument(s)");		
+	}
+	LEAVE;
+	return(return_code);
+}/* convert_rig_to_nodes */
 #endif /* defined (UNEMAP_USE_3D) */

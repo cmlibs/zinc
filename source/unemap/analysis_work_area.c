@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 23 October 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -227,45 +227,53 @@ rig->current_region->type are compatible.
 			{
 				projection_type=analysis->mapping_window->map->projection_type;
 			}
-			/*possibly change the projection_type*/
-			if(!analysis->rig->current_region)
+#if defined (UNEMAP_USE_3D)
+			/*THREED_PROJECTION always valid */
+			if(projection_type!=THREED_PROJECTION)
 			{
-				/*no current_region, so mutli region */
-				projection_type=HAMMER_PROJECTION;
-			}
-			else
-			{
-				switch(analysis->rig->current_region->type)
-				{			
-					case SOCK:
-					{
-						if(projection_type==CYLINDRICAL_PROJECTION)
+#endif /* defined (UNEMAP_USE_3D) */
+				/*possibly change the projection_type*/
+				if(!analysis->rig->current_region)
+				{
+					/*no current_region, so mutli region */
+					projection_type=HAMMER_PROJECTION;
+				}
+				else
+				{
+					switch(analysis->rig->current_region->type)
+					{			
+						case SOCK:
+						{
+							if(projection_type==CYLINDRICAL_PROJECTION)
+							{
+								projection_type=HAMMER_PROJECTION;
+							}
+						}break;
+						case PATCH:
+						{	
+							if((projection_type==HAMMER_PROJECTION)||
+								(projection_type==POLAR_PROJECTION))
+							{
+								projection_type=CYLINDRICAL_PROJECTION;
+							}
+						}break;
+						case TORSO:
+						{
+							if((projection_type==HAMMER_PROJECTION)||
+								(projection_type==POLAR_PROJECTION))
+							{
+								projection_type=CYLINDRICAL_PROJECTION;
+							}
+						}break;	
+						default:
 						{
 							projection_type=HAMMER_PROJECTION;
-						}
-					}break;
-					case PATCH:
-					{	
-						if((projection_type==HAMMER_PROJECTION)||
-							(projection_type==POLAR_PROJECTION))
-						{
-							projection_type=CYLINDRICAL_PROJECTION;
-						}
-					}break;
-					case TORSO:
-					{
-						if((projection_type==HAMMER_PROJECTION)||
-							(projection_type==POLAR_PROJECTION))
-						{
-							projection_type=CYLINDRICAL_PROJECTION;
-						}
-					}break;	
-					default:
-					{
-						projection_type=HAMMER_PROJECTION;
-					}break;
-				}
+						}break;
+					}
+				}		
+#if defined (UNEMAP_USE_3D)
 			}
+#endif /* defined (UNEMAP_USE_3D) */
 			/*set the projection type*/
 			if(analysis->mapping_window&&analysis->mapping_window->map)
 			{
@@ -2845,13 +2853,32 @@ Sets up the analysis work area for analysing a set of signals.
 			}
 		}
 #if defined (UNEMAP_USE_3D)
-		/* read the signal file into nodes */
-		/*???DB.  Would be better to be another callback from the same button ? */
-		if (file_read_signal_FE_node_group(file_name,
-			analysis->unemap_package,analysis->rig))
+		/* convert the loaded rig to nodes/elements/fields */
+		if (convert_rig_to_nodes(analysis->rig))
 		{
-			ACCESS(Unemap_package)(analysis->unemap_package);		 
+			/* same as rig->unemap_package */
+			ACCESS(Unemap_package)(analysis->unemap_package);	
+			return_code=1;
+#if  defined (OLD_CODE)
+		/* used to read the signal file into nodes now do the convert above */
+		/*???DB.  Would be better to be another callback from the same button ? */
+		if (file_read_signal_FE_node_group(file_name,analysis->rig))
+		{
+			ACCESS(Unemap_package)(analysis->unemap_package);	
+			return_code=1;	 
+#endif
+		}
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"analysis_read_signal_file. convert_rig_to_nodes failed ");
+		}
+#endif /* defined (UNEMAP_USE_3D) */
+
 #if defined (UNEMAP_USE_NODES)
+		if(return_code)
+		{
 			/* create the signal_drawing_package, store it, set it up */
 			if (!analysis->signal_drawing_package)
 			{
@@ -2917,14 +2944,8 @@ Sets up the analysis work area for analysing a set of signals.
 				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
 					1/*highlight*/);
 			}
+		} /* if (return_code) */
 #endif /* defined (UNEMAP_USE_NODES) */
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"analysis_read_signal_file. file_read_signal_FE_node_group failed ");
-		}
-#endif /* defined (UNEMAP_USE_3D) */
 		if (return_code)
 		{
 			/*highlight the first device*/
@@ -4150,8 +4171,7 @@ signals.
 				/*???DB.  Would be better to be another callback from the same button ? */
 				if (return_code&&signal_file_name)
 				{
-					if(file_read_signal_FE_node_group(signal_file_name,
-						analysis->unemap_package,analysis->rig))
+					if(file_read_signal_FE_node_group(signal_file_name,analysis->rig))
 					{
 						ACCESS(Unemap_package)(analysis->unemap_package);		 
 						/* highlight the  node (and everything else) */
@@ -4661,7 +4681,6 @@ for analysing the signals.
 					analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
 				}
 #endif /* defined (UNEMAP_USE_3D)*/
-
 				destroy_Rig(&(analysis->rig));
 #if defined (UNEMAP_USE_3D)
 				free_unemap_package_time_computed_fields(analysis->unemap_package);	
@@ -4703,11 +4722,9 @@ for analysing the signals.
 				&&(rig=analysis->rig)&&(rig->devices)&&(*(rig->devices))&&
 				(buffer=get_Device_signal_buffer(*(rig->devices))))
 			{
-				success=1;
-				/* read the event detection settincgs */
+				success=1;			
 				buffer_start=buffer->start;
-				buffer_end=buffer->end;
-								
+				buffer_end=buffer->end;								
 				if (analysis->window)
 				{
 					XtSetSensitive(analysis->window->map_menu.single_activation_button,
@@ -4732,7 +4749,7 @@ for analysing the signals.
 					"analysis_read_edf_file.  Invalid edf file: %s or cnfg file ",file_name);		
 			}
 #if defined (UNEMAP_USE_3D)
-			/* read the signal file into nodes */
+			/* put the rig into nodes */
 			/*???DB.  Would be better to be another callback from the same button ? */
 			if (convert_rig_to_nodes(analysis->rig))
 			{
@@ -4922,7 +4939,6 @@ for analysing the signals.
 	}	
 	LEAVE;
 } /* analysis_read_edf_file */
-
 
 static int analysis_read_neurosoft_sig_fil(char *file_name,
 	void *analysis_work_area)
@@ -6793,7 +6809,7 @@ drawing area.
 						if (GrabSuccess==XtGrabPointer(interval->drawing_area,owner_events,
 							ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
 							pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-						{
+						{ 
 							box_range=right_box-left_box;
 							minimum_box_range=2*pointer_sensitivity+1;
 							working_window=XtWindow(interval->drawing_area);
@@ -14294,9 +14310,6 @@ Responds to update callbacks from the time object.
 	struct Map_drawing_information *drawing_information;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
-#if defined (UNEMAP_USE_3D)
-	struct Sub_map *sub_map;
-#endif
 	XColor colour, spectrum_rgb[MAX_SPECTRUM_COLOURS];
 
 	ENTER(analysis_potential_time_update_callback);
@@ -14373,9 +14386,6 @@ Responds to update callbacks from the time object.
 				if ((mapping=analysis->mapping_window)&&(map=mapping->map)&&										
 					(drawing_information=map->drawing_information))
 				{
-#if defined (UNEMAP_USE_3D)
-					sub_map=map->sub_map[0];
-#endif
 					/* if we're in ELECTRICAL_IMAGING mode and have events, do nothing, as*/
 					/* in this mode we make maps from the eimaging_events, not the */
 					/*map_potential_time*/
@@ -14398,7 +14408,6 @@ Responds to update callbacks from the time object.
 										/* 3d map */
 										if (map->projection_type==THREED_PROJECTION)
 										{
-											sub_map->frame_time=map_potential_time;										
 											/* recalculate not used for 3d maps */
 											update_mapping_drawing_area(mapping,1/*recalculate*/);
 											update_mapping_colour_or_auxili(mapping);
@@ -14454,7 +14463,6 @@ Responds to update callbacks from the time object.
 											if (map->projection_type==THREED_PROJECTION)
 											{
 												/* 3d map */
-												sub_map->frame_time=map_potential_time;											
 												/* recalculate not used for 3d maps */
 												update_mapping_drawing_area(mapping,1/*recalculate*/);
 												update_mapping_colour_or_auxili(mapping);
@@ -14480,10 +14488,8 @@ Responds to update callbacks from the time object.
 #if defined (UNEMAP_USE_3D)
 									/* 3d map */
 									if (map->projection_type==THREED_PROJECTION)
-									{
-										/* for 3d map, with NO_INTERPOLATION need the frame_start_time
-											 to get the signal min,max */
-										sub_map->frame_time=map_potential_time;								
+									{									
+										;
 									}
 #endif /* defined (UNEMAP_USE_3D) */
 									update_mapping_drawing_area(mapping,1);
