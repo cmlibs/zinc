@@ -1511,7 +1511,7 @@ so that wrapper Computed_fields are automatically created and updated to match
 FE_fields.
 ==============================================================================*/
 
-int DESTROY(computed_field_package)(
+int DESTROY(Computed_field_package)(
 	struct Computed_field_package **package_address);
 /*******************************************************************************
 LAST MODIFIED : 3 February 1999
