@@ -20479,7 +20479,6 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	char file_ext[] = ".fml", *file_name, *group_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region cmiss_region;
 	struct FE_field_order_info *field_order_info;
 	struct FE_region fe_region;
 	struct GROUP(FE_node) *node_group;
