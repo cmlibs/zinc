@@ -48,6 +48,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
+#include "computed_field/computed_field_image_processing.h"
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
@@ -24103,6 +24104,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 			Computed_field_register_types_deformation(
 				command_data->computed_field_package);
+			if (command_data->root_region && command_data->user_interface)
+			{
+				Computed_field_register_types_image_processing(
+					command_data->computed_field_package, 
+					command_data->root_region, command_data->user_interface);
+			}
 		}
 
 #if defined (MIRAGE)

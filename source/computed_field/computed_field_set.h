@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_set.h
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Functions for selecting computed fields from the commands line.
@@ -66,6 +66,17 @@ range of fields available for selection. If the conditional_function is NULL,
 no criteria are placed on the chosen field.
 Allows the construction field.component name to automatically make a component
 wrapper for field and add it to the manager.
+==============================================================================*/
+
+int Option_table_add_Computed_field_conditional_entry(
+	struct Option_table *option_table, char *token, 
+	struct Computed_field **field_address, 
+	struct Set_Computed_field_conditional_data *set_field_data);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.
 ==============================================================================*/
 
 int set_Computed_field_array(struct Parse_state *state,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 1 August 2002
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -693,6 +693,46 @@ LAST MODIFIED : 8 October 2003
 DESCRIPTION :
 Adds the given <token> to the <option_table>.  If the <token> is specified 
 then the <flag> will be set.
+==============================================================================*/
+
+int Option_table_add_int_positive_entry(struct Option_table *option_table,
+	char *token, int *value);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+
+int Option_table_add_int_non_negative_entry(struct Option_table *option_table,
+	char *token, int *value);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+
+int Option_table_add_int_vector_entry(struct Option_table *option_table,
+	char *token, int *vector, int *number_of_components);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+==============================================================================*/
+
+int Option_table_add_FE_value_vector_entry(struct Option_table *option_table,
+	char *token, FE_value *vector, int *number_of_components);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
 ==============================================================================*/
 
 int Option_table_add_double_entry(struct Option_table *option_table,

@@ -454,7 +454,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
       ifneq ($(STATIC_LINK),true)
          #I am statically linking Motif so that it does not have to be installed at runtime.
-         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a -lXp -lXt -lX11
+         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a -lXp -lXt -lX11 -lXmu -lXext
       else # STATIC_LINK != true
          #Mandrake 8.2 static libs are incompatible, this works around it by
          #comparing the size of the symbols and forcing Xmu to preload its
@@ -661,6 +661,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
+	computed_field/computed_field_image_processing.c \
 	computed_field/computed_field_integration.c \
 	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 11 September 2002
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -4977,6 +4977,124 @@ then the <flag> will be set.
 
 	return (return_code);
 } /* Option_table_add_char_flag_entry */
+
+int Option_table_add_int_positive_entry(struct Option_table *option_table,
+	char *token, int *value)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_int_positive_entry);
+	if (option_table && token && value)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)value, NULL,
+			set_int_positive);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_int_positive_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_int_positive_entry */
+
+int Option_table_add_int_non_negative_entry(struct Option_table *option_table,
+	char *token, int *value)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_int_non_negative_entry);
+	if (option_table && token && value)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)value, NULL,
+			set_int_non_negative);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_int_non_negative_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_int_non_negative_entry */
+
+int Option_table_add_int_vector_entry(struct Option_table *option_table,
+	char *token, int *vector, int *number_of_components)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_int_vector_entry);
+	if (option_table && token && vector && number_of_components &&
+		(*number_of_components > 0))
+	{
+		return_code = Option_table_add_entry(option_table, token, vector,
+			(void *)number_of_components, set_int_vector);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_int_vector_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_int_vector_entry */
+
+int Option_table_add_FE_value_vector_entry(struct Option_table *option_table,
+	char *token, FE_value *vector, int *number_of_components)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_FE_value_vector_entry);
+	if (option_table && token && vector && number_of_components &&
+		(*number_of_components > 0))
+	{
+		return_code = Option_table_add_entry(option_table, token, vector,
+			(void *)number_of_components, set_FE_value_array);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_FE_value_vector_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_FE_value_vector_entry */
 
 int Option_table_add_double_entry(struct Option_table *option_table,
 	char *token, double *value)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_set.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -188,6 +188,36 @@ wrapper for field and add it to the manager.
 
 	return (return_code);
 } /* set_Computed_field_conditional */
+
+int Option_table_add_Computed_field_conditional_entry(
+	struct Option_table *option_table, char *token, 
+	struct Computed_field **field_address, 
+	struct Set_Computed_field_conditional_data *set_field_data)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_Computed_field_conditional_entry);
+	if (option_table && token && field_address && set_field_data)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)field_address, 
+			(void *)set_field_data, set_Computed_field_conditional);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_Computed_field_conditional_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_Computed_field_conditional_entry */
 
 int set_Computed_field_array(struct Parse_state *state,
 	void *field_array_void, void *set_field_array_data_void)
