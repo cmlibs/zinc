@@ -287,8 +287,8 @@ are both closed.
 				}
 				if (points&&(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,
 					g_QUADRILATERAL,2,number_of_segments_around+1,points,
-					normalpoints,/*texturepoints*/(Triple *)NULL,g_NO_DATA,
-					(GTDATA *)NULL)))
+					normalpoints,/*texturepoints*/(Triple *)NULL,
+					/*tangentpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 				{
 					if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 					{
@@ -501,7 +501,8 @@ lies at <1,0,0>. The radius of the cone is 0.5 at its base.
 				points,normalpoints);
 			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
 				number_of_segments_around+1,points,normalpoints,
-				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				/*texturepoints*/(Triple *)NULL,/*tangentpoints*/(Triple *)NULL,
+				g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -694,8 +695,8 @@ cube centred at <0,0,0>.
 				normalpoint++;
 			}
 			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,g_QUADRILATERAL,6,
-				4,points,normalpoints,/*texturepoints*/(Triple *)NULL,g_NO_DATA,
-				(GTDATA *)NULL)))
+				4,points,normalpoints,/*texturepoints*/(Triple *)NULL,
+				/*tangentpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -856,7 +857,8 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 				points,normalpoints);
 			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
 				number_of_segments_around+1,points,normalpoints,
-				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
+				g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -1110,8 +1112,8 @@ coordinate <-0.5,-0.5,0> to <0.5,0.5,0>.
 			(*point)[2] = 1.0;
 			point++;
 			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,g_QUADRILATERAL,1,
-				4,points,normalpoints,/*texturepoints*/(Triple *)NULL,g_NO_DATA,
-				(GTDATA *)NULL)))
+				4,points,normalpoints,/*texturepoints*/(Triple *)NULL,
+				/*tangentpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -1206,8 +1208,8 @@ twice <number_of_segments_down> look remotely spherical.
 			}
 			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,
 				number_of_segments_down+1,number_of_segments_around+1,
-				points,normalpoints,/*texturepoints*/(Triple *)NULL,g_NO_DATA,
-				(GTDATA *)NULL)))
+				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
+            /*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);

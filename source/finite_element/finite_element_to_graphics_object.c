@@ -1506,7 +1506,7 @@ Notes:
 			ALLOCATE(radius_array,FE_value,3*(number_of_segments_along+1))&&
 			(surface=CREATE(GT_surface)(/*g_SHADED*/g_SHADED_TEXMAP,g_QUADRILATERAL,
 				number_of_segments_around+1,number_of_segments_along+1,
-				points,normalpoints,texturepoints,n_data_components,data)))
+				points,normalpoints,(Triple *)NULL,texturepoints,n_data_components,data)))
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
@@ -2726,17 +2726,18 @@ normals are used.
 	char modified_reverse_normals,special_normals;
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type;
-	FE_value coordinates[3],derivative_xi[6],texture_values[3],xi[2],xi2;
-	float coordinate_1,coordinate_2,coordinate_3,distance;
+	enum GT_surface_type surface_type;
+	FE_value coordinates[3],derivative_xi[6],texture_values[3],xi[2],xi2,
+		texture_derivative[6], texture_determinant;
+	float distance;
 	GTDATA *data;
 	gtPolygonType polygon_type;
 	struct GT_surface *surface;
 	int i,j,n_data_components,number_of_points,number_of_points_in_xi1,
 		number_of_points_in_xi2,number_of_polygon_vertices;
 	struct CM_element_information cm;
-	Triple *normal,*normalpoints,*point,*point_a,*point_b,*points,*point_s,
-		*point_t,*texturepoints,*texture_coordinate,*texture_coordinate_s,
-		*texture_coordinate_t;
+	Triple *normal,*normalpoints,*point,*point_a,*point_b,*points,
+		*tangent,*tangentpoints,*texturepoints,*texture_coordinate;
 
 	ENTER(create_GT_surface_from_FE_element);
 	if (element && (2 == get_FE_element_dimension(element)) &&
@@ -2767,6 +2768,7 @@ normals are used.
 		surface=(struct GT_surface *)NULL;
 		points=(Triple *)NULL;
 		normalpoints=(Triple *)NULL;
+		tangentpoints=(Triple *)NULL;
 		texturepoints=(Triple *)NULL;
 		n_data_components = 0;
 		data=(GTDATA *)NULL;
@@ -2779,17 +2781,25 @@ normals are used.
 					"create_GT_surface_from_FE_element.  Could allocate data");
 			}
 		}
+		switch (render_type)
+		{
+			case RENDER_TYPE_WIREFRAME:
+			{
+				surface_type = g_WIREFRAME_SHADED_TEXMAP;
+			} break;
+			default:
+			{
+				surface_type = g_SHADED_TEXMAP;
+			} break;
+		}
 		if ((data||(0==n_data_components))&&
 			ALLOCATE(points,Triple,number_of_points)&&
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
-			ALLOCATE(texturepoints,Triple,number_of_points)&&
-			(((render_type == RENDER_TYPE_WIREFRAME) &&
-				(surface=CREATE(GT_surface)(g_WIREFRAME_SHADED_TEXMAP,polygon_type,
-				number_of_points_in_xi1,number_of_points_in_xi2, points,
-				normalpoints, texturepoints, n_data_components,data)))
-				||(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,polygon_type,
-				number_of_points_in_xi1,number_of_points_in_xi2, points,
-				normalpoints, texturepoints, n_data_components,data))))
+			(!texture_coordinate_field || (ALLOCATE(tangentpoints,Triple,number_of_points)&&
+			ALLOCATE(texturepoints,Triple,number_of_points)))&&
+			(surface=CREATE(GT_surface)(surface_type,polygon_type,
+			number_of_points_in_xi1,number_of_points_in_xi2, points,
+			normalpoints, tangentpoints, texturepoints, n_data_components,data)))
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
@@ -2858,7 +2868,11 @@ normals are used.
 			/* calculate the points, normals and data */
 			point=points;
 			normal=normalpoints;
-			texture_coordinate=texturepoints;
+			if (texture_coordinate_field)
+			{
+				tangent=tangentpoints;
+				texture_coordinate=texturepoints;
+			}
 			if ((g_QUADRILATERAL==polygon_type)&&
 				((ELEMENT_COLLAPSED_XI1_0==collapsed_element)||
 				(ELEMENT_COLLAPSED_XI1_1==collapsed_element)||
@@ -2885,7 +2899,7 @@ normals are used.
 					(FE_value *)NULL))&&((!texture_coordinate_field)||
 					Computed_field_evaluate_in_element(texture_coordinate_field,
 					element,xi,time,top_level_element,texture_values,
-					(FE_value *)NULL)))
+					texture_derivative)))
 				{
 					(*point)[0]=coordinates[0];
 					(*point)[1]=coordinates[1];
@@ -2899,6 +2913,19 @@ normals are used.
 						derivative_xi[5]*derivative_xi[0];
 					(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
 						derivative_xi[1]*derivative_xi[2];
+					if (texture_coordinate_field)
+					{
+						/* tangent is dX/d_xi * inv(dT/dxi) */
+						texture_determinant = texture_derivative[0] * texture_derivative[3]
+							- texture_derivative[1] * texture_derivative[2];
+						(*tangent)[0] = (derivative_xi[0] * texture_derivative[0]
+							- derivative_xi[1] * texture_derivative[2]) / texture_determinant;
+						(*tangent)[1] = (derivative_xi[2] * texture_derivative[0]
+							- derivative_xi[3] * texture_derivative[2]) / texture_determinant;
+						(*tangent)[2] = (derivative_xi[4] * texture_derivative[0]
+							- derivative_xi[5] * texture_derivative[2]) / texture_determinant;
+						tangent++;
+					}
 					if (special_normals)
 					{
 						if (ELEMENT_COLLAPSED_XI1_0==collapsed_element)
@@ -3147,134 +3174,20 @@ normals are used.
 						normal++;
 					}
 				}
-				if (!texture_coordinate_field)
+				if (texture_coordinate_field)
 				{
-					/* Keep the old texture coordinates if no field defined */
-					/* calculate the texture coordinates */
-					/*???DB.  Should be able to use scale factors, but don't know for
-					  linear.  Locate in structure ? */
-					point=points;
-					point_s=point;
-					point_t=point;
-					texture_coordinate=texturepoints;
-					texture_coordinate_s=texture_coordinate;
-					texture_coordinate_t=texture_coordinate;
-					(*texture_coordinate)[0]=0.;
-					(*texture_coordinate)[1]=0.;
-					(*texture_coordinate)[2]=0.;
-					if (SIMPLEX_SHAPE== shape_type)
+					/* normalize the tangents */
+					tangent=tangentpoints;
+					for (i=number_of_points;i>0;i--)
 					{
-						for (j=number_of_points_in_xi1-1;j>0;j--)
+						if (0.0<(distance=sqrt((*tangent)[0]*(*tangent)[0]+
+										(*tangent)[1]*(*tangent)[1]+(*tangent)[2]*(*tangent)[2])))
 						{
-							point++;
-							texture_coordinate++;
-							coordinate_1=(*point)[0]-(*point_s)[0];
-							coordinate_2=(*point)[1]-(*point_s)[1];
-							coordinate_3=(*point)[2]-(*point_s)[2];
-							(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							(*texture_coordinate)[1]=0.;
-							(*texture_coordinate)[2]=0.;
-							point_s++;
-							texture_coordinate_s++;
+							(*tangent)[0] /= distance;
+							(*tangent)[1] /= distance;
+							(*tangent)[2] /= distance;
 						}
-						for (i=number_of_points_in_xi2-1;i>0;i--)
-						{
-							point++;
-							texture_coordinate++;
-							point_s++;
-							texture_coordinate_s++;
-							(*texture_coordinate)[0]=0.;
-							coordinate_1=(*point)[0]-(*point_t)[0];
-							coordinate_2=(*point)[1]-(*point_t)[1];
-							coordinate_3=(*point)[2]-(*point_t)[2];
-							(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							(*texture_coordinate)[2]=0.;
-							point_t++;
-							texture_coordinate_t++;
-							for (j=i-1;j>0;j--)
-							{
-								point++;
-								texture_coordinate++;
-								coordinate_1=(*point)[0]-(*point_s)[0];
-								coordinate_2=(*point)[1]-(*point_s)[1];
-								coordinate_3=(*point)[2]-(*point_s)[2];
-								(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-									sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-										coordinate_3*coordinate_3);
-								coordinate_1=(*point)[0]-(*point_t)[0];
-								coordinate_2=(*point)[1]-(*point_t)[1];
-								coordinate_3=(*point)[2]-(*point_t)[2];
-								(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-									sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-										coordinate_3*coordinate_3);
-								(*texture_coordinate)[2]=0.;
-								point_s++;
-								texture_coordinate_s++;
-							}
-							point_t++;
-							texture_coordinate_t++;
-						}
-					}
-					else
-					{
-						for (j=number_of_points_in_xi1-1;j>0;j--)
-						{
-							point++;
-							texture_coordinate++;
-							coordinate_1=(*point)[0]-(*point_s)[0];
-							coordinate_2=(*point)[1]-(*point_s)[1];
-							coordinate_3=(*point)[2]-(*point_s)[2];
-							(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							(*texture_coordinate)[1]=0.;
-							(*texture_coordinate)[2]=0.;
-							point_s++;
-							texture_coordinate_s++;
-						}
-						for (i=number_of_points_in_xi2-1;i>0;i--)
-						{
-							point++;
-							texture_coordinate++;
-							point_s++;
-							texture_coordinate_s++;
-							(*texture_coordinate)[0]=0.;
-							coordinate_1=(*point)[0]-(*point_t)[0];
-							coordinate_2=(*point)[1]-(*point_t)[1];
-							coordinate_3=(*point)[2]-(*point_t)[2];
-							(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-									coordinate_3*coordinate_3);
-							(*texture_coordinate)[2]=0.;
-							point_t++;
-							texture_coordinate_t++;
-							for (j=number_of_points_in_xi1-1;j>0;j--)
-							{
-								point++;
-								texture_coordinate++;
-								coordinate_1=(*point)[0]-(*point_s)[0];
-								coordinate_2=(*point)[1]-(*point_s)[1];
-								coordinate_3=(*point)[2]-(*point_s)[2];
-								(*texture_coordinate)[0]=(*texture_coordinate_s)[0]+
-									sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-										coordinate_3*coordinate_3);
-								coordinate_1=(*point)[0]-(*point_t)[0];
-								coordinate_2=(*point)[1]-(*point_t)[1];
-								coordinate_3=(*point)[2]-(*point_t)[2];
-								(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
-									sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
-										coordinate_3*coordinate_3);
-								(*texture_coordinate)[2]=0.;
-								point_s++;
-								texture_coordinate_s++;
-								point_t++;
-								texture_coordinate_t++;
-							}
-						}
+						tangent++;
 					}
 				}
 			}
@@ -3283,8 +3196,18 @@ normals are used.
 		{
 			DEALLOCATE(points);
 			DEALLOCATE(normalpoints);
-			DEALLOCATE(texturepoints);
-			DEALLOCATE(data);
+			if (tangentpoints)
+			{
+				DEALLOCATE(tangentpoints);
+			}
+			if (texturepoints)
+			{
+				DEALLOCATE(texturepoints);
+			}
+			if (data)
+			{
+				DEALLOCATE(data);
+			}
 		}
 		if (!surface)
 		{

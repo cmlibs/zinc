@@ -616,7 +616,8 @@ DESCRIPTION :
 										} break;
 									}
 									surface=CREATE(GT_surface)(surface_type,g_QUADRILATERAL,
-										npts1,npts2,pointlist,normallist,texturelist,
+										npts1,npts2,pointlist,normallist,
+										/*tangentlist*/(Triple *)NULL,texturelist,
 										n_data_components,data);
 									GT_OBJECT_ADD(GT_surface)(obj,time,surface);
 								}

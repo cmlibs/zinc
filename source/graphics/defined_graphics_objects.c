@@ -253,6 +253,7 @@ graphics_objects that don't come from finite_elements?
 				return_code=(
 					(surface=CREATE(GT_surface)(g_SHADED,g_QUADRILATERAL,
 						points_around_bar,points_along_bar,points,normalpoints,
+						/*tangentpoints*/(Triple *)NULL,
 						/*texturepoints*/(Triple *)NULL,/*n_data_components*/1,data)) &&
 					set_GT_object_default_material(bar_graphics_object,bar_material) &&
 					set_GT_object_Spectrum(bar_graphics_object,spectrum)&&

@@ -3696,7 +3696,8 @@ DESCRIPTION :
 Conditional function returning true if the field is suitable for 3-D streamline
 tracking. This means it has either 3, 6 or 9 components (with 3 components per
 vector), or has a FIBRE coordinate_system, meaning it can be wrapped to produce
-9-component fibre_axes.
+9-component fibre_axes.  Also now supports 2 components for use with a 2
+component coordinate field.
 The number of components controls how the field is interpreted:
 3 = 1 3-D vector (lateral direction and normal worked out from curl of field);
 6 = 2 3-D vectors (2nd vector is lateral direction. Stream ribbon normal found
@@ -3711,7 +3712,7 @@ The number of components controls how the field is interpreted:
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		return_code=((3==field->number_of_components)||
+		return_code=((2==field->number_of_components)||(3==field->number_of_components)||
 			(6==field->number_of_components)||(9==field->number_of_components)||
 			((3>=field->number_of_components)&&
 				(FIBRE==get_coordinate_system_type(&(field->coordinate_system)))));

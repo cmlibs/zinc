@@ -77,7 +77,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 #if defined (GLX_SGIX_pbuffer)
-GLXPbufferSGIX Dm_buffer_get_pbuffer(struct Dm_buffer *buffer);
+GLXPbuffer Dm_buffer_get_pbuffer(struct Dm_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 14 September 1998
 DESCRIPTION :

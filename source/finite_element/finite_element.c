@@ -45291,9 +45291,9 @@ An iterator function that returns true if the element referred to in the parent
 } /* FE_element_parent_not_equal_to_element */
 
 int FE_element_change_to_adjacent_element(struct FE_element **element,
-	FE_value *xi, int face_index)
+	int element_dimension, FE_value *xi, int face_index)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2003
+LAST MODIFIED : 18 December 2003
 
 DESCRIPTION :
 For changing between elements when at the interface between elements. Swaps
@@ -45329,207 +45329,268 @@ time to resolve which one is correct but that is really expensive.
 				face->parent_list);
 			if (parent_struct)
 			{
-				/* go to the face * dimension ^ 2 position in face to element */
-				face_to_element=((*element)->shape->face_to_element)+face_index*9;
-				/* first column is translation, subtract from xi */
-				xi[0] -= face_to_element[0];
-				xi[1] -= face_to_element[3];
-				xi[2] -= face_to_element[6];
-				/* find the non zero entries in the second part, assuming one to one
-					mapping */
-				if (face_to_element[1])
+				switch (element_dimension)
 				{
-					facexi[0]=xi[0]/face_to_element[1];
-				}
-				else
-				{
-					if (face_to_element[4])
+					case 2:
 					{
-						facexi[0]=xi[1]/face_to_element[4];
-					}
-					else
-					{
-						if (face_to_element[7])
+						/* go to the face * dimension ^ 2 position in face to element */
+						face_to_element=((*element)->shape->face_to_element)+face_index*4;
+						/* first column is translation, subtract from xi */
+						xi[0] -= face_to_element[0];
+						xi[1] -= face_to_element[2];
+						/* find the non zero entries in the second part, assuming one to one
+							mapping */
+						if (face_to_element[1])
 						{
-							facexi[0]=xi[2]/face_to_element[7];
+							facexi[0]=xi[0]/face_to_element[1];
 						}
 						else
 						{
-							facexi[0]=0.0;
+							if (face_to_element[3])
+							{
+								facexi[0]=xi[1]/face_to_element[3];
+							}
+							else
+							{
+								facexi[0]=0.0;
+							}
 						}
-					}
-				}
-				if (face_to_element[2])
-				{
-					facexi[1]=xi[0]/face_to_element[2];
-				}
-				else
-				{
-					if (face_to_element[5])
-					{
-						facexi[1]=xi[1]/face_to_element[5];
-					}
-					else
-					{
-						if (face_to_element[8])
+						if (face_to_element[2])
 						{
-							facexi[1]=xi[2]/face_to_element[8];
+							facexi[1]=xi[0]/face_to_element[2];
 						}
 						else
 						{
-							facexi[1]=0.0;
-						}
-					}
-				}
-#if defined (NEW_CODE)
-				/* Fixup for incompatible circumferential xi coordinate in Polygons
-					(Part 1) */
-				if (POLYGON_SHAPE==(*element)->shape->type[0])
-				{
-					number_of_vertices=((*element)->shape->type)[1];
-					if (0==number_of_vertices)
-					{
-						number_of_vertices=((*element)->shape->type)[2];
-					}
-					if (face_index<number_of_vertices)
-					{
-						/* if polygon, need to check ordering of nodes to ensure that xi
-							coordinates will match, so store pointA now and compare at end */
-						xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-							face_to_element[2]*facexi[1];
-						xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-							face_to_element[5]*facexi[1];
-						xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-							face_to_element[8]*facexi[1];
-						if (!Computed_field_evaluate_in_element(coordinate_field,
-							*element,xi,time,(struct FE_element *)NULL,pointA,(FE_value*)NULL))
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_change_to_adjacent_element.  "
-								"Error calculating coordinate field");
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					if (POLYGON_SHAPE==(*element)->shape->type[3])
-					{
-						number_of_vertices=((*element)->shape->type)[4];
-						if (face_index<number_of_vertices)
-						{
-							/* if polygon, need to check ordering of nodes to
-								ensure that xi coordinates will match, so store pointA now
-								and compare at end */
-							xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-								face_to_element[2]*facexi[1];
-							xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-								face_to_element[5]*facexi[1];
-							xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-								face_to_element[8]*facexi[1];
-							if (!Computed_field_evaluate_in_element(coordinate_field,
-								*element,xi,time,(struct FE_element *)NULL,pointA,
-								(FE_value*)NULL))
+							if (face_to_element[4])
 							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_change_to_adjacent_element.  "
-									"Error calculating coordinate field");
-								return_code = 0;
+								facexi[1]=xi[1]/face_to_element[4];
+							}
+							else
+							{
+									facexi[1]=0.0;
 							}
 						}
-					}
-				}
-				/* End Fixup for incompatible circumferential xi coorodinate in Polygons
-					(Part 1) */
-#endif /* defined (NEW_CODE) */
-				if ( return_code )
-				{
-					*element=parent_struct->parent;
-					face_to_element=((*element)->shape->face_to_element)+
-						(parent_struct->face_number)*9;
-					xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
-						face_to_element[2]*facexi[1];
-					xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
-						face_to_element[5]*facexi[1];
-					xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
-						face_to_element[8]*facexi[1];
-#if defined (NEW_CODE)
-					/* Fixup for incompatible circumferential xi coorodinate in
-						 Polygons (Part 2) */
-					if (POLYGON_SHAPE==(*element)->shape->type[0])
-					{
-						number_of_vertices=((*element)->shape->type)[1];
-						if (0==number_of_vertices)
+						if ( return_code )
 						{
-							number_of_vertices=((*element)->shape->type)[2];
+							*element=parent_struct->parent;
+							face_to_element=((*element)->shape->face_to_element)+
+								(parent_struct->face_number)*4;
+							xi[0]=face_to_element[0]+face_to_element[1]*facexi[0];
+							xi[1]=face_to_element[2]+face_to_element[3]*facexi[0];
 						}
-						if (face_index<number_of_vertices)
+					} break;
+					case 3:
+					{
+						/* go to the face * dimension ^ 2 position in face to element */
+						face_to_element=((*element)->shape->face_to_element)+face_index*9;
+						/* first column is translation, subtract from xi */
+						xi[0] -= face_to_element[0];
+						xi[1] -= face_to_element[3];
+						xi[2] -= face_to_element[6];
+						/* find the non zero entries in the second part, assuming one to one
+							mapping */
+						if (face_to_element[1])
 						{
-							/* if polygon, compare pointA and pointB */
-							if (!Computed_field_evaluate_in_element(coordinate_field,
-								*element,xi,time,(struct FE_element *)NULL,pointB,
-								(FE_value*)NULL))
+							facexi[0]=xi[0]/face_to_element[1];
+						}
+						else
+						{
+							if (face_to_element[4])
 							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_change_to_adjacent_element.  "
-									"Error calculating coordinate field");
-								return_code=0;
+								facexi[0]=xi[1]/face_to_element[4];
 							}
-							if ((fabs(pointA[0]-pointB[0])>1e-5)||
-								(fabs(pointA[1]-pointB[1])>1e-5)||
-								(fabs(pointA[2]-pointB[2])>1e-5))
+							else
 							{
-								/* Assume that xi are valid other way round */
-								facexi[0]=1.0-facexi[0];
+								if (face_to_element[7])
+								{
+									facexi[0]=xi[2]/face_to_element[7];
+								}
+								else
+								{
+									facexi[0]=0.0;
+								}
+							}
+						}
+						if (face_to_element[2])
+						{
+							facexi[1]=xi[0]/face_to_element[2];
+						}
+						else
+						{
+							if (face_to_element[5])
+							{
+								facexi[1]=xi[1]/face_to_element[5];
+							}
+							else
+							{
+								if (face_to_element[8])
+								{
+									facexi[1]=xi[2]/face_to_element[8];
+								}
+								else
+								{
+									facexi[1]=0.0;
+								}
+							}
+						}
+#if defined (NEW_CODE)
+						/* Fixup for incompatible circumferential xi coordinate in Polygons
+							(Part 1) */
+						if (POLYGON_SHAPE==(*element)->shape->type[0])
+						{
+							number_of_vertices=((*element)->shape->type)[1];
+							if (0==number_of_vertices)
+							{
+								number_of_vertices=((*element)->shape->type)[2];
+							}
+							if (face_index<number_of_vertices)
+							{
+								/* if polygon, need to check ordering of nodes to ensure that xi
+									coordinates will match, so store pointA now and compare at end */
 								xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
 									face_to_element[2]*facexi[1];
 								xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
 									face_to_element[5]*facexi[1];
 								xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
 									face_to_element[8]*facexi[1];
-								return_code=1;
-							}
-						}
-					}
-					else
-					{
-						if (POLYGON_SHAPE==(*element)->shape->type[3])
-						{
-							number_of_vertices=((*element)->shape->type)[4];
-							if (face_index<number_of_vertices)
-							{
-								/* if polygon, need to check ordering of nodes to
-									 ensure that xi coordinates will match, so store pointA
-									 now and compare at end */
 								if (!Computed_field_evaluate_in_element(coordinate_field,
-									*element,xi,time,(struct FE_element *)NULL,pointB,
-									(FE_value*)NULL))
+										 *element,xi,time,(struct FE_element *)NULL,pointA,(FE_value*)NULL))
 								{
 									display_message(ERROR_MESSAGE,
 										"FE_element_change_to_adjacent_element.  "
 										"Error calculating coordinate field");
 									return_code = 0;
 								}
-								if ((fabs(pointA[0]-pointB[0])>1e-5)||
-									(fabs(pointA[1]-pointB[1])>1e-5)||
-									(fabs(pointA[2]-pointB[2])>1e-5))
+							}
+						}
+						else
+						{
+							if (POLYGON_SHAPE==(*element)->shape->type[3])
+							{
+								number_of_vertices=((*element)->shape->type)[4];
+								if (face_index<number_of_vertices)
 								{
-									/* Assume that xi are valid other way round */
-									facexi[0]=1.0-facexi[0];
+									/* if polygon, need to check ordering of nodes to
+										ensure that xi coordinates will match, so store pointA now
+										and compare at end */
 									xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
 										face_to_element[2]*facexi[1];
 									xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
 										face_to_element[5]*facexi[1];
 									xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
 										face_to_element[8]*facexi[1];
-									return_code = 1;
+									if (!Computed_field_evaluate_in_element(coordinate_field,
+											 *element,xi,time,(struct FE_element *)NULL,pointA,
+											 (FE_value*)NULL))
+									{
+										display_message(ERROR_MESSAGE,
+											"FE_element_change_to_adjacent_element.  "
+											"Error calculating coordinate field");
+										return_code = 0;
+									}
 								}
 							}
 						}
-					}
-					/* End Fixup for incompatible circumferential xi coorodinate in
-						 Polygons (Part 2) */
+						/* End Fixup for incompatible circumferential xi coorodinate in Polygons
+							(Part 1) */
 #endif /* defined (NEW_CODE) */
+						if ( return_code )
+						{
+							*element=parent_struct->parent;
+							face_to_element=((*element)->shape->face_to_element)+
+								(parent_struct->face_number)*9;
+							xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
+								face_to_element[2]*facexi[1];
+							xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
+								face_to_element[5]*facexi[1];
+							xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
+								face_to_element[8]*facexi[1];
+#if defined (NEW_CODE)
+							/* Fixup for incompatible circumferential xi coorodinate in
+								Polygons (Part 2) */
+							if (POLYGON_SHAPE==(*element)->shape->type[0])
+							{
+								number_of_vertices=((*element)->shape->type)[1];
+								if (0==number_of_vertices)
+								{
+									number_of_vertices=((*element)->shape->type)[2];
+								}
+								if (face_index<number_of_vertices)
+								{
+									/* if polygon, compare pointA and pointB */
+									if (!Computed_field_evaluate_in_element(coordinate_field,
+											 *element,xi,time,(struct FE_element *)NULL,pointB,
+											 (FE_value*)NULL))
+									{
+										display_message(ERROR_MESSAGE,
+											"FE_element_change_to_adjacent_element.  "
+											"Error calculating coordinate field");
+										return_code=0;
+									}
+									if ((fabs(pointA[0]-pointB[0])>1e-5)||
+										(fabs(pointA[1]-pointB[1])>1e-5)||
+										(fabs(pointA[2]-pointB[2])>1e-5))
+									{
+										/* Assume that xi are valid other way round */
+										facexi[0]=1.0-facexi[0];
+										xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
+											face_to_element[2]*facexi[1];
+										xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
+											face_to_element[5]*facexi[1];
+										xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
+											face_to_element[8]*facexi[1];
+										return_code=1;
+									}
+								}
+							}
+							else
+							{
+								if (POLYGON_SHAPE==(*element)->shape->type[3])
+								{
+									number_of_vertices=((*element)->shape->type)[4];
+									if (face_index<number_of_vertices)
+									{
+										/* if polygon, need to check ordering of nodes to
+											ensure that xi coordinates will match, so store pointA
+											now and compare at end */
+										if (!Computed_field_evaluate_in_element(coordinate_field,
+												 *element,xi,time,(struct FE_element *)NULL,pointB,
+												 (FE_value*)NULL))
+										{
+											display_message(ERROR_MESSAGE,
+												"FE_element_change_to_adjacent_element.  "
+												"Error calculating coordinate field");
+											return_code = 0;
+										}
+										if ((fabs(pointA[0]-pointB[0])>1e-5)||
+											(fabs(pointA[1]-pointB[1])>1e-5)||
+											(fabs(pointA[2]-pointB[2])>1e-5))
+										{
+											/* Assume that xi are valid other way round */
+											facexi[0]=1.0-facexi[0];
+											xi[0]=face_to_element[0]+face_to_element[1]*facexi[0]+
+												face_to_element[2]*facexi[1];
+											xi[1]=face_to_element[3]+face_to_element[4]*facexi[0]+
+												face_to_element[5]*facexi[1];
+											xi[2]=face_to_element[6]+face_to_element[7]*facexi[0]+
+												face_to_element[8]*facexi[1];
+											return_code = 1;
+										}
+									}
+								}
+							}
+							/* End Fixup for incompatible circumferential xi coorodinate in
+								Polygons (Part 2) */
+#endif /* defined (NEW_CODE) */
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_change_to_adjacent_element.  "
+							"Unimplemented element dimension %d");
+						return_code=0;
+					}
 				}
 			}
 			else

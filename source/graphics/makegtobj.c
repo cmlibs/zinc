@@ -597,6 +597,7 @@ un-selected graphics are drawn.
 												}
 												draw_surfaceGL(interpolate_surface->pointlist,
 													interpolate_surface->normallist,
+													interpolate_surface->tangentlist,
 													interpolate_surface->texturelist,
 													interpolate_surface->n_pts1,
 													interpolate_surface->n_pts2,
@@ -628,6 +629,7 @@ un-selected graphics are drawn.
 												glLoadName((GLuint)surface->object_name);
 											}
 											draw_surfaceGL(surface->pointlist, surface->normallist,
+												surface->tangentlist,
 												surface->texturelist, surface->n_pts1,
 												surface->n_pts2, surface->polygon,
 												surface->n_data_components, surface->data,

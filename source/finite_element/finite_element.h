@@ -4752,9 +4752,9 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 ==============================================================================*/
 
 int FE_element_change_to_adjacent_element(struct FE_element **element,
-	FE_value *xi, int face_index);
+	int element_dimension, FE_value *xi, int face_index);
 /*******************************************************************************
-LAST MODIFIED : 19 March 2003
+LAST MODIFIED : 18 December 2003
 
 DESCRIPTION :
 For changing between elements when at the interface between elements. Swaps

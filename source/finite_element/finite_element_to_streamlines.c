@@ -57,7 +57,7 @@ Module functions
 */
 
 static int check_xi_limits(int change_xi, struct FE_element **element,
-	FE_value *xi,struct Computed_field *coordinate_field, FE_value time)
+	int element_dimension, FE_value *xi,struct Computed_field *coordinate_field, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
 
@@ -80,8 +80,6 @@ called if the integration has indicated that the direction changes element.
 		0, &shape_type1);
 	get_FE_element_shape_xi_shape_type(element_shape,
 		1, &shape_type2);
-	get_FE_element_shape_xi_shape_type(element_shape,
-		2, &shape_type3);
 	if ((1==change_xi)&&(xi[0]<=0.0))
 	{
 		if (POLYGON_SHAPE==shape_type1)
@@ -101,7 +99,8 @@ called if the integration has indicated that the direction changes element.
 			{
 				face_index=0;
 			}
-			return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
+			return_code=FE_element_change_to_adjacent_element(element,
+				element_dimension,xi,face_index);
 		}
 	}
 	else
@@ -125,7 +124,8 @@ called if the integration has indicated that the direction changes element.
 				{
 					face_index=1;
 				}
-				return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
+				return_code=FE_element_change_to_adjacent_element(element,
+					element_dimension,xi,face_index);
 			}
 		}
 	}
@@ -172,7 +172,8 @@ called if the integration has indicated that the direction changes element.
 			{
 				face_index=2;
 			}
-			return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
+			return_code=FE_element_change_to_adjacent_element(element,
+				element_dimension,xi,face_index);
 		}
 	}
 	else
@@ -190,7 +191,8 @@ called if the integration has indicated that the direction changes element.
 					/* radial xi */
 					/* Assumes faces are stored in order of increasing xi0 */
 					face_index=(int)floor(xi[0]*(FE_value)xi_linkage_number);
-					return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
+					return_code=FE_element_change_to_adjacent_element(element,
+						element_dimension,xi,face_index);
 				}
 				else
 				{
@@ -214,40 +216,16 @@ called if the integration has indicated that the direction changes element.
 				{
 					face_index=3;
 				}
-				return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
+				return_code=FE_element_change_to_adjacent_element(element,
+				element_dimension,xi,face_index);
 			}
 		}
 	}
-	if ((3==change_xi)&&(xi[2]<=0))
+	if (element_dimension >= 3)
 	{
-		if (POLYGON_SHAPE==shape_type3)
-		{
-			/* Polygon */
-			/* Not done yet */
-			return_code=0;
-		}
-		else
-		{
-			/* Line */
-			/* SAB Could be improved to check shape->faces for the
-				face, now it assumes the order of the faces, all other faces first,
-				then xi3 = 0 and then xi3 = 1 */
-			if (POLYGON_SHAPE==shape_type1)
-			{
-				get_FE_element_shape_xi_linkage_number(
-					element_shape, /*xi_number1*/0, /*xi_number2*/1,
-					&face_index);
-			}
-			else
-			{
-				face_index=4;
-			}
-			return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
-		}
-	}
-	else
-	{
-		if ((3==change_xi)&&(xi[2]>=1.0))
+		get_FE_element_shape_xi_shape_type(element_shape,
+			2, &shape_type3);
+		if ((3==change_xi)&&(xi[2]<=0))
 		{
 			if (POLYGON_SHAPE==shape_type3)
 			{
@@ -266,13 +244,45 @@ called if the integration has indicated that the direction changes element.
 					get_FE_element_shape_xi_linkage_number(
 						element_shape, /*xi_number1*/0, /*xi_number2*/1,
 						&face_index);
-					face_index++;
 				}
 				else
 				{
-					face_index=5;
+					face_index=4;
 				}
-				return_code=FE_element_change_to_adjacent_element(element,xi,face_index);
+				return_code=FE_element_change_to_adjacent_element(element,
+				element_dimension,xi,face_index);
+			}
+		}
+		else
+		{
+			if ((3==change_xi)&&(xi[2]>=1.0))
+			{
+				if (POLYGON_SHAPE==shape_type3)
+				{
+					/* Polygon */
+					/* Not done yet */
+					return_code=0;
+				}
+				else
+				{
+					/* Line */
+					/* SAB Could be improved to check shape->faces for the
+						face, now it assumes the order of the faces, all other faces first,
+						then xi3 = 0 and then xi3 = 1 */
+					if (POLYGON_SHAPE==shape_type1)
+					{
+						get_FE_element_shape_xi_linkage_number(
+							element_shape, /*xi_number1*/0, /*xi_number2*/1,
+							&face_index);
+						face_index++;
+					}
+					else
+					{
+						face_index=5;
+					}
+					return_code=FE_element_change_to_adjacent_element(element,
+				element_dimension,xi,face_index);
+				}
 			}
 		}
 	}
@@ -281,38 +291,185 @@ called if the integration has indicated that the direction changes element.
 	return (return_code);
 } /* check_xi_limits */
 
-static int calculate_delta_xi(FE_value *vector,FE_value *dx_dxi,
-	FE_value *delta_xi)
+static int calculate_delta_xi(int vector_dimension,FE_value *vector,
+	int element_dimension, FE_value *dx_dxi, FE_value *delta_xi)
 /*******************************************************************************
-LAST MODIFIED : 15 March 1999
+LAST MODIFIED : 18 December 2003
 
 DESCRIPTION :
 Converts a vector <vector> in world space into xi space <delta_xi> by
 calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 ==============================================================================*/
 {
-	FE_value dxi_dx[9];
-	int return_code;
+	double a[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		b[MAXIMUM_ELEMENT_XI_DIMENSIONS], d;
+	int i, index[MAXIMUM_ELEMENT_XI_DIMENSIONS], j, k, return_code;
 
 	ENTER(calculate_delta_xi);
 	if (vector && dx_dxi && delta_xi)
 	{
-		if (invert_FE_value_matrix3(dx_dxi, dxi_dx))
+		if (element_dimension == vector_dimension)
 		{
-			delta_xi[0] =
-				vector[0]*dxi_dx[0] + vector[1]*dxi_dx[1] + vector[2]*dxi_dx[2];
-			delta_xi[1] =
-				vector[0]*dxi_dx[3] + vector[1]*dxi_dx[4] + vector[2]*dxi_dx[5];
-			delta_xi[2] =
-				vector[0]*dxi_dx[6] + vector[1]*dxi_dx[7] + vector[2]*dxi_dx[8];
-			return_code = 1;
+			/* Solve directly */
+			for (i = 0 ; i < element_dimension * element_dimension ; i++)
+			{
+				a[i] = dx_dxi[i];
+			}
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				b[i] = vector[i];
+			}
+			i = 0;
+			if (LU_decompose(element_dimension, a, index, &d) &&
+				LU_backsubstitute(element_dimension, a, index, b))
+			{
+				for (i = 0 ; i < element_dimension ; i++)
+				{
+					delta_xi[i] = b[i];
+				}
+			}
+			/* Clear out the other delta_xi's until the rest of the code is
+				generalised to an arbitrary number of dimensions */
+			for ( ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+			{
+				delta_xi[i] = 0.0;
+			}
+		}
+		else if (element_dimension < vector_dimension)
+		{
+			/* Overdetermined system, solve least squares */
+			/* A transpose A x = A transpose b */
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				for (j = 0 ; j < element_dimension ; j++)
+				{
+					a[i * element_dimension + j] = 0.0;
+					for (k = 0 ; k < vector_dimension ; k++)
+					{
+						a[i * element_dimension + j] += dx_dxi[i + element_dimension + k] * 
+							dx_dxi[j + element_dimension + k];
+					}
+				}
+				b[i] = 0.0;
+				for (k = 0 ; k < vector_dimension ; k++)
+				{
+					b[i] += dx_dxi[i + element_dimension + k] * vector[k];
+				}
+			}
+			i = 0;
+			if (LU_decompose(element_dimension, a, index, &d) &&
+				LU_backsubstitute(element_dimension, a, index, b))
+			{
+				for (i = 0 ; i < element_dimension ; i++)
+				{
+					delta_xi[i] = b[i];
+				}
+			}
+			/* Clear out the other delta_xi's until the rest of the code is
+				generalised to an arbitrary number of dimensions */
+			for ( ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+			{
+				delta_xi[i] = 0.0;
+			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"calculate_delta_xi.  Could not invert dx/dxi");
+			/* Underdetermined system, not implemented */
+			display_message(ERROR_MESSAGE, "calculate_delta_xi.  "
+				"Underdetermined systems not implemented.");
 			return_code = 0;
 		}
+#if defined (OLD_CODE)
+		switch (element_dimension)
+		{
+			case 2:
+			{
+				switch (vector_dimension)
+				{
+					case 2:
+					{
+						a[0] = dx_dxi[0];
+						a[1] = dx_dxi[1];
+						a[2] = dx_dxi[2];
+						a[3] = dx_dxi[3];
+						
+						atb[0] = vector[0];
+						atb[1] = vector[1];
+						if (LU_decompose(element_dimension, a, index, &d) &&
+							LU_backsubstitute(element_dimension, a, index, atb))
+						{
+							delta_xi[0] = atb[0];
+							delta_xi[1] = atb[1];
+						}
+						else
+						{
+							/* Probably singular system, we can't track any more */
+							delta_xi[0] = 0;
+							delta_xi[1] = 0;
+						}
+						delta_xi[2] = 0;
+					} break;
+					case 3:
+					{
+						/* Overdetermined system */
+						/* Solve A transpose A x = A transpose b */
+						a[0] = dx_dxi[0] * dx_dxi[0] + dx_dxi[2] * dx_dxi[2] + dx_dxi[4] * dx_dxi[4];
+						a[1] = dx_dxi[0] * dx_dxi[1] + dx_dxi[2] * dx_dxi[3] + dx_dxi[4] * dx_dxi[5];
+						a[2] = a[1];
+						a[3] = dx_dxi[1] * dx_dxi[1] + dx_dxi[3] * dx_dxi[3] + dx_dxi[5] * dx_dxi[5];
+						
+						atb[0] = dx_dxi[0] * vector[0] + dx_dxi[2] * vector[1] + dx_dxi[4] * vector[2];
+						atb[1] = dx_dxi[1] * vector[0] + dx_dxi[3] * vector[1] + dx_dxi[5] * vector[2];
+						
+						if (LU_decompose(element_dimension, a, index, &d) &&
+							LU_backsubstitute(element_dimension, a, index, atb))
+						{
+							delta_xi[0] = atb[0];
+							delta_xi[1] = atb[1];
+						}
+						else
+						{
+							/* Probably singular system, we can't track any more */
+							delta_xi[0] = 0;
+							delta_xi[1] = 0;
+						}
+						delta_xi[2] = 0;
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"calculate_delta_xi.  Unsupported number of components in vector field.");
+						return_code = 0;
+					} break;
+				}
+			} break;
+			case 3:
+			{
+				if (invert_FE_value_matrix3(dx_dxi, dxi_dx))
+				{
+					delta_xi[0] =
+						vector[0]*dxi_dx[0] + vector[1]*dxi_dx[1] + vector[2]*dxi_dx[2];
+					delta_xi[1] =
+						vector[0]*dxi_dx[3] + vector[1]*dxi_dx[4] + vector[2]*dxi_dx[5];
+					delta_xi[2] =
+						vector[0]*dxi_dx[6] + vector[1]*dxi_dx[7] + vector[2]*dxi_dx[8];
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_delta_xi.  Could not invert dx/dxi");
+					return_code = 0;
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_delta_xi.  Unsupported element dimension");
+				return_code = 0;
+			} break;
+		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -398,7 +555,7 @@ changed. The function updates the <total_stepped>.
 If <reverse_track> is true, the reverse of vector field is tracked.
 ==============================================================================*/
 {
-	int return_code;
+	int element_dimension,return_code,vector_dimension;
 	FE_value deltaxi[3],deltaxiA[3],
 		deltaxiC[3], deltaxiD[3], deltaxiE[3], dxdxi[9], error,
 		proportion, tolerance, vector[9], xiA[3], xiB[3], xiC[3],
@@ -406,6 +563,10 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 
 	ENTER(update_adaptive_imp_euler);
 	/* clear coordinates in case fewer than 3 components */
+	element_dimension = get_FE_element_dimension(element);
+	/* It is expected that the coordinate dimension and vector dimension match,
+		the vector field may have extra components related to the cross directions */
+	vector_dimension = Computed_field_get_number_of_components(coordinate_field);
 	point[0]=0.0;
 	point[1]=0.0;
 	point[2]=0.0;
@@ -422,7 +583,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	}
 	if (return_code)
 	{
-		return_code=calculate_delta_xi(vector,dxdxi,deltaxi);
+		return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
+			dxdxi,deltaxi);
 	}
 	if (return_code)
 	{
@@ -450,7 +612,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			return_code=calculate_delta_xi(vector,dxdxi,deltaxiA);
+			return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
+				dxdxi,deltaxiA);
 		}
 		if (return_code)
 		{
@@ -477,7 +640,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			return_code=calculate_delta_xi(vector,dxdxi,deltaxiC);
+			return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
+				dxdxi,deltaxiC);
 		}
 		if (return_code)
 		{
@@ -497,7 +661,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			return_code=calculate_delta_xi(vector,dxdxi,deltaxiD);
+			return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
+				dxdxi,deltaxiD);
 		}
 		if (return_code)
 		{
@@ -517,7 +682,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			return_code=calculate_delta_xi(vector,dxdxi,deltaxiE);
+			return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
+				dxdxi,deltaxiE);
 		}
 		if (return_code)
 		{
@@ -658,7 +824,8 @@ accurate if small), also ensuring that the element is updated.
 			if (Computed_field_evaluate_in_element(coordinate_field,*element,xi,
 				time, (struct FE_element *)NULL,point,dxdxi))
 			{
-				if (!(calculate_delta_xi(translate,dxdxi,deltaxi)))
+				if (!(calculate_delta_xi(/*vector_dimension*/3,translate,
+				   /*element_dimension*/3,dxdxi,deltaxi)))
 				{
 					/* dxdxi tensor is singular, peturb xi by random small amount */
 					deltaxi[0] = 0.002*CMGUI_RANDOM(FE_value) - 0.001;
@@ -697,7 +864,8 @@ accurate if small), also ensuring that the element is updated.
 					}
 					if (change_element)
 					{
-						if (check_xi_limits(change_element,element,xi,coordinate_field,time))
+						if (check_xi_limits(change_element,element,/*element_dimension*/3,
+								 xi,coordinate_field,time))
 						{
 							return_code=1;
 						}
@@ -803,8 +971,9 @@ following way:
 		sin_angle,step_size,stream_vector_values[9],temp,total_stepped,vector[3],
 		vector_magnitude;
 	GTDATA *stream_datum,*tmp_stream_data;
-	int allocated_number_of_points,change_element,
-		i,keep_tracking,previous_change_element,
+	int allocated_number_of_points,change_element,element_dimension,
+		i,keep_tracking,number_of_coordinate_components,
+		previous_change_element,
 		number_of_stream_vector_components,return_code;
 	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples;
 
@@ -812,16 +981,22 @@ following way:
 	/*	step_size of zero indicates first step */
 	step_size = 0;
 	total_stepped = 0.0;
-	if (element&&(*element)&&(3==get_FE_element_dimension(*element))&&
+	if (element&&(*element)&&FE_element_is_top_level(*element, NULL)&&
+		(element_dimension = get_FE_element_dimension(*element))&&
+		((3 == element_dimension) || (2 == element_dimension)) &&
 		xi&&(0.0 <= xi[0])&&(1.0 >= xi[0])&&(0.0 <= xi[1])&&(1.0 >= xi[1])&&
 		(0.0 <= xi[2])&&(1.0 >= xi[2])&&coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		stream_vector_field&&((3==(number_of_stream_vector_components=
-			Computed_field_get_number_of_components(stream_vector_field)))||
-			(6==number_of_stream_vector_components)||
-			(9==number_of_stream_vector_components))&&
+		(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
+		stream_vector_field&&(number_of_stream_vector_components=
+		Computed_field_get_number_of_components(stream_vector_field))
+		&& (((3 == number_of_coordinate_components) &&
+		((3==number_of_stream_vector_components)||
+		(6==number_of_stream_vector_components)||
+		(9==number_of_stream_vector_components)))
+		|| ((2 == number_of_coordinate_components) &&
+		(2==number_of_stream_vector_components)))&&
 		(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) ||
-			(data_field&&(1==Computed_field_get_number_of_components(data_field))))&&
+		(data_field&&(1==Computed_field_get_number_of_components(data_field))))&&
 		number_of_points&&stream_points&&stream_vectors&&stream_normals&&
 		((STREAM_NO_DATA==data_type)|| stream_data))
 	{
@@ -854,30 +1029,38 @@ following way:
 				while (keep_tracking&&(i<allocated_number_of_points))
 				{
 					/* evaluate the coordinate and stream_vector fields */
-					if (3==number_of_stream_vector_components)
+					switch (number_of_stream_vector_components)
 					{
-						/* need derivatives of coordinate_field and stream_vector_field
-							 for calculation of curl. Calculate coordinates first, since
-							 may be required for evaluating the stream_vector_field. */
-						keep_tracking=Computed_field_evaluate_in_element(coordinate_field,
-							*element,xi,time,(struct FE_element *)NULL,coordinates,dx_dxi)&&
-							Computed_field_evaluate_in_element(stream_vector_field,
-							*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
-							dv_dxi);
-					}
-					else
-					{
-						/* derivatives are not required with 6 or 9 components in the
-							 stream_vector_field, since the lateral direction and ribbon
-							 normal are taken or calculated directly from it. Want to
-							 evaluate stream_vector_field first, since in many cases it will
-							 force a calculation of the coordinate field with derivatives,
-							 thus saving the coordinates from being recalculated */
-						keep_tracking=Computed_field_evaluate_in_element(
-							stream_vector_field,*element,xi,time,(struct FE_element *)NULL,
-							stream_vector_values,(FE_value *)NULL)&&
-							Computed_field_evaluate_in_element(coordinate_field,*element,
-							xi,time,(struct FE_element *)NULL,coordinates,(FE_value *)NULL);
+						case 2:
+						{
+							stream_vector_values[2] = 0.0;
+						} /* no break */
+						case 3:
+						{
+							/* need derivatives of coordinate_field and stream_vector_field
+								for calculation of curl. Calculate coordinates first, since
+								may be required for evaluating the stream_vector_field. */
+							keep_tracking=Computed_field_evaluate_in_element(coordinate_field,
+								*element,xi,time,(struct FE_element *)NULL,coordinates,dx_dxi)&&
+								Computed_field_evaluate_in_element(stream_vector_field,
+								*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
+								dv_dxi);
+						} break;
+						case 6:
+						case 9:
+						{
+							/* derivatives are not required with 6 or 9 components in the
+								stream_vector_field, since the lateral direction and ribbon
+								normal are taken or calculated directly from it. Want to
+								evaluate stream_vector_field first, since in many cases it will
+								force a calculation of the coordinate field with derivatives,
+								thus saving the coordinates from being recalculated */
+							keep_tracking=Computed_field_evaluate_in_element(
+							   stream_vector_field,*element,xi,time,(struct FE_element *)NULL,
+							   stream_vector_values,(FE_value *)NULL)&&
+							   Computed_field_evaluate_in_element(coordinate_field,*element,
+							   xi,time,(struct FE_element *)NULL,coordinates,(FE_value *)NULL);
+						} break;
 					}
 					/* extract stream vector from stream_vector_values */
 					if (reverse_track)
@@ -903,222 +1086,253 @@ following way:
 						/* get vector, normal and normal2 - latter are unit vectors normal
 							 to the streamline - normal is in lateral direction across sheet,
 							 normal2 is normal to the ribbon sheet */
-						switch (number_of_stream_vector_components)
+						switch (element_dimension)
 						{
+							case 2:
+							{
+								switch (number_of_stream_vector_components)
+								{
+									case 2:
+									{
+										/* Normal2 is out of the 2D plane */
+										normal2[0] = 0.0;
+										normal2[1] = 0.0;
+										normal2[2] = 1.0;
+										/* get normal = vector (x) normal2 */
+										normal[0]=vector[1]*normal2[2]-vector[2]*normal2[1];
+										normal[1]=vector[2]*normal2[0]-vector[0]*normal2[2];
+										normal[2]=vector[0]*normal2[1]-vector[1]*normal2[0];
+										/* make normal unit length */
+										magnitude=sqrt(normal[0]*normal[0]+normal[1]*normal[1]+
+											normal[2]*normal[2]);
+										normal[0] /= magnitude;
+										normal[1] /= magnitude;
+										normal[2] /= magnitude;
+									} break;
+									case 3:
+									{
+										/* Normal2 is the cross of the derivatives */
+										normal2[0] = dx_dxi[2] * dx_dxi[5] - dx_dxi[4] * dx_dxi[3];
+										normal2[1] = dx_dxi[4] * dx_dxi[1] - dx_dxi[0] * dx_dxi[5];
+										normal2[2] = dx_dxi[0] * dx_dxi[3] - dx_dxi[2] * dx_dxi[1];
+										/* make normal2 unit length */
+										magnitude=sqrt(normal2[0]*normal2[0]+normal2[1]*normal2[1]+
+											normal2[2]*normal2[2]);
+										normal2[0] /= magnitude;
+										normal2[1] /= magnitude;
+										normal2[2] /= magnitude;
+										/* get normal = vector (x) normal2 */
+										normal[0]=vector[1]*normal2[2]-vector[2]*normal2[1];
+										normal[1]=vector[2]*normal2[0]-vector[0]*normal2[2];
+										normal[2]=vector[0]*normal2[1]-vector[1]*normal2[0];
+										/* make normal unit length */
+										magnitude=sqrt(normal[0]*normal[0]+normal[1]*normal[1]+
+											normal[2]*normal[2]);
+										normal[0] /= magnitude;
+										normal[1] /= magnitude;
+										normal[2] /= magnitude;
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"track_streamline_from_FE_element.  "
+											"Incompatible element dimension and vector components.");
+										keep_tracking = 0;
+									}
+								}
+							} break;
 							case 3:
 							{
-								/* evaluate the curl, and its component along vector */
-								if (invert_FE_value_matrix3(dx_dxi,dxi_dx)&&
-									multiply_FE_value_matrix3(dv_dxi,dxi_dx,dv_dx))
+								switch (number_of_stream_vector_components)
 								{
-									curl[0] = dv_dx[7] - dv_dx[5];
-									curl[1] = dv_dx[2] - dv_dx[6];
-									curl[2] = dv_dx[3] - dv_dx[1];
-									curl_component=(curl[0]*vector[0]+curl[1]*vector[1]+
-										curl[2]*vector[2])/vector_magnitude;
-								}
-								else
-								{
-									curl_component=0.0;
-								}
-								if (0.0==total_stepped)
-								{
-									angle = 0.0;
-									previous_total_stepped = 0.0;
-									/* get normal2 = a vector not co-linear with stream vector */
-									normal2[0]=0.0;
-									normal2[1]=0.0;
-									normal2[2]=0.0;
-									if (fabs(vector[0]) < fabs(vector[1]))
+									case 3:
 									{
-										if (fabs(vector[2]) < fabs(vector[0]))
+										/* evaluate the curl, and its component along vector */
+										if (invert_FE_value_matrix3(dx_dxi,dxi_dx)&&
+											multiply_FE_value_matrix3(dv_dxi,dxi_dx,dv_dx))
 										{
-											normal2[2]=1.0;
+											curl[0] = dv_dx[7] - dv_dx[5];
+											curl[1] = dv_dx[2] - dv_dx[6];
+											curl[2] = dv_dx[3] - dv_dx[1];
+											curl_component=(curl[0]*vector[0]+curl[1]*vector[1]+
+												curl[2]*vector[2])/vector_magnitude;
 										}
 										else
 										{
-											normal2[0]=1.0;
+											curl_component=0.0;
 										}
-									}
-									else
-									{
-										if (fabs(vector[2]) < fabs(vector[1]))
+										if (0.0==total_stepped)
 										{
-											normal2[2]=1.0;
+											angle = 0.0;
+											previous_total_stepped = 0.0;
+											/* get normal2 = a vector not co-linear with stream vector */
+											normal2[0]=0.0;
+											normal2[1]=0.0;
+											normal2[2]=0.0;
+											if (fabs(vector[0]) < fabs(vector[1]))
+											{
+												if (fabs(vector[2]) < fabs(vector[0]))
+												{
+													normal2[2]=1.0;
+												}
+												else
+												{
+													normal2[0]=1.0;
+												}
+											}
+											else
+											{
+												if (fabs(vector[2]) < fabs(vector[1]))
+												{
+													normal2[2]=1.0;
+												}
+												else
+												{
+													normal2[1]=1.0;
+												}
+											}
 										}
 										else
 										{
-											normal2[1]=1.0;
+											/* get angle from average curl along segment of streamline */
+											angle = 0.5*(previous_curl_component + curl_component)
+												* (total_stepped - previous_total_stepped);
+											if (reverse_track)
+											{
+												angle = -angle;
+											}
+											/* get displacement from old to current coordinates */
+											displacement[0]=coordinates[0]-displacement[0];
+											displacement[1]=coordinates[1]-displacement[1];
+											displacement[2]=coordinates[2]-displacement[2];
+											magnitude=displacement[0]*displacement[0]+
+												displacement[1]*displacement[1]+
+												displacement[2]*displacement[2];
+											if (0.0<magnitude)
+											{
+												/* get normal2 = displacement (x) old_normal */
+												normal2[0]=displacement[1]*old_normal[2]-
+													displacement[2]*old_normal[1];
+												normal2[1]=displacement[2]*old_normal[0]-
+													displacement[0]*old_normal[2];
+												normal2[2]=displacement[0]*old_normal[1]-
+													displacement[1]*old_normal[0];
+											}
+											if (0.0==(magnitude=normal2[0]*normal2[0]+
+													 normal2[1]*normal2[1]+normal2[2]*normal2[2]))
+											{
+												printf("temp: alternative normal2 calculation!\n");
+												/* displacement and old_normal are co-linear */
+												/* get normal2 = vector (x) old_normal */
+												normal2[0]=vector[1]*old_normal[2]-vector[2]*old_normal[1];
+												normal2[1]=vector[2]*old_normal[0]-vector[0]*old_normal[2];
+												normal2[2]=vector[0]*old_normal[1]-vector[1]*old_normal[0];
+											}
 										}
+										/* get normal = normal2 (x) vector */
+										normal[0]=normal2[1]*vector[2]-normal2[2]*vector[1];
+										normal[1]=normal2[2]*vector[0]-normal2[0]*vector[2];
+										normal[2]=normal2[0]*vector[1]-normal2[1]*vector[0];
+										/* make normal unit length */
+										magnitude=sqrt(normal[0]*normal[0]+normal[1]*normal[1]+
+											normal[2]*normal[2]);
+										normal[0] /= magnitude;
+										normal[1] /= magnitude;
+										normal[2] /= magnitude;
+										/* get normal2 = vector (x) normal */
+										normal2[0]=vector[1]*normal[2]-vector[2]*normal[1];
+										normal2[1]=vector[2]*normal[0]-vector[0]*normal[2];
+										normal2[2]=vector[0]*normal[1]-vector[1]*normal[0];
+										/* make normal2 unit length */
+										magnitude=sqrt(normal2[0]*normal2[0]+normal2[1]*normal2[1]+
+											normal2[2]*normal2[2]);
+										normal2[0] /= magnitude;
+										normal2[1] /= magnitude;
+										normal2[2] /= magnitude;
+										/* rotate normals by angle */
+										cos_angle=cos(angle);
+										sin_angle=sin(angle);
+										temp = normal[0];
+										normal[0]  = normal[0]  * cos_angle + normal2[0] * sin_angle;
+										normal2[0] = normal2[0] * cos_angle - temp       * sin_angle;
+										temp = normal[1];
+										normal[1]  = normal[1]  * cos_angle + normal2[1] * sin_angle;
+										normal2[1] = normal2[1] * cos_angle - temp       * sin_angle;
+										temp = normal[2];
+										normal[2]  = normal[2]  * cos_angle + normal2[2] * sin_angle;
+										normal2[2] = normal2[2] * cos_angle - temp       * sin_angle;
+										/* store old_normal, and old coordinates in displacement */
+										old_normal[0]=normal[0];
+										old_normal[1]=normal[1];
+										old_normal[2]=normal[2];
+										displacement[0]=coordinates[0];
+										displacement[1]=coordinates[1];
+										displacement[2]=coordinates[2];
+										previous_curl_component = curl_component;
+									} break;
+									case 6:
+									{
+										/* get stream vector and normal from stream_vector_values */
+										if (reverse_track)
+										{
+											normal[0]=-stream_vector_values[3];
+											normal[1]=-stream_vector_values[4];
+											normal[2]=-stream_vector_values[5];
+										}
+										else
+										{
+											normal[0]=stream_vector_values[3];
+											normal[1]=stream_vector_values[4];
+											normal[2]=stream_vector_values[5];
+										}
+										/* get normal2 = vector (x) normal */
+										normal2[0]=vector[1]*normal[2]-vector[2]*normal[1];
+										normal2[1]=vector[2]*normal[0]-vector[0]*normal[2];
+										normal2[2]=vector[0]*normal[1]-vector[1]*normal[0];
+										/* make normal2 unit length */
+										if (0.0<(magnitude=sqrt(normal2[0]*normal2[0]+
+														normal2[1]*normal2[1]+normal2[2]*normal2[2])))
+										{
+											normal2[0] /= magnitude;
+											normal2[1] /= magnitude;
+											normal2[2] /= magnitude;
+										}
+									} break;
+									case 9:
+									{
+										/* get vector, normal and normal2 from stream_vector_values */
+										if (reverse_track)
+										{
+											normal[0]=-stream_vector_values[3];
+											normal[1]=-stream_vector_values[4];
+											normal[2]=-stream_vector_values[5];
+										}
+										else
+										{
+											normal[0]=stream_vector_values[3];
+											normal[1]=stream_vector_values[4];
+											normal[2]=stream_vector_values[5];
+										}
+										normal2[0]=stream_vector_values[6];
+										normal2[1]=stream_vector_values[7];
+										normal2[2]=stream_vector_values[8];
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"track_streamline_from_FE_element.  "
+											"Incompatible element dimension and vector components.");
+										keep_tracking = 0;
 									}
 								}
-								else
-								{
-									/* get angle from average curl along segment of streamline */
-									angle = 0.5*(previous_curl_component + curl_component)
-										* (total_stepped - previous_total_stepped);
-									if (reverse_track)
-									{
-										angle = -angle;
-									}
-									/* get displacement from old to current coordinates */
-									displacement[0]=coordinates[0]-displacement[0];
-									displacement[1]=coordinates[1]-displacement[1];
-									displacement[2]=coordinates[2]-displacement[2];
-									magnitude=displacement[0]*displacement[0]+
-										displacement[1]*displacement[1]+
-										displacement[2]*displacement[2];
-									if (0.0<magnitude)
-									{
-										/* get normal2 = displacement (x) old_normal */
-										normal2[0]=displacement[1]*old_normal[2]-
-											displacement[2]*old_normal[1];
-										normal2[1]=displacement[2]*old_normal[0]-
-											displacement[0]*old_normal[2];
-										normal2[2]=displacement[0]*old_normal[1]-
-											displacement[1]*old_normal[0];
-									}
-									if (0.0==(magnitude=normal2[0]*normal2[0]+
-										normal2[1]*normal2[1]+normal2[2]*normal2[2]))
-									{
-										printf("temp: alternative normal2 calculation!\n");
-										/* displacement and old_normal are co-linear */
-										/* get normal2 = vector (x) old_normal */
-										normal2[0]=vector[1]*old_normal[2]-vector[2]*old_normal[1];
-										normal2[1]=vector[2]*old_normal[0]-vector[0]*old_normal[2];
-										normal2[2]=vector[0]*old_normal[1]-vector[1]*old_normal[0];
-									}
-								}
-								/* get normal = normal2 (x) vector */
-								normal[0]=normal2[1]*vector[2]-normal2[2]*vector[1];
-								normal[1]=normal2[2]*vector[0]-normal2[0]*vector[2];
-								normal[2]=normal2[0]*vector[1]-normal2[1]*vector[0];
-								/* make normal unit length */
-								magnitude=sqrt(normal[0]*normal[0]+normal[1]*normal[1]+
-									normal[2]*normal[2]);
-								normal[0] /= magnitude;
-								normal[1] /= magnitude;
-								normal[2] /= magnitude;
-								/* get normal2 = vector (x) normal */
-								normal2[0]=vector[1]*normal[2]-vector[2]*normal[1];
-								normal2[1]=vector[2]*normal[0]-vector[0]*normal[2];
-								normal2[2]=vector[0]*normal[1]-vector[1]*normal[0];
-								/* make normal2 unit length */
-								magnitude=sqrt(normal2[0]*normal2[0]+normal2[1]*normal2[1]+
-									normal2[2]*normal2[2]);
-								normal2[0] /= magnitude;
-								normal2[1] /= magnitude;
-								normal2[2] /= magnitude;
-								/* rotate normals by angle */
-								cos_angle=cos(angle);
-								sin_angle=sin(angle);
-								temp = normal[0];
-								normal[0]  = normal[0]  * cos_angle + normal2[0] * sin_angle;
-								normal2[0] = normal2[0] * cos_angle - temp       * sin_angle;
-								temp = normal[1];
-								normal[1]  = normal[1]  * cos_angle + normal2[1] * sin_angle;
-								normal2[1] = normal2[1] * cos_angle - temp       * sin_angle;
-								temp = normal[2];
-								normal[2]  = normal[2]  * cos_angle + normal2[2] * sin_angle;
-								normal2[2] = normal2[2] * cos_angle - temp       * sin_angle;
-								/* store old_normal, and old coordinates in displacement */
-								old_normal[0]=normal[0];
-								old_normal[1]=normal[1];
-								old_normal[2]=normal[2];
-								displacement[0]=coordinates[0];
-								displacement[1]=coordinates[1];
-								displacement[2]=coordinates[2];
-								previous_curl_component = curl_component;
-#if defined (OLD_CODE)
-								/* Get an initial orthogonal vector */
-								if (vector_magnitude > 1e-30)
-								{
-									if ( fabs(vector[1])>(0.1 * vector_magnitude) || 
-										fabs(vector[2])>(0.1 * vector_magnitude))
-									{
-										/*???RC why change magnitude here? Need for data. */
-										magnitude = sqrt(vector[1]*vector[1] + vector[2]*vector[2]);
-										normal[0] = 0.0;
-										normal[1] = vector[2] / magnitude;
-										normal[2] = -vector[1] / magnitude;
-										magnitude *= vector_magnitude;
-										normal2[0] = -(vector[2] * vector[2] +
-											vector[1] * vector[1]) / magnitude;
-										normal2[1] = vector[0] * vector[1] / magnitude;
-										normal2[2] = vector[0] * vector[2] / magnitude;
-									}
-									else
-									{
-										/*???RC why change magnitude here? Need for data. */
-										magnitude = sqrt(vector[0]*vector[0] + vector[2]*vector[2]);
-										normal[0] = -vector[2] / magnitude;
-										normal[1] = 0.0;
-										normal[2] = vector[0] / magnitude;
-										magnitude *= vector_magnitude;
-										normal2[0] = vector[0] * vector[1] / magnitude;
-										normal2[1] = -(vector[0] * vector[0] +
-											vector[2] * vector[2]) / magnitude;
-										normal2[2] = vector[1] * vector[2] / magnitude;
-									}
-									temp = normal[0];
-									normal[0] = normal[0] * cos(angle) + normal2[0] * sin(angle);
-									normal2[0] = normal2[0] * cos(angle) - temp * sin(angle);
-									temp = normal[1];
-									normal[1] = normal[1] * cos(angle) + normal2[1] * sin(angle);
-									normal2[1] = normal2[1] * cos(angle) - temp * sin(angle);
-									temp = normal[2];
-									normal[2] = normal[2] * cos(angle) + normal2[2] * sin(angle);
-									normal2[2] = normal2[2] * cos(angle) - temp * sin(angle);
-								}
-#endif /* defined (OLD_CODE) */
 							} break;
-							case 6:
+							default:
 							{
-								/* get stream vector and normal from stream_vector_values */
-								if (reverse_track)
-								{
-									normal[0]=-stream_vector_values[3];
-									normal[1]=-stream_vector_values[4];
-									normal[2]=-stream_vector_values[5];
-								}
-								else
-								{
-									normal[0]=stream_vector_values[3];
-									normal[1]=stream_vector_values[4];
-									normal[2]=stream_vector_values[5];
-								}
-								/* get normal2 = vector (x) normal */
-								normal2[0]=vector[1]*normal[2]-vector[2]*normal[1];
-								normal2[1]=vector[2]*normal[0]-vector[0]*normal[2];
-								normal2[2]=vector[0]*normal[1]-vector[1]*normal[0];
-								/* make normal2 unit length */
-								if (0.0<(magnitude=sqrt(normal2[0]*normal2[0]+
-									normal2[1]*normal2[1]+normal2[2]*normal2[2])))
-								{
-									normal2[0] /= magnitude;
-									normal2[1] /= magnitude;
-									normal2[2] /= magnitude;
-								}
-							} break;
-							case 9:
-							{
-								/* get vector, normal and normal2 from stream_vector_values */
-								if (reverse_track)
-								{
-									normal[0]=-stream_vector_values[3];
-									normal[1]=-stream_vector_values[4];
-									normal[2]=-stream_vector_values[5];
-								}
-								else
-								{
-									normal[0]=stream_vector_values[3];
-									normal[1]=stream_vector_values[4];
-									normal[2]=stream_vector_values[5];
-								}
-								normal2[0]=stream_vector_values[6];
-								normal2[1]=stream_vector_values[7];
-								normal2[2]=stream_vector_values[8];
-							} break;
+								display_message(ERROR_MESSAGE,
+									"track_streamline_from_FE_element.  "
+									"Unsupported number of element dimension.");
+								keep_tracking = 0;
+							}
 						}
 						/* calculate data */
 						switch (data_type)
@@ -1199,8 +1413,8 @@ following way:
 								}
 								else
 								{
-									keep_tracking=check_xi_limits(change_element,element,xi,
-										coordinate_field,time);
+									keep_tracking=check_xi_limits(change_element,element,
+										element_dimension,xi,coordinate_field,time);
 								}
 							}
 							previous_change_element=change_element;
@@ -1344,18 +1558,25 @@ stream vector is tracked, and the travel_scalar is made negative.
 {
 	gtDataType gt_data_type;
 	GTDATA *stream_data;
-	int number_of_stream_points,number_of_stream_vector_components;
+	int element_dimension,number_of_stream_points,number_of_coordinate_components,
+		number_of_stream_vector_components;
 	struct GT_polyline *polyline;
 	Triple *stream_points,*stream_normals,*stream_vectors;
 
 	ENTER(create_GT_polyline_streamline_FE_element);
-	if (element&&(3==get_FE_element_dimension(element))&&start_xi&&
-		coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		stream_vector_field&&((3==(number_of_stream_vector_components=
-			Computed_field_get_number_of_components(stream_vector_field)))||
-			(6==number_of_stream_vector_components)||
-			(9==number_of_stream_vector_components))&&
+	if (element&&FE_element_is_top_level(element, NULL)&&
+		(element_dimension = get_FE_element_dimension(element))&&
+		((3 == element_dimension) || (2 == element_dimension))
+		&&start_xi&&coordinate_field&&
+		(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
+		stream_vector_field&&(number_of_stream_vector_components=
+		Computed_field_get_number_of_components(stream_vector_field))
+		&& (((3 == number_of_coordinate_components) &&
+		((3==number_of_stream_vector_components)||
+		(6==number_of_stream_vector_components)||
+		(9==number_of_stream_vector_components)))
+		|| ((2 == number_of_coordinate_components) &&
+		(2==number_of_stream_vector_components)))&&
 		(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
 	{
 		/* track points and normals on streamline, and data if requested */
@@ -1433,21 +1654,27 @@ stream vector is tracked, and the travel_scalar is made negative.
 	float cosw,magnitude,sinw,thickness;
 	gtDataType gt_data_type;
 	GTDATA *data,*datum,*stream_data,stream_datum;
-	int d,i,number_of_stream_points,number_of_stream_vector_components,
-		surface_points_per_step;
+	int d,element_dimension,i,number_of_stream_points,number_of_coordinate_components,
+		number_of_stream_vector_components,surface_points_per_step;
 	struct GT_surface *surface;
 	Triple cross_thickness,cross_width,*normal,*normalpoints,*point,*points,stream_cross,
 		stream_normal,*stream_normals,stream_point,*stream_points,
 		stream_unit_vector,stream_vector,*stream_vectors;
 
 	ENTER(create_GT_surface_streamribbon_FE_element);
-	if (element&&(3==get_FE_element_dimension(element))&&start_xi&&
-		coordinate_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		stream_vector_field&&((3==(number_of_stream_vector_components=
-			Computed_field_get_number_of_components(stream_vector_field)))||
-			(6==number_of_stream_vector_components)||
-			(9==number_of_stream_vector_components))&&
+	if (element&&FE_element_is_top_level(element, NULL)&&
+		(element_dimension = get_FE_element_dimension(element))&&
+		((3 == element_dimension) || (2 == element_dimension))
+		&&start_xi&&coordinate_field&&
+		(number_of_coordinate_components=Computed_field_get_number_of_components(coordinate_field))&&
+		stream_vector_field&&(number_of_stream_vector_components=
+		Computed_field_get_number_of_components(stream_vector_field))
+		&& (((3 == number_of_coordinate_components) &&
+		((3==number_of_stream_vector_components)||
+		(6==number_of_stream_vector_components)||
+		(9==number_of_stream_vector_components)))
+		|| ((2 == number_of_coordinate_components) &&
+		(2==number_of_stream_vector_components)))&&
 		(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
 	{
 		if (type == STREAM_EXTRUDED_CIRCLE)
@@ -1501,7 +1728,8 @@ stream vector is tracked, and the travel_scalar is made negative.
 				{
 					if (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,
 						surface_points_per_step,number_of_stream_points,points,
-						normalpoints, /*Texturepoints*/(Triple *)NULL,gt_data_type,data))
+						normalpoints, /*tangentpoints*/(Triple *)NULL,
+						/*texturepoints*/(Triple *)NULL,gt_data_type,data))
 					{
 						point = points;
 						normal = normalpoints;
@@ -2016,7 +2244,7 @@ created with the given timestamp.
 				else
 				{
 					return_code=check_xi_limits(change_element,&(point->element),
-						point->xi,coordinate_field,time);
+						/*element_dimension*/3,point->xi,coordinate_field,time);
 				}
 			}
 			previous_change_element=change_element;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendergl.h
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 28 November 2003
 
 DESCRIPTION :
 Header file for rendergl.c, GL rendering calls (API specific)
@@ -77,12 +77,12 @@ LAST MODIFIED : 9 June 1999
 DESCRIPTION :
 ==============================================================================*/
 
-int draw_surfaceGL(Triple *surfpts, Triple *normalpoints,
+int draw_surfaceGL(Triple *surfpts, Triple *normalpoints, Triple *tangentpoints, 
 	Triple *texturepoints, int npts1, int npts2, gtPolygonType polygon_type,
 	int number_of_data_components, GTDATA *data, 
 	struct Graphical_material *material, struct Spectrum *spectrum);
 /*******************************************************************************
-LAST MODIFIED : 1 June 1999
+LAST MODIFIED : 28 November 2003
 
 DESCRIPTION :
 ==============================================================================*/

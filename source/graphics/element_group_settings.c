@@ -173,6 +173,10 @@ ensure the relevant parent elements are also in the group.
 			cm_element_type=Use_element_type_CM_element_type(
 				settings->use_element_type);
 		}
+		else if (GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type)
+		{
+			cm_element_type=CM_ELEMENT;
+		}
 		else
 		{
 			cm_element_type=CM_ELEMENT_TYPE_INVALID;
@@ -500,9 +504,13 @@ the given <dimension>. Note a <dimension> of -1 is taken to mean any dimension.
 			return_code = ((-1 == dimension) || (2 == dimension));
 		} break;
 		case GT_ELEMENT_SETTINGS_VOLUMES:
-		case GT_ELEMENT_SETTINGS_STREAMLINES:
 		{
 			return_code = ((-1 == dimension) || (3 == dimension));
+		} break;
+		case GT_ELEMENT_SETTINGS_STREAMLINES:
+		{
+			return_code = ((-1 == dimension) || (2 == dimension) || 
+				(3 == dimension));
 		} break;
 		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
@@ -8446,7 +8454,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			/* seed_element */
 			Option_table_add_entry(option_table, "seed_element",
 				&(settings->seed_element), fe_region,
-				set_FE_element_dimension_3_FE_region);
+				set_FE_element_top_level_FE_region);
 			/* select_mode */
 			select_mode = GT_element_settings_get_select_mode(settings);
 			select_mode_string =
@@ -8646,7 +8654,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			/* seed_element */
 			Option_table_add_entry(option_table, "seed_element",
 				&(settings->seed_element), fe_region,
-				set_FE_element_dimension_3_FE_region);
+				set_FE_element_top_level_FE_region);
 			/* select_mode */
 			select_mode = GT_element_settings_get_select_mode(settings);
 			select_mode_string =

@@ -408,6 +408,7 @@ DESCRIPTION :
 	int n_pts2;
 	Triple *pointlist;
 	Triple *normallist;
+	Triple *tangentlist;
 	Triple *texturelist;
 	GTDATA *data;
 	/* store integer object_name eg. element number from which this object came */
@@ -940,10 +941,10 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
 	gtPolygonType polytype,int n_pts1,int n_pts2,Triple *pointlist,
-	Triple *normallist, Triple *texturelist,
+	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GTDATA *data);
 /*******************************************************************************
-LAST MODIFIED : 31 May 1999
+LAST MODIFIED : 28 November 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics surface.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 25 March 2003
+LAST MODIFIED : 28 November 2003
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -1347,7 +1347,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 struct GT_surface *morph_GT_surface(float proportion,
 	struct GT_surface *initial,struct GT_surface *final)
 /*******************************************************************************
-LAST MODIFIED : 14 August 1998
+LAST MODIFIED : 28 November 2003
 
 DESCRIPTION :
 Creates a new GT_surface which is the interpolation of two GT_surfaces.
@@ -1356,7 +1356,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 	GTDATA *data;
 	struct GT_surface *surface;
 	int i,j,number_of_nodes;
-	Triple *normallist,*point,*texturelist;
+	Triple *normallist,*point,*tangentlist,*texturelist;
 
 	ENTER(morph_GT_surface);
 	if ((initial->n_pts1==final->n_pts1)&&(initial->n_pts2==final->n_pts2)&&
@@ -1433,6 +1433,34 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 			{
 				normallist = (Triple *)NULL;
 			}
+			if (initial->tangentlist)
+			{
+				if (ALLOCATE(tangentlist,Triple,number_of_nodes))
+				{
+					for (i=0;i<number_of_nodes;i++)
+					{
+						for (j=0;j<3;j++)
+						{
+							tangentlist[i][j]=(1.0-proportion)*(initial->tangentlist)[i][j]+
+								proportion*(final->tangentlist)[i][j];
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"morph_GT_pointset.  Could not allocate normals");
+					DEALLOCATE(point);
+					if (normallist)
+					{
+						DEALLOCATE(normallist);
+					}
+				}				
+			}
+			else
+			{
+				tangentlist = (Triple *)NULL;
+			}
 			if (point)
 			{
 				if (initial->texturelist)
@@ -1457,7 +1485,11 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 						{
 							DEALLOCATE(normallist);
 						}
-					}				
+						if (tangentlist)
+						{
+							DEALLOCATE(tangentlist);
+						}
+					}
 				}
 				else
 				{
@@ -1487,6 +1519,10 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 						{
 							DEALLOCATE(normallist);
 						}
+						if (tangentlist)
+						{
+							DEALLOCATE(tangentlist);
+						}
 						if (texturelist)
 						{
 							DEALLOCATE(texturelist);
@@ -1501,7 +1537,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 			if (point)
 			{
 				if (surface=CREATE(GT_surface)(initial->surface_type,initial->polygon,
-					initial->n_pts1,initial->n_pts2,point,normallist,texturelist,
+					initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
 					initial->n_data_components,data))
 				{
 					/* go recursive in case it is a linked list */
@@ -1528,6 +1564,10 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 					if (normallist)
 					{
 						DEALLOCATE(normallist);
+					}
+					if (tangentlist)
+					{
+						DEALLOCATE(tangentlist);
 					}
 					if (texturelist)
 					{
@@ -1724,7 +1764,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 	GTDATA *data;
 	struct GT_surface *surface;
 	int i,j,number_of_nodes;
-	Triple *normallist,*point,*texturelist;
+	Triple *normallist,*point,*tangentlist,*texturelist;
 
 	ENTER(transform_GT_surface);
 	switch (initial->polygon)
@@ -1797,6 +1837,33 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 		{
 			normallist = (Triple *)NULL;
 		}
+		if (initial->tangentlist)
+		{
+			if (ALLOCATE(tangentlist,Triple,number_of_nodes))
+			{
+				for (i=0;i<number_of_nodes;i++)
+				{
+					for (j=0;j<3;j++)
+					{
+						tangentlist[i][j]=initial->tangentlist[i][j];
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"transform_GT_pointset.  Could not allocate normals");
+				DEALLOCATE(point);
+				if (normallist)
+				{
+					DEALLOCATE(normallist);
+				}
+			}
+		}
+	  	else
+		{
+			tangentlist = (Triple *)NULL;
+		}
 		if (point)
 		{
 			if (initial->texturelist)
@@ -1819,6 +1886,10 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 					if (normallist)
 					{
 						DEALLOCATE(normallist);
+					}
+					if (tangentlist)
+					{
+						DEALLOCATE(tangentlist);
 					}
 				}				
 			}
@@ -1849,11 +1920,15 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 					{
 						DEALLOCATE(normallist);
 					}
+					if (tangentlist)
+					{
+						DEALLOCATE(tangentlist);
+					}
 					if (texturelist)
 					{
 						DEALLOCATE(texturelist);
 					}
-					}
+				}
 			}
 			else
 			{
@@ -1863,7 +1938,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 		if (point)
 		{
 			if (surface=CREATE(GT_surface)(initial->surface_type,initial->polygon,
-				initial->n_pts1,initial->n_pts2,point,normallist,texturelist,
+				initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
 				initial->n_data_components,data))
 			{
 				/* go recursive in case it is a linked list */
@@ -1890,6 +1965,10 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 				if (normallist)
 				{
 					DEALLOCATE(normallist);
+				}
+				if (tangentlist)
+				{
+					DEALLOCATE(tangentlist);
 				}
 				if (texturelist)
 				{
@@ -2678,7 +2757,7 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
 	gtPolygonType polytype,int n_pts1,int n_pts2,Triple *pointlist,
-	Triple *normallist, Triple *texturelist,
+	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GTDATA *data)
 /*******************************************************************************
 LAST MODIFIED : 31 May 1999
@@ -2698,6 +2777,7 @@ Allocates memory and assigns fields for a graphics surface.
 		surface->n_pts2=n_pts2;
 		surface->pointlist=pointlist;
 		surface->normallist=normallist;
+		surface->tangentlist=tangentlist;
 		surface->texturelist=texturelist;
 		surface->n_data_components=n_data_components;
 		surface->data=data;
@@ -2732,6 +2812,10 @@ Frees the memory for <**surface> and sets <*surface> to NULL.
 			if ((*surface)->normallist)
 			{
 				DEALLOCATE((*surface)->normallist);
+			}
+			if ((*surface)->tangentlist)
+			{
+				DEALLOCATE((*surface)->tangentlist);
 			}
 			if ((*surface)->texturelist)
 			{

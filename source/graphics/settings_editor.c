@@ -3281,7 +3281,7 @@ Creates a settings_editor widget.
 								CREATE_TEXT_CHOOSE_FROM_FE_REGION_WIDGET(FE_element)(
 								settings_editor->seed_element_form,
 								(struct FE_element *)NULL,fe_region,
-								FE_element_is_dimension_3,(void *)NULL,
+								FE_element_is_top_level,(void *)NULL,
 								FE_element_to_element_string,
 								FE_region_element_string_to_FE_element)))
 							{
