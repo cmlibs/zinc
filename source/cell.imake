@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cell.imake
 XCOMM
-XCOMM LAST MODIFIED : 25 May 2001
+XCOMM LAST MODIFIED : 28 June 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -244,6 +244,7 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/drawing_2d.c \
+	unemap/eimaging_time_dialog.c \
 	unemap/interpolate.c \
 	unemap/map_dialog.c \
 	unemap/mapping.c \
