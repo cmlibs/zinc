@@ -443,7 +443,7 @@ GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMSTRINGARBPROC GLHANDLE(glProgramStringARB);
 GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMSARBPROC GLHANDLE(glDeleteProgramsARB);
 #define glDeleteProgramsARB (GLHANDLE(glDeleteProgramsARB))
 #endif /* defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program) */
-#else 
+#else  /* ! defined (PFNGLTEXIMAGE3DPROC) */
 /* We don't have types for the functions so we will not use any extensions */
 #undef GL_VERSION_1_2
 #undef GL_VERSION_1_3
@@ -451,6 +451,7 @@ GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMSARBPROC GLHANDLE(glDeleteProgramsARB)
 #undef GL_EXT_texture3D
 #undef GL_ARB_vertex_program
 #undef GL_ARB_fragment_program
+#endif  /* ! defined (PFNGLTEXIMAGE3DPROC) */
 #endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES */
 
 #endif /* defined (OPENGL_API) */
