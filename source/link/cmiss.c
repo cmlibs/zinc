@@ -2990,7 +2990,12 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 	if ((connection_address)&&(connection= *connection_address))
 	{
 		/* tell the back end to quit */
-		CMISS_connection_process_command(connection_address,"quit",(Widget)NULL);
+		if (!connection->cm_quit)
+		{
+			/* Don't send a message if this destroy is in response to the 
+				back end going */
+			CMISS_connection_process_command(connection_address,"quit",(Widget)NULL);
+		}
 		if (connection= *connection_address)
 		{
 			/* destroy the connection */
@@ -3098,7 +3103,10 @@ Executes the given command within CMISS.
 						user_interface);
 					/* wait for command to complete */
 					connection->command_in_progress=1;
-					while (connection&&(connection->command_in_progress))
+					/* when we start processing with application main step the back end
+						might quit and then the connection would be destroyed so we need
+						to keep checking the connection address pointer */
+					while (*connection_address&&((*connection_address)->command_in_progress))
 					{
 						/* wh_output_wait(connection->command_output,0.001);
 						CMISS_connection_update(connection_address);
