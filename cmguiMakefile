@@ -9,6 +9,7 @@ USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
 DYNAMIC_GL_LINUX=DYNAMIC_GL_LINUX=false
 DEBUG=DEBUG=true
 ABI=
+MEMORYCHECK=
 
 ifdef CMISS_ROOT
    CMISS_ROOT_DEFINED = true
@@ -32,12 +33,13 @@ cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=DYNAMIC_GL_LINUX=true
 cmgui cmgui-dynamicgl cmgui64 : DEBUG=DEBUG=false
 cmgui-debug cmgui-dynamicgl-debug cmgui64-debug : DEBUG=DEBUG=true
 cmgui64 cmgui64-debug : ABI=ABI=64
+cmgui-debug-memorycheck : MEMORYCHECK=MEMORYCHECK=true
 
 utilities: TARGET=utilities
 
 cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug utilities :
 	cd source ; \
-	$(MAKE) -f $(MAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DYNAMIC_GL_LINUX) $(DEBUG) ;
+	$(MAKE) -f $(MAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DYNAMIC_GL_LINUX) $(DEBUG) $(MEMORYCHECK) ;
 
 update_sources :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
