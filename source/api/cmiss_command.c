@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_command.c
 
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 5 April 2004
 
 DESCRIPTION :
 The public interface to the some of the internal functions of cmiss.
@@ -20,21 +20,18 @@ Global functions
 int Cmiss_command_data_execute(struct Cmiss_command_data *command_data,
 	char *command)
 /*******************************************************************************
-LAST MODIFIED : 13 August 2002
+LAST MODIFIED : 5 April 2004
 
 DESCRIPTION :
-Parses the supplied <command> using cmiss on command parser, therefore the
-string should only contain valid "gfx" or "fem" syntax.
+Parses the supplied <command> using the command parser interpreter.
 ==============================================================================*/
 {
-	int quit, return_code;
+	int return_code;
 
 	ENTER(Cmiss_command_data_execute);
 	if (command)
 	{
-		quit = 0;
-		return_code = 1;
-		execute_command(command, (void *)command_data, &quit, &return_code);
+		return_code = cmiss_execute_command(command, (void *)command_data);
 	}
 	else
 	{

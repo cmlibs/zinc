@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_command.h
 
-LAST MODIFIED : 31 March 2004
+LAST MODIFIED : 5 April 2004
 
 DESCRIPTION :
 The public interface to the some of the internal functions of cmiss.
@@ -50,11 +50,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 int Cmiss_command_data_execute(struct Cmiss_command_data *command_data,
 	char *command);
 /*******************************************************************************
-LAST MODIFIED : 13 August 2002
+LAST MODIFIED : 5 April 2004
 
 DESCRIPTION :
-Parses the supplied <command> using cmiss on command parser, therefore the
-string should only contain valid "gfx" or "fem" syntax.
+Parses the supplied <command> using the command parser interpreter.
 ==============================================================================*/
 
 struct Cmiss_region *Cmiss_command_data_get_root_region(
