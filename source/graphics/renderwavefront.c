@@ -210,9 +210,10 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(
 	position,struct Wavefront_vertex_position *,compare_vertex_location)
 
 static int activate_material_wavefront(FILE *file,
-	struct Graphical_material *material)
+	struct Graphical_material *material,
+	struct Graphical_material **current_material)
 /*******************************************************************************
-LAST MODIFIED : 7 January 1998
+LAST MODIFIED : 2 October 2000
 
 DESCRIPTION :
 Writes Wavefront object file that defines the material
@@ -223,8 +224,24 @@ Writes Wavefront object file that defines the material
 	ENTER(activate_material_wavefront);
 	if (material&&file)
 	{
-		fprintf(file,"usemtl %s\n",Graphical_material_name(material));
-		return_code=1;
+		if (current_material)
+		{
+			if (*current_material == material)
+			{
+				return_code = 1;
+			}
+			else
+			{
+				fprintf(file,"usemtl %s\n",Graphical_material_name(material));
+				*current_material = material;
+				return_code=1;
+			}
+		}
+		else
+		{
+			fprintf(file,"usemtl %s\n",Graphical_material_name(material));
+			return_code=1;
+		}
 	}
 	else
 	{
@@ -343,11 +360,13 @@ points  given by the positions in <point_list> and oriented and scaled by
 } /* draw_glyph_set_vrml */
 
 static int draw_surface_wavefront(FILE *file, Triple *surfpts, Triple *normalpts,
-	Triple *texturepts, int number_of_data_components, GTDATA *data,
+	Triple *texturepts, int npts1,int npts2, gtPolygonType polygon_type,
+  int number_of_data_components, GTDATA *data,
 	struct Graphical_material *material, struct Spectrum *spectrum,
-	int npts1,int npts2, struct LIST(Wavefront_vertex) *vertex_list)
+	struct LIST(Wavefront_vertex) *vertex_list,
+	struct Graphical_material **current_material)
 /*******************************************************************************
-LAST MODIFIED : 8 July 1999
+LAST MODIFIED : 3 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -355,6 +374,7 @@ DESCRIPTION :
 	int i,j,index,npts12,return_code, *vertex_index_array, *vertex_index;
 	struct Wavefront_vertex *vertex;
 	struct Wavefront_vertex_position position;
+	Triple *surface_point_1, *texture_point;
 
 	ENTER(draw_surface_wavefront);
 	/* Keep a similar interface to all the other render implementations */
@@ -364,114 +384,224 @@ DESCRIPTION :
 	USE_PARAMETER(spectrum);
 	if (surfpts&&(1<npts1)&&(1<npts2))
 	{
-		npts12 = npts1 * npts2;
-		activate_material_wavefront( file, material );
-		ALLOCATE(vertex_index_array,int,npts12);
-		vertex_index = vertex_index_array;
-		for (i=0;i<npts1;i++)
+		switch (polygon_type)
 		{
-			for (j=0;j<npts2;j++)
+			case g_QUADRILATERAL:
 			{
-				if (vertex_list&&((i==0)||(i==(npts1-1))||(j==0)||(j==(npts2-1))))
+				npts12 = npts1 * npts2;
+				activate_material_wavefront(file, material, current_material);
+				ALLOCATE(vertex_index_array,int,npts12);
+				vertex_index = vertex_index_array;
+				for (i=0;i<npts1;i++)
 				{
-					position.x = surfpts[i+npts1*j][0];
-					position.y = surfpts[i+npts1*j][1];
-					position.z = surfpts[i+npts1*j][2];
-					if (vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,
-						vertex_list))
+					for (j=0;j<npts2;j++)
 					{
-						*vertex_index = vertex->index;
-					}
-					else
-					{
-						fprintf(file, "v %f %f %f\n",
-							surfpts[i+npts1*j][0],
-							surfpts[i+npts1*j][1],
-							surfpts[i+npts1*j][2]);
-						file_vertex_index++;
-						*vertex_index = file_vertex_index;
-						if (vertex = CREATE(Wavefront_vertex)(file_vertex_index,
-							surfpts[i+npts1*j][0], surfpts[i+npts1*j][1],
-							surfpts[i+npts1*j][2]))
+						if (vertex_list&&((i==0)||(i==(npts1-1))||(j==0)||(j==(npts2-1))))
 						{
-							ADD_OBJECT_TO_LIST(Wavefront_vertex)(vertex, vertex_list);
+							position.x = surfpts[i+npts1*j][0];
+							position.y = surfpts[i+npts1*j][1];
+							position.z = surfpts[i+npts1*j][2];
+							if (vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,
+								vertex_list))
+							{
+								*vertex_index = vertex->index;
+							}
+							else
+							{
+								fprintf(file, "v %f %f %f\n",
+									surfpts[i+npts1*j][0],
+									surfpts[i+npts1*j][1],
+									surfpts[i+npts1*j][2]);
+								file_vertex_index++;
+								*vertex_index = file_vertex_index;
+								if (vertex = CREATE(Wavefront_vertex)(file_vertex_index,
+									surfpts[i+npts1*j][0], surfpts[i+npts1*j][1],
+									surfpts[i+npts1*j][2]))
+								{
+									ADD_OBJECT_TO_LIST(Wavefront_vertex)(vertex, vertex_list);
+								}
+							}
+						}
+						else
+						{
+							fprintf(file, "v %f %f %f\n",
+								surfpts[i+npts1*j][0],
+								surfpts[i+npts1*j][1],
+								surfpts[i+npts1*j][2]);
+							file_vertex_index++;
+							*vertex_index = file_vertex_index;
+						}
+						vertex_index++;
+					}
+				}
+#if defined (OLD_CODE)
+				/* Normals are not used well by Maya so not bothering to put
+					them out */
+				if (normalpts)
+				{
+					for (i=0;i<npts1;i++)
+					{
+						for (j=0;j<npts2;j++)
+						{
+							fprintf(file, "vn %f %f %f\n",
+								normalpts[i+npts1*j][0],
+								normalpts[i+npts1*j][1],
+								normalpts[i+npts1*j][2]);
+							file_normal_vertex_index++;
 						}
 					}
 				}
-				else
-				{
-					fprintf(file, "v %f %f %f\n",
-						surfpts[i+npts1*j][0],
-						surfpts[i+npts1*j][1],
-						surfpts[i+npts1*j][2]);
-					file_vertex_index++;
-					*vertex_index = file_vertex_index;
-				}
-				vertex_index++;
-			}
-		}
-#if defined (OLD_CODE)
-		/* Normals are not used well by Maya so not bothering to put
-			them out */
-		if (normalpts)
-		{
-			for (i=0;i<npts1;i++)
-			{
-				for (j=0;j<npts2;j++)
-				{
-					fprintf(file, "vn %f %f %f\n",
-						normalpts[i+npts1*j][0],
-						normalpts[i+npts1*j][1],
-						normalpts[i+npts1*j][2]);
-					file_normal_vertex_index++;
-				}
-			}
-		}
 #endif /* defined (OLD_CODE) */
-		if (texturepts)
-		{
-			for (i=0;i<npts1;i++)
-			{
-				for (j=0;j<npts2;j++)
-				{
-					fprintf(file, "vt %f %f %f\n",
-						texturepts[i+npts1*j][0],
-						texturepts[i+npts1*j][1],
-						texturepts[i+npts1*j][2]);
-					file_texture_vertex_index++;
-				}
-			}
-		}
-
-		index = file_texture_vertex_index-npts1*npts2+1;
-		vertex_index = vertex_index_array;
-		for (i=0;i<npts1-1;i++)
-		{
-			for (j=0;j<npts2-1;j++)
-			{
 				if (texturepts)
 				{
-					fprintf(file, "f %d/%d %d/%d %d/%d %d/%d\n",
-						*vertex_index, index,
-						*(vertex_index + 1), (index + 1),
-						*(vertex_index + npts2 + 1), (index + npts2 + 1),
-						*(vertex_index + npts2), (index + npts2));
+					for (i=0;i<npts1;i++)
+					{
+						for (j=0;j<npts2;j++)
+						{
+							fprintf(file, "vt %f %f %f\n",
+								texturepts[i+npts1*j][0],
+								texturepts[i+npts1*j][1],
+								texturepts[i+npts1*j][2]);
+							file_texture_vertex_index++;
+						}
+					}
 				}
-				else
+
+				index = file_texture_vertex_index-npts1*npts2+1;
+				vertex_index = vertex_index_array;
+				for (i=0;i<npts1-1;i++)
 				{
-					fprintf(file, "f %d %d %d %d\n",
-						*vertex_index,
-						*(vertex_index + 1),
-						*(vertex_index + npts2 + 1),
-						*(vertex_index + npts2));
+					for (j=0;j<npts2-1;j++)
+					{
+						if (texturepts)
+						{
+							fprintf(file, "f %d/%d %d/%d %d/%d %d/%d\n",
+								*vertex_index, index,
+								*(vertex_index + 1), (index + 1),
+								*(vertex_index + npts2 + 1), (index + npts2 + 1),
+								*(vertex_index + npts2), (index + npts2));
+						}
+						else
+						{
+							fprintf(file, "f %d %d %d %d\n",
+								*vertex_index,
+								*(vertex_index + 1),
+								*(vertex_index + npts2 + 1),
+								*(vertex_index + npts2));
+						}
+						vertex_index++;
+						index++;
+					}
+					vertex_index++;
+					index++;
 				}
-				vertex_index++;
-				index++;
-			}
-			vertex_index++;
-			index++;
+				DEALLOCATE(vertex_index_array);
+				return_code=1;
+			} break;
+			case g_TRIANGLE:
+			{
+				npts12 = (npts1 + 1) * npts1 / 2;
+				activate_material_wavefront(file, material, current_material);
+				ALLOCATE(vertex_index_array,int,npts12);
+				vertex_index = vertex_index_array;
+				texture_point=texturepts;
+				surface_point_1=surfpts;
+				for (i = npts1;i>0;i--)
+				{
+					for (j = 0 ; j < i ; j++)
+					{
+						if (vertex_list&&((i==0)||(i==(npts1-1))||(j==0)||(j==(i-1))))
+						{
+							position.x = (*surface_point_1)[0];
+							position.y = (*surface_point_1)[1];
+							position.z = (*surface_point_1)[2];
+							if (vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,
+								vertex_list))
+							{
+								*vertex_index = vertex->index;
+							}
+							else
+							{
+								fprintf(file, "v %f %f %f\n",
+									(*surface_point_1)[0],
+									(*surface_point_1)[1],
+									(*surface_point_1)[2]);
+								file_vertex_index++;
+								*vertex_index = file_vertex_index;
+								if (vertex = CREATE(Wavefront_vertex)(file_vertex_index,
+									(*surface_point_1)[0], (*surface_point_1)[1],
+									(*surface_point_1)[2]))
+								{
+									ADD_OBJECT_TO_LIST(Wavefront_vertex)(vertex, vertex_list);
+								}
+							}
+						}
+						else
+						{
+							fprintf(file, "v %f %f %f\n",
+								(*surface_point_1)[0],
+								(*surface_point_1)[1],
+								(*surface_point_1)[2]);
+							file_vertex_index++;
+							*vertex_index = file_vertex_index;
+						}
+						vertex_index++;
+						surface_point_1++;
+						if (texturepts)
+						{
+							fprintf(file, "vt %f %f %f\n",
+								(*texture_point)[0],
+								(*texture_point)[1],
+								(*texture_point)[2]);
+							file_texture_vertex_index++;
+							texture_point++;
+						}
+					}
+				}
+				index = file_texture_vertex_index-npts12+1;
+				vertex_index = vertex_index_array;
+				for (i= npts1;i>1;i--)
+				{
+					for (j=0;j<i-1;j++)
+					{
+						if (texturepts)
+						{
+							fprintf(file, "f %d/%d %d/%d %d/%d\n",
+								*vertex_index, index,
+								*(vertex_index + 1), (index + 1),
+								*(vertex_index + i), (index + i));
+							if (j < i-2)
+							{
+								fprintf(file, "f %d/%d %d/%d %d/%d\n",
+									*(vertex_index + i), (index + i),
+									*(vertex_index + 1), (index + 1),
+									*(vertex_index + i + 1), (index + i + 1));
+							}
+						}
+						else
+						{
+							fprintf(file, "f %d %d %d\n",
+								*vertex_index,
+								*(vertex_index + 1),
+								*(vertex_index + i));
+							if (j < i-2)
+							{
+								fprintf(file, "f %d %d %d\n",
+									*(vertex_index + i),
+									*(vertex_index + 1),
+									*(vertex_index + i + 1));
+							}
+						}
+						vertex_index++;
+						index++;
+					}
+					vertex_index++;
+					index++;
+				}
+				DEALLOCATE(vertex_index_array);
+				return_code=1;
+			} break;
 		}
-		return_code=1;
 	}
 	else
 	{
@@ -773,6 +903,7 @@ Convert graphical object into Wavefront object file.
 {
 	float proportion,*times;
 	int itime,return_code;
+	struct Graphical_material *current_material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_nurbs *nurbs;
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
@@ -783,6 +914,7 @@ Convert graphical object into Wavefront object file.
 
 	/* check arguments */
 	return_code = 1;
+	current_material = (struct Graphical_material *)NULL;
 	if (object)
 	{
 		if ((itime=object->number_of_times)>0)
@@ -928,12 +1060,13 @@ Convert graphical object into Wavefront object file.
 												interpolate_surface->pointlist,
 												interpolate_surface->normallist,
 												interpolate_surface->texturelist,
+												interpolate_surface->n_pts1,
+												interpolate_surface->n_pts2,
+												interpolate_surface->polygon,
 												interpolate_surface->n_data_components,
 												interpolate_surface->data,
 												object->default_material, object->spectrum,
-												interpolate_surface->n_pts1,
-												interpolate_surface->n_pts2,
-												vertex_list);
+												vertex_list, &current_material);
 											DESTROY(GT_surface)(&interpolate_surface);
 										}
 										surface=surface->ptrnext;
@@ -947,11 +1080,12 @@ Convert graphical object into Wavefront object file.
 										{
 											draw_surface_wavefront(wavefront_file,
 												surface->pointlist,surface->normallist,
-												surface->texturelist, surface->n_data_components,
+												surface->texturelist, surface->n_pts1,
+												surface->n_pts2, surface->polygon,
+												surface->n_data_components,
 												surface->data,object->default_material,
-												object->spectrum,surface->n_pts1,
-												surface->n_pts2,
-												vertex_list);
+												object->spectrum,
+												vertex_list, &current_material);
 											surface=surface->ptrnext;
 										}
 									}
