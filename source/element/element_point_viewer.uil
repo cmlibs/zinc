@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : element_point_viewer.uil
 !
-! LAST MODIFIED : 25 May 2000
+! LAST MODIFIED : 9 June 2000
 !
 ! DESCRIPTION :
 ! Dialog for selecting an element point, viewing and editing its fields and
@@ -12,6 +12,7 @@ module element_point_viewer_module
 
 procedure
 	elem_pt_v_id_element_form;
+	elem_pt_v_id_top_element_form;
  	elem_pt_v_id_xi_disc_mode_form;
 	elem_pt_v_id_disc_number_entry;
 	elem_pt_v_id_disc_text;
@@ -79,6 +80,7 @@ object
     controls
       {
 			XmRowColumn elem_pt_v_element_entry;
+			XmRowColumn elem_pt_v_top_element_entry;
 			XmRowColumn elem_pt_v_xi_disc_mode_entry;
 			XmRowColumn elem_pt_v_disc_number_entry;
 			XmRowColumn elem_pt_v_xi_entry;
@@ -120,6 +122,41 @@ object
 			{
 			MrmNcreateCallback = procedure
 				elem_pt_v_id_element_form(elem_pt_v_structure);
+			};
+		};
+!*******************************************************************************
+  elem_pt_v_top_element_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget elem_pt_v_top_element_label;
+      XmForm elem_pt_v_top_element_form;
+      };
+    };
+  elem_pt_v_top_element_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Top-level element:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	elem_pt_v_top_element_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_pt_v_id_top_element_form(elem_pt_v_structure);
 			};
 		};
 !*******************************************************************************

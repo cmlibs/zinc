@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 2 June 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -37,7 +37,7 @@ static MrmHierarchy element_point_viewer_hierarchy;
 
 struct Element_point_viewer
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Contains all the information carried by the element_point_viewer widget.
@@ -60,7 +60,9 @@ Contains all the information carried by the element_point_viewer widget.
 	struct FE_element *element_copy;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	/* widgets */
+	Pixel editable_background_color,non_editable_background_color;
 	Widget element_form,element_widget,
+		top_level_element_form,top_level_element_widget,
 		xi_discretization_mode_form,xi_discretization_mode_widget,
 		discretization_number_entry,discretization_text,point_number_text,xi_text,
 		grid_number_entry,grid_field_form,grid_field_widget,grid_value_text,
@@ -75,6 +77,8 @@ Module functions
 
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
 	element_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
+	top_level_element_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
 	xi_discretization_mode_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
@@ -142,7 +146,7 @@ leaves the current discretization/mode intact.
 static int Element_point_viewer_calculate_xi(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Ensures xi is correct for the currently selected element point, if any.
@@ -160,6 +164,7 @@ Ensures xi is correct for the currently selected element point, if any.
 				element_point_viewer->element_point_identifier.xi_discretization_mode,
 				get_FE_element_dimension(element),
 				element_point_viewer->element_point_identifier.number_in_xi,
+				element_point_viewer->element_point_identifier.exact_xi,
 				element_point_viewer->element_point_number,
 				element_point_viewer->xi);
 		}
@@ -182,14 +187,14 @@ Ensures xi is correct for the currently selected element point, if any.
 static int Element_point_viewer_set_viewer_element_point(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Gets the current element_point, makes a copy of its element if not NULL,
 and passes it to the element_point_viewer_widget.
 ==============================================================================*/
 {
-	int return_code;
+	int temp_element_point_number,return_code;
 	struct Element_point_ranges_identifier temp_element_point_identifier;
 
 	ENTER(Element_point_viewer_set_viewer_element_point);
@@ -197,20 +202,27 @@ and passes it to the element_point_viewer_widget.
 	{
 		REACCESS(FE_element)(&(element_point_viewer->element_copy),
 			(struct FE_element *)NULL);
-		if (element_point_viewer->element_point_identifier.element)
+		temp_element_point_number=element_point_viewer->element_point_number;
+		COPY(Element_point_ranges_identifier)(&temp_element_point_identifier,
+			&(element_point_viewer->element_point_identifier));
+		if (temp_element_point_identifier.element)
 		{
+			if (Element_point_ranges_identifier_is_valid(
+				&temp_element_point_identifier))
+			{
+				Element_point_make_top_level(&temp_element_point_identifier,
+					&temp_element_point_number);
+			}
+			/* copy the element - now guaranteed to be top-level */
 			element_point_viewer->element_copy=ACCESS(FE_element)(CREATE(FE_element)(
-				element_point_viewer->element_point_identifier.element->identifier,
-				element_point_viewer->element_point_identifier.element));
+				temp_element_point_identifier.element->identifier,
+				temp_element_point_identifier.element));
 		}
 		/* pass identifier with copy_element to viewer widget */
-		COPY(Element_point_ranges_identifier)(
-			&temp_element_point_identifier,
-			&(element_point_viewer->element_point_identifier));
 		temp_element_point_identifier.element=element_point_viewer->element_copy;
 		element_point_viewer_widget_set_element_point(
-			element_point_viewer->viewer_widget,&temp_element_point_identifier,
-			element_point_viewer->element_point_number);
+			element_point_viewer->viewer_widget,
+			&temp_element_point_identifier,temp_element_point_number);
 		return_code=1;
 	}
 	else
@@ -286,38 +298,40 @@ selection. Does nothing if no current element point.
 	return (return_code);
 } /* Element_point_viewer_select_current_point */
 
-static int Element_point_viewer_refresh_element(
+static int Element_point_viewer_refresh_elements(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Updates the element shown in the chooser to match that for the current point.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_element *element;
  
-	ENTER(Element_point_viewer_refresh_element);
+	ENTER(Element_point_viewer_refresh_elements);
 	if (element_point_viewer)
 	{
 		return_code=1;
-		if (element=element_point_viewer->element_point_identifier.element)
-		{
-			TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
-				element_point_viewer->element_widget,element);
-		}
+		TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+			element_point_viewer->element_widget,
+			element_point_viewer->element_point_identifier.element);
+		TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(FE_element)(
+			element_point_viewer->top_level_element_widget,
+			FE_element_is_top_level_parent_of_element,
+			(void *)element_point_viewer->element_point_identifier.element,
+			element_point_viewer->element_point_identifier.top_level_element);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_point_viewer_refresh_element.  Invalid argument(s)");
+			"Element_point_viewer_refresh_elements.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Element_point_viewer_refresh_element */
+} /* Element_point_viewer_refresh_elements */
 
 static int Element_point_viewer_refresh_xi_discretization_mode(
 	struct Element_point_viewer *element_point_viewer)
@@ -365,52 +379,80 @@ current point.
 static int Element_point_viewer_refresh_discretization_text(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Updates the discretization text field. If there is a current element point,
 writes the discretization in use, otherwise N/A.
 ==============================================================================*/
 {
-	char temp_string[60];
-	int dimension,*number_in_xi,return_code,is_sensitive;
+	char temp_string[60],*value_string;
+	int dimension,is_editable,is_sensitive,*number_in_xi,return_code;
 	struct FE_element *element;
  
 	ENTER(Element_point_viewer_refresh_discretization_text);
 	if (element_point_viewer)
 	{
 		return_code=1;
-		if ((element=element_point_viewer->element_point_identifier.element)&&
-			(dimension=get_FE_element_dimension(element))&&
-			(number_in_xi=
-				element_point_viewer->element_point_identifier.number_in_xi))
+		if (value_string=
+			XmTextFieldGetString(element_point_viewer->discretization_text))
 		{
-			switch (dimension)
+			if ((element=element_point_viewer->element_point_identifier.element)&&
+				(dimension=get_FE_element_dimension(element))&&
+				(number_in_xi=
+					element_point_viewer->element_point_identifier.number_in_xi))
 			{
-				case 1:
+				switch (dimension)
 				{
-					sprintf(temp_string,"%d",number_in_xi[2]);
-				} break;
-				case 2:
-				{
-					sprintf(temp_string,"%d*%d",number_in_xi[0],number_in_xi[1]);
-				} break;
-				default:
-				{
-					sprintf(temp_string,"%d*%d*%d",number_in_xi[0],number_in_xi[1],
-						number_in_xi[2]);
-				} break;
+					case 1:
+					{
+						sprintf(temp_string,"%d",number_in_xi[2]);
+					} break;
+					case 2:
+					{
+						sprintf(temp_string,"%d*%d",number_in_xi[0],number_in_xi[1]);
+					} break;
+					default:
+					{
+						sprintf(temp_string,"%d*%d*%d",number_in_xi[0],number_in_xi[1],
+							number_in_xi[2]);
+					} break;
+				}
+				is_sensitive=is_editable=
+					(XI_DISCRETIZATION_EXACT_XI != element_point_viewer->
+						element_point_identifier.xi_discretization_mode);
 			}
-			XmTextFieldSetString(element_point_viewer->discretization_text,
-				temp_string);
-			is_sensitive=True;
+			else
+			{
+				sprintf(temp_string,"N/A");
+				is_editable=False;
+				is_sensitive=False;
+			}
+			if (is_editable)
+			{
+				/* editable */
+				XtVaSetValues(element_point_viewer->discretization_text,XmNbackground,
+					element_point_viewer->editable_background_color,NULL);
+				XtVaSetValues(element_point_viewer->discretization_text,
+					XmNeditable,True,NULL);
+			}
+			else
+			{
+				/* non-editable */
+				XtVaSetValues(element_point_viewer->discretization_text,XmNbackground,
+					element_point_viewer->non_editable_background_color,NULL);
+				XtVaSetValues(element_point_viewer->discretization_text,
+					XmNeditable,False,NULL);
+			}
+			/* only set string if different from that shown */
+			if (strcmp(temp_string,value_string))
+			{
+				XmTextFieldSetString(element_point_viewer->discretization_text,
+					temp_string);
+			}
+			XtSetSensitive(element_point_viewer->discretization_text,is_sensitive);
+			XtFree(value_string);
 		}
-		else
-		{
-			XmTextFieldSetString(element_point_viewer->discretization_text,"N/A");
-			is_sensitive=False;
-		}
-		XtSetSensitive(element_point_viewer->discretization_text,is_sensitive);
 	}
 	else
 	{
@@ -426,32 +468,61 @@ writes the discretization in use, otherwise N/A.
 static int Element_point_viewer_refresh_point_number_text(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Updates the point_number text field. If there is a current element point,
 writes its number, otherwise N/A.
 ==============================================================================*/
 {
-	char temp_string[20];
-	int return_code,is_sensitive;
+	char temp_string[20],*value_string;
+	int return_code,is_editable,is_sensitive;
  
 	ENTER(Element_point_viewer_refresh_point_number_text);
 	if (element_point_viewer)
 	{
 		return_code=1;
-		if (element_point_viewer->element_point_identifier.element)
+		if (value_string=
+			XmTextFieldGetString(element_point_viewer->point_number_text))
 		{
-			sprintf(temp_string,"%d",element_point_viewer->element_point_number);
-			XmTextFieldSetString(element_point_viewer->point_number_text,temp_string);
-			is_sensitive=True;
+			if (element_point_viewer->element_point_identifier.element)
+			{
+				sprintf(temp_string,"%d",element_point_viewer->element_point_number);
+				is_sensitive=is_editable=
+					(XI_DISCRETIZATION_EXACT_XI != element_point_viewer->
+						element_point_identifier.xi_discretization_mode);
+			}
+			else
+			{
+				sprintf(temp_string,"N/A");
+				is_editable=False;
+				is_sensitive=False;
+			}
+			if (is_editable)
+			{
+				/* editable */
+				XtVaSetValues(element_point_viewer->point_number_text,XmNbackground,
+					element_point_viewer->editable_background_color,NULL);
+				XtVaSetValues(element_point_viewer->point_number_text,
+					XmNeditable,True,NULL);
+			}
+			else
+			{
+				/* non-editable */
+				XtVaSetValues(element_point_viewer->point_number_text,XmNbackground,
+					element_point_viewer->non_editable_background_color,NULL);
+				XtVaSetValues(element_point_viewer->point_number_text,
+					XmNeditable,False,NULL);
+			}
+			/* only set string if different from that shown */
+			if (strcmp(temp_string,value_string))
+			{
+				XmTextFieldSetString(element_point_viewer->point_number_text,
+					temp_string);
+			}
+			XtSetSensitive(element_point_viewer->point_number_text,is_sensitive);
+			XtFree(value_string);
 		}
-		else
-		{
-			XmTextFieldSetString(element_point_viewer->point_number_text,"N/A");
-			is_sensitive=False;
-		}
-		XtSetSensitive(element_point_viewer->point_number_text,is_sensitive);
 	}
 	else
 	{
@@ -467,50 +538,75 @@ writes its number, otherwise N/A.
 static int Element_point_viewer_refresh_xi_text(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Updates the xi text field. If there is a current element point, writes its xi
 value otherwise N/A.
 ==============================================================================*/
 {
-	char temp_string[120];
+	char temp_string[120],*value_string;
 	FE_value *xi;
-	int dimension,is_sensitive,return_code;
+	int dimension,is_editable,is_sensitive,return_code;
 	struct FE_element *element;
  
 	ENTER(Element_point_viewer_refresh_xi_text);
 	if (element_point_viewer)
 	{
 		return_code=1;
-		if ((element=element_point_viewer->element_point_identifier.element)&&
-			(dimension=get_FE_element_dimension(element))&&
-			(xi=element_point_viewer->xi))
+		if (value_string=XmTextFieldGetString(element_point_viewer->xi_text))
 		{
-			switch (dimension)
+			if ((element=element_point_viewer->element_point_identifier.element)&&
+				(dimension=get_FE_element_dimension(element))&&
+				(xi=element_point_viewer->xi))
 			{
-				case 1:
+				switch (dimension)
 				{
-					sprintf(temp_string,"%g",xi[0]);
-				} break;
-				case 2:
-				{
-					sprintf(temp_string,"%g, %g",xi[0],xi[1]);
-				} break;
-				default:
-				{
-					sprintf(temp_string,"%g, %g, %g",xi[0],xi[1],xi[2]);
-				} break;
+					case 1:
+					{
+						sprintf(temp_string,"%g",xi[0]);
+					} break;
+					case 2:
+					{
+						sprintf(temp_string,"%g, %g",xi[0],xi[1]);
+					} break;
+					default:
+					{
+						sprintf(temp_string,"%g, %g, %g",xi[0],xi[1],xi[2]);
+					} break;
+				}
+				is_editable=(XI_DISCRETIZATION_EXACT_XI == element_point_viewer->
+					element_point_identifier.xi_discretization_mode);
+				is_sensitive=True;
 			}
-			XmTextFieldSetString(element_point_viewer->xi_text,temp_string);
-			is_sensitive=True;
+			else
+			{
+				sprintf(temp_string,"N/A");
+				is_editable=False;
+				is_sensitive=False;
+			}
+			if (is_editable)
+			{
+				/* editable */
+				XtVaSetValues(element_point_viewer->xi_text,XmNbackground,
+					element_point_viewer->editable_background_color,NULL);
+				XtVaSetValues(element_point_viewer->xi_text,XmNeditable,True,NULL);
+			}
+			else
+			{
+				/* non-editable */
+				XtVaSetValues(element_point_viewer->xi_text,XmNbackground,
+					element_point_viewer->non_editable_background_color,NULL);
+				XtVaSetValues(element_point_viewer->xi_text,XmNeditable,False,NULL);
+			}
+			/* only set string if different from that shown */
+			if (strcmp(temp_string,value_string))
+			{
+				XmTextFieldSetString(element_point_viewer->xi_text,temp_string);
+			}
+			XtSetSensitive(element_point_viewer->xi_text,is_sensitive);
+			XtFree(value_string);
 		}
-		else
-		{
-			XmTextFieldSetString(element_point_viewer->xi_text,"N/A");
-			is_sensitive=False;
-		}
-		XtSetSensitive(element_point_viewer->discretization_text,is_sensitive);
 	}
 	else
 	{
@@ -526,51 +622,65 @@ value otherwise N/A.
 static int Element_point_viewer_refresh_grid_value_text(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Updates the grid_value text field. If there is a current element point, writes
 the field value, otherwise N/A.
 ==============================================================================*/
 {
-	char *value_string;
+	char *field_value_string,*value_string;
 	int is_sensitive,return_code;
 	struct Computed_field *grid_field;
-	struct FE_element *top_level_element;
+	struct FE_element *element,*top_level_element;
  
 	ENTER(Element_point_viewer_refresh_grid_value_text);
 	if (element_point_viewer)
 	{
 		return_code=1;
-		top_level_element=(struct FE_element *)NULL;
-		if ((element_point_viewer->element_point_identifier.element)&&
-			(grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-				element_point_viewer->grid_field_widget)))
+		/* Get the text string */
+		if (value_string=
+			XmTextFieldGetString(element_point_viewer->grid_value_text))
 		{
-			if (value_string=Computed_field_evaluate_as_string_in_element(
-				grid_field,element_point_viewer->element_point_identifier.element,
-				element_point_viewer->xi,top_level_element))
+			if ((element=element_point_viewer->element_point_identifier.element)&&
+				(top_level_element=
+					element_point_viewer->element_point_identifier.top_level_element)&&
+				(grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					element_point_viewer->grid_field_widget)))
 			{
-				XmTextFieldSetString(element_point_viewer->grid_value_text,
-					value_string);
-				DEALLOCATE(value_string);
+				if (field_value_string=Computed_field_evaluate_as_string_in_element(
+					grid_field,element,element_point_viewer->xi,top_level_element))
+				{
+					/* only set string from field if different from that shown */
+					if (strcmp(field_value_string,value_string))
+					{
+						XmTextFieldSetString(element_point_viewer->grid_value_text,
+							field_value_string);
+					}
+					DEALLOCATE(field_value_string);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Element_point_viewer_refresh_grid_value_text.  "
+						"Could not evaluate field");
+					XmTextFieldSetString(element_point_viewer->grid_value_text,"ERROR");
+				}
+				Computed_field_clear_cache(grid_field);
+				is_sensitive=True;
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Element_point_viewer_refresh_grid_value_text.  "
-					"Could not evaluate field");
-				XmTextFieldSetString(element_point_viewer->grid_value_text,"ERROR");
+				/* only set string if different from that shown */
+				if (strcmp(value_string,"N/A"))
+				{
+					XmTextFieldSetString(element_point_viewer->grid_value_text,"N/A");
+				}
+				is_sensitive=False;
 			}
-			Computed_field_clear_cache(grid_field);
-			is_sensitive=True;
+			XtSetSensitive(element_point_viewer->grid_value_text,is_sensitive);
+			XtFree(value_string);
 		}
-		else
-		{
-			XmTextFieldSetString(element_point_viewer->grid_value_text,"N/A");
-			is_sensitive=False;
-		}
-		XtSetSensitive(element_point_viewer->discretization_text,is_sensitive);
 	}
 	else
 	{
@@ -598,7 +708,7 @@ Fills the widgets for choosing the element point with the current values.
 	if (element_point_viewer)
 	{
 		return_code=1;
-		Element_point_viewer_refresh_element(element_point_viewer);
+		Element_point_viewer_refresh_elements(element_point_viewer);
 		Element_point_viewer_refresh_xi_discretization_mode(element_point_viewer);
 		Element_point_viewer_refresh_discretization_text(element_point_viewer);
 		Element_point_viewer_refresh_point_number_text(element_point_viewer);
@@ -680,12 +790,13 @@ Callback for change in the global element_point selection.
 static void Element_point_viewer_update_element(Widget widget,
 	void *element_point_viewer_void,void *element_void)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Callback for change of element.
 ==============================================================================*/
 {
+	FE_value element_to_top_level[9];
 	struct Element_point_viewer *element_point_viewer;
 
 	ENTER(Element_point_viewer_update_element);
@@ -697,6 +808,19 @@ Callback for change of element.
 			(struct FE_element *)element_void;
 		if (element_point_viewer->element_point_identifier.element)
 		{
+			/* get top_level_element, keeping existing one if possible */
+			element_point_viewer->element_point_identifier.top_level_element=
+				FE_element_get_top_level_element_conversion(
+					element_point_viewer->element_point_identifier.element,
+					element_point_viewer->element_point_identifier.top_level_element,
+					(struct GROUP(FE_element) *)NULL,/*face_number*/-1,
+					element_to_top_level);
+			TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(FE_element)(
+				element_point_viewer->top_level_element_widget,
+				FE_element_is_top_level_parent_of_element,
+				(void *)element_point_viewer->element_point_identifier.element,
+				element_point_viewer->element_point_identifier.top_level_element);
+			element_point_viewer->element_point_number=0;
 			if (XI_DISCRETIZATION_CELL_CORNERS==
 				element_point_viewer->element_point_identifier.xi_discretization_mode)
 			{
@@ -718,16 +842,53 @@ Callback for change of element.
 	LEAVE;
 } /* Element_point_viewer_update_element */
 
+static void Element_point_viewer_update_top_level_element(Widget widget,
+	void *element_point_viewer_void,void *top_level_element_void)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2000
+
+DESCRIPTION :
+Callback for change of top_level_element.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_update_top_level_element);
+	USE_PARAMETER(widget);
+	if (element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void)
+	{
+		element_point_viewer->element_point_identifier.top_level_element=
+			(struct FE_element *)top_level_element_void;
+		if (element_point_viewer->element_point_identifier.element)
+		{
+			Element_point_viewer_select_current_point(element_point_viewer);
+		}
+		else
+		{
+			Element_point_viewer_set_viewer_element_point(element_point_viewer);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_viewer_update_top_level_element.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_update_top_level_element */
+
 static void Element_point_viewer_update_xi_discretization_mode(Widget widget,
 	void *element_point_viewer_void,void *xi_discretization_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Callback for change of xi_discretization_mode.
 ==============================================================================*/
 {
-	enum Xi_discretization_mode temp_xi_discretization_mode;
+	enum Xi_discretization_mode xi_discretization_mode;
+	int i;
+	struct Element_point_ranges_identifier temp_element_point_identifier;
 	struct Element_point_viewer *element_point_viewer;
 
 	ENTER(Element_point_viewer_update_xi_discretization_mode);
@@ -735,27 +896,36 @@ Callback for change of xi_discretization_mode.
 	if (element_point_viewer=
 		(struct Element_point_viewer *)element_point_viewer_void)
 	{
-		temp_xi_discretization_mode=
-			element_point_viewer->element_point_identifier.xi_discretization_mode;
+		/* store old identifier unless in case new one is invalid */
+		COPY(Element_point_ranges_identifier)(&temp_element_point_identifier,
+			&(element_point_viewer->element_point_identifier));
+		xi_discretization_mode=Xi_discretization_mode_from_string(
+			(char *)xi_discretization_mode_string_void);
 		element_point_viewer->element_point_identifier.xi_discretization_mode=
-			Xi_discretization_mode_from_string(
-				(char *)xi_discretization_mode_string_void);
+			xi_discretization_mode;
+		if (XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)
+		{
+			Element_point_viewer_get_grid(element_point_viewer);
+		}
+		else if (XI_DISCRETIZATION_EXACT_XI==xi_discretization_mode)
+		{
+			for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+			{
+				element_point_viewer->element_point_identifier.number_in_xi[i]=1;
+			}
+		}
+		element_point_viewer->element_point_number=0;
 		if (Element_point_ranges_identifier_is_valid(
 			&(element_point_viewer->element_point_identifier)))
 		{
-			if (XI_DISCRETIZATION_CELL_CORNERS==
-				element_point_viewer->element_point_identifier.xi_discretization_mode)
-			{
-				Element_point_viewer_get_grid(element_point_viewer);
-			}
-			element_point_viewer->element_point_number=0;
 			Element_point_viewer_calculate_xi(element_point_viewer);
 			Element_point_viewer_select_current_point(element_point_viewer);
 		}
 		else
 		{
-			element_point_viewer->element_point_identifier.xi_discretization_mode=
-				temp_xi_discretization_mode;
+			COPY(Element_point_ranges_identifier)(
+				&(element_point_viewer->element_point_identifier),
+				&temp_element_point_identifier);
 			/* always restore mode to actual value in use */
 			Element_point_viewer_refresh_xi_discretization_mode(element_point_viewer);
 		}
@@ -920,21 +1090,26 @@ Called when entry is made into the point_number_text field.
 static void Element_point_viewer_xi_text_CB(Widget widget,
 	void *element_point_viewer_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Called when entry is made into the xi_text field.
 ==============================================================================*/
 {
 	char *value_string;
+	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int dimension,i;
 	struct Element_point_viewer *element_point_viewer;
+	struct Parse_state *temp_state;
 	XmAnyCallbackStruct *any_callback;
 
 	ENTER(Element_point_viewer_xi_text_CB);
 	USE_PARAMETER(widget);
 	if ((element_point_viewer=
 		(struct Element_point_viewer *)element_point_viewer_void)&&
-		(any_callback=(XmAnyCallbackStruct *)call_data))
+		(any_callback=(XmAnyCallbackStruct *)call_data)&&
+		(dimension=get_FE_element_dimension(
+			element_point_viewer->element_point_identifier.element)))
 	{
 		if (XmCR_ACTIVATE == any_callback->reason)
 		{
@@ -942,8 +1117,19 @@ Called when entry is made into the xi_text field.
 			if (value_string=
 				XmTextFieldGetString(element_point_viewer->xi_text))
 			{
-				display_message(ERROR_MESSAGE,
-					"Element_point_viewer_xi_text_CB.  Xi is currently for viewing only");
+				/* clean up spaces? */
+				if (temp_state=create_Parse_state(value_string))
+				{
+					if (set_float_vector(temp_state,xi,(void *)&dimension))
+					{
+						for (i=0;i<dimension;i++)
+						{
+							element_point_viewer->element_point_identifier.exact_xi[i]=xi[i];
+						}
+						Element_point_viewer_select_current_point(element_point_viewer);
+					}
+					destroy_Parse_state(&temp_state);
+				}
 				XtFree(value_string);
 			}
 			else
@@ -1359,7 +1545,7 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -1368,6 +1554,7 @@ fields.
 {
 	Atom WM_DELETE_WINDOW;
 	char **valid_strings;
+	Colormap cmap;
 	int i,init_widgets,number_of_valid_strings,start,stop;
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
 		*choose_field_conditional_function;
@@ -1383,6 +1570,8 @@ fields.
 	{
 		{"elem_pt_v_id_element_form",(XtPointer)
 			DIALOG_IDENTIFY(element_point_viewer,element_form)},
+		{"elem_pt_v_id_top_element_form",(XtPointer)
+			DIALOG_IDENTIFY(element_point_viewer,top_level_element_form)},
 		{"elem_pt_v_id_xi_disc_mode_form",(XtPointer)
 			DIALOG_IDENTIFY(element_point_viewer,xi_discretization_mode_form)},
 		{"elem_pt_v_id_disc_number_entry",(XtPointer)
@@ -1418,6 +1607,7 @@ fields.
 	{
 		{"elem_pt_v_structure",(XtPointer)NULL}
 	};
+	XColor color,unused;
 
 	ENTER(CREATE(Element_point_viewer));
 	element_point_viewer=(struct Element_point_viewer *)NULL;
@@ -1444,18 +1634,23 @@ fields.
 				element_point_viewer->user_interface=user_interface;
 				element_point_viewer->element_point_identifier.element=
 					(struct FE_element *)NULL;
+				element_point_viewer->element_point_identifier.top_level_element=
+					(struct FE_element *)NULL;
 				element_point_viewer->element_copy=(struct FE_element *)NULL;
 				element_point_viewer->element_point_identifier.xi_discretization_mode=
-					XI_DISCRETIZATION_CELL_CENTRES;
+					XI_DISCRETIZATION_EXACT_XI;
 				for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 				{
 					element_point_viewer->element_point_identifier.number_in_xi[i]=1;
-					element_point_viewer->xi[i]=0.5;
+					element_point_viewer->xi[i]=
+						element_point_viewer->element_point_identifier.exact_xi[i]=0.5;
 				}
 				element_point_viewer->element_point_number=0;
 				/* initialise widgets */
 				element_point_viewer->element_form=(Widget)NULL;
 				element_point_viewer->element_widget=(Widget)NULL;
+				element_point_viewer->top_level_element_form=(Widget)NULL;
+				element_point_viewer->top_level_element_widget=(Widget)NULL;
 				element_point_viewer->xi_discretization_mode_form=(Widget)NULL;
 				element_point_viewer->xi_discretization_mode_widget=(Widget)NULL;
 				element_point_viewer->discretization_number_entry=(Widget)NULL;
@@ -1486,20 +1681,29 @@ fields.
 				}
 				else
 				{
-					element_point_viewer->element_point_identifier.element=
+					if (element_point_viewer->element_point_identifier.element=
 						FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
-							(MANAGER_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL,
-							element_manager);
+							FE_element_is_top_level,(void *)NULL,element_manager))
+					{
+						element_point_viewer->element_point_identifier.top_level_element=
+							element_point_viewer->element_point_identifier.element;
+					}
+					else
+					{
+						element_point_viewer->element_point_identifier.top_level_element=
+							(struct FE_element *)NULL;
+					}
 					Element_point_viewer_get_grid(element_point_viewer);
 					Element_point_viewer_select_current_point(element_point_viewer);
 				}
 				Element_point_viewer_calculate_xi(element_point_viewer);
-				if (element_point_viewer->element_point_identifier.element)
+				if (element_point_viewer->element_point_identifier.top_level_element)
 				{
 					element_point_viewer->element_copy=ACCESS(FE_element)(
 						CREATE(FE_element)(element_point_viewer->
-							element_point_identifier.element->identifier,
-							element_point_viewer->element_point_identifier.element));
+							element_point_identifier.top_level_element->identifier,
+							element_point_viewer->
+							element_point_identifier.top_level_element));
 					choose_field_conditional_function=
 						Computed_field_is_scalar_integer_grid_in_element;
 				}
@@ -1554,6 +1758,18 @@ fields.
 								&(element_point_viewer->widget),
 								&element_point_viewer_dialog_class))
 							{
+								/* store background colour for editable text fields */
+								XtVaGetValues(element_point_viewer->xi_text,XmNbackground,
+									&(element_point_viewer->editable_background_color),NULL);
+								/* establish background colour for non-editable text fields */
+								/* Following is from O'Reilly X window System Guide Volume Six:
+									 Motif Programming Manual, Section 11.5.2, p391 */
+								XtVaGetValues(element_point_viewer->xi_text,
+									XmNcolormap,&cmap,NULL);
+								XAllocNamedColor(XtDisplay(element_point_viewer->xi_text),
+									cmap,"gray",&color,&unused);
+								element_point_viewer->non_editable_background_color=color.pixel;
+
 								XtManageChild(element_point_viewer->widget);
 								init_widgets=1;
 								if (!(element_point_viewer->element_widget=
@@ -1562,6 +1778,18 @@ fields.
 										element_point_viewer->element_point_identifier.element,
 										element_manager,
 										(MANAGER_CONDITIONAL_FUNCTION(FE_element) *)NULL,
+										(void *)NULL,
+										FE_element_to_any_element_string,
+										any_element_string_to_FE_element)))
+								{
+									init_widgets=0;
+								}
+								if (!(element_point_viewer->top_level_element_widget=
+									CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
+										element_point_viewer->top_level_element_form,
+										element_point_viewer->element_point_identifier.top_level_element,
+										element_manager,FE_element_is_top_level_parent_of_element,
+										(void *)(element_point_viewer->element_point_identifier.element),
 										FE_element_to_any_element_string,
 										any_element_string_to_FE_element)))
 								{
@@ -1626,6 +1854,10 @@ fields.
 									callback.procedure=Element_point_viewer_update_element;
 									TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
 										element_point_viewer->element_widget,&callback);
+									callback.procedure=
+										Element_point_viewer_update_top_level_element;
+									TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
+										element_point_viewer->top_level_element_widget,&callback);
 									Element_point_viewer_refresh_chooser_widgets(
 										element_point_viewer);
 									element_point_viewer->element_manager_callback_id=
