@@ -335,23 +335,20 @@ DESCRIPTION :
 	FILE *fp;
 	gtObject *obj;
 	char objname[100];
-	int dummy, i,j,k,m;
+	int dummy, i,j,k;
 	int n_data_components, npts1,npts2;
-	Triple *pointlist,*normallist,*texturelist,*save_pointlist;
+	Triple *pointlist,*normallist,*texturelist;
 	enum GT_surface_type surface_type;
 	enum GT_polyline_type polyline_type;
 	GTDATA *data;
-	int nurbsprop;
 	int sorder,torder,corder;
 	int sknotcnt,tknotcnt,cknotcnt,pwlcnt,ccount;
 	int maxs,maxt;
 	double *sknots,*tknots,*cknots;
 	double *controlpts,*trimarray,*pwlarray;
-	double **mcontrolpts;
 	enum GT_object_type object_type;
 	gtMatrix transform;
 	gtTransformType transtype;
-	int def_colour=0;
 	struct Graphical_material *object_material;
 	struct File_read_graphics_object_data *file_read_graphics_object_data;
 	struct GT_nurbs *nurbs;
@@ -766,7 +763,6 @@ DESCRIPTION :
 								sknots=(double *)NULL;
 								tknots=(double *)NULL;
 								controlpts=(double *)NULL;
-								mcontrolpts=(double **)NULL;
 								cknots=(double *)NULL;
 								trimarray=(double *)NULL;
 								pwlarray=(double *)NULL;
@@ -955,6 +951,7 @@ DESCRIPTION :
 	/*???debug*/
 	printf("ENTER(file_read_voltex_graphics_object_from_obj\n");
 #endif /* defined (DEBUG) */
+	return_code = 1;
 	if (file_name&&(file_read_graphics_object_data=
 		(struct File_read_graphics_object_from_obj_data *)
 		file_read_graphics_object_from_obj_data_void))
@@ -990,8 +987,29 @@ DESCRIPTION :
 						}
 						object_material = FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)
 							(NULL, NULL, file_read_graphics_object_data->graphical_material_manager);
-						if(!(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-							objname,file_read_graphics_object_data->object_list)))
+						if(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+							objname,file_read_graphics_object_data->object_list))
+						{
+							if (g_VOLTEX==obj->object_type)
+							{
+								if (GT_object_has_time(obj,file_read_graphics_object_data->time))
+								{
+									display_message(WARNING_MESSAGE,
+										"Overwriting time %g in graphics object '%s'",
+										file_read_graphics_object_data->time, objname);
+									return_code=GT_object_delete_time(obj,
+										file_read_graphics_object_data->time);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Object of different type named '%s' already exists",
+									objname);
+								return_code=0;
+							}
+						}
+						else
 						{
 							obj=CREATE(GT_object)(objname, g_VOLTEX, object_material);
 							if (obj)
@@ -1000,110 +1018,112 @@ DESCRIPTION :
 									file_read_graphics_object_data->object_list);
 							}
 						}
-						if(voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
-							triangle_list, vertex_list, iso_poly_material,
-							iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
-							/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL))
+						if (return_code)
 						{
-							acc_triangle_index=0;
-							for (i=0;i<n_iso_polys;i++)
+							if(voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
+								triangle_list, vertex_list, iso_poly_material,
+								iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
+								/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL))
 							{
-								for (j=0;j<3;j++)
+								acc_triangle_index=0;
+								for (i=0;i<n_iso_polys;i++)
 								{
-									triangle_list[3*acc_triangle_index+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->vertex_index[j];
-									iso_poly_material[3*acc_triangle_index+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->material[j];
-									iso_env_map[3*acc_triangle_index+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->env_map[j];
-									texturemap_index[3*acc_triangle_index+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->env_map_index[j];
-									texturemap_coord[3*(3*acc_triangle_index+0)+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->texture_coord[0][j];
-									texturemap_coord[3*(3*acc_triangle_index+1)+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->texture_coord[1][j];
-									texturemap_coord[3*(3*acc_triangle_index+2)+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->texture_coord[2][j];
-									iso_poly_cop[3*(3*acc_triangle_index+0)+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->iso_poly_cop[0][j];
-									iso_poly_cop[3*(3*acc_triangle_index+1)+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->iso_poly_cop[1][j];
-									iso_poly_cop[3*(3*acc_triangle_index+2)+j]=
-										vtexture->mc_iso_surface->
-										compiled_triangle_list[i]->iso_poly_cop[2][j];
+									for (j=0;j<3;j++)
+									{
+										triangle_list[3*acc_triangle_index+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->vertex_index[j];
+										iso_poly_material[3*acc_triangle_index+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->material[j];
+										iso_env_map[3*acc_triangle_index+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->env_map[j];
+										texturemap_index[3*acc_triangle_index+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->env_map_index[j];
+										texturemap_coord[3*(3*acc_triangle_index+0)+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->texture_coord[0][j];
+										texturemap_coord[3*(3*acc_triangle_index+1)+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->texture_coord[1][j];
+										texturemap_coord[3*(3*acc_triangle_index+2)+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->texture_coord[2][j];
+										iso_poly_cop[3*(3*acc_triangle_index+0)+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->iso_poly_cop[0][j];
+										iso_poly_cop[3*(3*acc_triangle_index+1)+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->iso_poly_cop[1][j];
+										iso_poly_cop[3*(3*acc_triangle_index+2)+j]=
+											vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->iso_poly_cop[2][j];
+									}
+									acc_triangle_index++;
 								}
-								acc_triangle_index++;
-							}
-							for (i=0;i<n_vertices;i++)
-							{
-								vertex_list[i].n_ptrs=(vtexture->mc_iso_surface->
-									compiled_vertex_list)[i]->n_triangle_ptrs;
-								for (j=0;j<vertex_list[i].n_ptrs;j++)
+								for (i=0;i<n_vertices;i++)
 								{
-									vertex_list[i].ptrs[j]=(vtexture->mc_iso_surface->
-										compiled_vertex_list[i]->triangle_ptrs)[j]->
-										triangle_index;
+									vertex_list[i].n_ptrs=(vtexture->mc_iso_surface->
+										compiled_vertex_list)[i]->n_triangle_ptrs;
+									for (j=0;j<vertex_list[i].n_ptrs;j++)
+									{
+										vertex_list[i].ptrs[j]=(vtexture->mc_iso_surface->
+											compiled_vertex_list[i]->triangle_ptrs)[j]->
+											triangle_index;
+									}
+									vertex_list[i].coord[0] = ((vtexture->mc_iso_surface->
+										compiled_vertex_list)[i]->coord)[0];
+									vertex_list[i].coord[1] = ((vtexture->mc_iso_surface->
+										compiled_vertex_list)[i]->coord)[1];
+									vertex_list[i].coord[2] = ((vtexture->mc_iso_surface->
+										compiled_vertex_list)[i]->coord)[2];
 								}
-								vertex_list[i].coord[0] = ((vtexture->mc_iso_surface->
-									compiled_vertex_list)[i]->coord)[0];
-								vertex_list[i].coord[1] = ((vtexture->mc_iso_surface->
-									compiled_vertex_list)[i]->coord)[1];
-								vertex_list[i].coord[2] = ((vtexture->mc_iso_surface->
-									compiled_vertex_list)[i]->coord)[2];
-							}
-							/* now calculate vertex normals in cartesian space by
-								averaging normals of surrounding faces */
-							/*???DB.  Can the normals be transformed ? */
-							for (i=0;i<n_vertices;i++)
-							{
-								for (k=0;k<3;k++)
+								/* now calculate vertex normals in cartesian space by
+									averaging normals of surrounding faces */
+								/*???DB.  Can the normals be transformed ? */
+								for (i=0;i<n_vertices;i++)
 								{
-									vectorsum[k]=0;
-								}
-								for (j=0;j<vertex_list[i].n_ptrs;j++)
-								{
-									triangle=vertex_list[i].ptrs[j];
 									for (k=0;k<3;k++)
 									{
-										vertex0[k]=vertex_list[triangle_list[triangle*3+0]].coord[k];
-										vertex1[k]=vertex_list[triangle_list[triangle*3+1]].coord[k];
-										vertex2[k]=vertex_list[triangle_list[triangle*3+2]].coord[k];
-										vector1[k]=vertex1[k]-vertex0[k];
-										vector2[k]=vertex2[k]-vertex0[k];
+										vectorsum[k]=0;
 									}
-									normalized_crossproduct(vector1,vector2,result);
+									for (j=0;j<vertex_list[i].n_ptrs;j++)
+									{
+										triangle=vertex_list[i].ptrs[j];
+										for (k=0;k<3;k++)
+										{
+											vertex0[k]=vertex_list[triangle_list[triangle*3+0]].coord[k];
+											vertex1[k]=vertex_list[triangle_list[triangle*3+1]].coord[k];
+											vertex2[k]=vertex_list[triangle_list[triangle*3+2]].coord[k];
+											vector1[k]=vertex1[k]-vertex0[k];
+											vector2[k]=vertex2[k]-vertex0[k];
+										}
+										normalized_crossproduct(vector1,vector2,result);
+										for (k=0;k<3;k++)
+										{
+											vectorsum[k] += result[k];
+										}
+									}
+									/* now set normal as the average & normalize */
+									rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
+										vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
 									for (k=0;k<3;k++)
 									{
-										vectorsum[k] += result[k];
+										vertex_list[i].normal[k]=-vectorsum[k]/rmag;
+										/*???Mark.  This should be + */
 									}
-								}
-								/* now set normal as the average & normalize */
-								rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
-									vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
-								for (k=0;k<3;k++)
-								{
-									vertex_list[i].normal[k]=-vectorsum[k]/rmag;
-									/*???Mark.  This should be + */
-								}
-							} /* i */
-							return_code = 1;
-							GT_OBJECT_ADD(GT_voltex)(obj,
-								file_read_graphics_object_data->time, voltex);
-						}
-						else
-						{
-							return_code=0;
-							display_message(ERROR_MESSAGE,
-								"file_read_voltex_graphics_object_from_obj.  Unable create GT_voltex");
+								} /* i */
+								GT_OBJECT_ADD(GT_voltex)(obj,
+									file_read_graphics_object_data->time, voltex);
+							}
+							else
+							{
+								return_code=0;
+								display_message(ERROR_MESSAGE,
+									"file_read_voltex_graphics_object_from_obj.  Unable create GT_voltex");
+							}
 						}
 							
 					}
