@@ -7448,7 +7448,8 @@ GT_element_group and therefore have the same rendition.
 										GT_ELEMENT_SETTINGS_DATA_POINTS))
 									{
 										if (element_xi_coordinate_field&&
-											!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+											!(default_coordinate_field && 
+												FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
 												FE_node_has_Computed_field_defined,
 												(void *)default_coordinate_field,data_group)))
 										{
