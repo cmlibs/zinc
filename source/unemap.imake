@@ -581,9 +581,9 @@ IMAGEMAGICK_SWITCH =
 IMAGEMAGICK_LIB = 
 #else /* !defined (IMAGEMAGICK) */
 #if defined (CMISS_ROOT_DEFINED)
-IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_utils
+IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
 #else /* defined (CMISS_ROOT_DEFINED) */
-IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_utils
+IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_libraries
 #endif /* defined (CMISS_ROOT_DEFINED) */
 #if defined (IRIX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
