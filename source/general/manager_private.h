@@ -343,7 +343,10 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			DESTROY(LIST(object_type))(&(manager->message->changed_object_list)); \
 			DEALLOCATE(manager->message); \
 		} \
-		/* destroy the callback list */ \
+		/* destroy the list of objects in the manager */ \
+		DESTROY_LIST(object_type)(&(manager->object_list)); \
+		/* destroy the callback list, after the list of objects as some Computed fields get 
+		 Computed_field_manager callbacks */ \
 		current=manager->callback_list; \
 		while (current) \
 		{ \
@@ -351,9 +354,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			DEALLOCATE(current); \
 			current = next; \
 		} \
-		/* destroy the list of objects in the manager */ \
-		DESTROY_LIST(object_type)(&(manager->object_list)); \
-    DEALLOCATE(manager); \
+      DEALLOCATE(manager); \
 	} \
 	else \
 	{ \
@@ -390,7 +391,14 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			DESTROY(LIST(object_type))(&(manager->message->changed_object_list)); \
 			DEALLOCATE(manager->message); \
 		} \
-		/* destroy the callback list */ \
+		/* remove the manager_pointer from each object */ \
+		FOR_EACH_OBJECT_IN_LIST(object_type)( \
+			OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type), \
+			(void *)NULL, manager->object_list); \
+		/* destroy the list of objects in the manager */ \
+		DESTROY_LIST(object_type)(&(manager->object_list)); \
+		/* destroy the callback list, after the list of objects as some Computed fields get 
+		 Computed_field_manager callbacks */ \
 		current=manager->callback_list; \
 		while (current) \
 		{ \
@@ -398,13 +406,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			DEALLOCATE(current); \
 			current = next; \
 		} \
-		/* remove the manager_pointer from each object */ \
-		FOR_EACH_OBJECT_IN_LIST(object_type)( \
-			OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type), \
-			(void *)NULL, manager->object_list); \
-		/* destroy the list of objects in the manager */ \
-		DESTROY_LIST(object_type)(&(manager->object_list)); \
-    DEALLOCATE(manager); \
+      DEALLOCATE(manager); \
 	} \
 	else \
 	{ \
