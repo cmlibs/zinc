@@ -7106,7 +7106,7 @@ Removes <graphics object> from the list of objects on <scene>.
 			Scene_object_has_gt_object,(void *)graphics_object,
 			scene->scene_object_list))
 		{
-			Scene_remove_scene_object(scene, scene_object);
+			return_code = Scene_remove_scene_object(scene, scene_object);
 		}
 		else
 		{
@@ -7193,7 +7193,7 @@ Removes <child_scene> from the list of scenes in <scene>.
 			Scene_object_has_child_scene,(void *)child_scene,
 			scene->scene_object_list))
 		{
-			Scene_remove_scene_object(scene, scene_object);
+			return_code = Scene_remove_scene_object(scene, scene_object);
 		}
 		else
 		{
