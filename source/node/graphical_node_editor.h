@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_node_editor.h
 
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Functions mouse controlled node editing to a Scene.
@@ -29,12 +29,9 @@ Global functions
 ----------------
 */
 struct Graphical_node_editor *CREATE(Graphical_node_editor)(
-	struct Scene *scene,struct GROUP(FE_element) *active_element_group,
-	struct GROUP(FE_node) *active_data_group,
-	struct GROUP(FE_node) *active_node_group,
-	struct MANAGER(FE_node) *node_manager);
+	struct Scene *scene,struct MANAGER(FE_node) *node_manager);
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Creates the structure that needs to be passed to the GNE_scene_input_callback.
@@ -43,7 +40,7 @@ Creates the structure that needs to be passed to the GNE_scene_input_callback.
 int DESTROY(Graphical_node_editor)(
 	struct Graphical_node_editor **node_editor_address);
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Frees and deaccesses objects in the <node_editor> and deallocates the
