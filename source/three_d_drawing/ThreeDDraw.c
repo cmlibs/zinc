@@ -838,7 +838,7 @@ because the initialize method is downward chained.
 ==============================================================================*/
 {
 	Display *display;
-	int screen_number;
+	int major_version_number, minor_version_number, screen_number;
 	ThreeDDrawingWidget request,new;
 #if defined (OPENGL_API)
 	Bool direct_rendering;
@@ -891,7 +891,6 @@ because the initialize method is downward chained.
 		/* check the existence of the GLX server extension */
 		if (True==glXQueryExtension(display,&error_base,&event_base))
 		{
-#if defined (DEBUG)
 			/* find version numbers for the GLX extension */
 			if (True==glXQueryVersion(display,&major_version_number,
 				&minor_version_number))
@@ -900,12 +899,13 @@ because the initialize method is downward chained.
 				{
 					glx_major_version = major_version_number;
 					glx_minor_version = minor_version_number;
+#if defined (DEBUG)
 					/* only want to print this once */
 					display_message(ERROR_MESSAGE,"GLX version = %d.%d\n",
 						major_version_number,minor_version_number);
+#endif /* defined (DEBUG) */
 				}
 			}
-#endif /* defined (DEBUG) */
 			visual_info_template.screen=screen_number;
 			if (visual_info_list=XGetVisualInfo(display,VisualScreenMask,
 				&visual_info_template,&number_of_visual_infos))
