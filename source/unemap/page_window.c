@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 
@@ -4415,7 +4415,8 @@ Called to start stimulating on the <page_window>.
 						return_code=unemap_load_voltage_stimulating(1,
 							&(((page_window->stimulate_devices)[
 							(page_window->stimulator_number)-1])->channel->number),
-							number_of_values,values_per_second,values);
+							number_of_values,values_per_second,values,
+							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 #if defined (OLD_CODE)
 						return_code=unemap_start_voltage_stimulating(
 							((page_window->stimulate_devices)[
@@ -4438,7 +4439,8 @@ Called to start stimulating on the <page_window>.
 							return_code=unemap_load_current_stimulating(1,
 								&(((page_window->stimulate_devices)[
 								(page_window->stimulator_number)-1])->channel->number),
-								number_of_values,values_per_second,values);
+								number_of_values,values_per_second,values,
+								(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 #if defined (OLD_CODE)
 							return_code=unemap_start_current_stimulating(
 								((page_window->stimulate_devices)[
@@ -4680,7 +4682,8 @@ Called to start a stimulator.
 							((page_window->stimulators)[stimulator_number]).
 							number_of_channels,
 							((page_window->stimulators)[stimulator_number]).channel_numbers,
-							number_of_values,values_per_second,values,number_of_cycles);
+							number_of_values,values_per_second,values,number_of_cycles,
+							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 					}
 					else
 					{
@@ -4695,7 +4698,8 @@ Called to start a stimulator.
 								((page_window->stimulators)[stimulator_number]).
 								number_of_channels,
 								((page_window->stimulators)[stimulator_number]).channel_numbers,
-								number_of_values,values_per_second,values,number_of_cycles);
+								number_of_values,values_per_second,values,number_of_cycles,
+								(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 						}
 					}
 					DEALLOCATE(values);
@@ -4761,7 +4765,8 @@ Called to stop a stimulator.
 						end_number_of_values,
 						((page_window->stimulators)[stimulator_number]).
 						end_values_per_second,
-						((page_window->stimulators)[stimulator_number]).end_values,1);
+						((page_window->stimulators)[stimulator_number]).end_values,1,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 				}
 				else
 				{
@@ -4782,7 +4787,8 @@ Called to stop a stimulator.
 							end_number_of_values,
 							((page_window->stimulators)[stimulator_number]).
 							end_values_per_second,
-							((page_window->stimulators)[stimulator_number]).end_values,1);
+							((page_window->stimulators)[stimulator_number]).end_values,1,
+							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 					}
 				}
 				if (return_code)
@@ -5567,7 +5573,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5663,6 +5669,11 @@ Called to start experiment on the <page_window>.
 #if defined (WINDOWS)
 					Edit_SetText((page_window->low_pass_filter).edit,working_string);
 #endif /* defined (WINDOWS) */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Could not configure hardware");
+					return_code=0;
 				}
 #endif /* defined (MIRADA) */
 			}
@@ -6292,7 +6303,7 @@ Called to stop experiment on the <page_window>.
 static void start_stop_experiment_callback(Widget widget,XtPointer page_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 29 July 1999
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 Motif wrapper for start_experiment and stop_experiment.
@@ -6305,7 +6316,10 @@ Motif wrapper for start_experiment and stop_experiment.
 	XtVaGetValues(widget,XmNset,&status,NULL);
 	if (True==status)
 	{
-		start_experiment((struct Page_window *)page_window);
+		if (!start_experiment((struct Page_window *)page_window))
+		{
+			XtVaSetValues(widget,XmNset,False,NULL);
+		}
 	}
 	else
 	{
@@ -7494,7 +7508,8 @@ Called when the start all stimulators button is pressed.
 									number_of_channels,
 									((page_window->stimulators)[stimulator_number]).
 									channel_numbers,number_of_values,values_per_second,
-									values,number_of_cycles);
+									values,number_of_cycles,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 							}
 							else
 							{
@@ -7511,7 +7526,8 @@ Called when the start all stimulators button is pressed.
 										number_of_channels,
 										((page_window->stimulators)[stimulator_number]).
 										channel_numbers,number_of_values,values_per_second,
-										values,number_of_cycles);
+										values,number_of_cycles,
+										(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 								}
 							}
 							DEALLOCATE(values);
@@ -7626,7 +7642,8 @@ Called when the stop all stimulators button is pressed.
 					unemap_load_voltage_stimulating(
 						((page_window->stimulators)[i]).number_of_channels,
 						((page_window->stimulators)[i]).channel_numbers,number_of_values,
-						values_per_second,values,1);
+						values_per_second,values,1,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 				}
 				else
 				{
@@ -7640,7 +7657,8 @@ Called when the stop all stimulators button is pressed.
 						unemap_load_current_stimulating(
 							((page_window->stimulators)[i]).number_of_channels,
 							((page_window->stimulators)[i]).channel_numbers,number_of_values,
-							values_per_second,values,1);
+							values_per_second,values,1,
+							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 					}
 				}
 				if (0<(number_of_values=((page_window->stimulators)[i]).
