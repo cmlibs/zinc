@@ -410,6 +410,7 @@ of this parse state routine.
 	int return_code;
 
 	ENTER(ignore_entry_and_next_token);
+	USE_PARAMETER(dummy_void);
 	if (state)
 	{
 		if (current_token = state->current_token)
@@ -1472,7 +1473,7 @@ Main program for the CMISS Graphical User Interface
 	Execute_command_set_command_function(execute_command,
 		cmiss_execute_command, (void *)(&command_data));
 	Execute_command_set_command_function(set_command,
-		cmiss_execute_command, (void *)(&command_data));
+		cmiss_set_command, (void *)(&command_data));
 
 	/* initialize random number generator */
 	if (-1 == non_random)
