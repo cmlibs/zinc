@@ -14,7 +14,7 @@
 
 EXPORT template<typename Value_type>
 Function_variable_value_specific<Value_type>::
-	Function_variable_value_specific<Value_type>(
+	Function_variable_value_specific(
 	bool (*set_function)(Value_type&,const Function_variable_handle)):
 	set_function(set_function){};
 
