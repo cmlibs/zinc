@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.cpp
 //
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -195,9 +195,9 @@ class Function_variable_iterator_representation_atomic_exclusion: public
 Function_variable_exclusion::Function_variable_exclusion(
 	const Function_variable_handle& universe,
 	const Function_variable_handle& exclusion):
-	Function_variable(),exclusion(exclusion),universe(universe)
+	Function_variable(Function_handle(0)),exclusion(exclusion),universe(universe)
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // Constructor.

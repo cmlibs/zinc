@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composition.cpp
 //
-// LAST MODIFIED : 14 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -68,27 +68,24 @@ class Function_variable_iterator_representation_atomic_composition:
 
 class Function_variable_composition : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 14 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	friend class Function_composition;
 	friend class Function_variable_iterator_representation_atomic_composition;
-	friend bool is_atomic(Function_variable_composition_handle variable);
 	public:
 		// constructor
 		Function_variable_composition(
 			const Function_composition_handle& function_composition):
-			Function_variable(),function_composition(function_composition),
-			atomic_output_variable(0){};
+			Function_variable(function_composition),atomic_output_variable(0){};
 		// constructor.  A zero <atomic_output_variable> indicates the whole output
 		//   variable
 		Function_variable_composition(
 			const Function_composition_handle& function_composition,
 			Function_variable_handle& atomic_output_variable):
-			Function_variable(),function_composition(function_composition),
-			atomic_output_variable(0)
+			Function_variable(function_composition),atomic_output_variable(0)
 		{
 			if (function_composition)
 			{
@@ -122,13 +119,11 @@ class Function_variable_composition : public Function_variable
 			return (Function_variable_composition_handle(
 				new Function_variable_composition(*this)));
 		};
-		Function_handle function()
-		{
-			return (function_composition);
-		};
 		Function_handle evaluate()
 		{
 			Function_handle result(0);
+			Function_composition_handle function_composition=
+				boost::dynamic_pointer_cast<Function_composition,Function>(function());
 
 			if (function_composition)
 			{
@@ -137,7 +132,7 @@ class Function_variable_composition : public Function_variable
 				if ((function_composition->input_private)&&
 					(function_composition->value_private))
 				{
-					input_current=(function_composition->input_private)->evaluate();
+					input_current=(function_composition->input_private)->get_value();
 					(function_composition->input_private)->set_value(
 						function_composition->value_private->evaluate());
 				}
@@ -164,6 +159,8 @@ class Function_variable_composition : public Function_variable
 			std::list<Function_variable_handle>& independent_variables)
 		{
 			Function_handle result(0);
+			Function_composition_handle function_composition=
+				boost::dynamic_pointer_cast<Function_composition,Function>(function());
 
 			if (function_composition)
 			{
@@ -229,7 +226,7 @@ class Function_variable_composition : public Function_variable
 						if ((function_composition->input_private)&&
 							(function_composition->value_private))
 						{
-							input_current=(function_composition->input_private)->evaluate();
+							input_current=(function_composition->input_private)->get_value();
 							(function_composition->input_private)->set_value(
 								function_composition->value_private->evaluate());
 						}
@@ -269,6 +266,8 @@ class Function_variable_composition : public Function_variable
 		}
 		string_handle get_string_representation()
 		{
+			Function_composition_handle function_composition=
+				boost::dynamic_pointer_cast<Function_composition,Function>(function());
 			string_handle return_string(0);
 
 			if (return_string=new std::string)
@@ -339,6 +338,8 @@ class Function_variable_composition : public Function_variable
 		};
 		Function_size_type number_differentiable()
 		{
+			Function_composition_handle function_composition=
+				boost::dynamic_pointer_cast<Function_composition,Function>(function());
 			Function_size_type result;
 
 			result=0;
@@ -363,13 +364,15 @@ class Function_variable_composition : public Function_variable
 		bool equality_atomic(const Function_variable_handle& variable) const
 		{
 			bool result;
+			Function_composition_handle function_composition=
+				boost::dynamic_pointer_cast<Function_composition,Function>(function());
 			Function_variable_composition_handle variable_composition;
 
 			result=false;
 			if (variable_composition=boost::dynamic_pointer_cast<
 				Function_variable_composition,Function_variable>(variable))
 			{
-				if ((variable_composition->function_composition==function_composition)&&
+				if ((variable_composition->function()==function_composition)&&
 					(((0==variable_composition->atomic_output_variable)&&
 					(0==atomic_output_variable))||(atomic_output_variable&&
 					(variable_composition->atomic_output_variable)&&
@@ -386,30 +389,15 @@ class Function_variable_composition : public Function_variable
 		// copy constructor
 		Function_variable_composition(
 			const Function_variable_composition& variable_composition):
-			Function_variable(),
-			function_composition(variable_composition.function_composition),
+			Function_variable(variable_composition),
 			atomic_output_variable(variable_composition.atomic_output_variable){};
 		// assignment
 		Function_variable_composition& operator=(
 			const Function_variable_composition&);
 	private:
-		Function_composition_handle function_composition;
 		// if zero then all of output
 		Function_variable_handle atomic_output_variable;
 };
-
-bool is_atomic(Function_variable_composition_handle variable)
-{
-	bool result;
-
-	result=false;
-	if (variable&&(variable->atomic_output_variable))
-	{
-		result=true;
-	}
-
-	return (result);
-}
 
 
 // class Function_variable_iterator_representation_atomic_composition
@@ -421,17 +409,21 @@ Function_variable_iterator_representation_atomic_composition::
 	atomic_variable(0),variable(variable),atomic_output_iterator(0),
 	atomic_output_iterator_begin(0),atomic_output_iterator_end(0)
 //******************************************************************************
-// LAST MODIFIED : 11 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
 // atomic variable, otherwise it points to one past the last atomic variable.
 //==============================================================================
 {
-	if (begin&&variable&&(variable->function_composition))
+	if (begin&&variable)
 	{
-		if (atomic_variable=boost::dynamic_pointer_cast<
-			Function_variable_composition,Function_variable>(variable->clone()))
+		Function_composition_handle function_composition=
+			boost::dynamic_pointer_cast<Function_composition,Function>(
+			variable->function());
+
+		if (function_composition&&(atomic_variable=boost::dynamic_pointer_cast<
+			Function_variable_composition,Function_variable>(variable->clone())))
 		{
 			atomic_output_iterator=0;
 			atomic_output_iterator_begin=0;
@@ -447,8 +439,7 @@ Function_variable_iterator_representation_atomic_composition::
 			{
 				Function_variable_handle output_variable_local;
 
-				if (output_variable_local=
-					variable->function_composition->output_private)
+				if (output_variable_local=function_composition->output_private)
 				{
 					atomic_output_iterator_begin=output_variable_local->begin_atomic();
 					atomic_output_iterator_end=output_variable_local->end_atomic();
@@ -463,27 +454,13 @@ Function_variable_iterator_representation_atomic_composition::
 				(atomic_output_iterator_begin!=atomic_output_iterator_end))
 			{
 				atomic_output_iterator=atomic_output_iterator_begin;
-				while ((atomic_output_iterator!=atomic_output_iterator_end)&&
-					(1!=(*atomic_output_iterator)->number_differentiable()))
-				{
-					atomic_output_iterator++;
-				}
-				if (atomic_output_iterator!=atomic_output_iterator_end)
-				{
-					atomic_variable->atomic_output_variable= *atomic_output_iterator;
-				}
-				else
-				{
-					// end
-					atomic_variable=0;
-				}
+				atomic_variable->atomic_output_variable= *atomic_output_iterator;
 			}
 			else
 			{
 				// end
 				atomic_variable=0;
 			}
-			// variable is an output and cannot be set so leave value_private zero
 		}
 	}
 }
@@ -545,7 +522,7 @@ void Function_variable_iterator_representation_atomic_composition::increment()
 
 void Function_variable_iterator_representation_atomic_composition::decrement()
 //******************************************************************************
-// LAST MODIFIED : 11 June 2004
+// LAST MODIFIED : 23 June 2004
 //
 // DESCRIPTION :
 // Decrements the iterator to the next atomic variable.  NULL <atomic_variable>
@@ -566,10 +543,14 @@ void Function_variable_iterator_representation_atomic_composition::decrement()
 	}
 	else
 	{
-		if (variable&&(variable->function_composition))
+		if (variable)
 		{
-			if (atomic_variable=boost::dynamic_pointer_cast<
-				Function_variable_composition,Function_variable>(variable->clone()))
+			Function_composition_handle function_composition=
+				boost::dynamic_pointer_cast<Function_composition,Function>(
+				variable->function());
+
+			if (function_composition&&(atomic_variable=boost::dynamic_pointer_cast<
+				Function_variable_composition,Function_variable>(variable->clone())))
 			{
 				atomic_output_iterator=0;
 				atomic_output_iterator_begin=0;
@@ -585,8 +566,7 @@ void Function_variable_iterator_representation_atomic_composition::decrement()
 				{
 					Function_variable_handle output_variable_local;
 
-					if (output_variable_local=
-						variable->function_composition->output_private)
+					if (output_variable_local=function_composition->output_private)
 					{
 						atomic_output_iterator_begin=
 							output_variable_local->begin_atomic();
@@ -602,32 +582,15 @@ void Function_variable_iterator_representation_atomic_composition::decrement()
 				if (atomic_variable&&
 					(atomic_output_iterator_begin!=atomic_output_iterator_end))
 				{
-					Function_size_type number_differentiable_local;
-
 					atomic_output_iterator=atomic_output_iterator_end;
 					atomic_output_iterator--;
-					while ((1!=(number_differentiable_local=
-						(*atomic_output_iterator)->number_differentiable()))&&
-						(atomic_output_iterator!=atomic_output_iterator_begin))
-					{
-						atomic_output_iterator--;
-					}
-					if (1==number_differentiable_local)
-					{
-						atomic_variable->atomic_output_variable= *atomic_output_iterator;
-					}
-					else
-					{
-						// end
-						atomic_variable=0;
-					}
+					atomic_variable->atomic_output_variable= *atomic_output_iterator;
 				}
 				else
 				{
 					// end
 					atomic_variable=0;
 				}
-				// variable is an output and cannot be set so leave value_private zero
 			}
 		}
 	}
@@ -827,6 +790,25 @@ bool Function_composition::set_value(
 		(function->set_value)(atomic_variable,atomic_value))
 	{
 		result=true;
+	}
+
+	return (result);
+}
+
+Function_handle Function_composition::get_value(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 22 June 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_handle function,result;
+
+	result=0;
+	if (output_private&&(function=(output_private->function)()))
+	{
+		result=(function->get_value)(atomic_variable);
 	}
 
 	return (result);

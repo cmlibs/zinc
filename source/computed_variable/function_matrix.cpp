@@ -1,10 +1,13 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 9 June 2004
+// LAST MODIFIED : 15 July 2004
 //
 // DESCRIPTION :
 //???DB.  Should be template?
+//???DB.  Should be linear transformation (with Function_variable_matrix as an
+//  input?
+//???DB.  solve method becomes an invert?
 //==============================================================================
 
 #include <sstream>
@@ -18,11 +21,27 @@ namespace lapack = boost::numeric::bindings::lapack;
 
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+#include "computed_variable/function_variable_matrix.hpp"
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 #include "computed_variable/function_variable_value_scalar.hpp"
+
+
+// module typedefs
+// ===============
+
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+typedef boost::intrusive_ptr< Function_variable_matrix<Scalar> >
+	Function_variable_matrix_handle;
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+
 
 // module classes
 // ==============
 
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 // forward declaration so that can use _handle
 class Function_variable_matrix;
 typedef boost::intrusive_ptr<Function_variable_matrix>
@@ -76,7 +95,7 @@ static bool Function_variable_matrix_set_scalar_function(Scalar& value,
 
 class Function_variable_matrix : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 15 May 2004
+// LAST MODIFIED : 1 July 2004
 //
 // DESCRIPTION :
 // <column> and <row> start from one when referencing a matrix entry.  Zero
@@ -85,13 +104,12 @@ class Function_variable_matrix : public Function_variable
 {
 	friend class Function_matrix;
 	friend class Function_variable_iterator_representation_atomic_matrix;
-	friend bool is_atomic(Function_variable_matrix_handle variable);
 	friend bool Function_variable_matrix_set_scalar_function(Scalar& value,
 		const Function_variable_handle variable);
 	public:
 		// constructor
 		Function_variable_matrix(const Function_matrix_handle function_matrix):
-			Function_variable(),function_matrix(function_matrix),column(0),row(0)
+			Function_variable(),column(0),row(0)
 		{
 			if (function_matrix&&(1==(function_matrix->number_of_rows)())&&
 				(1==(function_matrix->number_of_columns)()))
@@ -103,7 +121,7 @@ class Function_variable_matrix : public Function_variable
 		};
 		Function_variable_matrix(const Function_matrix_handle function_matrix,
 			const Function_size_type row,const Function_size_type column):
-			function_matrix(function_matrix),column(column),row(row)
+			column(column),row(row)
 		{
 			if (function_matrix)
 			{
@@ -151,12 +169,10 @@ class Function_variable_matrix : public Function_variable
 		{
 			return (Function_variable_handle(new Function_variable_matrix(*this)));
 		};
-		Function_handle function()
-		{
-			return (function_matrix);
-		};
 		string_handle get_string_representation()
 		{
+			Function_matrix_handle function_matrix=boost::dynamic_pointer_cast<
+				Function_matrix,Function>(function());
 			string_handle return_string(0);
 
 			if (return_string=new std::string)
@@ -260,6 +276,8 @@ class Function_variable_matrix : public Function_variable
 		};
 		Function_size_type number_differentiable()
 		{
+			Function_matrix_handle function_matrix=boost::dynamic_pointer_cast<
+				Function_matrix,Function>(function());
 			Function_size_type result;
 
 			result=0;
@@ -301,8 +319,21 @@ class Function_variable_matrix : public Function_variable
 			if (variable_matrix=boost::dynamic_pointer_cast<
 				Function_variable_matrix,Function_variable>(variable))
 			{
-				result=((function_matrix==variable_matrix->function_matrix)&&
+				result=((function()==variable_matrix->function())&&
 					(row==variable_matrix->row)&&(column==variable_matrix->column));
+			}
+
+			return (result);
+		};
+	private:
+		bool is_atomic()
+		{
+			bool result;
+
+			result=false;
+			if (this&&(0!=row)&&(0!=column))
+			{
+				result=true;
 			}
 
 			return (result);
@@ -310,40 +341,27 @@ class Function_variable_matrix : public Function_variable
 	private:
 		// copy constructor
 		Function_variable_matrix(const Function_variable_matrix& variable):
-			Function_variable(variable),function_matrix(variable.function_matrix),
-			column(variable.column),row(variable.row){};
+			Function_variable(variable),column(variable.column),row(variable.row){};
 		// assignment
 		Function_variable_matrix& operator=(const Function_variable_matrix&);
 	private:
-		Function_matrix_handle function_matrix;
 		Function_size_type column,row;
 };
-
-bool is_atomic(Function_variable_matrix_handle variable)
-{
-	bool result;
-
-	result=false;
-	if (variable&&(0!=variable->row)&&(0!=variable->column))
-	{
-		result=true;
-	}
-
-	return (result);
-}
 
 static bool Function_variable_matrix_set_scalar_function(Scalar& value,
 	const Function_variable_handle variable)
 {
 	bool result;
+	Function_matrix_handle function_matrix;
 	Function_variable_matrix_handle matrix_variable;
 
 	result=false;
 	if ((matrix_variable=boost::dynamic_pointer_cast<Function_variable_matrix,
-		Function_variable>(variable))&&is_atomic(matrix_variable)&&
-		(matrix_variable->function_matrix))
+		Function_variable>(variable))&&(matrix_variable->is_atomic)()&&
+		(function_matrix=boost::dynamic_pointer_cast<Function_matrix,Function>(
+		matrix_variable->function())))
 	{
-		value=(*(matrix_variable->function_matrix))((matrix_variable->row)-1,
+		value=(*function_matrix)((matrix_variable->row)-1,
 			(matrix_variable->column)-1);
 		result=true;
 	}
@@ -419,25 +437,26 @@ Function_variable_iterator_representation_atomic_matrix::
 
 void Function_variable_iterator_representation_atomic_matrix::increment()
 //******************************************************************************
-// LAST MODIFIED : 2 March 2004
+// LAST MODIFIED : 1 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	if (variable&&(variable->function_matrix)&&(atomic_variable))
+	Function_matrix_handle function_matrix;
+
+	if (variable&&(function_matrix=boost::dynamic_pointer_cast<Function_matrix,
+		Function>(variable->function()))&&(atomic_variable))
 	{
 		if (0==variable->column)
 		{
 			(atomic_variable->column)++;
-			if (atomic_variable->column>
-				(variable->function_matrix->number_of_columns)())
+			if (atomic_variable->column>(function_matrix->number_of_columns)())
 			{
 				if (0==variable->row)
 				{
 					(atomic_variable->column)=1;
 					(atomic_variable->row)++;
-					if (atomic_variable->row>
-						(variable->function_matrix->number_of_rows)())
+					if (atomic_variable->row>(function_matrix->number_of_rows)())
 					{
 						// end
 						atomic_variable=0;
@@ -455,8 +474,7 @@ void Function_variable_iterator_representation_atomic_matrix::increment()
 			if (0==variable->row)
 			{
 				(atomic_variable->row)++;
-				if (atomic_variable->row>
-					(variable->function_matrix->number_of_rows)())
+				if (atomic_variable->row>(function_matrix->number_of_rows)())
 				{
 					// end
 					atomic_variable=0;
@@ -473,12 +491,15 @@ void Function_variable_iterator_representation_atomic_matrix::increment()
 
 void Function_variable_iterator_representation_atomic_matrix::decrement()
 //******************************************************************************
-// LAST MODIFIED : 3 June 2004
+// LAST MODIFIED : 1 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	if (variable&&(variable->function_matrix))
+	Function_matrix_handle function_matrix;
+
+	if (variable&&(function_matrix=boost::dynamic_pointer_cast<Function_matrix,
+		Function>(variable->function())))
 	{
 		if (atomic_variable)
 		{
@@ -489,8 +510,7 @@ void Function_variable_iterator_representation_atomic_matrix::decrement()
 				{
 					if (0==variable->row)
 					{
-						atomic_variable->column=
-							(variable->function_matrix->number_of_columns)();
+						atomic_variable->column=(function_matrix->number_of_columns)();
 						(atomic_variable->row)--;
 						if (atomic_variable->row<1)
 						{
@@ -530,13 +550,11 @@ void Function_variable_iterator_representation_atomic_matrix::decrement()
 			{
 				if (0==atomic_variable->row)
 				{
-					atomic_variable->row=
-						(variable->function_matrix->number_of_rows)();
+					atomic_variable->row=(function_matrix->number_of_rows)();
 				}
 				if (0==atomic_variable->column)
 				{
-					atomic_variable->column=
-						(variable->function_matrix->number_of_columns)();
+					atomic_variable->column=(function_matrix->number_of_columns)();
 				}
 				atomic_variable->value_private=Function_variable_value_handle(
 					new Function_variable_value_scalar(
@@ -603,6 +621,88 @@ Function_variable_iterator_representation_atomic_matrix::
 			Function_variable>((representation.atomic_variable)->clone());
 	}
 }
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+
+// class Function_variable_matrix_coefficients
+// -------------------------------------------
+
+// forward declaration so that can use _handle
+class Function_variable_matrix_coefficients;
+typedef boost::intrusive_ptr<Function_variable_matrix_coefficients>
+	Function_variable_matrix_coefficients_handle;
+
+class Function_variable_matrix_coefficients :
+	public Function_variable_matrix<Scalar>
+//******************************************************************************
+// LAST MODIFIED : 15 July 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	friend class Function_matrix;
+	public:
+		// constructor
+		Function_variable_matrix_coefficients(
+			const Function_matrix_handle function_matrix):
+			Function_variable_matrix<Scalar>(function_matrix){};
+		Function_variable_matrix_coefficients(
+			const Function_matrix_handle function_matrix,
+			const Function_size_type row,const Function_size_type column):
+			Function_variable_matrix<Scalar>(function_matrix,row,column){};
+		~Function_variable_matrix_coefficients(){}
+	public:
+		Function_variable_handle clone() const
+		{
+			return (Function_variable_handle(
+				new Function_variable_matrix_coefficients(*this)));
+		};
+		Function_variable_matrix_handle operator()(
+			Function_size_type row,Function_size_type column)
+		{
+			Function_variable_matrix_handle result(0);
+
+			if ((row<=number_of_rows())&&(column<=number_of_columns()))
+			{
+				result=Function_variable_matrix_handle(
+					new Function_variable_matrix_coefficients(
+					boost::dynamic_pointer_cast<Function_matrix,Function>(
+					function_private),row,column));
+			}
+
+			return (result);
+		};
+		Function_size_type number_of_rows() const
+		{
+			return ((boost::dynamic_pointer_cast<Function_matrix,Function>(
+				function_private))->number_of_rows());
+		};
+		Function_size_type number_of_columns() const
+		{
+			return ((boost::dynamic_pointer_cast<Function_matrix,Function>(
+				function_private))->number_of_columns());
+		};
+		bool get_entry(Scalar& value) const
+		{
+			bool result;
+
+			result=false;
+			if ((0<row)&&(row<=number_of_rows())&&
+				(0<column)&&(column<=number_of_columns()))
+			{
+				result=true;
+				value=(*(boost::dynamic_pointer_cast<Function_matrix,Function>(
+					function_private)))(row-1,column-1);
+			}
+
+			return (result);
+		};
+	private:
+		// copy constructor
+		Function_variable_matrix_coefficients(
+			const Function_variable_matrix_coefficients& variable):
+			Function_variable_matrix<Scalar>(variable){};
+};
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 
 
 // global classes
@@ -656,8 +756,13 @@ Function_variable_handle Function_matrix::input()
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(new Function_variable_matrix(
-		Function_matrix_handle(this))));
+	return (Function_variable_handle(new
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix_coefficients
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		(Function_matrix_handle(this))));
 }
 
 Function_variable_handle Function_matrix::output()
@@ -667,8 +772,13 @@ Function_variable_handle Function_matrix::output()
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(new Function_variable_matrix(
-		Function_matrix_handle(this))));
+	return (Function_variable_handle(new
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix_coefficients
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		(Function_matrix_handle(this))));
 }
 
 Function_variable_handle Function_matrix::entry(Function_size_type row,
@@ -679,8 +789,13 @@ Function_variable_handle Function_matrix::entry(Function_size_type row,
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(new Function_variable_matrix(
-		Function_matrix_handle(this),row,column)));
+	return (Function_variable_handle(new
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix_coefficients
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		(Function_matrix_handle(this),row,column)));
 }
 
 Scalar& Function_matrix::operator()(Function_size_type row,
@@ -783,48 +898,55 @@ Function_matrix_handle Function_matrix::solve(const Function_matrix_handle& rhs)
 Function_handle Function_matrix::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 9 June 2004
+// LAST MODIFIED : 23 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	Function_handle result(0);
-	Matrix result_matrix(1,1);
-
-	if (atomic_variable&&(Function_handle(this)==(atomic_variable->function)())&&
-		Function_variable_matrix_set_scalar_function(
-		result_matrix(0,0),atomic_variable))
-	{
-		result=Function_handle(new Function_matrix(result_matrix));
-	}
-
-	return (result);
+	return (get_value(atomic_variable));
 }
 
 bool Function_matrix::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 1 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
-	Function_variable_matrix_handle atomic_dependent_variable,
-		atomic_independent_variable;
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	Function_variable_matrix_handle
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	Function_variable_matrix_coefficients_handle
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		atomic_dependent_variable,atomic_independent_variable;
 
 	result=false;
 	if ((atomic_dependent_variable=boost::dynamic_pointer_cast<
-		Function_variable_matrix,Function_variable>(atomic_variable))&&
-		(this==atomic_dependent_variable->function_matrix)&&
-		is_atomic(atomic_dependent_variable)&&
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix_coefficients
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		,Function_variable>(atomic_variable))&&
+		(Function_handle(this)==atomic_dependent_variable->function())&&
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		(atomic_dependent_variable->is_atomic)()&&
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 		(1==atomic_dependent_variable->number_differentiable()))
 	{
 		result=true;
 		if ((1==atomic_independent_variables.size())&&
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
-			Function_variable_matrix,Function_variable>(
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+			Function_variable_matrix
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+			Function_variable_matrix_coefficients
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+			,Function_variable>(
 			atomic_independent_variables.front()))&&
 			(*atomic_dependent_variable== *atomic_independent_variable))
 		{
@@ -842,26 +964,73 @@ bool Function_matrix::evaluate_derivative(Scalar& derivative,
 bool Function_matrix::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 1 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
-	Function_variable_matrix_handle atomic_matrix_variable;
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	Function_variable_matrix_handle
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	Function_variable_matrix_coefficients_handle
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		atomic_matrix_variable;
 	Function_variable_value_scalar_handle value_scalar;
 
 	result=false;
 	if ((atomic_matrix_variable=boost::dynamic_pointer_cast<
-		Function_variable_matrix,Function_variable>(atomic_variable))&&
-		(this==atomic_matrix_variable->function_matrix)&&
-		is_atomic(atomic_matrix_variable)&&atomic_value&&(atomic_value->value())&&
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix_coefficients
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		,Function_variable>(atomic_variable))&&
+		(Function_handle(this)==atomic_matrix_variable->function())&&
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		(atomic_matrix_variable->is_atomic)()&&
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		atomic_value&&(atomic_value->value())&&
 		(std::string("Scalar")==(atomic_value->value())->type())&&
 		(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
 		Function_variable_value>(atomic_value->value())))
 	{
 		result=value_scalar->set(values((atomic_matrix_variable->row)-1,
 			(atomic_matrix_variable->column)-1),atomic_value);
+	}
+
+	return (result);
+}
+
+Function_handle Function_matrix::get_value(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 23 June 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_handle result(0);
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	Function_variable_matrix_coefficients_handle
+		atomic_variable_matrix_coefficients;
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	Matrix result_matrix(1,1);
+
+	if (atomic_variable&&(Function_handle(this)==(atomic_variable->function)())&&
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		Function_variable_matrix_coefficients_set_scalar_function(
+		result_matrix(0,0),atomic_variable)
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		(atomic_variable_matrix_coefficients=boost::dynamic_pointer_cast<
+		Function_variable_matrix_coefficients,Function_variable>(atomic_variable))&&
+		(atomic_variable_matrix_coefficients->get_entry)(result_matrix(0,0))
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+		)
+	{
+		result=Function_handle(new Function_matrix(result_matrix));
 	}
 
 	return (result);

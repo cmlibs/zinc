@@ -1,13 +1,14 @@
 //******************************************************************************
 // FILE : function_variable_value_element.cpp
 //
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 15 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 
 #include "computed_variable/function_variable_value_element.hpp"
 
+#if defined (OLD_CODE)
 const std::string Function_variable_value_element::type_string("Element");
 
 Function_variable_value_element::Function_variable_value_element(
@@ -34,3 +35,7 @@ bool Function_variable_value_element::set(struct FE_element*& value,
 
 	return (result);
 }
+#endif // defined (OLD_CODE)
+
+const std::string
+	Function_variable_value_specific<Element>::type_string("Element");

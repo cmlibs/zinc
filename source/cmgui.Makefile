@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 14 June 2004
+# LAST MODIFIED : 7 July 2004
 #
 # DESCRIPTION :
 #
@@ -709,15 +709,22 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/function_derivative.cpp \
 	computed_variable/function_derivative_matrix.cpp \
 	computed_variable/function_finite_element.cpp \
+	computed_variable/function_function_size_type.cpp \
+	computed_variable/function_identity.cpp \
+	computed_variable/function_inverse.cpp \
 	computed_variable/function_matrix.cpp \
 	computed_variable/function_variable.cpp \
 	computed_variable/function_variable_composite.cpp \
+	computed_variable/function_variable_element_xi.cpp \
 	computed_variable/function_variable_exclusion.cpp \
 	computed_variable/function_variable_intersection.cpp \
+	computed_variable/function_variable_matrix.cpp \
 	computed_variable/function_variable_union.cpp \
 	computed_variable/function_variable_value.cpp \
 	computed_variable/function_variable_value_element.cpp \
+	computed_variable/function_variable_value_function_size_type.cpp \
 	computed_variable/function_variable_value_scalar.cpp \
+	computed_variable/function_variable_wrapper.cpp \
 	computed_variable/variable.cpp \
 	computed_variable/variable_composite.cpp \
 	computed_variable/variable_composition.cpp \

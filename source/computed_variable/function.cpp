@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.cpp
 //
-// LAST MODIFIED : 16 February 2004
+// LAST MODIFIED : 25 June 2004
 //
 // DESCRIPTION :
 // See function.hpp
@@ -23,29 +23,40 @@
 // 5 Started by using old dynamic memory allocation ie use new(nothrow), but
 //   changed to new - program stops if throw an exception (without being caught)
 // 6 Need -lstdc++ for standard library
-// 7 Destructors need to be virtual so that if delete a pointer to a derived
+// 7 Sort out constructors and destructors
+//   Constructors and destructors are not inherited
+// 8 Destructors need to be virtual so that if delete a pointer to a derived
 //   object when the pointer is of type pointer to base class, the correct
 //   destructor is called and delete is called with the correct size.
-// 8 "Virtual" constructor.  Constructors cannot be virtual, but can get the
+// 9 "Virtual" constructor.  Constructors cannot be virtual, but can get the
 //   desired effect - see Stroustrup 3rd:424.
-// 9 Constructors have to construct their members (using : member initializer
+// 10 Constructors have to construct their members (using : member initializer
 //   list).
-// 10 The members' constructors are called before the body of the containing
+// 11 The members' constructors are called before the body of the containing
 //   class' own constructor is executed.  The constructors are called in the
 //   order in which the members are declared in the class (rather than the order
 //   in which the members appear in the initializer list).  If a member
 //   constructor needs no arguments, the member need not be mentioned in the
 //   member initializer list.  Stroustrup 3rd:247-8
-// 11 The member destructors are called in the reverse order of construction
+// 12 The member destructors are called in the reverse order of construction
 //   after the body of the class' own destructor has executed.
 //   Stroustrup 3rd:247
-// 12 Member initializers are essential for types for which initialization
+// 13 Member initializers are essential for types for which initialization
 //   differs from assignment.  Stroustrup 3rd:248
-// 13 A reference cannot be made to refer to another object at run-time.  A
+// 14 If the base clase doesn't have a constructor without arguments or another
+//   constructor is required then the desired base class constructor should be
+//   invoked in the initialization part of the derived class constructor.
+//   Otherwise, if a base class constructor is not invoked the one with no
+//   arguments will be implicitly invoked.
+// 15 Be careful with smart pointers in constructors.  The following would cause
+//   the objects destructor to be invoked because this starts with a reference
+//   count of 0
+//     f(Smart_pointer(this))
+// 16 A reference cannot be made to refer to another object at run-time.  A
 //   reference must be initialized so that it refers to an object.  If a data
 //   member is a reference, it must be initialized in the constructors'
 //   initializer list.
-// 14 A local class cannot be used as a template argument.  Lischner 138
+// 17 A local class cannot be used as a template argument.  Lischner 138
 // 18 By default a single argument constructor also defines an implicit
 //   conversion.  Implicit conversion from a particular constructor can be
 //   suppressed by declaring the constructor implicit.  Stroustrup 3rd:284
@@ -67,20 +78,18 @@
 //     different object at runtime"
 // 23 Functions seem to be midway between template and inheritence?
 //   See Meyers 42
-// 24 Sort out constructors and destructors
-//   Constructors and destructors are not inherited
-// 25 Bad returning dereferenced new because delete will never be called
+// 24 Bad returning dereferenced new because delete will never be called
 //   See Meyers 31
-// 26 Bad having methods that give access to data which is more private than the
+// 25 Bad having methods that give access to data which is more private than the
 //   method.  See Meyers ???DB
-// 27 What about exceptions?
-// 28 What happens when a constructor fails?
-// 29 Overload << instead of get_string_representation?
-// 30 Need a value type method for variables?
-// 31 Would like to use const on methods more (means that <this> is not changed
+// 26 What about exceptions?
+// 27 What happens when a constructor fails?
+// 28 Overload << instead of get_string_representation?
+// 29 Need a value type method for variables?
+// 30 Would like to use const on methods more (means that <this> is not changed
 //   (eg. virtual Function_handle clone() const=0), but prevented because of
 //   instrusive smart pointer
-// 32 For conversion to non-class type objects can have an operator of the
+// 31 For conversion to non-class type objects can have an operator of the
 //   type name eg
 //     operator Scalar() const
 //   Lischner 118-9
@@ -103,6 +112,12 @@
 //     to leave you where you were
 //   - Have get iterate forward, set iterate back and element last for
 //     element/xi forward iteration?
+//
+// ???DB.  25Jun04
+//   Need Function methods for all values which return the correct type so that
+//   the set functions don't need to be friends
+//   - make set functions friends?
+//   - use Function_variable::get_value?
 //==============================================================================
 
 #include "computed_variable/function.hpp"

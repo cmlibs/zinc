@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_intersection.cpp
 //
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -238,9 +238,9 @@ class Function_variable_iterator_representation_atomic_intersection: public
 Function_variable_intersection::Function_variable_intersection(
 	const Function_variable_handle& variable_1,
 	const Function_variable_handle& variable_2):
-	Function_variable(),variables_list(0)
+	Function_variable(Function_handle(0)),variables_list(0)
 //******************************************************************************
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -268,9 +268,9 @@ Function_variable_intersection::Function_variable_intersection(
 
 Function_variable_intersection::Function_variable_intersection(
 	std::list<Function_variable_handle>& variables_list):
-	Function_variable(),variables_list(variables_list)
+	Function_variable(Function_handle(0)),variables_list(variables_list)
 //******************************************************************************
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // Constructor.

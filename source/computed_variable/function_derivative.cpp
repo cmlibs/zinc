@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative.cpp
 //
-// LAST MODIFIED : 11 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -67,20 +67,19 @@ class Function_variable_iterator_representation_atomic_derivative:
 
 class Function_variable_derivative : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 10 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	friend class Function_derivative;
 	friend class Function_variable_iterator_representation_atomic_derivative;
-	friend bool is_atomic(Function_variable_derivative_handle variable);
 	public:
 		// constructor
 		Function_variable_derivative(
 			const Function_derivative_handle& function_derivative):
-			Function_variable(),function_derivative(function_derivative),
-			atomic_dependent_variable(0),atomic_independent_variables(0){};
+			Function_variable(function_derivative),atomic_dependent_variable(0),
+			atomic_independent_variables(0){};
 		// constructor.  A zero <atomic_dependent_variable> indicates the whole
 		//   dependent variable.  An empty <atomic_independent_variables> list
 		//   indicates all derivatives.  A zero <atomic_independent_variables> list
@@ -89,8 +88,8 @@ class Function_variable_derivative : public Function_variable
 			const Function_derivative_handle& function_derivative,
 			Function_variable_handle& atomic_dependent_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables):
-			Function_variable(),function_derivative(function_derivative),
-			atomic_dependent_variable(0),atomic_independent_variables(0)
+			Function_variable(function_derivative),atomic_dependent_variable(0),
+			atomic_independent_variables(0)
 		{
 			if (function_derivative)
 			{
@@ -162,12 +161,10 @@ class Function_variable_derivative : public Function_variable
 			return (Function_variable_derivative_handle(
 				new Function_variable_derivative(*this)));
 		};
-		Function_handle function()
-		{
-			return (function_derivative);
-		};
 		Function_handle evaluate()
 		{
+			Function_derivative_handle function_derivative=
+				boost::dynamic_pointer_cast<Function_derivative,Function>(function());
 			Function_handle result(0);
 
 			if (function_derivative)
@@ -216,6 +213,8 @@ class Function_variable_derivative : public Function_variable
 		Function_handle evaluate_derivative(
 			std::list<Function_variable_handle>& independent_variables)
 		{
+			Function_derivative_handle function_derivative=
+				boost::dynamic_pointer_cast<Function_derivative,Function>(function());
 			Function_handle result(0);
 
 			if (function_derivative)
@@ -266,6 +265,8 @@ class Function_variable_derivative : public Function_variable
 		};
 		string_handle get_string_representation()
 		{
+			Function_derivative_handle function_derivative=
+				boost::dynamic_pointer_cast<Function_derivative,Function>(function());
 			string_handle return_string(0);
 
 			if (return_string=new std::string)
@@ -397,6 +398,8 @@ class Function_variable_derivative : public Function_variable
 			number_of_columns=0;
 			if (this)
 			{
+				Function_derivative_handle function_derivative=
+					boost::dynamic_pointer_cast<Function_derivative,Function>(function());
 				Function_size_type order;
 
 				if (atomic_dependent_variable)
@@ -497,13 +500,15 @@ class Function_variable_derivative : public Function_variable
 		bool equality_atomic(const Function_variable_handle& variable) const
 		{
 			bool result;
+			Function_derivative_handle function_derivative=
+				boost::dynamic_pointer_cast<Function_derivative,Function>(function());
 			Function_variable_derivative_handle variable_derivative;
 
 			result=false;
 			if (variable_derivative=boost::dynamic_pointer_cast<
 				Function_variable_derivative,Function_variable>(variable))
 			{
-				if ((variable_derivative->function_derivative==function_derivative)&&
+				if ((variable_derivative->function()==function_derivative)&&
 					(((0==variable_derivative->atomic_dependent_variable)&&
 					(0==atomic_dependent_variable))||(atomic_dependent_variable&&
 					(variable_derivative->atomic_dependent_variable)&&
@@ -539,11 +544,35 @@ class Function_variable_derivative : public Function_variable
 			return (result);
 		};
 	private:
+		bool is_atomic()
+		{
+			bool result;
+
+			result=false;
+			if (this&&atomic_dependent_variable)
+			{
+				std::list<Function_variable_handle>::iterator variable_iterator,
+					variable_iterator_end;
+
+				variable_iterator=atomic_independent_variables.begin();
+				variable_iterator_end=atomic_independent_variables.end();
+				while ((variable_iterator!=variable_iterator_end)&&(*variable_iterator))
+				{
+					variable_iterator++;
+				}
+				if (variable_iterator==variable_iterator_end)
+				{
+					result=true;
+				}
+			}
+
+			return (result);
+		};
+	private:
 		// copy constructor
 		Function_variable_derivative(
 			const Function_variable_derivative& variable_derivative):
-			Function_variable(),
-			function_derivative(variable_derivative.function_derivative),
+			Function_variable(variable_derivative),
 			atomic_dependent_variable(variable_derivative.atomic_dependent_variable),
 			atomic_independent_variables(
 			variable_derivative.atomic_independent_variables){};
@@ -551,38 +580,12 @@ class Function_variable_derivative : public Function_variable
 		Function_variable_derivative& operator=(
 			const Function_variable_derivative&);
 	private:
-		Function_derivative_handle function_derivative;
 		// if zero then all
 		Function_variable_handle atomic_dependent_variable;
 		// if empty list then all.  If zero list entry then all for that independent
 		//   variable
 		std::list<Function_variable_handle> atomic_independent_variables;
 };
-
-bool is_atomic(Function_variable_derivative_handle variable)
-{
-	bool result;
-
-	result=false;
-	if (variable&&(variable->atomic_dependent_variable))
-	{
-		std::list<Function_variable_handle>::iterator variable_iterator,
-			variable_iterator_end;
-
-		variable_iterator=(variable->atomic_independent_variables).begin();
-		variable_iterator_end=(variable->atomic_independent_variables).end();
-		while ((variable_iterator!=variable_iterator_end)&&(*variable_iterator))
-		{
-			variable_iterator++;
-		}
-		if (variable_iterator==variable_iterator_end)
-		{
-			result=true;
-		}
-	}
-
-	return (result);
-}
 
 
 // class Function_variable_iterator_representation_atomic_derivative
@@ -596,17 +599,21 @@ Function_variable_iterator_representation_atomic_derivative::
 	atomic_independent_iterators(0),atomic_independent_iterators_begin(0),
 	atomic_independent_iterators_end(0)
 //******************************************************************************
-// LAST MODIFIED : 11 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
 // atomic variable, otherwise it points to one past the last atomic variable.
 //==============================================================================
 {
-	if (begin&&variable&&(variable->function_derivative))
+	if (begin&&variable)
 	{
-		if (atomic_variable=boost::dynamic_pointer_cast<
-			Function_variable_derivative,Function_variable>(variable->clone()))
+		Function_derivative_handle function_derivative=
+			boost::dynamic_pointer_cast<Function_derivative,Function>(
+			variable->function());
+
+		if (function_derivative&&(atomic_variable=boost::dynamic_pointer_cast<
+			Function_variable_derivative,Function_variable>(variable->clone())))
 		{
 			atomic_dependent_iterator=0;
 			atomic_dependent_iterator_begin=0;
@@ -623,7 +630,7 @@ Function_variable_iterator_representation_atomic_derivative::
 				Function_variable_handle dependent_variable_local;
 
 				if (dependent_variable_local=
-					variable->function_derivative->dependent_variable_private)
+					function_derivative->dependent_variable_private)
 				{
 					atomic_dependent_iterator_begin=
 						dependent_variable_local->begin_atomic();
@@ -649,7 +656,7 @@ Function_variable_iterator_representation_atomic_derivative::
 				{
 					Function_size_type order;
 					std::list<Function_variable_handle> independent_variables_local=
-						variable->function_derivative->independent_variables_private;
+						function_derivative->independent_variables_private;
 
 					atomic_variable->atomic_dependent_variable=
 						*atomic_dependent_iterator;
@@ -1010,8 +1017,12 @@ void Function_variable_iterator_representation_atomic_derivative::decrement()
 	}
 	else
 	{
-		if (variable&&(variable->function_derivative))
+		if (variable)
 		{
+			Function_derivative_handle function_derivative=
+				boost::dynamic_pointer_cast<Function_derivative,Function>(
+				variable->function());
+
 			if (atomic_variable=boost::dynamic_pointer_cast<
 				Function_variable_derivative,Function_variable>(variable->clone()))
 			{
@@ -1030,7 +1041,7 @@ void Function_variable_iterator_representation_atomic_derivative::decrement()
 					Function_variable_handle dependent_variable_local;
 
 					if (dependent_variable_local=
-						variable->function_derivative->dependent_variable_private)
+						function_derivative->dependent_variable_private)
 					{
 						atomic_dependent_iterator_begin=
 							dependent_variable_local->begin_atomic();
@@ -1060,7 +1071,7 @@ void Function_variable_iterator_representation_atomic_derivative::decrement()
 					{
 						Function_size_type order;
 						std::list<Function_variable_handle> independent_variables_local=
-							variable->function_derivative->independent_variables_private;
+							function_derivative->independent_variables_private;
 
 						atomic_variable->atomic_dependent_variable=
 							*atomic_dependent_iterator;
@@ -1428,7 +1439,7 @@ Function_variable_handle Function_derivative::output()
 Function_handle Function_derivative::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 9 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1438,8 +1449,8 @@ Function_handle Function_derivative::evaluate(
 
 	if ((atomic_derivative_variable=boost::dynamic_pointer_cast<
 		Function_variable_derivative,Function_variable>(atomic_variable))&&
-		(this==atomic_derivative_variable->function_derivative)&&
-		is_atomic(atomic_derivative_variable)&&
+		(Function_handle(this)==atomic_derivative_variable->function())&&
+		(atomic_derivative_variable->is_atomic)()&&
 		(atomic_derivative_variable->atomic_dependent_variable))
 	{
 		result=(atomic_derivative_variable->atomic_dependent_variable->
@@ -1454,7 +1465,7 @@ bool Function_derivative::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 9 June 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1466,8 +1477,8 @@ bool Function_derivative::evaluate_derivative(Scalar& derivative,
 	result=false;
 	if ((atomic_variable_derivative=boost::dynamic_pointer_cast<
 		Function_variable_derivative,Function_variable>(atomic_variable))&&
-		(this==atomic_variable_derivative->function_derivative)&&
-		is_atomic(atomic_variable_derivative)&&
+		(Function_handle(this)==atomic_variable_derivative->function())&&
+		(atomic_variable_derivative->is_atomic)()&&
 		(1==atomic_variable_derivative->number_differentiable())&&
 		(atomic_variable_local=
 		atomic_variable_derivative->atomic_dependent_variable))
@@ -1500,6 +1511,26 @@ bool Function_derivative::set_value(Function_variable_handle atomic_variable,
 		(function=(dependent_variable_private->function)()))
 	{
 		result=(function->set_value)(atomic_variable,atomic_value);
+	}
+
+	return (result);
+}
+
+Function_handle Function_derivative::get_value(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 23 June 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_handle function,result;
+
+	result=0;
+	if (dependent_variable_private&&
+		(function=(dependent_variable_private->function)()))
+	{
+		result=(function->get_value)(atomic_variable);
 	}
 
 	return (result);

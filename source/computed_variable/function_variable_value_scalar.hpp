@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_value_scalar.hpp
 //
-// LAST MODIFIED : 25 February 2004
+// LAST MODIFIED : 13 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -10,6 +10,7 @@
 
 #include "computed_variable/function_variable_value.hpp"
 
+#if defined (OLD_CODE)
 typedef bool (*Function_variable_value_scalar_set_function)(Scalar& value,
 	const Function_variable_handle variable);
 
@@ -37,6 +38,9 @@ class Function_variable_value_scalar : public Function_variable_value
 		static const std::string type_string;
 		Function_variable_value_scalar_set_function set_function;
 };
+#endif // defined (OLD_CODE)
+
+typedef Function_variable_value_specific<Scalar> Function_variable_value_scalar;
 
 typedef boost::intrusive_ptr<Function_variable_value_scalar>
 	Function_variable_value_scalar_handle;

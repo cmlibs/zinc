@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.cpp
 //
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 22 June 2004
 //
 // DESCRIPTION :
 //???DB.  Should make a Matrix if it can?  Changes type in constructors?
@@ -204,6 +204,31 @@ bool Function_composite::set_value(Function_variable_handle atomic_variable,
 		if (*function_iterator)
 		{
 			result=(*function_iterator)->set_value(atomic_variable,atomic_value);
+		}
+		i--;
+		function_iterator++;
+	}
+
+	return (result);
+}
+
+Function_handle Function_composite::get_value(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 22 June 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_handle result(0);
+	Function_size_type i=functions_list.size();
+	std::list<Function_handle>::iterator function_iterator=functions_list.begin();
+
+	while ((!result)&&(i>0))
+	{
+		if (*function_iterator)
+		{
+			result=(*function_iterator)->get_value(atomic_variable);
 		}
 		i--;
 		function_iterator++;

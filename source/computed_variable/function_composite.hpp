@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.hpp
 //
-// LAST MODIFIED : 15 March 2004
+// LAST MODIFIED : 22 June 2004
 //
 // DESCRIPTION :
 // A list of functions whose output is the composite of the functions' outputs
@@ -16,7 +16,7 @@
 
 class Function_composite : public Function
 //******************************************************************************
-// LAST MODIFIED : 5 March 2004
+// LAST MODIFIED : 22 June 2004
 //
 // DESCRIPTION :
 // A composite of other function(s).
@@ -41,6 +41,7 @@ class Function_composite : public Function
 			std::list<Function_variable_handle>& atomic_independent_variables);
 		bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
+		Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
 		Function_composite(const Function_composite&);

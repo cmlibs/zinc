@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_value_element.hpp
 //
-// LAST MODIFIED : 25 March 2004
+// LAST MODIFIED : 15 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -14,6 +14,7 @@ extern "C"
 }
 #include "computed_variable/function_variable_value.hpp"
 
+#if defined (OLD_CODE)
 typedef bool (*Function_variable_value_element_set_function)(
 	struct FE_element*& value,const Function_variable_handle variable);
 
@@ -41,6 +42,12 @@ class Function_variable_value_element : public Function_variable_value
 		static const std::string type_string;
 		Function_variable_value_element_set_function set_function;
 };
+#endif // defined (OLD_CODE)
+
+typedef struct FE_element* Element;
+
+typedef Function_variable_value_specific<Element>
+	Function_variable_value_element;
 
 typedef boost::intrusive_ptr<Function_variable_value_element>
 	Function_variable_value_element_handle;

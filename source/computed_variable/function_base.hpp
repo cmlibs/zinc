@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_base.hpp
 //
-// LAST MODIFIED : 17 March 2004
+// LAST MODIFIED : 15 July 2004
 //
 // DESCRIPTION :
 // Basic declarations and #defines for functions.
@@ -16,10 +16,16 @@
 
 #include <stdexcept>
 
+#if defined (EXPORT_IMPLEMENTED)
+#define EXPORT export
+#else // defined (EXPORT_IMPLEMENTED)
+#define EXPORT 
+#endif // defined (EXPORT_IMPLEMENTED)
+
 const bool Assert_on=true;
 
 template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception) 
+	Assertion assertion,Exception exception)
 {
 	if (Assert_on&&!(assertion))
 	{

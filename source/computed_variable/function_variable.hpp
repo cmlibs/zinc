@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.hpp
 //
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // An abstract class for specifying input/independent and output/dependent
@@ -112,7 +112,7 @@ class Function_variable_iterator:
 
 class Function_variable
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // A specification for an input/independent and/or output/dependent variable of
@@ -123,7 +123,7 @@ class Function_variable
 		virtual Function_variable_handle clone() const=0;
 		// if the variable is for a single function, the function is returned,
 		//   otherwise a zero handle is returned
-		virtual Function_handle function();
+		virtual Function_handle function() const;
 		// returns a specification for the type of variable's value
 		virtual Function_variable_value_handle value();
 		// evaluate creates a new Function which is the variable's value with the
@@ -147,6 +147,9 @@ class Function_variable
 		//   to evaluate (back to front).  Returns true if the variable is changed
 		//   and false otherwise
 		virtual bool rset_value(Function_handle value);
+		// get_value creates a new Function which is the variable's value.  The
+		//   variable's function is not evaluated
+		virtual Function_handle get_value();
 		// returns a string the represents the variable
 		virtual string_handle get_string_representation()=0;
 		// for stepping through the atomic variables that make up the variable.
@@ -178,8 +181,7 @@ class Function_variable
 	private:
 		virtual bool equality_atomic(const Function_variable_handle&) const=0;
 	protected:
-		// constructor.  Protected so that can't create "plain" Function_variables
-		Function_variable();
+		// constructors.  Protected so that can't create "plain" Function_variables
 		Function_variable(const Function_handle& function);
 		// copy constructor
 		Function_variable(const Function_variable&);

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 19 May 2004
+// LAST MODIFIED : 30 June 2004
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -401,9 +401,9 @@ Function_variable_handle Function_variable_iterator::operator*() const
 // class Function_variable
 // -----------------------
 
-Function_handle Function_variable::function()
+Function_handle Function_variable::function() const
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 29 June 2004
 //
 // DESCRIPTION :
 // This is the default.  Also by default, function_private is zero.
@@ -661,6 +661,45 @@ bool Function_variable::rset_value(Function_handle value)
 	return (result);
 }
 
+Function_handle Function_variable::get_value()
+//******************************************************************************
+// LAST MODIFIED : 22 June 2004
+//
+// DESCRIPTION :
+//???DB.  Merge atomic_results functions ie. join scalars onto vectors?
+//==============================================================================
+{
+	Function_handle result(0);
+
+	if (this)
+	{
+		Function_variable_iterator atomic_iterator=begin_atomic();
+		std::list<Function_handle> atomic_results(0);
+
+		// do the local evaluate
+		while (atomic_iterator!=end_atomic())
+		{
+			Function_handle atomic_result;
+
+			Assert((*atomic_iterator)&&((*atomic_iterator)->function()),
+				std::logic_error(
+				"Function_variable::get_value().  Atomic variable missing function()"));
+			if (atomic_result=
+				((*atomic_iterator)->function())->get_value(*atomic_iterator))
+			{
+				atomic_results.push_back(atomic_result);
+			}
+			atomic_iterator++;
+		}
+		if (0<atomic_results.size())
+		{
+			result=Function_handle(new Function_composite(atomic_results));
+		}
+	}
+
+	return (result);
+}
+
 class Function_variable_sum_number_differentiable_functor
 //******************************************************************************
 // LAST MODIFIED : 19 March 2004
@@ -803,16 +842,6 @@ Function_variable_handle Function_variable::operator+=(const Function_variable&)
 {
 	return (Function_variable_handle(0));
 }
-
-Function_variable::Function_variable():function_private(0),value_private(0),
-	reference_count(0)
-//******************************************************************************
-// LAST MODIFIED : 10 March 2004
-//
-// DESCRIPTION :
-// Constructor.
-//==============================================================================
-{}
 
 Function_variable::Function_variable(const Function_handle& function):
 	function_private(function),value_private(0),reference_count(0)

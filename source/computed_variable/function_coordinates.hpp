@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.hpp
 //
-// LAST MODIFIED : 4 June 2004
+// LAST MODIFIED : 23 June 2004
 //
 // DESCRIPTION :
 // Functions which transform between coordinate systems.
@@ -20,7 +20,7 @@ typedef
 
 class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 //******************************************************************************
-// LAST MODIFIED : 4 June 2004
+// LAST MODIFIED : 23 June 2004
 //
 // DESCRIPTION :
 // Converts from prolate spheroidal to rectangular cartesian.
@@ -54,7 +54,10 @@ class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 			focus_value(),
 			lambda_value(),
 			mu_value(),
-			theta_value();
+			theta_value(),
+			x_value(),
+			y_value(),
+			z_value();
 		Function_size_type number_of_components();
 	private:
 		Function_handle evaluate(Function_variable_handle atomic_variable);
@@ -63,6 +66,7 @@ class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 			std::list<Function_variable_handle>& atomic_independent_variables);
 		bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
+		Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
 		Function_prolate_spheroidal_to_rectangular_cartesian(
@@ -72,7 +76,8 @@ class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 			const Function_prolate_spheroidal_to_rectangular_cartesian&);
 	private:
 		Function_size_type number_of_components_private;
-		Scalar focus_private,lambda_private,mu_private,theta_private;
+		Scalar focus_private,lambda_private,mu_private,theta_private,x_private,
+			y_private,z_private;
 };
 
 #endif /* !defined (__FUNCTION_COORDINATES_HPP__) */

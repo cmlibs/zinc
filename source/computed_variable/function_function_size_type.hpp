@@ -1,44 +1,44 @@
 //******************************************************************************
-// FILE : function_derivative.hpp
+// FILE : function_function_size_type.hpp
 //
-// LAST MODIFIED : 23 June 2004
+// LAST MODIFIED : 25 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
-#if !defined (__FUNCTION_DERIVATIVE_HPP__)
-#define __FUNCTION_DERIVATIVE_HPP__
+#if !defined (__FUNCTION_FUNCTION_SIZE_TYPE_HPP__)
+#define __FUNCTION_FUNCTION_SIZE_TYPE_HPP__
 
 #include <list>
+#include <utility>
 #include "computed_variable/function.hpp"
 
-class Function_derivative;
+class Function_function_size_type;
 
-typedef boost::intrusive_ptr<Function_derivative> Function_derivative_handle;
+typedef boost::intrusive_ptr<Function_function_size_type>
+	Function_function_size_type_handle;
 
-class Function_derivative : public Function
+class Function_function_size_type : public Function
 //******************************************************************************
-// LAST MODIFIED : 23 June 2004
+// LAST MODIFIED : 25 June 2004
 //
 // DESCRIPTION :
-// A derivative of another function.
-//
-// No storage for result and so can't be inverted.
-// ???DB.  Could compose with a Function_matrix and then would be invertable?
+// An identity function whose input/output is a function_size_type
 //==============================================================================
 {
-	friend class Function_variable_derivative;
-	friend class Function_variable_iterator_representation_atomic_derivative;
+	friend class Function_variable_function_size_type;
 	public:
 		// constructor
-		Function_derivative(const Function_variable_handle& dependent_variable,
-			std::list<Function_variable_handle>& independent_variables);
+		Function_function_size_type(Function_size_type& value);
 		// destructor
-		~Function_derivative();
+		~Function_function_size_type();
 	// inherited
 	public:
 		string_handle get_string_representation();
 		Function_variable_handle input();
 		Function_variable_handle output();
+	// additional
+	public:
+		Function_size_type value() const;
 	private:
 		Function_handle evaluate(Function_variable_handle atomic_variable);
 		bool evaluate_derivative(Scalar& derivative,
@@ -49,12 +49,11 @@ class Function_derivative : public Function
 		Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
-		Function_derivative(const Function_derivative&);
+		Function_function_size_type(const Function_function_size_type&);
 		// assignment
-		Function_derivative& operator=(const Function_derivative&);
+		Function_function_size_type& operator=(const Function_function_size_type&);
 	private:
-		Function_variable_handle dependent_variable_private;
-		std::list<Function_variable_handle> independent_variables_private;
+		Function_size_type value_private;
 };
 
-#endif /* !defined (__FUNCTION_DERIVATIVE_HPP__) */
+#endif /* !defined (__FUNCTION_FUNCTION_SIZE_TYPE_HPP__) */

@@ -1,12 +1,18 @@
 //******************************************************************************
 // FILE : function_variable_value.cpp
 //
-// LAST MODIFIED : 25 February 2004
+// LAST MODIFIED : 15 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 
 #include "computed_variable/function_variable_value.hpp"
+
+// global classes
+// ==============
+
+// class Function_variable_value
+// =============================
 
 Function_variable_value::Function_variable_value():reference_count(0){}
 
@@ -41,3 +47,11 @@ void intrusive_ptr_release(Function_variable_value *variable_value)
 		}
 	}
 }
+
+
+// template class Function_variable_value_specific
+// ===============================================
+
+#if defined (EXPORT_IMPLEMENTED)
+#include "computed_variable/function_variable_value_specific.cpp"
+#endif // defined (EXPORT_IMPLEMENTED)

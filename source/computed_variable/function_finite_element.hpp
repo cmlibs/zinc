@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.hpp
 //
-// LAST MODIFIED : 27 April 2004
+// LAST MODIFIED : 23 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -20,7 +20,7 @@ extern "C"
 
 class Function_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 7 April 2004
+// LAST MODIFIED : 22 June 2004
 //
 // DESCRIPTION :
 // An identity function whose input/output is and element.
@@ -51,6 +51,7 @@ class Function_element : public Function
 			std::list<Function_variable_handle>& atomic_independent_variables);
 		bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
+		Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
 		Function_element(const Function_element&);
@@ -64,7 +65,7 @@ typedef boost::intrusive_ptr<Function_element> Function_element_handle;
 
 class Function_element_xi : public Function
 //******************************************************************************
-// LAST MODIFIED : 8 April 2004
+// LAST MODIFIED : 22 June 2004
 //
 // DESCRIPTION :
 // An identity function whose input/output is element/xi.
@@ -104,6 +105,7 @@ class Function_element_xi : public Function
 			std::list<Function_variable_handle>& atomic_independent_variables);
 		bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
+		Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
 		Function_element_xi(const Function_element_xi&);
@@ -122,7 +124,7 @@ typedef boost::intrusive_ptr<Function_finite_element>
 
 class Function_finite_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 27 April 2004
+// LAST MODIFIED : 23 June 2004
 //
 // DESCRIPTION :
 // A function for a finite element interpolation field.
@@ -131,8 +133,13 @@ class Function_finite_element : public Function
 //  evaluate, evaluate_derivative and set_value?
 //==============================================================================
 {
+#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	friend class Function_variable_finite_element;
 	friend class Function_variable_nodal_values;
+#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	friend class Function_variable_matrix_components;
+	friend class Function_variable_matrix_nodal_values;
+#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	public:
 		// constructor
 		Function_finite_element(struct FE_field *field);
@@ -202,6 +209,8 @@ class Function_finite_element : public Function
 		struct FE_element* element_value() const;
 		// return the xi value 1<=index<=number_of_xi
 		Scalar xi_value(Function_size_type index) const;
+		// get the component value 1<=number<=number_of_components
+		bool component_value(Function_size_type number,Scalar& value) const;
 	private:
 		Function_handle evaluate(Function_variable_handle atomic_variable);
 		bool evaluate_derivative(Scalar& derivative,
@@ -209,6 +218,7 @@ class Function_finite_element : public Function
 			std::list<Function_variable_handle>& atomic_independent_variables);
 		bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
+		Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
 		Function_finite_element(const Function_finite_element&);
@@ -219,7 +229,7 @@ class Function_finite_element : public Function
 		struct FE_element *element_private;
 		struct FE_field *field_private;
 		struct FE_node *node_private;
-		Vector xi_private;
+		Vector components_private,xi_private;
 };
 
 #endif /* !defined (__FUNCTION_FINITE_ELEMENT_HPP__) */

@@ -1,37 +1,36 @@
 //******************************************************************************
-// FILE : function_composition.hpp
+// FILE : function_identity.hpp
 //
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 24 June 2004
 //
 // DESCRIPTION :
+// Used when calculating derivatives eg. composition and inverse.
 //==============================================================================
-#if !defined (__FUNCTION_COMPOSITION_HPP__)
-#define __FUNCTION_COMPOSITION_HPP__
+#if !defined (__FUNCTION_IDENTITY_HPP__)
+#define __FUNCTION_IDENTITY_HPP__
 
-#include <list>
 #include "computed_variable/function.hpp"
 
-class Function_composition;
+class Function_identity;
 
-typedef boost::intrusive_ptr<Function_composition> Function_composition_handle;
+typedef boost::intrusive_ptr<Function_identity> Function_identity_handle;
 
-class Function_composition : public Function
+class Function_identity : public Function
 //******************************************************************************
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 24 June 2004
 //
 // DESCRIPTION :
-// A composition of other function(s).
+// An identity function for a specified variable.  Used in calculating
+// derivatives.
 //==============================================================================
 {
-	friend class Function_variable_composition;
-	friend class Function_variable_iterator_representation_atomic_composition;
+	friend class Function_variable_identity;
+	friend class Function_variable_iterator_representation_atomic_identity;
 	public:
 		// constructor
-		Function_composition(const Function_variable_handle output,
-			const Function_variable_handle input,
-			const Function_variable_handle value);
+		Function_identity(const Function_variable_handle& variable);
 		// destructor
-		~Function_composition();
+		~Function_identity();
 	// inherited
 	public:
 		string_handle get_string_representation();
@@ -47,11 +46,11 @@ class Function_composition : public Function
 		Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
-		Function_composition(const Function_composition&);
+		Function_identity(const Function_identity&);
 		// assignment
-		Function_composition& operator=(const Function_composition&);
+		Function_identity& operator=(const Function_identity&);
 	private:
-		Function_variable_handle input_private,output_private,value_private;
+		Function_variable_handle variable_private;
 };
 
-#endif /* !defined (__FUNCTION_COMPOSITION_HPP__) */
+#endif // !defined (__FUNCTION_IDENTITY_HPP__)

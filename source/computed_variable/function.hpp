@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.hpp
 //
-// LAST MODIFIED : 11 June 2004
+// LAST MODIFIED : 25 June 2004
 //
 // DESCRIPTION :
 // Functions are expressions that are constructed for:
@@ -22,10 +22,11 @@
 
 class Function
 //******************************************************************************
-// LAST MODIFIED : 11 June 2004
+// LAST MODIFIED : 25 June 2004
 //
 // DESCRIPTION :
-// ???DB.  A function maintains storage for all its inputs and outputs.
+// A function maintains storage for all its inputs and the outputs that can be
+// inverted.
 //
 // ???DB.  Is this a multimethod - virtual function dispatch based on more
 //   than one object (Alexandrescu, Chapter 11)?
@@ -35,6 +36,7 @@ class Function
 	friend class Function_composition;
 	friend class Function_derivative;
 	friend class Function_derivative_matrix;
+	friend class Function_identity;
 	friend class Function_variable;
 	public:
 		// returns a string the represents the function
@@ -49,7 +51,8 @@ class Function
 	private:
 		// if <atomic_variable> is not a variable of the function, then a zero
 		//   handle is returned.  Otherwise, evaluate returns a new Function which
-		//   is the value of the <atomic_variable>.  The new Function is an identity
+		//   is the value of the <atomic_variable>.  For a dependent variable, this
+		//   will involve evaluating the function.  The new Function is an identity
 		//   function (outputs the same as inputs)
 		virtual Function_handle evaluate(
 			Function_variable_handle atomic_variable)=0;
@@ -66,6 +69,12 @@ class Function
 		//   if the <atomic_variable>'s value was changed and false otherwise
 		virtual bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value)=0;
+		// if <atomic_variable> is not a variable of the function, then a zero
+		//   handle is returned.  Otherwise, get_value returns a new Function which
+		//   is the value of the <atomic_variable>.  The function is not evaluated.
+		//   The new Function is an identity function (outputs the same as inputs)
+		virtual Function_handle get_value(
+			Function_variable_handle atomic_variable)=0;
 	protected:
 		// constructor.  Protected so that can't create "plain" Functions
 		Function();
