@@ -1921,7 +1921,6 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 			element_number=0;  /* Zero gives all elements in group */
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
 			ACCESS(Computed_field)(coordinate_field);
 			if (stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_is_stream_vector_capable,(void *)NULL,
@@ -2111,6 +2110,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 				DEACCESS(Computed_field)(&stream_vector_field);
 			}
 			DEACCESS(Spectrum)(&spectrum);
+			DEACCESS(Graphical_material)(&material);
 			DEALLOCATE(graphics_object_name);
 		}
 		else
@@ -2357,6 +2357,7 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 			{
 				DEACCESS(Computed_field)(&stream_vector_field);
 			}
+			DEACCESS(Graphical_material)(&material);
 			DEACCESS(Spectrum)(&spectrum);
 			DEALLOCATE(graphics_object_name);
 		}
@@ -16940,7 +16941,6 @@ otherwise the wavefront obj file is read.
 			time = 0;
 			file_name=(char *)NULL;
 
-
 			option_table=CREATE(Option_table)();
 			/* example */
 			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
@@ -16963,6 +16963,7 @@ otherwise the wavefront obj file is read.
 				NULL,set_file_name);
 
 			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
 				data.object_list=command_data->graphics_object_list;
@@ -18124,8 +18125,8 @@ Sets the axis origin of a scene from the command line.
 				axis_origin[1]=global_position.data[1];
 				axis_origin[2]=global_position.data[2];
 				Scene_set_axis_origin(scene,axis_origin);
-				DEACCESS(Cmgui_coordinate)(&coordinate);
 			}
+			DEACCESS(Cmgui_coordinate)(&coordinate);
 			DEACCESS(Scene)(&scene);
 		}
 		else
@@ -19022,6 +19023,7 @@ Sets the time from the command line.
 					default */
 				Time_keeper_request_new_time(command_data->default_time_keeper,time);
 			} /* parse error, help */
+			DEALLOCATE(timekeeper_name);
 		}
 		else
 		{
@@ -20092,14 +20094,14 @@ Executes a GFX SMOOTH command.
 
 	ENTER(execute_command_gfx_smooth);
 	USE_PARAMETER(dummy_to_be_modified);
-/*???debug */
-printf("enter execute_command_gfx_smooth\n");
+#if defined (DEBUG)
+	printf("enter execute_command_gfx_smooth\n");
+#endif /* defined (DEBUG) */
 	/* check argument */
 	if (state)
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			display_message(WARNING_MESSAGE,"gfx smooth  is temporary/not general");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			smooth_field_over_element_data.field=(struct FE_field *)NULL;
 			smooth_field_over_element_data.smoothing=1;
@@ -20115,6 +20117,7 @@ printf("enter execute_command_gfx_smooth\n");
 			return_code=process_multiple_options(state,option_table);
 			if (return_code)
 			{
+				display_message(WARNING_MESSAGE,"gfx smooth is temporary/not general");
 				MANAGER_BEGIN_CACHE(FE_node)(command_data->node_manager);
 				MANAGER_BEGIN_CACHE(FE_element)(command_data->element_manager);
 				smooth_field_over_element_data.node_lists=(struct LIST(FE_node) **)NULL;
@@ -20186,8 +20189,9 @@ printf("enter execute_command_gfx_smooth\n");
 		display_message(ERROR_MESSAGE,"execute_command_gfx_smooth.  Missing state");
 		return_code=0;
 	}
-/*???debug */
-printf("leave execute_command_gfx_smooth\n");
+#if defined (DEBUG)
+	printf("leave execute_command_gfx_smooth\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -22008,57 +22012,57 @@ Executes a UNEMAP OPEN command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{	
+			if (!((current_token=state->current_token)&&
+				!(strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+			{
 #if defined (UNEMAP)
-			/* create material "electrode_selected" to be bright white for highlighting
-				 electrode graphics */
-			if(!(FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-				("electrode_selected",command_data->graphical_material_manager)))
-			{
-				if (electrode_selected_material=CREATE(Graphical_material)("electrode_selected"))
+				/* create material "electrode_selected" to be bright white for highlighting
+					electrode graphics */
+				if(!(FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+					("electrode_selected",command_data->graphical_material_manager)))
 				{
-					colour.red=1.0;
-					colour.green=1.0;
-					colour.blue=1.0;
-					Graphical_material_set_ambient(electrode_selected_material,&colour);
-					Graphical_material_set_diffuse(electrode_selected_material,&colour);
-					/* ACCESS so can never be destroyed */
-					ACCESS(Graphical_material)(electrode_selected_material);
-					if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(electrode_selected_material,
-						command_data->graphical_material_manager))
+					if (electrode_selected_material=CREATE(Graphical_material)("electrode_selected"))
 					{
-						DEACCESS(Graphical_material)(&electrode_selected_material);
-					}
-				}		
-			}	
-			/* read in (and shift identifiers of) the default torso mesh nodes and elements */
-			/* (cleaned up when the program shuts down) */		
-			read_exnode_and_exelem_file_from_string_and_offset(
-				default_torso_exnode_string,default_torso_exelem_string,
-				"default_torso",command_data->fe_field_manager,command_data->node_manager,
-				command_data->element_manager,command_data->node_group_manager,
-				command_data->data_group_manager,command_data->element_group_manager
-				,command_data->basis_manager);
-			/* create the unemap_package */
-			if(!(command_data->unemap_package))
-			{
-				computed_field_manager=Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-				command_data->unemap_package = CREATE(Unemap_package)(
-					command_data->fe_field_manager,command_data->element_group_manager,
-					command_data->node_manager,command_data->data_manager,
-					command_data->data_group_manager,
-					command_data->node_group_manager,command_data->basis_manager,
-					command_data->element_manager,computed_field_manager,
-					command_data->interactive_tool_manager, 
-					command_data->node_selection);
-			}
-			if(command_data->unemap_package)
-			{
-#endif /*  defined (UNEMAP) */
-				if (!((current_token=state->current_token)&&
-					!(strcmp(PARSER_HELP_STRING,current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+						colour.red=1.0;
+						colour.green=1.0;
+						colour.blue=1.0;
+						Graphical_material_set_ambient(electrode_selected_material,&colour);
+						Graphical_material_set_diffuse(electrode_selected_material,&colour);
+						/* ACCESS so can never be destroyed */
+						ACCESS(Graphical_material)(electrode_selected_material);
+						if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(electrode_selected_material,
+							command_data->graphical_material_manager))
+						{
+							DEACCESS(Graphical_material)(&electrode_selected_material);
+						}
+					}		
+				}	
+				/* read in (and shift identifiers of) the default torso mesh nodes and elements */
+				/* (cleaned up when the program shuts down) */		
+				read_exnode_and_exelem_file_from_string_and_offset(
+					default_torso_exnode_string,default_torso_exelem_string,
+					"default_torso",command_data->fe_field_manager,command_data->node_manager,
+					command_data->element_manager,command_data->node_group_manager,
+					command_data->data_group_manager,command_data->element_group_manager
+					,command_data->basis_manager);
+				/* create the unemap_package */
+				if(!(command_data->unemap_package))
 				{
+					computed_field_manager=Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package);
+					command_data->unemap_package = CREATE(Unemap_package)(
+						command_data->fe_field_manager,command_data->element_group_manager,
+						command_data->node_manager,command_data->data_manager,
+						command_data->data_group_manager,
+						command_data->node_group_manager,command_data->basis_manager,
+						command_data->element_manager,computed_field_manager,
+						command_data->interactive_tool_manager, 
+						command_data->node_selection);
+				}
+				if(command_data->unemap_package)
+				{
+#endif /*  defined (UNEMAP) */
 					if (!(system=command_data->unemap_system_window))
 					{
 						/* create a shell */
@@ -22087,7 +22091,7 @@ Executes a UNEMAP OPEN command.
 								command_data->computed_field_package,
 								command_data->default_light,
 								command_data->default_light_model
-									))
+																	  ))
 							{
 								command_data->unemap_system_window=system;
 								create_Shell_list_item(&(system->window_shell),
@@ -22104,7 +22108,7 @@ Executes a UNEMAP OPEN command.
 									XmNheight,&window_height,
 									NULL);
 								/* Do all this to allow backward compatibility but still allow the
-									 resources to be set */
+									resources to be set */
 								system_window_data.x = -1; /* These defaults match with the */
 								system_window_data.y = -1; /* default resources above */
 								XtVaGetApplicationResources(system->window_shell,
@@ -22147,21 +22151,21 @@ Executes a UNEMAP OPEN command.
 					{
 						return_code=0;
 					}
+#if defined (UNEMAP)
 				}
 				else
 				{
-					/* no help */
-					return_code=1;
+					display_message(ERROR_MESSAGE,
+						"execute_command_unemap_open. Couldn't create unemap_package");
+					return_code=0;
 				}
-#if defined (UNEMAP)
+#endif /* defined (UNEMAP) */
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"execute_command_unemap_open. Couldn't create unemap_package");
-				return_code=0;
+				/* no help */
+				return_code=1;
 			}
-#endif /* defined (UNEMAP) */
 		}
 		else
 		{
