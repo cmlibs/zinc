@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -1138,7 +1138,7 @@ enable the creation of a coordinate field.
 int DESTROY(Element_creator)(
 	struct Element_creator **element_creator_address)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Deaccesses objects and frees memory used by the Element_creator at
@@ -1153,10 +1153,11 @@ Deaccesses objects and frees memory used by the Element_creator at
 		(element_creator= *element_creator_address))
 	{
 		Element_creator_end_element_creation(element_creator);
-		if (element_creator->template_node)
-		{
-			DEACCESS(FE_node)(&(element_creator->template_node));
-		}
+		/* lose the current template element and node, if any */
+		REACCESS(FE_element)(&(element_creator->template_element),
+			(struct FE_element *)NULL);
+		REACCESS(FE_node)(&(element_creator->template_node),
+			(struct FE_node *)NULL);
 		if (element_creator->create_enabled)
 		{
 			/* remove callbacks from the global node_selection */
