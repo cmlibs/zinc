@@ -188,6 +188,7 @@ and coordinate field along the element edges, using xi = (t,0,0) for the first
 differential, xi = (0,t,0) for the second and xi = (0,0,t) for the third.
 ==============================================================================*/
 {
+	double derivative_magnitude;
 	FE_value 
 		/* These two arrays are lower left diagonals matrices which for each row
 			have the positions and weights of a gauss point scheme for integrating
@@ -197,7 +198,7 @@ differential, xi = (0,t,0) for the second and xi = (0,0,t) for the third.
 		gauss_weights[2][2] = {{1, 0},
 									  {0.5, 0.5}},
 		*temp, xi[3];
-	int derivative_magnitude, k, m, n, element_dimension,
+	int k, m, n, element_dimension,
 		number_of_gauss_points, return_code;
 
 	ENTER(Computed_field_integration_add_neighbours);
@@ -234,7 +235,7 @@ differential, xi = (0,t,0) for the second and xi = (0,0,t) for the third.
 					temp=coordinate_field->derivatives+k;
 					for (n = 0 ; n < coordinate_field->number_of_components ; n++)
 					{
-						derivative_magnitude += *temp * *temp;
+						derivative_magnitude += (double)*temp * (double)*temp;
 						temp+=element_dimension;
 					}
 					mapping_item->differentials[k] += 
