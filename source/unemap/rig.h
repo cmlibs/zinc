@@ -958,6 +958,16 @@ LAST MODIFIED : 30 May 1992
 DESCRIPTION :
 ==============================================================================*/
 
+int Signal_get_min_max(struct Signal *signal,float *min,float *max,int time_range);
+/*******************************************************************************
+LAST MODIFIED : 4 August 2000
+
+DESCRIPTION :
+Get the minimum and maximun of <signal>, returned in <min> <max>.
+If <time_range> is set, determine min, max over the selected time range.
+If <time_range> is 0, determine min, max over the signal's entire time range.
+==============================================================================*/
+
 struct Signal_buffer *create_Signal_buffer(enum Signal_value_type value_type,
 	int number_of_signals,int number_of_samples,float frequency);
 /*******************************************************************************

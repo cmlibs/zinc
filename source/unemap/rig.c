@@ -4435,6 +4435,87 @@ This function frees the memory for <**signal> and changes <*signal> to NULL.
 	return (return_code);
 } /* destroy_Signal */
 
+int Signal_get_min_max(struct Signal *signal,float *min,float *max,int time_range)
+/*******************************************************************************
+LAST MODIFIED : 4 August 2000
+
+DESCRIPTION :
+Get the minimum and maximun of <signal>, returned in <min> <max>.
+If <time_range> is set, determine min, max over the selected time range.
+If <time_range> is 0, determine min, max over the signal's entire time range.
+==============================================================================*/
+{
+	float value,minimum,maximum;
+	int count,end_count,number_of_samples,number_of_signals,return_code,start_count,index;
+	struct Signal_buffer *signal_buffer;
+
+	ENTER(Signal_get_min_max);
+	return_code=0;
+	if(signal&&(signal_buffer=signal->buffer))
+	{
+		return_code=1;	
+		number_of_samples=signal_buffer->number_of_samples;
+		number_of_signals=signal_buffer->number_of_signals;		
+		if(time_range)
+		{
+			start_count=signal_buffer->start;
+			end_count=signal_buffer->end;
+		}
+		else
+		{
+			start_count=0;
+			end_count=number_of_samples;
+		}
+		index=signal->index+(start_count*number_of_signals);
+		switch(signal_buffer->value_type)
+		{
+			case SHORT_INT_VALUE:
+			{
+				minimum=(float)(signal_buffer->signals.short_int_values[index]);
+			}break;
+			case FLOAT_VALUE:
+			{
+				minimum=signal_buffer->signals.float_values[index];				
+			}break;			
+		}
+		maximum=minimum;
+		for(count=start_count;count<end_count;count++)
+		{			
+			switch(signal_buffer->value_type)
+			{
+				case SHORT_INT_VALUE:
+				{
+					value=(float)(signal_buffer->signals.short_int_values[index]);
+				}break;
+				case FLOAT_VALUE:
+				{
+					value=signal_buffer->signals.float_values[index];									
+				}break;
+			}		
+			if(value>maximum)
+			{
+				maximum=value;			
+			}
+			if(value<minimum)
+			{
+				minimum=value;			
+			}				
+			index=index+number_of_signals;
+		}		
+		*min=minimum;
+		*max=maximum;	
+	}
+	else
+	{
+		*min=0;
+		*max=0;
+		display_message(ERROR_MESSAGE,
+			"Signal_get_min_max.  Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+}/* Signal_get_min_max */
+
 struct Signal_buffer *create_Signal_buffer(enum Signal_value_type value_type,
 	int number_of_signals,int number_of_samples,float frequency)
 /*******************************************************************************
@@ -5746,3 +5827,4 @@ DESCRIPTION :
 
 	return (return_code);
 } /* destroy_all_events */
+

@@ -73,22 +73,7 @@ to store info when iterating
 	struct MANAGER(FE_node) *node_manager;
 };
 
-struct Min_max_info
-/*******************************************************************************
-LAST MODIFIED : 3 April 2000
-
-DESCRIPTION :
-Used by get_rig_node_group_signal_min_max_at_time to store info
-about the minimum and maximum signal values at a rig node group at time
-==============================================================================*/
-{
-	FE_value max,min,time;
-	int count;
-	struct FE_field_component *signal_component;
-	struct FE_field *signal_status_field;
-};
-
-struct Position_min_max_info
+struct Position_min_max_iterator
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
@@ -130,6 +115,744 @@ Module variables
 Module functions
 ----------------
 */
+#if defined (UNEMAP_USE_NODES)
+struct Min_max_iterator *CREATE(Min_max_iterator)(void)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION:
+Create a Min_max_iterator, set fields to NULL/0.
+==============================================================================*/
+{	
+	struct  Min_max_iterator *min_max_iterator;
+
+	ENTER(CREATE(Min_max_iterator));
+	min_max_iterator=(struct  Min_max_iterator *)NULL;
+	if (ALLOCATE(min_max_iterator,struct Min_max_iterator,1))
+	{
+		min_max_iterator->max=0;
+		min_max_iterator->min=0;
+		min_max_iterator->time=0;
+		min_max_iterator->count=0;
+		min_max_iterator->started=0; /*have we started accumulating info yet? */
+		min_max_iterator->channel_gain_field=(struct FE_field *)NULL;
+		min_max_iterator->channel_offset_field=(struct FE_field *)NULL;
+		min_max_iterator->display_start_time_field=(struct FE_field *)NULL;
+		min_max_iterator->display_end_time_field=(struct FE_field *)NULL;
+		min_max_iterator->signal_minimum_field=(struct FE_field *)NULL;
+		min_max_iterator->signal_maximum_field=(struct FE_field *)NULL;
+		min_max_iterator->signal_status_field=(struct FE_field *)NULL;	
+		min_max_iterator->signal_component=(struct FE_field_component *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Unemap_package).  Could not allocate memory ");
+		DEALLOCATE(min_max_iterator);
+	}
+	LEAVE;
+	return(min_max_iterator);
+}
+
+int DESTROY(Min_max_iterator)(struct Min_max_iterator **iterator_address)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000 
+
+DESCRIPTION :
+Destroy a Min_max_iterator. Don't DEACCESS fields, 'cos never accessed them.
+This is only temp references for iteration.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(DESTROY(Min_max_iterator));
+	if (iterator_address)
+	{				
+		DEALLOCATE(*iterator_address);		
+		return_code=1;
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Min_max_iterator) */
+
+int get_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
+	int *started)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the started of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&started)
+	{
+		return_code=1;
+		*started=min_max_iterator->started;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_started. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_started */
+
+int set_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, int started)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the started of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->started=started;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_started. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_started */
+
+int get_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
+	int *count)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the count of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&count)
+	{
+		return_code=1;
+		*count=min_max_iterator->count;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_count. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_count */
+
+int set_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, int count)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the count of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->count=count;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_count. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_count */
+
+int get_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, 
+	FE_value *time)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the time of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&time)
+	{
+		return_code=1;
+		*time=min_max_iterator->time;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_time. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_time */
+
+int set_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the time of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->time=time;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_time. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_time */
+
+int get_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, 
+	FE_value *min)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the min of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&min)
+	{
+		return_code=1;
+		*min=min_max_iterator->min;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_min. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_min */
+
+int set_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, FE_value min)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the min of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->min=min;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_min. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_min */
+
+int get_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, 
+	FE_value *max)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the max of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&max)
+	{
+		return_code=1;
+		*max=min_max_iterator->max;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_max. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_max */
+
+int set_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, FE_value max)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the max of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->max=max;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_max. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_max */
+
+int get_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_gain_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the channel_gain_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&channel_gain_field)
+	{
+		return_code=1;
+		channel_gain_field=min_max_iterator->channel_gain_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_channel_gain_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_channel_gain_field */
+
+int set_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_gain_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the channel_gain_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->channel_gain_field=channel_gain_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_channel_gain_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_channel_gain_field */
+
+int get_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_offset_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the channel_offset_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&channel_offset_field)
+	{
+		return_code=1;
+		channel_offset_field=min_max_iterator->channel_offset_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_channel_offset_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_channel_offset_field */
+
+int set_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_offset_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the channel_offset_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->channel_offset_field=channel_offset_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_channel_offset_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_channel_offset_field */
+
+int get_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_start_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the display_start_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&display_start_time_field)
+	{
+		return_code=1;
+		display_start_time_field=min_max_iterator->display_start_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_display_start_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_display_start_time_field */
+
+int set_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_start_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the display_start_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->display_start_time_field=display_start_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_display_start_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_display_start_time_field */
+
+int get_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_end_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the display_end_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&display_end_time_field)
+	{
+		return_code=1;
+		display_end_time_field=min_max_iterator->display_end_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_display_end_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_display_end_time_field */
+
+int set_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_end_time_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the display_end_time_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->display_end_time_field=display_end_time_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_display_end_time_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_display_end_time_field */
+
+int get_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_minimum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_minimum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_minimum_field)
+	{
+		return_code=1;
+		signal_minimum_field=min_max_iterator->signal_minimum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_minimum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_minimum_field */
+
+int set_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_minimum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_minimum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_minimum_field=signal_minimum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_minimum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_minimum_field */
+
+int get_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_maximum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_maximum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_maximum_field)
+	{
+		return_code=1;
+		signal_maximum_field=min_max_iterator->signal_maximum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_maximum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_maximum_field */
+
+int set_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_maximum_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_maximum_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_maximum_field=signal_maximum_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_maximum_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_maximum_field */
+
+int get_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_status_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_status_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_status_field)
+	{
+		return_code=1;
+		signal_status_field=min_max_iterator->signal_status_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_status_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_status_field */
+
+int set_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_status_field)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_status_field of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_status_field=signal_status_field;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_status_field. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_status_field */
+
+int get_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field_component *signal_component)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_component of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator&&signal_component)
+	{
+		return_code=1;
+		signal_component=min_max_iterator->signal_component;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_Min_max_iterator_signal_component. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_Min_max_iterator_signal_component */
+
+int set_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field_component *signal_component)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_component of Min_max_iterato
+==============================================================================*/
+{
+	int return_code;
+
+	if(min_max_iterator)
+	{
+		return_code=1;
+		min_max_iterator->signal_component=signal_component;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"set_Min_max_iterator_signal_component. Invalid arguments");	
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_Min_max_iterator_signal_component */
+
+#endif /*defined (UNEMAP_USE_NODES)*/
+
 #if defined (UNEMAP_USE_NODES)
 static struct FE_node *create_config_template_node(enum Config_node_type 
 	config_node_type,FE_value focus,struct FE_field_order_info **field_order_info,
@@ -5128,7 +5851,7 @@ cf file_read_FE_node_group() in import_finite_element.c
 } /* file_read_config_FE_node_group */
 
 static int get_rig_node_map_electrode_position_min_max(struct FE_node *node,
-	void *position_min_max_info_void)
+	void *position_min_max_iterator_void)
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
@@ -5141,16 +5864,17 @@ Note: map_electrode_position_field  is cylindrical polar, convert to rc.
 	struct FE_field_component component;
 	FE_value c0,c1,c2,x_value,y_value,z_value;
 	int return_code;			
-	struct Position_min_max_info *position_min_max_info;
+	struct Position_min_max_iterator *position_min_max_iterator;
 	
 	return_code=1;
 	ENTER(get_rig_node_map_electrode_position_min_max);
-	if((node)&&(position_min_max_info_void))
+	if((node)&&(position_min_max_iterator_void))
 	{
-		position_min_max_info=(struct Position_min_max_info *)position_min_max_info_void;	
-		if(position_min_max_info&&position_min_max_info->map_electrode_position_field)
+		position_min_max_iterator=(struct Position_min_max_iterator *)
+			position_min_max_iterator_void;	
+		if(position_min_max_iterator&&position_min_max_iterator->map_electrode_position_field)
 		{													 
-			component.field=position_min_max_info->map_electrode_position_field;
+			component.field=position_min_max_iterator->map_electrode_position_field;
 			component.number=0;
 			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c0);
 			component.number=1;
@@ -5161,39 +5885,39 @@ Note: map_electrode_position_field  is cylindrical polar, convert to rc.
 			/*perhaps should perform check*/
 			cylindrical_polar_to_cartesian(c0,c1,c2,&x_value,&y_value,&z_value,
 				(FE_value *)NULL);						
-			if(x_value>position_min_max_info->max_x)
+			if(x_value>position_min_max_iterator->max_x)
 			{
-				position_min_max_info->max_x=x_value;
+				position_min_max_iterator->max_x=x_value;
 			}
-			if(x_value<position_min_max_info->min_x)
+			if(x_value<position_min_max_iterator->min_x)
 			{
-				position_min_max_info->min_x=x_value;
+				position_min_max_iterator->min_x=x_value;
 			}									
-			if(y_value>position_min_max_info->max_y)
+			if(y_value>position_min_max_iterator->max_y)
 			{
-				position_min_max_info->max_y=y_value;
+				position_min_max_iterator->max_y=y_value;
 			}
-			if(y_value<position_min_max_info->min_y)
+			if(y_value<position_min_max_iterator->min_y)
 			{
-				position_min_max_info->min_y=y_value;
+				position_min_max_iterator->min_y=y_value;
 			}			
-			if(z_value>position_min_max_info->max_z)
+			if(z_value>position_min_max_iterator->max_z)
 			{
-				position_min_max_info->max_z=z_value;
+				position_min_max_iterator->max_z=z_value;
 			}
-			if(z_value<position_min_max_info->min_z)
+			if(z_value<position_min_max_iterator->min_z)
 			{
-				position_min_max_info->min_z=z_value;
+				position_min_max_iterator->min_z=z_value;
 			}			
-			position_min_max_info->count++;
-		}	/* if(min_max_info */
+			position_min_max_iterator->count++;
+		}	/* if(min_max_iterator */
 		else
 		{
 			display_message(ERROR_MESSAGE,"get_rig_node_map_electrode_position_min_max."
-				" min_max_info NULL ");
+				" min_max_iterator NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(position_min_max_info_void)) */
+	}/* if((node)&&(position_min_max_iterator_void)) */
 	else
 	{
 		display_message(ERROR_MESSAGE,"get_rig_node_map_electrode_position_min_max."
@@ -5218,7 +5942,7 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 
 	FE_value value;
 	int return_code;
-	struct Position_min_max_info position_min_max_info;
+	struct Position_min_max_iterator position_min_max_iterator;
 	struct FE_node *node;
 	struct FE_field_component component;
 
@@ -5226,8 +5950,8 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 	if (node_group&&min_x&&max_x&&min_y&&max_y&&min_z&&max_z
 		&&map_electrode_position_field)
 	{	
-		position_min_max_info.count=0;
-		position_min_max_info.map_electrode_position_field=
+		position_min_max_iterator.count=0;
+		position_min_max_iterator.map_electrode_position_field=
 			map_electrode_position_field;	
 		component.number=0;
 		component.field=map_electrode_position_field;
@@ -5236,27 +5960,27 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 		{
 			value=0;
 			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-			position_min_max_info.min_x=value;
-			position_min_max_info.max_x=position_min_max_info.min_x;
+			position_min_max_iterator.min_x=value;
+			position_min_max_iterator.max_x=position_min_max_iterator.min_x;
 			component.number=1;	
 			value=0;			
 			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-			position_min_max_info.min_y=value;
-			position_min_max_info.max_y=position_min_max_info.min_y;
+			position_min_max_iterator.min_y=value;
+			position_min_max_iterator.max_y=position_min_max_iterator.min_y;
 			component.number=2;
 			value=0;
 			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-			position_min_max_info.min_z=value;
-			position_min_max_info.max_z=position_min_max_info.min_z;
+			position_min_max_iterator.min_z=value;
+			position_min_max_iterator.max_z=position_min_max_iterator.min_z;
 			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
 				(get_rig_node_map_electrode_position_min_max,
-					(void *)&position_min_max_info,node_group);	
-			*min_x= position_min_max_info.min_x;
-			*max_x= position_min_max_info.max_x;
-			*min_y= position_min_max_info.min_y;
-			*max_y= position_min_max_info.max_y;	
-			*min_z= position_min_max_info.min_z;
-			*max_z= position_min_max_info.max_z;
+					(void *)&position_min_max_iterator,node_group);	
+			*min_x= position_min_max_iterator.min_x;
+			*max_x= position_min_max_iterator.max_x;
+			*min_y= position_min_max_iterator.min_y;
+			*max_y= position_min_max_iterator.max_y;	
+			*min_z= position_min_max_iterator.min_z;
+			*max_z= position_min_max_iterator.max_z;
 		}
 		else
 		{
@@ -5285,17 +6009,421 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 	return (return_code);
 } /* get_rig_node_group_map_electrode_position_min_max */
 
-static int get_rig_node_signal_min_max_at_time(struct FE_node *node,
-	void *min_max_info_void)
+int iterative_get_rig_node_accepted_undecided_signal_min_max(struct FE_node *node,
+	void *min_max_iterator_void)
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+Sets the the <min_max_iterator>, min, max based upon the node's signal properties.
+Only proceses a node if it's signal status filed is accepted/undecided.
+This function is called iteratively by analysis_set_range
+==============================================================================*/
+{		
+	FE_value min,max;
+	int return_code;
+	struct FE_field *signal_field;
+	struct Min_max_iterator *min_max_iterator;
+	enum Event_signal_status status;
+
+	return_code=1;
+	ENTER(iterative_get_rig_node_accepted_undecided_signal_min_max);
+	if(node&&min_max_iterator_void)
+	{
+		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
+		if(min_max_iterator&&min_max_iterator->display_start_time_field
+			&&min_max_iterator->display_end_time_field
+			&&min_max_iterator->signal_status_field&&min_max_iterator->signal_component
+			 &&(signal_field=min_max_iterator->signal_component->field))
+		{
+			if(FE_field_is_defined_at_node(min_max_iterator->display_start_time_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->display_end_time_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->signal_status_field,node)
+				&&FE_field_is_defined_at_node(signal_field,node))
+				/* nothing to do, but NOT an error if no signal at node*/			
+			{	
+				/* get the minimum,maximum */
+				/*??JW do we need to take account of offset, with min=min-channel_offset,*/
+				/* max=max-channel_offset? cf analysis_set_range */
+				get_rig_node_signal_min_max(node,signal_field,
+					min_max_iterator->display_start_time_field,
+					min_max_iterator->display_end_time_field,min_max_iterator->signal_status_field,
+					&min,&max,&status,1/* time_range*/);
+				/* do nothing with rejected signals*/
+				if((status==ACCEPTED)||(status==UNDECIDED))
+				{
+					if(!min_max_iterator->started)
+					{
+						/*initialise the min_max_iterator->min,min_max_iterator->max*/
+						min_max_iterator->min=min;
+						min_max_iterator->max=max;
+						min_max_iterator->started=1;
+					}
+					else
+					{
+						/*check/set min/max*/
+						if(max>min_max_iterator->max)
+						{
+							min_max_iterator->max=max;
+						}
+						if(min<min_max_iterator->min)
+						{
+							min_max_iterator->min=min;			
+						}
+					}		
+					min_max_iterator->count++; /* don't really use, but may as well count*/
+				}						
+			}/* if(FE_field_is_defined_at_node*/
+		}	/* if(min_max_iterator */
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"iterative_get_rig_node_accepted_undecided_signal_min_max."
+				" min_max_iterator NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(min_max_iterator_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"iterative_get_rig_node_accepted_undecided_signal_min_max."
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* iterative_get_rig_node_accepted_undecided_signal_min_max*/
+
+int get_rig_node_signal_min_max(struct FE_node *node,
+	struct FE_field *signal_field,struct FE_field *display_start_time_field,
+	struct FE_field *display_end_time_field,struct FE_field *signal_status_field,
+	FE_value *min,FE_value *max,enum Event_signal_status *status,int time_range)
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION : Determines and returns <min> and <max the minimum and maximum
+value of <signal_field> at <node>. If <time_range> >0 AND <display_start_time_field>,
+<display_end_time_field>  are set, then determines the min, max over this range.
+If <time_range> =0, determines the min, max over entire signal time  range.
+If <signal_status_field> and <status> set, return the node signal's 
+Event_signal_status in <status>
+==============================================================================*/
+{	
+	char *signal_status_string;		
+	enum Value_type value_type;
+	FE_value end_time,*fe_value_array,fe_value_maximum,fe_value_minimum,start_time,
+		time_high,time_low;
+	int count,index_high,index_low,number_of_array_values,return_code,start_index,
+		end_index;		
+	short *short_array,short_minimum,short_maximum;
+	struct FE_field_component component;
+	
+	ENTER(get_rig_node_signal_min_max);
+	fe_value_array=(FE_value *)NULL;
+	short_array=(short *)NULL;
+	signal_status_string=(char *)NULL;	
+	if(node&&signal_field&&min&&max&&((time_range&&display_start_time_field&&
+		display_end_time_field)||(!time_range))
+		 &&((signal_status_field&&status)||(!signal_status_field&&!status)))
+	{	
+		if(signal_status_field)
+		{				
+			/* need to check if signal is accepted/rejected/undecided */
+			if(get_FE_nodal_string_value(node,signal_status_field,0,0,
+				FE_NODAL_VALUE,&signal_status_string))
+			{			
+				if(!strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
+				{
+					*status=REJECTED;
+				}
+				if(!strcmp(signal_status_string,"ACCEPTED")) 
+				{
+					*status=ACCEPTED;
+				}
+				if(!strcmp(signal_status_string,"UNDECIDED")) 
+				{
+					*status=UNDECIDED;
+				}
+				DEALLOCATE(signal_status_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
+					"Failed to get signal_status");
+				return_code=0;	
+			}	
+		}	/* if(signal_status_field) */
+		component.field =signal_field;
+		component.number = 0;		
+		number_of_array_values=get_FE_nodal_array_number_of_elements(node,
+			&component,0,FE_NODAL_VALUE);
+		*min=0;
+		*max=0;
+		if(time_range)
+		{
+			/*get the display start time, end time*/
+			return_code=get_FE_field_FE_value_value(display_start_time_field,0,
+				&start_time);
+			return_code=get_FE_field_FE_value_value(display_end_time_field,0,
+				&end_time);
+			/*get the array indices for start time, end time*/
+			return_code=get_FE_field_time_array_index_at_FE_value_time(
+				signal_field,start_time,&time_high,&time_low,&start_index,
+				&index_high,&index_low);	
+			return_code=get_FE_field_time_array_index_at_FE_value_time(
+				signal_field,end_time,&time_high,&time_low,&end_index,
+				&index_high,&index_low);		
+		}
+		else
+		{
+			start_index=0;
+			end_index=number_of_array_values;
+		}		
+		if(number_of_array_values>0)
+		{
+			value_type=get_FE_field_value_type(signal_field);
+			switch(value_type)
+			{
+				case FE_VALUE_ARRAY_VALUE:
+				{
+					if(ALLOCATE(fe_value_array,FE_value,number_of_array_values))
+					{
+						if(return_code=get_FE_nodal_FE_value_array(node,&component,0,FE_NODAL_VALUE,
+							fe_value_array,number_of_array_values))
+						{
+							fe_value_minimum=fe_value_array[0];
+							fe_value_maximum=fe_value_minimum;
+							for(count=start_index;count<end_index;count++)
+							{
+								if(fe_value_array[count]>fe_value_maximum)
+								{
+									fe_value_maximum=fe_value_array[count];
+								}	
+								if(fe_value_array[count]<fe_value_minimum)
+								{
+									fe_value_minimum=fe_value_array[count];
+								}
+							}/* for(count= */						
+							*min=fe_value_minimum;
+							*max=fe_value_maximum;
+						}/*if(return_code=ge*/
+						DEALLOCATE(fe_value_array);
+					}/* if(ALLOCATE( */
+					else
+					{
+						display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
+						"out of memory");
+						return_code=0;
+					}
+				}break;
+				case SHORT_ARRAY_VALUE:
+				{
+					if(ALLOCATE(short_array,short,number_of_array_values))
+					{
+						if(return_code=get_FE_nodal_short_array(node,&component,0,FE_NODAL_VALUE,
+							short_array,number_of_array_values))
+						{
+							short_minimum=short_array[0];
+							short_maximum=short_minimum;
+							for(count=start_index;count<end_index;count++)
+							{
+								if(short_array[count]>short_maximum)
+								{
+									short_maximum=short_array[count];
+								}	
+								if(short_array[count]<short_minimum)
+								{
+									short_minimum=short_array[count];
+								}
+							}	/* for(count=star */					
+							*min=(FE_value)(short_minimum);
+							*max=(FE_value)(short_maximum);
+						}/* if(return_code=g */
+						DEALLOCATE(short_array);
+					}/* if(ALLOCATE(sho */
+					else
+					{	
+						display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
+						"out of memory");
+						return_code=0;
+					}
+				}break;
+				default :
+				{
+					display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
+						" Incorrect signal field value type");
+					return_code=0;
+				}break;
+			}/* switch */
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max. No array at node");
+			return_code=0;
+		}	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max."
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_rig_node_signal_min_max */
+
+int iterative_unrange_rig_node_signal(struct FE_node *node,	void *min_max_iterator_void)
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+Set the <nodes> signal_minimum,signal_maximum by determining the signals's
+actual min and max.
+This function is called iteratively by analysis_unrange_all
+==============================================================================*/
+{		
+	FE_value channel_gain,channel_offset,signal_minimum,signal_maximum;
+	int return_code;		
+	struct FE_field_component component;
+	struct Min_max_iterator *min_max_iterator;
+
+	return_code=1;
+	ENTER(iterative_unrange_rig_node_signal);
+	if(node&&min_max_iterator_void)
+	{
+		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
+		if(min_max_iterator&&min_max_iterator->channel_gain_field
+			&&min_max_iterator->channel_offset_field&&min_max_iterator->signal_minimum_field
+			&&min_max_iterator->signal_maximum_field&&min_max_iterator->display_start_time_field
+			&&min_max_iterator->display_end_time_field)
+		{
+			if(FE_field_is_defined_at_node(min_max_iterator->channel_gain_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->channel_offset_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->signal_minimum_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->signal_maximum_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->display_start_time_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->display_end_time_field,node))
+				/* nothing to do, but NOT an error if no signal at node*/			
+			{
+				/*get the gain and offset */
+				component.number=0;	
+				component.field=min_max_iterator->channel_gain_field;
+				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+					&channel_gain);
+				component.field=min_max_iterator->channel_offset_field;
+				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+					&channel_offset);
+				/* calculate the  new signal_minimum,signal_maximum */
+				get_rig_node_signal_min_max(node,min_max_iterator->signal_component->field,
+					min_max_iterator->display_start_time_field,
+					min_max_iterator->display_end_time_field,(struct FE_field *)NULL,
+					&signal_minimum,&signal_maximum,(enum Event_signal_status *)NULL,
+					1/*int time_range*/);
+				signal_minimum=channel_gain*(signal_minimum-channel_offset);
+				signal_maximum=channel_gain*(signal_maximum-channel_offset);		
+				/* set the new signal_minimum,signal_maximum*/
+				component.field = min_max_iterator->signal_minimum_field;												
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_minimum);
+				component.field = min_max_iterator->signal_maximum_field;
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);			
+				min_max_iterator->count++; /* don't really use,but  may as well count*/
+			}/* if(FE_field_is_defined_at_node*/
+		}	/* if(min_max_iterator */
+		else
+		{
+			display_message(ERROR_MESSAGE,"iterative_unrange_rig_node_signal."
+				" min_max_iterator NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(min_max_iterator_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,"iterative_unrange_rig_node_signal."
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* iterative_unrange_rig_node_signal*/
+
+int iterative_set_rig_node_signal_min_max(struct FE_node *node,	
+	void *min_max_iterator_void)
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+Set the <nodes> signal_minimum,signal_maximum from the <min_max_iterator>.
+This function is called iteratively by analysis_set_range
+==============================================================================*/
+{		
+	FE_value channel_gain,channel_offset,signal_minimum,signal_maximum;
+	int return_code;		
+	struct FE_field_component component;
+	struct Min_max_iterator *min_max_iterator;
+
+	return_code=1;
+	ENTER(iterative_set_rig_node_signal_min_max);
+	if(node&&min_max_iterator_void)
+	{
+		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
+		if(min_max_iterator&&min_max_iterator->channel_gain_field
+			&&min_max_iterator->channel_offset_field&&min_max_iterator->signal_minimum_field
+			&&min_max_iterator->signal_maximum_field)
+		{
+			if(FE_field_is_defined_at_node(min_max_iterator->channel_gain_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->channel_offset_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->signal_minimum_field,node)
+				&&FE_field_is_defined_at_node(min_max_iterator->signal_maximum_field,node))
+				/* nothing to do, but NOT an error if no signal at node*/			
+			{
+				/*get the gain and offset */
+				component.number=0;	
+				component.field=min_max_iterator->channel_gain_field;
+				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+					&channel_gain);
+				component.field=min_max_iterator->channel_offset_field;
+				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
+					&channel_offset);
+				/* calculate the  new signal_minimum,signal_maximum */
+				signal_minimum=channel_offset+min_max_iterator->min/channel_gain;
+				signal_maximum=channel_offset+min_max_iterator->max/channel_gain;
+				/* set the new signal_minimum,signal_maximum*/
+				component.field = min_max_iterator->signal_minimum_field;												
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_minimum);
+				component.field = min_max_iterator->signal_maximum_field;
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);
+				min_max_iterator->count++; /* don't really use,but  may as well count*/
+			}/* if(FE_field_is_defined_at_node*/
+		}	/* if(min_max_iterator */
+		else
+		{
+			display_message(ERROR_MESSAGE,"iterative_set_rig_node_signal_min_max."
+				" min_max_iterator NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(min_max_iterator_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_rig_node_signal_min_max."
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* iterative_set_rig_node_signal_min_max*/
+
+static int iterative_get_rig_node_signal_min_max_at_time(struct FE_node *node,
+	void *min_max_iterator_void)
 /*******************************************************************************
 LAST MODIFIED : 6 October 1999
 
 DESCRIPTION :
-Get the signal <value> stored at the <node>, <min_max_info->component->field>
-at time <min_max_info->time>.
-Compares this value to <min_max_info->max>,<min_max_info->min>, and adjusts these
-accordingly.
+Get the signal <value> stored at the <node>, <min_max_iterator->component->field>
+at time <min_max_iterator->time>.
+Compares this value to <min_max_iterator->max>,<min_max_iterator->min>, and adjusts 
+these accordingly.
 This function is called iteratively by get_rig_node_group_signal_min_max_at_time
+Does nothing with REJECTED signals.
 ==============================================================================*/
 {	
 	char *signal_status_string;	
@@ -5303,55 +6431,57 @@ This function is called iteratively by get_rig_node_group_signal_min_max_at_time
 	FE_value fe_value;
 	int return_code;		
 	short short_value;
-	struct Min_max_info *min_max_info;
+	struct Min_max_iterator *min_max_iterator;
 	
 	return_code=1;
-	ENTER(get_rig_node_signal_min_max_at_time);
-	if((node)&&(min_max_info_void))
+	ENTER(iterative_get_rig_node_signal_min_max_at_time);
+	if((node)&&(min_max_iterator_void))
 	{
-		min_max_info=(struct Min_max_info *)min_max_info_void;	
-		if(min_max_info&&min_max_info->signal_component&&min_max_info->signal_status_field)
+		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
+		if(min_max_iterator&&min_max_iterator->signal_component&&
+			min_max_iterator->signal_status_field)
 		{
 			/* need to check if signal is accepted/rejected/undecided */	
-			if(get_FE_nodal_string_value(node,min_max_info->signal_status_field,0,0,
+			if(get_FE_nodal_string_value(node,min_max_iterator->signal_status_field,0,0,
 				FE_NODAL_VALUE,&signal_status_string))
 			{
 				/* do nothing if signal is rejected */
 				if(strcmp(signal_status_string,"REJECTED")) /* strcmp rets 0 for match*/
 				{
-					value_type=get_FE_field_value_type(min_max_info->signal_component->field);
+					value_type=get_FE_field_value_type(min_max_iterator->signal_component->field);
 					switch(value_type)
 					{
 						case FE_VALUE_ARRAY_VALUE:
 						{
 							return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
-								min_max_info->signal_component,0,FE_NODAL_VALUE,min_max_info->time,
-								&fe_value);
+								min_max_iterator->signal_component,0,
+								FE_NODAL_VALUE,min_max_iterator->time,&fe_value);
 						}break;
 						case SHORT_ARRAY_VALUE:
 						{
 							return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
-								min_max_info->signal_component,0,FE_NODAL_VALUE,min_max_info->time,
-								&short_value);
+								min_max_iterator->signal_component,0,FE_NODAL_VALUE,
+								min_max_iterator->time,&short_value);
 							fe_value=short_value;
 						}break;
 						default :
 						{
-							display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max_at_time."
+							display_message(ERROR_MESSAGE,
+								"iterative_get_rig_node_signal_min_max_at_time."
 								" Incorrect signal field value type");
 							return_code=0;
 						}break;
 					}
 					if(return_code)
 					{
-						min_max_info->count++;
-						if(fe_value>min_max_info->max)
+						min_max_iterator->count++;
+						if(fe_value>min_max_iterator->max)
 						{
-							min_max_info->max=fe_value;
+							min_max_iterator->max=fe_value;
 						}
-						if(fe_value<min_max_info->min)
+						if(fe_value<min_max_iterator->min)
 						{
-							min_max_info->min=fe_value;
+							min_max_iterator->min=fe_value;
 						}			
 					}/* if(return_code) */
 				} /* if(strcmp(signal_status_string,*/
@@ -5359,27 +6489,27 @@ This function is called iteratively by get_rig_node_group_signal_min_max_at_time
 			}	/* if(get_FE_nodal_string_value */
 			else
 			{
-				display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max_at_time."
+				display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
 					"Failed to get signal_status");
 				return_code=0;	
 			}				
-		}	/* if(min_max_info */
+		}	/* if(min_max_iterator */
 		else
 		{
-			display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max_at_time."
-			" min_max_info NULL ");
+			display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
+			" min_max_iterator NULL ");
 			return_code=0;
 		}	
-	}/* if((node)&&(min_max_info_void)) */
+	}/* if((node)&&(min_max_iterator_void)) */
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_rig_node_signal_min_max_at_time."
+		display_message(ERROR_MESSAGE,"iterative_get_rig_node_signal_min_max_at_time."
 			" Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}
+}/* iterative_get_rig_node_signal_min_max_at_time*/
 
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
 	struct FE_field *signal_field,struct FE_field *signal_status_field,FE_value time,
@@ -5393,59 +6523,71 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 ==============================================================================*/
 {	
 	enum Value_type value_type;
-	FE_value fe_value;
+	FE_value fe_value,maximum,minimum;
 	int return_code;
 	short short_value;	
-	struct Min_max_info min_max_info;
+	struct Min_max_iterator *min_max_iterator;
 	struct FE_node *node;
 	struct FE_field_component component;
 	
 	ENTER(get_rig_node_group_signal_min_max_at_time);
 	if (node_group&&min&&max&&signal_field)
-	{	
-		min_max_info.count=0;
-		min_max_info.time=time;	
-		component.number=0;
-		component.field=signal_field;
-
-		node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-			(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group);		
-		value_type=get_FE_field_value_type(signal_field);
-		switch(value_type)
-		{
-			case FE_VALUE_ARRAY_VALUE:
+	{		
+		if(min_max_iterator=CREATE(Min_max_iterator)())
+		{	
+			set_Min_max_iterator_count(min_max_iterator,0);
+			set_Min_max_iterator_time(min_max_iterator,time);	
+			component.number=0;
+			component.field=signal_field;
+			node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+				(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group);		
+			value_type=get_FE_field_value_type(signal_field);
+			switch(value_type)
 			{
-				return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
-					&component,0,FE_NODAL_VALUE,time,&fe_value);
-			}break;
-			case SHORT_ARRAY_VALUE:
+				case FE_VALUE_ARRAY_VALUE:
+				{
+					return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
+						&component,0,FE_NODAL_VALUE,time,&fe_value);
+				}break;
+				case SHORT_ARRAY_VALUE:
+				{
+					return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
+						&component,0,FE_NODAL_VALUE,time,&short_value);
+					fe_value=short_value;
+				}break;
+				default :
+				{
+					display_message(ERROR_MESSAGE,"get_rig_node_group_signal_min_max_at_time."
+						" Incorrect signal field value type");
+					return_code=0;
+				}break;
+			}
+			if(return_code)
+			{				
+				set_Min_max_iterator_min(min_max_iterator,fe_value);
+				set_Min_max_iterator_max(min_max_iterator,fe_value);
+				set_Min_max_iterator_signal_component(min_max_iterator,&component);
+				set_Min_max_iterator_signal_status_field(min_max_iterator,signal_status_field);
+				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
+					(iterative_get_rig_node_signal_min_max_at_time,
+						(void *)min_max_iterator,node_group);					
+				get_Min_max_iterator_min(min_max_iterator,&minimum);
+				*min= minimum;
+				get_Min_max_iterator_max(min_max_iterator,&maximum);
+				*max= maximum;				
+			}
+			else
 			{
-				return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
-					&component,0,FE_NODAL_VALUE,time,&short_value);
-				fe_value=short_value;
-			}break;
-			default :
-			{
-				display_message(ERROR_MESSAGE,"get_rig_node_group_signal_min_max_at_time."
-					" Incorrect signal field value type");
-				return_code=0;
-			}break;
-		}
-		if(return_code)
-		{
-			min_max_info.min=fe_value;
-			min_max_info.max=min_max_info.min;
-			min_max_info.signal_component=&component;
-			min_max_info.signal_status_field=signal_status_field;
-			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(get_rig_node_signal_min_max_at_time,
-				(void *)&min_max_info,node_group);	
-			*min= min_max_info.min;
-			*max= min_max_info.max;
+				*min= 0;
+				*max= 0;
+			}
+			DESTROY(Min_max_iterator)(&min_max_iterator);	
 		}
 		else
 		{
-			*min= 0;
-			*max= 0;
+			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"get_rig_node_group_signal_min_max_at_time. CREATE(Min_max_iterator failed)");
 		}
 	}
 	else
@@ -5459,7 +6601,7 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 	return (return_code);
 } /* get_rig_node_group_signal_min_max_at_time */
 
-static int rig_node_set_map_electrode_position_lambda_r(struct FE_node *node,
+static int iterative_rig_node_set_map_electrode_position_lambda_r(struct FE_node *node,
 	void *set_map_electrode_position_info_void)
 /*******************************************************************************
 LAST MODIFIED : 14 June 2000
@@ -5482,7 +6624,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 	struct MANAGER(FE_node) *node_manager;
 	struct Set_map_electrode_position_info *set_map_electrode_position_info;
 
-	ENTER(rig_node_set_map_electrode_position_lambda_r);
+	ENTER(iterative_rig_node_set_map_electrode_position_lambda_r);
 	return_code=1;
 	node_unmanaged=(struct FE_node *)NULL;
 	if((node)&&(set_map_electrode_position_info_void))
@@ -5610,7 +6752,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 						default:
 						{
 							display_message(ERROR_MESSAGE,
-								"rig_node_set_map_electrode_position_lambda_r"
+								"iterative_rig_node_set_map_electrode_position_lambda_r"
 								"  invalid region_type");
 							return_code=0;
 						}break;
@@ -5622,7 +6764,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"rig_node_set_map_electrode_position_lambda_r"
+						"iterative_rig_node_set_map_electrode_position_lambda_r"
 						"  MANAGER_COPY_WITH_IDENTIFIER failed");
 					return_code=0;
 				}
@@ -5631,14 +6773,14 @@ rig_node_group_set_map_electrode_position_lambda_r
 		}	/* if(set_map_electrode_position_info */
 		else
 		{
-			display_message(ERROR_MESSAGE,"rig_node_set_map_electrode_position_lambda_r"
+			display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
 				" set_map_electrode_position_info NULL ");
 			return_code=0;
 		}	
 	}/* if((node)&&(set_map_electrode_position_info_void)) */
 	else
 	{
-		display_message(ERROR_MESSAGE,"rig_node_set_map_electrode_position_lambda_r"
+		display_message(ERROR_MESSAGE,"iterative_rig_node_set_map_electrode_position_lambda_r"
 			" Invalid argument");
 		return_code=0;
 	}
@@ -5721,7 +6863,7 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 			set_map_electrode_position_info.region_type=region_type;
 			MANAGER_BEGIN_CACHE(FE_node)(node_manager);				
 			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-				rig_node_set_map_electrode_position_lambda_r,
+				iterative_rig_node_set_map_electrode_position_lambda_r,
 				(void *)&set_map_electrode_position_info,rig_node_group);
 			MANAGER_END_CACHE(FE_node)(node_manager);	
 		}	

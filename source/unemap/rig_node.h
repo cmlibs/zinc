@@ -14,20 +14,44 @@ the rig and signal information. rather that special structures.
 #include <stdio.h>
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
-
 /*
 Global types
 ------------
 */
 #if defined (UNEMAP_USE_NODES)
 struct Rig_node_sort
-/* so we can sort arrays of nodes, (or rather, arrays of Rig_node_sorts) */
-/* by  read_order or event_time using heapsort or quicksort */
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+So we can sort arrays of nodes, (or rather, arrays of Rig_node_sorts) 
+by  read_order or event_time using heapsort or quicksort 
+==============================================================================*/
 {
 	struct FE_node *node;
 	int read_order;
 	FE_value event_time; /* I think event_time is an FE_value*/
 };/* Rig_node_sort */
+
+struct Min_max_iterator
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+Used by get_rig_node_group_signal_min_max_at_time, set_rig_node_signal_min_max etc
+to store info about the minimum and maximum signal values at a rig node group at 
+time. Not all the fields are not necesarily used simultaneously.
+No ACCessing of feilds  as just temp reference for iteration.
+==============================================================================*/
+{
+	FE_value max,min,time;
+	int count;
+	int started; /*have we started accumulating info yet? */
+	struct FE_field *channel_gain_field,*channel_offset_field,*display_start_time_field,
+		*display_end_time_field,*signal_minimum_field,*signal_maximum_field,
+		*signal_status_field;	
+	struct FE_field_component *signal_component;
+};
 #endif /* defined (UNEMAP_USE_NODES) */
 
 struct Signal_drawing_package
@@ -63,6 +87,258 @@ Global functions
 */
 #if defined (UNEMAP_USE_NODES)
 PROTOTYPE_OBJECT_FUNCTIONS(Signal_drawing_package);
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct Min_max_iterator *CREATE(Min_max_iterator)(void);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION:
+Create a Min_max_iterator, set fields to NULL/0.
+==============================================================================*/
+
+int DESTROY(Min_max_iterator)(struct Min_max_iterator **iterator_address);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000 
+
+DESCRIPTION :
+Destroy a Min_max_iterator. Don't DEACCESS fields, 'cos never accessed them.
+This is only temp references for iteration.
+==============================================================================*/
+
+int get_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
+	int *count);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the count of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
+	int count);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the count of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
+	int *started);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the started of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
+	int started);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the started of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, 
+	FE_value *time);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the time of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, FE_value time);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the time of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, 
+	FE_value *min);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the min of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, FE_value min);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the min of Min_max_iterato
+==============================================================================*/
+
+
+int get_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, 
+	FE_value *max);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the max of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, FE_value max);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the max of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_gain_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the channel_gain_field of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_gain_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the channel_gain_field of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_offset_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the channel_offset_field of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *channel_offset_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the channel_offset_field of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_start_time_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the display_start_time_field of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_start_time_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the display_start_time_field of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_end_time_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the display_end_time_field of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_display_end_time_field(
+	struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *display_end_time_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the display_end_time_field of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_minimum_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_minimum_field of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_minimum_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_minimum_field of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_maximum_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_maximum_field of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_maximum_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_maximum_field of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_status_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_status_field of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field *signal_status_field);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_status_field of Min_max_iterato
+==============================================================================*/
+
+int get_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field_component *signal_component);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+gets the signal_component of Min_max_iterato
+==============================================================================*/
+
+int set_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
+	struct FE_field_component *signal_component);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2000
+
+DESCRIPTION :
+Sets the signal_component of Min_max_iterato
+==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
@@ -460,6 +736,50 @@ LAST MODIFIED : 15 June 2000
 DESCRIPTION :
 Finds the min and max coordinates of the  <map_electrode_position_field>
 in the <node_group>
+==============================================================================*/
+
+int iterative_get_rig_node_accepted_undecided_signal_min_max(struct FE_node *node,
+	void *min_max_iterator_void);
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+int get_rig_node_signal_min_max(struct FE_node *node,
+	struct FE_field *signal_field,struct FE_field *display_start_time_field,
+	struct FE_field *display_end_time_field,struct FE_field *signal_status_field,
+	FE_value *min,FE_value *max,enum Event_signal_status *status,int time_range);
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION : Determines and returns <min> and <max the minimum and maximum
+value of <signal_field> at <node>. If <time_range> >0 AND <display_start_time_field>,
+<display_end_time_field>  are set, then determines the min, max over this range.
+If <time_range> =0, determines the min, max over entire signal range.
+If <signal_status_field> and <status> set, return the node signal's 
+Event_signal_status in <status>
+==============================================================================*/
+
+int iterative_unrange_rig_node_signal(struct FE_node *node,	
+	void *min_max_iterator_void);
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+Set the <nodes> signal_minimum,signal_maximum by determining the signals's
+actual min and max.
+This function is called iteratively by analysis_unrange_all
+==============================================================================*/
+
+int iterative_set_rig_node_signal_min_max(struct FE_node *node,	
+	void *min_max_iterator_void);
+/*******************************************************************************
+LAST MODIFIED : 7 August 2000
+
+DESCRIPTION :
+Set the <nodes> signal_minimum,signal_maximum from the <min_max_iterator>.
+This function is called iteratively by analysis_set_range
 ==============================================================================*/
 
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,

@@ -79,7 +79,7 @@ The fields are filed in with set_unemap_package_fields()
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Unemap_package).  Could not allocate memory for node field");
+				"CREATE(Unemap_package).  Could not allocate memory ");
 			DEALLOCATE(package);
 		}
 	}

@@ -5785,8 +5785,8 @@ Outputs the information contained by the node field.
 									
 										component.field =field;
 										component.number = 0;
-										number_of_values=get_FE_nodal_array_number_of_elements(node,&component,
-											0,FE_NODAL_VALUE);
+										number_of_values=get_FE_nodal_array_number_of_elements(node,
+											&component,0,FE_NODAL_VALUE);
 										if(number_of_values>0)
 										{
 											return_code=1;

@@ -2048,8 +2048,8 @@ sets a node's values storage with the coordinate system component versions and v
 				component.number = 0;
 				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(node,
 					position_field,0);
-				component_value_types=get_FE_node_field_component_nodal_value_types(node,position_field,
-					0);
+				component_value_types=get_FE_node_field_component_nodal_value_types(node,
+					position_field,0);
 				value=coords_comp_0;
 				for(i=0;i<coords_comp_0_num_versions;i++)
 				{
@@ -2095,7 +2095,8 @@ sets a node's values storage with the coordinate system component versions and v
 			}break;
 			default:
 			{					
-				display_message(ERROR_MESSAGE,"set_mapping_FE_node_coord_values.  Invalid region_type");
+				display_message(ERROR_MESSAGE,"set_mapping_FE_node_coord_values."
+					"  Invalid region_type");
 				node=(struct FE_node *)NULL;
 			}break;				
 		}	/* switch() */

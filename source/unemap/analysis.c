@@ -2762,16 +2762,16 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				else
 				{
 					struct FE_field_component component;
-					component.number=0;
-					/* These may be overwritten if loaded in in */
-					/*read_event_settings_and_signal_status_FE_node_group */
+					component.number=0;				
 					/* These max and min are  scaled and offset (by channel_gain,*/
 					/* channel_offset) values*/
-					component.field=get_Signal_drawing_package_signal_minimum_field(signal_drawing_package); 
+					component.field=get_Signal_drawing_package_signal_minimum_field(
+						signal_drawing_package); 
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						signal_minimum);
 					component.number=0;
-					component.field=get_Signal_drawing_package_signal_maximum_field(signal_drawing_package); 
+					component.field=get_Signal_drawing_package_signal_maximum_field(
+						signal_drawing_package); 
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						signal_maximum);
 				}
