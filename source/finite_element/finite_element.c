@@ -2486,6 +2486,15 @@ node_value_data.values_storage.
 							node_value_data->source_node,
 							new_node_field,node_value_data->dest_values_storage);
 					}
+					else
+					{
+						/* Initialise the values storage if time based */
+						if (new_node_field->time_version)
+						{
+							FE_node_field_initialise_value_storage(new_node_field,
+								node_value_data->dest_values_storage);
+						}
+					}
 				}
 				else
 				{
