@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : delauney.c
 
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 16 October 2000
 
 DESCRIPTION :
 Specialized implementation of Delauney triangulation for a cylinder.
@@ -9,8 +9,10 @@ Specialized implementation of Delauney triangulation for a cylinder.
 ???DB.  Do as 3-D instead.  Then would be general.  How to ge convex hull?
 ==============================================================================*/
 #include <stddef.h>
+#if defined (DEBUG)
 /*???debug */
 #include <stdio.h>
+#endif /* defined (DEBUG) */
 #include <math.h>
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -38,59 +40,6 @@ Module functions
 ----------------
 */
 static int normalize_vertex(float *xyz,float minimum_z,float maximum_z,
-	int number_of_cut_uv,float *cut_uv,float *uv)
-/*******************************************************************************
-LAST MODIFIED : 15 October 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	float minimum_u,u,v;
-	int lower,next,return_code,upper;
-
-	ENTER(normalize_vertex);
-	return_code=0;
-	if (xyz&&(minimum_z<maximum_z)&&(2<=number_of_cut_uv)&&cut_uv&&uv)
-	{
-		u=(float)atan2(xyz[1],xyz[0])/(2*PI);
-		v=(xyz[2]-minimum_z)/(maximum_z-minimum_z);
-		lower=0;
-		upper=number_of_cut_uv-1;
-		while (upper-lower>1)
-		{
-			next=(upper+lower)/2;
-			if (cut_uv[2*next+1]<v)
-			{
-				lower=next;
-			}
-			else
-			{
-				upper=next;
-			}
-		}
-		minimum_u=((cut_uv[2*upper+1]-v)*cut_uv[2*upper]+
-			(v-cut_uv[2*lower+1])*cut_uv[2*lower])/
-			(cut_uv[2*upper+1]-cut_uv[2*lower+1]);
-		if (u<minimum_u)
-		{
-			u += 1;
-		}
-		uv[0]=u;
-		uv[1]=v;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"normalize_vertex.  Invalid argument(s).  %p %g %g %d %p %p",xyz,
-			minimum_z,maximum_z,number_of_cut_uv,cut_uv,uv);
-	}
-	LEAVE;
-
-	return (return_code);
-} /* normalize_vertex */
-
-#if defined (OLD_CODE)
-static int normalize_vertex(float *xyz,float minimum_z,float maximum_z,
 	float minimum_u0,float minimum_u1,float *uv)
 /*******************************************************************************
 LAST MODIFIED : 7 October 2000
@@ -98,7 +47,6 @@ LAST MODIFIED : 7 October 2000
 DESCRIPTION :
 ==============================================================================*/
 {
-	float minimum_u;
 	int return_code;
 
 	ENTER(normalize_vertex);
@@ -107,8 +55,8 @@ DESCRIPTION :
 	{
 		uv[0]=(float)atan2(xyz[1],xyz[0])/(2*PI);
 		uv[1]=(xyz[2]-minimum_z)/(maximum_z-minimum_z);
-		minimum_u=(1-uv[1])*minimum_u0+uv[1]*minimum_u1;
-		if (uv[0]<minimum_u)
+		uv[0] -= (1-uv[1])*minimum_u0+uv[1]*minimum_u1;
+		if (uv[0]<0)
 		{
 			uv[0] += 1;
 		}
@@ -123,7 +71,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* normalize_vertex */
-#endif /* defined (OLD_CODE) */
 
 static int calculate_circumcentre(struct Delauney_triangle *triangle)
 /*******************************************************************************
@@ -172,7 +119,7 @@ Global functions
 int cylinder_delauney(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 16 October 2000
 
 DESCRIPTION :
 Calculates the Delauney triangulation of the <vertices> on a cylinder whose axis
@@ -187,12 +134,10 @@ is z.
 ==============================================================================*/
 {
 	float *adjacent_angles,*adjacent_angle,*adjacent_uv,*adjacent_uvs,angle,
-		*cut_uv,*cut_uv_temp,maximum_z,minimum_u0,minimum_u1,minimum_z,temp_u,
-		temp_v,uv[2],*vertex;
-	int *adjacent_vertices,*adjacent_vertex,*cut_vertices,*cut_vertices_temp,i,j,
-		k,l,lower,m,maximum_vertex,minimum_vertex,n,next,
-		number_of_adjacent_vertices,number_of_cut_uv,number_of_triangles,on_cut,
-		return_code,*returned_triangles,upper,vertex_number;
+		maximum_z,minimum_u0,minimum_u1,minimum_z,temp_u,temp_v,uv[2],*vertex;
+	int *adjacent_vertices,*adjacent_vertex,i,ii,j,k,l,m,maximum_vertex,
+		minimum_vertex,n,number_of_adjacent_vertices,number_of_returned_triangles,
+		number_of_triangles,return_code,*returned_triangles,vertex_number;
 	struct Delauney_triangle **temp_triangles,*triangle,**triangles;
 
 	ENTER(cylinder_delauney);
@@ -226,82 +171,97 @@ is z.
 		}
 		if (minimum_z<maximum_z)
 		{
-			/*???debug */
-			printf("minimum %g, maximum %g\n",minimum_z,maximum_z);
-			number_of_triangles=2;
-			number_of_cut_uv=2;
-			ALLOCATE(triangles,struct Delauney_triangle *,number_of_triangles);
-			ALLOCATE(cut_uv,float,2*number_of_cut_uv);
-			ALLOCATE(cut_vertices,int,number_of_cut_uv);
-			if (triangles&&cut_uv&&cut_vertices)
-			{
-				cut_uv[0]=0;
-				cut_uv[1]=0;
-				cut_uv[2]=0;
-				cut_uv[3]=1;
-#if defined (OLD_CODE)
 			minimum_u0=0;
 			minimum_u1=0;
+			normalize_vertex(vertices+(3*minimum_vertex),minimum_z,maximum_z,
+				minimum_u0,minimum_u1,uv);
+			minimum_u0=uv[0];
+			normalize_vertex(vertices+(3*maximum_vertex),minimum_z,maximum_z,
+				minimum_u0,minimum_u1,uv);
+			minimum_u1=uv[0];
+#if defined (DEBUG)
+			/*???debug */
+			printf("minimum %g %g (%d), maximum %g %g (%d)\n",minimum_u0,minimum_z,
+				minimum_vertex,minimum_u1,maximum_z,maximum_vertex);
+#endif /* defined (DEBUG) */
+			number_of_triangles=6;
 			if (ALLOCATE(triangles,struct Delauney_triangle *,number_of_triangles))
 			{
-#endif /* defined (OLD_CODE) */
-				ALLOCATE(triangles[0],struct Delauney_triangle,1);
-				ALLOCATE(triangles[1],struct Delauney_triangle,1);
-				if (triangles[0]&&triangles[1])
+				i=number_of_triangles;
+				do
 				{
-					triangles[0]->vertex_numbers[0]=minimum_vertex;
-					normalize_vertex(vertices+(3*minimum_vertex),minimum_z,maximum_z,
-						number_of_cut_uv,cut_uv,triangles[0]->vertices);
-#if defined (OLD_CODE)
-					normalize_vertex(vertices+(3*minimum_vertex),minimum_z,maximum_z,
-						minimum_u0,minimum_u1,triangles[0]->vertices);
-#endif /* defined (OLD_CODE) */
-					/*???debug */
-/*					printf("minimum %d %g %g %g  %g %g\n",minimum_vertex,
-						vertices[3*minimum_vertex],vertices[3*minimum_vertex+1],
-						vertices[3*minimum_vertex+2],(triangles[0]->vertices)[0],
-						(triangles[0]->vertices)[1]);*/
-					triangles[0]->vertex_numbers[1]=maximum_vertex;
-					normalize_vertex(vertices+(3*maximum_vertex),minimum_z,maximum_z,
-						number_of_cut_uv,cut_uv,triangles[0]->vertices+2);
-#if defined (OLD_CODE)
-					normalize_vertex(vertices+(3*maximum_vertex),minimum_z,maximum_z,
-						minimum_u0,minimum_u1,(triangles[0]->vertices)+2);
-#endif /* defined (OLD_CODE) */
-					triangles[0]->vertex_numbers[2]=minimum_vertex+number_of_vertices;
-					(triangles[0]->vertices)[4]=(triangles[0]->vertices)[0]+1;
-					(triangles[0]->vertices)[5]=(triangles[0]->vertices)[1];
-					/*???debug */
-/*					printf("maximum %d %g %g %g  %g %g\n",maximum_vertex,
-						vertices[3*maximum_vertex],vertices[3*maximum_vertex+1],
-						vertices[3*maximum_vertex+2],(triangles[0]->vertices)[4],
-						(triangles[0]->vertices)[5]);*/
-					calculate_circumcentre(triangles[0]);
-					triangles[1]->vertex_numbers[0]=maximum_vertex;
-					(triangles[1]->vertices)[0]=(triangles[0]->vertices)[2];
-					(triangles[1]->vertices)[1]=(triangles[0]->vertices)[3];
-					triangles[1]->vertex_numbers[1]=maximum_vertex+number_of_vertices;
-					(triangles[1]->vertices)[2]=(triangles[1]->vertices)[0]+1;
-					(triangles[1]->vertices)[3]=(triangles[1]->vertices)[1];
-					triangles[1]->vertex_numbers[2]=minimum_vertex+number_of_vertices;
-					(triangles[1]->vertices)[4]=(triangles[0]->vertices)[0]+1;
-					(triangles[1]->vertices)[5]=(triangles[0]->vertices)[1];
-					calculate_circumcentre(triangles[1]);
-					cut_uv[0]=(triangles[0]->vertices)[0];
-					cut_uv[2]=(triangles[0]->vertices)[2];
-					cut_vertices[0]=minimum_vertex;
-					cut_vertices[1]=maximum_vertex;
-#if defined (OLD_CODE)
-					minimum_u0=(triangles[0]->vertices)[0];
-					minimum_u1=(triangles[0]->vertices)[2];
-#endif /* defined (OLD_CODE) */
-					return_code=1;
-					i=0;
-					vertex=vertices;
-					while (return_code&&(i<number_of_vertices))
+					i--;
+				}
+				while ((i>=0)&&ALLOCATE(triangles[i],struct Delauney_triangle,1));
+				if (i<0)
+				{
+					(triangles[0]->vertex_numbers)[0]=minimum_vertex-number_of_vertices;
+					(triangles[0]->vertices)[0]= -1;
+					(triangles[0]->vertices)[1]=0;
+					(triangles[0]->vertex_numbers)[1]=maximum_vertex-number_of_vertices;
+					(triangles[0]->vertices)[2]= -1;
+					(triangles[0]->vertices)[3]=1;
+					(triangles[0]->vertex_numbers)[2]=minimum_vertex;
+					(triangles[0]->vertices)[4]=0;
+					(triangles[0]->vertices)[5]=0;
+					(triangles[1]->vertex_numbers)[0]=maximum_vertex-number_of_vertices;
+					(triangles[1]->vertices)[0]= -1;
+					(triangles[1]->vertices)[1]=1;
+					(triangles[1]->vertex_numbers)[1]=maximum_vertex;
+					(triangles[1]->vertices)[2]=0;
+					(triangles[1]->vertices)[3]=1;
+					(triangles[1]->vertex_numbers)[2]=minimum_vertex;
+					(triangles[1]->vertices)[4]=0;
+					(triangles[1]->vertices)[5]=0;
+					(triangles[2]->vertex_numbers)[0]=minimum_vertex;
+					(triangles[2]->vertices)[0]=0;
+					(triangles[2]->vertices)[1]=0;
+					(triangles[2]->vertex_numbers)[1]=maximum_vertex;
+					(triangles[2]->vertices)[2]=0;
+					(triangles[2]->vertices)[3]=1;
+					(triangles[2]->vertex_numbers)[2]=minimum_vertex+number_of_vertices;
+					(triangles[2]->vertices)[4]=1;
+					(triangles[2]->vertices)[5]=0;
+					(triangles[3]->vertex_numbers)[0]=maximum_vertex;
+					(triangles[3]->vertices)[0]=0;
+					(triangles[3]->vertices)[1]=1;
+					(triangles[3]->vertex_numbers)[1]=maximum_vertex+number_of_vertices;
+					(triangles[3]->vertices)[2]=1;
+					(triangles[3]->vertices)[3]=1;
+					(triangles[3]->vertex_numbers)[2]=minimum_vertex+number_of_vertices;
+					(triangles[3]->vertices)[4]=1;
+					(triangles[3]->vertices)[5]=0;
+					(triangles[4]->vertex_numbers)[0]=minimum_vertex+number_of_vertices;
+					(triangles[4]->vertices)[0]=1;
+					(triangles[4]->vertices)[1]=0;
+					(triangles[4]->vertex_numbers)[1]=maximum_vertex+number_of_vertices;
+					(triangles[4]->vertices)[2]=1;
+					(triangles[4]->vertices)[3]=1;
+					(triangles[4]->vertex_numbers)[2]=minimum_vertex+2*number_of_vertices;
+					(triangles[4]->vertices)[4]=2;
+					(triangles[4]->vertices)[5]=0;
+					(triangles[5]->vertex_numbers)[0]=maximum_vertex+number_of_vertices;
+					(triangles[5]->vertices)[0]=1;
+					(triangles[5]->vertices)[1]=1;
+					(triangles[5]->vertex_numbers)[1]=maximum_vertex+2*number_of_vertices;
+					(triangles[5]->vertices)[2]=2;
+					(triangles[5]->vertices)[3]=1;
+					(triangles[5]->vertex_numbers)[2]=minimum_vertex+2*number_of_vertices;
+					(triangles[5]->vertices)[4]=2;
+					(triangles[5]->vertices)[5]=0;
+					for (i=0;i<number_of_triangles;i++)
 					{
+						calculate_circumcentre(triangles[i]);
+					}
+					return_code=1;
+					ii=0;
+					vertex=vertices;
+					while (return_code&&(ii<2*number_of_vertices))
+					{
+						i=ii/2;
 						if ((i!=minimum_vertex)&&(i!=maximum_vertex))
 						{
+#if defined (DEBUG)
 							/*???debug */
 							printf("number_of_triangles=%d\n",number_of_triangles);
 							for (l=0;l<number_of_triangles;l++)
@@ -315,15 +275,27 @@ is z.
 								printf("    %d  %g %g\n",triangles[l]->vertex_numbers[2],
 									(triangles[l]->vertices)[4],(triangles[l]->vertices)[5]);
 							}
-							normalize_vertex(vertex,minimum_z,maximum_z,number_of_cut_uv,
-								cut_uv,uv);
-#if defined (OLD_CODE)
+#endif /* defined (DEBUG) */
 							normalize_vertex(vertex,minimum_z,maximum_z,minimum_u0,minimum_u1,
 								uv);
-#endif /* defined (OLD_CODE) */
+							if (1==ii%2)
+							{
+								if (uv[0]<0.5)
+								{
+									uv[0] += 1;
+									i += number_of_vertices;
+								}
+								else
+								{
+									uv[0] -= 1;
+									i -= number_of_vertices;
+								}
+							}
+#if defined (DEBUG)
 							/*???debug */
 							printf("vertex %d %g %g %g  %g %g\n",i,vertex[0],vertex[1],
 								vertex[2],uv[0],uv[1]);
+#endif /* defined (DEBUG) */
 							/* delete the triangles that no longer satisfy the in-circle
 								criterion */
 							j=0;
@@ -336,20 +308,6 @@ is z.
 							{
 								temp_u=uv[0]-(triangles[j]->centre)[0];
 								temp_v=uv[1]-(triangles[j]->centre)[1];
-#if defined (NOT_DEBUG)
-								/*???DB.  modulo 1 in u */
-								if (temp_u>0.5)
-								{
-									temp_u -= 1;
-								}
-								else
-								{
-									if (temp_u< -0.5)
-									{
-										temp_u += 1;
-									}
-								}
-#endif /* defined (NOT_DEBUG) */
 								if (temp_u*temp_u+temp_v*temp_v<=triangles[j]->radius2)
 								{
 									k++;
@@ -372,20 +330,6 @@ is z.
 											m=0;
 											vertex_number=(triangles[j]->vertex_numbers)[l];
 											angle=(triangles[j]->vertices)[2*l]-uv[0];
-#if defined (NOT_DEBUG)
-											/*???DB.  modulo 1 in u */
-											if (angle< -0.5)
-											{
-												angle += 1.;
-											}
-											else
-											{
-												if (angle>0.5)
-												{
-													angle -= 1.;
-												}
-											}
-#endif /* defined (NOT_DEBUG) */
 											angle=atan2((triangles[j]->vertices)[2*l+1]-uv[1],angle);
 											while ((m<number_of_adjacent_vertices)&&
 												(vertex_number!=adjacent_vertices[m])&&
@@ -419,13 +363,16 @@ is z.
 												adjacent_uv++;
 												*adjacent_uv=(triangles[j]->vertices)[2*l+1];
 												number_of_adjacent_vertices++;
-								/*???debug */
-/*								printf("adjacent vertices\n");
-								for (n=0;n<number_of_adjacent_vertices;n++)
-								{
-									printf("  %d.  %g %g  %g\n",adjacent_vertices[n],
-										adjacent_uvs[2*n],adjacent_uvs[2*n+1],adjacent_angles[n]);
-								}*/
+#if defined (DEBUG)
+												/*???debug */
+												printf("adjacent vertices\n");
+												for (n=0;n<number_of_adjacent_vertices;n++)
+												{
+													printf("  %d.  %g %g  %g\n",adjacent_vertices[n],
+														adjacent_uvs[2*n],adjacent_uvs[2*n+1],
+														adjacent_angles[n]);
+												}
+#endif /* defined (DEBUG) */
 											}
 										}
 									}
@@ -480,102 +427,18 @@ is z.
 										if (triangle=ALLOCATE(triangles[number_of_triangles],
 											struct Delauney_triangle,1))
 										{
-											/* check for triangle on cut line */
-											on_cut=0;
-#if defined (NOT_DEBUG)
-											if ((adjacent_uv[1]<uv[1])&&(uv[1]<adjacent_uv[3]))
-											{
-												/*???debug */
-												printf("cut %g %g %g\n",adjacent_uv[3],uv[1],
-													adjacent_uv[1]);
-												lower=0;
-												upper=number_of_cut_uv-1;
-												while (upper-lower>1)
-												{
-													next=(upper+lower)/2;
-													if (cut_uv[2*next+1]<uv[1])
-													{
-														lower=next;
-													}
-													else
-													{
-														upper=next;
-													}
-												}
-												/*???debug */
-												printf("  %d %d  %d %d  %d %d\n",lower,upper,
-													cut_vertices[lower],adjacent_vertex[0],
-													cut_vertices[upper],adjacent_vertex[1]);
-												if ((cut_vertices[lower]==adjacent_vertex[0])&&
-													(cut_vertices[upper]==adjacent_vertex[1]))
-												{
-													REALLOCATE(cut_uv_temp,cut_uv,float,
-														2*number_of_cut_uv+2);
-													REALLOCATE(cut_vertices_temp,cut_vertices,int,
-														number_of_cut_uv+1);
-													if (cut_uv_temp&&cut_vertices_temp)
-													{
-														cut_uv=cut_uv_temp;
-														cut_vertices=cut_vertices_temp;
-														on_cut=1;
-														for (l=number_of_cut_uv;l>upper;l--)
-														{
-															cut_vertices[l]=cut_vertices[l-1];
-															cut_uv[2*l]=cut_uv[2*l-2];
-															cut_uv[2*l+1]=cut_uv[2*l-1];
-														}
-														cut_vertices[upper]=i;
-														cut_uv[2*upper]=uv[0];
-														cut_uv[2*upper+1]=uv[1];
-														number_of_cut_uv++;
-					/*???debug */
-					printf("number_of_cut_uv=%d\n",number_of_cut_uv);
-					for (l=0;l<number_of_cut_uv;l++)
-					{
-						printf("  %d  %g %g\n",cut_vertices[l],cut_uv[2*l],cut_uv[2*l+1]);
-					}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"cylinder_delauney.  Could not reallocate cut");
-														return_code=0;
-													}
-												}
-											}
-#endif /* defined (NOT_DEBUG) */
-											if (on_cut)
-											{
-												triangle->vertex_numbers[0]=i+number_of_vertices;
-												(triangle->vertices)[0]=uv[0]+1;
-												(triangle->vertices)[1]=uv[1];
-												triangle->vertex_numbers[1]=(*adjacent_vertex)+
-													number_of_vertices;
-												adjacent_vertex++;
-												(triangle->vertices)[2]=(*adjacent_uv)+1;
-												adjacent_uv++;
-												(triangle->vertices)[3]= *adjacent_uv;
-												adjacent_uv++;
-												triangle->vertex_numbers[2]=(*adjacent_vertex)+
-													number_of_vertices;
-												(triangle->vertices)[4]=adjacent_uv[0]+1;
-												(triangle->vertices)[5]=adjacent_uv[1];
-											}
-											else
-											{
-												triangle->vertex_numbers[0]=i;
-												(triangle->vertices)[0]=uv[0];
-												(triangle->vertices)[1]=uv[1];
-												triangle->vertex_numbers[1]= *adjacent_vertex;
-												adjacent_vertex++;
-												(triangle->vertices)[2]= *adjacent_uv;
-												adjacent_uv++;
-												(triangle->vertices)[3]= *adjacent_uv;
-												adjacent_uv++;
-												triangle->vertex_numbers[2]= *adjacent_vertex;
-												(triangle->vertices)[4]=adjacent_uv[0];
-												(triangle->vertices)[5]=adjacent_uv[1];
-											}
+											triangle->vertex_numbers[0]=i;
+											(triangle->vertices)[0]=uv[0];
+											(triangle->vertices)[1]=uv[1];
+											triangle->vertex_numbers[1]= *adjacent_vertex;
+											adjacent_vertex++;
+											(triangle->vertices)[2]= *adjacent_uv;
+											adjacent_uv++;
+											(triangle->vertices)[3]= *adjacent_uv;
+											adjacent_uv++;
+											triangle->vertex_numbers[2]= *adjacent_vertex;
+											(triangle->vertices)[4]=adjacent_uv[0];
+											(triangle->vertices)[5]=adjacent_uv[1];
 											k++;
 											if (calculate_circumcentre(triangle))
 											{
@@ -604,45 +467,116 @@ is z.
 							DEALLOCATE(adjacent_angles);
 							DEALLOCATE(adjacent_uvs);
 						}
-						i++;
-						vertex += 3;
+						if (1==ii%2)
+						{
+							vertex += 3;
+						}
+						ii++;
 					}
+#if defined (DEBUG)
 					/*???debug */
 					printf("number_of_triangles=%d (end)\n",number_of_triangles);
-/*					for (l=0;l<number_of_triangles;l++)
+					for (l=0;l<number_of_triangles;l++)
 					{
 						printf("  triangle %d  %g %g  %g\n",l,triangles[l]->centre[0],
 							triangles[l]->centre[1],triangles[l]->radius2);
-						printf("    %d  %g %g\n",triangles[l]->vertex_numbers[0],
-							(triangles[l]->vertices)[0],(triangles[l]->vertices)[1]);
-						printf("    %d  %g %g\n",triangles[l]->vertex_numbers[1],
-							(triangles[l]->vertices)[2],(triangles[l]->vertices)[3]);
-						printf("    %d  %g %g\n",triangles[l]->vertex_numbers[2],
-							(triangles[l]->vertices)[4],(triangles[l]->vertices)[5]);
-					}*/
-					/*???debug */
-					printf("number_of_cut_uv=%d\n",number_of_cut_uv);
-					for (l=0;l<number_of_cut_uv;l++)
-					{
-						printf("  %d  %g %g\n",cut_vertices[l],cut_uv[2*l],cut_uv[2*l+1]);
+						m=triangles[l]->vertex_numbers[0];
+						if (m<0)
+						{
+							m += number_of_vertices;
+						}
+						else
+						{
+							if (m>=number_of_vertices)
+							{
+								m -= number_of_vertices;
+							}
+						}
+						printf("    %d (%d)  %g %g  %g %g %g\n",
+							triangles[l]->vertex_numbers[0],m,
+							(triangles[l]->vertices)[0],(triangles[l]->vertices)[1],
+							vertices[3*m],vertices[3*m+1],vertices[3*m+2]);
+						m=triangles[l]->vertex_numbers[1];
+						if (m<0)
+						{
+							m += number_of_vertices;
+						}
+						else
+						{
+							if (m>=number_of_vertices)
+							{
+								m -= number_of_vertices;
+							}
+						}
+						printf("    %d (%d)  %g %g  %g %g %g\n",
+							triangles[l]->vertex_numbers[1],m,
+							(triangles[l]->vertices)[2],(triangles[l]->vertices)[3],
+							vertices[3*m],vertices[3*m+1],vertices[3*m+2]);
+						m=triangles[l]->vertex_numbers[2];
+						if (m<0)
+						{
+							m += number_of_vertices;
+						}
+						else
+						{
+							if (m>=number_of_vertices)
+							{
+								m -= number_of_vertices;
+							}
+						}
+						printf("    %d (%d)  %g %g  %g %g %g\n",
+							triangles[l]->vertex_numbers[2],m,
+							(triangles[l]->vertices)[4],(triangles[l]->vertices)[5],
+							vertices[3*m],vertices[3*m+1],vertices[3*m+2]);
 					}
+#endif /* defined (DEBUG) */
 					if (return_code)
 					{
 						/* return results */
-						if (ALLOCATE(returned_triangles,int,3*number_of_triangles))
+						number_of_returned_triangles=0;
+						for (i=0;i<number_of_triangles;i++)
+						{
+							j=2;
+							while ((j>=0)&&((((triangles[i])->vertex_numbers)[j]<0)||
+								(number_of_vertices<=((triangles[i])->vertex_numbers)[j])))
+							{
+								j--;
+							}
+							if (j>=0)
+							{
+								number_of_returned_triangles++;
+							}
+						}
+						if (ALLOCATE(returned_triangles,int,3*number_of_returned_triangles))
 						{
 							*triangles_address=returned_triangles;
-							*number_of_triangles_address=number_of_triangles;
+							*number_of_triangles_address=number_of_returned_triangles;
 							for (i=0;i<number_of_triangles;i++)
 							{
-								for (j=0;j<3;j++)
+								j=2;
+								while ((j>=0)&&((((triangles[i])->vertex_numbers)[j]<0)||
+									(number_of_vertices<=((triangles[i])->vertex_numbers)[j])))
 								{
-									*returned_triangles=((triangles[i])->vertex_numbers)[j];
-									if (*returned_triangles>=number_of_vertices)
+									j--;
+								}
+								if (j>=0)
+								{
+									for (j=0;j<3;j++)
 									{
-										*returned_triangles -= number_of_vertices;
+										*returned_triangles=((triangles[i])->vertex_numbers)[j];
+										if (*returned_triangles>=number_of_vertices)
+										{
+											*returned_triangles -= number_of_vertices;
+										}
+										else
+										{
+											if (*returned_triangles<0)
+											{
+												*returned_triangles += number_of_vertices;
+											}
+										}
+										returned_triangles++;
 									}
-									returned_triangles++;
 								}
 							}
 						}
@@ -663,27 +597,20 @@ is z.
 				{
 					display_message(ERROR_MESSAGE,
 						"cylinder_delauney.  Could not allocate initial triangles 2");
-					DEALLOCATE(triangles[0]);
-					DEALLOCATE(triangles[1]);
+					i++;
+					while (i<number_of_triangles)
+					{
+						DEALLOCATE(triangles[i]);
+						i++;
+					}
 					DEALLOCATE(triangles);
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"cylinder_delauney.  Could not allocate initial triangles and cut");
-			}
-			DEALLOCATE(triangles);
-			DEALLOCATE(cut_uv);
-			DEALLOCATE(cut_vertices);
-#if defined (OLD_CODE)
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
 					"cylinder_delauney.  Could not allocate initial triangles");
 			}
-#endif /* defined (OLD_CODE) */
 		}
 		else
 		{
