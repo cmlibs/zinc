@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 8 May 2000
+XCOMM LAST MODIFIED : 23 May 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -704,6 +704,9 @@ DOF3_SRCS = \
 	dof3/dof3_input.c 
 ELEMENT_SRCS = \
 	element/element_creator.c \
+	element/element_point_field_viewer_widget.c \
+	element/element_point_viewer.c \
+	element/element_point_viewer_widget.c \
 	element/element_point_tool.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/computed_field.c \
