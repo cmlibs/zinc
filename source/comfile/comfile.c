@@ -65,7 +65,7 @@ specified on the command line, a file selection box is presented to the user.
 				&filename, (void *)1, set_name);
 			/* default */
 			Option_table_add_entry(option_table, (char *)NULL,
-				&filename, (void *)1, set_name);
+				&filename, NULL, set_name);
 			return_code=Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
 			/* no errors, not asking for help */
