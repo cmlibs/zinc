@@ -5896,9 +5896,7 @@ For PARALLEL and PERSPECTIVE projection modes only.
 	int return_code;
 
 	ENTER(Scene_viewer_get_view_angle);
-	if (scene_viewer && view_angle && (
-		(SCENE_VIEWER_PARALLEL == scene_viewer->projection_mode) ||
-		(SCENE_VIEWER_PERSPECTIVE == scene_viewer->projection_mode)))
+	if (scene_viewer && view_angle)
 	{
 		diagonal = sqrt((scene_viewer->right - scene_viewer->left)*
 			(scene_viewer->right - scene_viewer->left) +
