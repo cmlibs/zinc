@@ -3884,12 +3884,14 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
 									Graphical_material,name)(matname,
 										graphical_material_manager);
-								if (!scanned_material)
+								/* ???RC Allow token "none" to represent NULL material */
+								if (!(scanned_material ||
+									fuzzy_string_compare_same_length(matname,"NONE")))
 								{
 #if defined (DEBUG)
 									/*???debug */
 									printf(
-										"Could not find .obj material %s: Setting to default\n",
+										"Could not find .obj material %s: Creating new one\n",
 										matname);
 #endif /* defined (DEBUG) */
 									if((scanned_material = CREATE(Graphical_material)
