@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -10,6 +10,7 @@ selections. Elements are created in this way while dialog is open.
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
+#include <Xm/List.h>
 #include <Xm/TextF.h>
 #include <Xm/ToggleBG.h>
 #include "choose/choose_fe_field.h"
@@ -442,6 +443,46 @@ generating 2-D bilinear elements.
 	return (return_code);
 } /* Element_creator_make_template_element */
 
+static int Element_creator_end_element_creation(
+	struct Element_creator *element_creator)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+DEACCESSes the element being created, if any, and if it is unmanaged, warns that
+the creation was aborted. Also clears the node list.
+Call this function whether element is successfully created or not.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_creator_end_element_creation);
+	if (element_creator)
+	{
+		if (element_creator->element)
+		{
+			if (!IS_MANAGED(FE_element)(element_creator->element,
+				element_creator->element_manager))
+			{
+				display_message(WARNING_MESSAGE,
+					"Element_creator: destroying incomplete element");
+			}
+			DEACCESS(FE_element)(&(element_creator->element));
+			XmListDeleteAllItems(element_creator->node_list_widget);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_end_element_creation.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_creator_end_element_creation */
+
 static int Element_creator_add_element(struct Element_creator *element_creator)
 /*******************************************************************************
 LAST MODIFIED : 12 October 1999
@@ -510,7 +551,7 @@ Element_creator_release_input.
 			/* Destroy add_element_data without fail - it can be huge! */
 			DESTROY(Add_FE_element_and_faces_to_manager_data)(&add_element_data);
 		}
-		DEACCESS(FE_element)(&(element_creator->element));
+		Element_creator_end_element_creation(element_creator);
 	}
 	else
 	{
@@ -527,15 +568,17 @@ static void Element_creator_node_selection_change(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *changes,void *element_creator_void)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Callback for change in the global node selection.
 ==============================================================================*/
 {
+	char temp_string[50];
 	struct CM_element_information element_identifier;
-	struct FE_node *node;
 	struct Element_creator *element_creator;
+	struct FE_node *node;
+	XmString new_string;
 
 	ENTER(Element_creator_node_selection_change);
 	if (node_selection&&changes&&(element_creator=
@@ -577,6 +620,12 @@ Callback for change in the global node selection.
 						if (set_FE_element_node(element_creator->element,
 							element_creator->number_of_clicked_nodes,node))
 						{
+							sprintf(temp_string,"%d. Node %d",
+								element_creator->number_of_clicked_nodes+1,
+								get_FE_node_cm_node_identifier(node));
+							new_string=XmStringCreateSimple(temp_string);
+							XmListAddItem(element_creator->node_list_widget,new_string,0);
+							XmStringFree(new_string);
 							element_creator->number_of_clicked_nodes++;
 							if (element_creator->number_of_clicked_nodes ==
 								element_creator->element->information->number_of_nodes)
@@ -776,6 +825,32 @@ Callback for change of coordinate field.
 	LEAVE;
 } /* Element_creator_update_coordinate_field */
 
+static void Element_creator_abort_creation_CB(Widget widget,
+	void *element_creator_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Called when abort element creation button is pressed.
+==============================================================================*/
+{
+	struct Element_creator *element_creator;
+
+	ENTER(Element_creator_abort_creation_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_creator=(struct Element_creator *)element_creator_void)
+	{
+		Element_creator_end_element_creation(element_creator);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_abort_creation_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_creator_abort_creation_CB */
+
 static void Element_creator_close_CB(Widget widget,
 	void *element_creator_void,void *call_data)
 /*******************************************************************************
@@ -852,7 +927,9 @@ enable the creation of a coordinate field.
 		{"elem_cre_create_btn_CB",
 		 (XtPointer)Element_creator_create_button_CB},
 		{"elem_cre_dimension_text_CB",
-		 (XtPointer)Element_creator_element_dimension_text_CB}
+		 (XtPointer)Element_creator_element_dimension_text_CB},
+		{"elem_cre_abort_creation_CB",
+		 (XtPointer)Element_creator_abort_creation_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -1079,13 +1156,10 @@ Deaccesses objects and frees memory used by the Element_creator at
 	if (element_creator_address&&
 		(element_creator= *element_creator_address))
 	{
+		Element_creator_end_element_creation(element_creator);
 		if (element_creator->template_node)
 		{
 			DEACCESS(FE_node)(&(element_creator->template_node));
-		}
-		if (element_creator->template_element)
-		{
-			DEACCESS(FE_element)(&(element_creator->template_element));
 		}
 		if (element_creator->create_enabled)
 		{
@@ -1175,14 +1249,7 @@ Sets the coordinate field interpolated by elements created with
 			if (return_code)
 			{
 				element_creator->coordinate_field=coordinate_field;
-				if (element_creator->element)
-				{
-					display_message(WARNING_MESSAGE,
-						"Element creator changing coordinate field:  "
-						"Aborting current element creation");
-					/* lose the element currently being created, if any */
-					DEACCESS(FE_element)(&(element_creator->element));
-				}
+				Element_creator_end_element_creation(element_creator);
 				/* lose the current template element and node, if any */
 				REACCESS(FE_element)(&(element_creator->template_element),
 					(struct FE_element *)NULL);
@@ -1328,7 +1395,7 @@ Returns the dimension of elements to be created by the <element_creator>.
 int Element_creator_set_element_dimension(
 	struct Element_creator *element_creator,int element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Sets the <element_dimension> of elements to be created by <element_creator>.
@@ -1345,13 +1412,7 @@ Sets the <element_dimension> of elements to be created by <element_creator>.
 			if (element_creator->element_dimension != element_dimension)
 			{
 				element_creator->element_dimension=element_dimension;
-				if (element_creator->element)
-				{
-					display_message(WARNING_MESSAGE,
-						"Element creator changing element dimension:  "
-						"Ending current element creation");
-					DEACCESS(FE_element)(&(element_creator->element));
-				}
+				Element_creator_end_element_creation(element_creator);
 				/* lose the current template element and node, if any */
 				REACCESS(FE_element)(&(element_creator->template_element),
 					(struct FE_element *)NULL);
@@ -1408,7 +1469,7 @@ Returns the group where elements created by the <element_creator> are put.
 int Element_creator_set_element_group(struct Element_creator *element_creator,
 	struct GROUP(FE_element) *element_group)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Sets the <element_group> where elements created by <element_creator> are placed.
@@ -1426,12 +1487,7 @@ same name, which enables the nodes and elements to be exported as a group.
 		return_code=1;
 		if (element_group != element_creator->element_group)
 		{
-			if (element_creator->element)
-			{
-				display_message(WARNING_MESSAGE,
-					"Element creator changing group:  Ending current element creation");
-				DEACCESS(FE_element)(&(element_creator->element));
-			}
+			Element_creator_end_element_creation(element_creator);
 			element_creator->element_group=element_group;
 			if (element_creator->element_group&&GET_NAME(GROUP(FE_element))(
 				element_creator->element_group,&group_name))

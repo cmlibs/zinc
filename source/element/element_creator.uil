@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : element_creator.uil
 !
-! LAST MODIFIED : 26 June 2000
+! LAST MODIFIED : 18 July 2000
 !
 ! DESCRIPTION :
 ! Controls the elements being created.
@@ -18,6 +18,7 @@ procedure
 
 	elem_cre_create_btn_CB;
 	elem_cre_dimension_text_CB;
+	elem_cre_abort_creation_CB;
 
 identifier
 	!Pointer to data specific to this instance of the elem_cre widget
@@ -44,7 +45,8 @@ object
 		controls
 			{
 			XmRowColumn elem_cre_controls;
-			XmList elem_cre_node_list;
+			XmFrame elem_cre_progress_entry;
+			XmPushButtonGadget elem_cre_abort_creation;
 			};
 		};
 !*******************************************************************************
@@ -201,7 +203,7 @@ object
 			};
 		};
 !*******************************************************************************
-	elem_cre_node_list: XmList
+	elem_cre_progress_entry: XmFrame
 		{
 		arguments
 			{
@@ -209,12 +211,69 @@ object
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopWidget = elem_cre_controls;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = elem_cre_abort_creation;
+			};
+    controls
+      {
+      XmForm elem_cre_progress_form;
+      };
+		};
+	elem_cre_progress_form: XmForm
+		{
+    controls
+      {
+			XmLabelGadget elem_cre_element_name;
+      XmList elem_cre_node_list;
+      };
+		};
+	elem_cre_element_name: XmLabelGadget
+		{
+    arguments
+      {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+      XmNlabelString = compound_string("Nodes in new element:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+		};
+	elem_cre_node_list: XmList
+		{
+		arguments
+			{
+			XmNvisibleItemCount = 4;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_cre_element_name;
 			XmNbottomAttachment = XmATTACH_FORM;
 			};
     callbacks
       {
 			MrmNcreateCallback = procedure
 				elem_cre_id_node_list(elem_cre_structure);
+			};
+		};
+!*******************************************************************************
+	elem_cre_abort_creation: XmPushButtonGadget
+		{
+		arguments
+			{
+      XmNfontList = button_font;
+      XmNlabelString = compound_string("Abort element creation");
+      XmNalignment = XmALIGNMENT_CENTER;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+    callbacks
+      {
+			XmNactivateCallback = procedure
+				elem_cre_abort_creation_CB(elem_cre_structure);
 			};
 		};
 !*******************************************************************************
