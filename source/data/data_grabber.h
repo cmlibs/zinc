@@ -101,15 +101,17 @@ DESCRIPTION :
 Contains information required by the data_grabber control dialog.
 ==============================================================================*/
 {
-	int mode,calib_visible;
+	int button_state,mode,calib_visible,streaming_mode;
+	float streaming_distance;
 	Gmatrix last_direction;
 	struct Callback_data callback_array[DATA_GRABBER_NUM_CALLBACKS];
 	struct DG_data current_value,calib_value;
 	struct DG_calib_struct calib_struct[3];
-	struct Dof3_data last_position;
+	struct Dof3_data last_position,previous_streaming;
 	Widget menu_bar,calib_form[3],calib_button[3],calib_label[3],data_form[3],
 		data_label[3],data_rowcol,calib_rowcol,calib_menu_button,
-		calib_frame,input_module_widget,calib_rc_form[3],data_rc_form[3];
+		calib_frame,input_module_widget,calib_rc_form[3],data_rc_form[3],
+	   stream_distance_entry, stream_distance_text;
 	Widget calib_widget[3],data_widget[3];
 	Widget widget_parent,widget,*widget_address;
 }; /* DG_struct */

@@ -1745,7 +1745,7 @@ Let us receive events (ie from spaceball) if the mouse is in this window.
 	{
 		return_code=1;
 #if defined (SPACEBALL)
-		if (spaceball_valid)
+		if (spaceball_valid && spaceball_device)
 		{
 #if defined (SGI)
 			XSelectExtensionEvent(user_interface->display,XtWindow(widget),
@@ -1754,7 +1754,7 @@ Let us receive events (ie from spaceball) if the mouse is in this window.
 		}
 #endif
 #if defined (DIALS)
-		if (dials_valid)
+		if (dials_valid && dials_device)
 		{
 			XSelectExtensionEvent(user_interface->display,XtWindow(widget),
 				ListOfDialsEventClass,3);

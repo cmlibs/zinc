@@ -18,6 +18,10 @@ procedure
 	dg_calib_identify_button(integer);
 	dg_calib_control_CB(integer);
 	dg_calib_destroy_CB();
+	dg_stream_mode_CB();
+	dg_stream_distance_CB;
+	dg_id_stream_distance_entry;
+  	dg_id_stream_distance_text;
 
 value
 	dg_font : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
@@ -75,6 +79,7 @@ object
 			XmMenuBar dg_menu_bar;
 			XmFrame dg_data_frame;
 			XmFrame dg_calib_frame;
+			XmForm dg_streaming_form;
 			};
 		callbacks
 			{
@@ -93,9 +98,7 @@ object
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = 0;
-			XmNtopWidget = XmMenuBar dg_menu_bar;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
+			XmNtopWidget = dg_menu_bar;
 			XmNuserData = dg_structure;
 			};
 		controls
@@ -118,14 +121,34 @@ object
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = 0;
-			XmNtopWidget = XmMenuBar dg_menu_bar;
+			XmNtopWidget = dg_menu_bar;
+			XmNuserData = dg_structure;
+			};
+		controls
+			{
+			XmRowColumn dg_data_rowcol;
+			};
+		};
+	dg_streaming_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = dg_data_frame;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			XmNuserData = dg_structure;
 			};
 		controls
 			{
-			XmRowColumn dg_data_rowcol;
+			XmToggleButton dg_streaming_mode_toggle;
+			XmForm dg_stream_distance_entry;
 			};
 		};
 !**************************************************************************************
@@ -489,4 +512,88 @@ object
 				procedure dg_calib_control_CB(dg_calib_cont_clear_ID);
 			};
 		};
+!*******************************************************************************
+	dg_streaming_mode_toggle: XmToggleButton
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNindicatorType = XmN_OF_MANY;
+			XmNlabelString =
+			compound_string("Streaming");
+			XmNfontList = dg_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNuserData = dg_structure;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback = procedure dg_stream_mode_CB ();
+			};
+		};
+
+	dg_stream_distance_entry: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = dg_streaming_mode_toggle;
+			};
+		controls
+			{
+			XmLabelGadget dg_stream_distance_label;
+			XmTextField dg_stream_distance_text;
+			};
+    	callbacks
+      	{
+      	MrmNcreateCallback = procedure
+      		dg_id_stream_distance_entry(dg_structure);
+	    	};
+		};
+
+	dg_stream_distance_label: XmLabelGadget
+    	{
+    	arguments
+      	{
+      	XmNlabelString = compound_string("Streaming distance:");
+			XmNfontList = dg_font;
+      	XmNalignment = XmALIGNMENT_BEGINNING;
+      	XmNleftAttachment = XmATTACH_FORM;
+      	XmNleftOffset = 0;
+      	XmNtopAttachment = XmATTACH_FORM;
+      	XmNtopOffset = 0;
+      	XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+      	XmNuserData = dg_structure;
+			};
+		};
+
+	dg_stream_distance_text: XmTextField
+   	{
+    	arguments
+      	{
+      	XmNvalue = "";
+!        XmNwidth = 60;
+      	XmNcolumns = 8;
+      	XmNfontList = dg_font;
+      	XmNleftAttachment = XmATTACH_WIDGET;
+      	XmNleftOffset = 0;
+      	XmNleftWidget = dg_stream_distance_label;
+      	XmNtopAttachment = XmATTACH_FORM;
+      	XmNtopOffset = 0;
+      	XmNbottomAttachment = XmATTACH_FORM;
+      	XmNbottomOffset = 0;
+      	XmNuserData = dg_structure;
+      	};
+    	callbacks
+      	{
+      	MrmNcreateCallback = procedure
+     			dg_id_stream_distance_text(dg_structure);
+	     	XmNactivateCallback = procedure dg_stream_distance_CB(dg_structure);
+      	XmNlosingFocusCallback = procedure dg_stream_distance_CB(dg_structure);
+      	};
+    	};
+
+!*******************************************************************************
 end module;

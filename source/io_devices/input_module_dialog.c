@@ -1080,7 +1080,6 @@ DESCRIPTION :
 Creates a new calibration dialog.  If one exists, bring it up to the front.
 ==============================================================================*/
 {
-	Arg override_arg;
 	MrmType input_module_calibration_class;
 
 	ENTER(input_module_create_faro_calib_dialog);
@@ -1092,7 +1091,7 @@ Creates a new calibration dialog.  If one exists, bring it up to the front.
 		{
 			if (MrmSUCCESS==MrmFetchWidgetOverride(input_module_dialog_hierarchy,
 				"input_faro_widget",input_module_dialog->faro_struct.dialog,
-				NULL,&override_arg,1,&input_module_dialog->faro_struct.widget,
+				NULL,NULL,0,&input_module_dialog->faro_struct.widget,
 				&input_module_calibration_class))
 			{
 				input_module_dialog->faro_struct.calibrating = 0;
