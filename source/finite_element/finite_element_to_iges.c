@@ -13,6 +13,7 @@ to file.
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
@@ -164,20 +165,19 @@ DESCRIPTION :
 static int get_iges_entity_info(struct FE_element *element,
 	void *get_data_void)
 /******************************************************************************
-LAST MODIFIED : 4 March 2003
+LAST MODIFIED : 13 June 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	FE_value *source;
-	float *destination;
-	int *faces_material, *faces_world, i, j, k, material_curve_directory_pointer,
+	FE_value *destination, *source, *source_ptr;
+	int *faces_material,*faces_world,i,j,k,material_curve_directory_pointer,
 		monomial_x[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		monomial_y[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		monomial_z[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		number_of_component_values, number_of_faces, number_of_parents,
-		outer_boundary_directory_pointer, *reorder_faces, return_code,
-		surface_directory_pointer, world_curve_directory_pointer;
+		number_of_component_values, number_of_faces,number_of_parents,
+		outer_boundary_directory_pointer,*reorder_faces,return_code,
+		surface_directory_pointer,world_curve_directory_pointer;
 	struct CM_element_information cm;
 	struct FE_element *face;
 	struct FE_field *coordinate_field;
@@ -186,21 +186,20 @@ DESCRIPTION :
 	struct IGES_entity_info *entity,*surface_entity;
 
 	ENTER(get_iges_entity_info);
-	return_code = 0;
-	/* check arguments */
-	if (element && (get_data = (struct Get_iges_entity_info_data *)get_data_void))
+	return_code=0;
+	if (element&&(get_data=(struct Get_iges_entity_info_data *)get_data_void))
 	{
-		return_code = 1;
+		return_code=1;
 		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
-		if ((2 == get_FE_element_dimension(element)) &&
+		if ((2==get_FE_element_dimension(element))&&
 			get_FE_element_number_of_parents(element, &number_of_parents) &&
-			(0 == number_of_parents) &&
-			(coordinate_field = get_FE_element_default_coordinate_field(element)) &&
-			(3 == get_FE_field_number_of_components(coordinate_field)) &&
+			(1>=number_of_parents)&&
+			(coordinate_field=get_FE_element_default_coordinate_field(element))&&
+			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(coordinate_element_field_values = CREATE(FE_element_field_values)()) &&
-			calculate_FE_element_field_values(element,
-				coordinate_field, (FE_value)0, (char)0, coordinate_element_field_values,
-				(struct FE_element *)NULL) &&
+			(calculate_FE_element_field_values(element,coordinate_field,
+			/*time*/(FE_value)0,/*calculate_derivatives*/(char)0,coordinate_element_field_values,
+			(struct FE_element *)NULL))&&
 			FE_element_field_values_get_monomial_component_info(
 				coordinate_element_field_values, /*component_number*/0, monomial_x) &&
 			(2 == monomial_x[0]) && (monomial_x[1] <= 3) && (monomial_x[2] <= 3) &&
@@ -239,15 +238,16 @@ DESCRIPTION :
 					&number_of_component_values, &source) &&
 					(0 < number_of_component_values) && source)
 				{
+					source_ptr = source;
 					destination=(surface_entity->parameter).type_114.x;
 					k=0;
 					for (j=0;j<=monomial_x[2];j++)
 					{
 						for (i=0;i<=monomial_x[1];i++)
 						{
-							*destination= *source;
+							*destination= *source_ptr;
 							destination++;
-							source++;
+							source_ptr++;
 							k++;
 						}
 						while (i<=3)
@@ -271,15 +271,16 @@ DESCRIPTION :
 					&number_of_component_values, &source) &&
 					(0 < number_of_component_values) && source)
 				{
+					source_ptr = source;
 					destination=(surface_entity->parameter).type_114.y;
 					k=0;
 					for (j=0;j<=monomial_y[2];j++)
 					{
 						for (i=0;i<=monomial_y[1];i++)
 						{
-							*destination= *source;
+							*destination= *source_ptr;
 							destination++;
-							source++;
+							source_ptr++;
 							k++;
 						}
 						while (i<=3)
@@ -303,15 +304,16 @@ DESCRIPTION :
 					&number_of_component_values, &source) &&
 					(0 < number_of_component_values) && source)
 				{
+					source_ptr = source;
 					destination=(surface_entity->parameter).type_114.z;
 					k=0;
 					for (j=0;j<=monomial_z[2];j++)
 					{
 						for (i=0;i<=monomial_z[1];i++)
 						{
-							*destination= *source;
+							*destination= *source_ptr;
 							destination++;
-							source++;
+							source_ptr++;
 							k++;
 						}
 						while (i<=3)
@@ -674,9 +676,9 @@ struct Write_iges_parameter_data_data
 }; /* struct Write_iges_parameter_data_data */
 
 int export_to_iges(char *file_name, struct FE_region *fe_region,
-	char *region_path)
+	char *region_path, struct Computed_field *field)
 /******************************************************************************
-LAST MODIFIED : 4 March 2003
+LAST MODIFIED : 5 August 2003
 
 DESCRIPTION :
 Write bicubic elements to an IGES file.
@@ -692,14 +694,27 @@ Write bicubic elements to an IGES file.
 	struct tm *time_struct;
 
 	ENTER(export_to_iges);
-
+	return_code=0;
+	USE_PARAMETER(field);
+	if (file_name && fe_region && region_path)
+	{
+		if (iges=fopen(file_name,"w"))
+		{
+			return_code=1;
+			/* write IGES header */
+			/* start section */
+			fprintf(iges,"%-72sS      1\n","cmgui");
+			/* global section */
+			global_count=0;
+			out_string=(char *)NULL;
+			out_length=0;
 #define WRITE_STRING_PARAMETER( parameter ) \
 { \
 	length=strlen(parameter); \
 	if (length>0) \
 	{ \
 		length += (int)ceil(log10((double)length))+2; \
-		if (REALLOCATE(temp_string,out_string,char,out_length+length+1)) \
+		if (REALLOCATE(temp_string,out_string,char,out_length+length+2)) \
 		{ \
 			out_string=temp_string; \
 			sprintf(out_string+out_length,"%dH",(int)strlen(parameter)); \
@@ -730,7 +745,6 @@ Write bicubic elements to an IGES file.
 		} \
 	} \
 }
-
 #define WRITE_INTEGER_PARAMETER( parameter ) \
 { \
 	sprintf(numeric_string,"%d",parameter); \
@@ -750,7 +764,6 @@ Write bicubic elements to an IGES file.
 		out_length=strlen(out_string); \
 	} \
 }
-
 #define WRITE_REAL_PARAMETER( parameter ) \
 { \
 	sprintf(numeric_string,"%.6e",parameter); \
@@ -770,20 +783,6 @@ Write bicubic elements to an IGES file.
 		out_length=strlen(out_string); \
 	} \
 }
-
-	return_code = 0;
-	if (file_name && fe_region && region_path)
-	{
-		if (iges=fopen(file_name,"w"))
-		{
-			return_code=1;
-			/* write IGES header */
-			/* start section */
-			fprintf(iges,"%-72sS      1\n","cmgui");
-			/* global section */
-			global_count=0;
-			out_string=(char *)NULL;
-			out_length=0;
 			/* parameter delimiter */
 			WRITE_STRING_PARAMETER(",");
 			/* record delimiter */
