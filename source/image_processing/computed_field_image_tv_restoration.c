@@ -364,7 +364,7 @@ int Image_cache_image_tv_restoration(struct Image_cache *image, int number_of_it
    DESCRIPTION: Implement image restoration based on total variation (tv)
 ==================================================================================*/
 {
-        FE_value  *data_index, *result_index, *temp_index, *Max, *Min;
+        FE_value  *data_index, *result_index, *temp_index;
 	char *storage;
 	FE_value laplacian;
         int i, k, storage_size;
@@ -387,9 +387,7 @@ int Image_cache_image_tv_restoration(struct Image_cache *image, int number_of_it
 
 		 if (ALLOCATE(storage, char, storage_size * sizeof(FE_value))
 		          && ALLOCATE(offsets, int, 2 * image->dimension)
-			  && ALLOCATE(temp_index, FE_value, storage_size)
-		          && ALLOCATE(Max, FE_value, image->depth)
-			  && ALLOCATE(Min, FE_value, image->depth))
+			  && ALLOCATE(temp_index, FE_value, storage_size))
 		{
 		        return_code = 1;
 
@@ -405,11 +403,6 @@ int Image_cache_image_tv_restoration(struct Image_cache *image, int number_of_it
 			for (i = 0; i < storage_size; i++)
 			{
 			        temp_index[i] = *(data_index + i);
-			}
-			for (k = 0; k <image->depth; k++)
-			{
-			        Max[k] = -10000.0;
-				Min[k] = 10000.0;
 			}
 			x_off = image->depth;
 			for (m = 0; m < image->dimension; m++)
@@ -464,35 +457,17 @@ int Image_cache_image_tv_restoration(struct Image_cache *image, int number_of_it
 			{
 			        for (k = 0; k < image->depth; k++)
 				{
-				        Max[k] = my_Max(result_index[k], Max[k]);
-					Min[k] = my_Min(result_index[k], Min[k]);
+					if (result_index[k] < 0.0)
+					{
+					        result_index[k] = 0.0;
+					}
+					else if(result_index[k] > 1.0)
+					{
+					        result_index[k] = 1.0;
+					}
 				}
 				result_index += image->depth;
 			}
-			for (i = (storage_size/image->depth)  - 1; i >= 0; i--)
-			{
-			        result_index -= image->depth;
-			        for (k = 0; k < image->depth; k++)
-				{
-				        if(Max[k] == Min[k])
-					{
-					        if (Max[k] == 0.0)
-						{
-						        result_index[k] = 0.0;
-						}
-						else
-						{
-						        result_index[k] = 1.0;
-						}
-					}
-					else
-					{
-					        result_index[k] -= Min[k];
-						result_index[k] /= Max[k] - Min[k];
-					}
-				}
-			}
-
 			if (return_code)
         	        {
 			        DEALLOCATE(image->data);
@@ -503,8 +478,6 @@ int Image_cache_image_tv_restoration(struct Image_cache *image, int number_of_it
 			{
                                 DEALLOCATE(storage);
 			}
-			DEALLOCATE(Max);
-			DEALLOCATE(Min);
 			DEALLOCATE(offsets);
 			DEALLOCATE(temp_index);
                 }
