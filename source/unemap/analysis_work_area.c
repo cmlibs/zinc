@@ -166,7 +166,7 @@ DESCRIPTION : Stores info used by  rig_node_group_node_selection_change
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis_work_area;
-	int multiple_selection,no_highlight;
+	int multiple_selection,highlight;
 };
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -13669,720 +13669,6 @@ Global functions
 ----------------
 */
 
-#if defined (OLD_CODE)
-int highlight_analysis_device(unsigned int multiple_selection,
-	struct Device **device,	int *device_number,int *electrode_number,
-	int *auxiliary_number,struct Analysis_work_area *analysis)
-/*******************************************************************************
-LAST MODIFIED : 4 August 1999
-
-DESCRIPTION :
-If the highlight is part of a multiple selection
-then
-  If the <device> is not highlighted
-  then
-    highlight it and make it THE highlighted device for the analysis work area
-  else
-    if it is the only highlighted device
-    then
-      do nothing
-    else
-      dehighlight it
-      if it is THE highlighted device for the analysis work area
-      then
-        make the first highlighted device THE highlighted device
-else
-  highlight it and dehighlight all other devices
-  make it THE highlighted device for the analysis work area
-==============================================================================*/
-{
-	enum Device_type device_type;
-	int i,new_auxiliary_number,new_device_number,new_electrode_number,
-		old_auxiliary_number,old_device_number,old_electrode_number,return_code,
-			start_analysis_interval,end_analysis_interval;
-	struct Device **new_highlight,**old_highlight,**temp_device;
-	struct Device_description *description;
-	struct Interval_area *interval;
-	struct Map *map;
-	struct Mapping_window *mapping;
-	struct Region *current_region;
-	struct Signal_buffer *buffer;
-	struct Signals_area *signals;
-
-	ENTER(highlight_analysis_device);
-	if (analysis&&(analysis->rig)&&(analysis->rig->devices)&&
-		(*(analysis->rig->devices))&&
-		(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
-		(device||device_number||electrode_number||auxiliary_number))
-	{		
-		current_region=get_Rig_current_region(analysis->rig);
-		if (analysis->window)
-		{
-			signals= &(analysis->window->signals);
-			interval= &(analysis->window->interval);
-		}
-		else
-		{
-			signals=(struct Signals_area *)NULL;
-			interval=(struct Interval_area *)NULL;
-		}
-		if ((analysis->mapping_window)&&(analysis->mapping_window->map))
-		{
-			mapping=analysis->mapping_window;
-			map=mapping->map;
-		}
-		else
-		{
-			mapping=(struct Mapping_window *)NULL;
-			map=(struct Map *)NULL;
-		}
-		if (new_highlight=device)
-		{
-			/* have specified a device */
-			/* determine the device, electrode and auxiliary numbers */
-			temp_device=analysis->rig->devices;
-			new_device_number=0;
-			new_electrode_number=0;
-			new_auxiliary_number=0;
-			for (i=new_highlight-temp_device;i>0;i--)
-			{
-				if ((current_region==(description=(*temp_device)->description)->
-					region)||(!current_region))
-				{
-					new_device_number++;
-					if (ELECTRODE==(device_type=description->type))
-					{
-						new_electrode_number++;
-					}
-					else
-					{
-						if (AUXILIARY==device_type)
-						{
-							new_auxiliary_number++;
-						}
-					}
-				}
-				temp_device++;
-			}
-			if (ELECTRODE==(device_type=(*(temp_device))->description->type))
-			{
-				new_auxiliary_number= -1;
-				return_code=1;
-			}
-			else
-			{
-				if (AUXILIARY==device_type)
-				{
-					new_electrode_number= -1;
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"highlight_analysis_device.  Invalid device type in rig");
-					return_code=0;
-				}
-			}
-			if (return_code&&
-				((device_number&&!(*device_number==new_device_number))||
-				(electrode_number&&!(*electrode_number==new_electrode_number))||
-				(auxiliary_number&&!(*auxiliary_number==new_auxiliary_number))))
-			{
-				display_message(ERROR_MESSAGE,
-					"highlight_analysis_device.  device item %s",
-					"incompatible with device, electrode and auxiliary numbers");
-				return_code=0;
-			}
-		}
-		else
-		{
-			/* have not specified the device */
-			if (signals&&device_number&&((new_device_number= *device_number)>=0)&&
-				(new_device_number<signals->number_of_signals))
-			{
-				/* have specified a device_number */
-				/* determine the device and the electrode and auxiliary numbers */
-				new_highlight=analysis->rig->devices;
-				new_electrode_number=0;
-				new_auxiliary_number=0;
-				i=new_device_number;
-				while (((current_region!=(description=(*new_highlight)->description)->
-					region)&&current_region)||(i>0))
-				{
-					if (!current_region||(current_region==description->region))
-					{
-						i--;
-						if (ELECTRODE==(device_type=description->type))
-						{
-							new_electrode_number++;
-						}
-						else
-						{
-							if (AUXILIARY==device_type)
-							{
-								new_auxiliary_number++;
-							}
-						}
-					}
-					new_highlight++;
-				}
-				if (ELECTRODE==(device_type=description->type))
-				{
-					new_auxiliary_number= -1;
-					return_code=1;
-				}
-				else
-				{
-					if (AUXILIARY==device_type)
-					{
-						new_electrode_number= -1;
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"highlight_analysis_device.  Invalid device type in rig");
-						return_code=0;
-					}
-				}
-				if (return_code&&
-					((electrode_number&&!(*electrode_number==new_electrode_number))||
-					(auxiliary_number&&!(*auxiliary_number==new_auxiliary_number))))
-				{
-					display_message(ERROR_MESSAGE,"highlight_analysis_device.  %s",
-						"device number incompatible with electrode and auxiliary numbers");
-					return_code=0;
-				}
-			}
-			else
-			{
-				if (mapping&&map)
-				{
-					if (electrode_number&&((new_electrode_number= *electrode_number)>=0)&&
-						(new_electrode_number<map->number_of_electrodes))
-					{
-						/* have specified an electrode number */
-						/* determine the device and the device and auxiliary numbers */
-						new_highlight=analysis->rig->devices;
-						new_device_number=0;
-						new_auxiliary_number= -1;
-						i=new_electrode_number;
-						while ((ELECTRODE!=(device_type=(description=(*new_highlight)->
-							description)->type))||(current_region&&(current_region!=
-							description->region))||(i>0))
-						{
-							if (!current_region||(current_region==description->region))
-							{
-								new_device_number++;
-								if (ELECTRODE==device_type)
-								{
-									i--;
-								}
-							}
-							new_highlight++;
-						}
-						return_code=1;
-					}
-					else
-					{
-						if (auxiliary_number&&
-							((new_auxiliary_number= *auxiliary_number)>=0)&&
-							(new_auxiliary_number<map->number_of_auxiliary))
-						{
-							/* have specified an auxiliary number */
-							/* determine the device and the device and electrode numbers */
-							new_highlight=analysis->rig->devices;
-							new_device_number=0;
-							new_electrode_number= -1;
-							i=new_auxiliary_number;
-							while ((AUXILIARY!=(device_type=(description=(*new_highlight)->
-								description)->type))||(current_region&&(current_region!=
-								description->region))||(i>0))
-							{
-								if (!current_region||(current_region==description->region))
-								{
-									new_device_number++;
-									if (AUXILIARY==device_type)
-									{
-										i--;
-									}
-								}
-								new_highlight++;
-							}
-							return_code=1;
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-				}
-			}
-		}
-		if (return_code)
-		{
-			if (device)
-			{
-				*device= *new_highlight;
-			}
-			if (device_number)
-			{
-				*device_number=new_device_number;
-			}
-			if (electrode_number)
-			{
-				*electrode_number=new_electrode_number;
-			}
-			if (auxiliary_number)
-			{
-				*auxiliary_number=new_auxiliary_number;
-			}
-			start_analysis_interval=buffer->start;
-			end_analysis_interval=buffer->end;
-			/* if the highlight is part of a multiple selection */
-			if (multiple_selection)
-			{
-				/* if the device is highlighted */
-				if ((*new_highlight)->highlight)
-				{
-					/* determine whether or not the device is the only highlighted
-						device */
-					if (new_highlight==analysis->highlight)
-					{
-						temp_device=analysis->rig->devices;
-						i=analysis->rig->number_of_devices;
-						while ((i>0)&&
-							(!((*temp_device)->highlight)||(temp_device==new_highlight)))
-						{
-							temp_device++;
-							i--;
-						}
-						if (i>0)
-						{
-							analysis->highlight=temp_device;
-							if (interval)
-							{
-								update_interval_drawing_area(analysis->window);
-							}
-							/* update the trace window */
-							trace_change_signal(analysis->trace);
-						}
-					}
-					/* if it is not the only highlighted device */
-					if (new_highlight!=analysis->highlight)
-					{
-						/* dehighlight the selected device */
-						(*new_highlight)->highlight=0;
-						highlight_signal(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-							new_device_number,start_analysis_interval,end_analysis_interval,
-							analysis->datum,analysis->potential_time,signals,
-							analysis->signal_drawing_information,analysis->user_interface,
-							&(analysis->window->interval));
-						highlight_electrode_or_auxiliar(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-							(struct FE_node *)NULL,
-#endif
-							new_electrode_number,new_auxiliary_number,map,mapping);
-					}
-				}
-				else
-				{
- 					/* highlight it and make it THE highlighted device for the analysis
-						work area */
-					analysis->highlight=new_highlight;
-					(*new_highlight)->highlight=1;
-					highlight_signal(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-						new_device_number,start_analysis_interval,end_analysis_interval,
-						analysis->datum,analysis->potential_time,signals,
-						analysis->signal_drawing_information,analysis->user_interface,
-							&(analysis->window->interval));
-					if (interval)
-					{
-						update_interval_drawing_area(analysis->window);
-					}
-					/* update the trace window */
-					trace_change_signal(analysis->trace);
-					highlight_electrode_or_auxiliar(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-							(struct FE_node *)NULL,
-#endif
-						new_electrode_number,new_auxiliary_number,map,mapping);
-				}
-			}
-			else
-			{
-				/* highlight the device and dehighlight all other devices */
-				old_highlight=analysis->rig->devices;
-				old_device_number=0;
-				old_electrode_number=0;
-				old_auxiliary_number=0;
-				for (i=analysis->rig->number_of_devices;i>0;i--)
-				{
-					if ((current_region==(description=(*old_highlight)->description)->
-						region)||(!current_region))
-					{
-						if (ELECTRODE==(device_type=description->type))
-						{
-							if ((*old_highlight)->highlight)
-							{
-								(*old_highlight)->highlight=0;
-								highlight_signal(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-									(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-									old_device_number,start_analysis_interval,end_analysis_interval,
-									analysis->datum,analysis->potential_time,signals,
-									analysis->signal_drawing_information,analysis->user_interface,
-									&(analysis->window->interval));
-								highlight_electrode_or_auxiliar(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-									(struct FE_node *)NULL,
-#endif
-									old_electrode_number,-1,map,mapping);
-							}
-							old_electrode_number++;
-						}
-						else
-						{
-							if (AUXILIARY==device_type)
-							{
-								if ((*old_highlight)->highlight)
-								{
-									(*old_highlight)->highlight=0;
-									highlight_signal(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-										old_device_number,start_analysis_interval,end_analysis_interval,
-										analysis->datum,analysis->potential_time,signals,
-										analysis->signal_drawing_information,analysis->user_interface,
-										&(analysis->window->interval));
-									highlight_electrode_or_auxiliar(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-										(struct FE_node *)NULL,
-#endif
-										-1,old_auxiliary_number,map,mapping);
-								}
-								old_auxiliary_number++;
-							}
-						}
-						old_device_number++;
-					}
-					else
-					{
-						if ((*old_highlight)->highlight)
-						{
-							(*old_highlight)->highlight=0;
-						}
-					}
-					old_highlight++;
-				}
-				/* highlight the new device */
-				analysis->highlight=new_highlight;
-				if (new_highlight)
-				{
-					(*new_highlight)->highlight=1;
-					highlight_signal(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-						(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-						new_device_number,start_analysis_interval,end_analysis_interval,
-						analysis->datum,analysis->potential_time,signals,
-						analysis->signal_drawing_information,analysis->user_interface,
-							&(analysis->window->interval));
-					if (interval)
-					{
-						update_interval_drawing_area(analysis->window);
-					}
-					/* update the trace window */
-					trace_change_signal(analysis->trace);
-					highlight_electrode_or_auxiliar(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-						(struct FE_node *)NULL,
-#endif
-						new_electrode_number,	new_auxiliary_number,map,mapping);
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"highlight_analysis_device.  Missing arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* highlight_analysis_device */ 
-#endif /* defined (OLD_CODE)*/
-
-#if defined (OLD_CODE)
-int analysis_get_device_and_numbers(struct Analysis_work_area *analysis,
-	struct Device **device,struct Device ***the_new_highlight,
-	int *device_number,int *the_new_device_number,
-	int *electrode_number,int *the_new_electrode_number,
-	int *auxiliary_number,int *the_new_auxiliary_number)
-/*******************************************************************************
-LAST MODIFIED : 27 September 2000
-
-DESCRIPTION :
-Given one of <device>, <device_number>, <electrode_number> or <auxiliary_number>
-returns all the correspondingdevice and number  information in <the_new_highlight>,
-<the_new_electrode_number> <the_new_auxiliary_number>.
-ie supply with a <device>, get returned <the_new_highlight> (same as device), 
-<the_new_electrode_number> and <the_new_auxiliary_number>.
-Can't pass in and return info in same variables as want input variables to 
-remain unchanged.
-*******************************************************************************/
-{	
-	enum Device_type device_type;
-	int i,new_auxiliary_number,new_device_number,new_electrode_number,return_code;
-	struct Device **temp_device;
-	struct Device_description *description;
-	struct Map *map;
-	struct Mapping_window *mapping;
-	struct Region *current_region;
-	struct Signals_area *signals;
-	struct Device **new_highlight;
-
-	ENTER(analysis_get_device_and_numbers);
-	temp_device=(struct Device **)NULL;	
-	map=(struct Map *)NULL;
-	mapping=(struct Mapping_window *)NULL;
-	current_region=(struct Region *)NULL;
-	signals=(struct Signals_area *)NULL;
-	description=(struct Device_description *)NULL;
-	if(analysis&&(analysis->rig)&&(analysis->rig->devices)&&(*(analysis->rig->devices))
-		&&the_new_highlight&&the_new_device_number&&the_new_electrode_number&&
-		the_new_auxiliary_number&&(device||device_number||electrode_number||auxiliary_number))
-	{
-		current_region=get_Rig_current_region(analysis->rig);
-		if (analysis->window)
-		{
-			signals= &(analysis->window->signals);		
-		}
-		else
-		{
-			signals=(struct Signals_area *)NULL;		
-		}
-		if ((analysis->mapping_window)&&(analysis->mapping_window->map))
-		{
-			mapping=analysis->mapping_window;
-			map=mapping->map;
-		}
-		else
-		{
-			mapping=(struct Mapping_window *)NULL;
-			map=(struct Map *)NULL;
-		}
-
-		if (new_highlight=device)
-		{
-			/* have specified a device */
-			/* determine the device, electrode and auxiliary numbers */
-			temp_device=analysis->rig->devices;
-			new_device_number=0;
-			new_electrode_number=0;
-			new_auxiliary_number=0;
-			for (i=new_highlight-temp_device;i>0;i--)
-			{
-				if ((current_region==(description=(*temp_device)->description)->
-					region)||(!current_region))
-				{
-					new_device_number++;
-					if (ELECTRODE==(device_type=description->type))
-					{
-						new_electrode_number++;
-					}
-					else
-					{
-						if (AUXILIARY==device_type)
-						{
-							new_auxiliary_number++;
-						}
-					}
-				}
-				temp_device++;
-			}
-			if (ELECTRODE==(device_type=(*(temp_device))->description->type))
-			{
-				new_auxiliary_number= -1;
-				return_code=1;
-			}
-			else
-			{
-				if (AUXILIARY==device_type)
-				{
-					new_electrode_number= -1;
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"analysis_get_device_and_numbers.  Invalid device type in rig");
-					return_code=0;
-				}
-			}
-			if (return_code&&
-				((device_number&&!(*device_number==new_device_number))||
-				(electrode_number&&!(*electrode_number==new_electrode_number))||
-				(auxiliary_number&&!(*auxiliary_number==new_auxiliary_number))))
-			{
-				display_message(ERROR_MESSAGE,
-					"analysis_get_device_and_numbers.  device item %s",
-					"incompatible with device, electrode and auxiliary numbers");
-				return_code=0;
-			}
-		}
-		else
-		{
-			/* have not specified the device */
-			if (signals&&device_number&&((new_device_number= *device_number)>=0)&&
-				(new_device_number<signals->number_of_signals))
-			{
-				/* have specified a device_number */
-				/* determine the device and the electrode and auxiliary numbers */
-				new_highlight=analysis->rig->devices;
-				new_electrode_number=0;
-				new_auxiliary_number=0;
-				i=new_device_number;
-				while (((current_region!=(description=(*new_highlight)->description)->
-					region)&&current_region)||(i>0))
-				{
-					if (!current_region||(current_region==description->region))
-					{
-						i--;
-						if (ELECTRODE==(device_type=description->type))
-						{
-							new_electrode_number++;
-						}
-						else
-						{
-							if (AUXILIARY==device_type)
-							{
-								new_auxiliary_number++;
-							}
-						}
-					}
-					new_highlight++;
-				}
-				if (ELECTRODE==(device_type=description->type))
-				{
-					new_auxiliary_number= -1;
-					return_code=1;
-				}
-				else
-				{
-					if (AUXILIARY==device_type)
-					{
-						new_electrode_number= -1;
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"analysis_get_device_and_numbers.  Invalid device type in rig");
-						return_code=0;
-					}
-				}
-				if (return_code&&
-					((electrode_number&&!(*electrode_number==new_electrode_number))||
-					(auxiliary_number&&!(*auxiliary_number==new_auxiliary_number))))
-				{
-					display_message(ERROR_MESSAGE,"analysis_get_device_and_numbers.  %s",
-						"device number incompatible with electrode and auxiliary numbers");
-					return_code=0;
-				}
-			}
-			else
-			{
-				if (mapping&&map)
-				{
-					if (electrode_number&&((new_electrode_number= *electrode_number)>=0)&&
-						(new_electrode_number<map->number_of_electrodes))
-					{
-						/* have specified an electrode number */
-						/* determine the device and the device and auxiliary numbers */
-						new_highlight=analysis->rig->devices;
-						new_device_number=0;
-						new_auxiliary_number= -1;
-						i=new_electrode_number;
-						while ((ELECTRODE!=(device_type=(description=(*new_highlight)->
-							description)->type))||(current_region&&(current_region!=
-							description->region))||(i>0))
-						{
-							if (!current_region||(current_region==description->region))
-							{
-								new_device_number++;
-								if (ELECTRODE==device_type)
-								{
-									i--;
-								}
-							}
-							new_highlight++;
-						}
-						return_code=1;
-					}
-					else
-					{
-						if (auxiliary_number&&
-							((new_auxiliary_number= *auxiliary_number)>=0)&&
-							(new_auxiliary_number<map->number_of_auxiliary))
-						{
-							/* have specified an auxiliary number */
-							/* determine the device and the device and electrode numbers */
-							new_highlight=analysis->rig->devices;
-							new_device_number=0;
-							new_electrode_number= -1;
-							i=new_auxiliary_number;
-							while ((AUXILIARY!=(device_type=(description=(*new_highlight)->
-								description)->type))||(current_region&&(current_region!=
-								description->region))||(i>0))
-							{
-								if (!current_region||(current_region==description->region))
-								{
-									new_device_number++;
-									if (AUXILIARY==device_type)
-									{
-										i--;
-									}
-								}
-								new_highlight++;
-							}
-							return_code=1;
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-				}
-			}
-		}	
-		/*set things up for return */
-		*the_new_device_number=new_device_number;
-		*the_new_electrode_number=new_electrode_number;
-		*the_new_auxiliary_number=new_auxiliary_number;
-		*the_new_highlight=new_highlight;		
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"analysis_get_device_and_numbers. Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/*analysis_get_device_and_numbers*/
-#endif /* OLD_CODE */
-
 int analysis_get_numbers_from_device(struct Analysis_work_area *analysis,
 	struct Device **device,int *the_new_device_number,int *the_new_electrode_number,
 	int *the_new_auxiliary_number)
@@ -14724,239 +14010,6 @@ remain unchanged.
 	return(return_code);
 }/*analysis_get_device_and_numbers*/
 
-int bibble(struct Analysis_work_area *analysis,
-	unsigned int multiple_selection,struct Device **new_highlight,
-	int new_device_number,int new_electrode_number,int new_auxiliary_number)
-/*******************************************************************************
-LAST MODIFIED : 29 September 2000
-
-DESCRIPTION :
-*******************************************************************************/
-{
- 	enum Device_type device_type;
-	int i,old_auxiliary_number,old_device_number,old_electrode_number,return_code,
-			start_analysis_interval,end_analysis_interval;
-	struct Device **old_highlight,**temp_device;	
-	struct Device_description *description;
-	struct Interval_area *interval;
-	struct Map *map;
-	struct Mapping_window *mapping;
-	struct Region *current_region;
-	struct Signal_buffer *buffer;
-	struct Signals_area *signals;
-
-	ENTER(bibble);
-	if (analysis&&(analysis->rig)&&(analysis->rig->devices)&&
-		(*(analysis->rig->devices))&&
-		(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-	{	
-		return_code=1;	
-		current_region=get_Rig_current_region(analysis->rig);
-		if (analysis->window)
-		{
-			signals= &(analysis->window->signals);
-			interval= &(analysis->window->interval);
-		}
-		else
-		{
-			signals=(struct Signals_area *)NULL;
-			interval=(struct Interval_area *)NULL;
-		}
-		if ((analysis->mapping_window)&&(analysis->mapping_window->map))
-		{
-			mapping=analysis->mapping_window;
-			map=mapping->map;
-		}
-		else
-		{
-			mapping=(struct Mapping_window *)NULL;
-			map=(struct Map *)NULL;
-		}			
-		start_analysis_interval=buffer->start;
-		end_analysis_interval=buffer->end;
-		/* if the highlight is part of a multiple selection */
-		if (multiple_selection)
-		{
-			/* if the device is highlighted */
-			if ((*new_highlight)->highlight)
-			{
-				/* determine whether or not the device is the only highlighted
-					 device */
-				if (new_highlight==analysis->highlight)
-				{
-					temp_device=analysis->rig->devices;
-					i=analysis->rig->number_of_devices;
-					while ((i>0)&&
-						(!((*temp_device)->highlight)||(temp_device==new_highlight)))
-					{
-						temp_device++;
-						i--;
-					}
-					if (i>0)
-					{
-						analysis->highlight=temp_device;
-						if (interval)
-						{
-							update_interval_drawing_area(analysis->window);
-						}
-						/* update the trace window */
-						trace_change_signal(analysis->trace);
-					}
-				}
-				/* if it is not the only highlighted device */
-				if (new_highlight!=analysis->highlight)
-				{
-					/* dehighlight the selected device */
-					(*new_highlight)->highlight=0;
-					highlight_signal(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-						(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-						new_device_number,start_analysis_interval,end_analysis_interval,
-						analysis->datum,analysis->potential_time,signals,
-						analysis->signal_drawing_information,analysis->user_interface,
-						&(analysis->window->interval));
-					highlight_electrode_or_auxiliar(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-						(struct FE_node *)NULL,
-#endif
-						new_electrode_number,new_auxiliary_number,map,mapping);
-				}
-			}
-			else
-			{
-				/* highlight it and make it THE highlighted device for the analysis
-					 work area */
-				analysis->highlight=new_highlight;
-				(*new_highlight)->highlight=1;
-				highlight_signal(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-					new_device_number,start_analysis_interval,end_analysis_interval,
-					analysis->datum,analysis->potential_time,signals,
-					analysis->signal_drawing_information,analysis->user_interface,
-					&(analysis->window->interval));
-				if (interval)
-				{
-					update_interval_drawing_area(analysis->window);
-				}
-				/* update the trace window */
-				trace_change_signal(analysis->trace);
-				highlight_electrode_or_auxiliar(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-					(struct FE_node *)NULL,
-#endif
-					new_electrode_number,new_auxiliary_number,map,mapping);
-			}
-		} /* if (multiple_selection) */
-		else
-		{
-			/* highlight the device and dehighlight all other devices */
-			old_highlight=analysis->rig->devices;
-			old_device_number=0;
-			old_electrode_number=0;
-			old_auxiliary_number=0;
-			for (i=analysis->rig->number_of_devices;i>0;i--)
-			{
-				if ((current_region==(description=(*old_highlight)->description)->
-					region)||(!current_region))
-				{
-					if (ELECTRODE==(device_type=description->type))
-					{
-						if ((*old_highlight)->highlight)
-						{
-							(*old_highlight)->highlight=0;
-							highlight_signal(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-								old_device_number,start_analysis_interval,end_analysis_interval,
-								analysis->datum,analysis->potential_time,signals,
-								analysis->signal_drawing_information,analysis->user_interface,
-								&(analysis->window->interval));
-							highlight_electrode_or_auxiliar(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-								(struct FE_node *)NULL,
-#endif
-								old_electrode_number,-1,map,mapping);
-						}
-						old_electrode_number++;
-					}
-					else
-					{
-						if (AUXILIARY==device_type)
-						{
-							if ((*old_highlight)->highlight)
-							{
-								(*old_highlight)->highlight=0;
-								highlight_signal(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-									(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-									old_device_number,start_analysis_interval,end_analysis_interval,
-									analysis->datum,analysis->potential_time,signals,
-									analysis->signal_drawing_information,analysis->user_interface,
-									&(analysis->window->interval));
-								highlight_electrode_or_auxiliar(*old_highlight,
-#if defined (UNEMAP_USE_NODES)
-									(struct FE_node *)NULL,
-#endif
-									-1,old_auxiliary_number,map,mapping);
-							}
-							old_auxiliary_number++;
-						}
-					}
-					old_device_number++;
-				}
-				else
-				{
-					if ((*old_highlight)->highlight)
-					{
-						(*old_highlight)->highlight=0;
-					}
-				}
-				old_highlight++;
-			}
-			/* highlight the new device */
-			analysis->highlight=new_highlight;
-			if (new_highlight)
-			{
-				(*new_highlight)->highlight=1;
-				highlight_signal(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
-#endif /* defined (UNEMAP_USE_NODES)*/
-					new_device_number,start_analysis_interval,end_analysis_interval,
-					analysis->datum,analysis->potential_time,signals,
-					analysis->signal_drawing_information,analysis->user_interface,
-					&(analysis->window->interval));
-				if (interval)
-				{
-					update_interval_drawing_area(analysis->window);
-				}
-				/* update the trace window */
-				trace_change_signal(analysis->trace);
-				highlight_electrode_or_auxiliar(*new_highlight,
-#if defined (UNEMAP_USE_NODES)
-					(struct FE_node *)NULL,
-#endif
-					new_electrode_number,	new_auxiliary_number,map,mapping);
-			}
-		}/* if (multiple_selection) */
-
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"bibble. Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-} /*bibble */
-
-
 int highlight_analysis_perform_highlighting(struct Analysis_work_area *analysis,
 	unsigned int multiple_selection,struct Device **new_highlight,
 	int new_device_number,int new_electrode_number,int new_auxiliary_number)
@@ -15296,7 +14349,7 @@ Guts of highlighting happens in highlight_analysis_perform_highlighting
 } /* highlight_analysis_device */ 
 
 #if defined (UNEMAP_USE_NODES)
-/* still keep highlight_analysis_device, as will use both for a while */
+/* need to alter to use callbacks, cf highlight_analysis_device*/
 int highlight_analysis_device_node(unsigned int multiple_selection,
 	struct FE_node *device_node,	int *device_number,int *electrode_number,
 	int *auxiliary_number,struct Analysis_work_area *analysis)
@@ -16561,18 +15614,18 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 } /* analysis_select_map_drawing_are */
 
 #if defined (UNEMAP_USE_3D)
-static int rig_node_group_selection_change(struct FE_node *node,
+static int rig_node_selection_change(struct FE_node *node,
 	void *change_data_void)
 /*******************************************************************************
 LAST MODIFIED : 29 September 2000
 
 DESCRIPTION :
 If the selected node is a rig device node ( in all_devices_rig_node_group), 
-  if no_highlight is 0, highlights it via highlight_analysis_perform_highlighting
+  if highlight is 1, highlights it via highlight_analysis_perform_highlighting
   else unhighlightsal current hghlighted via  highlight_analysis_perform_highlighting
 ==============================================================================*/
 {
-	int auxiliary_number,device_number,electrode_number,multiple_selection,no_highlight,
+	int auxiliary_number,device_number,electrode_number,multiple_selection,highlight,
 		return_code;
 	struct Analysis_work_area *analysis;
 	struct Device **device;
@@ -16581,7 +15634,7 @@ If the selected node is a rig device node ( in all_devices_rig_node_group),
 	struct Rig *rig;
 	struct rig_node_selection_change_data *data;
 
-	ENTER(rig_node_group_selection_change);
+	ENTER(rig_node_selection_change);
 	device_name_field=(struct FE_field *)NULL;
 	device=(struct Device **)NULL;
 	if (node&&(data=(struct rig_node_selection_change_data *)change_data_void)
@@ -16591,10 +15644,10 @@ If the selected node is a rig device node ( in all_devices_rig_node_group),
 	{		
 		return_code=1;	
 		multiple_selection=data->multiple_selection;
-		no_highlight=data->no_highlight;
+		highlight=data->highlight;
 		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
 		{	
-			if(no_highlight)
+			if(!highlight)
 			{
 				/* don't highlight, just unhighlight any existing highlighted devices/nodes */
 				device=(struct Device **)NULL;
@@ -16611,23 +15664,94 @@ If the selected node is a rig device node ( in all_devices_rig_node_group),
 			highlight_analysis_perform_highlighting(analysis,multiple_selection,
 				device,device_number,electrode_number,auxiliary_number);				
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"rig_node_selection_change. node not in rig_node_group");
+			return_code=0;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"rig_node_group_selection_change.  Invalid argument");
+		display_message(ERROR_MESSAGE,"rig_node_selection_change.  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
-
 	return (return_code);
-} /* rig_node_group_selection_change */
+} /* rig_node_selection_change */
+#endif /* defined (UNEMAP_USE_3D) */
+
+
+#if defined (UNEMAP_USE_3D)
+static int rig_node_highlight_change(struct FE_node *node,void *change_data_void)
+/*******************************************************************************
+LAST MODIFIED : 3 October 2000
+
+DESCRIPTION :
+Change the highlight status of the node/device
+==============================================================================*/
+{
+	int auxiliary_number,device_number,electrode_number,return_code;
+	struct Analysis_work_area *analysis;
+	struct Device **device;
+	struct FE_field *device_name_field;
+	struct GROUP(FE_node) *all_devices_rig_node_group;	
+	struct Rig *rig;
+	struct rig_node_selection_change_data *data;
+	struct Map *map;
+	struct Mapping_window *mapping;
+
+	ENTER(rig_node_highlight_change);	
+	device_name_field=(struct FE_field *)NULL;
+	device=(struct Device **)NULL;
+	map=(struct Map *)NULL;
+	mapping=(struct Mapping_window *)NULL;
+	if (node&&(data=(struct rig_node_selection_change_data *)change_data_void)
+		&&(analysis=data->analysis_work_area)
+		&&(rig=analysis->rig)&&(all_devices_rig_node_group=
+			get_Rig_all_devices_rig_node_group(rig)))
+	{		
+		return_code=1;	
+	
+		if (IS_OBJECT_IN_GROUP(FE_node)(node,all_devices_rig_node_group))
+		{			
+			/* find the device corresponding to the node */
+			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+			device=find_device_given_rig_node(node,device_name_field,analysis->rig);
+			/*set the highlight*/
+			(*device)->highlight=data->highlight;
+			/* highlight the electrode on 2D map */
+			if((mapping=analysis->mapping_window)&&(map=mapping->map))
+			{
+				analysis_get_numbers_from_device(analysis,device,&device_number,
+					&electrode_number,&auxiliary_number);
+				highlight_electrode_or_auxiliar(*device,
+#if defined (UNEMAP_USE_NODES)
+					(struct FE_node *)NULL,
+#endif
+					electrode_number,auxiliary_number,map,mapping);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"rig_node_highlight_change. node not in rig_node_group");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"rig_node_highlight_change.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* rig_node_highlight_change */
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 void rig_node_group_node_selection_change(struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *changes,void *analysis_work_area_void)
 /*******************************************************************************
-LAST MODIFIED : 28 September 2000
+LAST MODIFIED : 3 October 2000
 
 DESCRIPTION :
 Callback for change in the  node selection. Checks to see if nodes  are in
@@ -16637,8 +15761,17 @@ the rig_node group. If are highlights them.
 	struct rig_node_selection_change_data data;
 	struct Analysis_work_area *analysis;
 	struct LIST(FE_node) *node_list;
+	struct FE_node *node;
+	struct FE_field *device_name_field;
+	struct Device **device;
+
 	ENTER(rig_node_group_node_selection_change);
 	node_list=(struct LIST(FE_node) *)NULL;
+	device=(struct Device **)NULL;
+	node=(struct FE_node *)NULL;
+	device_name_field=(struct FE_field *)NULL;
+	node_list=(struct LIST(FE_node) *)NULL;
+
 	if (node_selection&&changes&&(analysis=(struct Analysis_work_area *)
 		analysis_work_area_void))
 	{			
@@ -16646,21 +15779,55 @@ the rig_node group. If are highlights them.
 		/* determine multiple_selection flag */	
 		node_list=FE_node_selection_get_node_list(node_selection);
 		if((NUMBER_IN_LIST(FE_node)(node_list))>1)
-		{
+		{		
 			data.multiple_selection=1;	
 		}
 		else
-		{
+		{			
 			data.multiple_selection=0;
 		}	
-		/* change unselected nodes. Don't highlight anything, just unhighlight unselected   */	
-		data.no_highlight=1;
-		FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_group_selection_change,(void *)&data,
-			changes->newly_unselected_node_list);
-		/* change selected nodes. Highlight them! */	
-		data.no_highlight=0;
-		FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_group_selection_change,(void *)&data,
-			changes->newly_selected_node_list);
+
+		if(((NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))>1)||
+			((NUMBER_IN_LIST(FE_node)(changes->newly_unselected_node_list))>1))
+		{		
+			/* This method is more efficient if many nodes are (un)selected */				
+			/* unhighlight the unselected nodes/devices */
+			data.highlight=0;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
+				changes->newly_unselected_node_list);
+			/* highlight the selected nodes/devices */
+			data.highlight=1;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
+				changes->newly_selected_node_list);
+			/* get the first (un)selected node */
+			if(!(node=FIRST_OBJECT_IN_LIST_THAT(FE_node)((LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,
+				(void *)NULL,changes->newly_selected_node_list)))
+			{
+				node=FIRST_OBJECT_IN_LIST_THAT(FE_node)((LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,
+					(void *)NULL,changes->newly_unselected_node_list);
+			}		
+			/* find the device corresponding to the node */
+			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+			device=find_device_given_rig_node(node,device_name_field,analysis->rig);
+			/*make it THE highlighted device */
+			analysis->highlight=device;
+			/* update the  windows*/
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);				
+		}
+		else
+		{
+			/* This method is more efficient if just one node is (un)selected  */
+			/* change unselected nodes. Don't highlight anything, just unhighlight unselected   */	
+			data.highlight=0;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
+				changes->newly_unselected_node_list);
+			/* change selected nodes. Highlight them! */	
+			data.highlight=1;
+			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
+				changes->newly_selected_node_list);			
+		}
 	}
 	else
 	{

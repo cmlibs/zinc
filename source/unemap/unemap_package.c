@@ -195,12 +195,7 @@ Sets the field of the unemap package.
 	if(package)
 	{
 		return_code =1;		 
-		REACCESS(FE_field)(&(package->device_name_field),device_name_field);
-
-		if (FE_field_can_be_destroyed(package->device_name_field))
-		{
-			printf("bibble\n");
-		}
+		REACCESS(FE_field)(&(package->device_name_field),device_name_field);	
 	}
 	else
 	{
