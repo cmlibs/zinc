@@ -112,6 +112,7 @@ to NULL.
 		if (0==(*index_multi_range_address)->access_count)
 		{
 			DESTROY(Multi_range)(&((*index_multi_range_address)->ranges));
+			DEALLOCATE(*index_multi_range_address);
 			return_code=1;
 		}
 		else
