@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 21 March 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -23,7 +23,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -66,7 +66,6 @@ DESCRIPTION :
 		/*???DB.  Also manages faces and lines */
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
-	struct MANAGER(Interactive_streamline) *interactive_streamline_manager;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
@@ -111,7 +110,7 @@ DESCRIPTION :
 	Widget control_curve_editor_dialog,data_grabber_dialog,
 		emoter_slider_dialog,grid_field_calculator_dialog,input_module_dialog,
 		interactive_data_editor_dialog,interactive_node_editor_dialog,
-		interactive_streamlines_dialog,material_editor_dialog,
+		material_editor_dialog,
 		node_group_slider_dialog,spectrum_editor_dialog,sync_2d_3d_dialog,
 		time_editor_dialog,transformation_editor_dialog;
 	struct Node_viewer *data_viewer,*node_viewer;
