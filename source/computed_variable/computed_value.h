@@ -1,13 +1,14 @@
 /*******************************************************************************
 FILE : computed_value.h
 
-LAST MODIFIED : 7 February 2003
+LAST MODIFIED : 17 February 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
 conjunction with Computed_variables.
 
 ???DB.  Should _get_s try and get a representation if not specified type?
+???DB.  Merge FE_value, FE_value_vector and FE_value_matrix?
 ==============================================================================*/
 #if !defined (COMPUTED_VALUE_H)
 #define COMPUTED_VALUE_H
@@ -36,6 +37,15 @@ if (!(expression)) \
 	return_code=error_value; \
 } \
 else
+
+#define PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION( value_type ) \
+int Computed_value_is_type_ ## value_type (struct Computed_value *value) \
+/***************************************************************************** \
+LAST MODIFIED : 13 February 2003 \
+\
+DESCRIPTION : \
+Returns a non-zero if <value> is a #value_type and zero otherwise. \
+==============================================================================*/
 
 /*
 Global types
@@ -83,19 +93,19 @@ DESCRIPTION :
 Frees memory/deaccess objects for Computed_value at <*value_address>.
 ==============================================================================*/
 
-int Computed_value_same_type(struct Computed_value *value_1,
+int Computed_value_same_sub_type(struct Computed_value *value_1,
 	struct Computed_value *value_2);
 /*******************************************************************************
-LAST MODIFIED : 31 January 2003
+LAST MODIFIED : 13 February 2003
 
 DESCRIPTION :
-Returns nonzero if <value_1> and <value_2> have the same type and zero
+Returns nonzero if <value_1> and <value_2> have the same sub-type and zero
 otherwise.
 ==============================================================================*/
 
-char *Computed_value_get_type(struct Computed_value *value);
+char *Computed_value_get_type_id_string(struct Computed_value *value);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 12 February 2003
 
 DESCRIPTION :
 Returns the string which identifies the type.  The calling function must not
@@ -111,13 +121,7 @@ DESCRIPTION :
 Makes <value> of type FE_value and sets its <fe_value>.
 ==============================================================================*/
 
-int Computed_value_is_type_FE_value(struct Computed_value *value);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns a non-zero if <value> is a FE_value and zero otherwise.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(FE_value);
 
 int Computed_value_get_type_FE_value(struct Computed_value *value,
 	FE_value *fe_value_address);
@@ -128,39 +132,58 @@ DESCRIPTION :
 If <value> is of type FE_value, gets its <*fe_value_address>.
 ==============================================================================*/
 
-int Computed_value_set_type_FE_value_array(struct Computed_value *value,
-	int number_of_fe_values,FE_value *fe_value_array);
+int Computed_value_set_type_FE_value_vector(struct Computed_value *value,
+	int number_of_fe_values,FE_value *fe_value_vector);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 12 February 2003
 
 DESCRIPTION :
-Makes <value> of type FE_value_array and sets its <number_of_fe_values> and
-<fe_value_array>.  After success, the <value> is responsible for DEALLOCATEing
-<fe_value_array>.
+Makes <value> of type FE_value_vector and sets its <number_of_fe_values> and
+<fe_value_vector>.  After success, the <value> is responsible for DEALLOCATEing
+<fe_value_vector>.
 ==============================================================================*/
 
-int Computed_value_is_type_FE_value_array(struct Computed_value *value);
+PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(FE_value_vector);
+
+int Computed_value_get_type_FE_value_vector(struct Computed_value *value,
+	int *number_of_fe_values_address,FE_value **fe_value_vector_address);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 12 February 2003
 
 DESCRIPTION :
-Returns a non-zero if <value> is a FE_value_array and zero otherwise.
+If <value> is of type FE_value_vector, gets its <*number_of_fe_values_address>
+and <*fe_value_vector_address>.
+
+The calling program must not DEALLOCATE the returned <*fe_value_vector_address>.
 ==============================================================================*/
 
-int Computed_value_get_type_FE_value_array(struct Computed_value *value,
-	int *number_of_fe_values_address,FE_value **fe_value_array_address);
+int Computed_value_set_type_FE_value_matrix(struct Computed_value *value,
+	int number_of_rows,int number_of_columns,FE_value *fe_value_matrix);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 12 February 2003
 
 DESCRIPTION :
-If <value> is of type FE_value_array, gets its <*number_of_fe_values_address>
-and <*fe_value_array_address>.
-
-The calling program must not DEALLOCATE the returned <*fe_value_array_address>.
+Makes <value> of type FE_value_matrix and sets its <number_of_rows>,
+<number_of_columns> and <fe_value_matrix> (column number varying fastest).
+After success, the <value> is responsible for DEALLOCATEing <fe_value_matrix>.
 ==============================================================================*/
 
-int Computed_value_set_type_string(struct Computed_value *value,
-	char *string);
+PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(FE_value_matrix);
+
+int Computed_value_get_type_FE_value_matrix(struct Computed_value *value,
+	int *number_of_rows_address,int *number_of_columns_address,
+	FE_value **fe_value_matrix_address);
+/*******************************************************************************
+LAST MODIFIED : 12 February 2003
+
+DESCRIPTION :
+If <value> is of type FE_value_matrix, gets its <*number_of_rows_address>,
+<*number_of_columns_address> and <*fe_value_matrix_address>.
+
+The calling program must not DEALLOCATE the returned <*fe_value_matrix_address>.
+==============================================================================*/
+
+int Computed_value_set_type_string(struct Computed_value *value,char *string);
 /*******************************************************************************
 LAST MODIFIED : 22 January 2003
 
@@ -169,22 +192,25 @@ Makes <value> of type string and sets its <string>.  After success, the <value>
 is responsible for DEALLOCATEing <string>.
 ==============================================================================*/
 
-int Computed_value_is_type_string(struct Computed_value *value);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns a non-zero if <value> is a string and zero otherwise.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(string);
 
 int Computed_value_get_type_string(struct Computed_value *value,
 	char **string_address);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 13 February 2003
 
 DESCRIPTION :
 If <value> is of type string, gets its <*string_address>.
 
 The calling program must not DEALLOCATE the returned <*string_address>.
+==============================================================================*/
+
+int Computed_value_multiply_and_accumulate(struct Computed_value *value_1,
+	struct Computed_value *value_2,struct Computed_value *total);
+/*******************************************************************************
+LAST MODIFIED : 12 February 2003
+
+DESCRIPTION :
+Calculates <total>+<value_1>*<value_2> and puts in <total>.
 ==============================================================================*/
 #endif /* !defined (COMPUTED_VALUE_H) */

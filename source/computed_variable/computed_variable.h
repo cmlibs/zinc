@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.h
 
-LAST MODIFIED : 7 February 2003
+LAST MODIFIED : 10 February 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -212,9 +212,9 @@ Returns nonzero if <independent_variable> is an independent variable of
 <dependent_variable> and zero otherwise.
 ==============================================================================*/
 
-char *Computed_variable_get_type_string(struct Computed_variable *variable);
+char *Computed_variable_get_type_id_string(struct Computed_variable *variable);
 /*******************************************************************************
-LAST MODIFIED : 7 February 2003
+LAST MODIFIED : 12 February 2003
 
 DESCRIPTION :
 Returns the string which identifies the type.  The calling function must not
@@ -372,16 +372,29 @@ Calculates the <variable_value> with the specified <values> over-riding, but not
 setting, the current values.
 ==============================================================================*/
 
+int Computed_variable_evaluate_derivative(
+	struct Computed_variable *variable,int order,
+	struct Computed_variable **independent_variables,
+	struct LIST(Computed_variable_value) *values,
+	struct Computed_value *result);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2003
+
+DESCRIPTION :
+Evaluates the <order> degree derivative of <variable> with respect to the
+<independent_variables> and sets the <result>.
+==============================================================================*/
+
 int Computed_variable_set_type_derivative(
 	struct Computed_variable *derivative,
 	struct Computed_variable *variable,
-	struct LIST(Computed_variable) *independent_variables);
+	struct Computed_variable *independent_variable);
 /*******************************************************************************
-LAST MODIFIED : 29 January 2003
+LAST MODIFIED : 10 February 2003
 
 DESCRIPTION :
 Sets <derivative> to be the derivative of the <variable> with respect to the
-<independent_variables>.
+<independent_variable>.
 ==============================================================================*/
 
 int Computed_variable_set_type_divergence(

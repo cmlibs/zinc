@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_private.h
 
-LAST MODIFIED : 7 February 2003
+LAST MODIFIED : 12 February 2003
 
 DESCRIPTION :
 ???DB.  Move structure into .c .  Means that have to change macro into a
@@ -10,6 +10,14 @@ DESCRIPTION :
 ==============================================================================*/
 #if !defined (COMPUTED_VARIABLE_PRIVATE_H)
 #define COMPUTED_VARIABLE_PRIVATE_H
+
+/*
+Friend types
+------------
+*/
+typedef int (*Computed_variable_source_variable_iterator)(
+	struct Computed_variable *variable,struct Computed_variable *source_variable,
+	struct Computed_variable *independent_variable,void *data_void);
 
 /*
 Method types
@@ -40,7 +48,7 @@ int Computed_variable_ ## variable_type ## _clear_type_specific( \
 		Computed_variable_get_type_specific_data(variable); \
 	ASSERT_IF(data,return_code,0) \
 	ASSERT_IF(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable),return_code,0)
+		Computed_variable_get_type_id_string(variable),return_code,0)
 
 #define END_COMPUTED_VARIABLE_CLEAR_TYPE_SPECIFIC_FUNCTION( variable_type ) \
 	LEAVE; \
@@ -74,7 +82,7 @@ Computed_variable_type_specific_data * \
 	ENTER(Computed_variable_ ## variable_type ## _duplicate_data_type_specific); \
 	/* check arguments */ \
 	ASSERT_IF(variable&&(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable)),destination,NULL) \
+		Computed_variable_get_type_id_string(variable)),destination,NULL) \
 	{ \
 		source=Computed_variable_get_type_specific_data(variable); \
 		ASSERT_IF(source,destination,NULL) \
@@ -94,23 +102,56 @@ Computed_variable_type_specific_data * \
 	return (destination); \
 } /* Computed_variable_ ## variable_type ## _duplicate_data_type_specific */
 
-typedef int (*Computed_variable_evaluate_type_specific_function)(
-	struct Computed_variable_value *variable_value,
-	struct LIST(Computed_variable_value) *values);
+typedef int (*Computed_variable_evaluate_derivative_type_specific_function)(
+	struct Computed_variable *variable,int order,
+	struct Computed_variable **independent_variables,
+	struct Computed_value *value);
 /*******************************************************************************
-LAST MODIFIED : 6 February 2003
+LAST MODIFIED : 10 February 2003
+
+DESCRIPTION :
+Evaluates the <order> degree derivative of <variable> with respect to
+<independent_variables> and sets <value> to the result.
+==============================================================================*/
+
+#define START_COMPUTED_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION( \
+	variable_type ) \
+int Computed_variable_ ## variable_type ## _evaluate_derivative_type_specific( \
+	struct Computed_variable *variable,int order, \
+	struct Computed_variable **independent_variables, \
+	struct Computed_value *value) \
+{ \
+	int return_code; \
+\
+	ENTER(Computed_variable_ ## variable_type ## \
+		_evaluate_derivative_type_specific); \
+	return_code=0; \
+	/* check arguments */ \
+	ASSERT_IF(variable&&(computed_variable_ ## variable_type ## _type_string== \
+		Computed_variable_get_type_id_string(variable)&&(0<order)&& \
+		independent_variables&&value),return_code,0)
+
+#define END_COMPUTED_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION( \
+	variable_type ) \
+	LEAVE; \
+\
+	return (return_code); \
+} /* Computed_variable_ ## variable_type ## \
+	_evaluate_derivative_type_specific */
+
+typedef int (*Computed_variable_evaluate_type_specific_function)(
+	struct Computed_variable_value *variable_value);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2003
 
 DESCRIPTION :
 Evaluate the <variable_value> using the independent variable <values>.
-
-???DB.  Could assume that the <values> have been set?
 ==============================================================================*/
 
 #define START_COMPUTED_VARIABLE_EVALUATE_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
 int Computed_variable_ ## variable_type ## _evaluate_type_specific( \
-	struct Computed_variable_value *variable_value, \
-	struct LIST(Computed_variable_value) *values) \
+	struct Computed_variable_value *variable_value) \
 { \
 	int return_code; \
 	struct Computed_variable *variable; \
@@ -120,7 +161,7 @@ int Computed_variable_ ## variable_type ## _evaluate_type_specific( \
 	/* check arguments */ \
 	variable=Computed_variable_value_get_variable(variable_value); \
 	ASSERT_IF(variable&&(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable)),return_code,0)
+		Computed_variable_get_type_id_string(variable)),return_code,0)
 
 #define END_COMPUTED_VARIABLE_EVALUATE_TYPE_SPECIFIC_FUNCTION( variable_type ) \
 	LEAVE; \
@@ -156,7 +197,7 @@ int Computed_variable_ ## variable_type ## \
 	return_code=0; \
 	/* check arguments */ \
 	ASSERT_IF(dependent_variable&&(computed_variable_ ## variable_type ## \
-		_type_string==Computed_variable_get_type_string(dependent_variable))&& \
+		_type_string==Computed_variable_get_type_id_string(dependent_variable))&& \
 		independent_variable&&value,return_code,0)
 
 #define END_COMPUTED_VARIABLE_GET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION( \
@@ -166,6 +207,45 @@ int Computed_variable_ ## variable_type ## \
 	return (return_code); \
 } /* Computed_variable_ ## variable_type ## \
 	_get_independent_variable_value_type_specific */
+
+typedef int
+	(*Computed_variable_get_set_independent_variable_value_type_specific_function)(
+	struct Computed_variable *dependent_variable,
+	struct Computed_variable *independent_variable,
+	struct Computed_value *value);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2003
+
+DESCRIPTION :
+Swaps the <value> and the current value for the <independent_variable> of the
+<dependent_variable>.
+==============================================================================*/
+
+#define START_COMPUTED_VARIABLE_GET_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION( \
+	variable_type ) \
+int Computed_variable_ ## variable_type ## \
+	_get_set_independent_variable_value_type_specific( \
+	struct Computed_variable *dependent_variable, \
+	struct Computed_variable *independent_variable, \
+	struct Computed_value *value) \
+{ \
+	int return_code; \
+\
+	ENTER(Computed_variable_ ## variable_type ## \
+		_get_set_independent_variable_value_type_specific); \
+	return_code=0; \
+	/* check arguments */ \
+	ASSERT_IF(dependent_variable&&(computed_variable_ ## variable_type ## \
+		_type_string==Computed_variable_get_type_id_string(dependent_variable))&& \
+		independent_variable&&value,return_code,0)
+
+#define END_COMPUTED_VARIABLE_GET_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION( \
+	variable_type ) \
+	LEAVE; \
+\
+	return (return_code); \
+} /* Computed_variable_ ## variable_type ## \
+	_get_set_independent_variable_value_type_specific */
 
 typedef int (*Computed_variable_get_value_type_type_specific_function)(
 	struct Computed_variable *variable,struct Computed_value *type);
@@ -187,7 +267,7 @@ int Computed_variable_ ## variable_type ## _get_value_type_type_specific( \
 	return_code=0; \
 	/* check arguments */ \
 	ASSERT_IF(variable&&(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable))&&type,return_code,0)
+		Computed_variable_get_type_id_string(variable))&&type,return_code,0)
 
 #define END_COMPUTED_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
@@ -198,10 +278,9 @@ int Computed_variable_ ## variable_type ## _get_value_type_type_specific( \
 
 typedef int
 	(*Computed_variable_is_defined_type_specific_function)(
-	struct Computed_variable *variable,
-	struct LIST(Computed_variable_value) *values);
+	struct Computed_variable *variable);
 /*******************************************************************************
-LAST MODIFIED : 5 February 2003
+LAST MODIFIED : 10 February 2003
 
 DESCRIPTION :
 If the <variable> can be evaluated assuming that all its source variables can be
@@ -227,8 +306,7 @@ defined checking for source variables.
 #define START_COMPUTED_VARIABLE_IS_DEFINED_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
 int Computed_variable_ ## variable_type ## _is_defined_type_specific( \
-	struct Computed_variable *variable, \
-	struct LIST(Computed_variable_value) *values) \
+	struct Computed_variable *variable) \
 { \
 	int return_code; \
 \
@@ -236,7 +314,7 @@ int Computed_variable_ ## variable_type ## _is_defined_type_specific( \
 	return_code=0; \
 	/* check arguments */ \
 	ASSERT_IF(variable&&(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable)),return_code,0)
+		Computed_variable_get_type_id_string(variable)),return_code,0)
 
 #define END_COMPUTED_VARIABLE_IS_DEFINED_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
@@ -271,7 +349,7 @@ int Computed_variable_ ## variable_type ## \
 	return_code=0; \
 	/* check arguments */ \
 	ASSERT_IF(dependent_variable&&(computed_variable_ ## variable_type \
-		## _type_string==Computed_variable_get_type_string(dependent_variable))&& \
+		## _type_string==Computed_variable_get_type_id_string(dependent_variable))&& \
 		independent_variable,return_code,0)
 
 #define END_COMPUTED_VARIABLE_IS_INDEPENDENT_VARIABLE_OF_TYPE_SPECIFIC_FUNCTION( \
@@ -303,7 +381,7 @@ int Computed_variable_ ## variable_type ## _not_in_use_type_specific( \
 	return_code=0; \
 	/* check arguments */ \
 	ASSERT_IF(variable&&(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable)),return_code,0)
+		Computed_variable_get_type_id_string(variable)),return_code,0)
 
 #define END_COMPUTED_VARIABLE_NOT_IN_USE_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
@@ -333,9 +411,9 @@ int Computed_variable_ ## variable_type ## _overlap_type_specific( \
 	return_code=0; \
 	/* check arguments */ \
 	ASSERT_IF(variable_1&&(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable_1))&&variable_2&& \
+		Computed_variable_get_type_id_string(variable_1))&&variable_2&& \
 		(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable_2)),return_code,0)
+		Computed_variable_get_type_id_string(variable_2)),return_code,0)
 
 #define END_COMPUTED_VARIABLE_OVERLAP_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
@@ -365,9 +443,9 @@ int Computed_variable_ ## variable_type ## _same_variable_type_specific( \
 	return_code=0; \
 	/* check arguments */ \
 	ASSERT_IF(variable_1&&(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable_1))&&variable_2&& \
+		Computed_variable_get_type_id_string(variable_1))&&variable_2&& \
 		(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(variable_2)),return_code,0)
+		Computed_variable_get_type_id_string(variable_2)),return_code,0)
 
 #define END_COMPUTED_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
@@ -402,7 +480,7 @@ int Computed_variable_ ## variable_type ## \
 	/* check arguments */ \
 	ASSERT_IF(dependent_variable&& \
 		(computed_variable_ ## variable_type ## _type_string== \
-		Computed_variable_get_type_string(dependent_variable))&& \
+		Computed_variable_get_type_id_string(dependent_variable))&& \
 		independent_variable&&value,return_code,0)
 
 #define END_COMPUTED_VARIABLE_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION( \
@@ -420,7 +498,7 @@ Friend macros
 */
 #define COMPUTED_VARIABLE_ESTABLISH_METHODS( variable, variable_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 5 February 2003 \
+LAST MODIFIED : 10 February 2003 \
 \
 DESCRIPTION : \
 Each Computed_variable_set_type function should call this macro to establish \
@@ -431,8 +509,10 @@ to NULL or some default function. \
 Computed_variable_establish_methods(variable, \
 	Computed_variable_ ## variable_type ## _clear_type_specific, \
 	Computed_variable_ ## variable_type ## _duplicate_data_type_specific, \
+	Computed_variable_ ## variable_type ## _evaluate_derivative_type_specific, \
 	Computed_variable_ ## variable_type ## _evaluate_type_specific, \
 	Computed_variable_ ## variable_type ## _get_independent_variable_value_type_specific, \
+	Computed_variable_ ## variable_type ## _get_set_independent_variable_value_type_specific, \
 	Computed_variable_ ## variable_type ## _get_value_type_type_specific, \
 	Computed_variable_ ## variable_type ## _is_defined_type_specific, \
 	Computed_variable_ ## variable_type ## _is_independent_variable_of_type_specific, \
@@ -451,10 +531,14 @@ int Computed_variable_establish_methods(struct Computed_variable *variable,
 	computed_variable_clear_type_specific_function,
 	Computed_variable_duplicate_data_type_specific_function
 	computed_variable_duplicate_data_type_specific_function,
+	Computed_variable_evaluate_derivative_type_specific_function
+	computed_variable_evaluate_derivative_type_specific_function,
 	Computed_variable_evaluate_type_specific_function
 	computed_variable_evaluate_type_specific_function,
 	Computed_variable_get_independent_variable_value_type_specific_function
 	computed_variable_get_independent_variable_value_type_specific_function,
+	Computed_variable_get_set_independent_variable_value_type_specific_function
+	computed_variable_get_set_independent_variable_value_type_specific_function,
 	Computed_variable_get_value_type_type_specific_function
 	computed_variable_get_value_type_type_specific_function,
 	Computed_variable_is_defined_type_specific_function
@@ -470,7 +554,7 @@ int Computed_variable_establish_methods(struct Computed_variable *variable,
 	Computed_variable_set_independent_variable_value_type_specific_function
 	computed_variable_set_independent_variable_value_type_specific_function);
 /*******************************************************************************
-LAST MODIFIED : 5 February 2003
+LAST MODIFIED : 10 February 2003
 
 DESCRIPTION :
 Sets the methods for the <variable>.
@@ -497,6 +581,25 @@ changing the type of the Computed_variable should
 - call this function to clear what is currently in the variable
 - then set values
 to ensure that the variable is not left in an invalid state.
+==============================================================================*/
+
+int Computed_variable_not_in_use(struct Computed_variable *variable);
+/*******************************************************************************
+LAST MODIFIED : 11 February 2003
+
+DESCRIPTION :
+To give access to Computed_variable_not_in_use_type_specific_function method.
+==============================================================================*/
+
+int Computed_variable_for_each_source_variable(
+	struct Computed_variable *variable,
+	Computed_variable_source_variable_iterator iterator,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 12 February 2003
+
+DESCRIPTION :
+Applies the <iterator> to each of the <variable>s source/independent variable
+pairs until finish or the <iterator> returns zero.
 ==============================================================================*/
 
 #if defined (OLD_CODE)
@@ -759,7 +862,7 @@ Inherits its result from the first source variable.
 int Computed_variable_extract_rc(struct Computed_variable *variable,
 	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives);
 /*******************************************************************************
-LAST MODIFIED : 9 February 1999
+LAST MODIFIED : 10 February 1999
 
 DESCRIPTION :
 Takes the values in <variable> and converts them from their current coordinate

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_finite_element.h
 
-LAST MODIFIED : 29 January 2003
+LAST MODIFIED : 16 February 2003
 
 DESCRIPTION :
 Implements computed variables which interface to finite element fields:
@@ -143,10 +143,10 @@ If <variable> is of type FE_time, gets its <*fe_variable_address> and
 ==============================================================================*/
 
 int Computed_variable_set_type_finite_element(
-	struct Computed_variable *variable,int component_number,
-	struct FE_field *fe_field,struct MANAGER(FE_field) *fe_field_manager);
+	struct Computed_variable *variable,struct FE_field *fe_field,
+	int component_number);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 16 February 2003
 
 DESCRIPTION :
 Converts the <variable> into a finite_element Computed_variable for the
@@ -154,6 +154,9 @@ specified <fe_field> and <component_number> (all components if -1).
 
 Need pointer to <fe_field_manager> so can call MANAGED_OBJECT_NOT_IN_USE in
 Computed_variable_finite_element_not_in_use.
+
+???DB.  Assuming that the <fe_field> "knows" its FE_region (can get FE_field
+	manager)
 ==============================================================================*/
 
 int Computed_variable_is_type_finite_element(
