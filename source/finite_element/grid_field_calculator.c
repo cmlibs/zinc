@@ -18,7 +18,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #include "finite_element/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/grid_field_calculator.h"
-#include "finite_element/grid_field_calculator.uid64"
+#include "finite_element/grid_field_calculator.uidh"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -610,7 +610,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			{
 				Control_curve_add_element(constant_1_curve,1);
 				Control_curve_set_parameter(constant_1_curve,1,0,0.0);
-				Control_curve_set_parameter(constant_1_curve,1,1,0.0);
+				Control_curve_set_parameter(constant_1_curve,1,1,1.0);
 				value=1.0;
 				Control_curve_set_node_values(constant_1_curve,1,0,&value);
 				Control_curve_set_node_values(constant_1_curve,1,1,&value);
@@ -847,7 +847,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 		control_curve_manager&&element_manager&&user_interface&&
 		control_curve_editor_dialog_address)
 	{
-		if (MrmOpenHierarchy_base64_string(grid_field_calculator_uid64,
+		if (MrmOpenHierarchy_base64_string(grid_field_calculator_uidh,
 			&grid_field_calculator_hierarchy,
 			&grid_field_calculator_hierarchy_open))
 		{
