@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : pacing_window.uil
 !
-!LAST MODIFIED : 25 May 2003
+!LAST MODIFIED : 2 June 2003
 !
 !DESCRIPTION :
 !The widgets/gadgets for the pacing window in the acquisition work area.
@@ -72,8 +72,12 @@ procedure
 	pacing_set_sn_length_decrement;
 	id_pacing_restitution_time_pace;
 	ch_pacing_restitution_time_pace;
-	id_pacing_rest_time_inc_dec;
-	ch_pacing_rest_time_inc_dec;
+	id_pacing_restitution_time_incr;
+	ac_pacing_restitution_time_incr;
+	id_pacing_restitution_time_decr;
+	ac_pacing_restitution_time_decr;
+	id_pacing_restitution_time_repe;
+	ac_pacing_restitution_time_repe;
 	id_pacing_restitution_time_rese;
 	ac_pacing_restitution_time_rese;
 	id_pacing_sn_s1_pause_form;
@@ -1570,7 +1574,9 @@ object
 		controls
 			{
 			XmToggleButtonGadget pacing_restitution_time_pace;
-			XmPushButtonGadget pacing_restitution_time_inc_dec;
+			XmPushButtonGadget pacing_restitution_time_increme;
+			XmPushButtonGadget pacing_restitution_time_decreme;
+			XmPushButtonGadget pacing_restitution_time_repeat;
 			XmPushButtonGadget pacing_restitution_time_reset;
 			};
 		};
@@ -1601,11 +1607,11 @@ object
 				};
 			};
 		};
-	pacing_restitution_time_inc_dec: XmPushButtonGadget
+	pacing_restitution_time_increme: XmPushButtonGadget
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Inc/Dec");
+			XmNlabelString = compound_string("Increment");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNleftAttachment = XmATTACH_WIDGET;
@@ -1621,11 +1627,67 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_rest_time_inc_dec(pacing_window_structure);
+				id_pacing_restitution_time_incr(pacing_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				ch_pacing_rest_time_inc_dec(pacing_window_structure);
+				ac_pacing_restitution_time_incr(pacing_window_structure);
+				};
+			};
+		};
+	pacing_restitution_time_decreme: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Decrement");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget pacing_restitution_time_increme;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_restitution_time_decr(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				ac_pacing_restitution_time_decr(pacing_window_structure);
+				};
+			};
+		};
+	pacing_restitution_time_repeat: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Repeat");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget pacing_restitution_time_decreme;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_restitution_time_repe(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				ac_pacing_restitution_time_repe(pacing_window_structure);
 				};
 			};
 		};
@@ -1638,7 +1700,7 @@ object
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget pacing_restitution_time_inc_dec;
+			XmNleftWidget = XmPushButtonGadget pacing_restitution_time_repeat;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
