@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 20 November 2000
+LAST MODIFIED : 21 March 2001
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
