@@ -1844,6 +1844,16 @@ Returns the cmiss number of the <node>.
 ???DB.  GET_OBJECT_IDENTIFIER ?
 ==============================================================================*/
 
+int get_FE_node_access_count(struct FE_node *node);
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Returns the acccess count of the <node>.
+Useful for drawing the access count as a field when trying to debug why things
+cannot be destroyed.
+==============================================================================*/
+
 struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 3 November 1998

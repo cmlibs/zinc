@@ -13426,6 +13426,33 @@ Returns the cm_node_identifier of the <node>.
 	return (cm_node_identifier);
 } /* get_FE_node_cm_node_identifier */
 
+int get_FE_node_access_count(struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Returns the acccess count of the <node>.
+Useful for drawing the access count as a field when trying to debug why things
+cannot be destroyed.
+==============================================================================*/
+{
+	int access_count;
+
+	ENTER(get_FE_node_cm_node_identifier);
+	if (node)
+	{
+		access_count=node->access_count;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_FE_node_access_count.  Invalid node");
+		access_count=0;
+	}
+	LEAVE;
+
+	return (access_count);
+} /* get_FE_node_access_count */
+
 struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 5 November 1998
