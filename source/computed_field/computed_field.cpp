@@ -3853,7 +3853,7 @@ and should not itself be managed.
 						help_option_table = CREATE(Option_table)();
 						/* FIELD_NAME */
 						Option_table_add_entry(help_option_table,"FIELD_NAME",
-							(void *)temp_field, &computed_field_package_void,
+							(void *)temp_field, computed_field_package_void,
 							define_Computed_field_coordinate_system);
 						return_code=Option_table_parse(help_option_table,state);
 						DESTROY(Option_table)(&help_option_table);
