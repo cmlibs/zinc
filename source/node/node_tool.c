@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 15 September 2000
+LAST MODIFIED : 18 October 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -16,6 +16,7 @@ Scene input.
 #include "choose/choose_node_group.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "graphics/element_group_settings.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 18 October 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -18,6 +18,7 @@ appearance of graphical finite element groups.
 #include "general/object.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"

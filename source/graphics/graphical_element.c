@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 18 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -10,6 +10,7 @@ DESCRIPTION :
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
