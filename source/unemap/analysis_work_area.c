@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 19 June 2001
+LAST MODIFIED : 20 June 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -16831,6 +16831,14 @@ is used in Cell.
       if (window->print_selected_signals_data)
       {
         destroy_File_open_data(&(window->print_selected_signals_data));
+      }
+      if ((window->signals).drawing)
+      {
+        destroy_Drawing_2d(&((window->signals).drawing));
+      }
+      if ((window->interval).drawing)
+      {
+        destroy_Drawing_2d(&((window->interval).drawing));
       }
     }
     /* Clear out the rigs */
