@@ -7158,8 +7158,7 @@ Modifies the properties of a texture.
 		set_texture_coordinates_field_data;
 	struct Texture_evaluate_image_data *data;
 
-	ENTER(gfx_modify_Texture);
-
+	ENTER(gfx_modify_Texture_evaluate_image);
 	if (state)
 	{
 		if (state->current_token)
@@ -7211,54 +7210,137 @@ Modifies the properties of a texture.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"gfx_modify_Texture.  Missing command_data_void");
+					"gfx_modify_Texture_evaluate_image.  Missing command_data_void");
 				return_code=0;
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_modify_Texture.  Missing state");
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_Texture_evaluate_image.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-}
+} /* gfx_modify_Texture_evaluate_image */
 
-int gfx_modify_Texture(struct Parse_state *state,void *texture_void,
-	void *command_data_void)
+struct Texture_image_data
+{
+	char *image_file_name;
+	int crop_bottom_margin,crop_left_margin,crop_height,crop_width;
+};
+
+static int gfx_modify_Texture_image(struct Parse_state *state,void *data_void,
+	void *set_file_name_option_table_void)
 /*******************************************************************************
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Modifies the properties of a texture.
 ==============================================================================*/
 {
-	auto struct Modifier_entry
-		help_option_table[]=
+	char *current_token;
+	int return_code;
+	struct Modifier_entry *entry;
+	struct Texture_image_data *data;
+
+	ENTER(gfx_modify_Texture_image);
+	if (state && (data = (struct Texture_image_data *)data_void) &&
+		(entry=(struct Modifier_entry *)set_file_name_option_table_void))
+	{
+		return_code=1;
+		if (current_token=state->current_token)
 		{
-			{"TEXTURE_NAME",NULL,NULL,gfx_modify_Texture},
-			{NULL,NULL,NULL,NULL}
-		};
-	char *current_token, *field_name;
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (fuzzy_string_compare("crop",current_token))
+				{
+					if (!(shift_Parse_state(state,1)&&
+						(current_token=state->current_token)&&
+						(1==sscanf(current_token," %d",&(data->crop_left_margin)))&&
+						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
+						(1==sscanf(current_token," %d",&(data->crop_bottom_margin)))&&
+						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
+						(1==sscanf(current_token," %d",&(data->crop_width)))&&
+						shift_Parse_state(state,1)&&(current_token=state->current_token)&&
+						(1==sscanf(current_token," %d",&(data->crop_height)))&&
+						shift_Parse_state(state,1)))
+					{
+						display_message(WARNING_MESSAGE,"Missing/invalid crop value(s)");
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,
+					" <crop LEFT_MARGIN#[0] BOTTOM_MARGIN#[0] WIDTH#[0] HEIGHT#[0]>");
+			}
+		}
+		if (return_code)
+		{
+			if (current_token=state->current_token)
+			{
+				while (entry->option)
+				{
+					entry->to_be_modified= &(data->image_file_name);
+					entry++;
+				}
+				entry->to_be_modified= &(data->image_file_name);
+				return_code=process_option(state,
+					(struct Modifier_entry *)set_file_name_option_table_void);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx modify texture image:  Missing image file name");
+				display_parse_state_location(state);
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_Texture_image.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_Texture_image */
+
+int gfx_modify_Texture(struct Parse_state *state,void *texture_void,
+	void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 12 October 2000
+
+DESCRIPTION :
+Modifies the properties of a texture.
+==============================================================================*/
+{
+	char *combine_mode_string, *current_token, *field_name, *filter_mode_string,
+		*raw_image_storage_string, **valid_strings, *wrap_mode_string;
 	double texture_distortion[3];
 	float alpha,distortion_centre_x,distortion_centre_y,distortion_factor_k1,
 		height,width;
-	int process,return_code;
+	int number_of_valid_strings, process, return_code, specify_height,
+		specify_width;
 	struct Cmiss_command_data *command_data;
 	struct Colour colour;
-#if defined (SGI_MOVIE_FILE)
-	struct Movie_graphics *movie,*old_movie;
-#endif /* defined (SGI_MOVIE_FILE) */
-	struct Option_table *combine_option_table, *filter_option_table, *option_table, 
-	  *wrap_option_table;
+	struct Option_table *option_table;
 	struct Texture *texture_to_be_modified,*texture_to_be_modified_copy;
 	struct Texture_evaluate_image_data evaluate_data;
+	struct Texture_image_data image_data;
 	/* do not make the following static as 'set' flag must start at 0 */
 	struct Set_vector_with_help_data texture_distortion_data=
 		{3," DISTORTION_CENTRE_X DISTORTION_CENTRE_Y DISTORTION_FACTOR_K1",0};
 #if defined (SGI_MOVIE_FILE)
+	struct Movie_graphics *movie,*old_movie;
 	struct X3d_movie *x3d_movie;
 #endif /* defined (SGI_MOVIE_FILE) */
 
@@ -7340,11 +7422,12 @@ Modifies the properties of a texture.
 					{
 						if (texture_to_be_modified=CREATE(Texture)((char *)NULL))
 						{
-							(help_option_table[0]).to_be_modified=
-								(void *)texture_to_be_modified;
-							(help_option_table[0]).user_data=command_data_void;
-							return_code=process_option(state,help_option_table);
+							option_table = CREATE(Option_table)();
+							Option_table_add_entry(option_table, "TEXTURE_NAME",
+								(void *)texture_to_be_modified,command_data_void,gfx_modify_Texture);
+							return_code = Option_table_parse(option_table, state);
 								/*???DB.  return_code will be 0 ? */
+							DESTROY(Option_table)(&option_table);
 							DESTROY(Texture)(&texture_to_be_modified);
 						}
 						else
@@ -7387,64 +7470,90 @@ Modifies the properties of a texture.
 					texture_distortion[1]=(double)distortion_centre_y;
 					texture_distortion[2]=(double)distortion_factor_k1;
 
+					specify_width=0;
+					specify_height=0;
+
+					image_data.image_file_name=(char *)NULL;
+					image_data.crop_left_margin=0;
+					image_data.crop_bottom_margin=0;
+					image_data.crop_width=0;
+					image_data.crop_height=0;
+
 					evaluate_data.field = (struct Computed_field *)NULL;
 					evaluate_data.spectrum = (struct Spectrum *)NULL;
 					evaluate_data.element_group = (struct GROUP(FE_element) *)NULL;
 					evaluate_data.height_texels = 100;
 					evaluate_data.width_texels = 100;
 					evaluate_data.storage = TEXTURE_RGB;
-					evaluate_data.texture_coordinates_field = (struct Computed_field *)NULL;
+					evaluate_data.texture_coordinates_field =
+						(struct Computed_field *)NULL;
 					
 					option_table = CREATE(Option_table)();
 					/* alpha */
 					Option_table_add_entry(option_table, "alpha", &alpha,
 					  NULL,set_float_0_to_1_inclusive);
 					/* blend/decal/modulate */
-					combine_option_table = CREATE(Option_table)();
-					Option_table_add_entry(combine_option_table, "blend",
-					  texture_to_be_modified_copy, NULL,set_Texture_combine_blend);
-					Option_table_add_entry(combine_option_table, "decal",
-					  texture_to_be_modified_copy, NULL,set_Texture_combine_decal);
-					Option_table_add_entry(combine_option_table, "modulate",
-					  texture_to_be_modified_copy, NULL,set_Texture_combine_modulate);
-					Option_table_add_suboption_table(option_table, combine_option_table);
+					combine_mode_string = Texture_combine_mode_string(
+						Texture_get_combine_mode(texture_to_be_modified_copy));
+					valid_strings =
+						Texture_combine_mode_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&combine_mode_string);
+					DEALLOCATE(valid_strings);
 					/* clamp_wrap/repeat_wrap */
-					wrap_option_table = CREATE(Option_table)();
-					Option_table_add_entry(wrap_option_table, "clamp_wrap",
-					  texture_to_be_modified_copy, NULL, set_Texture_wrap_clamp);
-					Option_table_add_entry(wrap_option_table, "repeat_wrap", 
-					  texture_to_be_modified_copy, NULL, set_Texture_wrap_repeat);
-					Option_table_add_suboption_table(option_table, wrap_option_table);
+					wrap_mode_string = Texture_wrap_mode_string(
+						Texture_get_wrap_mode(texture_to_be_modified_copy));
+					valid_strings =
+						Texture_wrap_mode_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&wrap_mode_string);
+					DEALLOCATE(valid_strings);
 					/* colour */
 					Option_table_add_entry(option_table, "colour", &colour,
 					  NULL,set_Colour);
 					/* distortion */
-					Option_table_add_entry(option_table, "distortion", &texture_distortion,
+					Option_table_add_entry(option_table, "distortion",
+						&texture_distortion,
 					  &texture_distortion_data,set_double_vector_with_help);
 					/* height */
 					Option_table_add_entry(option_table, "height", &height,
 					  NULL,set_float_positive);
 					/* image */
-					Option_table_add_entry(option_table, "image", texture_to_be_modified_copy,
-					  command_data->set_file_name_option_table, set_Texture_image);
+					Option_table_add_entry(option_table, "image",
+						&image_data, command_data->set_file_name_option_table,
+						gfx_modify_Texture_image);
 					/* linear_filter/nearest_filter */
-					filter_option_table = CREATE(Option_table)();
-					Option_table_add_entry(filter_option_table, "linear_filter",
-					  texture_to_be_modified_copy, NULL, set_Texture_filter_linear);
-					Option_table_add_entry(filter_option_table, "nearest_filter",
-					  texture_to_be_modified_copy, NULL, set_Texture_filter_nearest);
-					Option_table_add_suboption_table(option_table, filter_option_table);
+					filter_mode_string = Texture_filter_mode_string(
+						Texture_get_filter_mode(texture_to_be_modified_copy));
+					valid_strings =
+						Texture_filter_mode_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&filter_mode_string);
+					DEALLOCATE(valid_strings);
 #if defined (SGI_MOVIE_FILE)
 					/* movie */
 					Option_table_add_entry(option_table, "movie", &movie,
 					  command_data->movie_graphics_manager, set_Movie_graphics);
 #endif /* defined (SGI_MOVIE_FILE) */
-					/* evaluate_image */
-					Option_table_add_entry(option_table, "evaluate_image",
-					  &evaluate_data, command_data, gfx_modify_Texture_evaluate_image);
+					/* raw image storage mode */
+					raw_image_storage_string=Raw_image_storage_string(RAW_PLANAR_RGB);
+					valid_strings =
+						Raw_image_storage_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&raw_image_storage_string);
+					DEALLOCATE(valid_strings);
+					/* specify_height */
+					Option_table_add_entry(option_table, "specify_height",&specify_height,
+					  NULL,set_int_non_negative);
+					/* specify_width */
+					Option_table_add_entry(option_table, "specify_width",&specify_width,
+					  NULL,set_int_non_negative);
 					/* width */
 					Option_table_add_entry(option_table, "width", &width,
 					  NULL,set_float_positive);
+					/* evaluate_image */
+					Option_table_add_entry(option_table, "evaluate_image",
+					  &evaluate_data, command_data, gfx_modify_Texture_evaluate_image);
 					return_code=Option_table_multi_parse(option_table, state);
 					if (return_code)
 					{
@@ -7464,9 +7573,29 @@ Modifies the properties of a texture.
 					}
 					if (return_code)
 					{
+						if (image_data.image_file_name)
+						{
+							return_code=Texture_set_image_file(texture_to_be_modified_copy,
+								image_data.image_file_name,specify_width,specify_height,
+								Raw_image_storage_from_string(raw_image_storage_string),
+								image_data.crop_left_margin,image_data.crop_bottom_margin,
+								image_data.crop_width,image_data.crop_height,
+								0.0,0.0,0.0);
+						}
+
 						Texture_set_combine_alpha(texture_to_be_modified_copy, alpha);
 						Texture_set_combine_colour(texture_to_be_modified_copy, &colour);
 						Texture_set_physical_size(texture_to_be_modified_copy,width,height);
+
+						Texture_set_combine_mode(texture_to_be_modified_copy,
+							Texture_combine_mode_from_string(combine_mode_string));
+
+						Texture_set_filter_mode(texture_to_be_modified_copy,
+							Texture_filter_mode_from_string(filter_mode_string));
+
+						Texture_set_wrap_mode(texture_to_be_modified_copy,
+							Texture_wrap_mode_from_string(wrap_mode_string));
+
 						if (texture_distortion_data.set)
 						{
 							distortion_centre_x=(float)texture_distortion[0];
