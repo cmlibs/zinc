@@ -400,7 +400,7 @@ Creates an option menu from which an object from the manager may be chosen. \
 			XtSetArg(args[2],XmNtopAttachment,XmATTACH_FORM); \
 			XtSetArg(args[3],XmNbottomAttachment,XmATTACH_FORM); \
 			XtSetArg(args[4],XmNuserData,(XtPointer)text_choose_object); \
-			XtSetArg(args[5],XmNcolumns,(XtPointer)8); \
+			XtSetArg(args[5],XmNcolumns,(XtPointer)12); \
 			if (text_choose_object->widget= \
 				XmCreateTextField(parent,"text_choose_object",args,6))\
 			{ \
