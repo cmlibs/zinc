@@ -4213,7 +4213,7 @@ DESCRIPTION :
 Writes the properties of the <texture> to the command window.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code, texture_size;
 
 	ENTER(list_Texture);
 	USE_PARAMETER(dummy);
@@ -4319,6 +4319,14 @@ Writes the properties of the <texture> to the command window.
 		/* write the compression type */
 		display_message(INFORMATION_MESSAGE,"  compression type : %s\n",
 			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
+		if (TEXTURE_COMPRESSED_UNSPECIFIED == texture->compression_mode)
+		{
+			/* get the compressed texture size */
+			glGetIntegerv(GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
+			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %d\n",
+				ENUMERATOR_STRING(Texture_compression_mode)(texture_size));
+		}
+
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
 			"  colour : red = %.3g, green = %.3g, blue = %.3g\n",
