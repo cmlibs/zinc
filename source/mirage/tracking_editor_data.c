@@ -95,7 +95,7 @@ node node_no.
 
 int DESTROY(Node_status)(struct Node_status **node_status_address)
 /*******************************************************************************
-LAST MODIFIED : 23 March 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Frees the memory for the node_status_ranges and sets <*node_status_address>
@@ -103,9 +103,8 @@ to NULL.
 ==============================================================================*/
 {
 	int return_code;
-	struct Graphical_material *material;
 
-	ENTER(DESTROY(Graphical_material));
+	ENTER(DESTROY(Node_status));
 	if (node_status_address && *node_status_address)
 	{
 		if (0==(*node_status_address)->access_count)
@@ -281,7 +280,7 @@ list it is modified by may be changed; it is no error if they do not match up.
 
 int Node_status_clear(struct Node_status *node_status,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 25 March 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Clears all ranges in the node_status.
@@ -290,6 +289,7 @@ Clears all ranges in the node_status.
 	int return_code;
 
 	ENTER(Node_status_clear);
+	USE_PARAMETER(dummy_void);
 	if (node_status)
 	{
 		return_code=Multi_range_clear(node_status->ranges);
@@ -603,13 +603,13 @@ DESCRIPTION :
 
 int Node_status_is_value_in_range(struct Node_status *node_status,int value)
 /*******************************************************************************
-LAST MODIFIED : 26 March 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Returns true if <value> is in any range in <node_status>.
 ==============================================================================*/
 {
-	int return_code,i,int_range_no,keep_searching;
+	int return_code;
 
 	ENTER(Node_status_is_value_in_range);
 	if (node_status)
@@ -630,7 +630,7 @@ Returns true if <value> is in any range in <node_status>.
 
 int Node_status_not_clear(struct Node_status *node_status,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 7 April 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Iterator function returning true if there are any ranges defined for this
@@ -640,6 +640,7 @@ node_status.
 	int return_code;
 
 	ENTER(Node_status_clear);
+	USE_PARAMETER(dummy_void);
 	if (node_status)
 	{
 		return_code=(0<Multi_range_get_number_of_ranges(node_status->ranges));
@@ -692,14 +693,14 @@ Removes the ranges in the second Node_status from the first.
 int Node_status_subtract_from_list(struct Node_status *node_status,
 	void *node_status_list_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Iterator function for removing the ranges in node_status from those for the
 same node_no in node_status_list.
 ==============================================================================*/
 {
-	int return_code,number_of_ranges,range_no,start,stop;
+	int return_code;
 	struct Node_status *node_status_to_modify;
 	struct LIST(Node_status) *node_status_list;
 
@@ -770,6 +771,35 @@ Removes the range from start to stop from node_status.
 	if (node_status&&(stop >= start))
 	{
 		return_code=Multi_range_remove_range(node_status->ranges,start,stop);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_status_remove_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_status_remove_range */
+
+int Node_status_remove_range_iterator(struct Node_status *node_status,
+	void *single_range_void)
+/*******************************************************************************
+LAST MODIFIED : 1 September 2000
+
+DESCRIPTION :
+Removes from <node_status> the range in <single_range>, a struct Single_range *.
+==============================================================================*/
+{
+	int return_code;
+	struct Single_range *single_range;
+
+	ENTER(Node_status_remove_range);
+	if (node_status&&(single_range=(struct Single_range *)single_range_void))
+	{
+		return_code = Node_status_remove_range(node_status,
+			single_range->start,single_range->stop);
 	}
 	else
 	{
@@ -918,13 +948,12 @@ Clears all ranges for all nodes in the list.
 struct LIST(Node_status) *Node_status_list_duplicate(
 	struct LIST(Node_status) *node_status_list)
 /*******************************************************************************
-LAST MODIFIED : 26 April 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Returns a new list containing an exact copy of <node_status_list>.
 ==============================================================================*/
 {
-	int return_code;
 	struct LIST(Node_status) *node_status_list_copy;
 
 	ENTER(Node_status_list_duplicate);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_data.h
 
-LAST MODIFIED : 26 April 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Contains data structures for the tracking editor, mainly the list
@@ -184,6 +184,15 @@ LAST MODIFIED : 24 March 1998
 
 DESCRIPTION :
 Removes the range from start to stop from node_status.
+==============================================================================*/
+
+int Node_status_remove_range_iterator(struct Node_status *node_status,
+	void *single_range_void);
+/*******************************************************************************
+LAST MODIFIED : 1 September 2000
+
+DESCRIPTION :
+Removes from <node_status> the range in <single_range>, a struct Single_range *.
 ==============================================================================*/
 
 int Node_status_list_add(struct LIST(Node_status) *node_status_list,
