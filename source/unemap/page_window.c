@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 20 August 2003
+LAST MODIFIED : 13 September 2004
 
 DESCRIPTION :
 
@@ -452,7 +452,7 @@ typedef struct
 
 struct Save_write_signal_file_background_data
 {
-	char *file_name,*temp_file_name;
+	char *file_name;
 	int all_channels,number_of_samples;
 	short *samples;
 	struct Page_window *page_window;
@@ -2128,7 +2128,7 @@ DWORD WINAPI save_write_signal_file_process(
 	LPVOID save_write_signal_file_background_data_void)
 #endif /* defined (WIN32_SYSTEM) */
 /*******************************************************************************
-LAST MODIFIED : 14 August 2003
+LAST MODIFIED : 13 September 2004
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
@@ -2169,7 +2169,6 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			page_window->number_of_configured_channels)&&
 			(configured_channels=page_window->configured_channels)&&
 			(save_write_signal_file_background_data->file_name)&&
-			(save_write_signal_file_background_data->temp_file_name)&&
 			(output_file=fopen(save_write_signal_file_background_data->file_name,
 			"wb")))
 		{
@@ -2216,15 +2215,9 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			}
 			return_code=write_signal_file(output_file,rig);
 			fclose(output_file);
-			if (return_code)
+			if (0==return_code)
 			{
-				page_window->data_saved=1;
-				rename(save_write_signal_file_background_data->temp_file_name,
-					save_write_signal_file_background_data->file_name);
-			}
-			else
-			{
-				remove(save_write_signal_file_background_data->temp_file_name);
+				remove(save_write_signal_file_background_data->file_name);
 			}
 		}
 		else
@@ -2248,7 +2241,6 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 #endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		DEALLOCATE(save_write_signal_file_background_data->samples);
-		DEALLOCATE(save_write_signal_file_background_data->temp_file_name);
 		DEALLOCATE(save_write_signal_file_background_data->file_name);
 		DEALLOCATE(save_write_signal_file_background_data);
 	}
@@ -2258,9 +2250,9 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			"Missing save_write_signal_file_background_data");
 		return_code=0;
 	}
-#if defined (DEBUG)
 	/*???debug */
 	printf("leave save_write_signal_file_process\n");
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
@@ -2347,15 +2339,15 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 #if defined (BACKGROUND_SAVING)
 static int save_write_signal_file(char *file_name,void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 13 September 2004
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
 named file.
 ==============================================================================*/
 {
-	char *temp_file_name,*title;
-	FILE *output_file,*temp_output_file;
+	char *title;
+	FILE *output_file;
 	float post_filter_gain,pre_filter_gain;
 	int i,return_code;
 	struct Device **device;
@@ -2377,108 +2369,85 @@ named file.
 		/* open the output file */
 		if (output_file=fopen(file_name,"wb"))
 		{
-			/* get a temporary file to write to in background */
-			if ((temp_file_name=tmpnam((char *)NULL))&&
-				(temp_output_file=fopen(temp_file_name,"wb")))
+			fclose(output_file);
+			remove(file_name);
+			if (ALLOCATE(save_write_signal_file_background_data,
+				struct Save_write_signal_file_background_data,1))
 			{
-				fclose(output_file);
-				remove(file_name);
-				fclose(temp_output_file);
-				remove(temp_file_name);
-				if (ALLOCATE(save_write_signal_file_background_data,
-					struct Save_write_signal_file_background_data,1))
+				save_write_signal_file_background_data->file_name=(char *)NULL;
+				if (ALLOCATE(save_write_signal_file_background_data->file_name,char,
+					strlen(file_name)+1))
 				{
-					save_write_signal_file_background_data->file_name=(char *)NULL;
-					save_write_signal_file_background_data->temp_file_name=(char *)NULL;
-					if (ALLOCATE(save_write_signal_file_background_data->file_name,char,
-						strlen(file_name)+1)&&
-						ALLOCATE(save_write_signal_file_background_data->temp_file_name,
-						char,strlen(temp_file_name)+1))
+					strcpy(save_write_signal_file_background_data->file_name,file_name);
+					save_write_signal_file_background_data->page_window=page_window;
+					if (unemap_get_samples_acquired_background(0,
+						(int)page_window->number_of_samples_to_save,
+						save_write_signal_file_background,
+						(void *)save_write_signal_file_background_data))
 					{
-						strcpy(save_write_signal_file_background_data->file_name,file_name);
-						strcpy(save_write_signal_file_background_data->temp_file_name,
-							temp_file_name);
-						save_write_signal_file_background_data->page_window=page_window;
-						if (unemap_get_samples_acquired_background(0,
-							(int)page_window->number_of_samples_to_save,
-							save_write_signal_file_background,
-							(void *)save_write_signal_file_background_data))
+						if (ALLOCATE(title,char,strlen(file_name)+8))
 						{
-							if (ALLOCATE(title,char,strlen(file_name)+8))
-							{
-								strcpy(title,"Saving ");
-								strcat(title,file_name);
+							strcpy(title,"Saving ");
+							strcat(title,file_name);
 #if defined (MOTIF)
-								XtVaSetValues(page_window->shell,XmNtitle,title,NULL);
+							XtVaSetValues(page_window->shell,XmNtitle,title,NULL);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-								SetWindowText(page_window->window,title);
+							SetWindowText(page_window->window,title);
 #endif /* defined (WIN32_USER_INTERFACE) */
-								DEALLOCATE(title);
-							}
-							else
-							{
-#if defined (MOTIF)
-								XtVaSetValues(page_window->shell,XmNtitle,"Saving",NULL);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-								SetWindowText(page_window->window,"Saving");
-#endif /* defined (WIN32_USER_INTERFACE) */
-							}
-							i=rig->number_of_devices;
-							device=rig->devices;
-							while (i>0)
-							{
-								if ((*device)&&((*device)->signal)&&
-									((*device)->signal->buffer)&&((*device)->channel))
-								{
-									if (unemap_get_gain((*device)->channel->number,
-										&pre_filter_gain,&post_filter_gain))
-									{
-										(*device)->channel->gain=
-											((*device)->channel->gain_correction)/
-											(pre_filter_gain*post_filter_gain);
-									}
-								}
-								i--;
-								device++;
-							}
-							return_code=1;
+							DEALLOCATE(title);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"save_write_signal_file.  Could not retrieve samples");
-							DEALLOCATE(save_write_signal_file_background_data->file_name);
-							DEALLOCATE(save_write_signal_file_background_data->
-								temp_file_name);
-							DEALLOCATE(save_write_signal_file_background_data);
-							return_code=0;
+#if defined (MOTIF)
+							XtVaSetValues(page_window->shell,XmNtitle,"Saving",NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+							SetWindowText(page_window->window,"Saving");
+#endif /* defined (WIN32_USER_INTERFACE) */
 						}
+						i=rig->number_of_devices;
+						device=rig->devices;
+						while (i>0)
+						{
+							if ((*device)&&((*device)->signal)&&
+								((*device)->signal->buffer)&&((*device)->channel))
+							{
+								if (unemap_get_gain((*device)->channel->number,
+									&pre_filter_gain,&post_filter_gain))
+								{
+									(*device)->channel->gain=
+										((*device)->channel->gain_correction)/
+										(pre_filter_gain*post_filter_gain);
+								}
+							}
+							i--;
+							device++;
+						}
+						return_code=1;
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"save_write_signal_file.  Could not allocate file names");
+							"save_write_signal_file.  Could not retrieve samples");
 						DEALLOCATE(save_write_signal_file_background_data->file_name);
-						DEALLOCATE(save_write_signal_file_background_data->temp_file_name);
 						DEALLOCATE(save_write_signal_file_background_data);
 						return_code=0;
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"save_write_signal_file.  "
-						"Could not allocate save_write_signal_file_background_data");
+					display_message(ERROR_MESSAGE,
+						"save_write_signal_file.  Could not allocate file names");
+					DEALLOCATE(save_write_signal_file_background_data->file_name);
+					DEALLOCATE(save_write_signal_file_background_data);
 					return_code=0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"save_write_signal_file.  Could not get temporary file");
-				fclose(output_file);
-				remove(file_name);
+				display_message(ERROR_MESSAGE,"save_write_signal_file.  "
+					"Could not allocate save_write_signal_file_background_data");
 				return_code=0;
 			}
 		}
