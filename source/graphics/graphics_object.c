@@ -2981,7 +2981,7 @@ and sets <*object> to NULL.
 
 int compile_GT_object(struct GT_object *graphics_object_list,void *time_void)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2000
+LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
@@ -3014,7 +3014,7 @@ pointed to by <time_void>.
 						if (graphics_object->selected_material)
 						{
 							execute_Graphical_material(graphics_object->selected_material);
-							makegtobject(graphics_object,*time,1);
+							makegtobject(graphics_object,*time,/*draw_selected*/1);
 						}
 						else
 						{
@@ -3028,7 +3028,7 @@ pointed to by <time_void>.
 					{
 						execute_Graphical_material(graphics_object->default_material);
 					}
-					makegtobject(graphics_object,*time,0);
+					makegtobject(graphics_object,*time,/*draw_selected*/0);
 					glEndList();
 					graphics_object->display_list_current = 1;
 				}
