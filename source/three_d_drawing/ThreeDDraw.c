@@ -1344,7 +1344,8 @@ present.
 		swapbuffers();
 #endif
 #if defined (OPENGL_API)
-		glXSwapBuffers(XtDisplay(widget),window);
+		/*???RC Shouldn't swap buffers here!*/
+		/*glXSwapBuffers(XtDisplay(widget),window);*/
 		if (current_ThreeDDrawing&&(widget!=current_ThreeDDrawing))
 		{
 			glXMakeCurrent(XtDisplay(current_ThreeDDrawing),
@@ -1449,7 +1450,8 @@ The resize method.
 		swapbuffers();
 #endif
 #if defined (OPENGL_API)
-		glXSwapBuffers(XtDisplay(widget),window);
+		/*???RC Shouldn't swap buffers here!*/
+		/*glXSwapBuffers(XtDisplay(widget),window);*/
 		if (current_ThreeDDrawing&&(widget!=current_ThreeDDrawing))
 		{
 			glXMakeCurrent(XtDisplay(current_ThreeDDrawing),
