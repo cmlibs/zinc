@@ -1211,7 +1211,7 @@ ifeq ($(SYSNAME),Linux)
             #   the irix file does not yet */
             EXPORTS_FILE = cmgui_ld_version.script
             SRC_EXPORTS_FILE = cmgui.exports
-            EXPORTS_LINK_FLAGS = -Wl,-export-dynamic,--version-script,$(EXPORTS_FILE)
+            EXPORTS_LINK_FLAGS = -Wl,--export-dynamic,--version-script,$(EXPORTS_FILE)
             $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
