@@ -3333,17 +3333,17 @@ Now prints current contents of the vector with help.
 	int comp_no,number_of_components,return_code;
 
 	ENTER(set_int_vector);
-	if (state)
+	if (state && number_of_components_address_void)
 	{
-		if ((values_address=(int *)values_address_void)&&
-			number_of_components_address_void&&(0<(number_of_components=
-			*((int *)number_of_components_address_void))))
+		values_address=(int *)values_address_void;
+		number_of_components= *((int *)number_of_components_address_void);
+		if (current_token=state->current_token)
 		{
-			if (current_token=state->current_token)
+			return_code=1;
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				return_code=1;
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				if (values_address && (0 < number_of_components))
 				{
 					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
 					{
@@ -3369,9 +3369,12 @@ Now prints current contents of the vector with help.
 						}
 					}
 				}
-				else
+			}
+			else
+			{
+				/* write help text */
+				if (values_address && (0 < number_of_components))
 				{
-					/* write help text */
 					for (comp_no=0;comp_no<number_of_components;comp_no++)
 					{
 						display_message(INFORMATION_MESSAGE," #");
@@ -3383,26 +3386,25 @@ Now prints current contents of the vector with help.
 					}
 					display_message(INFORMATION_MESSAGE,"]");
 				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Missing %d component int vector",number_of_components);
-				display_parse_state_location(state);
-				return_code=0;
+				else
+				{
+					display_message(INFORMATION_MESSAGE," VALUES");
+				}
 			}
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Missing %d component int vector",number_of_components);
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
 		else
 		{
 			display_message(ERROR_MESSAGE,"set_int_vector.  Invalid argument(s)");
 			return_code=0;
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_int_vector.  Missing state");
-		return_code=0;
-	}
 	LEAVE;
 
 	return (return_code);
@@ -5044,13 +5046,14 @@ LAST MODIFIED : 4 December 2003
 DESCRIPTION :
 Adds the given <token> to the <option_table>.  The <vector> is filled in with the
 <number_of_components>.
+<number_of_components> can be zero and <values> can be NULL as long as only
+help mode is entered.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Option_table_add_int_vector_entry);
-	if (option_table && token && vector && number_of_components &&
-		(*number_of_components > 0))
+	if (option_table && token && number_of_components)
 	{
 		return_code = Option_table_add_entry(option_table, token, vector,
 			(void *)number_of_components, set_int_vector);
@@ -5074,13 +5077,14 @@ LAST MODIFIED : 4 December 2003
 DESCRIPTION :
 Adds the given <token> to the <option_table>.  The <vector> is filled in with the
 <number_of_components>.
+<number_of_components> can be zero and <values> can be NULL as long as only
+help mode is entered.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Option_table_add_FE_value_vector_entry);
-	if (option_table && token && vector && number_of_components &&
-		(*number_of_components > 0))
+	if (option_table && token && number_of_components)
 	{
 		return_code = Option_table_add_entry(option_table, token, vector,
 			(void *)number_of_components, set_FE_value_array);
