@@ -7375,7 +7375,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 		}
 		else
 		{				
-#if 0 /*(!defined (NEW_CODE))*/
+#if  (!defined (NEW_CODE))
 			/* 2d map for 2d projection */	
 			/* draw one full size map*/
 			return_code=draw_map_2d(map,recalculate,drawing,drawing->width,
