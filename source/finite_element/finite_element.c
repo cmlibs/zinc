@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 12 June 2002
+LAST MODIFIED : 26 July 2002
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -22028,7 +22028,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 				case INDEXED_FE_FIELD:
 				{
 					if (calculate_FE_element_field_values(element,field->indexer_field,
-						calculate_derivatives,time,element_field_values,top_level_element))
+						time,calculate_derivatives,element_field_values,top_level_element))
 					{
 						/* restore pointer to original field - has the indexer_field in
 							 it anyway */
@@ -33790,7 +33790,7 @@ storage for the <value> should have been allocated outside the function.
 			/* calculate field for element */
 			/* determine if the field is defined over the element */
 			if (calculate_FE_element_field_values(element,field,
-				/*calculate_derivatives*/0,time,&element_field_values,
+				time,/*calculate_derivatives*/0,&element_field_values,
 				/*top_level_element*/(struct FE_element *)NULL))
 			{
 				/* calculate the value for the element field */

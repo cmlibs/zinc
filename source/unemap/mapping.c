@@ -3076,9 +3076,9 @@ Defines and sets the value of the fit field at <torso_node>.
 				/* get the torso position and jacobian */
 				torso_xi_coords[0]=0;
 				torso_xi_coords[1]=0;
-				if (calculate_FE_element_field_values(torso_element,torso_position_field,
-					/*time*/0,/*calculate_derivatives */1,&element_field_values,
-					/*top_level_element*/(struct FE_element *)NULL))
+				if (calculate_FE_element_field_values(torso_element,
+					torso_position_field,/*time*/0,/*calculate_derivatives */1,
+					&element_field_values,/*top_level_element*/(struct FE_element *)NULL))
 				{
 					/* calculate the value for the element field */
 					return_code=calculate_FE_element_field(/*component_number*/-1,
