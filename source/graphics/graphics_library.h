@@ -38,7 +38,8 @@ Functions and structures for interfacing with the graphics library.
 #if defined (graPHIGS_API)
 #include "phigs.h"
 #endif
-#include "user_interface/user_interface.h"
+
+struct User_interface;
 
 /*
 Global types
@@ -214,104 +215,6 @@ LAST MODIFIED : 14 November 1996
 
 DESCRIPTION :
 ==============================================================================*/
-#endif
-
-#if defined (OLD_CODE)
-/*******************************************************************************
-FILE : graphics_library.h
-
-LAST MODIFIED : 4 December 1994
-
-DESCRIPTION :
-Functions and structures for interfacing with the graphics library.
-
-Includes a prototype GL widget for AIX.  Taken from the files
-	R2/GL/examples/utilities/inc/Glib.h
-	R2/GL/examples/utilities/inc/GlibP.h
-	R2/GL/examples/utilities/gutil/Glib.c
-With resources:
-	Name              Class        RepType   Default Value
-	----              -----        -------   -------------
-	exposeCallback    Callback     Pointer   NULL
-	resizeCallback    Callback     Pointer   NULL
-	gconfigCallback   Callback     Pointer   NULL
-	initClearColor    Colorindex   int       0
-==============================================================================*/
-#include <stddef.h>
-
-#if defined (GL_API) || defined (OPENGL_API)
-/* include things needed to support GL or OpenGL */
-#include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
-#if defined (IBM) || defined (OPENGL_API)
-#include <X11/Xutil.h>
-#else
-#include <X11/Xirisw/GlxMDraw.h>
-#endif
-#endif
-
-#if defined (GL_API)
-#include <gl/gl.h>
-#endif
-
-#if defined (OPENGL_API)
-#include <GL/gl.h>
-#endif
-
-#if defined (DECPHIGS_API)
-#include <Xm/DrawingA.h>
-#include <phigs.h>
-#endif
-
-#if defined (graPHIGS_API)
-#include <afmnc.h>
-#include "phigs.h"
-#endif
-
-#if defined (GL_API) && defined (IBM)
-#define XglNexposeCallback "exposeCallback"
-#define XglNgconfigCallback "gconfigCallback"
-#define XglNresizeCallback "resizeCallback"
-#define XglNinitClearColor "initClearColor"
-/* define the callback structure */
-typedef struct
-{
-	int reason;
-	XEvent *event;
-	Region region;
-} GlibCallbackStruct;
-/* declare specific GlibWidget class and instance datatypes */
-typedef struct _GlibClassRec*  GlibWidgetClass;
-typedef struct _GlibRec*  GlibWidget;
-#endif
-
-/*
-Global/Public variables
------------------------
-*/
-#if defined (GL_API) && defined (IBM)
-/* declare the class constant */
-extern WidgetClass glibWidgetClass;
-#endif
-
-#if defined (GL_API) && defined (IBM)
-int GlWinsetWidget(Widget widget);
-/*******************************************************************************
-LAST MODIFIED : 23 March 1993
-
-DESCRIPTION :
-Set the window to which rendering will appear.
-==============================================================================*/
-
-Widget GlXCreateMDraw(Widget parent,char *name,ArgList arglist,
-	Cardinal argcount);
-/*******************************************************************************
-LAST MODIFIED : 24 March 1993
-
-DESCRIPTION :
-Set the window to which rendering will appear.
-==============================================================================*/
-#endif
 #endif
 
 #if defined (OPENGL_API)

@@ -10,12 +10,10 @@ The data structures used for representing graphical materials.
 #if !defined (MATERIAL_H)
 #define MATERIAL_H
 
-#include <stdio.h>
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
-#include "graphics/graphics_library.h"
 #include "graphics/texture.h"
 
 /*

@@ -26,6 +26,7 @@ Renders gtObjects to VRML file
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
+#include "graphics/graphics_object_private.h"
 
 /*
 Module types
@@ -1077,12 +1078,12 @@ points  given by the positions in <point_list> and oriented and scaled by
 								spectrum_render_value_on_material(spectrum,material_copy,
 									number_of_data_components,data+i*number_of_data_components);
 								/*???RC temporary until we have a struct Glyph - actual glyph to use
-									is at glyph->nextobject when glyph is in mirror mode */
+									is at GT_object_get_next_object(glyph) when glyph is in mirror mode */
 								/* note no DEF/USE when coloured by a spectrum as will always be
 									 different every time it is rendered */
 								if (mirror_mode)
 								{
-									write_graphics_object_vrml(vrml_file, glyph->nextobject, time,
+									write_graphics_object_vrml(vrml_file, GT_object_get_next_object(glyph), time,
 										(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
 										material_copy, /*gt_object_already_defined*/0);
 								}
@@ -1096,10 +1097,10 @@ points  given by the positions in <point_list> and oriented and scaled by
 							else
 							{
 								/*???RC temporary until we have a struct Glyph - actual glyph to use
-									is at glyph->nextobject when glyph is in mirror mode */
+									is at GT_object_get_next_object(glyph) when glyph is in mirror mode */
 								if (mirror_mode)
 								{
-									write_graphics_object_vrml(vrml_file, glyph->nextobject, time,
+									write_graphics_object_vrml(vrml_file, GT_object_get_next_object(glyph), time,
 										vrml_prototype_list, /*object_is_glyph*/1,
 										material, /*gt_object_already_defined*/0<i);
 								}
@@ -2325,7 +2326,7 @@ Only writes the geometry field.
 		}
 		if ((0 < number_of_times) && return_code)
 		{
-			switch (object->object_type)
+			switch (GT_object_get_type(object))
 			{
 				case g_GLYPH_SET:
 				{
@@ -2723,7 +2724,7 @@ DESCRIPTION :
 			}
 			if (temp_gt_object)
 			{
-				if (temp_gt_object->nextobject)
+				if (GT_object_get_next_object(temp_gt_object))
 				{
 					fprintf(vrml_file,"Group {\n");
 					fprintf(vrml_file,"  children [\n");
@@ -2744,7 +2745,7 @@ DESCRIPTION :
 							makevrml(vrml_file,temp_gt_object,time,vrml_prototype_list);
 						temp_gt_object->default_material = (struct Graphical_material *)NULL;
 					}
-					temp_gt_object=temp_gt_object->nextobject;
+					temp_gt_object=GT_object_get_next_object(temp_gt_object);
 				}
 				if (group)
 				{
@@ -2811,7 +2812,7 @@ graphics_object_tree_iterator_function
 		(struct Export_to_vrml_data *)export_to_vrml_data_void))
 	{
 		vrml_file=export_to_vrml_data->vrml_file;
-		switch(gt_object->object_type)
+		switch(GT_object_get_type(gt_object))
 		{
 			case g_POINT:
 			case g_POINTSET:

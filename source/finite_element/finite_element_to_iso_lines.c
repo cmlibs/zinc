@@ -238,7 +238,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 					contour_lines->number_of_data_components,data))
 				{
 					/* for selective editing of primitives, record object_name */
-					gt_polyline->object_name=object_name;
+					GT_polyline_set_integer_identifier(gt_polyline, object_name);
 					if (!GT_OBJECT_ADD(GT_polyline)(graphics_object,time,gt_polyline))
 					{
 						return_code=0;
@@ -894,7 +894,7 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		scalar_field&&(1==Computed_field_get_number_of_components(scalar_field))&&
-		graphics_object&&(g_POLYLINE==graphics_object->object_type))
+		graphics_object&&(g_POLYLINE==GT_object_get_type(graphics_object)))
 	{
 		return_code=1;
 		if (data_field)

@@ -709,7 +709,7 @@ a single point in 3-D space with a text string drawn beside it.
 					if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 						graphics_object_name,command_data->graphics_object_list))
 					{
-						if (g_POINTSET==graphics_object->object_type)
+						if (g_POINTSET==GT_object_get_type(graphics_object))
 						{
 							if (GT_object_has_time(graphics_object,time))
 							{
@@ -889,7 +889,7 @@ a single point in 3-D space with an axes glyph.
 			if (graphics_object = FIND_BY_IDENTIFIER_IN_LIST(GT_object, name)(
 				graphics_object_name, command_data->graphics_object_list))
 			{
-				if (g_GLYPH_SET == graphics_object->object_type)
+				if (g_GLYPH_SET == GT_object_get_type(graphics_object))
 				{
 					if (GT_object_has_time(graphics_object, time))
 					{
@@ -1307,7 +1307,7 @@ Executes a GFX CREATE CYLINDERS command.
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{
-				if (g_SURFACE==graphics_object->object_type)
+				if (g_SURFACE==GT_object_get_type(graphics_object))
 				{
 					if (GT_object_has_time(graphics_object,time))
 					{
@@ -1734,7 +1734,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 					graphics_object_name,command_data->graphics_object_list))
 				{
-					if (g_GLYPH_SET == graphics_object->object_type)
+					if (g_GLYPH_SET == GT_object_get_type(graphics_object))
 					{
 						if (GT_object_has_time(graphics_object,time))
 						{
@@ -2232,8 +2232,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 				{
 					if (pointset = GT_OBJECT_GET(GT_pointset)(graphics_object, time))
 					{
-						old_particle_positions = pointset->pointlist;
-						current_number_of_particles = pointset->n_pts;
+						GT_pointset_get_point_list(pointset,
+							&current_number_of_particles, &old_particle_positions);
 					}
 					else
 					{
@@ -2284,8 +2284,9 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 					if (REALLOCATE(new_particle_positions,old_particle_positions,Triple,
 						number_of_particles))
 					{
-						pointset->pointlist = new_particle_positions;
-						element_to_particle_data.pointlist = &(pointset->pointlist);
+						GT_pointset_set_point_list(pointset, number_of_particles,
+							new_particle_positions);
+						element_to_particle_data.pointlist = &new_particle_positions;
 						element_to_particle_data.index = current_number_of_particles;
 					}
 					else
@@ -2302,7 +2303,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 							new_particle_positions,(char **)NULL,	g_POINT_MARKER,
 							1,g_NO_DATA,(GTDATA *) NULL,(int *)NULL)))
 					{
-						element_to_particle_data.pointlist= &(pointset->pointlist);
+						element_to_particle_data.pointlist= &new_particle_positions;
 						element_to_particle_data.index=0;
 					}
 					else
@@ -2335,8 +2336,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 						REALLOCATE(final_particle_positions, new_particle_positions,
 							Triple, number_of_particles))
 					{
-						pointset->pointlist = final_particle_positions;
-						pointset->n_pts = number_of_particles;
+						GT_pointset_set_point_list(pointset, number_of_particles,
+							final_particle_positions);
 						if (create_more)
 						{
 							GT_object_changed(graphics_object);
@@ -2959,7 +2960,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{
-				if (graphics_object_type==graphics_object->object_type)
+				if (graphics_object_type==GT_object_get_type(graphics_object))
 				{
 					if (GT_object_has_time(graphics_object,time))
 					{
@@ -3426,7 +3427,7 @@ Executes a GFX CREATE LINES command.
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{
-				if (g_POLYLINE==graphics_object->object_type)
+				if (g_POLYLINE==GT_object_get_type(graphics_object))
 				{
 					if (GT_object_has_time(graphics_object,time))
 					{
@@ -4076,7 +4077,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{
-				if (g_GLYPH_SET==graphics_object->object_type)
+				if (g_GLYPH_SET==GT_object_get_type(graphics_object))
 				{
 					if (GT_object_has_time(graphics_object,time))
 					{
@@ -5071,7 +5072,7 @@ Executes a GFX CREATE STREAMLINES command.
 				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 					graphics_object_name,command_data->graphics_object_list))
 				{
-					if (graphics_object_type == graphics_object->object_type)
+					if (graphics_object_type == GT_object_get_type(graphics_object))
 					{
 						if (GT_object_has_time(graphics_object,time))
 						{
@@ -5400,7 +5401,7 @@ Executes a GFX CREATE SURFACES command.
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{
-				if (object_type==graphics_object->object_type)
+				if (object_type==GT_object_get_type(graphics_object))
 				{
 					if (GT_object_has_time(graphics_object,time))
 					{
@@ -7512,7 +7513,7 @@ Executes a GFX CREATE VOLUMES command.
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{
-				if (g_VOLTEX==graphics_object->object_type)
+				if (g_VOLTEX==GT_object_get_type(graphics_object))
 				{
 					if (GT_object_has_time(graphics_object,time))
 					{
@@ -9953,6 +9954,7 @@ LAST MODIFIED : 15 March 2001
 DESCRIPTION :
 ==============================================================================*/
 {
+	char *name;
 	int return_code;
 	struct Scene *scene;
 	struct Scene_add_graphics_object_iterator_data *data;
@@ -9969,8 +9971,12 @@ DESCRIPTION :
 		}
 		else
 		{
-			return_code = Scene_add_graphics_object(scene,graphics_object,
-				data->position, graphics_object->name,/*fast_changing*/0);
+			if (GET_NAME(GT_object)(graphics_object, &name))
+			{
+				return_code = Scene_add_graphics_object(scene,graphics_object,
+					data->position, name, /*fast_changing*/0);
+				DEALLOCATE(name);
+			}
 			if (0 < data->position)
 			{
 				data->position++;

@@ -26,6 +26,10 @@ Provides the widgets to manipulate spectrum settings.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
+/* SAB Trying to hide the guts of GT_object and its primitives,
+	however the spectrum editor is modifying it's primitives quite a bit . */
+#include "graphics/graphics_object_private.h"
+
 /*
 Module variables
 ----------------
@@ -911,6 +915,7 @@ DESCRIPTION :
 Creates a spectrum_editor widget.
 ==============================================================================*/
 {
+	char *name;
 	int i,j,return_code,surface_discretise_xi1=24,surface_discretise_xi2=108;
 	GTDATA *data;
 	MrmType spectrum_editor_dialog_class;
@@ -1112,8 +1117,8 @@ Creates a spectrum_editor widget.
 											CREATE(GT_object)("spectrum_editor_tick_lines",g_POLYLINE,
 											tick_material)))
 										{
-											spectrum_editor->graphics_object->nextobject = 
-												ACCESS(GT_object)(spectrum_editor->tick_lines_graphics_object);
+											GT_object_set_next_object(spectrum_editor->graphics_object,
+												spectrum_editor->tick_lines_graphics_object);
 											if (tick_lines = CREATE(GT_polyline)(
 												g_PLAIN_DISCONTINUOUS, /*line_width=default*/0,
 												0, points, /* normalpoints */(Triple *)NULL,
@@ -1151,8 +1156,8 @@ Creates a spectrum_editor widget.
 											CREATE(GT_object)("spectrum_editor_tick_labels",
 											g_POINTSET,tick_material)))
 										{
-											spectrum_editor->tick_lines_graphics_object->nextobject = 
-												ACCESS(GT_object)(spectrum_editor->tick_labels_graphics_object);
+											GT_object_set_next_object(spectrum_editor->tick_lines_graphics_object,
+												spectrum_editor->tick_labels_graphics_object);
 											if (tick_labels = CREATE(GT_pointset)(1,
 												points, strings, g_NO_MARKER, 0.0,
 												g_NO_DATA, (GTDATA *)NULL, (int *)NULL))
@@ -1205,11 +1210,13 @@ Creates a spectrum_editor widget.
 												spectrum_editor->spectrum_editor_scene,
 												(struct MANAGER(Texture) *)NULL,
 												user_interface );
+											GET_NAME(GT_object)(spectrum_editor->graphics_object,
+												&name);
 											return_code=Scene_add_graphics_object(
 												spectrum_editor->spectrum_editor_scene,
 												spectrum_editor->graphics_object, 0,
-												spectrum_editor->graphics_object->name,
-												/*fast_changing*/0);
+												name, /*fast_changing*/0);
+											DEALLOCATE(name);
 											Scene_viewer_set_input_mode(
 												spectrum_editor->spectrum_editor_scene_viewer,
 												SCENE_VIEWER_NO_INPUT );

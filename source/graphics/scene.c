@@ -3991,7 +3991,7 @@ graphics objects in scene_object.
 					return_code=1;
 					for (graphics_object=scene_object->gt_object;
 						  return_code&&(graphics_object != NULL);
-						  graphics_object=graphics_object->nextobject)
+						  graphics_object=GT_object_get_next_object(graphics_object))
 					{
 						return_code=
 							get_graphics_object_range(graphics_object,use_range_void);
@@ -4113,7 +4113,7 @@ ranges by those of the graphics_objects contained in the <scene_object>.
 	{
 		return_code=1;
 		for (graphics_object=scene_object->gt_object;(graphics_object != NULL)&&
-			return_code;graphics_object=graphics_object->nextobject)
+			return_code;graphics_object=GT_object_get_next_object(graphics_object))
 		{
 			return_code=get_graphics_object_time_range(graphics_object,
 				graphics_object_time_range_void);
@@ -4140,7 +4140,7 @@ name, visibility and information about the object in it to the command window.
 ???RC list transformation? Have separate gfx list transformation commands.
 ==============================================================================*/
 {
-	char *time_object_name;
+	char *object_name, *time_object_name;
 	int return_code;
 
 	ENTER(list_Scene_object);
@@ -4159,10 +4159,12 @@ name, visibility and information about the object in it to the command window.
 		{
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
 			{
-				if (scene_object->gt_object&&scene_object->gt_object->name)
+				if (scene_object->gt_object && 
+					GET_NAME(GT_object)(scene_object->gt_object, &object_name))
 				{
 					display_message(INFORMATION_MESSAGE," = graphics object %s",
-						scene_object->gt_object->name);
+						object_name);
+					DEALLOCATE(object_name);
 				}
 				else
 				{
@@ -7195,15 +7197,18 @@ name from that of the <graphics_object>, and must be unique for the scene.
 Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 ==============================================================================*/
 {
+	char *graphics_object_name;
 	int return_code;
 	struct Scene_object *scene_object;
 	
 	ENTER(Scene_add_graphics_object);
+	graphics_object_name = (char *)NULL;
 	if (scene && graphics_object)
 	{
 		if (!scene_object_name)
 		{
-			scene_object_name = graphics_object->name;
+			GET_NAME(GT_object)(graphics_object, &graphics_object_name);
+			scene_object_name = graphics_object_name;
 		}
 		if (!FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_name,
 			(void *)scene_object_name, scene->scene_object_list))
@@ -7225,6 +7230,10 @@ Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 				"Scene_add_graphics_object.  Object with name '%s' already in scene",
 				scene_object_name);
 			return_code = 1;
+		}
+		if (graphics_object_name)
+		{
+			DEALLOCATE(graphics_object_name);
 		}
 	}
 	else
@@ -9438,7 +9447,7 @@ DESCRIPTION :
 					while ( graphics_object )
 					{
 						(data->iterator_function)(graphics_object, time, data->user_data);
-						graphics_object = graphics_object->nextobject;
+						graphics_object = GT_object_get_next_object(graphics_object);
 					}
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
@@ -9521,7 +9530,7 @@ in the <scene> which point to this spectrum.
 	if (graphics_object &&
 		(data = (struct Scene_get_data_range_for_spectrum_data *)data_void))
 	{
-		if ( graphics_object->spectrum == data->spectrum )
+		if ( get_GT_object_spectrum(graphics_object) == data->spectrum )
 		{
 			get_graphics_object_data_range(graphics_object,
 				(void *)&(data->range));

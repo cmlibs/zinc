@@ -769,414 +769,410 @@ Creates a 7 dof heart surgery robot.
 #endif
 
 	ENTER(create_robot_7dof);
-	if (ALLOCATE(robot_7dof_object,struct GT_userdef,1))
-	{
 #if defined (GL_API)
-		if (first_call)
+	if (first_call)
+	{
+		/* make the cylinder */
+		cylinder=genobj();
+		makeobj(cylinder);
+		ia = 2.0*PI/((double) discretization);
+		for (i=0,a=0;i<discretization;i++,a+=ia)
 		{
-			/* make the cylinder */
-			cylinder=genobj();
-			makeobj(cylinder);
-			ia = 2.0*PI/((double) discretization);
-			for (i=0,a=0;i<discretization;i++,a+=ia)
-			{
-				bgnpolygon();
-				vert[0] = cos(a);
-				vert[1] = sin(a);
-				vert[2] = 0.0;
-				norm[0] = -vert[0];
-				norm[1] = -vert[1];
-				norm[2] = -vert[2];
-				n3f(norm);
-				v3f(vert);
-				vert[2] = 1.0;
-				v3f(vert);
-				vert[0] = cos(a+ia);
-				vert[1] = sin(a+ia);
-				norm[0] = -vert[0];
-				norm[1] = -vert[1];
-				n3f(norm);
-				v3f(vert);
-				vert[2] = 0.0;
-				v3f(vert);
-				endpolygon();
-			}
-			for (i=0,a=0;i<discretization;i++,a+=ia)
-			{
-				bgnpolygon();
-				norm[0] = norm[1] = 0.0;
-				norm[2] = 1.0;
-				vert[0] = cos(a);
-				vert[1] = sin(a);
-				vert[2] = 0.0;
-				n3f(norm);
-				v3f(vert);
-				vert[0] = cos(a+ia);
-				vert[1] = sin(a+ia);
-				v3f(vert);
-				vert[0] = vert[1] = 0.0;
-				v3f(vert);
-				endpolygon();
-				bgnpolygon();
-				norm[0] = norm[1] = 0.0;
-				norm[2] = -1.0;
-				vert[0] = cos(a);
-				vert[1] = sin(a);
-				vert[2] = 1.0;
-				n3f(norm);
-				v3f(vert);
-				vert[0] = cos(a+ia);
-				vert[1] = sin(a+ia);
-				v3f(vert);
-				vert[0] = vert[1] = 0.0;
-				v3f(vert);
-				endpolygon();
-			}
-			closeobj();
-			/* make the sphere */
-			sphere=genobj();
-			makeobj(sphere);
-			r=1.0;
-			ia=PI/6;
-			ib=2.0*PI/ 6;
-			for (i=0,a=PI;i<=6;++i,a+=ia)
-			{
-				for (j=0,b=0;j<=6;++j,b+=ib)
-				{
-					sphere_vert[3][0] = r * sin(a) * cos(b);
-					sphere_vert[3][1] = r * sin(a) * sin(b);
-					sphere_vert[3][2] = r * cos(a);
-					sphere_vert[2][0] = r * sin(a) * cos(b + ib);
-					sphere_vert[2][1] = r * sin(a) * sin(b + ib);
-					sphere_vert[2][2] = r * cos(a);
-					sphere_vert[1][0] = r * sin(a + ia) * cos(b + ib);
-					sphere_vert[1][1] = r * sin(a + ia) * sin(b + ib);
-					sphere_vert[1][2] = r * cos(a + ia);
-					sphere_vert[0][0] = r * sin(a + ia) * cos(b);
-					sphere_vert[0][1] = r * sin(a + ia) * sin(b);
-					sphere_vert[0][2] = r * cos(a + ia);
-					for (k = 0;k<=3;k++)
-					{
-						for (l=0;l<=2;++l)
-						{
-							sphere_norm[k][l] = -sphere_vert[k][l] / r;
-						}
-					}
-					bgnpolygon();
-					for (k=0;k<4;k++)
-					{
-						n3f(sphere_norm[k]);
-						v3f(sphere_vert[k]);
-					}
-					endpolygon();
-				}
-			}
-			closeobj();
-			/* make the cone */
-			cone=genobj();
-			makeobj(cone);
-			cf = 0.6 /* 0.3 */;
-			ia = 2.0*PI/((double) discretization);
-			for (i=0,a=0;i<discretization;i++,a+=ia)
-			{
-				bgnpolygon();
-				vert[0] = cos(a);
-				vert[1] = sin(a);
-				vert[2] = 0.0;
-				norm[0] = -vert[0];
-				norm[1] = -vert[1];
-				norm[2] = -vert[2];
-				n3f(norm);
-				v3f(vert);
-				vert[2] = 1.0;
-				vert[0] *= cf; vert[1] *= cf;
-				v3f(vert);
-				vert[0] = cos(a+ia);
-				vert[1] = sin(a+ia);
-				norm[0] = -vert[0];
-				norm[1] = -vert[1];
-				vert[0] *= cf;
-				vert[1] *= cf;
-				n3f(norm);
-				v3f(vert);
-				vert[0] = cos(a+ia);
-				vert[1] = sin(a+ia);
-				norm[0] = -vert[0];
-				norm[1] = -vert[1];
-				vert[2] = 0.0;
-				v3f(vert);
-				endpolygon();
-			}
-			for (i=0,a=0;i<discretization;i++,a+=ia)
-			{
-				bgnpolygon();
-				norm[0] = norm[1] = 0.0;
-				norm[2] = 1.0;
-				vert[0] = cos(a);
-				vert[1] = sin(a);
-				vert[2] = 0.0;
-				n3f(norm);
-				v3f(vert);
-				vert[0] = cos(a+ia);
-				vert[1] = sin(a+ia);
-				v3f(vert);
-				vert[0] = vert[1] = 0.0;
-				v3f(vert);
-				endpolygon();
-				bgnpolygon();
-				norm[0] = norm[1] = 0.0;
-				norm[2] = -1.0;
-				vert[0] = cf*cos(a);
-				vert[1] = cf*sin(a);
-				vert[2] = 1.0;
-				n3f(norm);
-				v3f(vert);
-				vert[0] = cf*cos(a+ia);
-				vert[1] = cf*sin(a+ia);
-				v3f(vert);
-				vert[0] = vert[1] = 0.0;
-				v3f(vert);
-				endpolygon();
-			}
-			closeobj();
-			/* make scalpel */
-			scalpel_1=genobj();
-			makeobj(scalpel_1);
-			norm[0] = 0.0;
-			norm[1] = -1.0;
-			norm[2] = 0.0;
 			bgnpolygon();
+			vert[0] = cos(a);
+			vert[1] = sin(a);
+			vert[2] = 0.0;
+			norm[0] = -vert[0];
+			norm[1] = -vert[1];
+			norm[2] = -vert[2];
 			n3f(norm);
-			vert[0] = -1.0;
-			vert[1] = 1.0; vert[2] = 0;
 			v3f(vert);
-			vert[1] = 0.0;
-			vert[0] = -1.0; vert[2] = 1.8;
+			vert[2] = 1.0;
 			v3f(vert);
-			vert[0] = 1.0; vert[2] = 1.35;
+			vert[0] = cos(a+ia);
+			vert[1] = sin(a+ia);
+			norm[0] = -vert[0];
+			norm[1] = -vert[1];
+			n3f(norm);
 			v3f(vert);
-			vert[0] = 1.0; vert[2] = 0.0;
+			vert[2] = 0.0;
 			v3f(vert);
 			endpolygon();
-			norm[0] = 0.0;
-			norm[1] = 1.0;
-			norm[2] = 0.0;
-			bgnpolygon();
-			n3f(norm);
-			vert[0] = -1.0;
-			vert[1] = -1.0; vert[2] = 0;
-			v3f(vert);
-			vert[1] = 0.0;
-			vert[0] = -1.0; vert[2] = 1.9;
-			v3f(vert);
-			vert[0] = 1.0; vert[2] = 1.35;
-			v3f(vert);
-			vert[0] = 1.0; vert[2] = 0.0;
-			v3f(vert);
-			endpolygon();
-			norm[0] = 1.0;
-			norm[1] = 0.0;
-			norm[2] = 0.0;
-			bgnpolygon();
-			n3f(norm);
-			vert[0] = -1.0;
-			vert[1] = -1.0; vert[2] = 0;
-			v3f(vert);
-			vert[1] = 0.0;
-			vert[0] = -1.0; vert[2] = 1.9;
-			v3f(vert);
-			vert[1] = 1.0;
-			vert[0] = -1.0; vert[2] = 0.0;
-			v3f(vert);
-			endpolygon();
-			closeobj();
-			/* make scalpel */
-			scalpel_2=genobj();
-			makeobj(scalpel_2);
-			norm[0] = 0.0;
-			norm[1] = 1.0;
-			norm[2] = 0.0;
-			bgnpolygon();
-			n3f(norm);
-			vert[0] = 0.0;
-			vert[1] = vert[2] = 0;
-			v3f(vert);
-			vert[0] = 1.0; vert[2] = 1.0;
-			v3f(vert);
-			vert[0] = 0.0; vert[2] = 2.0;
-			v3f(vert);
-			vert[0] = -1.0; vert[2] = 1.0;
-			v3f(vert);
-			endpolygon();
-			closeobj();
-			/* make the tool */
-			tool=genobj();
-			makeobj(tool);
-			pushmatrix();
-			scale(0.75,0.75,25.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,25.0);
-			pushmatrix();
-			scale(0.6,0.6,10.7);
-			callobj(cone);
-			popmatrix();
-			translate(0,0,10.2);
-			scale(0.4,1.0,1.5);
-			callobj(scalpel_2);
-			closeobj();
-			/* make the robot */
-			robot_7dof=genobj();
-			makeobj(robot_7dof);
-			pushmatrix();
-			translate(0,0,-10.0);
-			pushmatrix();
-			translate(0,0,8);
-			scale(0.5,0.5,0.5);
-			scale(0.34,0.175,1.5);
-			callobj(scalpel_1);
-			popmatrix();
-			pushmatrix();
-			pushmatrix();
-			pushmatrix();
-			scale(0.75,0.75,0.75);
-			callobj(sphere);
-			popmatrix();
-			translate(0,0,-8.5);
-			pushmatrix();
-			scale(0.75,0.75,0.75);
-			callobj(sphere);
-			popmatrix();
-			popmatrix();
-			translate(0,0,-10.0);
-			scale(0.5,0.5,0.5);
-			callobj(tool);
-			popmatrix();
-			pushmatrix();
-			rot(150.0,'x');
-			pushmatrix();
-			scale(0.4,0.4,56.0);
-			callobj(cylinder);
-			popmatrix();
-			pushmatrix();
-			pushmatrix();
-			translate(0,0,45.0);
-			scale(4,4,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,50.5);
-			scale(4,4,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,7);
-			rot(45.0,'z');
-			rot(90.0,'x');
-			pushmatrix();
-			translate(0,0,.3);
-			scale(0.3,0.3,0.3);
-			callobj(sphere);
-			popmatrix();
-			pushmatrix();
-			scale(0.2,0.2,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,5.0);
-			pushmatrix();
-			scale(0.3,0.3,0.3);
-			callobj(sphere);
-			popmatrix();
-			rot(-90.0,'z');
-			rot(120.0,'x');
-			scale(0.2,0.2,4.0);
-			callobj(cylinder);
-			popmatrix();
-			pushmatrix();
-			rot(120.0,'z');
-			rot(150.0,'x');
-			pushmatrix();
-			scale(0.4,0.4,56.0);
-			callobj(cylinder);
-			popmatrix();
-			pushmatrix();
-			pushmatrix();
-			translate(0,0,45.0);
-			scale(4,4,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,50.5);
-			scale(4,4,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,7);
-			rot(45.0,'z');
-			rot(90.0,'x');
-			pushmatrix();
-			translate(0,0,.3);
-			scale(0.3,0.3,0.3);
-			callobj(sphere);
-			popmatrix();
-			pushmatrix();
-			scale(0.2,0.2,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,5.0);
-			pushmatrix();
-			scale(0.3,0.3,0.3);
-			callobj(sphere);
-			popmatrix();
-			rot(-90.0,'z');
-			rot(120.0,'x');
-			scale(0.2,0.2,4.0);
-			callobj(cylinder);
-			popmatrix();
-			pushmatrix();
-			rot(240,'z');
-			rot(150.0,'x');
-			pushmatrix();
-			scale(0.4,0.4,56.0);
-			callobj(cylinder);
-			popmatrix();
-			pushmatrix();
-			pushmatrix();
-			translate(0,0,45.0);
-			scale(4,4,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,50.5);
-			scale(4,4,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,7);
-			rot(45.0,'z');
-			rot(90.0,'x');
-			pushmatrix();
-			translate(0,0,.3);
-			scale(0.3,0.3,0.3);
-			callobj(sphere);
-			popmatrix();
-			pushmatrix();
-			scale(0.2,0.2,5.0);
-			callobj(cylinder);
-			popmatrix();
-			translate(0,0,5.0);
-			pushmatrix();
-			scale(0.3,0.3,0.3);
-			callobj(sphere);
-			popmatrix();
-			rot(-90.0,'z');
-			rot(120.0,'x');
-			scale(0.2,0.2,4.0);
-			callobj(cylinder);
-			popmatrix();
-			popmatrix();
-			closeobj();
-			first_call=0;
 		}
-#endif
-		robot_7dof_object->data=(void *)NULL;
-		robot_7dof_object->render_function=render_robot_7dof;
+		for (i=0,a=0;i<discretization;i++,a+=ia)
+		{
+			bgnpolygon();
+			norm[0] = norm[1] = 0.0;
+			norm[2] = 1.0;
+			vert[0] = cos(a);
+			vert[1] = sin(a);
+			vert[2] = 0.0;
+			n3f(norm);
+			v3f(vert);
+			vert[0] = cos(a+ia);
+			vert[1] = sin(a+ia);
+			v3f(vert);
+			vert[0] = vert[1] = 0.0;
+			v3f(vert);
+			endpolygon();
+			bgnpolygon();
+			norm[0] = norm[1] = 0.0;
+			norm[2] = -1.0;
+			vert[0] = cos(a);
+			vert[1] = sin(a);
+			vert[2] = 1.0;
+			n3f(norm);
+			v3f(vert);
+			vert[0] = cos(a+ia);
+			vert[1] = sin(a+ia);
+			v3f(vert);
+			vert[0] = vert[1] = 0.0;
+			v3f(vert);
+			endpolygon();
+		}
+		closeobj();
+		/* make the sphere */
+		sphere=genobj();
+		makeobj(sphere);
+		r=1.0;
+		ia=PI/6;
+		ib=2.0*PI/ 6;
+		for (i=0,a=PI;i<=6;++i,a+=ia)
+		{
+			for (j=0,b=0;j<=6;++j,b+=ib)
+			{
+				sphere_vert[3][0] = r * sin(a) * cos(b);
+				sphere_vert[3][1] = r * sin(a) * sin(b);
+				sphere_vert[3][2] = r * cos(a);
+				sphere_vert[2][0] = r * sin(a) * cos(b + ib);
+				sphere_vert[2][1] = r * sin(a) * sin(b + ib);
+				sphere_vert[2][2] = r * cos(a);
+				sphere_vert[1][0] = r * sin(a + ia) * cos(b + ib);
+				sphere_vert[1][1] = r * sin(a + ia) * sin(b + ib);
+				sphere_vert[1][2] = r * cos(a + ia);
+				sphere_vert[0][0] = r * sin(a + ia) * cos(b);
+				sphere_vert[0][1] = r * sin(a + ia) * sin(b);
+				sphere_vert[0][2] = r * cos(a + ia);
+				for (k = 0;k<=3;k++)
+				{
+					for (l=0;l<=2;++l)
+					{
+						sphere_norm[k][l] = -sphere_vert[k][l] / r;
+					}
+				}
+				bgnpolygon();
+				for (k=0;k<4;k++)
+				{
+					n3f(sphere_norm[k]);
+					v3f(sphere_vert[k]);
+				}
+				endpolygon();
+			}
+		}
+		closeobj();
+		/* make the cone */
+		cone=genobj();
+		makeobj(cone);
+		cf = 0.6 /* 0.3 */;
+		ia = 2.0*PI/((double) discretization);
+		for (i=0,a=0;i<discretization;i++,a+=ia)
+		{
+			bgnpolygon();
+			vert[0] = cos(a);
+			vert[1] = sin(a);
+			vert[2] = 0.0;
+			norm[0] = -vert[0];
+			norm[1] = -vert[1];
+			norm[2] = -vert[2];
+			n3f(norm);
+			v3f(vert);
+			vert[2] = 1.0;
+			vert[0] *= cf; vert[1] *= cf;
+			v3f(vert);
+			vert[0] = cos(a+ia);
+			vert[1] = sin(a+ia);
+			norm[0] = -vert[0];
+			norm[1] = -vert[1];
+			vert[0] *= cf;
+			vert[1] *= cf;
+			n3f(norm);
+			v3f(vert);
+			vert[0] = cos(a+ia);
+			vert[1] = sin(a+ia);
+			norm[0] = -vert[0];
+			norm[1] = -vert[1];
+			vert[2] = 0.0;
+			v3f(vert);
+			endpolygon();
+		}
+		for (i=0,a=0;i<discretization;i++,a+=ia)
+		{
+			bgnpolygon();
+			norm[0] = norm[1] = 0.0;
+			norm[2] = 1.0;
+			vert[0] = cos(a);
+			vert[1] = sin(a);
+			vert[2] = 0.0;
+			n3f(norm);
+			v3f(vert);
+			vert[0] = cos(a+ia);
+			vert[1] = sin(a+ia);
+			v3f(vert);
+			vert[0] = vert[1] = 0.0;
+			v3f(vert);
+			endpolygon();
+			bgnpolygon();
+			norm[0] = norm[1] = 0.0;
+			norm[2] = -1.0;
+			vert[0] = cf*cos(a);
+			vert[1] = cf*sin(a);
+			vert[2] = 1.0;
+			n3f(norm);
+			v3f(vert);
+			vert[0] = cf*cos(a+ia);
+			vert[1] = cf*sin(a+ia);
+			v3f(vert);
+			vert[0] = vert[1] = 0.0;
+			v3f(vert);
+			endpolygon();
+		}
+		closeobj();
+		/* make scalpel */
+		scalpel_1=genobj();
+		makeobj(scalpel_1);
+		norm[0] = 0.0;
+		norm[1] = -1.0;
+		norm[2] = 0.0;
+		bgnpolygon();
+		n3f(norm);
+		vert[0] = -1.0;
+		vert[1] = 1.0; vert[2] = 0;
+		v3f(vert);
+		vert[1] = 0.0;
+		vert[0] = -1.0; vert[2] = 1.8;
+		v3f(vert);
+		vert[0] = 1.0; vert[2] = 1.35;
+		v3f(vert);
+		vert[0] = 1.0; vert[2] = 0.0;
+		v3f(vert);
+		endpolygon();
+		norm[0] = 0.0;
+		norm[1] = 1.0;
+		norm[2] = 0.0;
+		bgnpolygon();
+		n3f(norm);
+		vert[0] = -1.0;
+		vert[1] = -1.0; vert[2] = 0;
+		v3f(vert);
+		vert[1] = 0.0;
+		vert[0] = -1.0; vert[2] = 1.9;
+		v3f(vert);
+		vert[0] = 1.0; vert[2] = 1.35;
+		v3f(vert);
+		vert[0] = 1.0; vert[2] = 0.0;
+		v3f(vert);
+		endpolygon();
+		norm[0] = 1.0;
+		norm[1] = 0.0;
+		norm[2] = 0.0;
+		bgnpolygon();
+		n3f(norm);
+		vert[0] = -1.0;
+		vert[1] = -1.0; vert[2] = 0;
+		v3f(vert);
+		vert[1] = 0.0;
+		vert[0] = -1.0; vert[2] = 1.9;
+		v3f(vert);
+		vert[1] = 1.0;
+		vert[0] = -1.0; vert[2] = 0.0;
+		v3f(vert);
+		endpolygon();
+		closeobj();
+		/* make scalpel */
+		scalpel_2=genobj();
+		makeobj(scalpel_2);
+		norm[0] = 0.0;
+		norm[1] = 1.0;
+		norm[2] = 0.0;
+		bgnpolygon();
+		n3f(norm);
+		vert[0] = 0.0;
+		vert[1] = vert[2] = 0;
+		v3f(vert);
+		vert[0] = 1.0; vert[2] = 1.0;
+		v3f(vert);
+		vert[0] = 0.0; vert[2] = 2.0;
+		v3f(vert);
+		vert[0] = -1.0; vert[2] = 1.0;
+		v3f(vert);
+		endpolygon();
+		closeobj();
+		/* make the tool */
+		tool=genobj();
+		makeobj(tool);
+		pushmatrix();
+		scale(0.75,0.75,25.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,25.0);
+		pushmatrix();
+		scale(0.6,0.6,10.7);
+		callobj(cone);
+		popmatrix();
+		translate(0,0,10.2);
+		scale(0.4,1.0,1.5);
+		callobj(scalpel_2);
+		closeobj();
+		/* make the robot */
+		robot_7dof=genobj();
+		makeobj(robot_7dof);
+		pushmatrix();
+		translate(0,0,-10.0);
+		pushmatrix();
+		translate(0,0,8);
+		scale(0.5,0.5,0.5);
+		scale(0.34,0.175,1.5);
+		callobj(scalpel_1);
+		popmatrix();
+		pushmatrix();
+		pushmatrix();
+		pushmatrix();
+		scale(0.75,0.75,0.75);
+		callobj(sphere);
+		popmatrix();
+		translate(0,0,-8.5);
+		pushmatrix();
+		scale(0.75,0.75,0.75);
+		callobj(sphere);
+		popmatrix();
+		popmatrix();
+		translate(0,0,-10.0);
+		scale(0.5,0.5,0.5);
+		callobj(tool);
+		popmatrix();
+		pushmatrix();
+		rot(150.0,'x');
+		pushmatrix();
+		scale(0.4,0.4,56.0);
+		callobj(cylinder);
+		popmatrix();
+		pushmatrix();
+		pushmatrix();
+		translate(0,0,45.0);
+		scale(4,4,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,50.5);
+		scale(4,4,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,7);
+		rot(45.0,'z');
+		rot(90.0,'x');
+		pushmatrix();
+		translate(0,0,.3);
+		scale(0.3,0.3,0.3);
+		callobj(sphere);
+		popmatrix();
+		pushmatrix();
+		scale(0.2,0.2,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,5.0);
+		pushmatrix();
+		scale(0.3,0.3,0.3);
+		callobj(sphere);
+		popmatrix();
+		rot(-90.0,'z');
+		rot(120.0,'x');
+		scale(0.2,0.2,4.0);
+		callobj(cylinder);
+		popmatrix();
+		pushmatrix();
+		rot(120.0,'z');
+		rot(150.0,'x');
+		pushmatrix();
+		scale(0.4,0.4,56.0);
+		callobj(cylinder);
+		popmatrix();
+		pushmatrix();
+		pushmatrix();
+		translate(0,0,45.0);
+		scale(4,4,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,50.5);
+		scale(4,4,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,7);
+		rot(45.0,'z');
+		rot(90.0,'x');
+		pushmatrix();
+		translate(0,0,.3);
+		scale(0.3,0.3,0.3);
+		callobj(sphere);
+		popmatrix();
+		pushmatrix();
+		scale(0.2,0.2,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,5.0);
+		pushmatrix();
+		scale(0.3,0.3,0.3);
+		callobj(sphere);
+		popmatrix();
+		rot(-90.0,'z');
+		rot(120.0,'x');
+		scale(0.2,0.2,4.0);
+		callobj(cylinder);
+		popmatrix();
+		pushmatrix();
+		rot(240,'z');
+		rot(150.0,'x');
+		pushmatrix();
+		scale(0.4,0.4,56.0);
+		callobj(cylinder);
+		popmatrix();
+		pushmatrix();
+		pushmatrix();
+		translate(0,0,45.0);
+		scale(4,4,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,50.5);
+		scale(4,4,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,7);
+		rot(45.0,'z');
+		rot(90.0,'x');
+		pushmatrix();
+		translate(0,0,.3);
+		scale(0.3,0.3,0.3);
+		callobj(sphere);
+		popmatrix();
+		pushmatrix();
+		scale(0.2,0.2,5.0);
+		callobj(cylinder);
+		popmatrix();
+		translate(0,0,5.0);
+		pushmatrix();
+		scale(0.3,0.3,0.3);
+		callobj(sphere);
+		popmatrix();
+		rot(-90.0,'z');
+		rot(120.0,'x');
+		scale(0.2,0.2,4.0);
+		callobj(cylinder);
+		popmatrix();
+		popmatrix();
+		closeobj();
+		first_call=0;
 	}
-	else
+#endif
+	if (!(robot_7dof_object = CREATE(GT_userdef)((void *)NULL, 
+		(int (*)(void **))NULL, render_robot_7dof)))
 	{
 		display_message(ERROR_MESSAGE,
 			"create_robot_7dof.  Could not create 7 dof robot");

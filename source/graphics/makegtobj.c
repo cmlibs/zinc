@@ -19,6 +19,7 @@ Call graphics routines in the API.
 #include "graphics/makegtobj.h"
 #include "graphics/rendergl.h"
 #include "user_interface/message.h"
+#include "graphics/graphics_object_private.h"
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
@@ -51,25 +52,25 @@ un-selected graphics are drawn.
 
 	ENTER(makegtobject);
 /*???debug */
-/*printf("enter makegtobject %d  %d %d %d\n",object->object_type,g_POINTSET,
+/*printf("enter makegtobject %d  %d %d %d\n",GT_object_get_type(object),g_POINTSET,
 	g_POLYLINE,g_SURFACE);*/
 	/* check arguments */
 	if (object)
 	{
 		return_code = 1;
-		spectrum=object->spectrum;
+		spectrum=get_GT_object_spectrum(object);
 		/* determine if picking names are to be output */
 		picking_names=(GRAPHICS_NO_SELECT != GT_object_get_select_mode(object));
 		/* determine which material to use */
 		if (draw_selected)
 		{
-			material = object->selected_material;
+			material = get_GT_object_selected_material(object);
 		}
 		else
 		{
-			material = object->default_material;
+			material = get_GT_object_default_material(object);
 		}
-		number_of_times = object->number_of_times;
+		number_of_times = GT_object_get_number_of_times(object);
 		if (0 < number_of_times)
 		{
 			itime = number_of_times;
@@ -137,7 +138,7 @@ un-selected graphics are drawn.
 		}
 		if ((0 < number_of_times) && return_code)
 		{
-			switch (object->object_type)
+			switch (GT_object_get_type(object))
 			{
 				case g_GLYPH_SET:
 				{

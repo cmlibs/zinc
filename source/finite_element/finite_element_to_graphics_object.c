@@ -1372,7 +1372,7 @@ Notes:
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
-			polyline->object_name = CM_element_information_to_graphics_name(&cm);
+			GT_polyline_set_integer_identifier(polyline, CM_element_information_to_graphics_name(&cm));
 			point=points;
 			distance=(FE_value)number_of_segments;
 			i=0;
@@ -1511,7 +1511,7 @@ Notes:
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
-			surface->object_name = CM_element_information_to_graphics_name(&cm);
+			GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
 			point=points;
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
@@ -2050,7 +2050,7 @@ to say which parent element they should be evaluated on as necessary.
 			{
 				/* for selective editing of GT_object primitives, record element ID */
 				get_FE_element_identifier(element, &cm);
-				nurbs->object_name = CM_element_information_to_graphics_name(&cm);
+				GT_nurbs_set_integer_identifier(nurbs, CM_element_information_to_graphics_name(&cm));
 				if (GT_nurbs_set_surface(nurbs, sorder, torder,
 					sknotcount, tknotcount, sknots, tknots, 
 					scontrolcount, tcontrolcount, control_points))
@@ -2804,7 +2804,7 @@ normals are used.
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
-			surface->object_name = CM_element_information_to_graphics_name(&cm);
+			GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
 			/* calculate the xi coordinates and store in "normals" */
 			point_a=normalpoints;
 			point_b=point_a;
@@ -3603,8 +3603,8 @@ faces.
 								/* for selective editing of GT_object primitives,
 									 record element ID */
 								get_FE_element_identifier(element, &cm);
-								voltex->object_name =
-									CM_element_information_to_graphics_name(&cm);
+								GT_voltex_set_integer_identifier(voltex,
+									CM_element_information_to_graphics_name(&cm));
 
 								/*???Mark.  THIS CODE NEEDS TO BE DOCTORED.  begin */
 								/* copy volume texture values into triangle_list */
@@ -3704,6 +3704,9 @@ faces.
 										}
 										acc_triangle_index++;
 #if defined (OLD_CODE)
+										/* Not necessary while the number of triangles is not 
+											changing */
+										voltex->n_iso_polys=acc_triangle_index;
 									}
 #endif /* defined (OLD_CODE) */
 								}
@@ -3712,7 +3715,6 @@ faces.
 								printf("n_iso_polys = %d acc_triangle_index = %d\n",n_iso_polys,
 									acc_triangle_index);
 #endif /* defined (DEBUG) */
-								voltex->n_iso_polys=acc_triangle_index;
 								for (i=0;i<n_vertices;i++)
 								{
 									vertex_list[i].n_ptrs=(vtexture->mc_iso_surface->
@@ -4463,8 +4465,8 @@ the position of the point, with appropriate coordinate conversion.
 		data_density_field &&
 		(4 >= Computed_field_get_number_of_components(data_density_field)) &&
 		vtexture->mc_iso_surface && voltex &&
-		(vtexture->mc_iso_surface->n_triangles == voltex->n_iso_polys) &&
-		(vtexture->mc_iso_surface->n_vertices == voltex->n_vertices))
+		(vtexture->mc_iso_surface->n_triangles == GT_voltex_get_number_of_triangles(voltex)) &&
+		(vtexture->mc_iso_surface->n_vertices == GT_voltex_get_number_of_vertices(voltex)))
 	{
 		FE_region_begin_change(fe_region);
 		fe_coordinate_field_list = (struct LIST(FE_field) *)NULL;
@@ -4545,8 +4547,8 @@ the position of the point, with appropriate coordinate conversion.
 					if (return_code)
 					{
 						n_iso_polys=vtexture->mc_iso_surface->n_triangles;
-						triangle_list2 = voltex->triangle_list;
-						vertex_list = voltex->vertex_list;
+						triangle_list2 = GT_voltex_get_triangle_list(voltex);
+						vertex_list = GT_voltex_get_vertex_list(voltex);
 										
 						for ( i = 0 ; return_code && (i < n_iso_polys) ; i++)
 						{
@@ -6246,7 +6248,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 				element_to_iso_scalar_data->native_discretization_field,
 				top_level_number_in_xi,&top_level_element,number_in_xi))
 			{
-				switch (element_to_iso_scalar_data->graphics_object->object_type)
+				switch (GT_object_get_type(element_to_iso_scalar_data->graphics_object))
 				{
 					case g_VOLTEX:
 					{

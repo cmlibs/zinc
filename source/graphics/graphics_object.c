@@ -27,7 +27,9 @@ gtObject/gtWindow management routines.
 #include "graphics/makegtobj.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
+#include "graphics/volume_texture.h"
 #include "user_interface/message.h"
+#include "graphics/graphics_object_private.h"
 
 /*
 Global variables
@@ -472,6 +474,120 @@ from the conditional_function causes the primitive to be removed.
 Global functions
 ----------------
 */
+
+enum GT_object_type GT_object_get_type(struct GT_object *gt_object)
+/*******************************************************************************
+LAST MODIFIED : 17 June 2004
+
+DESCRIPTION :
+Returns the object type from the gt_object.
+==============================================================================*/
+{
+	enum GT_object_type type;
+
+	ENTER(GT_object_get_type);
+	if (gt_object)
+	{
+		type = gt_object->object_type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_get_type.  Invalid argument(s)");
+		type = g_OBJECT_TYPE_INVALID; 
+	}
+	LEAVE;
+
+	return (type);
+} /* GT_object_get_type */
+
+struct GT_object *GT_object_get_next_object(struct GT_object *gt_object)
+/*******************************************************************************
+LAST MODIFIED : 17 June 2004
+
+DESCRIPTION :
+Returns the next object from the gt_object.
+==============================================================================*/
+{
+	struct GT_object *next;
+
+	ENTER(GT_object_get_next_object);
+	if (gt_object)
+	{
+		next = gt_object->nextobject;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_get_next_object.  Invalid argument(s)");
+		next = (struct GT_object *)NULL;
+	}
+	LEAVE;
+
+	return (next);
+} /* GT_object_get_next_object */
+
+int GT_object_set_next_object(struct GT_object *gt_object,
+	struct GT_object *next_object)
+/*******************************************************************************
+LAST MODIFIED : 17 June 2004
+
+DESCRIPTION :
+Sets the next object for the gt_object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_set_next_object);
+	if (gt_object)
+	{
+		REACCESS(GT_object)(&gt_object->nextobject, next_object);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_set_next_object.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_set_next_object */
+
+int GT_object_compare_name(struct GT_object *gt_object,
+	char *name)
+/*******************************************************************************
+LAST MODIFIED : 17 June 2004
+
+DESCRIPTION :
+Returns true if the name of the <gt_object> matches the string <name> exactly.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_object_set_next_object);
+	if (gt_object && name)
+	{
+		if (!strcmp(gt_object->name, name))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_compare_name.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_compare_name */
 
 char *get_GT_object_type_string(enum GT_object_type object_type)
 /*******************************************************************************
@@ -2202,6 +2318,33 @@ Frees the frees the memory for <**glyph_set_address> and sets
 	return (return_code);
 } /* DESTROY(GT_glyph_set) */
 
+int GT_glyph_set_set_integer_identifier(struct GT_glyph_set *glyph_set,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_glyph_set_set_integer_identifier);
+	if (glyph_set)
+	{
+		glyph_set->object_name = identifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_glyph_set_set_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_glyph_set_set_integer_identifier */
+
 struct GT_nurbs *CREATE(GT_nurbs)(void)
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998
@@ -2307,6 +2450,33 @@ Frees the memory for <**nurbs> and its fields and sets <*nurbs> to NULL.
 
 	return (return_code);
 } /* DESTROY(GT_nurbs) */
+
+int GT_nurbs_set_integer_identifier(struct GT_nurbs *nurbs,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_nurbs_set_integer_identifier);
+	if (nurbs)
+	{
+		nurbs->object_name = identifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_nurbs_set_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_nurbs_set_integer_identifier */
 
 int GT_nurbs_set_surface(struct GT_nurbs *nurbs,
 	int sorder, int torder, int sknotcount, int tknotcount,
@@ -2593,6 +2763,33 @@ Frees the frees the memory for <**point> and sets <*point> to NULL.
 	return (return_code);
 } /* DESTROY(GT_point) */
 
+int GT_point_set_integer_identifier(struct GT_point *point,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_point_set_integer_identifier);
+	if (point)
+	{
+		point->object_name = identifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_point_set_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_point_set_integer_identifier */
+
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,float marker_size,int n_data_components,GTDATA *data,
 	int *names)
@@ -2686,6 +2883,98 @@ Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
 	return (return_code);
 } /* DESTROY(GT_pointset) */
 
+int GT_pointset_set_integer_identifier(struct GT_pointset *pointset,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_pointset_set_integer_identifier);
+	if (pointset)
+	{
+		pointset->object_name = identifier;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_pointset_set_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_pointset_set_integer_identifier */
+
+int GT_pointset_get_point_list(struct GT_pointset *pointset, int *number_of_points,
+	Triple **positions)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+SAB Added to allow GT_pointset to be hidden but should be replaced.
+Gets the <number_of_points> and the <positions> of those points into the 
+<pointset> object.  The <positions> pointer is copied directly from the internal
+storage.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_pointset_set_integer_identifier);
+	if (pointset)
+	{
+		*number_of_points = pointset->n_pts;
+		*positions = pointset->pointlist;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_pointset_set_point_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_pointset_set_integer_identifier */
+
+int GT_pointset_set_point_list(struct GT_pointset *pointset, int number_of_points,
+	Triple *positions)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+SAB Added to allow GT_pointset to be hidden but should be replaced.
+Sets the <number_of_points> and the <positions> of those points into the 
+<pointset> object.  The <positions> pointer is copied directly overwriting the
+current storage and the internal data, text and names arrays are messed up.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_pointset_set_integer_identifier);
+	if (pointset)
+	{
+		pointset->n_pts = number_of_points;
+		pointset->pointlist = positions;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_pointset_set_point_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_pointset_set_integer_identifier */
+
 struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
 	int line_width, int n_pts,Triple *pointlist,Triple *normallist,
 	int n_data_components,GTDATA *data)
@@ -2757,6 +3046,33 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
 
 	return (return_code);
 } /* DESTROY(GT_polyline) */
+
+int GT_polyline_set_integer_identifier(struct GT_polyline *polyline,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_polyline_set_integer_identifier);
+	if (polyline)
+	{
+		polyline->object_name = identifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_polyline_set_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_polyline_set_integer_identifier */
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
 	gtPolygonType polytype,int n_pts1,int n_pts2,Triple *pointlist,
@@ -2841,6 +3157,33 @@ Frees the memory for <**surface> and sets <*surface> to NULL.
 
 	return (return_code);
 } /* DESTROY(GT_surface) */
+
+int GT_surface_set_integer_identifier(struct GT_surface *surface,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_surface_set_integer_identifier);
+	if (surface)
+	{
+		surface->object_name = identifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_surface_set_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_surface_set_integer_identifier */
 
 struct GT_userdef *CREATE(GT_userdef)(void *data,
 	int (*destroy_function)(void **),int (*render_function)(void *))
@@ -3047,6 +3390,33 @@ Frees the memory for <**voltex> and sets <*voltex> to NULL.
 	return (return_code);
 } /* DESTROY(GT_voltex) */
 
+int GT_voltex_set_integer_identifier(struct GT_voltex *voltex,
+	int identifier)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_voltex_set_integer_identifier);
+	if (voltex)
+	{
+		voltex->object_name = identifier;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_set_integer_identifier.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_voltex_set_integer_identifier */
+
 int GT_voltex_set_triangle_vertex_environment_map(struct GT_voltex *voltex,
 	int triangle_number, int triangle_vertex_number,
 	struct Environment_map *environment_map)
@@ -3213,6 +3583,110 @@ Handles conversion to an indexed look-up into a non-repeating material array.
 
 	return (return_code);
 } /* GT_voltex_set_triangle_vertex_material */
+
+int GT_voltex_get_number_of_triangles(struct GT_voltex *voltex)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Returns the number of polygons used in the GT_voltex.
+==============================================================================*/
+{
+	int number_of_triangles;
+
+	ENTER(GT_voltex_get_number_of_triangles);
+	if (voltex)
+	{
+		number_of_triangles = voltex->n_iso_polys;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_get_number_of_triangles.  Invalid argument(s)");
+		number_of_triangles = 0;
+	}
+	LEAVE;
+
+	return (number_of_triangles);
+} /* GT_voltex_get_number_of_triangles */
+
+int *GT_voltex_get_triangle_list(struct GT_voltex *voltex)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Returns the internal pointer to the triangles used in the GT_voltex.
+==============================================================================*/
+{
+	int *triangle_list;
+
+	ENTER(GT_voltex_get_number_of_polygons);
+	if (voltex)
+	{
+		triangle_list = voltex->triangle_list;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_get_triangle_list.  Invalid argument(s)");
+		triangle_list = (int *)NULL;
+	}
+	LEAVE;
+
+	return (triangle_list);
+} /* GT_voltex_get_triangle_list */
+
+int GT_voltex_get_number_of_vertices(struct GT_voltex *voltex)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Sets the integer identifier used by the graphics to distinguish this object.
+==============================================================================*/
+{
+	int number_of_vertices;
+
+	ENTER(GT_voltex_get_number_of_vertices);
+	if (voltex)
+	{
+		number_of_vertices = voltex->n_vertices;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_get_number_of_vertices.  Invalid argument(s)");
+		number_of_vertices = 0;
+	}
+	LEAVE;
+
+	return (number_of_vertices);
+} /* GT_voltex_get_number_of_vertices */
+
+struct VT_iso_vertex *GT_voltex_get_vertex_list(struct GT_voltex *voltex)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2004
+
+DESCRIPTION :
+Returns the internal pointer to the list of vertices used in the GT_voltex.
+==============================================================================*/
+{
+	struct VT_iso_vertex *vertex_list;
+
+	ENTER(GT_voltex_get_vertex_list);
+	if (voltex)
+	{
+		vertex_list = voltex->vertex_list;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_get_vertex_list.  Invalid argument(s)");
+		vertex_list = (struct VT_iso_vertex *)NULL;
+	}
+	LEAVE;
+
+	return (vertex_list);
+} /* GT_voltex_get_vertex_list */
 
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)

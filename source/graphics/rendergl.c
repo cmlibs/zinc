@@ -22,6 +22,7 @@ GL rendering calls - API specific.
 #include "graphics/rendergl.h"
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
+#include "graphics/graphics_object_private.h"
 
 /*
 Global functions
@@ -470,7 +471,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								if (mirror_mode)
 								{
 									/* ignore first glyph since just a wrapper for the second */
-									temp_glyph = glyph->nextobject;
+									temp_glyph = GT_object_get_next_object(glyph);
 								}
 								else
 								{
@@ -480,7 +481,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								while (temp_glyph)
 								{
 									glCallList(temp_glyph->display_list);
-									temp_glyph = temp_glyph->nextobject;
+									temp_glyph = GT_object_get_next_object(temp_glyph);
 								}
 								/* restore the original modelview matrix */
 								glPopMatrix();

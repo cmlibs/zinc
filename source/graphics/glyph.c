@@ -377,7 +377,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				colour.blue = 0;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow2, material);
-				last_object->nextobject=ACCESS(GT_object)(arrow2);
+				GT_object_set_next_object(last_object, arrow2);
 				last_object = arrow2;
 
 				sprintf(glyph_name, "%s_arrow3", name);
@@ -390,7 +390,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				colour.blue = 1;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow3, material);
-				last_object->nextobject=ACCESS(GT_object)(arrow3);
+				GT_object_set_next_object(last_object, arrow3);
 				last_object = arrow3;
 				
 				DEALLOCATE(glyph_name);
@@ -498,7 +498,7 @@ The length and width of the arrow heads are specified by the final parameters.
 						(struct Graphical_material *)NULL))
 					{
 						GT_OBJECT_ADD(GT_pointset)(labels_object,/*time*/0.0,pointset);
-						last_object->nextobject = ACCESS(GT_object)(labels_object);
+						GT_object_set_next_object(last_object, labels_object);
 						last_object = labels_object;
 					}
 				}
@@ -1242,7 +1242,7 @@ Makes a glyph with the given <name> that automatically mirrors the given
 			(struct Graphical_material *)NULL))
 		{
 			GT_object_set_glyph_mirror_mode(glyph, 1);
-			glyph->nextobject = ACCESS(GT_object)(mirror_glyph);
+			GT_object_set_next_object(glyph, mirror_glyph);
 		}
 	}
 	else

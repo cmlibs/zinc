@@ -880,7 +880,7 @@ DESCRIPTION :
 						if(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 							objname, object_list))
 						{
-							if (g_VOLTEX==obj->object_type)
+							if (g_VOLTEX==GT_object_get_type(obj))
 							{
 								if (GT_object_has_time(obj, time))
 								{

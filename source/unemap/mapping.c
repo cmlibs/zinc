@@ -4771,6 +4771,7 @@ DESCRIPTION :
 Creates a pair of arm labels, and adds to the scene.
 ==============================================================================*/
 {
+	char *name;
 	int return_code;
 	char **labels;
 	char *left =(char *)NULL;
@@ -4869,9 +4870,11 @@ Creates a pair of arm labels, and adds to the scene.
 				{
 					if (GT_OBJECT_ADD(GT_glyph_set)(graphics_object,/*time*/0.0,glyph_set))
 					{
+						GET_NAME(GT_object)(graphics_object, &name);
 						Scene_add_graphics_object(get_map_drawing_information_scene
 							(drawing_information),graphics_object,0,
-							graphics_object->name,/*fast_changing*/0);
+							name,/*fast_changing*/0);
+						DEALLOCATE(name);
 						set_map_drawing_information_torso_arm_labels(drawing_information,
 							graphics_object);
 					}

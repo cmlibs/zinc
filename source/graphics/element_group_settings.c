@@ -4439,7 +4439,7 @@ any trivial differences are fixed up in the graphics_obejct.
 				}
 				if (settings->data_field && settings->spectrum)
 				{
-					if (settings->spectrum != settings->graphics_object->spectrum)
+					if (settings->spectrum != get_GT_object_spectrum(settings->graphics_object))
 					{
 						set_GT_object_Spectrum(settings->graphics_object,
 							(void *)settings->spectrum);
@@ -4693,7 +4693,11 @@ if no coordinate field. Currently only write if we have a field.
 			if (settings->glyph)
 			{
 				append_string(&settings_string," glyph ",&error);
-				append_string(&settings_string,settings->glyph->name,&error);
+				if (GET_NAME(GT_object)(settings->glyph, &name))
+				{
+					append_string(&settings_string,name,&error);
+					DEALLOCATE(name);
+				}
 				append_string(&settings_string," ",&error);
 				append_string(&settings_string,
 					ENUMERATOR_STRING(Glyph_scaling_mode)(settings->glyph_scaling_mode),
@@ -5346,7 +5350,7 @@ Converts a finite element into a graphics object with the supplied settings.
 					} break;
 					case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 					{
-						switch (settings->graphics_object->object_type)
+						switch (GT_object_get_type(settings->graphics_object))
 						{
 							case g_VOLTEX:
 							{
@@ -5717,7 +5721,7 @@ Creates a GT_object and fills it with the objects described by settings.
 The graphics object is stored with with the settings it was created from.
 ==============================================================================*/
 {
-	char *graphics_object_name, *settings_name, *settings_string;
+	char *existing_name, *graphics_object_name, *settings_name, *settings_string;
 	FE_value base_size[3], centre[3], scale_factors[3];
 	float time;
 	enum GT_object_type graphics_object_type;
@@ -5801,10 +5805,12 @@ The graphics object is stored with with the settings it was created from.
 #if defined (DEBUG)
 								/*???debug*/printf("  EDIT EXISTING GRAPHICS!\n");
 #endif /* defined (DEBUG) */
+								GET_NAME(GT_object)(settings->graphics_object, &existing_name);
 								settings_to_object_data->existing_graphics =
-									CREATE(GT_object)(settings->graphics_object->name,
-										settings->graphics_object->object_type,
-										settings->graphics_object->default_material);
+									CREATE(GT_object)(existing_name,
+										GT_object_get_type(settings->graphics_object),
+										get_GT_object_default_material(settings->graphics_object));
+								DEALLOCATE(existing_name);
 								GT_object_transfer_primitives_at_time(
 									settings_to_object_data->existing_graphics,
 									settings->graphics_object, time);

@@ -44,6 +44,10 @@ Routines for GL texture display window
 #include "three_d_drawing/ThreeDDraw.h"
 #include "user_interface/message.h"
 
+/* SAB Trying to hide the guts of GT_object and its primitives,
+	however the spectrum editor is modifying it's primitives quite a bit . */
+#include "graphics/graphics_object_private.h"
+
 /*
 Module constants
 ----------------

@@ -125,12 +125,12 @@ graphics_objects that don't come from finite_elements?
 			{
 				/* check whether the existing graphics object was really a colour_bar */
 				bar_graphics_object = *graphics_object_address;
-				if ((g_SURFACE == bar_graphics_object->object_type) &&
-					(0 == strcmp(bar_graphics_object->name,name)) &&
-					(tick_graphics_object = bar_graphics_object->nextobject) &&
-					(g_POLYLINE == tick_graphics_object->object_type) &&
-					(label_graphics_object = tick_graphics_object->nextobject) &&
-					(g_POINTSET == label_graphics_object->object_type))
+				if ((g_SURFACE == GT_object_get_type(bar_graphics_object)) &&
+					(GT_object_compare_name(bar_graphics_object,name)) &&
+					(tick_graphics_object = GT_object_get_next_object(bar_graphics_object)) &&
+					(g_POLYLINE == GT_object_get_type(tick_graphics_object)) &&
+					(label_graphics_object = GT_object_get_next_object(tick_graphics_object)) &&
+					(g_POINTSET == GT_object_get_type(label_graphics_object)))
 				{
 					GT_object_remove_primitives_at_time(bar_graphics_object,time,
 						(GT_object_primitive_object_name_conditional_function *)NULL,
@@ -161,10 +161,8 @@ graphics_objects that don't come from finite_elements?
 					(label_graphics_object=
 						CREATE(GT_object)("labels",g_POINTSET,tick_label_material)))
 				{
-					bar_graphics_object->nextobject =
-						ACCESS(GT_object)(tick_graphics_object);
-					tick_graphics_object->nextobject =
-						ACCESS(GT_object)(label_graphics_object);
+					GT_object_set_next_object(bar_graphics_object, tick_graphics_object);
+					GT_object_set_next_object(tick_graphics_object, label_graphics_object);
 					return_code=1;
 				}
 				else

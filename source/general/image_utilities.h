@@ -10,7 +10,6 @@ Utilities for handling images.
 #define IMAGE_UTILITIES_H
 #include "general/enumerator.h"
 #include "general/object.h"
-#include "user_interface/user_interface.h"
 
 /*
 Global types

@@ -19,6 +19,7 @@ Renders gtObjects to Wavefront OBJ file
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
+#include "graphics/graphics_object_private.h"
 
 /*
 Module types
@@ -680,7 +681,7 @@ Convert graphical object into Wavefront object file.
 		}
 		if ((0 < number_of_times) && return_code)
 		{
-			switch (object->object_type)
+			switch (GT_object_get_type(object))
 			{
 				case g_POINT:
 				{

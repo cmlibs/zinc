@@ -48,7 +48,7 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 
 	ENTER(Interaction_volume_make_polyline_extents);
 	if (interaction_volume&&graphics_object&&
-		(g_POLYLINE==graphics_object->object_type))
+		(g_POLYLINE==GT_object_get_type(graphics_object)))
 	{
 		return_code=1;
 		/* get the 8 vertices of the interaction_volume frustum */
