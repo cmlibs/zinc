@@ -3066,7 +3066,7 @@ static int read_signal_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,
 	struct FE_node_order_info *node_order_info)
 /*******************************************************************************
-LAST MODIFIED : 2 August 1999
+LAST MODIFIED : 13 September 2000
 
 DESCRIPTION :
 Reads signals from a signal file, stores them in a node group, via 
@@ -3187,8 +3187,8 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;		
 	struct FE_field *channel_gain_field,*channel_offset_field,*display_start_time_field,
-		*display_end_time_field,*signal_field,*signal_maximum_field,*signal_minimum_field,
-		*signal_status_field;
+		*display_end_time_field,*signal_field,*signal_maximum_field,
+		*signal_minimum_field,*signal_status_field;
 	struct FE_field_component component;
 	struct FE_node *device_node,*node,*node_managed;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -3372,7 +3372,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 									}
 									/* Do node stuff here */
 									if(return_code)
-									{								
+									{	
 										period = 1/frequency;									
 										/* allocate memory for times, and fill in */
 										if(ALLOCATE(times,FE_value,number_of_samples))
@@ -3487,7 +3487,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 											/*copy it from the manager */
 											if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 												(node,node_managed))
-											{
+											{									
 												/* add channel_gain and channel_offset fields to node*/
 												if (channel_gain_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"channel_gain",

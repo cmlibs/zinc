@@ -6396,33 +6396,6 @@ Calculates the processed device.
 				{
 					/* allow room for the beat averaged signal to be stored after the
 						signal */
-#if defined (OLD_CODE)
-					if (2*number_of_samples!=processed_buffer->number_of_samples)
-					{
-						if (REALLOCATE(processed_time,processed_buffer->times,int,
-							2*number_of_samples)&&REALLOCATE(value,(processed_buffer->
-							signals).float_values,float,2*number_of_samples))
-						{
-							processed_buffer->times=processed_time;
-							(processed_buffer->signals).float_values=value;
-							processed_buffer->number_of_samples=2*number_of_samples;
-							processed_buffer->number_of_signals=1;
-							trace->valid_processing=1;
-						}
-						else
-						{
-							DEALLOCATE(processed_time);
-							trace->valid_processing=0;
-						}
-					}
-					else
-					{
-						processed_time=processed_buffer->times;
-						value=(processed_buffer->signals).float_values;
-						trace->valid_processing=1;
-					}
-					if (trace->valid_processing)
-#endif /* defined (OLD_CODE) */
 					if (processed_device->signal->next)
 					{
 						destroy_Signal(&(processed_device->signal->next));

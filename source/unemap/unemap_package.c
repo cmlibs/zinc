@@ -1401,7 +1401,7 @@ Frees the <unemap_package> rig's computed and fe fields
 			{
 				unemap_package->signal_status_field=(struct FE_field *)NULL;
 			}
-		}
+		}	
 		if(unemap_package->channel_gain_field)
 		{
 			temp_field=unemap_package->channel_gain_field;

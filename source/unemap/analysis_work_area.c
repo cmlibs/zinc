@@ -5584,7 +5584,6 @@ set to automatic and reorder the devices if this is required.
 	struct Rig *rig;
 	struct Signals_area *signals_area;
 	struct Signal_buffer *buffer;
-
 	ENTER(calculate_all_event_markers);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
@@ -5601,8 +5600,7 @@ set to automatic and reorder the devices if this is required.
 			else
 			{
 				if ((analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
-					(highlight_device->signal)&&
-					(buffer=highlight_device->signal->buffer)&&
+					(highlight_device->signal)&&(buffer=highlight_device->signal->buffer)&&
 					(REJECTED!=highlight_device->signal->status))
 				{
 					/* clear the present markers */
@@ -5714,106 +5712,6 @@ set to automatic and reorder the devices if this is required.
 			}
 			if (analysis->trace->area_1.enlarge.calculate_all_events)
 			{
-#if defined (OLD_CODE)
-				/* for each device/signal calculate the event markers */
-				busy_cursor_on((Widget)NULL,analysis->user_interface);
-				device=rig->devices;
-				number_of_devices=rig->number_of_devices;
-				while (number_of_devices>0)
-				{
-					if ((*device)->signal->status!=REJECTED)
-					{
-						calculate_device_event_markers(*device,
-							analysis->start_search_interval,analysis->end_search_interval,
-							analysis->detection,analysis->objective,
-							analysis->number_of_events,threshold_percentage,
-							minimum_separation,level,average_width);
-					}
-					device++;
-					number_of_devices--;
-				}
-				busy_cursor_off((Widget)NULL,analysis->user_interface);
-				/*??? calculate the event times */
-				/* reorder the signals if required */
-				if (EVENT_ORDER==analysis->signal_order)
-				{
-					/* save highlighted device */
-					if (highlight=analysis->highlight)
-					{
-						highlight_device= *highlight;
-					}
-					/* sort devices */
-/*					qsort((void *)(rig->devices),rig->number_of_devices,
-						sizeof(struct Device *),sort_devices_by_event_time);*/
-					heapsort((void *)(rig->devices),rig->number_of_devices,
-						sizeof(struct Device *),sort_devices_by_event_time);
-					/* update highlight */
-					if (highlight)
-					{						
-						current_region=get_Rig_current_region(rig);
-						highlight=rig->devices;
-						while (*highlight!=highlight_device)
-						{
-							highlight++;
-						}
-						analysis->highlight=highlight;
-					}
-					/* determine the datum */
-					if (AUTOMATIC_DATUM==analysis->datum_type)
-					{
-						if ((device=rig->devices)&&(event=(*device)->signal->first_event))
-						{
-							analysis->datum=event->time;
-						}
-					}
-					/* redraw the signals */
-					trace_change_signal(analysis->trace);
-					update_signals_drawing_area(analysis->window);
-				}
-				else
-				{
-					/* determine the datum */
-					if (AUTOMATIC_DATUM==analysis->datum_type)
-					{
-						if (device=rig->devices)
-						{
-							buffer=(*device)->signal->buffer;
-							datum=(buffer->times)[buffer->number_of_samples-1]+1;
-							number_of_devices=rig->number_of_devices;
-							while (number_of_devices>0)
-							{
-								if ((event=(*device)->signal->first_event)&&(event->time<datum))
-								{
-									datum=event->time;
-								}
-								device++;
-								number_of_devices--;
-							}
-							if (datum<=(buffer->times)[buffer->number_of_samples-1])
-							{
-								analysis->datum=datum;
-								/*??? update the datum markers */
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"calculate_all_event_markers.  Could not find datum");
-							}
-						}
-					}
-					/* draw the event markers */
-					draw_all_markers(1,0,analysis);
-				}
-				if (EDA_THRESHOLD==analysis->detection)
-				{
-					/* change to calculating events for the current device only */
-					analysis->trace->area_1.enlarge.calculate_all_events=0;
-					XtVaSetValues(analysis->trace->area_1.enlarge.all_current_choice,
-						XmNmenuHistory,
-						analysis->trace->area_1.enlarge.all_current.current_button,
-						NULL);
-				}
-#endif /* defined (OLD_CODE) */
 				if ((analysis->trace)&&(analysis->trace->processed_device)&&
 					(analysis->trace->processed_device->signal)&&
 					(analysis->trace->processed_device->signal->buffer)&&
@@ -5833,7 +5731,7 @@ set to automatic and reorder the devices if this is required.
 					while (number_of_devices>0)
 					{					
 						if (((*device)->signal)&&(*device)->signal->status!=REJECTED)
-						{
+						{						
 							calculate_device_objective(*device,analysis->detection,
 								analysis->objective,objective_values,number_of_objective_values,
 								objective_values_step,average_width);
@@ -5947,19 +5845,6 @@ set to automatic and reorder the devices if this is required.
 			{
 				if (highlight_device)
 				{
-#if defined (OLD_CODE)
-					calculate_device_event_markers(highlight_device,
-						analysis->start_search_interval,analysis->end_search_interval,
-						analysis->detection,analysis->objective,analysis->number_of_events,
-						threshold_percentage,minimum_separation,level,average_width);
-					draw_device_markers(highlight_device,buffer->start,buffer->end,
-						analysis->datum,0,analysis->potential_time,0,SIGNAL_AREA_DETAIL,0,
-						xpos,ypos,signals_area->axes_width,signals_area->axes_height,
-						XtWindow(signals_area->drawing_area),
-						signals_area->drawing->pixel_map,
-						analysis->signal_drawing_information,analysis->user_interface);
-					trace_draw_markers(0,0,analysis->trace);
-#endif /* defined (OLD_CODE) */
 					if ((analysis->trace)&&(analysis->trace->processed_device)&&
 						(analysis->trace->processed_device->signal)&&
 						(analysis->trace->processed_device->signal->buffer)&&
@@ -11663,7 +11548,6 @@ DESCRIPTION :
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 	struct Signals_area *signals;
-
 	ENTER(analysis_accept_signal);
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
