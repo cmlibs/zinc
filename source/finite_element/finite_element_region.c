@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.c
 
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 23 August 2004
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -3313,7 +3313,7 @@ struct FE_node *FE_region_get_first_FE_node_that(struct FE_region *fe_region,
 	LIST_CONDITIONAL_FUNCTION(FE_node) *conditional_function,
 	void *user_data_void)
 /*******************************************************************************
-LAST MODIFIED : 25 March 2003
+LAST MODIFIED : 23 August 2004
 
 DESCRIPTION :
 Returns the first node in <fe_region> that satisfies <conditional_function>
@@ -3332,7 +3332,7 @@ A NULL <conditional_function> returns the first FE_node in <fe_region>, if any.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_get_first_FE_node_that.  Invalid argument(s)");
+			"FE_region_get_first_FE_node_that.  Missing region");
 		node = (struct FE_node *)NULL;
 	}
 	LEAVE;
