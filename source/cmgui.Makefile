@@ -48,7 +48,9 @@ include $(COMMONMAKEFILE)
 ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
    UNEMAP = true
    LINK_CMISS = true
-endif # $(USER_INTERFACE) != CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
+else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
+   LINK_CMISS = false
+endif # $(USER_INTERFACE) ==/!= CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
 PERL_INTERPRETER = true
 ifneq ($(SYSNAME),win32)
    IMAGEMAGICK = true
@@ -219,10 +221,10 @@ ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    endif # $(SYSNAME) == win32 
 endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
 
-ifndef LINK_CMISS
+ifeq ($(LINK_CMISS),false)
    CONNECTIVITY_DEFINES =
    WORMHOLE_LIB =
-else # ! LINK_CMISS
+else # LINK_CMISS
    WORMHOLE_PATH=$(CMISS_ROOT)/wormhole
    WORMHOLE_INC = -I${WORMHOLE_PATH}/source
    CONNECTIVITY_DEFINES = -DLINK_CMISS
@@ -231,7 +233,7 @@ else # ! LINK_CMISS
    # WORMHOLE_LIB = -L/usr/people/bullivan/wormhole/lib -lwormhole
    # WORMHOLE_INC = -I/usr/people/bullivan/wormhole/source
    WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib/$(LIB_ARCH_DIR) -lwormhole
-endif # ! LINK_CMISS
+endif # LINK_CMISS
 
 ifndef IMAGEMAGICK
    IMAGEMAGICK_DEFINES =
@@ -515,11 +517,15 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
+MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
 ifeq ($(SYSNAME:IRIX%=),)
    MATRIX_LIB = -lscs
-else # ($(SYSNAME:IRIX%=),)
-   MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
-endif # ($(SYSNAME:IRIX%=),)
+endif # SYSNAME == IRIX%
+ifeq ($(SYSNAME),Linux)
+  ifneq (,$(wildcard /usr/lib/libscs.*))# have IRIX libscs
+    MATRIX_LIB = -lscs
+  endif# libscs
+endif# Linux
 ifeq ($(SYSNAME),AIX)
    MATRIX_LIB += -lxlf90
 endif # SYSNAME == AIX
@@ -779,11 +785,11 @@ IO_DEVICES_INTERFACE_SRCS = \
 	io_devices/input_module.c \
 	io_devices/input_module_dialog.c \
 	io_devices/input_module_widget.c
-ifdef LINK_CMISS
+ifeq ($(LINK_CMISS),false)
+   LINK_INTERFACE_SRCS =
+else # LINK_CMISS
    LINK_INTERFACE_SRCS =  \
 	   link/cmiss.c
-else # LINK_CMISS
-   LINK_INTERFACE_SRCS =
 endif # LINK_CMISS
 MATERIAL_INTERFACE_SRCS =  \
 	material/material_editor.c \
