@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_inverse.cpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 20 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -22,6 +22,8 @@
 // module typedefs
 // ===============
 
+typedef boost::intrusive_ptr< Function_matrix<Scalar> >
+	Function_matrix_scalar_handle;
 typedef boost::intrusive_ptr< Function_variable_matrix<Scalar> >
 	Function_variable_matrix_scalar_handle;
 typedef boost::intrusive_ptr< Function_variable_matrix<Function_size_type> >
@@ -29,6 +31,46 @@ typedef boost::intrusive_ptr< Function_variable_matrix<Function_size_type> >
 
 // module classes
 // ==============
+
+// class Function_variable_independent
+// -----------------------------------
+
+// forward declaration so that can use _handle
+class Function_variable_independent;
+typedef boost::intrusive_ptr<Function_variable_independent>
+	Function_variable_independent_handle;
+
+class Function_variable_independent : public Function_variable_wrapper
+//******************************************************************************
+// LAST MODIFIED : 19 July 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// constructor
+		Function_variable_independent(
+			const Function_inverse_handle& function_inverse):
+			Function_variable_wrapper(function_inverse,
+			function_inverse->independent_variable){};
+		// destructor
+		~Function_variable_independent(){};
+	// inherited
+	public:
+		Function_variable_handle clone() const
+		{
+			return (Function_variable_independent_handle(
+				new Function_variable_independent(*this)));
+		};
+	private:
+		// copy constructor
+		Function_variable_independent(
+			const Function_variable_independent& variable_independent):
+			Function_variable_wrapper(variable_independent){};
+		// assignment
+		Function_variable_independent& operator=(
+			const Function_variable_independent&);
+};
 
 // class Function_variable_dependent
 // ---------------------------------
@@ -40,7 +82,7 @@ typedef boost::intrusive_ptr<Function_variable_dependent>
 
 class Function_variable_dependent : public Function_variable_wrapper
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -63,18 +105,18 @@ class Function_variable_dependent : public Function_variable_wrapper
 		// overload Function_variable::evaluate
 		Function_handle evaluate()
 		{
-			Function_handle result(0);
+			Function_handle result;
 			Function_inverse_handle function_inverse=boost::dynamic_pointer_cast<
 				Function_inverse,Function>(function());
 			Function_variable_handle specified_dependent_variable=get_wrapped();
 
+			result=0;
 			if (function_inverse&&specified_dependent_variable)
 			{
 				Function_variable_handle dependent_variable,
 					independent_value_variable,independent_variable;
-				Function_handle dependent_value_estimate,independent_value,result;
+				Function_handle dependent_value_estimate,independent_value;
 
-				result=0;
 				if ((dependent_variable=function_inverse->dependent_variable)&&
 					(dependent_value_estimate=dependent_variable->get_value())&&
 					(independent_variable=function_inverse->independent_variable)&&
@@ -102,21 +144,21 @@ class Function_variable_dependent : public Function_variable_wrapper
 						(error_norm<value_tolerance)||(increment_norm<step_tolerance))&&
 						(iteration_number<maximum_iterations))
 					{
-						Function_matrix_handle derivative_matrix=
-							boost::dynamic_pointer_cast<Function_matrix,Function>(
+						Function_matrix_scalar_handle derivative_matrix=
+							boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
 							independent_variable->evaluate_derivative(
 							independent_variables));
 
 						if (derivative_matrix)
 						{
-							Function_matrix_handle increment_function=derivative_matrix->
-								solve(boost::dynamic_pointer_cast<Function_matrix,Function>(
-								error->function()));
+							Function_matrix_scalar_handle increment_function=
+								derivative_matrix->solve(boost::dynamic_pointer_cast<
+								Function_matrix<Scalar>,Function>(error->function()));
 							Function_variable_handle increment;
 
 							if (valid=(increment_function&&
 								(increment=increment_function->output())&&
-								((*dependent_variable) -= (*increment))))
+								((*dependent_variable) += (*increment))))
 							{
 								iteration_number++;
 								valid=((independent_variable->set_value)(
@@ -134,9 +176,9 @@ class Function_variable_dependent : public Function_variable_wrapper
 					}
 					if (valid)
 					{
-						if (*specified_dependent_variable== *dependent_variable)
+						if (equivalent(specified_dependent_variable,dependent_variable))
 						{
-							result=dependent_value_estimate;
+							result=dependent_variable->get_value();
 						}
 						else
 						{
@@ -155,7 +197,8 @@ class Function_variable_dependent : public Function_variable_wrapper
 							while ((dependent_variable_iterator!=
 								dependent_variable_iterator_end)&&
 								(dependent_value_iterator!=dependent_value_iterator_end)&&
-								(*dependent_variable_iterator!=specified_dependent_variable))
+								!equivalent(*dependent_variable_iterator,
+								specified_dependent_variable))
 							{
 								dependent_variable_iterator++;
 								dependent_value_iterator++;
@@ -168,6 +211,8 @@ class Function_variable_dependent : public Function_variable_wrapper
 							}
 						}
 					}
+					// reset required value
+					independent_variable->set_value(independent_value);
 				}
 			}
 
@@ -180,8 +225,9 @@ class Function_variable_dependent : public Function_variable_wrapper
 			Function_handle result(0);
 			Function_inverse_handle function_inverse=boost::dynamic_pointer_cast<
 				Function_inverse,Function>(function());
+			Function_variable_handle specified_dependent_variable=get_wrapped();
 
-			if (function_inverse)
+			if (function_inverse&&specified_dependent_variable)
 			{
 				const Function_size_type number_of_independent_variables=
 					independent_variables.size();
@@ -224,354 +270,426 @@ class Function_variable_dependent : public Function_variable_wrapper
 					}
 					if (0<maximum_number_of_independent_values)
 					{
-						Function_variable_handle extended_dependent_variable(
-							new Function_variable_union(extended_dependent_list));
-						Function_variable_handle extended_independent_variable(
-							new Function_variable_union(extended_independent_list));
-						std::list<Function_variable_handle> extended_dependent_variables(
-							number_of_independent_variables,extended_dependent_variable);
-						Function_derivative_matrix_handle derivative_inverse(
-							new Function_derivative_matrix(extended_independent_variable,
-							extended_dependent_variables));
+						Function_handle dependent_value;
 
-						if (derivative_inverse&&(derivative_inverse=
-							boost::dynamic_pointer_cast<Function_derivative_matrix,Function>
-							((derivative_inverse->inverse)())))
+						// make sure that dependent is consistent with independent
+						dependent_value=dependent_variable->get_value();
+						if (dependent_variable->set_value((function_inverse->output())->
+							evaluate()))
 						{
+							Function_variable_handle extended_dependent_variable(
+								new Function_variable_union(extended_dependent_list));
+							Function_variable_handle extended_independent_variable(
+								new Function_variable_union(extended_independent_list));
+							std::list<Function_variable_handle> extended_dependent_variables(
+								number_of_independent_variables,extended_dependent_variable);
+							Function_derivative_matrix_handle derivative_inverse(
+								new Function_derivative_matrix(extended_independent_variable,
+								extended_dependent_variables));
+
+							if (derivative_inverse&&(derivative_inverse=
+								boost::dynamic_pointer_cast<Function_derivative_matrix,Function>
+								((derivative_inverse->inverse)())))
+							{
 #if defined (OLD_CODE)
-							// extract Derivative_matrix for
-							//   d(this)/d(independent_variables)
-							Function_size_type number_of_matrices=
-								(derivative_inverse->matrices).size();
-							ublas::matrix<bool> matrix_variables(number_of_matrices,
-								number_of_independent_variables);
-							Function_size_type number_of_dependent_values,
-								number_of_extended_dependent_values,
-								number_of_extended_independent_values;
-
-							for (i=0;i<number_of_matrices;i++)
-							{
-								for (j=0;j<number_of_independent_variables;j++)
-								{
-									matrix_variables(i,j)=false;
-								}
-							}
-							number_of_dependent_values=number_differentiable();
-							number_of_extended_dependent_values=
-								extended_dependent_variable->number_differentiable();
-							number_of_extended_independent_values=
-								extended_independent_variable->number_differentiable();
-							if ((0<number_of_dependent_values)&&
-								(0<number_of_extended_dependent_values)%%
-								(0<number_of_extended_independent_values))
-							{
-								Function_size_type column_1,j,k;
-								Function_variable_iterator variable_iterator,
-									extended_variable_iterator;
-								std::list<Matrix> matrices(0);
-								std::list<Matrix>::iterator matrix_iterator;
-								std::vector<Function_size_type> dependent_value_mapping(
-									number_of_dependent_values);
-								std::vector<Function_size_type> derivative_index(
+								// extract Derivative_matrix for
+								//   d(this)/d(independent_variables)
+								Function_size_type number_of_matrices=
+									(derivative_inverse->matrices).size();
+								ublas::matrix<bool> matrix_variables(number_of_matrices,
 									number_of_independent_variables);
-								ublas::matrix<Function_size_type> independent_value_mapping(
-									number_of_independent_variables,
-									maximum_number_of_independent_values);
+								Function_size_type number_of_dependent_values,
+									number_of_extended_dependent_values,
+									number_of_extended_independent_values;
 
-								variable_iterator=begin_atomic();
-								i=0;
-								while (i<number_of_dependent_values)
+								for (i=0;i<number_of_matrices;i++)
 								{
-									if (1==(*variable_iterator)->number_differentiable())
+									for (j=0;j<number_of_independent_variables;j++)
 									{
-										j=0;
-										extended_variable_iterator=extended_dependent_variable->
-											begin_atomic();
-										while ((j<number_of_extended_dependent_values)&&
-											(**extended_variable_iterator!= **variable_iterator))
-										{
-											if (1==(*extended_variable_iterator)->
-												number_differentiable())
-											{
-												j++;
-											}
-											extended_variable_iterator++;
-										}
-										dependent_value_mapping[i]=j;
-										i++;
+										matrix_variables(i,j)=false;
 									}
-									variable_iterator++;
 								}
-								matrix_iterator=(derivative_inverse->matrices).begin();
-								number_of_matrices=0;
-								independent_variables_iterator=independent_variables.begin();
-								for (i=0;i<number_of_independent_variables;i++)
+								number_of_dependent_values=number_differentiable();
+								number_of_extended_dependent_values=
+									extended_dependent_variable->number_differentiable();
+								number_of_extended_independent_values=
+									extended_independent_variable->number_differentiable();
+								if ((0<number_of_dependent_values)&&
+									(0<number_of_extended_dependent_values)%%
+									(0<number_of_extended_independent_values))
 								{
-									Function_size_type number_of_columns=
-										numbers_of_independent_values[i];
-									Function_size_type column,row;
-									Matrix matrix_1(number_of_dependent_values,
-										number_of_columns);
+									Function_size_type column_1,j,k;
+									Function_variable_iterator variable_iterator,
+										extended_variable_iterator;
+									std::list<Matrix> matrices(0);
+									std::list<Matrix>::iterator matrix_iterator;
+									std::vector<Function_size_type> dependent_value_mapping(
+										number_of_dependent_values);
+									std::vector<Function_size_type> derivative_index(
+										number_of_independent_variables);
+									ublas::matrix<Function_size_type> independent_value_mapping(
+										number_of_independent_variables,
+										maximum_number_of_independent_values);
 
-									variable_iterator=
-										(*independent_variables_iterator)->begin_atomic();
-									j=0;
-									while (j<number_of_columns)
+									variable_iterator=begin_atomic();
+									i=0;
+									while (i<number_of_dependent_values)
 									{
 										if (1==(*variable_iterator)->number_differentiable())
 										{
-											k=0;
-											extended_variable_iterator=
-												extended_independent_variable->begin_atomic();
-											while ((k<number_of_extended_independent_values)&&
+											j=0;
+											extended_variable_iterator=extended_dependent_variable->
+												begin_atomic();
+											while ((j<number_of_extended_dependent_values)&&
 												(**extended_variable_iterator!= **variable_iterator))
 											{
 												if (1==(*extended_variable_iterator)->
 													number_differentiable())
 												{
-													k++;
+													j++;
 												}
 												extended_variable_iterator++;
 											}
-											independent_value_mapping[i,j]=k;
-											j++;
+											dependent_value_mapping[i]=j;
+											i++;
 										}
 										variable_iterator++;
 									}
-									for (column=0;column<number_of_columns;column++)
+									matrix_iterator=(derivative_inverse->matrices).begin();
+									number_of_matrices=0;
+									independent_variables_iterator=independent_variables.begin();
+									for (i=0;i<number_of_independent_variables;i++)
 									{
-										column_1=independent_value_mapping[column];
-										for (row=0;row<number_of_dependent_values;row++)
-										{
-											matrix_1(row,column)=(*matrix_iterator)(
-												dependent_value_mapping[row],column_1);
-										}
-									}
-									matrix_variables(number_of_matrices,i)=true;
-									matrices.push_back(matrix_1);
-									matrix_iterator++;
-									for (j=0;j<number_of_matrices;j++)
-									{
-										number_of_columns=numbers_of_independent_values[i];
-										for (k=0;k<i;k++)
-										{
-											if (matrix_variables(j,k))
-											{
-												matrix_variables(j+number_of_matrices+1,k)=true;
-												number_of_columns *= numbers_of_independent_values[k];
-											}
-											derivative_index[k]=0;
-										}
-										derivative_index[i]=0;
-										matrix_variables(j+number_of_matrices+1,i)=true;
-
-										bool finished;
-										Matrix matrix_2(number_of_dependent_values,
+										Function_size_type number_of_columns=
+											numbers_of_independent_values[i];
+										Function_size_type column,row;
+										Matrix matrix_1(number_of_dependent_values,
 											number_of_columns);
-										Function_size_type column_2;
+
+										variable_iterator=
+											(*independent_variables_iterator)->begin_atomic();
+										j=0;
+										while (j<number_of_columns)
+										{
+											if (1==(*variable_iterator)->number_differentiable())
+											{
+												k=0;
+												extended_variable_iterator=
+													extended_independent_variable->begin_atomic();
+												while ((k<number_of_extended_independent_values)&&
+													(**extended_variable_iterator!= **variable_iterator))
+												{
+													if (1==(*extended_variable_iterator)->
+														number_differentiable())
+													{
+														k++;
+													}
+													extended_variable_iterator++;
+												}
+												independent_value_mapping[i,j]=k;
+												j++;
+											}
+											variable_iterator++;
+										}
+										for (column=0;column<number_of_columns;column++)
+										{
+											column_1=independent_value_mapping[column];
+											for (row=0;row<number_of_dependent_values;row++)
+											{
+												matrix_1(row,column)=(*matrix_iterator)(
+													dependent_value_mapping[row],column_1);
+											}
+										}
+										matrix_variables(number_of_matrices,i)=true;
+										matrices.push_back(matrix_1);
+										matrix_iterator++;
+										for (j=0;j<number_of_matrices;j++)
+										{
+											number_of_columns=numbers_of_independent_values[i];
+											for (k=0;k<i;k++)
+											{
+												if (matrix_variables(j,k))
+												{
+													matrix_variables(j+number_of_matrices+1,k)=true;
+													number_of_columns *= numbers_of_independent_values[k];
+												}
+												derivative_index[k]=0;
+											}
+											derivative_index[i]=0;
+											matrix_variables(j+number_of_matrices+1,i)=true;
+
+											bool finished;
+											Matrix matrix_2(number_of_dependent_values,
+												number_of_columns);
+											Function_size_type column_2;
+
+											column=0;
+											finished=false;
+											while (!finished)
+											{
+												// calculated column of *matrix_iterator
+												column_2=0;
+												for (k=0;k<=i;k++)
+												{
+													if (matrix_variables(j+number_of_matrices+1,k))
+													{
+														column_2 *= number_of_extended_independent_values;
+														column_2 += independent_value_mapping(k,
+															derivative_index[k]);
+													}
+												}
+												for (row=0;row<number_of_dependent_values;row++)
+												{
+													matrix_2(row,column)=(*matrix_iterator)(
+														dependent_value_mapping[row],column_2);
+												}
+												column++;
+												// increment derivative_index
+												finished=true;
+												k=i;
+												while (finished&&(k>0))
+												{
+													if (matrix_variables(j+number_of_matrices+1,k))
+													{
+														derivative_index[k]++;
+														if (derivative_index[k]==
+															numbers_of_independent_values[k])
+														{
+															derivative_index[k]=0;
+														}
+														else
+														{
+															finished=false;
+														}
+													}
+													k--;
+												}
+												if (finished&&
+													matrix_variables(j+number_of_matrices+1,0))
+												{
+													derivative_index[0]++;
+													finished=(derivative_index[0]==
+														numbers_of_independent_values[0]);
+												}
+											}
+											matrices.push_back(matrix_2);
+											matrix_iterator++;
+										}
+										number_of_matrices += number_of_matrices+1;
+										independent_variables_iterator++;
+									}
+									result=Function_derivative_matrix_handle(
+										new Function_derivative_matrix(
+										Function_inverse_handle(this),independent_variables,
+										matrices));
+								}
+#endif // defined (OLD_CODE)
+								// extract Matrix for d(this)/d(independent_variables)
+								Function_size_type number_of_dependent_values,
+									number_of_extended_dependent_values,
+									number_of_extended_independent_values;
+
+								number_of_dependent_values=number_differentiable();
+								number_of_extended_dependent_values=
+									extended_dependent_variable->number_differentiable();
+								number_of_extended_independent_values=
+									extended_independent_variable->number_differentiable();
+								if ((0<number_of_dependent_values)&&
+									(0<number_of_extended_dependent_values)&&
+									(0<number_of_extended_independent_values))
+								{
+									Function_size_type j,k,number_of_columns;
+									Function_variable_iterator variable_iterator,
+										extended_variable_iterator;
+									std::vector<Function_size_type> dependent_value_mapping(
+										number_of_dependent_values);
+									std::vector<Function_size_type> derivative_index(
+										number_of_independent_variables);
+									ublas::matrix<Function_size_type> independent_value_mapping(
+										number_of_independent_variables,
+										maximum_number_of_independent_values);
+
+									variable_iterator=
+										specified_dependent_variable->begin_atomic();
+									i=0;
+									while (i<number_of_dependent_values)
+									{
+										if (1==(*variable_iterator)->number_differentiable())
+										{
+											j=0;
+											extended_variable_iterator=extended_dependent_variable->
+												begin_atomic();
+											while ((j<number_of_extended_dependent_values)&&
+												!equivalent(*extended_variable_iterator,
+												*variable_iterator))
+											{
+												if (1==(*extended_variable_iterator)->
+													number_differentiable())
+												{
+													j++;
+												}
+												extended_variable_iterator++;
+											}
+											dependent_value_mapping[i]=j;
+											i++;
+										}
+										variable_iterator++;
+									}
+									number_of_columns=1;
+									independent_variables_iterator=independent_variables.begin();
+									for (i=0;i<number_of_independent_variables;i++)
+									{
+										Function_size_type number_of_independent_values=
+											numbers_of_independent_values[i];
+
+										// initialize derivative_index
+										derivative_index[i]=0;
+										// update number_of_columns
+										number_of_columns *= number_of_independent_values;
+										// initialize independent_value_mapping(i,*)
+										variable_iterator=
+											(*independent_variables_iterator)->begin_atomic();
+										j=0;
+										while (j<number_of_independent_values)
+										{
+#if !defined (OLD_CODE)
+											bool found;
+#endif // !defined (OLD_CODE)
+											Function_variable_handle
+#if !defined (OLD_CODE)
+												temp_extended_independent_variable,
+#endif // !defined (OLD_CODE)
+												temp_independent_variable;
+											Function_variable_independent_handle temp_variable;
+#if !defined (OLD_CODE)
+											Function_variable_wrapper_handle temp_wrapper_variable;
+#endif // !defined (OLD_CODE)
+
+											temp_independent_variable= *variable_iterator;
+											if ((temp_variable=
+												boost::dynamic_pointer_cast<
+												Function_variable_independent,Function_variable>(
+												temp_independent_variable))&&(equivalent(
+												temp_variable->function(),
+												function_inverse)))
+											{
+												temp_independent_variable=temp_variable->get_wrapped();
+											}
+											if (1==temp_independent_variable->number_differentiable())
+											{
+												k=0;
+												extended_variable_iterator=
+													extended_independent_variable->begin_atomic();
+#if defined (OLD_CODE)
+												while ((k<number_of_extended_independent_values)&&
+													!equivalent(*extended_variable_iterator,
+													temp_independent_variable))
+												{
+													if (1==(*extended_variable_iterator)->
+														number_differentiable())
+													{
+														k++;
+													}
+													extended_variable_iterator++;
+												}
+#else // defined (OLD_CODE)
+												//???DB.  Where I'm up to
+												found=false;
+												while ((k<number_of_extended_independent_values)&&
+													!found)
+												{
+													temp_extended_independent_variable=
+														*extended_variable_iterator;
+													if ((boost::dynamic_pointer_cast<Function_identity,
+														Function>(temp_extended_independent_variable->
+														function()))&&
+														(temp_wrapper_variable=boost::dynamic_pointer_cast<
+														Function_variable_wrapper,Function_variable>(
+														temp_extended_independent_variable)))
+													{
+														temp_extended_independent_variable=
+															temp_wrapper_variable->get_wrapped();
+													}
+													if (equivalent(temp_extended_independent_variable,
+														temp_independent_variable))
+													{
+														found=true;
+													}
+													else
+													{
+														if (1==temp_extended_independent_variable->
+															number_differentiable())
+														{
+															k++;
+														}
+														extended_variable_iterator++;
+													}
+												}
+#endif // defined (OLD_CODE)
+												independent_value_mapping(i,j)=k;
+												j++;
+											}
+											variable_iterator++;
+										}
+										independent_variables_iterator++;
+									}
+									if (0<number_of_columns)
+									{
+										bool finished;
+										Matrix matrix(number_of_dependent_values,number_of_columns);
+										Matrix
+											&matrix_extended=(derivative_inverse->matrices).back();
+										Function_size_type column,column_extended,row;
 
 										column=0;
 										finished=false;
 										while (!finished)
 										{
-											// calculated column of *matrix_iterator
-											column_2=0;
-											for (k=0;k<=i;k++)
+											column_extended=0;
+											for (i=0;i<number_of_independent_variables;i++)
 											{
-												if (matrix_variables(j+number_of_matrices+1,k))
-												{
-													column_2 *= number_of_extended_independent_values;
-													column_2 += independent_value_mapping(k,
-														derivative_index[k]);
-												}
+												column_extended *=
+													number_of_extended_independent_values;
+												column_extended +=
+													independent_value_mapping(i,derivative_index[i]);
 											}
 											for (row=0;row<number_of_dependent_values;row++)
 											{
-												matrix_2(row,column)=(*matrix_iterator)(
-													dependent_value_mapping[row],column_2);
+												matrix(row,column)=matrix_extended(
+													dependent_value_mapping[row],column_extended);
 											}
 											column++;
 											// increment derivative_index
 											finished=true;
-											k=i;
-											while (finished&&(k>0))
+											i=number_of_independent_variables-1;
+											while (finished&&(i>0))
 											{
-												if (matrix_variables(j+number_of_matrices+1,k))
+												derivative_index[i]++;
+												if (derivative_index[i]==
+													numbers_of_independent_values[i])
 												{
-													derivative_index[k]++;
-													if (derivative_index[k]==
-														numbers_of_independent_values[k])
-													{
-														derivative_index[k]=0;
-													}
-													else
-													{
-														finished=false;
-													}
+													derivative_index[i]=0;
 												}
-												k--;
+												else
+												{
+													finished=false;
+												}
+												i--;
 											}
-											if (finished&&
-												matrix_variables(j+number_of_matrices+1,0))
+											if (finished)
 											{
 												derivative_index[0]++;
 												finished=(derivative_index[0]==
 													numbers_of_independent_values[0]);
 											}
 										}
-										matrices.push_back(matrix_2);
-										matrix_iterator++;
+										result=Function_matrix_scalar_handle(
+											new Function_matrix<Scalar>(matrix));
 									}
-									number_of_matrices += number_of_matrices+1;
-									independent_variables_iterator++;
-								}
-								result=Function_derivative_matrix_handle(
-									new Function_derivative_matrix(
-									Function_inverse_handle(this),independent_variables,
-									matrices));
-							}
-#endif // defined (OLD_CODE)
-							// extract Matrix for d(this)/d(independent_variables)
-							Function_size_type number_of_dependent_values,
-								number_of_extended_dependent_values,
-								number_of_extended_independent_values;
-
-							number_of_dependent_values=number_differentiable();
-							number_of_extended_dependent_values=
-								extended_dependent_variable->number_differentiable();
-							number_of_extended_independent_values=
-								extended_independent_variable->number_differentiable();
-							if ((0<number_of_dependent_values)&&
-								(0<number_of_extended_dependent_values)&&
-								(0<number_of_extended_independent_values))
-							{
-								Function_size_type j,k,number_of_columns;
-								Function_variable_iterator variable_iterator,
-									extended_variable_iterator;
-								std::vector<Function_size_type> dependent_value_mapping(
-									number_of_dependent_values);
-								std::vector<Function_size_type> derivative_index(
-									number_of_independent_variables);
-								ublas::matrix<Function_size_type> independent_value_mapping(
-									number_of_independent_variables,
-									maximum_number_of_independent_values);
-
-								variable_iterator=begin_atomic();
-								i=0;
-								while (i<number_of_dependent_values)
-								{
-									if (1==(*variable_iterator)->number_differentiable())
-									{
-										j=0;
-										extended_variable_iterator=extended_dependent_variable->
-											begin_atomic();
-										while ((j<number_of_extended_dependent_values)&&
-											!(**extended_variable_iterator== **variable_iterator))
-										{
-											if (1==(*extended_variable_iterator)->
-												number_differentiable())
-											{
-												j++;
-											}
-											extended_variable_iterator++;
-										}
-										dependent_value_mapping[i]=j;
-										i++;
-									}
-									variable_iterator++;
-								}
-								number_of_columns=1;
-								independent_variables_iterator=independent_variables.begin();
-								for (i=0;i<number_of_independent_variables;i++)
-								{
-									Function_size_type number_of_independent_values=
-										numbers_of_independent_values[i];
-
-									// initialize derivative_index
-									derivative_index[i]=0;
-									// update number_of_columns
-									number_of_columns *= number_of_independent_values;
-									// initialize independent_value_mapping(i,*)
-									variable_iterator=
-										(*independent_variables_iterator)->begin_atomic();
-									j=0;
-									while (j<number_of_independent_values)
-									{
-										if (1==(*variable_iterator)->number_differentiable())
-										{
-											k=0;
-											extended_variable_iterator=
-												extended_independent_variable->begin_atomic();
-											while ((k<number_of_extended_independent_values)&&
-												!(**extended_variable_iterator== **variable_iterator))
-											{
-												if (1==(*extended_variable_iterator)->
-													number_differentiable())
-												{
-													k++;
-												}
-												extended_variable_iterator++;
-											}
-											independent_value_mapping(i,j)=k;
-											j++;
-										}
-										variable_iterator++;
-									}
-									independent_variables_iterator++;
-								}
-								if (0<number_of_columns)
-								{
-									bool finished;
-									Matrix matrix(number_of_dependent_values,number_of_columns);
-									Matrix
-										&matrix_extended=(derivative_inverse->matrices).back();
-									Function_size_type column,column_extended,row;
-
-									column=0;
-									finished=false;
-									while (!finished)
-									{
-										column_extended=0;
-										for (i=0;i<number_of_independent_variables;i++)
-										{
-											column_extended *=
-												number_of_extended_independent_values;
-											column_extended +=
-												independent_value_mapping(i,derivative_index[i]);
-										}
-										for (row=0;row<number_of_dependent_values;row++)
-										{
-											matrix(row,column)=matrix_extended(
-												dependent_value_mapping[row],column_extended);
-										}
-										column++;
-										// increment derivative_index
-										finished=true;
-										i=number_of_independent_variables;
-										while (finished&&(i>0))
-										{
-											derivative_index[i]++;
-											if (derivative_index[i]==
-												numbers_of_independent_values[i])
-											{
-												derivative_index[i]=0;
-											}
-											else
-											{
-												finished=false;
-											}
-											i--;
-										}
-										if (finished)
-										{
-											derivative_index[0]++;
-											finished=(derivative_index[0]==
-												numbers_of_independent_values[0]);
-										}
-									}
-									result=Function_matrix_handle(new Function_matrix(matrix));
 								}
 							}
+							// reset dependent variable value
+							dependent_variable->set_value(dependent_value);
 						}
 					}
 				}
@@ -647,47 +765,6 @@ class Function_variable_dependent_estimate : public Function_variable_wrapper
 };
 
 
-// class Function_variable_independent
-// -----------------------------------
-
-// forward declaration so that can use _handle
-class Function_variable_independent;
-typedef boost::intrusive_ptr<Function_variable_independent>
-	Function_variable_independent_handle;
-
-class Function_variable_independent : public Function_variable_wrapper
-//******************************************************************************
-// LAST MODIFIED : 19 July 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	public:
-		// constructor
-		Function_variable_independent(
-			const Function_inverse_handle& function_inverse):
-			Function_variable_wrapper(function_inverse,
-			function_inverse->independent_variable){};
-		// destructor
-		~Function_variable_independent(){};
-	// inherited
-	public:
-		Function_variable_handle clone() const
-		{
-			return (Function_variable_independent_handle(
-				new Function_variable_independent(*this)));
-		};
-	private:
-		// copy constructor
-		Function_variable_independent(
-			const Function_variable_independent& variable_independent):
-			Function_variable_wrapper(variable_independent){};
-		// assignment
-		Function_variable_independent& operator=(
-			const Function_variable_independent&);
-};
-
-
 // class Function_variable_value_tolerance
 // ---------------------------------------
 
@@ -699,7 +776,7 @@ typedef boost::intrusive_ptr<Function_variable_value_tolerance>
 class Function_variable_value_tolerance :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 6 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -732,7 +809,7 @@ class Function_variable_value_tolerance :
 			return (return_string);
 		};
 		Function_variable_matrix_scalar_handle operator()(
-			Function_size_type row,Function_size_type column)
+			Function_size_type row,Function_size_type column) const
 		{
 			Function_variable_matrix_scalar_handle result(0);
 
@@ -788,7 +865,7 @@ typedef boost::intrusive_ptr<Function_variable_step_tolerance>
 
 class Function_variable_step_tolerance : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 6 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -821,7 +898,7 @@ class Function_variable_step_tolerance : public Function_variable_matrix<Scalar>
 			return (return_string);
 		};
 		Function_variable_matrix_scalar_handle operator()(
-			Function_size_type row,Function_size_type column)
+			Function_size_type row,Function_size_type column) const
 		{
 			Function_variable_matrix_scalar_handle result(0);
 
@@ -878,7 +955,7 @@ typedef boost::intrusive_ptr<Function_variable_maximum_iterations>
 class Function_variable_maximum_iterations :
 	public Function_variable_matrix<Function_size_type>
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 6 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -915,7 +992,7 @@ class Function_variable_maximum_iterations :
 			return (0);
 		}
 		Function_variable_matrix_function_size_type_handle
-			operator()(Function_size_type row,Function_size_type column)
+			operator()(Function_size_type row,Function_size_type column) const
 		{
 			Function_variable_matrix_function_size_type_handle result(0);
 
@@ -1034,6 +1111,38 @@ Function_variable_handle Function_inverse::output()
 	return (Function_variable_handle(new Function_variable_dependent(this)));
 }
 
+bool Function_inverse::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_inverse& function_inverse=
+				dynamic_cast<const Function_inverse&>(function);
+
+			result=(equivalent(dependent_variable,
+				function_inverse.dependent_variable)&&
+				equivalent(independent_variable,
+				function_inverse.independent_variable));
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
+}
+
 Function_variable_handle Function_inverse::independent()
 //******************************************************************************
 // LAST MODIFIED : 24 June 2004
@@ -1120,7 +1229,7 @@ Function_size_type Function_inverse::maximum_iterations_value()
 Function_handle Function_inverse::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1132,13 +1241,14 @@ Function_handle Function_inverse::evaluate(
 
 	if ((atomic_variable_dependent=boost::dynamic_pointer_cast<
 		Function_variable_dependent,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent->function()))
+		equivalent(Function_handle(this),atomic_variable_dependent->function()))
 	{
 		result=(atomic_variable_dependent->evaluate)();
 	}
 	if ((atomic_variable_dependent_estimate=boost::dynamic_pointer_cast<
 		Function_variable_dependent_estimate,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent_estimate->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_dependent_estimate->function()))
 	{
 		result=get_value(atomic_variable);
 	}
@@ -1150,7 +1260,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1166,7 +1276,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 	result=false;
 	if ((atomic_variable_independent=boost::dynamic_pointer_cast<
 		Function_variable_independent,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_independent->function()))
+		equivalent(Function_handle(this),atomic_variable_independent->function()))
 	{
 		Function_variable_independent_handle atomic_independent_variable;
 
@@ -1175,7 +1285,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
 			Function_variable_independent,Function_variable>(
 			atomic_independent_variables.front()))&&
-			(*atomic_variable_independent== *atomic_independent_variable))
+			equivalent(atomic_variable_independent,atomic_independent_variable))
 		{
 			derivative=1;
 		}
@@ -1186,7 +1296,8 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 	}
 	else if ((atomic_variable_dependent_estimate=boost::dynamic_pointer_cast<
 		Function_variable_dependent_estimate,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent_estimate->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_dependent_estimate->function()))
 	{
 		Function_variable_dependent_handle atomic_independent_variable;
 
@@ -1195,7 +1306,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
 			Function_variable_dependent,Function_variable>(
 			atomic_independent_variables.front()))&&
-			(*atomic_variable_dependent== *atomic_independent_variable))
+			equivalent(atomic_variable_dependent,atomic_independent_variable))
 		{
 			derivative=1;
 		}
@@ -1206,10 +1317,10 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 	}
 	else if ((atomic_variable_dependent=boost::dynamic_pointer_cast<
 		Function_variable_dependent,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent->function()))
+		equivalent(Function_handle(this),atomic_variable_dependent->function()))
 	{
-		Function_matrix_handle derivative_matrix=boost::dynamic_pointer_cast<
-			Function_matrix,Function>((atomic_variable_dependent->
+		Function_matrix_scalar_handle derivative_matrix=boost::dynamic_pointer_cast<
+			Function_matrix<Scalar>,Function>((atomic_variable_dependent->
 			evaluate_derivative)(atomic_independent_variables));
 
 		if (derivative_matrix)
@@ -1220,7 +1331,8 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 	}
 	else if ((atomic_variable_step_tolerance=boost::dynamic_pointer_cast<
 		Function_variable_step_tolerance,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_step_tolerance->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_step_tolerance->function()))
 	{
 		Function_variable_step_tolerance_handle atomic_independent_variable;
 
@@ -1229,7 +1341,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
 			Function_variable_step_tolerance,Function_variable>(
 			atomic_independent_variables.front()))&&
-			(*atomic_variable_step_tolerance== *atomic_independent_variable))
+			equivalent(atomic_variable_step_tolerance,atomic_independent_variable))
 		{
 			derivative=1;
 		}
@@ -1240,7 +1352,8 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 	}
 	else if ((atomic_variable_value_tolerance=boost::dynamic_pointer_cast<
 		Function_variable_value_tolerance,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_value_tolerance->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_value_tolerance->function()))
 	{
 		Function_variable_value_tolerance_handle atomic_independent_variable;
 
@@ -1249,7 +1362,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
 			Function_variable_value_tolerance,Function_variable>(
 			atomic_independent_variables.front()))&&
-			(*atomic_variable_value_tolerance== *atomic_independent_variable))
+			equivalent(atomic_variable_value_tolerance,atomic_independent_variable))
 		{
 			derivative=1;
 		}
@@ -1265,7 +1378,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1283,7 +1396,7 @@ bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 	result=false;
 	if ((atomic_variable_independent=boost::dynamic_pointer_cast<
 		Function_variable_independent,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_independent->function()))
+		equivalent(Function_handle(this),atomic_variable_independent->function()))
 	{
 		if (atomic_variable_independent->get_wrapped())
 		{
@@ -1293,7 +1406,7 @@ bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 	}
 	else if ((atomic_variable_dependent=boost::dynamic_pointer_cast<
 		Function_variable_dependent,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent->function()))
+		equivalent(Function_handle(this),atomic_variable_dependent->function()))
 	{
 		Function_variable_handle wrapped_variable;
 
@@ -1304,7 +1417,8 @@ bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 	}
 	else if ((atomic_variable_dependent_estimate=boost::dynamic_pointer_cast<
 		Function_variable_dependent_estimate,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent_estimate->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_dependent_estimate->function()))
 	{
 		Function_variable_handle wrapped_variable;
 
@@ -1315,9 +1429,11 @@ bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 	}
 	else if ((atomic_variable_maximum_iterations=boost::dynamic_pointer_cast<
 		Function_variable_maximum_iterations,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_maximum_iterations->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_maximum_iterations->function()))
 	{
 		Function_variable_value_function_size_type_handle value_function_size_type;
+		Function_variable_value_scalar_handle value_scalar;
 
 		if ((std::string("Function_size_type")==(atomic_value->value())->type())&&
 			(value_function_size_type=boost::dynamic_pointer_cast<
@@ -1327,10 +1443,23 @@ bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 			result=value_function_size_type->set(maximum_iterations_private,
 				atomic_value);
 		}
+		else if ((std::string("Scalar")==(atomic_value->value())->type())&&
+			(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
+			Function_variable_value>(atomic_value->value())))
+		{
+			Scalar maximum_iterations_scalar;
+
+			if (result=value_scalar->set(maximum_iterations_scalar,atomic_value))
+			{
+				maximum_iterations_private=
+					(Function_size_type)maximum_iterations_scalar;
+			}
+		}
 	}
 	else if ((atomic_variable_step_tolerance=boost::dynamic_pointer_cast<
 		Function_variable_step_tolerance,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_step_tolerance->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_step_tolerance->function()))
 	{
 		Function_variable_value_scalar_handle value_scalar;
 
@@ -1343,7 +1472,8 @@ bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 	}
 	else if ((atomic_variable_value_tolerance=boost::dynamic_pointer_cast<
 		Function_variable_value_tolerance,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_value_tolerance->function()))
+		equivalent(Function_handle(this),
+			atomic_variable_value_tolerance->function()))
 	{
 		Function_variable_value_scalar_handle value_scalar;
 
@@ -1361,7 +1491,7 @@ bool Function_inverse::set_value(Function_variable_handle atomic_variable,
 Function_handle Function_inverse::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1378,7 +1508,7 @@ Function_handle Function_inverse::get_value(
 
 	if ((atomic_variable_independent=boost::dynamic_pointer_cast<
 		Function_variable_independent,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_independent->function()))
+		equivalent(Function_handle(this),atomic_variable_independent->function()))
 	{
 		if (atomic_variable_independent->get_wrapped())
 		{
@@ -1387,7 +1517,7 @@ Function_handle Function_inverse::get_value(
 	}
 	else if ((atomic_variable_dependent=boost::dynamic_pointer_cast<
 		Function_variable_dependent,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent->function()))
+		equivalent(Function_handle(this),atomic_variable_dependent->function()))
 	{
 		Function_variable_handle wrapped_variable;
 
@@ -1398,7 +1528,8 @@ Function_handle Function_inverse::get_value(
 	}
 	else if ((atomic_variable_dependent_estimate=boost::dynamic_pointer_cast<
 		Function_variable_dependent_estimate,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_dependent_estimate->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_dependent_estimate->function()))
 	{
 		Function_variable_handle wrapped_variable;
 
@@ -1409,28 +1540,31 @@ Function_handle Function_inverse::get_value(
 	}
 	else if ((atomic_variable_maximum_iterations=boost::dynamic_pointer_cast<
 		Function_variable_maximum_iterations,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_maximum_iterations->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_maximum_iterations->function()))
 	{
 		result=Function_handle(new Function_function_size_type(
 			maximum_iterations_private));
 	}
 	else if ((atomic_variable_step_tolerance=boost::dynamic_pointer_cast<
 		Function_variable_step_tolerance,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_step_tolerance->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_step_tolerance->function()))
 	{
 		Matrix result_matrix(1,1);
 
 		result_matrix(0,0)=step_tolerance_private;
-		result=Function_handle(new Function_matrix(result_matrix));
+		result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 	}
 	else if ((atomic_variable_value_tolerance=boost::dynamic_pointer_cast<
 		Function_variable_value_tolerance,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_value_tolerance->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_value_tolerance->function()))
 	{
 		Matrix result_matrix(1,1);
 
 		result_matrix(0,0)=value_tolerance_private;
-		result=Function_handle(new Function_matrix(result_matrix));
+		result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 	}
 
 	return (result);
