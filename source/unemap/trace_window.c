@@ -8383,7 +8383,7 @@ and location.
 
 static int process_eimaging(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 15 March 2001
 
 DESCRIPTION :
 Calculates the processed device for electrical imaging.
@@ -8392,12 +8392,11 @@ want the RMS of all the signals to be calculated. This flag is cleared
 before this function is exited.
 ==============================================================================*/
 {
-	char *name;
 	enum Calculate_signal_mode calculate_signal_mode;
 	enum Event_signal_status **status_ptr,*status;
 	enum Inverse_electrodes_mode electrodes_mode;
-	float processed_frequency,*processed_value,*source_value,*start_value,
-		*time_float,*times,*value,*values;
+	float *current_times,*current_values,processed_frequency,*processed_value,
+		*source_value,*start_value,*time_float,*value,*values;
 	int buffer_offset,i,j,number_of_devices,num_valid_devices,
 		number_of_samples,number_of_signals,*processed_time,return_code;
 	struct Device *device,*processed_device,**the_device;
@@ -8407,13 +8406,25 @@ before this function is exited.
 	struct Signal_buffer *processed_buffer;
 	struct Signal *signal_next,*signal_next_new;
 
-	ENTER(process_eimaging);
+	ENTER(process_eimaging);	
+	device=(struct Device *)NULL;
+	processed_device=(struct Device *)NULL;
+	the_device=(struct Device **)NULL;
 	values=(float *)NULL;
-	times=(float *)NULL;
+	current_values=(float *)NULL;
+	current_times=(float *)NULL;
 	rig=(struct Rig *)NULL;
 	current_region=(struct Region *)NULL;
 	description=(struct Device_description *)NULL;
 	signal_next=(struct Signal *)NULL;
+	signal_next_new=(struct Signal *)NULL;
+	processed_value=(float *)NULL;
+	source_value=(float *)NULL;
+	start_value=(float *)NULL;
+	time_float=(float *)NULL;
+	value=(float *)NULL;
+	processed_time=(int *)NULL;
+	processed_buffer=(struct Signal_buffer *)NULL;
 	return_code=0;	
 	if(trace)
 	{		
@@ -8451,8 +8462,8 @@ before this function is exited.
 				if(((signal_next)||(calculate_signal_mode==RMS_SIGNAL))&&
 					 extract_signal_information((struct FE_node *)NULL,
 					(struct Signal_drawing_package *)NULL,device,1,
-					1,0,(int *)NULL,&number_of_samples,&times,&values,
-					(enum Event_signal_status **)NULL,&name,(int *)NULL,
+					1,0,(int *)NULL,&number_of_samples,&current_times,&current_values,
+						 (enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
 					(float *)NULL,(float *)NULL)&&(0<number_of_samples))
 				{		
 					if(calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
@@ -8466,11 +8477,11 @@ before this function is exited.
 					}									
 					/* realloc Signal_buffer for processed_device */				
 					processed_frequency=(float)number_of_samples/
-						(times[number_of_samples-1]-times[0]);				
+						(current_times[number_of_samples-1]-current_times[0]);				
 					if (processed_buffer=reallocate_Signal_buffer(processed_buffer,
 						FLOAT_VALUE,number_of_signals,number_of_samples,processed_frequency))
 					{											
-						time_float=times;				
+						time_float=current_times;				
 						processed_time=processed_buffer->times;					
 						buffer_offset=processed_buffer->number_of_signals;
 						processed_device->channel->offset=0;
@@ -8519,8 +8530,8 @@ before this function is exited.
 								if((!current_region||(current_region==description->region))&&
 									(extract_signal_information((struct FE_node *)NULL,
 										(struct Signal_drawing_package *)NULL,*the_device,1,
-										1,0,(int *)NULL,&number_of_samples,&times,&values,							
-										status_ptr,&name,(int *)NULL,(float *)NULL,(float *)NULL)))					
+										1,0,(int *)NULL,&number_of_samples,(float **)NULL,&values,
+										status_ptr,(char **)NULL,(int *)NULL,(float *)NULL,(float *)NULL)))
 								{							
 									if(((*status==ACCEPTED)&&(electrodes_mode==ELECTRODES_ACCEPTED))||
 										(electrodes_mode==ELECTRODES_ALL)||
@@ -8536,7 +8547,9 @@ before this function is exited.
 										}
 										num_valid_devices++;								
 									}
-								}					
+								}	
+								DEALLOCATE(status);
+								DEALLOCATE(values);
 								the_device++;
 							}					
 							if(num_valid_devices)
@@ -8554,7 +8567,7 @@ before this function is exited.
 						/* put current signal in the processed_device->signal */
 						{								
 							buffer_offset=processed_buffer->number_of_signals;
-							value=values;
+							value=current_values;
 							processed_value=((processed_buffer->signals).float_values)+
 								(trace->processed_device->signal->index);
 							for (j=number_of_samples;j>0;j--)
@@ -8577,14 +8590,21 @@ before this function is exited.
 					if (signal_next)
 					{
 						destroy_Signal(&signal_next);
-					}
-					DEALLOCATE(name);
+					}			
 					display_message(ERROR_MESSAGE,
 						"trace_process_device.  Could not reallocate processed buffer");
 					trace->valid_processing=0;
 				}
 			} /* if ((trace->highlight)&&( */		
 		}/* if(trace->calculate_signal_mode==RMS_SIGNAL) */
+		if(current_times)
+		{
+			DEALLOCATE(current_times);
+		}
+		if(current_values)
+		{
+			DEALLOCATE(current_values);
+		}
 	}
 	else
 	{
