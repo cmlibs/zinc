@@ -202,7 +202,6 @@ DESCRIPTION :
 		eyelashy[i] += ran2;
 		eyelashz[i] += ran3;
 	}
-
 	point1[0] = eyelashx[0];
 	point1[1] = eyelashy[0];
 	point1[2] = eyelashz[0];
@@ -706,10 +705,9 @@ Clean up a hair.
 ==============================================================================*/
 {
 	int return_code;
-	struct Userdef_hair *hair;
 
 	ENTER(destroy_hair);
-	if (hair=(struct Userdef_hair *)*hair_struct)
+	if (*hair_struct)
 	{
 		DEALLOCATE(*hair_struct);
 	}

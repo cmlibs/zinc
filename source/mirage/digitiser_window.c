@@ -841,7 +841,7 @@ will be printed on the windows title bar.
 								}
 								if (graphics_buffer = create_Graphics_buffer_X3d(
 									digitiser_window->viewing_area, X3dCOLOUR_RGB_MODE, 
-									x3d_buffering_mode, 
+									x3d_buffering_mode, X3dMONO_BUFFERING,
 									User_interface_get_specified_visual_id(
 									digitiser_window->user_interface)))
 								{
