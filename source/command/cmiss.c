@@ -10934,33 +10934,20 @@ Executes a GFX EDIT command.
 static int execute_command_gfx_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 October 1999
+LAST MODIFIED : 20 January 2000
 
 DESCRIPTION :
 Executes a GFX ELEMENT_CREATOR command.
 ==============================================================================*/
 {
-	char create_nodes_flag,*group_name,new_element_flag,no_create_nodes_flag;
-	int element_dimension,i,return_code;
+	char *mesh_editor_create_mode_string,**valid_strings,*group_name;
+	enum Mesh_editor_create_mode mesh_editor_create_mode;
+	int element_dimension,number_of_valid_strings,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Graphical_element_creator *element_creator;
 	struct GROUP(FE_element) *element_group,*old_element_group;
 	struct GROUP(FE_node) *node_group,*old_node_group;
-	static struct Modifier_entry
-		create_nodes_option_table[]=
-		{
-			{"create_nodes",NULL,NULL,set_char_flag},
-			{"no_create_nodes",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{NULL,NULL,NULL,NULL},
-			{"dimension",NULL,NULL,set_int_non_negative},
-			{"egroup",NULL,NULL,set_FE_element_group},
-			{"new_element",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_element_creator);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -10970,8 +10957,6 @@ Executes a GFX ELEMENT_CREATOR command.
 			(element_creator=command_data->graphical_element_creator))
 		{
 			/* initialize defaults */
-			create_nodes_flag=0;
-			no_create_nodes_flag=0;
 			element_group=(struct GROUP(FE_element) *)NULL;
 			node_group=(struct GROUP(FE_node) *)NULL;
 			element_dimension=
@@ -10984,26 +10969,25 @@ Executes a GFX ELEMENT_CREATOR command.
 			}
 			old_element_group=element_group;
 			old_node_group=node_group;
-			new_element_flag=0;
-			i=0;
-			/* create_nodes/no_create_nodes */
-			(create_nodes_option_table[0]).to_be_modified= &create_nodes_flag;
-			(create_nodes_option_table[1]).to_be_modified= &no_create_nodes_flag;
-			(option_table[i]).user_data=create_nodes_option_table;
-			i++;
+
+			option_table=CREATE(Option_table)();
+			/* mesh_editor_create_mode */
+			Graphical_element_creator_get_mesh_editor_create_mode(element_creator,
+				&mesh_editor_create_mode);
+			mesh_editor_create_mode_string=
+				Mesh_editor_create_mode_string(mesh_editor_create_mode);
+			valid_strings=
+				Mesh_editor_create_mode_get_valid_strings(&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&mesh_editor_create_mode_string);
+			DEALLOCATE(valid_strings);
 			/* dimension */
-			(option_table[i]).to_be_modified= &element_dimension;
-			i++;
-			/* group */
-			(option_table[i]).to_be_modified= &element_group;
-			(option_table[i]).user_data=command_data->element_group_manager;
-			i++;
-			/* new_element */
-			(option_table[i]).to_be_modified= &new_element_flag;
-			i++;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+			Option_table_add_entry(option_table,"dimension",
+				&element_dimension,NULL,set_int_non_negative);
+			/* egroup */
+			Option_table_add_entry(option_table,"egroup",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
+			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				if (element_group)
 				{
@@ -11023,27 +11007,11 @@ Executes a GFX ELEMENT_CREATOR command.
 						element_dimension);
 					Graphical_element_creator_set_groups(element_creator,
 						element_group,node_group);
-					if (create_nodes_flag)
-					{
-						if (no_create_nodes_flag)
-						{
-							display_message(ERROR_MESSAGE,
-								"Only one of create_nodes_flag|no_create_nodes_flag");
-						}
-						else
-						{
-							Graphical_element_creator_set_create_nodes(element_creator,1);
-						}
-					}
-					else if (no_create_nodes_flag)
-					{
-						Graphical_element_creator_set_create_nodes(element_creator,0);
-					}
-					if (new_element_flag)
-					{
-						return_code=Graphical_element_creator_begin_create_element(
-							element_creator,command_data->default_scene);
-					}
+					mesh_editor_create_mode=Mesh_editor_create_mode_from_string(
+						mesh_editor_create_mode_string);
+					Graphical_element_creator_set_mesh_editor_create_mode(
+						element_creator,mesh_editor_create_mode,
+						command_data->default_scene);
 				}
 				else
 				{
@@ -11051,6 +11019,7 @@ Executes a GFX ELEMENT_CREATOR command.
 						"Please specify an element group for the element_creator");
 				}
 			} /* parse error,help */
+			DESTROY(Option_table)(&option_table);
 			if (element_group)
 			{
 				DEACCESS(GROUP(FE_element))(&element_group);
