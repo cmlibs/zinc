@@ -341,7 +341,7 @@ Called when scene is changed.
 	LEAVE;
 } /* spectrum_editor_dialog_set_autorange_scene */
 
-static struct Spectrum_editor_dialog *create_spectrum_editor_dialog(
+static struct Spectrum_editor_dialog *CREATE(Spectrum_editor_dialog)(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	Widget parent,
 	struct MANAGER(Spectrum) *spectrum_manager,
@@ -387,7 +387,7 @@ the spectrums contained in the global list.
 		{"spec_ed_d_autorange_scene_ID",(XtPointer)spectrum_editor_dialog_autorange_scene_ID}
 	};
 
-	ENTER(create_spectrum_editor_dialog);
+	ENTER(CREATE(Spectrum_editor_dialog));
 	spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
 	/* check arguments */
 	if (spectrum_manager&&user_interface)
@@ -461,7 +461,7 @@ the spectrums contained in the global list.
 									spectrum_manager))
 								{
 									display_message(ERROR_MESSAGE,
-						"create_spectrum_editor_dialog.  Could not create select widget.");
+						"CREATE(Spectrum_editor_dialog).  Could not create select widget.");
 									init_widgets=0;
 								}
 								if (!(spectrum_editor_dialog->spectrum_editor =
@@ -473,7 +473,7 @@ the spectrums contained in the global list.
 										spectrum_manager, texture_manager)))
 								{
 									display_message(ERROR_MESSAGE,
-										"create_spectrum_editor_dialog.  "
+										"CREATE(Spectrum_editor_dialog).  "
 										"Could not create spectrum editor");
 									init_widgets = 0;
 								}
@@ -508,8 +508,8 @@ the spectrums contained in the global list.
 										spectrum_editor_dialog->select_widget,&callback);
 									/* Set up window manager callback for close window message */
 									WM_DELETE_WINDOW=XmInternAtom(
-										XtDisplay(spectrum_editor_dialog->dialog),"WM_DELETE_WINDOW",
-										False);
+										XtDisplay(spectrum_editor_dialog->dialog),
+										"WM_DELETE_WINDOW", False);
 									XmAddWMProtocolCallback(spectrum_editor_dialog->dialog,
 										WM_DELETE_WINDOW,spectrum_editor_dialog_close_CB,
 										spectrum_editor_dialog);
@@ -526,47 +526,47 @@ the spectrums contained in the global list.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-			"create_spectrum_editor_dialog.  Could not fetch spectrum_editor_dialog");
+			"CREATE(Spectrum_editor_dialog).  Could not fetch spectrum_editor_dialog");
 								DEALLOCATE(spectrum_editor_dialog);
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-							"create_spectrum_editor_dialog.  Could not register identifiers");
+							"CREATE(Spectrum_editor_dialog).  Could not register identifiers");
 							DEALLOCATE(spectrum_editor_dialog);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_spectrum_editor_dialog.  Could not register callbacks");
+							"CREATE(Spectrum_editor_dialog).  Could not register callbacks");
 						DEALLOCATE(spectrum_editor_dialog);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_spectrum_editor_dialog.  Could not create popup shell.");
+						"CREATE(Spectrum_editor_dialog).  Could not create popup shell.");
 					DEALLOCATE(spectrum_editor_dialog);
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-	"create_spectrum_editor_dialog.  Could not allocate spectrum_editor_dialog");
+	"CREATE(Spectrum_editor_dialog).  Could not allocate spectrum_editor_dialog");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_spectrum_editor_dialog.  Could not open hierarchy");
+				"CREATE(Spectrum_editor_dialog).  Could not open hierarchy");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_spectrum_editor_dialog.  Invalid argument(s)");
+			"CREATE(Spectrum_editor_dialog).  Invalid argument(s)");
 	}
 	if (spectrum_editor_dialog_address && spectrum_editor_dialog)
 	{
@@ -575,7 +575,7 @@ the spectrums contained in the global list.
 	LEAVE;
 
 	return (spectrum_editor_dialog);
-} /* create_spectrum_editor_dialog */
+} /* CREATE(Spectrum_editor_dialog) */
 
 /*
 Global functions
@@ -755,23 +755,23 @@ bring it to the front, otherwise create a new one.
 			spectrum_editor_dialog_set_spectrum(spectrum_editor_dialog, spectrum);
 			XtPopup(spectrum_editor_dialog->dialog, XtGrabNone);
 			XtVaSetValues(spectrum_editor_dialog->dialog, XmNiconic, False, NULL);
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
-			if (create_spectrum_editor_dialog(spectrum_editor_dialog_address,parent,
+			if (CREATE(Spectrum_editor_dialog)(spectrum_editor_dialog_address,parent,
 				spectrum_manager, spectrum, user_interface,
 				glyph_list,
 				graphical_material_manager, light_manager,
 				texture_manager, scene_manager))
 			{
-				return_code=1;
+				return_code = 1;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"bring_up_spectrum_editor_dialog.  Error creating dialog");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -779,7 +779,7 @@ bring it to the front, otherwise create a new one.
 	{
 		display_message(ERROR_MESSAGE,
 			"bring_up_spectrum_editor_dialog.  Invalid argument");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
