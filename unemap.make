@@ -116,7 +116,7 @@ update :
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
-		make -f unemap.make $(BIN_PATH)/unemap32 $(BIN_PATH)/unemap_nodes $(BIN_PATH)/unemap_optimised $(BIN_PATH)/unemap_64; \
+		make -f unemap.make unemap32 unemap_nodes unemap_optimised unemap_64; \
 		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; make -f unemap.make unemap_linux' ; \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \

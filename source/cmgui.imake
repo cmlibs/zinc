@@ -32,9 +32,8 @@ XCOMM ==========================================================================
 
 SHELL=/bin/sh
 
-
-BIN_PATH=$(CMGUI_ROOT)/devbin
-SOURCE_PATH=$(CMGUI_ROOT)/source
+BIN_PATH=$(CMGUI_DEV_ROOT)/devbin
+SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities
@@ -69,9 +68,9 @@ XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
 #define CmguiMake cmgui_sgilite.make
 #define DependMake cmgui_sgilite.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32_lite
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_lite
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_lite
-UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* defined (LITEWEIGHT) */
 #if !defined (OPTIMISED)
@@ -86,9 +85,9 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define CmguiMake cmgui_sgi.make
 #define DependMake cmgui_sgi.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32
-UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* !defined (MEMORY_CHECK) */
 #define CmguiTarget cmgui_memorycheck
@@ -98,9 +97,9 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define CmguiMake cmgui_sgi_memorycheck.make
 #define DependMake cmgui_sgi_memorycheck.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32
-UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (MEMORY_CHECK) */
 #else /* !defined (OPTIMISED) */
@@ -111,9 +110,9 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define CmguiMake cmgui_sgioptimised.make
 #define DependMake cmgui_sgioptimised.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32_optimised
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_optimised
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
-UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (OPTIMISED) */
 #endif /* defined (LITEWEIGHT) */
@@ -128,9 +127,9 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define CmguiMake cmgui_sgi64.make
 #define DependMake cmgui_sgi64.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/64
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/64
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/64
-UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/64
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/64
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #endif /* !defined (O64) */
 
@@ -149,9 +148,9 @@ XCOMM #define CELL
 #define DependMake cmgui_linux.depend
 #define ObjSuffix o
 /* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/linux_g
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
-UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/linux_g
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_g
 #endif /* switch OperatingSystem */
 
@@ -233,7 +232,7 @@ TARGET_TYPE_FLAGS =
 TARGET_TYPE_DEFINES =
 #endif /* switch OperatingSystem */
 
-BASE_DIRECTORY_INC = -I$(CMGUI_ROOT)/source -I$(PRODUCT_SOURCE_PATH)
+SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 
 #if defined (IRIX) /* switch OperatingSystem */
 PLATFORM_SWITCH = -DSGI -Dmips
@@ -667,7 +666,7 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(END_ALL_DEFINES)
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
-	$(BASE_DIRECTORY_INC) $(XVG_INC) $(SOCKET_INC) $(WORMHOLE_INC) $(XML_INC) \
+	$(SOURCE_DIRECTORY_INC) $(XVG_INC) $(SOCKET_INC) $(WORMHOLE_INC) $(XML_INC) \
 	$(END_ALL_INCLUDES)
 #endif /* defined (OLD_CODE) */
 
@@ -684,7 +683,7 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(END_ALL_DEFINES)
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
-	$(BASE_DIRECTORY_INC) $(HAPTIC_INC) $(XVG_INC) $(WORMHOLE_INC) $(XML_INC) \
+	$(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(XVG_INC) $(WORMHOLE_INC) $(XML_INC) \
 	$(UIDH_INC) $(END_ALL_INCLUDES)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
@@ -718,7 +717,7 @@ ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(LIB) $(VIDEO_LIB) $(WORMHOLE_LIB) \
 	else \
 	   case $*.c in  \
 	      $(STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_PATH)/$*.c;; \
+	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
 	      * ) \
       		set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
 	   esac ; \
@@ -746,7 +745,7 @@ ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(LIB) $(VIDEO_LIB) $(WORMHOLE_LIB) \
 	else \
 	   case $*.cpp in  \
 	      $(STRICT_FLAGS_PATTERN) ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_PATH)/$*.cpp;; \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	      * ) \
 	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	   esac ; \
@@ -759,12 +758,12 @@ ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(LIB) $(VIDEO_LIB) $(WORMHOLE_LIB) \
 	@if [ -f $*.f ]; then \
 	   case $*.f in  \
 	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(BASE_DIRECTORY_INC) $*.f ;; \
+	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
 	   esac ; \
 	else \
 	   case $*.f in  \
 	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(BASE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
+	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
 	   esac ; \
 	fi
 #if defined (OLD_CODE) /* Used to put object in correct directory with g77 */

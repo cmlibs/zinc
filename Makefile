@@ -14,9 +14,9 @@ VPATH=$(PRODUCT_PATH)
 cmgui : force $(SOURCE_PATH)/cmgui_sgi.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi.make ]; then \
-		make -f cmgui_sgi.make CMGUI_ROOT=$(PWD) ; \
+		make -f cmgui_sgi.make CMGUI_DEV_ROOT=$(PWD) ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi.make CMGUI_DEV_ROOT=$(PWD) ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -34,9 +34,9 @@ $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 cmgui_optimised : force $(SOURCE_PATH)/cmgui_sgioptimised.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgioptimised.make ]; then \
-		make -f cmgui_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
+		make -f cmgui_sgioptimised.make CMGUI_DEV_ROOT=$(PWD) ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgioptimised.make CMGUI_DEV_ROOT=$(PWD) ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -54,9 +54,9 @@ $(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 cmgui_lite : force $(SOURCE_PATH)/cmgui_sgilite.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgilite.make ]; then \
-		make -f cmgui_sgilite.make CMGUI_ROOT=$(PWD) ; \
+		make -f cmgui_sgilite.make CMGUI_DEV_ROOT=$(PWD) ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgilite.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgilite.make CMGUI_DEV_ROOT=$(PWD) ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -74,9 +74,9 @@ $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi_memorycheck.make ]; then \
-		make -f cmgui_sgi_memorycheck.make CMGUI_ROOT=$(PWD) ; \
+		make -f cmgui_sgi_memorycheck.make CMGUI_DEV_ROOT=$(PWD) ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi_memorycheck.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi_memorycheck.make CMGUI_DEV_ROOT=$(PWD) ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -91,9 +91,9 @@ $(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake cmgui.mak
 cmgui64 : force $(SOURCE_PATH)/cmgui_sgi64.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi64.make ]; then \
-		make -f cmgui_sgi64.make CMGUI_ROOT=$(PWD) ; \
+		make -f cmgui_sgi64.make CMGUI_DEV_ROOT=$(PWD) ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi64.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi64.make CMGUI_DEV_ROOT=$(PWD) ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -111,9 +111,9 @@ $(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 cmgui_linux : force $(SOURCE_PATH)/cmgui_linux.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_linux.make ]; then \
-		make -f cmgui_linux.make CMGUI_ROOT=$(PWD) ; \
+		make -f cmgui_linux.make CMGUI_DEV_ROOT=$(PWD) ; \
 	else \
-		make -f $(PRODUCT_SOURCE_PATH)/cmgui_linux.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_linux.make CMGUI_DEV_ROOT=$(PWD) ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_linux.make : $(SOURCE_PATH)/cmgui.imake cmgui.make

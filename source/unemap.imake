@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM  FILE : unemap.imake
 XCOMM
-XCOMM  LAST MODIFIED : 19 October 1999
+XCOMM LAST MODIFIED : 3 December 1999
 XCOMM
 XCOMM  DESCRIPTION :
 XCOMM  Makefile for unemap
@@ -11,9 +11,25 @@ XCOMM ==========================================================================
 /* The UnemapMake filename should match the filename into which this is being
 	written.  This is done in the dependency rules in unemap.make i.e.
 	for sgi
-		image -T unemap.imake -f dummy.imake -s unemap.make
+		image -T unemap.imake -f /dev/null -s unemap.make
 	for linux
-		image -DLINUX -T unemap.imake -f dummy.imake -s unemap_linux.make */
+		image -DLINUX -T unemap.imake -f /dev/null -s unemap_linux.make */
+
+SHELL=/bin/sh
+
+BIN_PATH=$(CMGUI_DEV_ROOT)/devbin
+SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
+PRODUCT_PATH=$(CMISS_ROOT)/cmgui
+PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
+UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities
+
+#if defined (OLD_CODE)
+PRODUCT_PATH=/usr/people/bullivan/cmgui/uni_source
+UTILITIES_PATH=/usr/people/bullivan/cmgui/cvs_unemap/utilities
+PRODUCT_PATH=.
+PRODUCT_PATH=$(CMISS_ROOT)/cmgui/source
+UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
+#endif /* defined (OLD_CODE) */
 
 #if defined (IRIX) /* switch OperatingSystem */
 /* 1 IRIX */
@@ -21,7 +37,6 @@ XCOMM ==========================================================================
 /* 1.1 IRIX-O64 */
 /* the O64 version can be either OPTIMISED or not but only one version is kept
 	at the moment */
-#define UidPath uid64
 #define UnemapTarget unemap64
 #define Bmsi2sigTarget unemap/utilities/bmsi2sig64
 #define ChangeCalibrationTarget unemap/utilities/change_calibration64
@@ -39,7 +54,11 @@ XCOMM ==========================================================================
 #define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware64
 #define UnemapMake unemap_sgi64.make
 #define DependMake unemap_sgi64.depend
-#define ObjSuffix o64non
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/64
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/64
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/64
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #else /* defined (O64) */
 /* 1.2 IRIX-N32 */
 #define UidPath uid
@@ -62,7 +81,11 @@ XCOMM ==========================================================================
 #define RegisterTarget unemap/utilities/register_optimised
 #define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware_optimised
 #define DependMake unemap_sgioptimised.depend
-#define ObjSuffix ooptnon
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_optnon
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_optnon
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #else /* defined (OPTIMISED) */
 /* 1.2.2 IRIX-N32-!OPTIMISED */
 #if defined (USE_UNEMAP_NODES)
@@ -85,8 +108,11 @@ XCOMM ==========================================================================
 #define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware_nodes
 #define UnemapMake unemap_sginodes.make
 #define DependMake unemap_sginodes.depend
-/* must be same as default cmgui make, (with nodes) */
 #define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #else /* defined (USE_UNEMAP_NODES) */
 /* 1.2.2.2 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES */
 #define UnemapTarget unemap32
@@ -106,7 +132,11 @@ XCOMM ==========================================================================
 #define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware32
 #define UnemapMake unemap_sgi.make
 #define DependMake unemap_sgi.depend
-#define ObjSuffix onon
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_nonodes
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_nonodes
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #endif /* defined (USE_UNEMAP_NODES) */
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
@@ -130,7 +160,11 @@ XCOMM ==========================================================================
 #define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware_linux
 #define UnemapMake unemap_linux.make
 #define DependMake unemap_linux.depend
-#define ObjSuffix olinuxnon
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux
 #endif /* switch OperatingSystem */
 
 #if defined (USE_UNEMAP_NODES)
@@ -157,32 +191,23 @@ USE_NODES_SWITCH = -DUNEMAP_USE_NODES
 USE_NODES_SWITCH =
 #endif
 
-#if defined (OLD_CODE)
-SHELL=/bin/tcsh
-#endif /* defined (OLD_CODE) */
-SHELL=/bin/sh
-
-#if defined (OLD_CODE)
-PRODUCT_PATH=/usr/people/bullivan/cmgui/uni_source
-UTILITIES_PATH=/usr/people/bullivan/cmgui/cvs_unemap/utilities
-PRODUCT_PATH=.
-#endif /* defined (OLD_CODE) */
-PRODUCT_PATH=$(CMISS_ROOT)/cmgui/source
-UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
-
 #if defined (IRIX) /* switch OperatingSystem */
-VPATH=$(PRODUCT_PATH)
+#if defined (CMISS_ROOT_DEFINED)
+VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
+#else /* defined (CMISS_ROOT_DEFINED) */
+VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
+#endif /* defined (CMISS_ROOT_DEFINED) */
 #elif defined (LINUX) /* switch OperatingSystem */
 XCOMM LINUX treats VPATH slightly differently and does not notice
 XCOMM	that a local *.c file has changed if a valid *.olinux file
 XCOMM	is found in the PRODUCT_PATH directories so use vpath and
 XCOMM the VPATH is not searched for *.olinux.  This has the penalty
 XCOMM of requiring all the objects to be built locally.
-vpath %.c $(PRODUCT_PATH)
-vpath %.f $(PRODUCT_PATH)
-vpath %.h $(PRODUCT_PATH)
-vpath %.cpp $(PRODUCT_PATH)
-vpath %.uil $(PRODUCT_PATH)
+vpath %.c $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
+vpath %.f $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
+vpath %.h $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
+vpath %.cpp $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
+vpath %.uil $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)
@@ -204,46 +229,57 @@ LINK = cc -o
 #endif
 
 #if defined (IRIX) /* switch OperatingSystem */
-
-UIDTOUID64 = $(UTILITIES_PATH)/uid2uid64
+#define WildC *.c
+UIDTOUIDH = $(UTILITIES_PATH)/uid2uidh
+#if !defined (O64)
 UIL = uil
-UIL64 = uil64
+#else /* !defined (O64) */
+UIL = uil64
+#endif /* !defined (O64) */
+CC = cc -c
+CPP = CC -c
+FORTRAN = f77 -c
+LINK = cc
 #if defined (OPTIMISED)
-CC_START = cc -c -O
-CPP_START = CC -c -O
-FORTRAN_START = f77 -c -O
-LINK_START = cc -O
+OPTIMISATION_FLAGS = -O
+COMPILE_FLAGS = -ansi -pedantic -woff 1521,1048
+COMPILE_DEFINES = 
+STRICT_FLAGS = 
+STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
 #else /* defined (OPTIMISED) */
-CC_START = cc -c -g -fullwarn -DUSE_PARAMETER_ON -mips3
-CPP_START = CC -c -g -fullwarn -DUSE_PARAMETER_ON -mips3
-FORTRAN_START = f77 -c -g -fullwarn -mips3
-LINK_START = cc -g -fullwarn -mips3
+OPTIMISATION_FLAGS = -g -mips3
+COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521,1048
+COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
+STRICT_FLAGS = -diag_error 1196
+STRICT_FLAGS_PATTERN = choose/WildC | command/WildC | curve/WildC | data/WildC | finite_element/WildC | general/WildC | graphics/WildC | material/WildC | mirage/WildC | select/WildC | three_d_drawing/WildC | time/WildC | user_interface/WildC | view/WildC
 #endif /* defined (OPTIMISED) */
 
 #if defined (O64)
-CC = ${CC_START} -G0 -64 -DO64 -o
-CPP = ${CPP_START} -G0 -64 -DO64 -o
-FORTRAN = ${FORTRAN_START} -G0 -64 -DO64 -o
-LINK = ${LINK_START} -G0 -64 -DO64 -o
+TARGET_TYPE_FLAGS = -G0 -64
+TARGET_TYPE_DEFINES = -DO64
 #else /* defined (O64) */
-CC = ${CC_START} -n32 -o
-CPP = ${CPP_START} -n32 -o
-FORTRAN = ${FORTRAN_START} -n32 -o
-LINK = ${LINK_START} -n32 -o
+TARGET_TYPE_FLAGS = -n32
+TARGET_TYPE_DEFINES =
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 
-UIDTOUID64 = $(UTILITIES_PATH)/uid2uid64_linux
+UIDTOUIDH = $(UTILITIES_PATH)/uid2uidh_linux
 UIL = uil
 UIL64 = uil64  /* There is a test in the rule to see if this is available */
-CC = egcs -c -g -o
-CPP = egcs -c -o
-FORTRAN = g77 -c -o
-LINK = egcs -static -L/usr/X11R6/lib -g -o
-
+CC = egcs -c
+CPP = egcs -c
+FORTRAN = g77 -c
+LINK = egcs -static -L/usr/X11R6/lib
+OPTIMISATION_FLAGS = -g
+COMPILE_FLAGS = 
+COMPILE_DEFINES = 
+STRICT_FLAGS = 
+STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
+TARGET_TYPE_FLAGS =
+TARGET_TYPE_DEFINES =
 #endif /* switch OperatingSystem */
 
-BASE_DIRECTORY_INC = -I$(CMGUI_BASE_DIRECTORY) -I$(PRODUCT_PATH)
+SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 
 #if defined (IRIX) /* switch OperatingSystem */
 PLATFORM_SWITCH = -DSGI -Dmips
@@ -269,6 +305,8 @@ WINDOWING_SYSTEM = -DMOTIF
 #if defined (OLD_CODE)
 WINDOWING_SYSTEM = -DWINDOWS
 #endif /* (OLD_CODE) */
+
+UIDH_INC = -I$(UIDH_PATH) -I$(PRODUCT_UIDH_PATH)
 
 #if defined (IRIX) && defined (USE_UNEMAP_NODES)
 EXTERNAL_INPUT_DEFINES = -DDIALS -DSPACEBALL -DPOLHEMUS -DFARO -DEXT_INPUT
@@ -297,12 +335,12 @@ TEMPORARY_DEVELOPMENT_FLAGS = -DWINDOWS_DEV_FLAG
 CFLAGS = /float=ieee /standard=ansi89
 CFLAGS =
 CFLAGS = -ansi -pedantic -fullwarn -woff 841 -wlint,-faivu
-#endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
 CFLAGS = -ansi -pedantic -woff 1521,1048
 #elif defined(LINUX) /* switch OperatingSystem */
 CFLAGS = -ansi -pedantic
 #endif /* switch OperatingSystem */
+#endif /* defined (OLD_CODE) */
 
 #if defined (OLD_CODE)
 LIB = -lMrm -lXm -lXt -lX11 -lPW -lm -lmalloc_cv
@@ -339,6 +377,7 @@ END_ALL_INCLUDES =
 
 #if defined (USE_UNEMAP_NODES)
 ALL_DEFINES = $(START_ALL_DEFINES) \
+	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) $(USE_NODES_SWITCH) \
 	$(EXTERNAL_INPUT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
 	$(GRAPHICS_LIBRARY_SWITCH) \
@@ -347,6 +386,7 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(END_ALL_DEFINES)
 #else
 ALL_DEFINES = $(START_ALL_DEFINES) \
+	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) $(USE_NODES_SWITCH) \
 	$(EXTERNAL_INPUT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
 	-DNOT_ACQUISITION_ONLY \
@@ -355,11 +395,12 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 #endif /* (USE_UNEMAP_NODES) */
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
-	$(BASE_DIRECTORY_INC) \
-	$(WORMHOLE_INC) \
+	$(SOURCE_DIRECTORY_INC) \
+	$(WORMHOLE_INC) $(UIDH_INC) \
 	$(END_ALL_INCLUDES)
 
-ALL_FLAGS = $(CFLAGS) $(ALL_DEFINES) $(ALL_INCLUDES)
+ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
+	$(ALL_DEFINES) $(ALL_INCLUDES)
 
 #if defined (USE_UNEMAP_NODES)
 ALL_LIB = $(LIB) $(EXTERNAL_INPUT_LIB) $(GRAPHICS_LIB)
@@ -374,48 +415,71 @@ ALL_LIB = alpha.opt/opt
 .MAKEOPTS : -r
 
 .SUFFIXES :
-.SUFFIXES : .ObjSuffix .c .cpp .f .uil .uid64
+.SUFFIXES : .ObjSuffix .c .cpp .f .uil .uidh
 
-.c.ObjSuffix:
-	if [ -d $(*D) ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p $(*D); \
+.c.ObjSuffix: 
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	if [ -f $*.c ]; \
-	then \
-		$(CC) $*.ObjSuffix $(ALL_FLAGS) $*.c; \
+#if defined (CMISS_ROOT_DEFINED)
+	@if [ -f $*.c ]; then \
+	   case $*.c in  \
+	      $(STRICT_FLAGS_PATTERN) ) \
+	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
+	      * ) \
+	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
+	   esac ; \
 	else \
-		$(CC) $*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/$*.c; \
+	   case $*.c in  \
+	      $(STRICT_FLAGS_PATTERN) ) \
+	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
+	      * ) \
+      		set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
+	   esac ; \
 	fi
+#else /* defined (CMISS_ROOT_DEFINED) */
+	@case $*.c in  \
+	   $(STRICT_FLAGS_PATTERN) ) \
+	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
+	   * ) \
+	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
+	esac ;
+#endif /* defined (CMISS_ROOT_DEFINED) */
 
 .cpp.ObjSuffix:
-	if [ -d $(*D) ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p $(*D); \
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	if [ -f $*.cpp ]; \
-	then \
-		$(CPP) $*.ObjSuffix $(ALL_FLAGS) $*.cpp; \
+	@if [ -f $*.cpp ]; then \
+	   case $*.cpp in  \
+	      $(STRICT_FLAGS_PATTERN) ) \
+   		   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
+	      * ) \
+	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.cpp;; \
+	   esac ; \
 	else \
-		$(CPP) $*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/$*.cpp; \
+	   case $*.cpp in  \
+	      $(STRICT_FLAGS_PATTERN) ) \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
+	      * ) \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
+	   esac ; \
 	fi
 
-.f.ObjSuffix:
-	if [ -d $(*D) ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p $(*D); \
+.f.ObjSuffix: 
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	if [ -f $*.f ]; \
-	then \
-		$(FORTRAN) $*.ObjSuffix $(BASE_DIRECTORY_INC) $*.f; \
+	@if [ -f $*.f ]; then \
+	   case $*.f in  \
+	      * ) \
+	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
+	   esac ; \
 	else \
-		$(FORTRAN) $*.ObjSuffix $(BASE_DIRECTORY_INC) $(PRODUCT_PATH)/$*.f; \
+	   case $*.f in  \
+	      * ) \
+	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
+	   esac ; \
 	fi
 #if defined (OLD_CODE) /* Used to put object in correct directory with g77 */
 #if defined (LINUX)
@@ -423,32 +487,18 @@ ALL_LIB = alpha.opt/opt
 #endif /* defined (LINUX) */
 #endif /* defined (OLD_CODE) */
 
-.uil.uid64:
-	if [ -d $(*D) ]; then \
-		: ; \
-	else \
-		mkdir -p $(*D); \
+.uil.uidh:
+	@if [ ! -d $(UIDH_PATH)/$(*D) ]; then \
+		mkdir -p $(UIDH_PATH)/$(*D); \
 	fi
-	if [ -f $*.uil ]; then \
-	   $(UIL) -o $*.uid $*.uil; \
-	   if which $(UIL64) > /dev/null ; then \
-	   	$(UIL64) -o $*_64bit.uid $*.uil; \
-	   	$(UIDTOUID64) $*.uid -64bit $*_64bit.uid $*.uid64; \
-		rm $*.uid $*_64bit.uid; \
-	   else \
-	   	$(UIDTOUID64) $*.uid $*.uid64; \
-		rm $*.uid; \
-	   fi ; \
+	@if [ -f $*.uil ]; then \
+	   set -x ; \
+	   $(UIL) -o $(UIDH_PATH)/$*.uid $*.uil; \
+           $(UIDTOUIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh; \
 	else \
-	   $(UIL) -o $*.uid $(PRODUCT_PATH)/$*.uil; \
-	   if which $(UIL64) > /dev/null ; then \
-	   	$(UIL64) -o $*_64bit.uid $(PRODUCT_PATH)/$*.uil; \
-	   	$(UIDTOUID64) $*.uid -64bit $*_64bit.uid $*.uid64; \
-		rm $*.uid $*_64bit.uid; \
-	   else \
-	   	$(UIDTOUID64) $*.uid $*.uid64; \
-		rm $*.uid; \
-	   fi ; \
+	   set -x ; \
+	   $(UIL) -o $(UIDH_PATH)/$*.uid $(PRODUCT_SOURCE_PATH)/$*.uil; \
+      	   $(UIDTOUIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh; \
 	fi
 
 COMMAND_SRCS = \
@@ -526,6 +576,7 @@ GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
 	graphics/element_group_settings.c \
 	graphics/volume_texture.c \
+	graphics/material.c \
 	graphics/rendergl.c \
 	graphics/graphics_object.c \
 	graphics/graphics_library.c \
@@ -534,10 +585,16 @@ GRAPHICS_SRCS = \
 	graphics/colour.c \
 	graphics/graphics_window.c \
 	graphics/scene_viewer.c \
-	graphics/scene.c
+	graphics/scene.c \
+	graphics/spectrum_settings.c \
+ 	graphics/texture.c
 #else
 GRAPHICS_SRCS = \
-	graphics/colour.c
+	graphics/colour.c \
+	graphics/material.c \
+	graphics/spectrum.c \
+	graphics/spectrum_settings.c \
+	graphics/texture.c
 #endif
 #if defined (USE_UNEMAP_NODES)
 POSITION_SRCS = \
@@ -546,6 +603,7 @@ POSITION_SRCS = \
 #else /* defined (USE_UNEMAP_NODES) */
 POSITION_SRCS =
 #endif /* defined (USE_UNEMAP_NODES) */
+
 TIME_SRCS = \
 	time/time.c \
 	time/time_keeper.c \
@@ -567,20 +625,16 @@ UNEMAP_SRCS = \
 	unemap/map_dialog.c \
 	unemap/mapping.c \
 	unemap/mapping_window.c \
-	unemap/material.c \
 	unemap/neurosoft.c \
 	unemap/page_window.c \
 	unemap/rig.c \
 	unemap/rig_node.c \
 	unemap/setup_dialog.c \
 	unemap/spectral_methods.c \
-	unemap/spectrum_settings.c \
 	unemap/system_window.c \
-	unemap/texture.c \
 	unemap/trace_window.c \
 	unemap/unemap_package.c \
-	unemap/unemap_hardware_client.c \
-	unemap/user_interface.c
+	unemap/unemap_hardware_client.c
 #else
 UNEMAP_SRCS = \
 	unemap/acquisition.c \
@@ -597,27 +651,23 @@ UNEMAP_SRCS = \
 	unemap/map_dialog.c \
 	unemap/mapping.c \
 	unemap/mapping_window.c \
-	unemap/material.c \
 	unemap/neurosoft.c \
 	unemap/page_window.c \
 	unemap/rig.c \
 	unemap/rig_node.c \
 	unemap/setup_dialog.c \
-	unemap/spectrum.c \
 	unemap/spectral_methods.c \
-	unemap/spectrum_settings.c \
 	unemap/system_window.c \
-	unemap/texture.c \
 	unemap/trace_window.c \
 	unemap/unemap_package.c \
-	unemap/unemap_hardware_client.c \
-	unemap/user_interface.c
+	unemap/unemap_hardware_client.c
 #endif
 USER_INTERFACE_SRCS = \
 	user_interface/confirmation.c \
 	user_interface/filedir.c \
 	user_interface/message.c \
-	user_interface/printer.c
+	user_interface/printer.c \
+	user_interface/user_interface.c
 
 SRCS = \
 	$(COLOUR_SRCS) \
@@ -637,11 +687,20 @@ OBJSB = $(OBJSA:.cpp=.ObjSuffix)
 OBJS = $(OBJSB:.f=.ObjSuffix)
 
 all : oscheck
-	if [ -s $(PRODUCT_PATH)/DependMake ] ; then \
-		make -f UnemapMake UnemapTarget ; \
+	if [ -s $(PRODUCT_SOURCE_PATH)/DependMake ] ; then \
+	    	if [ -f UnemapMake ]; then \
+			$(MAKE) -f UnemapMake UnemapTarget ; \
+		else \
+			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/UnemapMake UnemapTarget ; \
+		fi \
 	else \
-		make -f UnemapMake depend ; \
-		make -f UnemapMake UnemapTarget ; \
+	    	if [ -f UnemapMake ]; then \
+			$(MAKE) -f UnemapMake depend ; \
+			$(MAKE) -f UnemapMake UnemapTarget ; \
+		else \
+			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/UnemapMake depend ; \
+			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/UnemapMake UnemapTarget ; \
+		fi \
 	fi
 
 XCOMM Check that the makefile is being used on the correct system
@@ -662,28 +721,15 @@ oscheck :
 #endif  /* defined (LINUX) */
 #endif  /* defined (IRIX) */
 
-#if defined (OLD_CODE)
-update :
-	if [ "$(PWD)" = "$(PRODUCT_PATH)" -a "$(USER)" = "cmiss" ]; \
-	then \
-		cvs update -d && \
-		chgrp -R cmgui_programmers *; \
-		make -f UnemapMake CMGUI_BASE_DIRECTORY=$(PRODUCT_PATH); \
-		chgrp -R cmgui_programmers *; \
-	else \
-		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
-	fi
-#endif /* defined (OLD_CODE) */
-
 depend :
 	echo -n > DependMake
 	(makedepend -f DependMake -Y -o.ObjSuffix -- $(ALL_FLAGS) -- unemap.c 2> DependMake.tmp)
 	(makedepend -f DependMake -a -Y -o.ObjSuffix -- $(ALL_FLAGS) -- $(SRCS) 2>> DependMake.tmp)
-	/* Try and make a rule for the uid64s if they don't exist already, It is bad,
-		based on the format of the error output from makedepend and it only gets the
-		first inclusion.  If it fails then you can get the correct makedepend by
-		ensuring all the uid64 files already exist before you makedepend */
-	( grep uid64 DependMake.tmp | grep makedepend | awk -F "[ ,]" '{printf("%s:",$$4); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uid64")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
+	/* Try and make a rule for the uidhs if they don't exist already,
+	It is bad, based on the format of the error output from makedepend and it only
+	gets the first inclusion.  If it fails then you can get the correct makedepend 
+	by ensuring all the uidh files already exist before you makedepend */
+	( grep uidh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
 	rm DependMake.tmp
 
 	  /* Can't put / by * or it thinks there is a comment so I have put the * into
@@ -709,113 +755,46 @@ clobber : clean
 transfer :
 	tar -cvf - \
 	unemap.make unemap.c version.h \
-	unemap/WildC unemapWildH unemap/WildUil \
-	unemap/utilities/WildC unemap/utilitiesWildH unemap/utilities/WildUil \
+	unemap/WildC unemap/WildH unemap/WildUil \
+	unemap/utilities/WildC unemap/utilities/WildH unemap/utilities/WildUil \
 	command/parser.c command/parser.h \
 	general/WildC generalWildH general/WildUil \
 	graphics/colour.c graphics/colour.h graphics/material.c graphics/material.h \
 	graphics/spectrum.c graphics/spectrum.h graphics/spectrum_settings.c \
 	graphics/spectrum_settings.h graphics/graphics_library.h graphics/texture.c \
 	graphics/texture.h \
-	io_devices/WildC io_devicesWildH io_devices/WildUil \
-	user_interface/WildC user_interfaceWildH user_interface/WildUil \
+	io_devices/WildC io_devices/WildH io_devices/WildUil \
+	user_interface/WildC user_interface/WildH user_interface/WildUil \
 	| gzip > unemap_tar.gz
 
-$(CMGUI_BASE_DIRECTORY)/unemap_version.ObjSuffix.h : $(OBJS)
+$(OBJECT_PATH)/version.ObjSuffix.h : $(OBJS)
+	if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi	
+	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.ObjSuffix.h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "unemap version 001.001.010  &/;s/.$$/&\\nCopyright 1996-1999, Auckland UniServices Ltd."/' < date.h > unemap_version.ObjSuffix.h
+	sed 's/"//;s/./#define VERSION "unemap version 001.001.010  &/;s/.$$/&\\nCopyright 1996-1999, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.ObjSuffix.h
 
-unemap.ObjSuffix : unemap.c $(CMGUI_BASE_DIRECTORY)/unemap_version.ObjSuffix.h
-	if [ -f $*.c ]; \
-	then \
-	   cat $(CMGUI_BASE_DIRECTORY)/unemap_version.ObjSuffix.h $*.c > $*.ObjSuffix.c ; \
-		$(CC) $*.ObjSuffix $(ALL_FLAGS) $*.ObjSuffix.c; \
-		rm $*.ObjSuffix.c ; \
+unemap.ObjSuffix : unemap.c $(OBJECT_PATH)/version.ObjSuffix.h
+	@if [ -f $*.c ]; then \
+		set -x; \
+		cat $(OBJECT_PATH)/version.ObjSuffix.h $*.c > $(OBJECT_PATH)/$*.ObjSuffix.c ; \
 	else \
-	   cat $(CMGUI_BASE_DIRECTORY)/unemap_version.ObjSuffix.h $(PRODUCT_PATH)/$*.c > $*.ObjSuffix.c ; \
-		$(CC) $*.ObjSuffix $(ALL_FLAGS) $*.ObjSuffix.c; \
-		rm $*.ObjSuffix.c ; \
+		set -x; \
+		cat $(OBJECT_PATH)/version.ObjSuffix.h $(PRODUCT_SOURCE_PATH)/$*.c > $(OBJECT_PATH)/$*.ObjSuffix.c ; \
 	fi
+	$(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(OBJECT_PATH)/$*.ObjSuffix.c;
 
 UnemapTarget : $(OBJS) unemap.ObjSuffix
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
+	if [ ! -d $(BIN_PATH) ]; then \
+		mkdir -p $(BIN_PATH); \
+	fi
 #if defined (IRIX) /* switch OperatingSystem */
-	(ls $(OBJS) unemap.ObjSuffix 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) unemap.ObjSuffix 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%" > object.list)
 #elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(OBJS) unemap.ObjSuffix 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) unemap.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #endif /* switch OperatingSystem */
-	$(LINK) UnemapTarget `cat object.list` $(ALL_LIB)
-
-XCOMM ???DB.  unemap has different flags
-unemap/material.ObjSuffix : graphics/material.c
-	if [ -d unemap ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p unemap; \
-	fi
-	if [ -f graphics/material.c ]; \
-	then \
-		$(CC) unemap/material.ObjSuffix $(ALL_FLAGS) graphics/material.c; \
-	else \
-		$(CC) unemap/material.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/graphics/material.c; \
-	fi
-
-unemap/spectrum.ObjSuffix : graphics/spectrum.c
-	if [ -d unemap ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p unemap; \
-	fi
-	if [ -f graphics/spectrum.c ]; \
-	then \
-		$(CC) unemap/spectrum.ObjSuffix $(ALL_FLAGS) graphics/spectrum.c; \
-	else \
-		$(CC) unemap/spectrum.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/graphics/spectrum.c; \
-	fi
-
-unemap/spectrum_settings.ObjSuffix : graphics/spectrum_settings.c
-	if [ -d unemap ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p unemap; \
-	fi
-	if [ -f graphics/spectrum_settings.c ]; \
-	then \
-		$(CC) unemap/spectrum_settings.ObjSuffix $(ALL_FLAGS) graphics/spectrum_settings.c; \
-	else \
-		$(CC) unemap/spectrum_settings.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/graphics/spectrum_settings.c; \
-	fi
-
-unemap/texture.ObjSuffix : graphics/texture.c
-	if [ -d unemap ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p unemap; \
-	fi
-	if [ -f graphics/texture.c ]; \
-	then \
-		$(CC) unemap/texture.ObjSuffix $(ALL_FLAGS) graphics/texture.c; \
-	else \
-		$(CC) unemap/texture.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/graphics/texture.c; \
-	fi
-
-unemap/user_interface.ObjSuffix : user_interface/user_interface.c
-	if [ -d unemap ]; \
-	then \
-		: ; \
-	else \
-		mkdir -p unemap; \
-	fi
-	if [ -f user_interface/user_interface.c ]; \
-	then \
-		$(CC) unemap/user_interface.ObjSuffix $(ALL_FLAGS) user_interface/user_interface.c; \
-	else \
-		$(CC) unemap/user_interface.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/user_interface/user_interface.c; \
-	fi
+	cd $(OBJECT_PATH) ; rm -f product_object ; ln -s $(PRODUCT_OBJECT_PATH) product_object ; $(LINK) -o $(BIN_PATH)/UnemapTarget $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
 
 utilities : Bmsi2sigTarget ChangeCalibrationTarget ChangeChannelsTarget \
 ChangeConfigurationTarget ChangeEventsTarget ChangeFrequencyTarget \
@@ -1169,6 +1148,8 @@ unemap/utilities/change_events.ObjSuffix : unemap/utilities/change_events.c
 	$(CC) unemap/utilities/change_events.ObjSuffix -I. unemap/utilities/change_events.c
 #endif /* defined (OLD_CODE) */
 
+
 /* sinclude used so that the makefile can be run when the dependency file doesn't exist,
  it should then make one */
-sinclude $(PRODUCT_PATH)/DependMake
+sinclude $(PRODUCT_SOURCE_PATH)/DependMake
+sinclude DependMake
