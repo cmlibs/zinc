@@ -3960,44 +3960,44 @@ graphics objects in scene_object.
 		{
 			use_range_void=graphics_object_range_void;
 		}
-		switch(scene_object->type)
+		if (g_VISIBLE==scene_object->visibility)
 		{
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+			switch(scene_object->type)
 			{
-				return_code=1;
-				if (g_VISIBLE==scene_object->visibility)
+				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
 					return_code=for_each_settings_in_GT_element_group(
 						scene_object->gt_element_group,
 						GT_element_settings_get_visible_graphics_object_range,
 						use_range_void);
-				}
-			} break;
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				return_code=1;
-				if (g_VISIBLE==scene_object->visibility)
+				} break;
+				case SCENE_OBJECT_GRAPHICS_OBJECT:
 				{
+					return_code=1;
 					for (graphics_object=scene_object->gt_object;
-						return_code&&(graphics_object != NULL);
-						graphics_object=graphics_object->nextobject)
+						  return_code&&(graphics_object != NULL);
+						  graphics_object=graphics_object->nextobject)
 					{
 						return_code=
 							get_graphics_object_range(graphics_object,use_range_void);
 					}
-				}
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				return_code=for_each_Scene_object_in_Scene(scene_object->child_scene,
-					Scene_object_get_range,use_range_void);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_object_get_range.  Unknown scene object type");
-				return_code=0;
-			} break;
+				} break;
+				case SCENE_OBJECT_SCENE:
+				{
+					return_code=for_each_Scene_object_in_Scene(scene_object->child_scene,
+						Scene_object_get_range,use_range_void);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Scene_object_get_range.  Unknown scene object type");
+					return_code=0;
+				} break;
+			}
+		}
+		else
+		{
+			return_code = 1;
 		}
 		if (return_code&&transformation&&(!temp_graphics_object_range.first))
 		{
@@ -7376,8 +7376,7 @@ GT_element_group and therefore have the same rendition.
 {
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum GT_visibility_type visibility;
-	int default_coordinate_field_defined, default_value, maximum_value,
-		return_code;
+	int default_coordinate_field_defined, default_value, return_code;
 	struct Computed_field *default_coordinate_field, *element_xi_coordinate_field,
 		*orientation_scale_field, *variable_scale_field;
 	struct Element_discretization element_discretization;
@@ -7460,11 +7459,11 @@ GT_element_group and therefore have the same rendition.
 							GT_element_group_get_default_coordinate_field(gt_element_group);
 						/* set default circle and element discretization in group */
 						read_circle_discretization_defaults(&default_value,
-							&maximum_value, scene->user_interface);
+							scene->user_interface);
 						GT_element_group_set_circle_discretization(gt_element_group,
 							default_value, scene->user_interface);
 						read_element_discretization_defaults(&default_value,
-							&maximum_value, scene->user_interface);
+							scene->user_interface);
 						element_discretization.number_in_xi1 = default_value;
 						element_discretization.number_in_xi2 = default_value;
 						element_discretization.number_in_xi3 = default_value;

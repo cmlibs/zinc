@@ -3561,7 +3561,7 @@ if <direct_interpolation> is true, sets the element discretization to 1
 Also applies <number_of_contours> contours to surface.
 ==============================================================================*/
 {
-	int existing_autorange_spectrum_flag,maximum_discretization,
+	int existing_autorange_spectrum_flag,
 		required_discretization,return_code,update_settings;
 	struct Cmiss_region *cmiss_region;
 	struct Colour white;
@@ -3610,7 +3610,7 @@ Also applies <number_of_contours> contours to surface.
 			else
 			{
 				read_element_discretization_defaults(&required_discretization,
-					&maximum_discretization,user_interface);
+					user_interface);
 			}
 			if (!((discretization.number_in_xi1==required_discretization)&&
 				(discretization.number_in_xi2==required_discretization)&&

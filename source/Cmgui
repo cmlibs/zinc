@@ -112,13 +112,13 @@ cmgui.*.digitiser_window.*.digwin_viewing_area.width:  402
 ! -------------------------
 ! default number of line segments used to draw element curves (>= 1)
 cmgui.*.defaultElementDiscretization:   4
-! maximum number of line segments used to draw element curves
-cmgui.*.maximumElementDiscretization:  50
+! No longer used: maximum number of line segments used to draw element curves
+! cmgui.*.maximumElementDiscretization:  50
 ! default number of line segments used to draw circles (>= 2)
 ! 5 is the first number that looks remotely round
 cmgui.*.defaultCircleDiscretization:    6
-! maximum number of line segments used to draw circles
-cmgui.*.maximumCircleDiscretization:   64
+! No longer used: maximum number of line segments used to draw circles
+! cmgui.*.maximumCircleDiscretization:   64
 !
 !
 ! Help window (replaced by netscape)

@@ -172,12 +172,12 @@ A modifier function for setting exterior flag and face number.
 ==============================================================================*/
 
 int read_circle_discretization_defaults(int *default_value,
-	int *maximum_value,struct User_interface *user_interface);
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 2 June 1998
+LAST MODIFIED : 10 March 2004
 
 DESCRIPTION :
-Reads that maximum and default number of line segments used to approximate
+Reads the default number of line segments used to approximate
 a circle. Minimum is always 2, but this does not look much like a circle!
 ==============================================================================*/
 
@@ -201,12 +201,12 @@ A modifier function for setting number of segments used to draw circles.
 ==============================================================================*/
 
 int read_element_discretization_defaults(int *default_value,
-	int *maximum_value,struct User_interface *user_interface);
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 2 June 1998
+LAST MODIFIED : 10 March 2004
 
 DESCRIPTION :
-Reads that maximum and default number of line segments used to approximate
+Reads the default number of line segments used to approximate
 element curves. Minimum is always 1.
 ???RC. Actually uses points = 1 greater than number of segments so minimum is
 2 - this is due to change.

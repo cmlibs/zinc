@@ -174,7 +174,7 @@ A modifier function for setting exterior flag and face number.
 } /* set_exterior */
 
 int read_circle_discretization_defaults(int *default_value,
-	int *maximum_value,struct User_interface *user_interface)
+	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 11 December 1998
 
@@ -196,7 +196,6 @@ any x application - incl. for compatibility with win32.
 	static struct Discretization
 	{
 		int default_value;
-		int maximum_value;
 	} discretization;
 	static XtResource resources[]=
 	{
@@ -208,15 +207,6 @@ any x application - incl. for compatibility with win32.
 			XtOffsetOf(struct Discretization,default_value),
 			XmRString,
 			"6"
-		},
-		{
-			XmNmaximumCircleDiscretization,
-			XmCMaximumCircleDiscretization,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Discretization,maximum_value),
-			XmRString,
-			"64"
 		}
 	};
 #endif /* defined (MOTIF) */
@@ -225,7 +215,7 @@ any x application - incl. for compatibility with win32.
 #if !defined (MOTIF)
 	USE_PARAMETER(user_interface);
 #endif /* !defined (MOTIF) */
-	if (default_value&&maximum_value)
+	if (default_value)
 	{
 #if defined (MOTIF)
 		if (!resources_read)
@@ -240,14 +230,11 @@ any x application - incl. for compatibility with win32.
 			else
 			{
 				discretization.default_value=6;
-				discretization.maximum_value=64;
 			}
 		}
 		*default_value=discretization.default_value;
-		*maximum_value=discretization.maximum_value;
 #else /* defined (MOTIF) */
 		*default_value=6;
-		*maximum_value=64;
 #endif /* defined (MOTIF) */
 		return_code=1;
 	}
@@ -275,19 +262,15 @@ read_Circle_discretization_defaults().
 ==============================================================================*/
 {
 	int return_code;
-	int default_value,maximum_value,initial_value;
+	int default_value,initial_value;
 
 	ENTER(check_Circle_discretization);
 	if (circle_discretization)
 	{
 		if (return_code=read_circle_discretization_defaults(&default_value,
-			&maximum_value,user_interface))
+			user_interface))
 		{
 			initial_value = *circle_discretization;
-			if (*circle_discretization > maximum_value)
-			{
-				*circle_discretization=maximum_value;
-			}
 			if (2 > *circle_discretization)
 			{
 				*circle_discretization=2;
@@ -295,8 +278,8 @@ read_Circle_discretization_defaults().
 			if (*circle_discretization != initial_value)
 			{
 				display_message(WARNING_MESSAGE,
-					"Circle discretization values must be from 2 to %d\n"
-					"%d changed to %d",maximum_value,initial_value,
+					"Circle discretization values must be at least 2\n"
+					"%d changed to %d",initial_value,
 					*circle_discretization);
 			}
 			return_code=1;
@@ -400,7 +383,7 @@ A modifier function for setting number of segments used to draw circles.
 } /* set_Circle_discretization */
 
 int read_element_discretization_defaults(int *default_value,
-	int *maximum_value,struct User_interface *user_interface)
+	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 11 December 1998
 
@@ -422,7 +405,6 @@ any x application - incl. for compatibility with win32.
 	static struct Discretization
 	{
 		int default_value;
-		int maximum_value;
 	} discretization;
 	static XtResource resources[]=
 	{
@@ -434,15 +416,6 @@ any x application - incl. for compatibility with win32.
 			XtOffsetOf(struct Discretization,default_value),
 			XmRString,
 			"4"
-		},
-		{
-			XmNmaximumElementDiscretization,
-			XmCMaximumElementDiscretization,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(struct Discretization,maximum_value),
-			XmRString,
-			"50"
 		}
 	};
 #endif /* defined (MOTIF) */
@@ -451,7 +424,7 @@ any x application - incl. for compatibility with win32.
 #if !defined (MOTIF)
 	USE_PARAMETER(user_interface);
 #endif /* !defined (MOTIF) */
-	if (default_value&&maximum_value)
+	if (default_value)
 	{
 #if defined (MOTIF)
 		if (!resources_read)
@@ -468,14 +441,11 @@ any x application - incl. for compatibility with win32.
 			else
 			{
 				discretization.default_value=4;
-				discretization.maximum_value=50;
 			}
 		}
 		*default_value=discretization.default_value;
-		*maximum_value=discretization.maximum_value;
 #else /* defined (MOTIF) */
 		*default_value=4;
-		*maximum_value=50;
 #endif /* defined (MOTIF) */
 		return_code=1;
 	}
@@ -506,41 +476,26 @@ read_Element_discretization_defaults().
 {
 	int discretization_change,return_code;
 	struct Element_discretization initial;
-	int default_value,maximum_value;
+	int default_value;
 
 	ENTER(check_Element_discretization);
 	if (element_discretization)
 	{
 		if (return_code=read_element_discretization_defaults(&default_value,
-			&maximum_value,user_interface))
+			user_interface))
 		{
 			discretization_change=0;
 			initial.number_in_xi1=element_discretization->number_in_xi1;
 			initial.number_in_xi2=element_discretization->number_in_xi2;
 			initial.number_in_xi3=element_discretization->number_in_xi3;
-			if (element_discretization->number_in_xi1 > maximum_value)
-			{
-				element_discretization->number_in_xi1=maximum_value;
-				discretization_change=1;
-			}
 			if (1 > element_discretization->number_in_xi1)
 			{
 				element_discretization->number_in_xi1=1;
 				discretization_change=1;
 			}
-			if (element_discretization->number_in_xi2 > maximum_value)
-			{
-				element_discretization->number_in_xi2=maximum_value;
-				discretization_change=1;
-			}
 			if (1 > element_discretization->number_in_xi2)
 			{
 				element_discretization->number_in_xi2=1;
-				discretization_change=1;
-			}
-			if (element_discretization->number_in_xi3 > maximum_value)
-			{
-				element_discretization->number_in_xi3=maximum_value;
 				discretization_change=1;
 			}
 			if (1 > element_discretization->number_in_xi3)
@@ -551,8 +506,8 @@ read_Element_discretization_defaults().
 			if (discretization_change)
 			{
 				display_message(WARNING_MESSAGE,
-					"Element discretization values must be from 1 to %d\n"
-					"%d*%d*%d changed to %d*%d*%d",maximum_value,
+					"Element discretization values must be at least 1\n"
+					"%d*%d*%d changed to %d*%d*%d",
 					initial.number_in_xi1,initial.number_in_xi2,initial.number_in_xi3,
 					element_discretization->number_in_xi1,
 					element_discretization->number_in_xi2,
