@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_implementation.cpp
 //
-// LAST MODIFIED : 26 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //???DB.  Should be linear transformation (with Function_variable_matrix as an
@@ -22,6 +22,119 @@ namespace lapack = boost::numeric::bindings::lapack;
 #include "computed_variable/function_variable.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_specific.hpp"
+
+#define Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT
+
+#if defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
+// module classes
+// ==============
+
+// class Function_variable_matrix_input
+// ------------------------------------
+
+EXPORT template<typename Value_type>
+class Function_variable_matrix_input :
+	public Function_variable_matrix<Value_type>
+//******************************************************************************
+// LAST MODIFIED : 1 March 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// constructor
+		Function_variable_matrix_input(
+			const boost::intrusive_ptr< Function_matrix<Value_type> >
+			function_matrix):Function_variable_matrix<Value_type>(function_matrix){};
+		Function_variable_matrix_input(
+			const boost::intrusive_ptr< Function_matrix<Value_type> >
+			function_matrix,const Function_size_type row,
+			const Function_size_type column):Function_variable_matrix<Value_type>(
+			function_matrix,row,column){};
+		~Function_variable_matrix_input(){};
+	public:
+		Function_variable_handle clone() const
+		{
+			return (Function_variable_handle(
+				new Function_variable_matrix_input<Value_type>(*this)));
+		};
+		//???DB.  Should operator() and get_entry do an evaluate?
+		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
+			Function_size_type row=1,Function_size_type column=1) const
+		{
+			boost::intrusive_ptr< Function_matrix<Value_type> > function_matrix;
+			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
+
+			if ((function_matrix=boost::dynamic_pointer_cast<
+				Function_matrix<Value_type>,Function>(function_private))&&
+				(row<=number_of_rows())&&(column<=number_of_columns()))
+			{
+				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
+					new Function_variable_matrix_input<Value_type>(function_matrix,row,
+					column));
+			}
+
+			return (result);
+		};
+	private:
+		// copy constructor
+		Function_variable_matrix_input(
+			const Function_variable_matrix_input<Value_type>& variable):
+			Function_variable_matrix<Value_type>(variable){};
+};
+
+
+EXPORT template<typename Value_type>
+class Function_variable_matrix_output :
+	public Function_variable_matrix<Value_type>
+//******************************************************************************
+// LAST MODIFIED : 1 March 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// constructor
+		Function_variable_matrix_output(
+			const boost::intrusive_ptr< Function_matrix<Value_type> >
+			function_matrix):Function_variable_matrix<Value_type>(function_matrix){};
+		Function_variable_matrix_output(
+			const boost::intrusive_ptr< Function_matrix<Value_type> >
+			function_matrix,const Function_size_type row,
+			const Function_size_type column):Function_variable_matrix<Value_type>(
+			function_matrix,row,column){};
+		~Function_variable_matrix_output(){};
+	public:
+		Function_variable_handle clone() const
+		{
+			return (Function_variable_handle(
+				new Function_variable_matrix_output<Value_type>(*this)));
+		};
+		//???DB.  Should operator() and get_entry do an evaluate?
+		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
+			Function_size_type row=1,Function_size_type column=1) const
+		{
+			boost::intrusive_ptr< Function_matrix<Value_type> > function_matrix;
+			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
+
+			if ((function_matrix=boost::dynamic_pointer_cast<
+				Function_matrix<Value_type>,Function>(function_private))&&
+				(row<=number_of_rows())&&(column<=number_of_columns()))
+			{
+				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
+					new Function_variable_matrix_output<Value_type>(function_matrix,row,
+					column));
+			}
+
+			return (result);
+		};
+	private:
+		// copy constructor
+		Function_variable_matrix_output(
+			const Function_variable_matrix_output<Value_type>& variable):
+			Function_variable_matrix<Value_type>(variable){};
+};
+#endif // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 
 
 // global classes
@@ -76,25 +189,55 @@ string_handle Function_matrix<Value_type>::get_string_representation()
 EXPORT template<typename Value_type>
 Function_variable_handle Function_matrix<Value_type>::input()
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
+#if defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
+	return (Function_variable_handle(new Function_variable_matrix_input<
+		Value_type>(boost::intrusive_ptr< Function_matrix<Value_type> >(this))));
+#else // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 	return (Function_variable_handle(new Function_variable_matrix<Value_type>(
-		boost::intrusive_ptr< Function_matrix<Value_type> >(this))));
+		boost::intrusive_ptr< Function_matrix<Value_type> >(this)
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		,true
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		)));
+#endif // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 }
 
 EXPORT template<typename Value_type>
 Function_variable_handle Function_matrix<Value_type>::output()
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
+#if defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
+	return (Function_variable_handle(new Function_variable_matrix_output<
+		Value_type>(boost::intrusive_ptr< Function_matrix<Value_type> >(this))));
+#else // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 	return (Function_variable_handle(new Function_variable_matrix<Value_type>(
-		boost::intrusive_ptr< Function_matrix<Value_type> >(this))));
+		boost::intrusive_ptr< Function_matrix<Value_type> >(this)
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		,false
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		)));
+#endif // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
+}
+
+EXPORT template<typename Value_type>
+const ublas::matrix<Value_type,ublas::column_major>&
+	Function_matrix<Value_type>::matrix()
+//******************************************************************************
+// LAST MODIFIED : 23 February 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (values);
 }
 
 EXPORT template<typename Value_type>
@@ -154,13 +297,23 @@ EXPORT template<typename Value_type>
 Function_variable_handle Function_matrix<Value_type>::entry(
 	Function_size_type row,Function_size_type column)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 5 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
+#if defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
+	return (Function_variable_handle(new Function_variable_matrix_input<
+		Value_type>(boost::intrusive_ptr< Function_matrix<Value_type> >(this),row,
+		column)));
+#else // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 	return (Function_variable_handle(new Function_variable_matrix<Value_type>(
-		boost::intrusive_ptr< Function_matrix<Value_type> >(this),row,column)));
+		boost::intrusive_ptr< Function_matrix<Value_type> >(this),
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		row,column)));
+#endif // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 }
 
 EXPORT template<typename Value_type>
