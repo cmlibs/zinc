@@ -572,14 +572,80 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_composite_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
+static int Computed_field_composite_find_element_xi(
+	struct Computed_field *field, FE_value *values, int number_of_values, 
+	struct FE_element **element, FE_value *xi, struct GROUP(FE_element) *search_element_group)
 /*******************************************************************************
-LAST MODIFIED : 19 October 2000
+LAST MODIFIED : 18 February 2002
 
 DESCRIPTION :
-Not implemented yet.
+Currently only tries to work if there is only one and exactly one source field.
+Zero is used for any source field values that aren't set from the composite field.
 ==============================================================================*/
+{
+	int i, number_of_source_values, return_code, source_field_number;
+	FE_value *source_values;
+	struct Computed_field_composite_type_specific_data *data;
+	
+	ENTER(Computed_field_composite_find_element_xiset_values_at_node);
+	if (field && element && xi && values && (number_of_values == field->number_of_components)
+		&& (computed_field_composite_type_string == field->type_string) &&
+		(data = (struct Computed_field_composite_type_specific_data *)
+			field->type_specific_data))
+	{
+		return_code=1;
+		if (field->number_of_source_fields == 1)
+		{
+			source_field_number = 0;
+			number_of_source_values = field->source_fields[source_field_number]->number_of_components;
+			if (ALLOCATE(source_values,FE_value,number_of_source_values))
+			{
+				/* Put zero into every value initially */
+				for (i=0;i<number_of_source_values;i++)
+				{
+					source_values[i] = 0.0;
+				}
+				for (i=0;i<field->number_of_components;i++)
+				{
+					if (source_field_number == data->source_field_numbers[i])
+					{
+						source_values[data->source_value_numbers[i]] = values[i];
+					}
+				}
+				return_code=Computed_field_find_element_xi(
+					field->source_fields[source_field_number],source_values,
+					number_of_source_values,element, xi, search_element_group);
+				DEALLOCATE(source_values);
+			}
+			else
+			{
+				return_code=0;
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_composite_find_element_xi.  Failed");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_composite_find_element_xi.  "
+				"Unable to find element xi on a composite field involving more than one source field.");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_composite_find_element_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_composite_find_element_xi */
 
 static char *Computed_field_composite_get_source_string(
 	struct Computed_field *field, int commands)
