@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -23,7 +23,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -101,13 +101,13 @@ DESCRIPTION :
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct User_interface *user_interface;
 #if !defined (WINDOWS_DEV_FLAG)
-	Widget data_editor_dialog,data_grabber_dialog,emoter_slider_dialog,
-		input_module_dialog,interactive_data_editor_dialog,
-		interactive_node_editor_dialog,interactive_streamlines_dialog,
-		material_editor_dialog,node_editor_dialog,node_group_slider_dialog,
-		spectrum_editor_dialog,sync_2d_3d_dialog,time_editor_dialog,
-		transformation_editor_dialog,control_curve_editor_dialog;
-/*???RC temporary - should allow more than one */
+	Widget control_curve_editor_dialog,data_editor_dialog,data_grabber_dialog,
+		emoter_slider_dialog,grid_field_calculator_dialog,input_module_dialog,
+		interactive_data_editor_dialog,interactive_node_editor_dialog,
+		interactive_streamlines_dialog,material_editor_dialog,node_editor_dialog,
+		node_group_slider_dialog,spectrum_editor_dialog,sync_2d_3d_dialog,
+		time_editor_dialog,transformation_editor_dialog;
+/*???RC temporary - should allow more than one??? */
 	Widget element_group_editor_dialog;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Unemap_package *unemap_package;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -30,6 +30,7 @@ DESCRIPTION :
 #include "finite_element/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_streamlines.h"
+#include "finite_element/grid_field_calculator.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "general/debug.h"
 #include "general/error_handler.h"
@@ -369,7 +370,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 30 November 1999
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -671,10 +672,12 @@ Main program for the CMISS Graphical User Interface
 		command_data.user_interface= &user_interface;
 	}
 #if !defined (WINDOWS_DEV_FLAG)
+	command_data.control_curve_editor_dialog=(Widget)NULL;
 	command_data.data_editor_dialog=(Widget)NULL;
 	command_data.data_grabber_dialog=(Widget)NULL;
 	command_data.sync_2d_3d_dialog=(Widget)NULL;
 	command_data.emoter_slider_dialog=(Widget)NULL;
+	command_data.grid_field_calculator_dialog=(Widget)NULL;
 	command_data.input_module_dialog=(Widget)NULL;
 	command_data.interactive_data_editor_dialog=(Widget)NULL;
 	command_data.interactive_node_editor_dialog=(Widget)NULL;
@@ -689,7 +692,6 @@ Main program for the CMISS Graphical User Interface
 		/*???RC.  Temporary - should allow more than one */
 	command_data.spectrum_editor_dialog=(Widget)NULL;
 	command_data.time_editor_dialog=(Widget)NULL;
-	command_data.control_curve_editor_dialog=(Widget)NULL;
 		/*???RC.  Temporary - should allow more than one */
 #if defined (UNEMAP)
 	command_data.unemap_system_window=(struct System_window *)NULL;

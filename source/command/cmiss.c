@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 1 December 1999
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -35,6 +35,7 @@ Functions for executing cmiss commands.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_streamlines.h"
+#include "finite_element/grid_field_calculator.h"
 #include "finite_element/import_finite_element.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "general/debug.h"
@@ -2711,7 +2712,6 @@ Invokes the graphical element group editor.
 	return (return_code);
 } /* gfx_create_g_element_editor */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_graphical_material_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2775,7 +2775,52 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_graphical_material_editor */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+static int gfx_create_grid_field_calculator(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 1 December 1999
+
+DESCRIPTION :
+Executes a GFX CREATE GRID_FIELD_CALCULATOR command.
+Invokes the grid field calculator dialog.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(gfx_create_grid_field_calculator);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			return_code=bring_up_grid_field_calculator(
+				&(command_data->grid_field_calculator_dialog),
+				command_data->user_interface->application_shell,
+				command_data->computed_field_package,
+				&(command_data->control_curve_editor_dialog),
+				command_data->control_curve_manager,
+				command_data->element_manager,
+				command_data->user_interface);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_create_grid_field_calculator.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_create_grid_field_calculator.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_grid_field_calculator */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_input_module_control(struct Parse_state *state,
@@ -9094,6 +9139,7 @@ Executes a GFX CREATE command.
 		{"g_element_editor",NULL,NULL,gfx_create_g_element_editor},
 		{"graphical_material_editor",NULL,NULL,
 			gfx_create_graphical_material_editor},
+		{"grid_field_calculator",NULL,NULL,gfx_create_grid_field_calculator},
 #if defined (HAPTIC)
 		{"haptic",NULL,NULL,gfx_create_haptic},
 #endif /* defined (HAPTIC) */
