@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 18 July 2002
+XCOMM LAST MODIFIED : 17 December 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -37,6 +37,7 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 /* the O64 version can be either OPTIMISED or not but only one version is kept
 	at the moment */
 #define Target unemap64
+#define ActivationSummaryTarget unemap/activation_summary64
 #define AffineTarget unemap/affine64
 #define AnalysisCalculateLibTarget unemap/analysis_calculate64.lib
 #define Bmsi2sigTarget unemap/bmsi2sig64
@@ -83,6 +84,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-64-irix/unemap
 /* this version uses nodes just for 3D window , */
 /* USE_UNEMAP_NODES uses nodes for as much as possible   */
 #define Target unemap-3d
+#define ActivationSummaryTarget unemap/activation_summary_3d_optimised
 #define AffineTarget unemap/affine_3d_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_3d_optimised.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_3d_optimised
@@ -123,6 +125,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-3d
 #else /* defined (USE_UNEMAP_3D) */
 #define Target unemap
 #define Makefile unemap_sgioptimised.make
+#define ActivationSummaryTarget unemap/activation_summary_optimised
 #define AffineTarget unemap/affine_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_optimised.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_optimised
@@ -167,6 +170,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap
 /* this version uses nodes for as much as possible, */
 /* USE_UNEMAP_3D uses nodes just for 3D window  */
 #define Target unemap-nodes
+#define ActivationSummaryTarget unemap/activation_summary_nodes
 #define AffineTarget unemap/affine_nodes
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_nodes.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_nodes
@@ -210,6 +214,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-nodes
 /* this version uses nodes just for 3D window , */
 /* USE_UNEMAP_NODES uses nodes for as much as possible   */
 #define Target unemap-3d-debug
+#define ActivationSummaryTarget unemap/activation_summary_3d
 #define AffineTarget unemap/affine_3d
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_3d.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_3d
@@ -254,6 +259,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-3d-debug
 #if !defined (MEMORY_CHECK)
 /* 1.2.2.3.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-!MEMORY_CHECK */
 #define Target unemap-debug
+#define ActivationSummaryTarget unemap/activation_summary32
 #define AffineTarget unemap/affine32
 #define AnalysisCalculateLibTarget unemap/analysis_calculate32.lib
 #define Bmsi2sigTarget unemap/bmsi2sig32
@@ -294,6 +300,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-debug
 #else /* !defined (MEMORY_CHECK) */
 /* 1.2.2.3.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-MEMORY_CHECK */
 #define Target unemap-debug-memorycheck
+#define ActivationSummaryTarget unemap/activation_summary32
 #define AffineTarget unemap/affine32
 #define AnalysisCalculateLibTarget unemap/analysis_calculate32.lib
 #define Bmsi2sigTarget unemap/bmsi2sig32
@@ -344,6 +351,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/unemap-debug-memorycheck
 /* this version uses nodes for as much as possible , */
 /* USE_UNEMAP_3D uses nodes just for 3D window    */
 #define Target unemap-nodes-debug
+#define ActivationSummaryTarget unemap/activation_summary_linux_nodes
 #define AffineTarget unemap/affine_linux_nodes
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_nodes.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_nodes
@@ -388,6 +396,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-nodes-debug
 /* USE_UNEMAP_NODES uses nodes  for as much as possible   */
 #if !defined (OPTIMISED)
 #define Target unemap-3d-debug
+#define ActivationSummaryTarget unemap/activation_summary_linux_3d
 #define AffineTarget unemap/affine_linux_3d
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_3d.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_3d
@@ -427,6 +436,7 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/unemap-3d-debug
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-3d-debug
 #else /* !defined (OPTIMISED) */
 #define Target unemap-3d
+#define ActivationSummaryTarget unemap/activation_summary_linux_3d_optimised
 #define AffineTarget unemap/affine_linux_3d_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_3d_optimised.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_3d_optimised
@@ -469,6 +479,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-3d
 /* 2.3 LINUX-!USE_UNEMAP_NODES */
 #if !defined (OPTIMISED)
 #define Target unemap-debug
+#define ActivationSummaryTarget unemap/activation_summary_linux
 #define AffineTarget unemap/affine_linux
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
@@ -508,6 +519,7 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/unemap-debug
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/unemap-debug
 #else /* !defined (OPTIMISED) */
 #define Target unemap
+#define ActivationSummaryTarget unemap/activation_summary_linux_optimised
 #define AffineTarget unemap/affine_linux_optimised
 #define AnalysisCalculateLibTarget unemap/analysis_calculate_linux_optimised.lib
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_optimised
@@ -1083,14 +1095,30 @@ general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
 	fi
 #endif /* defined (MEMORY_CHECK) */
 
-utilities : AffineTarget AnalysisCalculateLibTarget Bmsi2sigTarget \
-Biosense2sigTarget Biosense2vrmlTarget CalculateEventsTarget \
+utilities : ActivationSummaryTarget AffineTarget AnalysisCalculateLibTarget \
+Bmsi2sigTarget Biosense2sigTarget Biosense2vrmlTarget CalculateEventsTarget \
 ChangeCalibrationTarget ChangeChannelsTarget ChangeConfigurationTarget \
 ChangeEventsTarget ChangeFrequencyTarget CombineSignalsTarget \
 DifferenceSignalsTarget ExtractSignalTarget FixEcgTarget Img2sigTarget \
 MakePlaqueTarget OpticalSignalsTarget Plt2cnfgTarget Posdat2sigTarget \
 RatioSignalsTarget RegisterTarget Sig2textTarget TestDelaunayTarget \
 TestUnemapHardwareTarget Text2sigTarget Tuff2sigTarget UniqueChannelsTarget
+
+ACTIVATION_SUMMARY_SRCS = \
+	unemap/utilities/activation_summary.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/analysis_calculate.c \
+	unemap/analysis.c \
+	unemap/rig.c \
+	unemap/rig_node.c \
+	user_interface/message.c
+
+BuildNormalTarget(ActivationSummaryTarget,$(UTILITIES_PATH),ACTIVATION_SUMMARY_SRCS,ACTIVATION_SUMMARY_OBJSA,ACTIVATION_SUMMARY_OBJSB,ACTIVATION_SUMMARY_OBJS,$(LIB)) 
 
 AFFINE_SRCS = \
 	unemap/utilities/affine.c \
