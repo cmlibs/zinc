@@ -7,8 +7,11 @@ SOURCE_PATH=source
 
 VPATH=$(PRODUCT_PATH)
 
+#The tags for the executables don't actually point at them (they would have to
+#have $(BIN_PATH)/unemap32 etc. but this forces them to get made (which is what 
+#we want) and shortens the name you have to type.
 #SGI debug version
-$(BIN_PATH)/unemap32 : force $(SOURCE_PATH)/unemap_sgi.make
+unemap32 : $(SOURCE_PATH)/unemap_sgi.make
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sgi.make ]; then \
 		make -f unemap_sgi.make CMGUI_ROOT=$(PWD) ; \
@@ -28,7 +31,7 @@ $(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake unemap.make
 	fi
 
 #SGI rig nodes version
-$(BIN_PATH)/unemap_nodes : force $(SOURCE_PATH)/unemap_sginodes.make
+unemap_nodes : $(SOURCE_PATH)/unemap_sginodes.make
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sginodes.make ]; then \
 		make -f unemap_sginodes.make CMGUI_ROOT=$(PWD) ; \
@@ -48,7 +51,7 @@ $(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
 	fi
 
 #SGI optimised version
-$(BIN_PATH)/unemap_optimised : force $(SOURCE_PATH)/unemap_sgioptimised.make
+unemap_optimised : $(SOURCE_PATH)/unemap_sgioptimised.make
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sgioptimised.make ]; then \
 		make -f unemap_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
@@ -68,7 +71,7 @@ $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.mak
 	fi
 
 #SGI 64bit version
-$(BIN_PATH)/unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
+unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_sgi64.make ]; then \
 		make -f unemap_sgi64.make CMGUI_ROOT=$(PWD) ; \
@@ -88,7 +91,7 @@ $(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake unemap.make
 	fi
 
 #Linux version
-$(BIN_PATH)/unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
+unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
 	cd $(SOURCE_PATH); \
 	if [ -f unemap_linux.make ]; then \
 		make -f unemap_linux.make CMGUI_ROOT=$(PWD) ; \
@@ -128,7 +131,7 @@ depend : $(SOURCE_PATH)/unemap_sgi.make $(SOURCE_PATH)/unemap_sginodes.make $(SO
 		make -f unemap_sginodes.make depend  ; \
 		make -f unemap_sgioptimised.make depend  ; \
 		make -f unemap_sgi64.make depend  ; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_SOURCE_PATH) ; make -f unemap_linux.make depend ' ; \
+		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_SOURCE_PATH) ; make -f unemap_linux.make depend  CMGUI_ROOT=$(PWD) ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi

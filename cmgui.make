@@ -7,8 +7,11 @@ SOURCE_PATH=source
 
 VPATH=$(PRODUCT_PATH)
 
+#The tags for the executables don't actually point at them (they would have to
+#have $(BIN_PATH)/cmgui etc. but this forces them to get made (which is what 
+#we want) and shortens the name you have to type.
 #SGI debug version
-$(BIN_PATH)/cmgui : force $(SOURCE_PATH)/cmgui_sgi.make
+cmgui : force $(SOURCE_PATH)/cmgui_sgi.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi.make ]; then \
 		make -f cmgui_sgi.make CMGUI_ROOT=$(PWD) ; \
@@ -28,7 +31,7 @@ $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 	fi
 
 #SGI optimised version
-$(BIN_PATH)/cmgui_optimised : force $(SOURCE_PATH)/cmgui_sgioptimised.make
+cmgui_optimised : force $(SOURCE_PATH)/cmgui_sgioptimised.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgioptimised.make ]; then \
 		make -f cmgui_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
@@ -44,16 +47,16 @@ $(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 	if [ -f cmgui.imake ]; then \
 		imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_sgioptimised.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_sgioptimised.make -T $(PRODUCT_SOURCE_PATH)/source/cmgui.imake -f /dev/null; \
+		imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_sgioptimised.make -T $(PRODUCT_SOURCE_PATH)/cmgui.imake -f /dev/null; \
 	fi
 
 #SGI optimised lite version
-$(BIN_PATH)/cmgui_lite : force $(SOURCE_PATH)/cmgui_sgilite.make
+cmgui_lite : force $(SOURCE_PATH)/cmgui_sgilite.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgilite.make ]; then \
 		make -f cmgui_sgilite.make CMGUI_ROOT=$(PWD) ; \
 	else \
-		make -f $(VPATH)/cmgui_sgilite.make CMGUI_ROOT=$(PWD) ; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgilite.make CMGUI_ROOT=$(PWD) ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -68,7 +71,7 @@ $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 	fi
 
 #SGI debug memory check version
-$(BIN_PATH)/cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
+cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi_memorycheck.make ]; then \
 		make -f cmgui_sgi_memorycheck.make CMGUI_ROOT=$(PWD) ; \
@@ -85,7 +88,7 @@ $(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake cmgui.mak
 	fi
 
 #SGI 64bit version
-$(BIN_PATH)/cmgui64 : force $(SOURCE_PATH)/cmgui_sgi64.make
+cmgui64 : force $(SOURCE_PATH)/cmgui_sgi64.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi64.make ]; then \
 		make -f cmgui_sgi64.make CMGUI_ROOT=$(PWD) ; \
@@ -105,7 +108,7 @@ $(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 	fi
 
 #Linux version
-$(BIN_PATH)/cmgui_linux : force $(SOURCE_PATH)/cmgui_linux.make
+cmgui_linux : force $(SOURCE_PATH)/cmgui_linux.make
 	cd $(SOURCE_PATH); \
 	if [ -f cmgui_linux.make ]; then \
 		make -f cmgui_linux.make CMGUI_ROOT=$(PWD) ; \
@@ -126,12 +129,13 @@ $(SOURCE_PATH)/cmgui_linux.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
-		cvs update cmgui.make && \
-		cd $(PRODUCT_SOURCE_PATH) && \
 		cvs update && \
+		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
+		cd $(PRODUCT_PATH) && \
 		make -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
 		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; make -f cmgui.make cmgui_linux' && \
+		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
