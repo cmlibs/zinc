@@ -131,8 +131,8 @@ The fields of the field_order_info are named using the node_type, therefore
 beware of name clashes if loading multiple rigs of the same node_type.
 ==============================================================================*/
 {		
-  #define AUXILIARY_NUM_CONFIG_FIELDS 3 /*,device_name_field,device_type_field*/
-	/* channel_number */
+  #define AUXILIARY_NUM_CONFIG_FIELDS 3 /*,device_name_field,*/
+	/* device_type_field channel_number */
   #define PATCH_NUM_CONFIG_FIELDS 4 /* electrode_position_field,*/ 
 	  /*device_name_field,device_type_field,channel_number*/
   #define SOCK_NUM_CONFIG_FIELDS 4 /* electrode_position_field,*/
@@ -140,22 +140,24 @@ beware of name clashes if loading multiple rigs of the same node_type.
   #define TORSO_NUM_CONFIG_FIELDS 4/* electrode_position_field,*/ 
     /*device_name_field,device_type_field,channel_number */
 
-	char *electrode_name,*rig_type_str;
+	char *electrode_name =(char *)NULL;
+	char *rig_type_str =(char *)NULL;
 	int field_number,number_of_fields,success,string_length;
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;	
-
-	struct FE_field *channel_number_field,*device_name_field,*device_type_field,
-		*electrode_position_field;
+	struct FE_field *channel_number_field=(struct FE_field *)NULL;
+	struct FE_field *device_name_field=(struct FE_field *)NULL;
+	struct FE_field *device_type_field=(struct FE_field *)NULL;
+	struct FE_field *electrode_position_field=(struct FE_field *)NULL;
 	struct FE_field_order_info *the_field_order_info = 
 		(struct FE_field_order_info *)NULL;
-	struct FE_node *node;
-	struct MANAGER(FE_field) *fe_field_manager;
+	struct FE_node *node=(struct FE_node *)NULL;
+	struct MANAGER(FE_field) *fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 	
 	char *device_name_component_names[1]=
 	{
 		"name"
-	};
+	};	
 	char *device_type_component_names[1]=
 	{
 		"type"
@@ -206,7 +208,7 @@ beware of name clashes if loading multiple rigs of the same node_type.
 		}
 	};	
 	int device_name_components_number_of_derivatives[1]={0},
-	  device_name_components_number_of_versions[1]={1};
+	  device_name_components_number_of_versions[1]={1};	
 	int device_type_components_number_of_derivatives[1]={0},
 	  device_type_components_number_of_versions[1]={1};
 	int electrode_components_number_of_derivatives[3]={0,0,0},
@@ -402,7 +404,7 @@ beware of name clashes if loading multiple rigs of the same node_type.
 					display_message(ERROR_MESSAGE,
 						"create_config_template_node. Could not retrieve device name field");
 					success=0;
-				}			
+				}				
 				/* set up the info needed to create the device type field */			
 				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 				coordinate_system.type=NOT_APPLICABLE;				
@@ -3025,10 +3027,11 @@ Create a Draw_package, set all it's fields to NULL.
 	if (ALLOCATE(package,struct Draw_package,1))
 	{
 		/* fields of the rig_nodes */
-		package->device_name_field=(struct FE_field *)NULL;
-		package->device_type_field=(struct FE_field *)NULL;
+		package->device_name_field=(struct FE_field *)NULL;		
+		package->device_type_field=(struct FE_field *)NULL;	
 		package->channel_number_field=(struct FE_field *)NULL;
-		package->signal_field=(struct FE_field *)NULL;	
+		package->signal_field=(struct FE_field *)NULL;		
+		package->signal_status_field=(struct FE_field *)NULL;	
 		package->signal_minimum_field=(struct FE_field *)NULL;
 		package->signal_maximum_field=(struct FE_field *)NULL;
 		package->channel_gain_field=(struct FE_field *)NULL;
@@ -3063,10 +3066,11 @@ sets <*package_address> to NULL.
 	ENTER(DESTROY(Draw_package));
 	if ((package_address)&&(package=*package_address))
 	{	
-		DEACCESS(FE_field)(&(package->device_name_field)); 
+		DEACCESS(FE_field)(&(package->device_name_field));	
 		DEACCESS(FE_field)(&(package->device_type_field));
 		DEACCESS(FE_field)(&(package->channel_number_field)); 
-		DEACCESS(FE_field)(&(package->signal_field)); 
+		DEACCESS(FE_field)(&(package->signal_field));	
+		DEACCESS(FE_field)(&(package->signal_status_field)); 
 		DEACCESS(FE_field)(&(package->signal_minimum_field));
 		DEACCESS(FE_field)(&(package->signal_maximum_field));
 		DEACCESS(FE_field)(&(package->channel_gain_field)); 
@@ -3317,6 +3321,64 @@ Sets the field of the draw package.
 
 	return (return_code);
 } /* set_Draw_package_signal_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Draw_package_signal_status_field(struct Draw_package *package)
+/*******************************************************************************
+LAST MODIFIED : 16 August 1999
+
+DESCRIPTION :
+Gets the field of the unemap package.
+==============================================================================*/
+{	
+	struct FE_field *signal_status_field;
+
+	ENTER(get_Draw_package_signal_status_field);
+	if (package)
+	{	
+		signal_status_field=package->signal_status_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Draw_package_signal_status_field.  Invalid argument");
+		signal_status_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+
+	return (signal_status_field);
+} /* get_Draw_package_signal_status_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Draw_package_signal_status_field(struct Draw_package *package,
+	struct FE_field *signal_status_field)
+/*******************************************************************************
+LAST MODIFIED : 16 August 1999
+
+DESCRIPTION :
+Sets the field of the draw package.
+==============================================================================*/
+{
+	int return_code;	
+
+	ENTER(set_Draw_package_signal_status_field);
+	if (package)
+	{
+		return_code=1;		
+		REACCESS(FE_field)(&(package->signal_status_field),signal_status_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Draw_package_signal_status_field.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Draw_package_signal_status_field */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
@@ -3596,10 +3658,13 @@ The extraction arguments are:
 	the maximum value to be displayed (not necessarily the maximum of the values)
 ==============================================================================*/
 {
-	char *name;
-	enum Event_signal_status *signals_status;
-	float channel_offset,channel_gain,signal_minimum,signal_maximum,
-		*signal_value,*signals_values,*times;
+	char *name=(char *)NULL;
+	char *signal_status_str=(char *)NULL;
+	enum Event_signal_status *signals_status=(enum Event_signal_status *)NULL;
+	float channel_offset,channel_gain,signal_minimum,signal_maximum;
+	float	*signal_value=(float *)NULL;
+	float	*signals_values=(float *)NULL;
+	float	*times=(float *)NULL;
 	int first_data_local,highlight,last_data_local,number_of_signals,
 		number_of_values,return_code;
 
@@ -3615,12 +3680,13 @@ The extraction arguments are:
 		if (device)
 		{
 #endif /* defined (UNEMAP_USE_NODES) */
-			float buffer_frequency,*data_value_float,*electrode_coefficients;
+			float buffer_frequency,*data_value_float;
+			float	*electrode_coefficients=(float *)NULL;
 			int buffer_offset,i,j,k,length,linear_combination,number_of_electrodes;
-			short int *data_value_short_int;
-			struct Device **electrodes;
-			struct Signal *signal;
-			struct Signal_buffer *buffer;
+			short int *data_value_short_int=(short int *)NULL;
+			struct Device **electrodes=(struct Device **)NULL;
+			struct Signal *signal=(struct Signal *)NULL;
+			struct Signal_buffer *buffer=(struct Signal_buffer *)NULL;
 
 			if ((signal=device->signal)&&(buffer=signal->buffer))
 			{
@@ -4004,9 +4070,10 @@ The extraction arguments are:
 		else
 		{
 			enum Value_type value_type;
-			FE_value *FE_value_signal_data,time;
+			FE_value *FE_value_signal_data=(FE_value *)NULL;
+			FE_value 	time;
 			int i,number_of_nodal_values;
-			short int *short_signal_data;
+			short int *short_signal_data=(short int *)NULL;
 			struct FE_field_component component;						
 			
 			return_code=1;
@@ -4226,12 +4293,38 @@ The extraction arguments are:
 						{
 							if (ALLOCATE(signals_status,enum Event_signal_status,
 								number_of_signals))
-							{
-								/* fill in statuses */
-								/*???DB.  Signal status needs to be stored with node */
+							{									
+								/* fill in statuses */							
 								for (i=0;i<number_of_signals;i++)
 								{
-									signals_status[i]=REJECTED;
+									if (get_FE_nodal_string_value(device_node,
+										draw_package->signal_status_field,/*component_number*/0,
+										/*version*/0,FE_NODAL_VALUE,&signal_status_str))
+									{
+										if(!(strcmp("ACCEPTED",signal_status_str)))
+										{
+											signals_status[i]=ACCEPTED;										
+										}
+										else if(!(strcmp("REJECTED",signal_status_str)))
+										{
+											signals_status[i]=REJECTED;											
+										}
+										else if(!(strcmp("UNDECIDED",signal_status_str)))
+										{
+											signals_status[i]=UNDECIDED;										
+										}
+										else
+										{
+											signals_status[i]=UNDECIDED;										
+										}									
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"extract_signal_information.  Could not get signal_status");
+										return_code=0;
+										signals_status[i]=UNDECIDED;
+									}								
 								}
 							}
 							else

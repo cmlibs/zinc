@@ -478,7 +478,6 @@ access this function.
 			{0.1875,0.3125}
 		};
 	void *new_data;
-	Widget widget;
 
 	ENTER(Scene_viewer_render_scene);
 	if (scene_viewer)

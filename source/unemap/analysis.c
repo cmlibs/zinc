@@ -3402,28 +3402,35 @@ Draws the <device> signal in the <pixel_map> at the specified position
 ==============================================================================*/
 {
 	char number_string[20],ticks_above;
-	Display *display;
-	float channel_gain,channel_offset,*data_value_float,frequency,frequency_next,
+	Display *display=(Display *)NULL;
+	float channel_gain,channel_offset,frequency,frequency_next,
 		postscript_page_bottom,postscript_page_left,postscript_page_height,
 		postscript_page_width,signal_max,signal_min,signal_ref,time_ref_next,
 		time_scale,time_scale_next,time_tick,time_tick_max,time_tick_min,
 		time_tick_width,value_float,value_scale,value_tick,value_tick_max,
 		value_tick_min,value_tick_width,world_height,world_left,world_top,
 		world_width,x_scale,y_scale;
+	float *data_value_float=(float *)NULL;
 	GC graphics_context;
-	int ascent,buffer_offset,buffer_offset_next,*data_time,*data_time_next,
+	int ascent,buffer_offset,buffer_offset_next,
 		descent,direction,first_data_next,i,last_data_next,length,number_of_points,
 		number_of_points_next,number_of_segments,number_of_ticks,return_code,
 		time_max,time_min,time_ref,x_marker,x_max,x_min,x_ref,x_string,x_tick,
 		x_tick_length=3,y_marker,y_max,y_min,y_ref,y_string,y_tick,y_tick_length=3;
+	int *data_time=(int *)NULL;
+	int *data_time_next=(int *)NULL;
 	short int *data_value_short_int,value_short_int,x;
-	struct Signal *signal,*signal_next;
-	struct Signal_buffer *buffer,*buffer_next;
+	struct Signal *signal=(struct Signal *)NULL;
+	struct Signal *signal_next=(struct Signal *)NULL;
+	struct Signal_buffer *buffer=(struct Signal_buffer *)NULL;
+	struct Signal_buffer *buffer_next=(struct Signal_buffer *)NULL;
 	XCharStruct bounds;
-	XFontStruct *font;
+	XFontStruct *font=(XFontStruct *)NULL;
 	XRectangle clip_rectangle;
-	XSegment *segment,*segments;
-	XPoint *point,*points;
+	XSegment *segment=(XSegment *)NULL;
+	XSegment *segments=(XSegment *)NULL;
+	XPoint *point=(XPoint *)NULL;
+	XPoint *points=(XPoint *)NULL;
 
 	ENTER(draw_signal);
 #if defined (DEBUG)

@@ -4069,7 +4069,7 @@ Pass either <rig > or (<rig_node_group> and <draw_package> ).  If pass
 <rig_node_group> and <draw_package>, then we create an array of pointers to the
 nodes, in an FE_node_order_info, so can increment through nodes similar
 to rig->devices. This is not ideal, but is done for compatibility with the
-rig->devices approach. Do differently when have removed rig->devices
+rig->devices approach. ??JW Do differently when have removed rig->devices
 Should use GROUP NEXT operator (when it's ready!)
 ==============================================================================*/
 {

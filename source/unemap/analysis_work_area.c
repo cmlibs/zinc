@@ -2243,6 +2243,8 @@ Sets up the analysis work area for analysing a set of signals.
 			set_Draw_package_signal_minimum_field(analysis->draw_package,field);
 			field=get_unemap_package_signal_maximum_field(analysis->unemap_package);
 			set_Draw_package_signal_maximum_field(analysis->draw_package,field);
+			field=get_unemap_package_signal_status_field(analysis->unemap_package);
+			set_Draw_package_signal_status_field(analysis->draw_package,field);
 			/* for the moment assuming only one signal per node, ie only one
 				signal_field */
 		}

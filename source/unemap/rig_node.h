@@ -41,7 +41,8 @@ unemap_package struct. If a field is set to NULL, then it isn't drawn.
 	struct FE_field *channel_offset_field; 
 	struct FE_field *signal_field;	
 	struct FE_field *signal_maximum_field;	
-	struct FE_field *signal_minimum_field;	
+	struct FE_field *signal_minimum_field;
+	struct FE_field *signal_status_field;	
 }; /* struct Draw_package */
 
 /*
@@ -172,6 +173,17 @@ Gets the field of the unemap package.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Draw_package_signal_status_field(
+	struct Draw_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 13 1999
+
+DESCRIPTION :
+Gets the field of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
 struct FE_field *get_Draw_package_signal_minimum_field(
 	struct Draw_package *package);
 /*******************************************************************************
@@ -185,6 +197,17 @@ Gets the field of the unemap package.
 #if defined (UNEMAP_USE_NODES)
 int set_Draw_package_signal_field(struct Draw_package *package,
 	struct FE_field *signal_field);
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the draw package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Draw_package_signal_status_field(struct Draw_package *package,
+	struct FE_field *signal_status_field);
 /*******************************************************************************
 LAST MODIFIED : July 8 1999
 
