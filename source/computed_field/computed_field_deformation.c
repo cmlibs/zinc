@@ -724,7 +724,8 @@ already) and allows its contents to be modified.
 			/* fibre_angle */
 			set_fibre_angle_field_data.computed_field_manager=
 				computed_field_deformation_package->computed_field_manager;
-			set_fibre_angle_field_data.conditional_function=Computed_field_is_scalar;
+			set_fibre_angle_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_angle_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"fibre_angle",
 				&fibre_angle_field,&set_fibre_angle_field_data,
