@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 27 March 2001
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1111,7 +1111,6 @@ a single point in 3-D space with a text string drawn beside it.
 	char *annotation_text,*graphics_object_name,**text;
 	float time;
 	int number_of_components,return_code;
-	static char default_name[]="annotation";
 	static char default_annotation_text[]="\"annotation text\"";
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *material;
@@ -1127,14 +1126,7 @@ a single point in 3-D space with a text string drawn beside it.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("annotation");
 			/* must access it now, because we deaccess it later */
 			material=
 				ACCESS(Graphical_material)(command_data->default_graphical_material);
@@ -1293,7 +1285,7 @@ a single point in 3-D space with a text string drawn beside it.
 static int gfx_create_colour_bar(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE COLOUR_BAR command. Creates a colour bar graphics object
@@ -1303,7 +1295,6 @@ with tick marks and labels for showing the scale of a spectrum.
 	char *graphics_object_name,*number_format;
 	float bar_length,bar_radius,extend_length,tick_length;
 	int number_of_components,return_code,tick_divisions;
-	static char default_name[]="colour_bar";
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *label_material,*material;
 	struct GT_object *graphics_object;
@@ -1318,14 +1309,7 @@ with tick marks and labels for showing the scale of a spectrum.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("colour_bar");
 			number_format = duplicate_string("%+.4e");
 			/* must access it now, because we deaccess it later */
 			label_material=
@@ -1456,7 +1440,7 @@ with tick marks and labels for showing the scale of a spectrum.
 static int gfx_create_cylinders(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
@@ -1466,7 +1450,6 @@ Executes a GFX CREATE CYLINDERS command.
 	float constant_radius,scale_factor,time;
 	gtObject *graphics_object;
 	int face_number,return_code;
-	static char default_name[]="cylinders";
 	struct Cmiss_command_data *command_data;
 	struct Element_discretization discretization;
 	struct Element_to_cylinder_data element_to_cylinder_data;
@@ -1488,14 +1471,7 @@ Executes a GFX CREATE CYLINDERS command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("cylinders");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			constant_radius=0.0;
 			scale_factor=1.0;
@@ -1789,7 +1765,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -1801,7 +1777,6 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	enum Xi_discretization_mode xi_discretization_mode;
 	float time;
 	int face_number,number_of_components,number_of_valid_strings,return_code;
-	static char default_name[]="element_points";
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field, *label_field,
 		*orientation_scale_field, *variable_scale_field;
@@ -1827,14 +1802,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			command_data->computed_field_package)))
 	{
 		/* initialise defaults */
-		if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-		{
-			strcpy(graphics_object_name,default_name);
-		}
-		else
-		{
-			graphics_object_name=(char *)NULL;
-		}
+		graphics_object_name = duplicate_string("element_points");
 		number_of_components=3;
 		exact_xi[0]=0.5;
 		exact_xi[1]=0.5;
@@ -2559,13 +2527,12 @@ for intersect - look at how fibre angle varies through the heart wall.
 static int gfx_create_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE FLOW_PARTICLES command.
 ==============================================================================*/
 {
-	static char default_name[]="particles";
 	char *graphics_object_name;
 	float time,xi[3];
 	gtObject *graphics_object;
@@ -2605,14 +2572,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("particles");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			element_number=0;  /* Zero gives all elements in group */
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -2832,13 +2792,12 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 static int gfx_create_more_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 ==============================================================================*/
 {
-	static char default_name[]="particles";
 	char *graphics_object_name;
 	float time,xi[3];
 	gtObject *graphics_object;
@@ -2878,14 +2837,7 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("particles");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			element_number=0;  /* Zero gives all elements in group */
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -3744,7 +3696,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -3757,7 +3709,6 @@ Executes a GFX CREATE ISO_SURFACES command.
 	enum Use_element_type use_element_type;
 	float time;
 	int face_number,number_of_valid_strings,return_code;
-	static char default_name[]="iso_surfaces";
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field, *scalar_field,
@@ -3787,14 +3738,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("iso_surfaces");
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 				"default_coordinate", computed_field_manager);
 			/* must access it now, because we deaccess it later */
@@ -4406,13 +4350,12 @@ Executes a GFX CREATE LMODEL command.
 static int gfx_create_lines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE LINES command.
 ==============================================================================*/
 {
-	static char default_name[]="lines";
 	char exterior_flag,*graphics_object_name;
 	float time;
 	struct GT_object *graphics_object;
@@ -4438,14 +4381,7 @@ Executes a GFX CREATE LINES command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("lines");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 				"default_coordinate",computed_field_manager);
@@ -4747,14 +4683,13 @@ If the material already exists, then behaves like gfx modify material.
 static int gfx_create_morph(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE MORPH command.  This command interpolates between two
 graphics objects, and produces a new object
 ==============================================================================*/
 {
-	static char default_name[]="morph";
 	char *graphics_object_name;
 	float proportion;
 	gtObject *graphics_object;
@@ -4777,7 +4712,7 @@ graphics objects, and produces a new object
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			graphics_object_name = duplicate_string(default_name);
+			graphics_object_name = duplicate_string("morph");
 			proportion = 0.0;
 			initial = (gtObject *)NULL;
 			final = (gtObject *)NULL;
@@ -6311,13 +6246,12 @@ Executes a GFX CREATE SPECTRUM command.
 static int gfx_create_streamlines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE STREAMLINES command.
 ==============================================================================*/
 {
-	static char default_name[]="streamlines";
 	char *graphics_object_name,reverse_track,*streamline_data_type_string,
 		*streamline_type_string,**valid_strings;
 	enum GT_object_type graphics_object_type;
@@ -6352,14 +6286,7 @@ Executes a GFX CREATE STREAMLINES command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("streamlines");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 				"default_coordinate",computed_field_manager);
@@ -6747,13 +6674,12 @@ Executes a GFX CREATE STREAMLINES command.
 static int gfx_create_interactive_streamline(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 ==============================================================================*/
 {
-	static char default_name[]="interactive_streamline";
 	char *graphics_object_name,*line_graphics_object_name,reverse_track,
 		*streamline_data_type_string,*streamline_type_string,**valid_strings;
 	enum Streamline_type streamline_type;
@@ -6787,14 +6713,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("interactive_streamline");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 				"default_coordinate",computed_field_manager);
@@ -7147,7 +7066,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 static int gfx_create_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE SURFACES command.
@@ -7160,7 +7079,6 @@ Executes a GFX CREATE SURFACES command.
 	float time;
 	gtObject *graphics_object;
 	int face_number,number_of_valid_strings,return_code;
-	static char default_name[]="surfaces";
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
 	struct Element_discretization discretization;
@@ -7182,14 +7100,7 @@ Executes a GFX CREATE SURFACES command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("surfaces");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 				"default_coordinate",computed_field_manager);
@@ -8694,13 +8605,12 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 static int gfx_create_robot_7dof(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE OBJECT HEART_ROBOT command.
 ==============================================================================*/
 {
-	static char default_name[]="robot_7dof";
 	char *graphics_object_name;
 	gtObject *graphics_object;
 	int return_code;
@@ -8721,14 +8631,7 @@ Executes a GFX CREATE OBJECT HEART_ROBOT command.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("robot_7dof");
 			/* must access it now, because we deaccess it later */
 			material=ACCESS(Graphical_material)(command_data->
 				default_graphical_material);
@@ -8923,7 +8826,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED :  19 March 2001
+LAST MODIFIED :  29 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
@@ -8933,7 +8836,6 @@ Executes a GFX CREATE VOLUMES command.
 	enum Render_type render_type;
 	float time;
 	int displacement_map_xi_direction,number_of_valid_strings, return_code;
-	static char default_name[]="volumes";
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field,
@@ -8964,14 +8866,7 @@ Executes a GFX CREATE VOLUMES command.
 				command_data->computed_field_package)))
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
+			graphics_object_name = duplicate_string("volumes");
 			element_group=(struct GROUP(FE_element) *)NULL;
 			clipping=(struct Clipping *)NULL;
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -21506,7 +21401,7 @@ the derivatives).
 static int gfx_warp_voltex(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 29 March 2001
 
 DESCRIPTION :
 Executes a GFX WARP VOLTEX command. This warps the vertex and normals of a
@@ -21518,7 +21413,6 @@ gtvoltex according to calculated
 	double ximax[3];
 	gtObject *graphics_object1,*graphics_object2;
 	int itime1,itime2,return_code,xi_order;
-	static char default_name[]="volume";
 	static struct Modifier_entry option_table[]=
 	{
 		{"extent",NULL,NULL,set_Element_discretization},
@@ -21543,22 +21437,8 @@ gtvoltex according to calculated
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name1,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name1,default_name);
-			}
-			else
-			{
-				graphics_object_name1=(char *)NULL;
-			}
-			if (ALLOCATE(graphics_object_name2,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name2,default_name);
-			}
-			else
-			{
-				graphics_object_name2=(char *)NULL;
-			}
+			graphics_object_name1 = duplicate_string("volume");
+			graphics_object_name2 = duplicate_string("volume");
 			warp_field=(struct FE_field *)NULL;
 			seed_element=(struct FE_element *)NULL;
 			extent.number_in_xi1=1;
