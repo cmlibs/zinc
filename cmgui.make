@@ -67,8 +67,8 @@ cmgui-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
 cmgui-debug-memorycheck : MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
-cmgui-gtk cmgui-gtk-debug cmgui-gtk-static-lib cmgui-gtk-lib : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
-cmgui-gtk cmgui-gtk-debug cmgui-gtk-static-lib cmgui-gtk-lib : USER_INTERFACE=GTK_USER_INTERFACE
+cmgui-gtk cmgui-gtk-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui-gtk cmgui-gtk-debug : USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
@@ -98,6 +98,14 @@ cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui6
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 #Recurse on these targets so we don't have to redefine in this file what cmgui-gtk-debug is etc.
+cmgui-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui TARGET=so_lib ;
+cmgui-debug-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-debug TARGET=so_lib ;
+cmgui-static-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui TARGET=static_lib ;
+cmgui-debug-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui-debug TARGET=static_lib ;
 cmgui-gtk-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-gtk TARGET=so_lib ;
 cmgui-gtk-debug-lib :
