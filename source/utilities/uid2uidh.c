@@ -41,7 +41,11 @@ int main(int argc, char *argv[])
 					*dot_ptr = 0;
 				}
 
+#if defined (LINUX)
+				fprintf(outfile, "static char %s_uidh[] = \"", string_ptr + 1);
+#else /* defined (LINUX) */
 				fprintf(outfile, "static char %s_uidh[] = \"", string_ptr);
+#endif /* defined (LINUX) */
 
 				while(!feof(infile))
 				{
