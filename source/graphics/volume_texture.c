@@ -4040,33 +4040,50 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 							}
 							for (i=0;i<n_face_vertices;i++)
 							{
+								face_vertex[i][0]=0;
+								face_vertex[i][1]=0;
+								face_vertex[i][2]=0;
 								if (!strstr(face_word[i],"/"))
 								{
-									/* no vt or vn data (represent as 0) */
 									face_vertex[i][0]=atoi(face_word[i]);
-									face_vertex[i][1]=0;
-									face_vertex[i][2]=0;
 								}
 								else
 								{
 									if (strstr(face_word[i],"//"))
 									{
-										/* no vt data (represent as 0) */
-										word=strtok(face_word[i],"//");
-										face_vertex[i][0]=atoi(word);
-										word=strtok(NULL,"//");
-										face_vertex[i][1]=0;
-										face_vertex[i][2]=atoi(word);
-										word=strtok(NULL,"/");
+										if (word=strtok(face_word[i],"//"))
+										{
+											face_vertex[i][0]=atoi(word);
+											if(word=strtok(NULL,"//"))
+											{
+												face_vertex[i][1]=0;
+												face_vertex[i][2]=atoi(word);
+												word=strtok(NULL,"/");
+											}
+										}
+										else
+										{
+											face_vertex[i][0]=atoi(face_word[i]);
+										}
 									}
 									else
 									{
-										word=strtok(face_word[i], "/");
-										face_vertex[i][0]=atoi(word);
-										word=strtok(NULL,"/");
-										face_vertex[i][1]=atoi(word);
-										word=strtok(NULL,"/");
-										face_vertex[i][2]=atoi(word);
+										if (word=strtok(face_word[i], "/"))
+										{
+											face_vertex[i][0]=atoi(word);
+											if (word=strtok(NULL,"/"))
+											{
+												face_vertex[i][1]=atoi(word);
+												if(word=strtok(NULL,"/"))
+												{
+													face_vertex[i][2]=atoi(word);
+												}
+											}
+										}
+										else
+										{
+											face_vertex[i][0]=atoi(face_word[i]);
+										}
 									}
 								}
 							}
