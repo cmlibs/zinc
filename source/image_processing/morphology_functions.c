@@ -29,13 +29,6 @@
 #define DISTANCE1 sqrt((x - xctr) * (x - xctr) + (y - yctr) * (y - yctr))
 
 
-extern double sqrt(double x);
-
-extern long int random();
-
-extern	char *setstate();
-extern char *initstate();
-
 int Spatial_gray_tone_histogram(FE_value *data_index, int radius, int xctr, int yctr, int zctr,
          int xsize, int ysize, int zsize, int levels, int *h)
 /*****************************************************************************************
