@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_buffer.h
 
-LAST MODIFIED : 27 May 2004
+LAST MODIFIED : 4 June 2004
 
 DESCRIPTION :
 This provides a Cmgui interface to the OpenGL contexts of many types.
@@ -17,9 +17,13 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 /* #define GTK_USE_GTKGLAREA */
 #endif /* defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
-#define GRAPHICS_BUFFER_OFFSCREEN_BUFFERS
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#if defined (OPENGL_API)
+#  if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#     define GRAPHICS_BUFFER_USE_BUFFERS
+#     define GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS
+#  endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (OPENGL_API) */
+
 /*
 Global types
 ------------
@@ -134,6 +138,21 @@ PROTOTYPE_OBJECT_FUNCTIONS(Graphics_buffer);
 
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	int width, int height,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 6 May 2004
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_shared_offscreen(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	int width, int height,
 	enum Graphics_buffer_buffering_mode buffering_mode,

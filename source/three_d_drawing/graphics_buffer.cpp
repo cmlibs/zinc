@@ -676,7 +676,6 @@ DESCRIPTION :
 				buffer->glx_pbuffer = pbuffer;
 				buffer->visual_info = 
 					glXGetVisualFromFBConfig(display, buffer->config);
-				buffer->glx_pbuffer = pbuffer;
 				buffer->context = glXCreateNewContext(
 					display, buffer->config, GLX_RGBA_TYPE, 
 					graphics_buffer_package->shared_glx_context, GL_TRUE);
@@ -835,7 +834,6 @@ the equivalent GLX1.3 versions.
 				buffer->glx_pbuffer = pbuffer;
 				buffer->visual_info = 
 					glXGetVisualFromFBConfigSGIX(display, buffer->config);
-				buffer->glx_pbuffer = pbuffer;
 				buffer->context = glXCreateContextWithConfigSGIX(
 					display, buffer->config, GLX_RGBA_TYPE_SGIX, 
 					graphics_buffer_package->shared_glx_context, GL_TRUE);
@@ -1204,6 +1202,8 @@ that it is all in one place.
 		/* Only if an SGI server */
 		!strncmp("SGI", glXQueryServerString(display, DefaultScreen(display), GLX_VENDOR), 3))
 	{
+		XVisualInfo *visual_info;
+
 		if (graphics_buffer_package->override_visual_id)
 		{
 			number_of_visual_attributes = 5;
@@ -1214,10 +1214,6 @@ that it is all in one place.
 				attribute_ptr++;
 				*attribute_ptr = GLX_RGBA_BIT;
 				attribute_ptr++;
-				*attribute_ptr = GLX_VISUAL_ID;
-				attribute_ptr++;
-				*attribute_ptr = graphics_buffer_package->override_visual_id;
-				attribute_ptr++;
 				*attribute_ptr = None;
 				attribute_ptr++;
 				
@@ -1225,10 +1221,35 @@ that it is all in one place.
 					DefaultScreen(display), visual_attributes, &nelements))
 				{
 					config_index = 0;
-					Graphics_buffer_create_from_fb_config_sgi(buffer,
-						graphics_buffer_package, class, x3d_parent_widget,
-						width, height, buffer->config_list[config_index]);
-					
+					while ((config_index < nelements) &&
+					  (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type))
+					{
+					  if (visual_info = glXGetVisualFromFBConfigSGIX(display,
+						 buffer->config_list[config_index]))
+					  {
+						 if (visual_info->visualid == 
+							graphics_buffer_package->override_visual_id)
+						 {
+							if (class == GRAPHICS_BUFFER_ONSCREEN_CLASS)
+							{
+							  /* Try a shared buffer first */
+							  Graphics_buffer_create_from_fb_config_sgi(buffer,
+								 graphics_buffer_package,
+								 GRAPHICS_BUFFER_ONSCREEN_SHARED_CLASS,
+								 x3d_parent_widget,
+								 width, height, buffer->config_list[config_index]);
+							}
+							if (GRAPHICS_BUFFER_INVALID_TYPE == buffer->type)
+							{
+							  Graphics_buffer_create_from_fb_config_sgi(buffer,
+								 graphics_buffer_package, class, x3d_parent_widget,
+								 width, height, buffer->config_list[config_index]);
+							}
+						 }
+						 XFree(visual_info);
+					  }
+					  config_index++;
+					}
 				}
 			}
 		}
@@ -2416,6 +2437,61 @@ DESCRIPTION :
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_shared_offscreen(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	int width, int height,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 6 May 2004
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Graphics_buffer *buffer;
+
+	ENTER(create_Graphics_buffer_offscreen);
+
+	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+	{
+#if defined (MOTIF)
+		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package, 
+			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
+			buffering_mode, stereo_mode, minimum_colour_buffer_depth, 
+			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
+			minimum_accumulation_buffer_depth,
+			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
+#else /* defined (MOTIF) */
+		USE_PARAMETER(width);
+		USE_PARAMETER(height);
+		USE_PARAMETER(buffering_mode);
+		USE_PARAMETER(stereo_mode);
+		USE_PARAMETER(minimum_colour_buffer_depth);
+		USE_PARAMETER(minimum_depth_buffer_depth);
+		USE_PARAMETER(minimum_accumulation_buffer_depth);
+#endif /* defined (MOTIF) */
+		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
+		{
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
+				"Unable to create offscreen graphics buffer.");				
+			buffer = (struct Graphics_buffer *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
+			"Unable to create generic Graphics_buffer.");				
+		buffer = (struct Graphics_buffer *)NULL;
+	}
+	LEAVE;
+
+	return (buffer);
+} /* create_Graphics_buffer_offscreen */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_offscreen_from_buffer(
 	int width, int height, struct Graphics_buffer *buffer_to_match)
 /*******************************************************************************
@@ -3463,7 +3539,7 @@ made current) to be the GLX destination.
 			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
 			{
 				glXMakeContextCurrent(buffer->display, glXGetCurrentDrawable(),
-					buffer->glx_pbuffer, buffer->context);
+					buffer->glx_pbuffer, glXGetCurrentContext());
 				return_code = 1;
 			} break;
 #  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */

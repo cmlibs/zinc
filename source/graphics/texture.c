@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 28 August 2002
+LAST MODIFIED : 4 June 2004
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -1770,11 +1770,13 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 					return_code=0;
 #endif /* defined (SGI_MOVIE_FILE) */
 				}
+#if defined (GRAPHICS_BUFFER_USE_BUFFERS)
 				if(texture->graphics_buffer)
 				{
 					DEACCESS(Graphics_buffer)(&(texture->graphics_buffer));
 					return_code=0;
 				}
+#endif /* defined (GRAPHICS_BUFFER_USE_BUFFERS) */
 #if defined (OPENGL_API)
 				if (texture->display_list)
 				{
@@ -1924,17 +1926,19 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 				case TEXTURE_DMBUFFER:
 				case TEXTURE_PBUFFER:
 				{
-#if defined (SGI_DIGITAL_MEDIA)
-					if (destination->image)
-					{
-						DEALLOCATE(destination->image)
-					}
+#if defined (GRAPHICS_BUFFER_USE_BUFFERS)
 					ACCESS(Graphics_buffer)(source->graphics_buffer);
 					if (destination->graphics_buffer)
 					{
 						DEACCESS(Graphics_buffer)(&(destination->graphics_buffer));
 					}
 					destination->graphics_buffer = source->graphics_buffer;
+#endif /* defined (GRAPHICS_BUFFER_USE_BUFFERS) */
+#if defined (SGI_DIGITAL_MEDIA)
+					if (destination->image)
+					{
+						DEALLOCATE(destination->image)
+					}
 #else /* defined (SGI_DIGITAL_MEDIA) */
 					display_message(ERROR_MESSAGE,
 						"MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)."
@@ -3201,14 +3205,16 @@ texture, and must be given a value.
 				"Extending (%d,%d) to (%d,%d)",image_width,image_height,texture_width,
 				texture_height);
 		}
-#if defined (SGI_DIGITAL_MEDIA)
-		/* If dm_buffers are available then use them, 
-		 otherwise default to normal texture storage*/
+#if defined (GRAPHICS_BUFFER_USE_BUFFERS)
 		if(texture->graphics_buffer)
 		{
 			DEACCESS(Graphics_buffer)(&(texture->graphics_buffer));
 		}
-		graphics_buffer = create_Graphics_buffer_offscreen(
+#endif /* defined (GRAPHICS_BUFFER_USE_BUFFERS) */
+#if defined (SGI_DIGITAL_MEDIA)
+		/* If dm_buffers are available then use them, 
+		 otherwise default to normal texture storage*/
+		graphics_buffer = create_Graphics_buffer_shared_offscreen(
 			graphics_buffer_package, texture_width, texture_height, 
 			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 			/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/0,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 4 June 2004
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -7095,14 +7095,14 @@ scene viewer on screen.
 ==============================================================================*/
 {
 	int number_of_components, return_code;
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	struct Graphics_buffer *offscreen_buffer;
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 	ENTER(Scene_viewer_get_frame_pixels);
-#if ! defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if ! defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	USE_PARAMETER(force_onscreen);	
-#endif /* ! defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* ! defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 	if (scene_viewer && width && height)
 	{
@@ -7112,7 +7112,7 @@ scene viewer on screen.
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		}
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 		/* If working offscreen try and allocate as large an area as possible */
 		if (!force_onscreen && (offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
 			*width, *height, Scene_viewer_get_graphics_buffer(
@@ -7145,7 +7145,7 @@ scene viewer on screen.
 		}
 		else
 		{
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 			/* Always use the window size if grabbing from screen */
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
@@ -7170,9 +7170,9 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 		}
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 	}
 	else
 	{

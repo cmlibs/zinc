@@ -34,12 +34,12 @@ struct Render_element_data
 
 struct Computed_field_find_element_xi_cache
 {
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	int bit_shift;
 	int minimum_element_number;
 	int maximum_element_number;
 	struct Graphics_buffer *graphics_buffer;
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 	int valid_values;
 	struct FE_element *element;
 	struct Cmiss_region *search_region;
@@ -478,7 +478,7 @@ ultimate parent finite_element field.
 	return (return_code);
 } /* Computed_field_perform_find_element_xi */
 
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 static int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2000
@@ -520,7 +520,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	return (return_code);
 } /* Expand_element_range */
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 static int Render_element_as_texture(struct FE_element *element, void *data_void)
 /*******************************************************************************
@@ -643,7 +643,7 @@ sequential element_xi lookup should now be performed.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 #define BLOCK_SIZE (20)
 #if defined (DEBUG)
 	int dummy[1024 * 1024];
@@ -658,11 +658,11 @@ sequential element_xi lookup should now be performed.
 	struct FE_region *fe_region;
 	struct Render_element_data data;
 	int gl_list, i, nx, ny, px, py, scaled_number;
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 	ENTER(Computed_field_find_element_xi_special);
 	USE_PARAMETER(number_of_values);
-#if !defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if !defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	USE_PARAMETER(field);
 	USE_PARAMETER(cache_ptr);
 	USE_PARAMETER(values);
@@ -677,7 +677,7 @@ sequential element_xi lookup should now be performed.
 #endif /* !defined (DM_BUFFERS) */
 
 	return_code = 0;
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	/* If the number of elements in the group is small then there probably isn't
 		any benefit to using this method */
 	/* This method is adversely affected when displaying on a remote machine as every
@@ -1008,7 +1008,7 @@ sequential element_xi lookup should now be performed.
 			return_code = 0;
 		}
 	}
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 	LEAVE;
 
 	return (return_code);
@@ -1029,9 +1029,9 @@ Stores cache data for the find_xi routines.
 	
 	if (ALLOCATE(cache,struct Computed_field_find_element_xi_cache,1))
 	{
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 	  cache->graphics_buffer = (struct Graphics_buffer *)NULL;
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 	  cache->valid_values = 0;
 	  cache->number_of_values = 0;
 	  cache->values = (FE_value *)NULL;
@@ -1062,12 +1062,12 @@ Frees memory/deaccess cache at <*cache_address>.
 	ENTER(DESTROY(Computed_field_find_element_xi_cache));
 	if (cache_address&&*cache_address)
 	{
-#if defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS)
+#if defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS)
 		if ((*cache_address)->graphics_buffer)
 		{
 			DESTROY(Graphics_buffer)(&(*cache_address)->graphics_buffer);
 		}
-#endif /* defined (GRAPHICS_BUFFER_OFFSCREEN_BUFFERS) */
+#endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 		if ((*cache_address)->values)
 		{
 			DEALLOCATE((*cache_address)->values);
