@@ -56,7 +56,7 @@ NOTE
 #include "user_interface/message.h"
 
 /*???DB.  Enable data transfer */
-#define NOT_TEMPORARY
+/* #define NOT_TEMPORARY */
 
 /*
 Module types
@@ -657,6 +657,8 @@ DESCRIPTION :
 Receives any data from the output data wormhole.
 ==============================================================================*/
 {
+/*???DB.  Temporary to disable data transfer */
+#if defined (NOT_TEMPORARY)
 	char **component_names,*field_name,*group_name,region_name[]="region_xxxxx";
 	double *temp_field_values;
 	enum CM_field_type cm_field_type;
@@ -673,14 +675,17 @@ Receives any data from the output data wormhole.
 	struct FE_node_field_creator *node_field_creator;
 	struct GROUP(FE_node) *old_node_group;
 	struct MANAGER(FE_node) *FE_node_manager;
+#else /* defined (NOT_TEMPORARY) */
+	int return_code;
+#endif /* defined (NOT_TEMPORARY) */
 
 	ENTER(CMISS_connection_get_data);
 	return_code=0;
-	FE_node_manager = (struct MANAGER(FE_node) *)NULL;
 	if (connection)
 	{
 /*???DB.  Temporary to disable data transfer */
 #if defined (NOT_TEMPORARY)
+		FE_node_manager = (struct MANAGER(FE_node) *)NULL;
 		/* what is our current state */
 		switch (connection->data_input_state)
 		{
@@ -1566,6 +1571,7 @@ while (wh_output_can_open(connection->data_output))
 	return (return_code);
 } /* CMISS_connection_get_data */
 
+#if defined (NOT_TEMPORARY)
 static int CMISS_connection_count_node_field(struct FE_node *node,
 	struct FE_field *field,void *count_void)
 /*******************************************************************************
@@ -1970,7 +1976,9 @@ Sends a destroy message for <node> through the wormhole.
 
 	return (return_code);
 } /* CMISS_connection_send_delete_node */
+#endif /* defined (NOT_TEMPORARY) */
 
+#if defined (NOT_TEMPORARY)
 static void CMISS_connection_node_global_change(
 	struct MANAGER_MESSAGE(FE_node) *message, void *connection_void)
 /*******************************************************************************
@@ -2047,7 +2055,9 @@ Something has changed globally about the objects this widget uses, so refresh.
 	}
 	LEAVE;
 } /* CMISS_connection_node_global_change */
+#endif /* defined (NOT_TEMPORARY) */
 
+#if defined (NOT_TEMPORARY)
 static void CMISS_connection_data_global_change(
 	struct MANAGER_MESSAGE(FE_node) *message, void *connection_void)
 /*******************************************************************************
@@ -2124,6 +2134,7 @@ Something has changed globally about the objects this widget uses, so refresh.
 	}
 	LEAVE;
 } /* CMISS_connection_data_global_change */
+#endif /* defined (NOT_TEMPORARY) */
 
 #if defined (NOT_DEBUG)
 #if defined (NOT_TEMPORARY)
@@ -3010,10 +3021,16 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 				connection->element_manager);
 #endif /* defined (NOT_TEMPORARY) */
 #endif /* defined (NOT_DEBUG) */
-			MANAGER_DEREGISTER(FE_node)(connection->node_manager_callback_id,
-				connection->node_manager);
-			MANAGER_DEREGISTER(FE_node)(connection->data_manager_callback_id,
-				connection->data_manager);
+			if (connection->node_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(FE_node)(connection->node_manager_callback_id,
+					connection->node_manager);
+			}
+			if (connection->data_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(FE_node)(connection->data_manager_callback_id,
+					connection->data_manager);
+			}
 			if (DESTROY(Wh_input)(&(connection->command_input))&&
 				DESTROY(Wh_output)(&(connection->command_output))&&
 				DESTROY(Wh_input)(&(connection->prompt_input))&&
@@ -3075,6 +3092,7 @@ Executes the given command within CMISS.
 	struct User_interface *user_interface;
 
 	ENTER(CMISS_connection_process_command);
+	USE_PARAMETER(modal_widget);
 	return_code=0;
 	if (connection_address&&(connection= *connection_address))
 	{
@@ -3098,11 +3116,16 @@ Executes the given command within CMISS.
 					/* Hold on to the user interface in case the connection
 						closes on us */
 					user_interface = connection->user_interface;
+#if defined (OLD_CODE)
+					/* Martin pointed out that it is probably more useful
+						not to do this.  I agree and think that the probable 
+						dangers are your own silly fault */
 					busy_cursor_on(
 #if defined (MOTIF)
 						modal_widget,
 #endif /* defined (MOTIF) */
 						user_interface);
+#endif /* defined (OLD_CODE) */
 					/* wait for command to complete */
 					connection->command_in_progress=1;
 					/* when we start processing with application main step the back end
@@ -3115,11 +3138,13 @@ Executes the given command within CMISS.
 						connection= *connection_address; */
 						application_main_step(user_interface);
 					}
+#if defined (OLD_CODE)
 					busy_cursor_off(
 #if defined (MOTIF)
 						modal_widget,
 #endif /* defined (MOTIF) */
 						user_interface);
+#endif /* defined (OLD_CODE) */
 				}
 			}
 			else
