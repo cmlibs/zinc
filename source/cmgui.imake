@@ -1047,7 +1047,7 @@ Target : $(OBJS) cmgui.ObjSuffix
 		mkdir -p $(BIN_PATH); \
 	fi
 #if defined (IRIX) /* switch OperatingSystem */
-	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list)
 #elif defined(LINUX) /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #endif /* switch OperatingSystem */
