@@ -1,0 +1,41 @@
+
+from distutils.core import setup, Extension
+
+setup(name="Cmiss",
+      version="1.0",
+      description="Cmiss python interface",
+      author="Shane Blackett",
+      author_email="s.blackett@auckland.ac.nz",
+      url="http://www.cmiss.org",
+      packages=['Cmiss', 'Cmiss.Value', 'Cmiss.Variable'],
+      ext_modules=[
+        Extension("Cmiss.Interpreter", ["Cmiss/Interpreter.c"],
+          include_dirs=["/usr/people/blackett/perl_interpreter/source"],
+          define_macros=[('FULL_NAMES', '1')]),
+        Extension("Cmiss.Value.Value", ["Cmiss/Value/Value.c"],
+          include_dirs=["/usr/people/blackett/cmgui/source"],
+          define_macros=[('FULL_NAMES', '1')],
+          library_dirs=["/home/blackett/lib"],
+          libraries=["cmgui"]),
+        Extension("Cmiss.Value.Matrix", ["Cmiss/Value/Matrix.c"],
+          include_dirs=["/usr/people/blackett/cmgui/source"],
+          define_macros=[('FULL_NAMES', '1')],
+          library_dirs=["/home/blackett/lib"],
+          libraries=["cmgui"]),
+         Extension("Cmiss.Value.Derivative_matrix", ["Cmiss/Value/Derivative_matrix.c"],
+          include_dirs=["/usr/people/blackett/cmgui/source"],
+          define_macros=[('FULL_NAMES', '1')],
+          library_dirs=["/home/blackett/lib"],
+          libraries=["cmgui"]),
+         Extension("Cmiss.Value.Element_xi", ["Cmiss/Value/Element_xi.c"],
+          include_dirs=["/usr/people/blackett/cmgui/source"],
+          define_macros=[('FULL_NAMES', '1')],
+          library_dirs=["/home/blackett/lib"],
+          libraries=["cmgui"]),
+        Extension("Cmiss.Variable.Variable", ["Cmiss/Variable/Variable.c"],
+          include_dirs=["/usr/people/blackett/cmgui/source"],
+          define_macros=[('FULL_NAMES', '1')],
+          library_dirs=["/home/blackett/lib"],
+          libraries=["cmgui"])]
+     )
+
