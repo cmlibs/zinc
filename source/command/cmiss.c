@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 10 April 2001
+LAST MODIFIED : 17 April 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -23993,10 +23993,10 @@ Executes a CELL SET CALCULATE command.
           &intg_routine_name,(void *)1,set_name);
         intg_dso_name = (char *)NULL;
         Option_table_add_entry(option_table,"integrator_dso",
-          &intg_dso_name,(void *)1,set_name);
+          &intg_dso_name,NULL,set_file_name);
         data_file_name = (char *)NULL;
         Option_table_add_entry(option_table,"data_file",
-          &data_file_name,(void *)1,set_name);
+          &data_file_name,NULL,set_file_name);
         return_code = Option_table_multi_parse(option_table,state);
         DESTROY(Option_table)(&option_table);
       }
