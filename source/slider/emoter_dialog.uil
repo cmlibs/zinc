@@ -11,7 +11,6 @@ module emoter_dialog
 
 procedure
 	emoter_dialog_destroy_CB          ();
-	emoter_slider_destroy_CB;
 	emoter_loadslider_CB;
 	emoter_saveslider_CB;
 	emoter_exportslider_CB;
@@ -48,7 +47,6 @@ procedure
 	emoter_movie_framerate_CB;
 
 	emoter_id_marker;
-	emoter_marker_destroy_CB;
 	emoter_id_marker_value_text;
 	emoter_marker_value_text_CB;
 
@@ -632,11 +630,6 @@ object
 			XmToggleButtonGadget emoter_slider_label;
 			XmSeparator emoter_slider_separator;
 			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure
-				emoter_slider_destroy_CB(emoter_slider_structure);
-			};
 		};
 
 	emoter_slider_toggle: XmToggleButtonGadget
@@ -846,11 +839,6 @@ object
 			XmText emoter_marker_value_text;
 			XmPushButton emoter_marker_add_button;
 			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure
-				emoter_marker_destroy_CB(emoter_marker_structure);
-			};
 		};
 
 	emoter_marker_end: XmForm
@@ -863,11 +851,6 @@ object
 			{
 			XmLabel emoter_marker_label;
 			XmText emoter_marker_value_text;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure
-				emoter_marker_destroy_CB(emoter_marker_structure);
 			};
 		};
 

@@ -18,6 +18,12 @@ used to scale the distance between a fixed node and a group of nodes.
 Global types
 ------------
 */
+struct Emoter_dialog;
+/*******************************************************************************
+LAST MODIFIED : 9 December 2003
+
+DESCRIPTION :
+==============================================================================*/
 
 struct Create_emoter_slider_data
 /*******************************************************************************
@@ -36,8 +42,8 @@ DESCRIPTION :
 	struct Colour viewer_background_colour;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
-	Widget *emoter_slider_dialog_address,parent,
-		*control_curve_editor_dialog_address;
+	Widget parent, *control_curve_editor_dialog_address;
+	struct Emoter_dialog **emoter_dialog_address;
 	struct User_interface *user_interface;
 }; /* struct Create_emoter_slider_data */
 
@@ -48,7 +54,7 @@ Global functions
 int gfx_create_emoter(struct Parse_state *state,void *dummy_to_be_modified,
 	void *create_emoter_slider_data_void);
 /*******************************************************************************
-LAST MODIFIED : 7 April 1998
+LAST MODIFIED : 9 December 2003
 
 DESCRIPTION :
 Executes a GFX CREATE EMOTER command.  If there is a emoter dialog
@@ -79,5 +85,13 @@ LAST MODIFIED : 7 September 1999
 
 DESCRIPTION :
 Executes a GFX MODIFY EMOTER command.
+==============================================================================*/
+
+int DESTROY(Emoter_dialog)(struct Emoter_dialog **emoter_dialog_address);
+/*******************************************************************************
+LAST MODIFIED : 9 December 2003
+
+DESCRIPTION :
+Callback for the emoter dialog - tidies up all details - mem etc
 ==============================================================================*/
 #endif /* !defined (EMOTER_SLIDER_DIALOG_H) */

@@ -276,11 +276,12 @@ DESCRIPTION :
 	struct User_interface *user_interface;
 #if defined (MOTIF)
 	Widget control_curve_editor_dialog,data_grabber_dialog,
-		emoter_slider_dialog,grid_field_calculator_dialog,input_module_dialog,
+		grid_field_calculator_dialog,input_module_dialog,
 		sync_2d_3d_dialog;
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
+	struct Emoter_dialog *emoter_slider_dialog;
 	struct Material_editor_dialog *material_editor_dialog;
 	struct Scene_editor *scene_editor;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
@@ -8539,7 +8540,7 @@ Executes a GFX CREATE command.
 				create_emoter_slider_data.viewer_light=command_data->default_light;
 				create_emoter_slider_data.viewer_light_model=
 					command_data->default_light_model;
-				create_emoter_slider_data.emoter_slider_dialog_address=
+				create_emoter_slider_data.emoter_dialog_address=
 					&(command_data->emoter_slider_dialog);
 				if (command_data->user_interface)
 				{
@@ -23520,7 +23521,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->control_curve_editor_dialog=(Widget)NULL;
 		command_data->data_grabber_dialog=(Widget)NULL;
 		command_data->sync_2d_3d_dialog=(Widget)NULL;
-		command_data->emoter_slider_dialog=(Widget)NULL;
+		command_data->emoter_slider_dialog=(struct Emoter_dialog *)NULL;
 		command_data->grid_field_calculator_dialog=(Widget)NULL;
 		command_data->input_module_dialog=(Widget)NULL;
 		command_data->data_viewer=(struct Node_viewer *)NULL;
@@ -24578,6 +24579,11 @@ Clean up the command_data, deallocating all the associated memory and resources.
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 		DESTROY(MANAGER(Movie_graphics))(&command_data->movie_graphics_manager);
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF) */
+
+		if (command_data->emoter_slider_dialog)
+		{
+			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
+		}
 
 #if defined (CELL)
 		/*created in execute_command_cell_open in command/cmiss.c */

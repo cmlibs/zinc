@@ -148,7 +148,7 @@ DESCRIPTION :
 	float time_minimum, time_maximum;
 	struct Shared_emoter_slider_data *shared;
 	void *control_curve_manager_callback_id;
-	Widget *dialog_address, shell, widget,
+	Widget shell, widget,
 		play_slider, slider_form, play_value_text,
 		play_max_text, play_min_text, mode_subform,
 		mode_text, solid_motion_button, movie_control_form,
@@ -156,6 +156,8 @@ DESCRIPTION :
 	struct Cmiss_region *minimum_region;
 	struct Shell_list_item *shell_list_item;
 	struct Movie_graphics *movie;
+	struct Emoter_dialog **dialog_address;
+	XtIntervalId autoplay_timeout;
 }; /* struct Emoter_dialog */
 
 /*
@@ -319,8 +321,8 @@ Updates the node locations for the <emoter_slider>
 					if ((node=FE_region_get_FE_node_from_identifier(fe_region,
 						(em_object->index)[i])))
 					{
-						if (temp_node=CREATE(FE_node)((em_object->index)[i],
-							(struct FE_region *)NULL,node))
+						if (temp_node=ACCESS(FE_node)(CREATE(FE_node)((em_object->index)[i],
+							(struct FE_region *)NULL,node)))
 						{
 							position[0] = 0;
 							position[1] = 0;
@@ -404,6 +406,7 @@ Updates the node locations for the <emoter_slider>
 									return_code = 0;
 								}
 							}
+							DEACCESS(FE_node)(&temp_node);
 						}
 						else
 						{
@@ -785,6 +788,14 @@ emoter slider's Control_curve
 			(int)((float)SLIDER_RESOLUTION*((emoter_slider->value)-
 			(emoter_slider->minimum))/((emoter_slider->maximum)-
 			(emoter_slider->minimum)));
+		if (slider_position < 0)
+		{
+			slider_position = 0;
+		}
+		else if (slider_position > SLIDER_RESOLUTION)
+		{
+			slider_position = SLIDER_RESOLUTION;
+		}
 		if ( slider_position != emoter_slider->slider_position &&
 			emoter_slider->slider )
 		{
@@ -947,56 +958,61 @@ Emoter slider scrollbar callback.  Sets the value from the slider
 	LEAVE;
 } /* update_emoter_slider_callback */
 
-static void destroy_emoter_marker_callback(Widget widget,
-	XtPointer emoter_marker_void, XtPointer call_data)
+static int DESTROY(Emoter_marker)(struct Emoter_marker **emoter_marker_address)
 /*******************************************************************************
-LAST MODIFIED : 6 April 1998
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Destroy Emoter marker scrollbar callback.  Deallocates the structure for the
 marker
 ==============================================================================*/
 {
+	int return_code;
 	struct Emoter_marker *emoter_marker;
 
-	ENTER(destroy_emoter_marker_callback);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (emoter_marker = (struct Emoter_marker *)emoter_marker_void)
+	ENTER(DESTROY(Emoter_marker));
+	if (emoter_marker = *emoter_marker_address)
 	{
 		if ( emoter_marker->name )
 		{
 			DEALLOCATE( emoter_marker->name );
 		}
-		DEALLOCATE( emoter_marker );
+		DEALLOCATE( *emoter_marker_address );
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"destroy_emoter_marker_callback.  Missing emoter_marker structure");
+			"DESTROY(Emoter_marker).  Missing emoter_marker structure");
+		return_code = 0;
 	}
 	LEAVE;
-} /* destroy_emoter_marker_callback */
 
-static void destroy_emoter_slider_callback(Widget widget,
-	XtPointer emoter_slider_void, XtPointer call_data)
+	return (return_code);
+} /* DESTROY(Emoter_marker) */
+
+static int DESTROY(Emoter_slider)(struct Emoter_slider **emoter_slider_address)
 /*******************************************************************************
-LAST MODIFIED : 6 April 1998
+LAST MODIFIED : 9 December 2003
 
 DESCRIPTION :
 Destroy Emoter slider scrollbar callback.  Deallocates the structure for the
 slider
 ==============================================================================*/
 {
-	int i, j;
+	int i, j, return_code;
 	struct Emoter_slider *emoter_slider, *combine_slider;
 	struct Control_curve *temp_var;
 
-	ENTER(destroy_emoter_slider_callback);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (emoter_slider = (struct Emoter_slider *)emoter_slider_void)
+	ENTER(DESTROY(Emoter_slider));
+	if (emoter_slider = *emoter_slider_address)
 	{
+		return_code = 1;
+		for (i = 0 ; i < emoter_slider->number_of_emoter_markers ; i++)
+		{
+			DESTROY(Emoter_marker)(emoter_slider->emoter_markers + i);
+		}
+		emoter_slider->number_of_emoter_markers = 0;
 		if ( emoter_slider->mode_curve )
 		{
 			temp_var = emoter_slider->mode_curve;
@@ -1016,27 +1032,30 @@ slider
 			combine_slider = (emoter_slider->combine_sliders[j])->slider;
 			if ( temp_var = (emoter_slider->combine_sliders[j])->timebase_curve)
 			{
-				i = 0;
-				while ( i < combine_slider->number_of_timebase_curves
-					&& temp_var != combine_slider->timebase_curves[i])
+				if (combine_slider->timebase_curves)
 				{
-					i++;
-				}
-				if ( i < combine_slider->number_of_timebase_curves )
-				{
-					combine_slider->number_of_timebase_curves--;
-					while ( i < combine_slider->number_of_timebase_curves )
+					i = 0;
+					while ( i < combine_slider->number_of_timebase_curves
+						&& temp_var != combine_slider->timebase_curves[i])
 					{
-						combine_slider->timebase_curves[i] =
-							combine_slider->timebase_curves[i + 1];
+						i++;
+					}
+					if ( i < combine_slider->number_of_timebase_curves )
+					{
+						combine_slider->number_of_timebase_curves--;
+						while ( i < combine_slider->number_of_timebase_curves )
+						{
+							combine_slider->timebase_curves[i] =
+								combine_slider->timebase_curves[i + 1];
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"DESTROY(Emoter_slider).  Unable to find timebase curve reference in combine curve");
+						return_code = 0;
 					}
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"destroy_emoter_slider_callback.  Unable to find timebase curve reference in combine curve");
-				}
-
 				if ( (emoter_slider->combine_sliders[j])->timebase_curve )
 				{
 					temp_var = (emoter_slider->combine_sliders[j])->timebase_curve;
@@ -1051,21 +1070,90 @@ slider
 		DEALLOCATE( emoter_slider->combine_sliders );
 		DEALLOCATE( emoter_slider->emoter_markers );
 		DEALLOCATE( emoter_slider->timebase_curves );
+		DESTROY(Scene_viewer)(&emoter_slider->scene_viewer);
 
 		if ( emoter_slider->sequence_filename )
 		{
 			DEALLOCATE(  emoter_slider->sequence_filename );
 		}
 		DEALLOCATE( emoter_slider->name );
-		DEALLOCATE( emoter_slider );
+		DEALLOCATE( *emoter_slider_address );
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"destroy_emoter_slider_callback.  Missing emoter_slider structure");
+			"DESTROY(Emoter_slider).  Missing emoter_slider structure");
+		return_code = 0;
 	}
 	LEAVE;
-} /* destroy_emoter_slider_callback */
+
+	return (return_code);
+} /* DESTROY(Emoter_slider) */
+
+int DESTROY(Emoter_dialog)(struct Emoter_dialog **emoter_dialog_address)
+/*******************************************************************************
+LAST MODIFIED : 9 December 2003
+
+DESCRIPTION :
+Callback for the emoter dialog - tidies up all details - mem etc
+==============================================================================*/
+{
+	int i, return_code;
+	struct Emoter_dialog *emoter_dialog;
+
+	ENTER(DESTROY(Emoter_dialog));
+
+	if (emoter_dialog = *emoter_dialog_address)
+	{
+		return_code = 1;
+		for (i = 0 ; i < emoter_dialog->shared->number_of_sliders ; i++)
+		{
+			DESTROY(Emoter_slider)(emoter_dialog->shared->sliders + i);
+		}
+		emoter_dialog->shared->number_of_sliders = 0;
+
+		if (emoter_dialog->autoplay_timeout)
+		{
+			XtRemoveTimeOut(emoter_dialog->autoplay_timeout);
+		}
+
+		if ( emoter_dialog->control_curve_manager_callback_id )
+		{
+			MANAGER_DEREGISTER(Control_curve)(
+				emoter_dialog->control_curve_manager_callback_id,
+				emoter_dialog->shared->control_curve_manager);
+			emoter_dialog->control_curve_manager_callback_id=(void *)NULL;
+		}
+
+		/* Destroy shared slider data */
+		DEALLOCATE(emoter_dialog->shared->weights);
+		DEALLOCATE(emoter_dialog->shared->sliders);
+		DEACCESS(Cmiss_region)(&emoter_dialog->shared->region);
+		destroy_EM_Object(&(emoter_dialog->shared->em_object));
+
+		if(emoter_dialog->minimum_region)
+		{
+			DEACCESS(Cmiss_region)(&emoter_dialog->minimum_region);
+		}
+
+		destroy_Shell_list_item(&(emoter_dialog->shell_list_item));
+
+		DEALLOCATE(emoter_dialog->shared);
+		
+		*(emoter_dialog->dialog_address) = (struct Emoter_dialog *)NULL;
+
+		DEALLOCATE(emoter_dialog);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Emoter_dialog).  Could not get emoter_dialog");
+		return_code = 0;
+	}
+
+	LEAVE;
+	return (return_code);
+} /* DESTROY(Emoter_dialog) */
 
 static void emoter_dialog_destroy_CB(Widget w,XtPointer user_data,
 	XtPointer call_data)
@@ -1086,33 +1174,7 @@ Callback for the emoter dialog - tidies up all details - mem etc
 
 	if ( emoter_dialog )
 	{
-		/* The sliders DEALLOCATE their own data */
-
-		if ( emoter_dialog->control_curve_manager_callback_id )
-		{
-			MANAGER_DEREGISTER(Control_curve)(
-				emoter_dialog->control_curve_manager_callback_id,
-				emoter_dialog->shared->control_curve_manager);
-			emoter_dialog->control_curve_manager_callback_id=(void *)NULL;
-		}
-
-		/* Destroy shared slider data */
-		DEALLOCATE(emoter_dialog->shared->weights);
-		DEALLOCATE(emoter_dialog->shared->sliders);
-		destroy_EM_Object(&(emoter_dialog->shared->em_object));
-
-		if(emoter_dialog->minimum_region)
-		{
-			DEACCESS(Cmiss_region)(&emoter_dialog->minimum_region);
-		}
-
-		destroy_Shell_list_item(&(emoter_dialog->shell_list_item));
-
-		DEALLOCATE(emoter_dialog->shared);
-
-		*(emoter_dialog->dialog_address) = (Widget)NULL;
-		/* deallocate the memory for the user data */
-		DEALLOCATE(emoter_dialog);
+		DESTROY(Emoter_dialog)(&emoter_dialog);
 	}
 	else
 	{
@@ -1146,6 +1208,7 @@ Callback for the play slider which sets the min and max and stores the widget
 	{
 		emoter_dialog->play_slider = widget;
 		XtVaSetValues(widget,
+			XmNvalue, (int)emoter_dialog->time_minimum,
 			XmNminimum, (int)emoter_dialog->time_minimum,
 			XmNmaximum, (int)(emoter_dialog->time_maximum + 1),
 			XmNsliderSize, 1,
@@ -2345,8 +2408,6 @@ DESCRIPTION :
 	MrmType emoter_marker_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"emoter_marker_destroy_CB",
-			(XtPointer)destroy_emoter_marker_callback},
 		{"emoter_id_marker_value_text",(XtPointer)
 			DIALOG_IDENTIFY(emoter_marker, value_text)},
 		{"emoter_marker_value_text_CB",
@@ -2487,12 +2548,16 @@ Reads stuff from a file.
 
 					return_code = 0;
 					slider_to_combine = (struct Emoter_slider *)NULL;
+#if defined (DEBUG)
 					printf(" %d\n", shared->number_of_sliders);
+#endif /* defined (DEBUG) */
 					for ( i = 0 ; i < shared->number_of_sliders ; i++ )
 					{
 						if ( (shared->sliders[i])->sequence_filename )
 						{
+#if defined (DEBUG)
 							printf("%s   %s\n", temp_string, (shared->sliders[i])->sequence_filename);
+#endif /* defined (DEBUG) */
 							if ( !strcmp( temp_string, (shared->sliders[i])->sequence_filename ))
 							{
 								slider_to_combine = shared->sliders[i];
@@ -2587,7 +2652,6 @@ Reads stuff from a file.
 										"read_emoter_slider_file.  Unable to reallocate combine sliders array");
 									return_code = 0;
 								}
-
 							}
 							else
 							{
@@ -2595,6 +2659,7 @@ Reads stuff from a file.
 									"read_emoter_slider_file.  Unable to read emoter control curve");
 								return_code = 0;
 							}
+							DEALLOCATE(name);
 						}
 						else
 						{
@@ -2883,6 +2948,7 @@ Reads stuff from a file.
 									"read_emoter_slider_file.  Unable to allocate shape vector");
 								return_code=0;
 							}
+							DEALLOCATE(name);
 						}
 						else
 						{
@@ -2932,8 +2998,6 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 	MrmType emoter_slider_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"emoter_slider_destroy_CB",
-			(XtPointer)destroy_emoter_slider_callback},
 		{"emoter_id_emoter_slider",(XtPointer)emoter_id_emoter_slider},
 		{"emoter_slider_CB",(XtPointer)emoter_slider_CB},
 		{"emoter_id_slider_togglebutton",(XtPointer)
@@ -3095,7 +3159,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 								marker_count, marker_count, 1, 1,
 								emoter_slider, shared_data );
 							if ( REALLOCATE( shared_data->sliders,
-								shared_data->sliders, struct Emoter_slider*,
+								shared_data->sliders, struct Emoter_slider *,
 								shared_data->number_of_sliders + 1))
 							{
 								shared_data->sliders
@@ -3649,6 +3713,7 @@ DESCRIPTION :
 			XmNuserData, &emoter_dialog,
 			XmNset, &button_set,
 			NULL);
+		emoter_dialog->autoplay_timeout = (XtIntervalId)NULL;
 
 		if ( emoter_dialog )
 		{
@@ -3661,7 +3726,8 @@ DESCRIPTION :
 				}
 				emoter_set_play_slider_value ( emoter_dialog, time );
 				emoter_update_face( emoter_dialog->shared );
-				XtAppAddTimeOut( XtWidgetToApplicationContext(widget),
+				emoter_dialog->autoplay_timeout = 
+					XtAppAddTimeOut( XtWidgetToApplicationContext(widget),
 					1, emoter_autoplay_CB, (void *)widget );
 			}
 		}
@@ -3735,7 +3801,8 @@ DESCRIPTION :
 				}
 				emoter_set_play_slider_value ( emoter_dialog, time );
 				emoter_update_face( emoter_dialog->shared );
-				XtAppAddTimeOut( XtWidgetToApplicationContext(widget),
+				emoter_dialog->autoplay_timeout = XtAppAddTimeOut(
+					XtWidgetToApplicationContext(widget),
 					1, emoter_autoplay_CB, (void *)widget );
 			}
 		}
@@ -5367,7 +5434,7 @@ Something has changed globally in the control curve manager.
 	LEAVE;
 } /* emoter_control_curve_manager_message */
 
-static Widget create_emoter_dialog(Widget *emoter_dialog_address,
+static Widget create_emoter_dialog(struct Emoter_dialog **emoter_dialog_address,
 	Widget parent, struct Shared_emoter_slider_data *shared_data)
 /*******************************************************************************
 LAST MODIFIED : 15 June 1998
@@ -5467,6 +5534,7 @@ Create emoter controls.
 			emoter_dialog->movie_every_frame = 1;
 			emoter_dialog->minimum_region = (struct Cmiss_region *)NULL;
 			emoter_dialog->shell_list_item = (struct Shell_list_item *)NULL;
+			emoter_dialog->autoplay_timeout = (XtIntervalId)NULL;
 
 			/* make the dialog shell */
 			if (emoter_dialog->shell = XtVaCreatePopupShell(
@@ -5522,7 +5590,7 @@ Create emoter controls.
 							}
 							XtPopup(emoter_dialog->shell, XtGrabNone);
 
-							*(emoter_dialog->dialog_address) = emoter_dialog->widget;
+							*(emoter_dialog->dialog_address) = emoter_dialog;
 							return_widget = emoter_dialog->widget;
 						}
 						else
@@ -5564,13 +5632,12 @@ Create emoter controls.
 		display_message(ERROR_MESSAGE,
 			"create_emoter_dialog.  Could not open hierarchy");
 	}
-	*emoter_dialog_address = return_widget;
 	LEAVE;
 
 	return (return_widget);
 } /* create_emoter_dialog */
 
-int bring_up_emoter_dialog(Widget *emoter_dialog_address,
+int bring_up_emoter_dialog(struct Emoter_dialog **emoter_dialog_address,
 	Widget parent, struct Shared_emoter_slider_data *shared_data)
 /*******************************************************************************
 LAST MODIFIED : 6 April 1998
@@ -5589,7 +5656,7 @@ a time.  This implementation may be changed later.
 		/* does it exist */
 		if (*emoter_dialog_address)
 		{
-			XtPopup(*emoter_dialog_address,XtGrabNone);
+			XtPopup((*emoter_dialog_address)->widget,XtGrabNone);
 			return_code=1;
 		}
 		else
@@ -5699,7 +5766,7 @@ in existence, then bring it to the front, otherwise create new one.
 	if (state&&(create_emoter_slider_data=
 		(struct Create_emoter_slider_data *)
 		create_emoter_slider_data_void)&&
-		(create_emoter_slider_data->emoter_slider_dialog_address))
+		(create_emoter_slider_data->emoter_dialog_address))
 	{
 		Cmiss_region_get_root_region_path(&region_path);
 		index_nodes = (int *)NULL;
@@ -5824,7 +5891,7 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->number_of_sliders = 0;
 								shared_emoter_slider_data->number_of_modes=number_of_modes;
 								shared_emoter_slider_data->mode_limit = number_of_modes;
-								shared_emoter_slider_data->region = region;
+								shared_emoter_slider_data->region = ACCESS(Cmiss_region)(region);
 								shared_emoter_slider_data->show_solid_body_motion = 1;
 								shared_emoter_slider_data->control_curve_manager
 									= create_emoter_slider_data->control_curve_manager;
@@ -5853,7 +5920,7 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->transformation_scene_object
 									= transformation_scene_object;
 								return_code=bring_up_emoter_dialog(
-									create_emoter_slider_data->emoter_slider_dialog_address,
+									create_emoter_slider_data->emoter_dialog_address,
 									create_emoter_slider_data->parent,
 									shared_emoter_slider_data);
 								return_code=1;
@@ -5894,6 +5961,14 @@ in existence, then bring it to the front, otherwise create new one.
 				}
 			}
 		}
+		if (basis_file_name)
+		{
+			DEALLOCATE(basis_file_name);
+		}
+		if (transformation_graphics_object_name)
+		{
+			DEALLOCATE(transformation_graphics_object_name);
+		}
 		if (transformation_scene)
 		{
 			DEACCESS(Scene)(&transformation_scene);
@@ -5911,7 +5986,7 @@ in existence, then bring it to the front, otherwise create new one.
 } /* create_emoter */
 
 int gfx_modify_emoter(struct Parse_state *state,
-	void *dummy_to_be_modified, void *emoter_dialog_widget_void)
+	void *dummy_to_be_modified, void *emoter_dialog_void)
 /*******************************************************************************
 LAST MODIFIED : 7 September 1999
 
@@ -5958,12 +6033,8 @@ Executes a GFX MODIFY EMOTER command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (emoter_dialog_widget = (Widget)emoter_dialog_widget_void)
+		if (emoter_dialog = emoter_dialog_void)
 		{
-			/* Get the pointer to the emoter_dialog structure */
-			XtVaGetValues(emoter_dialog_widget,
-				XmNuserData, &emoter_dialog,
-				NULL);
 			maximum_time = emoter_dialog->time_maximum;
 			minimum_time = emoter_dialog->time_minimum;
 			shared = emoter_dialog->shared;
