@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.h
 
-LAST MODIFIED : 16 May 2003
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -348,6 +348,20 @@ Returns the node of number <identifier> in <fe_region>, or NULL without error
 if no such node found.
 ==============================================================================*/
 
+struct FE_node *FE_region_get_or_create_FE_node_with_identifier(
+	struct FE_region *fe_region, int identifier);
+/*******************************************************************************
+LAST MODIFIED : 27 May 2003
+
+DESCRIPTION :
+Convenience function returning an existing node with <identifier> from
+<fe_region> or any of its ancestors. If none is found, a new node with the
+given <identifier> is created.
+If the returned node is not already in <fe_region> it is merged before return.
+It is expected that the calling function has wrapped calls to this function
+with FE_region_begin/end_change.
+==============================================================================*/
+
 int FE_region_get_next_FE_node_identifier(struct FE_region *fe_region,
 	int start_identifier);
 /*******************************************************************************
@@ -602,6 +616,26 @@ LAST MODIFIED : 22 October 2002
 DESCRIPTION :
 Returns the element identified by <cm> in <fe_region>, or NULL without error if
 no such element found.
+==============================================================================*/
+
+struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
+	struct FE_region *fe_region, struct CM_element_information *identifier,
+	int dimension);
+/*******************************************************************************
+LAST MODIFIED : 27 May 2003
+
+DESCRIPTION :
+Convenience function returning an existing element with <identifier> from
+<fe_region> or any of its ancestors. Existing elements are checked against the
+<dimension> and no element is returned if the dimension is different.
+If no existing element is found, a new element with the given <identifier> and
+and unspecified shape of the given <dimension> is created.
+If the returned element is not already in <fe_region> it is merged before
+return.
+It is expected that the calling function has wrapped calls to this function
+with FE_region_begin/end_change.
+???RC Could eventually allow the shape of newly created elements to be other
+than 'unspecified'.
 ==============================================================================*/
 
 int FE_region_get_next_FE_element_identifier(struct FE_region *fe_region,

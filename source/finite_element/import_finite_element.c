@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 12 May 2003
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
@@ -159,7 +159,7 @@ static int read_element_xi_value(FILE *input_file,
 	struct Cmiss_region *root_region, struct FE_element **element_address,
 	FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 30 April 2003
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Reads an element:xi position in from the <input_file> in the format:
@@ -177,7 +177,6 @@ is in the root_region itself. The REGION_PATH must end in
 	struct CM_element_information cm;
 	struct Cmiss_region *region;
 	struct FE_element *element;
-	struct FE_element_shape *element_shape;
 	struct FE_region *fe_region;
 
 	ENTER(read_element_xi_value);
@@ -266,51 +265,10 @@ is in the root_region itself. The REGION_PATH must end in
 				element = (struct FE_element *)NULL;
 				if ((1 == fscanf(input_file, " %d", &dimension)) && (0 < dimension))
 				{
-					if (element =
-						FE_region_get_FE_element_from_identifier(fe_region, &cm))
-					{
-						if (get_FE_element_dimension(element) != dimension)
-						{
-							display_message(ERROR_MESSAGE,
-								"Invalid dimension (%d) for %s %d - should be %d.  Line %d",
-								dimension, CM_element_type_string(cm.type), cm.number,
-								get_FE_element_dimension(element),
-								get_line_number(input_file));
-							return_code = 0;
-						}
-					}
-					else
-					{
-						/* create a dummy element of the correct dimension -- ie. one with
-							 an unspecified shape */
-						if (element_shape =
-							CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL))
-						{
-							ACCESS(FE_element_shape)(element_shape);
-							if (!((element = CREATE(FE_element)(&cm, element_shape,
-								fe_region, (struct FE_element *)NULL)) &&
-								FE_region_merge_FE_element(fe_region, element)))
-							{
-								DESTROY(FE_element)(&element);
-								return_code = 0;
-							}
-							DEACCESS(FE_element_shape)(&element_shape);
-						}
-						else
-						{
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Error reading dimension.  Line %d",
-						get_line_number(input_file));
-					return_code = 0;
-				}
-				if (return_code)
-				{
-					if (element)
+					/* get existing element and check it has the dimension, or create
+						 a dummy element with unspecified shape and the dimension */
+					if (element = FE_region_get_or_create_FE_element_with_identifier(
+						fe_region, &cm, dimension))
 					{
 						*element_address = element;
 						/* now read the xi position */
@@ -337,8 +295,17 @@ is in the root_region itself. The REGION_PATH must end in
 					}
 					else
 					{
+						display_message(ERROR_MESSAGE, "read_element_xi_value.  "
+							"Could not get or create element.  Line %d",
+							get_line_number(input_file));
 						return_code = 0;
 					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Error reading dimension.  Line %d",
+						get_line_number(input_file));
+					return_code = 0;
 				}
 			}
 			else
@@ -3204,7 +3171,7 @@ static struct FE_element *read_FE_element(FILE *input_file,
 	struct FE_element *template_element, struct FE_region *fe_region,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 6 May 2003
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Reads in an element from an <input_file>.
@@ -3219,7 +3186,6 @@ in a grid field.
 		number_of_values, return_code, element_num, face_num, line_num;
 	struct CM_element_information element_identifier, face_identifier;
 	struct FE_element *element, *face_element;
-	struct FE_element_shape *element_shape;
 	struct FE_field *field;
 	struct FE_node *node;
 
@@ -3306,31 +3272,12 @@ in a grid field.
 								/* face number of 0 means no face */
 								if (0 != face_identifier.number)
 								{
-									face_element = FE_region_get_FE_element_from_identifier(
-										fe_region, &face_identifier);
-									if (!face_element)
-									{
-										/* create a dummy face of the appropriate dimension; this
-											 is and element with an unspecified shape */
-										if (element_shape = CREATE(FE_element_shape)(dimension - 1,
-											/*type*/(int *)NULL))
-										{
-											ACCESS(FE_element_shape)(element_shape);
-											if (!((face_element = CREATE(FE_element)(&face_identifier,
-												element_shape, fe_region, (struct FE_element *)NULL)) &&
-												FE_region_merge_FE_element(fe_region, face_element)))
-											{
-												DESTROY(FE_element)(&face_element);
-												return_code = 0;
-											}
-											DEACCESS(FE_element_shape)(&element_shape);
-										}
-										else
-										{
-											return_code = 0;
-										}
-									}
-									if (face_element)
+									/* get existing face and check it has the dimension less 1,
+										 or create a dummy face element with unspecified shape and
+										 with dimension one less than parent element */
+									if (face_element =
+										FE_region_get_or_create_FE_element_with_identifier(
+											fe_region, &face_identifier, dimension - 1))
 									{
 										if (!set_FE_element_face(element, i, face_element))
 										{
@@ -3340,6 +3287,13 @@ in a grid field.
 												element_identifier.number);
 											return_code = 0;
 										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE, "read_FE_element.  "
+											"Could not get or create face element.  Line %d",
+											get_line_number(input_file));
+										return_code = 0;
 									}
 								}
 							}
@@ -3490,25 +3444,9 @@ in a grid field.
 							{
 								if (1 == fscanf(input_file, "%d", &node_number))
 								{
-									/* try to find the node with node_number */
-									if (!(node = FE_region_get_FE_node_from_identifier(
-										fe_region, node_number)))
-									{
-										/* otherwise create a "dummy" node with no fields */
-										if (!((node = CREATE(FE_node)(node_number, fe_region,
-											/*template_node*/(struct FE_node *)NULL)) &&
-											FE_region_merge_FE_node(fe_region, node)))
-										{
-											display_message(ERROR_MESSAGE,
-												"read_FE_element.  Could not create node %d for %s %d",
-												node_number,
-												CM_element_type_string(element_identifier.type),
-												element_identifier.number);
-											DESTROY(FE_node)(&node);
-											return_code = 0;
-										}
-									}
-									if (return_code)
+									/* get or create node with node_number */
+									if (node = FE_region_get_or_create_FE_node_with_identifier(
+										fe_region, node_number))
 									{
 										if (!set_FE_element_node(element, i, node))
 										{
@@ -3516,6 +3454,12 @@ in a grid field.
 												"read_FE_element.  Could not set node");
 											return_code = 0;
 										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"read_FE_element.  Could not get or create node");
+										return_code = 0;
 									}
 								}
 								else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.c
 
-LAST MODIFIED : 13 May 2003
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -2373,6 +2373,76 @@ if no such node found.
 	return (node);
 } /* FE_region_get_FE_node_from_identifier */
 
+struct FE_node *FE_region_get_or_create_FE_node_with_identifier(
+	struct FE_region *fe_region, int identifier)
+/*******************************************************************************
+LAST MODIFIED : 27 May 2003
+
+DESCRIPTION :
+Convenience function returning an existing node with <identifier> from
+<fe_region> or any of its ancestors. If none is found, a new node with the
+given <identifier> is created.
+If the returned node is not already in <fe_region> it is merged before return.
+It is expected that the calling function has wrapped calls to this function
+with FE_region_begin/end_change.
+==============================================================================*/
+{
+	struct FE_node *node;
+	struct FE_region *master_fe_region;
+
+	ENTER(FE_region_get_or_create_FE_node_with_identifier);
+	node = (struct FE_node *)NULL;
+	if (fe_region)
+	{
+		if (!(node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+			identifier, fe_region->fe_node_list)))
+		{
+			/* get the ultimate master FE_region for complete list of nodes */
+			master_fe_region = fe_region;
+			while (master_fe_region->master_fe_region &&
+				(!master_fe_region->data_hack))
+			{
+				master_fe_region = master_fe_region->master_fe_region;
+			}
+			if (master_fe_region != fe_region)
+			{
+				node = FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+					identifier, master_fe_region->fe_node_list);
+			}
+			if (!node)
+			{
+				node = CREATE(FE_node)(identifier, master_fe_region,
+					/*template_node*/(struct FE_node *)NULL);
+				if (!node)
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_get_or_create_FE_node_with_identifier.  "
+						"Could not create node");
+				}
+			}
+			if (node)
+			{
+				if (!FE_region_merge_FE_node(fe_region, node))
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_get_or_create_FE_node_with_identifier.  "
+						"Could not merge node");
+					/* following cleans up node if newly created, and clears pointer */
+					REACCESS(FE_node)(&node, (struct FE_node *)NULL);
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_or_create_FE_node_with_identifier.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (node);
+} /* FE_region_get_or_create_FE_node_with_identifier */
+
 int FE_region_get_next_FE_node_identifier(struct FE_region *fe_region,
 	int start_identifier)
 /*******************************************************************************
@@ -3601,6 +3671,122 @@ no such element found.
 	return (element);
 } /* FE_region_get_FE_element_from_identifier */
 
+struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
+	struct FE_region *fe_region, struct CM_element_information *identifier,
+	int dimension)
+/*******************************************************************************
+LAST MODIFIED : 27 May 2003
+
+DESCRIPTION :
+Convenience function returning an existing element with <identifier> from
+<fe_region> or any of its ancestors. Existing elements are checked against the
+<dimension> and no element is returned if the dimension is different.
+If no existing element is found, a new element with the given <identifier> and
+and unspecified shape of the given <dimension> is created.
+If the returned element is not already in <fe_region> it is merged before
+return.
+It is expected that the calling function has wrapped calls to this function
+with FE_region_begin/end_change.
+???RC Could eventually allow the shape of newly created elements to be other
+than 'unspecified'.
+==============================================================================*/
+{
+	int existing_dimension;
+	struct FE_element *element, *existing_element;
+	struct FE_element_shape *element_shape;
+	struct FE_region *master_fe_region;
+
+	ENTER(FE_region_get_or_create_FE_element_with_identifier);
+	element = (struct FE_element *)NULL;
+	if (fe_region && identifier)
+	{
+		if (existing_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
+			identifier, fe_region->fe_element_list))
+		{
+			existing_dimension = get_FE_element_dimension(existing_element);
+			if (existing_dimension == dimension)
+			{
+				element = existing_element;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_region_get_or_create_FE_element_with_identifier.  "
+					"Existing element %s %d is dimension %d, not the requested %d",
+					CM_element_type_string(identifier->type), identifier->number,
+					existing_dimension, dimension);
+			}
+		}
+		else
+		{
+			/* get the ultimate master FE_region for complete list of elements */
+			master_fe_region = fe_region;
+			while (master_fe_region->master_fe_region)
+			{
+				master_fe_region = master_fe_region->master_fe_region;
+			}
+			if (master_fe_region != fe_region)
+			{
+				if (existing_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,
+					identifier)(identifier, master_fe_region->fe_element_list))
+				{
+					existing_dimension = get_FE_element_dimension(existing_element);
+					if (existing_dimension == dimension)
+					{
+						element = existing_element;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_region_get_or_create_FE_element_with_identifier.  Existing "
+							"element %s %d in master is dimension %d, not the requested %d",
+							CM_element_type_string(identifier->type), identifier->number,
+							existing_dimension, dimension);
+					}
+				}
+			}
+			if (!existing_element)
+			{
+				/* create an element with an unspecified shape of <dimension> */
+				if (element_shape =
+					CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL))
+				{
+					ACCESS(FE_element_shape)(element_shape);
+					element = CREATE(FE_element)(identifier, element_shape,
+						master_fe_region, /*template_element*/(struct FE_element *)NULL);
+					DEACCESS(FE_element_shape)(&element_shape);
+				}
+				if (!element)
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_get_or_create_FE_element_with_identifier.  "
+						"Could not create element");
+				}
+			}
+			if (element)
+			{
+				if (!FE_region_merge_FE_element(fe_region, element))
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_region_get_or_create_FE_element_with_identifier.  "
+						"Could not merge element");
+					/* following cleans up element if newly created, and clears pointer */
+					REACCESS(FE_element)(&element, (struct FE_element *)NULL);
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_or_create_FE_element_with_identifier.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (element);
+} /* FE_region_get_or_create_FE_element_with_identifier */
+
 int FE_region_get_next_FE_element_identifier(struct FE_region *fe_region,
 	enum CM_element_type element_type, int start_identifier)
 /*******************************************************************************
@@ -3846,7 +4032,7 @@ Should place multiple calls to this function between begin_change/end_change.
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 14 May 2003
+LAST MODIFIED : 27 May 2003
 
 DESCRIPTION :
 Checks <element> is compatible with <fe_region> and any existing FE_element
@@ -3875,7 +4061,10 @@ A NULL value is returned on any error.
 			if (merged_element =
 				FE_region_merge_FE_element(fe_region->master_fe_region, element))
 			{
-				if (!fe_region->data_hack)
+				/* data_hack region and its children do not contain elements, but can
+					 merge into their master -- the true root_region */
+				if ((!fe_region->data_hack) &&
+					(!fe_region->master_fe_region->data_hack))
 				{
 					if (!IS_OBJECT_IN_LIST(FE_element)(merged_element,
 						fe_region->fe_element_list))
