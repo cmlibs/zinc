@@ -1058,7 +1058,7 @@ DESCRIPTION :
 				if (data)
 				{
 					data_1=data;
-					data_2=data+npts1;
+					data_2=data+npts1*number_of_data_components;
 				}
 				for (i=npts1-1;i>0;i--)
 				{
