@@ -690,7 +690,9 @@ Main program for the CMISS Graphical User Interface
 	struct Computed_field *computed_field;
 	struct Computed_field_finite_element_package
 		*computed_field_finite_element_package;
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 	struct Command_window *command_window;
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 	struct Coordinate_system rect_coord_system,temp_coordinate_system;
 	struct Execute_command *execute_command, *set_command;
 	struct FE_field *fe_field;
@@ -801,7 +803,9 @@ Main program for the CMISS Graphical User Interface
 	command_data.computed_field_package=(struct Computed_field_package *)NULL;
 	command_data.default_scene=(struct Scene *)NULL;
 	command_data.scene_manager=(struct MANAGER(Scene) *)NULL;
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 	command_data.command_window=(struct Command_window *)NULL;
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 	command_data.fe_time = (struct FE_time *)NULL;
 #if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;

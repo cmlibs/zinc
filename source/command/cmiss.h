@@ -32,7 +32,9 @@ DESCRIPTION :
 	struct Cell_interface *cell_interface;
 #endif /* defined (CELL) */
 	struct Console *command_console;
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 	struct Command_window *command_window;
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 	struct Colour background_colour,foreground_colour;
 	struct Execute_command *execute_command,*set_command;
 #if defined (MOTIF)
