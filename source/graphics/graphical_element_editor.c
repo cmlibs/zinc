@@ -401,7 +401,7 @@ static int gelem_editor_update_settings_item(
 	struct Graphical_element_editor_struct *gelem_editor,
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Updates the label on item <settings> to match its contents.
@@ -432,6 +432,7 @@ Updates the label on item <settings> to match its contents.
 					new_string=XmStringCreateSimple(settings_string);
 					XtVaSetValues(toggle_list[1],XmNlabelString,new_string,NULL);
 					XmStringFree(new_string);
+					DEALLOCATE(settings_string);
 					return_code=1;
 				}
 			}
@@ -1419,7 +1420,7 @@ Callback for when changes are made in the settings editor.
 static void graphical_element_editor_material_manager_message(
 	struct MANAGER_MESSAGE(Graphical_material) *message,void *data)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1997
+LAST MODIFIED : 28 May 2001
 
 DESCRIPTION :
 Something has changed globally in the material manager. If the event has
@@ -1434,14 +1435,13 @@ changed the name of a material, must remake the menu.
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(Graphical_material):
 			case MANAGER_CHANGE_IDENTIFIER(Graphical_material):
 			case MANAGER_CHANGE_OBJECT(Graphical_material):
 			{
 				gelem_editor_make_settings_list(gelem_editor);
 			} break;
-			case MANAGER_CHANGE_DELETE(Graphical_material):
 			case MANAGER_CHANGE_ADD(Graphical_material):
+			case MANAGER_CHANGE_REMOVE(Graphical_material):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material):
 			{
 				/* do nothing */
@@ -1460,7 +1460,7 @@ changed the name of a material, must remake the menu.
 static void graphical_element_editor_spectrum_manager_message(
 	struct MANAGER_MESSAGE(Spectrum) *message,void *data)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1997
+LAST MODIFIED : 28 May 2001
 
 DESCRIPTION :
 Something has changed globally in the spectrum manager. If the event has
@@ -1475,14 +1475,13 @@ changed the name of a spectrum, must remake the menu.
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(Spectrum):
 			case MANAGER_CHANGE_IDENTIFIER(Spectrum):
 			case MANAGER_CHANGE_OBJECT(Spectrum):
 			{
 				gelem_editor_make_settings_list(gelem_editor);
 			} break;
-			case MANAGER_CHANGE_DELETE(Spectrum):
 			case MANAGER_CHANGE_ADD(Spectrum):
+			case MANAGER_CHANGE_REMOVE(Spectrum):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum):
 			{
 				/* do nothing */
