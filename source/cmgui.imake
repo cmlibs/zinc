@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 13 October 2000
+XCOMM LAST MODIFIED : 17 October 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -1014,6 +1014,7 @@ transfer :
 	link/WildC link/WildH link/WildUil \
 	material/WildC material/WildH material/WildUil \
 	menu/WildC menu/WildH menu/WildUil \
+	mirage/WildC mirage/WildH mirage/WildUil \
 	node/WildC node/WildH node/WildUil \
 	projection/WildC projection/WildH projection/WildUil \
 	prompt/WildC prompt/WildH prompt/WildUil \
@@ -1032,10 +1033,10 @@ transfer :
 	cell/WildC cell/WildCmn cell/WildF cell/WildH cell/WildUil cell/bitmaps/WildXbm \
 	hypertext_help/WildC hypertext_help/WildH hypertext_help/Makefile \
 	hypertext_help/WildMms \
-	mirage/WildC mirage/WildH mirage/WildUil \
 	unemap/WildC unemap/WildH unemap/WildUil unemap/WildRc \
 	unemap/utilities/Makefile unemap/utilities/WildC unemap/utilities/WildH  \
 	unemap/utilities/WildUil unemap/utilities/WildRc \
+	unemap/default_torso/WildEx \
 	unemap_hardware_service/WildC unemap_hardware_service/WildH \
 	unemap_hardware_service/WildUil unemap_hardware_service/WildRc \
 	xvg/README xvg/custom/WildC xvg/custom/WildF xvg/include/WildH xvg/cmgui/WildUil \
@@ -1054,7 +1055,12 @@ transfer :
 	$(XML_PATH)/expat_lib/lib/WildAll $(XML_PATH)/expat_lib/include/WildH \
 	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
 	$(WORMHOLE_PATH)/lib/WildAll $(WORMHOLE_PATH)/source/wormhole.h \
+	$(INTERPRETER_PATH)/source/WildC $(INTERPRETER_PATH)/source/WildH \
+	$(INTERPRETER_PATH)/source/WildF90 $(INTERPRETER_PATH)/source/WildPm \
 	| gzip > cmgui_tar4.gz
+	tar -cvf - \
+	$(INTERPRETER_PATH)/generated/mips3-n32-debug/WildA \
+	| gzip > cmgui_tar5.gz
 
 compare :
 	mv cmgui_tar tmp

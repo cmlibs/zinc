@@ -42,6 +42,10 @@ all : oscheck
 #define WildXbm *.xbm
 #define WildRc *.rc
 #define WildPx *.px
+#define WildEx *.ex*
+#define WildF90 *.f90
+#define WildPm *.pm
+#define WildA *.a
 
 UIDTOUIDH = Uid2uidhTarget
 #if defined (IRIX) /* switch OperatingSystem */
