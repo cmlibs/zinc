@@ -51,9 +51,7 @@ DESCRIPTION :
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "general/debug.h"
 #include "general/error_handler.h"
-#if defined (IMAGEMAGICK)
 #include "general/image_utilities.h"
-#endif /* defined (IMAGEMAGICK) */
 #if !defined (WINDOWS_DEV_FLAG)
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
@@ -1611,9 +1609,8 @@ Main program for the CMISS Graphical User Interface
 			create_interpreter(argc, argv, comfile_name, &status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
-#if defined (IMAGEMAGICK)
+			/* set up image library */
 			Open_image_environment(*argv);
-#endif /* defined (IMAGEMAGICK) */
 
 			if(no_display)
 			{
