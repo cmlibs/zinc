@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -8038,7 +8038,7 @@ static struct Texture *make_gouraud_texture_from_torso_map(struct Map *map,
 	float minimum,float maximum,int texture_x_length,int texture_y_length,
 	int draw_skin)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2002
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Given <map>,<region>,<time>, <z_min> and <z_range>, <minimum> and <maximum> 
@@ -8052,9 +8052,12 @@ opengl texture reasons (at least on the SGI).
 
 ==============================================================================*/
 {	
+	enum Texture_storage_type storage_type;
 	FE_value value,red,green,blue,x,y,z_rc,r,theta,z_cp,x_offset,y_offset;
 	float *vertices;							
-	int i,number_of_electrodes,nodes_rejected_or_accepted,success;
+	int bytes_per_pixel, i, number_of_bytes_per_component, number_of_components,
+		number_of_electrodes, nodes_rejected_or_accepted, skin_texture_is_managed,
+		success;
 	struct Colour black = {0,0,0},result;			
 	struct Computed_field *scaled_offset_signal_value_at_time_field;
 	struct FE_field *electrode_postion_field;
@@ -8280,49 +8283,63 @@ opengl texture reasons (at least on the SGI).
 				map->triangle_electrode_indices,map->electrode_tex_x,map->electrode_tex_y,
 				map->electrode_rgbs,map->texture_image);
 		}														
-		if(success)
+		if (success)
 		{																			
-			/*find CMGUI texture, and set it with the map->texture_image*/
-			if (skin_texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)
-				("2d_unemap",texture_manager))
+			/* find CMGUI texture, and set it with the map->texture_image */
+			if (skin_texture = FIND_BY_IDENTIFIER_IN_MANAGER(Texture, name)(
+				"2d_unemap", texture_manager))
 			{
-				/*texture will retain its other properties, eg combine_mode?*/
-				managed_Texture_set_image(skin_texture,texture_manager,
-					(unsigned long *)map->texture_image,TEXTURE_RGB,
-					/* number_of_bytes_per_component */1,texture_x_length,
-					texture_y_length,TEXTURE_BOTTOM_TO_TOP,"from_2d_unemap",
-					/*crop_left_margin*/0,/*crop_bottom_margin*/0,
-					/*crop_width*/0,/*crop_height*/0,/*perform_crop*/0);			
-			}	/* if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(	*/
+				/* texture will retain its other properties, eg combine_mode */
+				skin_texture_is_managed = 1;
+			}
 			else
 			{
-				/*create a CMGUI texture, and set it with the map->texture_image*/
-				if (skin_texture=CREATE(Texture)("2d_unemap"))
+				skin_texture = CREATE(Texture)("2d_unemap");
+				Texture_set_filter_mode(skin_texture, TEXTURE_NEAREST_FILTER);
+				Texture_set_combine_mode(skin_texture, TEXTURE_MODULATE);
+				skin_texture_is_managed = 0;
+			}
+			if (skin_texture)
+			{
+				if (skin_texture_is_managed)
 				{
-					if(Texture_set_image(skin_texture,(unsigned long *)map->texture_image,
-						TEXTURE_RGB,/* number_of_bytes_per_component */1,
-						texture_x_length,texture_y_length,TEXTURE_BOTTOM_TO_TOP,
-						"from_2d_unemap",/*crop_left_margin*/0,/*crop_bottom_margin*/0,
-						/*crop_width*/0,/*crop_height*/0,/*perform_crop*/0)&&
-						Texture_set_filter_mode(skin_texture,TEXTURE_NEAREST_FILTER)&&
-						Texture_set_combine_mode(skin_texture,TEXTURE_MODULATE))
-					{
-						ADD_OBJECT_TO_MANAGER(Texture)(skin_texture,texture_manager);
-						success=1;					
-					}
-					else
-					{
-						DESTROY(Texture)(&skin_texture);
-						success=0;
-					}
-				}/*if (texture=CREATE(Texture)*/
+					MANAGER_BEGIN_CHANGE(Texture)(texture_manager,
+						MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), skin_texture);
+				}
+				storage_type = TEXTURE_RGB;
+				number_of_components =
+					Texture_storage_type_get_number_of_components(storage_type);
+				number_of_bytes_per_component = 1;
+				bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+				success =
+					Texture_allocate_image(skin_texture,
+						/*width*/texture_x_length, /*height*/texture_y_length, /*depth*/1, 
+						storage_type, number_of_bytes_per_component) &&
+					Texture_set_image_block(skin_texture, /*left*/0, /*bottom*/0,
+						/*width*/texture_x_length, /*height*/texture_y_length,
+						/*depth_plane*/0,
+						/*source_width_bytes*/texture_x_length*bytes_per_pixel,
+						map->texture_image);
+				if (skin_texture_is_managed)
+				{
+					MANAGER_END_CHANGE(Texture)(texture_manager);
+				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"make_gouraud_texture_from_torso_map. "
-						"Could not create texture ");
-					success=0;
+					if (!(success &&
+						ADD_OBJECT_TO_MANAGER(Texture)(skin_texture, texture_manager)))
+					{
+						DESTROY(Texture)(&skin_texture);
+						skin_texture = (struct Texture *)NULL;
+					}
 				}
-			}/* if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(	*/
+			}
+			if (!skin_texture)
+			{
+				display_message(ERROR_MESSAGE,
+					"make_gouraud_texture_from_torso_map.  Could not create texture");
+				success = 0;
+			}
 		}/* if(success) */
 		if(material)
 		{
