@@ -631,6 +631,7 @@ GENERAL_SRCS = \
 	general/error_handler.c \
 	general/geometry.c \
 	general/heapsort.c \
+	general/io_stream.c \
 	general/image_utilities.c \
 	general/machine.c \
 	general/matrix_vector.c \
