@@ -1056,7 +1056,7 @@ Main program for the CMISS Graphical User Interface
 		command_data.element_manager,command_data.element_point_ranges_selection,
 		command_data.element_selection,command_data.node_selection,
 		command_data.data_selection,
-		computed_field_manager,command_data.graphics_window_manager,
+		computed_field_manager,
 		command_data.texture_manager,command_data.interactive_tool_manager,
 		command_data.scene_manager,
 		command_data.light_model_manager,command_data.light_manager,
