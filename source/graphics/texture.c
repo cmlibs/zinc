@@ -21,9 +21,6 @@ easier, compile_Texture is a list/manager iterator function.
 execute function can take over compiling as well. Furthermore, it is easy to
 return to direct rendering, as described with these routines.
 ==============================================================================*/
-#if defined (BYTE_ORDER_CODE)
-#include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
-#endif /* defined (BYTE_ORDER_CODE) */
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +31,7 @@ return to direct rendering, as described with these routines.
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
+#include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "three_d_drawing/dm_interface.h"
@@ -44,12 +42,6 @@ return to direct rendering, as described with these routines.
 #include "three_d_drawing/ThreeDDraw.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/message.h"
-
-#if defined (BYTE_ORDER_CODE)
-#if defined SGI
-#define __BYTE_ORDER 4321 
-#endif /* defined SGI */
-#endif /* defined (BYTE_ORDER_CODE) */
 
 /*
 Module types
@@ -648,11 +640,11 @@ currently implemented for the expensive linear filter.
 													{
 														for (c = 0; c < width_reduction; c++)
 														{
-#if (1234==__BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 															accumulator += *source2 + ((*(source2 + 1)) << 8);
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 															accumulator += (*source2 << 8) + (*(source2 + 1));
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 															source2 += c_offset;
 														}
 														source2 += b_offset;
@@ -2862,8 +2854,7 @@ texture, and must be given a value.
 			X3d_movie_render_to_glx(movie, 0, 15);
 			X3dThreeDDrawingRemakeCurrent();
 
-			X3d_movie_add_callback(movie, user_interface->application_context,
-				Texture_movie_callback, (void *)texture);
+			X3d_movie_add_callback(movie, Texture_movie_callback, (void *)texture);
 			X3d_movie_add_destroy_callback(movie,
 				Texture_movie_destroy_callback, (void *)texture);
 
@@ -2916,8 +2907,7 @@ texture, and must be given a value.
 						image_width, image_height, texture_width - image_width,
 						0, 15);
 
-					X3d_movie_add_callback(movie, user_interface->application_context,
-						Texture_movie_callback, (void *)texture);
+					X3d_movie_add_callback(movie, Texture_movie_callback, (void *)texture);
 					X3d_movie_add_destroy_callback(movie,
 						Texture_movie_destroy_callback, (void *)texture);
 
@@ -3260,13 +3250,13 @@ is constant from the half texel location to the edge.
 							{
 								if (2 == number_of_bytes_per_component)
 								{
-#if (1234==__BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 									short_value =
 										(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 									short_value = 
 										(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 									values[n] += (double)short_value * weight;
 								}
 								else
@@ -3307,13 +3297,13 @@ is constant from the half texel location to the edge.
 				{
 					if (2 == number_of_bytes_per_component)
 					{
-#if (1234==__BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 						short_value =
 							(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 						short_value = 
 							(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 						values[n] = (double)short_value / component_max;
 					}
 					else
