@@ -4745,34 +4745,6 @@ components as that specified by <components_ptr_void>.
 	return (return_code);
 } /* Computed_field_has_n_components */
 
-int Computed_field_is_of_type(struct Computed_field *field,
-	void *computed_field_type_void)
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if the <field> is of the given <computed_field_type>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_of_type);
-	if (field)
-	{
-		return_code=
-			(enum Computed_field_type)computed_field_type_void == field->type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_of_type.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_of_type */
-
 int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************

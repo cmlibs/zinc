@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -644,15 +644,6 @@ LAST MODIFIED : 23 May 2000
 DESCRIPTION :
 Conditional function returning true if <field> has up to 4 components and they
 are numerical - useful for selecting vector/coordinate fields.
-==============================================================================*/
-
-int Computed_field_is_of_type(struct Computed_field *field,
-	void *computed_field_type_void);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if the <field> is of the given <computed_field_type>.
 ==============================================================================*/
 
 int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
