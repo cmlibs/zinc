@@ -8,6 +8,7 @@ Widget for displaying and editing component values of computed fields defined
 over a node. One field at a time can be viewed/edited.
 Note the node passed to this widget should be a non-managed local copy.
 ==============================================================================*/
+#include <stdio.h>
 #include <Xm/Xm.h>
 #include <Xm/LabelG.h>
 #include <Xm/RowColumn.h>

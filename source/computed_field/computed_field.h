@@ -38,7 +38,6 @@ if a value is already known.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/texture.h"
 #include "curve/control_curve.h"
 #include "user_interface/message.h"
 

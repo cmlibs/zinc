@@ -14,6 +14,7 @@ DESCRIPTION :
 #include "finite_element/import_finite_element.h"
 #include "finite_element/export_finite_element.h"
 #include "general/debug.h"
+#include "general/indexed_multi_range.h"
 #include "general/image_utilities.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -23,7 +24,6 @@ DESCRIPTION :
 #include "graphics/texture.h"
 #include "mirage/movie.h"
 #include "mirage/mirage_node_editor.h"
-#include "mirage/tracking_editor_data.h"
 #include "node/node_tool.h"
 #include "user_interface/message.h"
 
@@ -51,7 +51,7 @@ Allocates space for and initializes the Mirage_view structure.
 
 	ENTER(CREATE(Mirage_view));
 	if (ALLOCATE(mirage_view,struct Mirage_view,1)&&
-		(mirage_view->placed_list=CREATE(LIST(Node_status))()))
+		(mirage_view->placed_list=CREATE(LIST(Index_multi_range))()))
 	{
 		mirage_view->name=(char *)NULL;
 		mirage_view->image_file_name_template=(char *)NULL;
@@ -105,7 +105,7 @@ Cleans up space used by Mirage_view structure.
 	ENTER(DESTROY(Mirage_view));
 	if (mirage_view_address&&*mirage_view_address)
 	{
-		DESTROY(LIST(Node_status))(&((*mirage_view_address)->placed_list));
+		DESTROY(LIST(Index_multi_range))(&((*mirage_view_address)->placed_list));
 		if ((*mirage_view_address)->name)
 		{
 			DEALLOCATE((*mirage_view_address)->name);
@@ -212,9 +212,9 @@ Allocates space for and initializes the Mirage_movie structure.
 
 	ENTER(CREATE(Mirage_movie));
 	if (ALLOCATE(mirage_movie,struct Mirage_movie,1)&&
-		(mirage_movie->placed_list=CREATE(LIST(Node_status))())&&
-		(mirage_movie->pending_list=CREATE(LIST(Node_status))())&&
-		(mirage_movie->problem_list=CREATE(LIST(Node_status))()))
+		(mirage_movie->placed_list=CREATE(LIST(Index_multi_range))())&&
+		(mirage_movie->pending_list=CREATE(LIST(Index_multi_range))())&&
+		(mirage_movie->problem_list=CREATE(LIST(Index_multi_range))()))
 	{
 		mirage_movie->name=(char *)NULL;
 		mirage_movie->working_directory_name=(char *)NULL;
@@ -270,8 +270,8 @@ Allocates space for and initializes the Mirage_movie structure.
 		{
 			if (mirage_movie->placed_list)
 			{
-				DESTROY(LIST(Node_status))(&(mirage_movie->placed_list));
-				DESTROY(LIST(Node_status))(&(mirage_movie->pending_list));
+				DESTROY(LIST(Index_multi_range))(&(mirage_movie->placed_list));
+				DESTROY(LIST(Index_multi_range))(&(mirage_movie->pending_list));
 			}
 			DEALLOCATE(mirage_movie);
 		}
@@ -303,9 +303,9 @@ Cleans up space used by Mirage_movie structure.
 	ENTER(DESTROY(Mirage_movie));
 	if (mirage_movie_address&&(movie=*mirage_movie_address))
 	{
-		DESTROY(LIST(Node_status))(&(movie->placed_list));
-		DESTROY(LIST(Node_status))(&(movie->pending_list));
-		DESTROY(LIST(Node_status))(&(movie->problem_list));
+		DESTROY(LIST(Index_multi_range))(&(movie->placed_list));
+		DESTROY(LIST(Index_multi_range))(&(movie->pending_list));
+		DESTROY(LIST(Index_multi_range))(&(movie->problem_list));
 		if (movie->node_editor)
 		{
 			DESTROY(Mirage_node_editor)(&(movie->node_editor));
@@ -614,7 +614,7 @@ Creates and fills a Mirage movie structure from file <file_name>.
 		this_com_radius,use_factors;
 	struct Mirage_movie *mirage_movie;
 	struct Mirage_view **mirage_views,*view;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 
 	ENTER(read_Mirage_movie);
 	/* check arguments */
@@ -910,13 +910,13 @@ Creates and fills a Mirage movie structure from file <file_name>.
 												view->com_colour_indices[i]=com_colour_index;
 												/*???debug*//*printf("%d %d %d\n",node_no,com_factor,
 													com_colour_index);*/
-												/* make entries in Node_status lists */
-												if (node_status=CREATE(Node_status)(node_no))
+												/* make entries in Index_multi_range lists */
+												if (node_status=CREATE(Index_multi_range)(node_no))
 												{
-													if (!ADD_OBJECT_TO_LIST(Node_status)(
+													if (!ADD_OBJECT_TO_LIST(Index_multi_range)(
 														node_status,view->placed_list))
 													{
-														DESTROY(Node_status)(&node_status);
+														DESTROY(Index_multi_range)(&node_status);
 														return_code=0;
 													}
 												}
@@ -926,15 +926,15 @@ Creates and fills a Mirage movie structure from file <file_name>.
 												}
 												/* ensure entry is in movie placed list */
 												if (return_code&&
-													!FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+													!FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 													node_no,mirage_movie->placed_list))
 												{
-													if (node_status=CREATE(Node_status)(node_no))
+													if (node_status=CREATE(Index_multi_range)(node_no))
 													{
-														if (!ADD_OBJECT_TO_LIST(Node_status)(
+														if (!ADD_OBJECT_TO_LIST(Index_multi_range)(
 															node_status,mirage_movie->placed_list))
 														{
-															DESTROY(Node_status)(&node_status);
+															DESTROY(Index_multi_range)(&node_status);
 															return_code=0;
 														}
 													}
@@ -945,15 +945,15 @@ Creates and fills a Mirage movie structure from file <file_name>.
 												}
 												/* ensure entry is in movie pending list */
 												if (return_code&&
-													!FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+													!FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 													node_no,mirage_movie->pending_list))
 												{
-													if (node_status=CREATE(Node_status)(node_no))
+													if (node_status=CREATE(Index_multi_range)(node_no))
 													{
-														if (!ADD_OBJECT_TO_LIST(Node_status)(
+														if (!ADD_OBJECT_TO_LIST(Index_multi_range)(
 															node_status,mirage_movie->pending_list))
 														{
-															DESTROY(Node_status)(&node_status);
+															DESTROY(Index_multi_range)(&node_status);
 															return_code=0;
 														}
 													}
@@ -964,15 +964,15 @@ Creates and fills a Mirage movie structure from file <file_name>.
 												}
 												/* ensure entry is in movie problem list */
 												if (return_code&&
-													!FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+													!FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 													node_no,mirage_movie->problem_list))
 												{
-													if (node_status=CREATE(Node_status)(node_no))
+													if (node_status=CREATE(Index_multi_range)(node_no))
 													{
-														if (!ADD_OBJECT_TO_LIST(Node_status)(
+														if (!ADD_OBJECT_TO_LIST(Index_multi_range)(
 															node_status,mirage_movie->problem_list))
 														{
-															DESTROY(Node_status)(&node_status);
+															DESTROY(Index_multi_range)(&node_status);
 															return_code=0;
 														}
 													}
@@ -1297,22 +1297,22 @@ function.
 			return_code=1;
 			/*???RC.  Error if files not there? */
 			sprintf(file_name,"%s_placed%s",movie->name,extra_extension);
-			Node_status_list_clear(movie->placed_list);
-			Node_status_list_read(movie->placed_list,file_name);
+			Index_multi_range_list_clear(movie->placed_list);
+			Index_multi_range_list_read(movie->placed_list,file_name);
 			sprintf(file_name,"%s_pending%s",movie->name,extra_extension);
-			Node_status_list_clear(movie->pending_list);
-			Node_status_list_read(movie->pending_list,file_name);
+			Index_multi_range_list_clear(movie->pending_list);
+			Index_multi_range_list_read(movie->pending_list,file_name);
 			sprintf(file_name,"%s_problem%s",movie->name,extra_extension);
-			Node_status_list_clear(movie->problem_list);
-			Node_status_list_read(movie->problem_list,file_name);
+			Index_multi_range_list_clear(movie->problem_list);
+			Index_multi_range_list_read(movie->problem_list,file_name);
 			for (view_no=0;view_no<movie->number_of_views;view_no++)
 			{
 				if (view=movie->views[view_no])
 				{
 					sprintf(file_name,"%s_view%s%s",movie->name,view->name,
 						extra_extension);
-					Node_status_list_clear(view->placed_list);
-					Node_status_list_read(view->placed_list,file_name);
+					Index_multi_range_list_clear(view->placed_list);
+					Index_multi_range_list_read(view->placed_list,file_name);
 				}
 			}
 			DEALLOCATE(file_name);
@@ -1362,19 +1362,19 @@ undo function.
 			if (return_code)
 			{
 				sprintf(file_name,"%s_placed%s",movie->name,extra_extension);
-				return_code=Node_status_list_write(movie->placed_list,file_name,
+				return_code=Index_multi_range_list_write(movie->placed_list,file_name,
 					header_text,line_format);
 			}
 			if (return_code)
 			{
 				sprintf(file_name,"%s_pending%s",movie->name,extra_extension);
-				return_code=Node_status_list_write(movie->pending_list,file_name,
+				return_code=Index_multi_range_list_write(movie->pending_list,file_name,
 					header_text,line_format);
 			}
 			if (return_code)
 			{
 				sprintf(file_name,"%s_problem%s",movie->name,extra_extension);
-				return_code=Node_status_list_write(movie->problem_list,file_name,
+				return_code=Index_multi_range_list_write(movie->problem_list,file_name,
 					header_text,line_format);
 			}
 			for (view_no=0;return_code&&(view_no<movie->number_of_views);view_no++)
@@ -1383,7 +1383,7 @@ undo function.
 				{
 					sprintf(file_name,"%s_view%s%s",movie->name,view->name,
 						extra_extension);
-					return_code=Node_status_list_write(view->placed_list,file_name,
+					return_code=Index_multi_range_list_write(view->placed_list,file_name,
 						header_text,line_format);
 				}
 				else
@@ -2938,8 +2938,8 @@ either for the any single view or the movie.
 	if (movie&&(frame_no >= movie->start_frame_no)&&
 		(frame_no < movie->start_frame_no+movie->number_of_frames))
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(Node_status)(
-			Node_status_is_value_in_range_iterator,(void *)&frame_no,
+		if (FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(
+			Index_multi_range_is_value_in_range_iterator,(void *)&frame_no,
 			movie->placed_list))
 		{
 			return_code=1;
@@ -2948,8 +2948,8 @@ either for the any single view or the movie.
 		{
 			if (view=movie->views[view_no])
 			{
-				if (FIRST_OBJECT_IN_LIST_THAT(Node_status)(
-					Node_status_is_value_in_range_iterator,(void *)&frame_no,
+				if (FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(
+					Index_multi_range_is_value_in_range_iterator,(void *)&frame_no,
 					view->placed_list))
 				{
 					return_code=1;
@@ -2987,17 +2987,17 @@ in the <movie> and placed lists in the views.
 		single_range.start = frame_no;
 		single_range.stop = frame_no;
 		/* removing frame_no from movie problem list */
-		FOR_EACH_OBJECT_IN_LIST(Node_status)(Node_status_remove_range_iterator,
+		FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(Index_multi_range_remove_range_iterator,
 			(void *)&single_range,movie->problem_list);
 		/* removing frame_no from movie placed list */
-		FOR_EACH_OBJECT_IN_LIST(Node_status)(Node_status_remove_range_iterator,
+		FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(Index_multi_range_remove_range_iterator,
 			(void *)&single_range,movie->placed_list);
 		for (view_no=0;view_no<movie->number_of_views;view_no++)
 		{
 			if (view=movie->views[view_no])
 			{
 				/* removing frame_no from view placed list */
-				FOR_EACH_OBJECT_IN_LIST(Node_status)(Node_status_remove_range_iterator,
+				FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(Index_multi_range_remove_range_iterator,
 					(void *)&single_range,view->placed_list);
 			}
 		}
@@ -3225,7 +3225,7 @@ written - but with its usual name.
 
 struct Mirage_movie_add_node_to_group_data
 {
-	struct LIST(Node_status) *node_status_list,*node_status_list2;
+	struct LIST(Index_multi_range) *node_status_list,*node_status_list2;
 	struct GROUP(FE_node) *node_group;
 	int frame_no;
 }; /* Mirage_movie_add_node_to_group_data */
@@ -3237,7 +3237,7 @@ LAST MODIFIED : 4 November 1998
 
 DESCRIPTION :
 Adds node to supplied group if it is in the node_status_list for the
-specified view and frame. If there was a Node_status for <node> in the
+specified view and frame. If there was a Index_multi_range for <node> in the
 <node_status_list>, but the node was not in a range, add it if it is in a
 range in the node_status_list2 (if that list is not NULL).
 The reason for this is that placed lists for each view are only utilised
@@ -3245,7 +3245,7 @@ while a point is not placed fully in 3-D.
 ==============================================================================*/
 {
 	int return_code;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 	struct Mirage_movie_add_node_to_group_data *add_node_data;
 
 	ENTER(Mirage_movie_add_node_to_group);
@@ -3254,14 +3254,14 @@ while a point is not placed fully in 3-D.
 		add_node_data->node_group&&add_node_data->node_status_list)
 	{
 		return_code=1;
-		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			get_FE_node_cm_node_identifier(node),add_node_data->node_status_list))
 		{
-			if (Node_status_is_value_in_range(node_status,add_node_data->frame_no)||
+			if (Index_multi_range_is_value_in_range(node_status,add_node_data->frame_no)||
 				(add_node_data->node_status_list2&&
-				(node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+				(node_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 				get_FE_node_cm_node_identifier(node),add_node_data->node_status_list2))&&
-				Node_status_is_value_in_range(node_status,add_node_data->frame_no)))
+				Index_multi_range_is_value_in_range(node_status,add_node_data->frame_no)))
 			{
 				return_code=ADD_OBJECT_TO_GROUP(FE_node)(node,
 					add_node_data->node_group);
@@ -3416,7 +3416,7 @@ LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Refreshes the placed, pending and problem node groups so that they match the
-entries in the Node_status_lists for the exnode_frame_no of the movie.
+entries in the Index_multi_range_lists for the exnode_frame_no of the movie.
 Should be called after reading and changing frames.
 Because this can be very slow, esp. for updating the element group, the
 <compare_frame_no> is provided to allow you to compare the node status lists
@@ -3430,7 +3430,7 @@ groups to be rebuilt.
 	struct add_completed_FE_element_to_group_data add_element_data;
 	struct add_FE_node_to_group_if_in_group_data add_node_if_in_group_data;
 	struct Mirage_movie_add_node_to_group_data add_node_data;
-	struct Node_status_value_pair value_pair;
+	struct Index_multi_range_value_pair value_pair;
 
 	ENTER(Mirage_movie_refresh_node_groups);
 	if (movie)
@@ -3441,12 +3441,12 @@ groups to be rebuilt.
 		value_pair.value1 = compare_frame_no;
 		value_pair.value2 = movie->exnode_frame_no;
 
-		add_node_data.node_status_list2=(struct LIST(Node_status) *)NULL;
+		add_node_data.node_status_list2=(struct LIST(Index_multi_range) *)NULL;
 
 		/* only update pending if forced to or changed from compare_frame_no */
 		if ((compare_frame_no == movie->exnode_frame_no) ||
-			FIRST_OBJECT_IN_LIST_THAT(Node_status)(
-				Node_status_value_pair_have_different_status,(void *)&value_pair,
+			FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(
+				Index_multi_range_value_pair_have_different_status,(void *)&value_pair,
 				movie->pending_list))
 		{
 			update_pending=1;
@@ -3465,8 +3465,8 @@ groups to be rebuilt.
 
 		/* only update problem if forced to or changed from compare_frame_no */
 		if ((compare_frame_no == movie->exnode_frame_no) ||
-			FIRST_OBJECT_IN_LIST_THAT(Node_status)(
-				Node_status_value_pair_have_different_status,(void *)&value_pair,
+			FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(
+				Index_multi_range_value_pair_have_different_status,(void *)&value_pair,
 				movie->problem_list))
 		{
 			update_problem=1;
@@ -3485,8 +3485,8 @@ groups to be rebuilt.
 
 		/* only update placed if forced to or changed from compare_frame_no */
 		if ((compare_frame_no == movie->exnode_frame_no) ||
-			FIRST_OBJECT_IN_LIST_THAT(Node_status)(
-				Node_status_value_pair_have_different_status,(void *)&value_pair,
+			FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(
+				Index_multi_range_value_pair_have_different_status,(void *)&value_pair,
 				movie->placed_list))
 		{
 			update_placed=1;
@@ -3549,8 +3549,8 @@ groups to be rebuilt.
 				/* only update placed if forced to or changed from compare_frame_no.
 					 Note if 3-D groups have been updated then must update these */
 				if (update_placed ||
-					FIRST_OBJECT_IN_LIST_THAT(Node_status)(
-						Node_status_value_pair_have_different_status,(void *)&value_pair,
+					FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(
+						Index_multi_range_value_pair_have_different_status,(void *)&value_pair,
 						view->placed_list))
 				{
 					/* add placed nodes for view */

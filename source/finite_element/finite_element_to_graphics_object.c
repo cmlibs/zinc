@@ -12,6 +12,7 @@ The functions for creating graphical objects from finite elements.
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_adjacent_elements.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "general/debug.h"
@@ -380,8 +381,8 @@ Recursive routine used to fill a volume with elements which may not adjacent,
 but are indirectly connected (e.g. mesh with slit)
 *******************************************************************************/
 {
-	int return_code;
-	struct FE_element *element_ptr;
+	int number_of_elements, return_code;
+	struct FE_element **elements, *element_ptr;
 
 	ENTER(fill_table);
 	/* check arguments */
@@ -395,36 +396,42 @@ but are indirectly connected (e.g. mesh with slit)
 			/* add element to block */
 			element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]=element;
 			/* +ve xi1 direction */
-			element_ptr=adjacent_FE_element(element,1);
-			if (element_ptr)
+			if (adjacent_FE_element(element,1,&number_of_elements,&elements))
 			{
+				/* Just use the first one */
+				element_ptr=elements[0];
 				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+1]=
 					element_ptr->cm.number;
 				fill_table(element_block,adjacency_table,element_ptr,i+1,j,k,n_xi);
+				DEALLOCATE(elements);
 			}
 			else
 			{
 				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+1]=0;
 			}
 			/* +ve xi2 direction */
-			element_ptr=adjacent_FE_element(element,3);
-			if (element_ptr)
+			if (adjacent_FE_element(element,3,&number_of_elements,&elements))
 			{
+				/* Just use the first one */
+				element_ptr=elements[0];
 				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+3]=
 					element_ptr->cm.number;
 				fill_table(element_block,adjacency_table,element_ptr,i,j+1,k,n_xi);
+				DEALLOCATE(elements);
 			}
 			else
 			{
 				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+3]=0;
 			}
 			/* +ve xi3 direction */
-			element_ptr=adjacent_FE_element(element,5);
-			if (element_ptr)
+			if (adjacent_FE_element(element,3,&number_of_elements,&elements))
 			{
+				/* Just use the first one */
+				element_ptr=elements[0];
 				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+5]=
 					element_ptr->cm.number;
 				fill_table(element_block,adjacency_table,element_ptr,i,j,k+1,n_xi);
+				DEALLOCATE(elements);
 			}
 			else
 			{

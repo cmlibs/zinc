@@ -289,7 +289,6 @@ MIRAGE_SRCS = \
 	mirage/mirage_node_editor.c \
 	mirage/movie.c \
 	mirage/movie_data.c \
-	mirage/tracking_editor_data.c \
 	mirage/tracking_editor_dialog.c \
 	slider/emoter_dialog.c
 #endif /* !defined (MIRAGE) */
@@ -739,6 +738,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element.c \
+	finite_element/finite_element_adjacent_elements.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
@@ -753,6 +753,7 @@ GENERAL_SRCS = \
 	general/error_handler.c \
 	general/geometry.c \
 	general/heapsort.c \
+	general/indexed_multi_range.c \
 	general/image_utilities.c \
 	general/machine.c \
 	general/matrix_vector.c \

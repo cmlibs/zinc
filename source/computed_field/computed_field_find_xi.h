@@ -10,6 +10,8 @@ lookup of the element.
 #if !defined (COMPUTED_FIELD_FIND_XI_H)
 #define COMPUTED_FIELD_FIND_XI_H
 
+#include "user_interface/user_interface.h"
+
 struct Computed_field_iterative_find_element_xi_data
 {
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];

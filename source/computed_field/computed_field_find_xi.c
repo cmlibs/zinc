@@ -14,6 +14,7 @@ lookup of the element.
 #include "general/image_utilities.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "graphics/texture.h"
 #include "three_d_drawing/dm_interface.h"
 #include "user_interface/message.h"
 

@@ -4237,15 +4237,6 @@ returns true if <element_field> has a field of type CM_anatomical
 Not static as used in projection/projection.c
 ==============================================================================*/
 
-struct FE_element *adjacent_FE_element(struct FE_element *element,
-	int face_number);
-/*******************************************************************************
-LAST MODIFIED : 8 June 1999
-
-DESCRIPTION :
-Returns the element which shares the face given.
-==============================================================================*/
-
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape, 
 	FE_value *xi, int *face_number);
 /*******************************************************************************

@@ -10,10 +10,10 @@ Structures and functions prototypes for the tracking editor dialog.
 #if !defined (TRACKING_EDITOR_DIALOG_H)
 #define TRACKING_EDITOR_DIALOG_H
 
+#include "general/indexed_multi_range.h"
 #include "general/managed_group.h"
 #include "general/manager.h"
 #include "interaction/interactive_tool.h"
-#include "mirage/tracking_editor_data.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"

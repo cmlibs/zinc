@@ -559,7 +559,8 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 	char *curve_name,*field_name;
 	FE_value value;
 	int axis,return_code;
-	struct Computed_field *coordinate_field,*grid_field;
+	struct Computed_field *coordinate_field,*grid_field,*integration_integrand,
+		*integration_coordinate_field;
 	struct Control_curve *constant_1_curve,*curve;
 	struct FE_element *seed_element;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -574,9 +575,9 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 		if (coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			"xi_texture_coordinates",computed_field_manager))
 		{
-			if (Computed_field_is_type_xi_texture_coordinates(coordinate_field)&&
-				Computed_field_get_type_xi_texture_coordinates(coordinate_field,
-					&seed_element))
+			if (Computed_field_is_type_integration(coordinate_field)&&
+				Computed_field_get_type_integration(coordinate_field,
+					&seed_element,&integration_integrand,&integration_coordinate_field))
 			{
 				TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
 					grid_calc->seed_element_widget,seed_element);
@@ -584,13 +585,26 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 		}
 		else
 		{
+			if (!integration_coordinate_field)
+			{
+				integration_coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
+					("xi", computed_field_manager);
+			}
+			value = 1.0;
+			if (!integration_integrand)
+			{
+				integration_integrand = CREATE(Computed_field)("constant_1.0");
+				Computed_field_set_type_constant(integration_integrand,1,&value);
+			}
+			ACCESS(Computed_field)(integration_integrand);
 			if (seed_element=TEXT_CHOOSE_OBJECT_GET_OBJECT(FE_element)(
 				grid_calc->seed_element_widget))
 			{
 				if (coordinate_field=CREATE(Computed_field)("xi_texture_coordinates"))
 				{
-					if (!(Computed_field_set_type_xi_texture_coordinates(
-						coordinate_field,seed_element,grid_calc->element_manager)&&
+					if (!(Computed_field_set_type_integration(
+						coordinate_field,seed_element,grid_calc->element_manager,
+						integration_integrand,integration_coordinate_field)&&
 						ADD_OBJECT_TO_MANAGER(Computed_field)(coordinate_field,
 							computed_field_manager)))
 					{
@@ -598,13 +612,14 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 					}
 				}
 			}
+			DEACCESS(Computed_field)(&integration_integrand);
 		}
 		if (coordinate_field)
 		{
 			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(grid_calc->coord_field_widget,
 				coordinate_field);
 			XtSetSensitive(grid_calc->seed_element_entry,
-				Computed_field_is_type_xi_texture_coordinates(coordinate_field));
+				Computed_field_is_type_integration(coordinate_field));
 		}
 		if (!(constant_1_curve=FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
 			"constant_1",grid_calc->control_curve_manager)))
@@ -707,7 +722,8 @@ DESCRIPTION :
 Callback for change of coordinate field.
 ==============================================================================*/
 {
-	struct Computed_field *coordinate_field;
+	struct Computed_field *coordinate_field, *integration_integrand, 
+		*integration_coordinate_field;
 	struct FE_element *seed_element;
 	struct Grid_field_calculator *grid_calc;
 
@@ -716,15 +732,15 @@ Callback for change of coordinate field.
 	if ((grid_calc=(struct Grid_field_calculator *)grid_calc_void)&&
 		(coordinate_field=(struct Computed_field *)coordinate_field_void))
 	{
-		if (Computed_field_is_type_xi_texture_coordinates(coordinate_field)&&
-			Computed_field_get_type_xi_texture_coordinates(coordinate_field,
-				&seed_element))
+		if (Computed_field_is_type_integration(coordinate_field)&&
+			Computed_field_get_type_integration(coordinate_field,
+				&seed_element, &integration_integrand, &integration_coordinate_field))
 		{
 			TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
 				grid_calc->seed_element_widget,seed_element);
 		}
 		XtSetSensitive(grid_calc->seed_element_entry,
-			Computed_field_is_type_xi_texture_coordinates(coordinate_field));
+			Computed_field_is_type_integration(coordinate_field));
 	}
 	else
 	{
@@ -743,7 +759,9 @@ DESCRIPTION :
 Callback for change of seed_element.
 ==============================================================================*/
 {
-	struct Computed_field *coordinate_field,*temp_field;
+	FE_value value;
+	struct Computed_field *coordinate_field,*integration_integrand,
+		*integration_coordinate_field,*temp_field;
 	struct FE_element *seed_element;
 	struct Grid_field_calculator *grid_calc;
 
@@ -755,11 +773,26 @@ Callback for change of seed_element.
 		if (coordinate_field=
 			CHOOSE_OBJECT_GET_OBJECT(Computed_field)(grid_calc->coord_field_widget))
 		{
+			if (Computed_field_is_type_integration(coordinate_field))
+			{
+				Computed_field_get_type_integration(coordinate_field,
+					&seed_element,&integration_integrand,&integration_coordinate_field);
+			}
+			else
+			{
+				integration_coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
+					("xi", Computed_field_package_get_computed_field_manager(
+							grid_calc->computed_field_package));
+				integration_integrand = CREATE(Computed_field)("constant_1.0");
+				Computed_field_set_type_constant(integration_integrand,1,&value);				
+			}
+			ACCESS(Computed_field)(integration_integrand);
 			/* this is very inefficient - creates xi mapping twice per element! */
 			if (temp_field=CREATE(Computed_field)("temp"))
 			{
-				if (Computed_field_set_type_xi_texture_coordinates(temp_field,
-					seed_element,grid_calc->element_manager))
+				if (Computed_field_set_type_integration(temp_field,
+					seed_element,grid_calc->element_manager,integration_integrand,
+					integration_coordinate_field))
 				{
 					MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
 						coordinate_field,temp_field,
@@ -768,6 +801,7 @@ Callback for change of seed_element.
 				}
 				DESTROY(Computed_field)(&temp_field);
 			}
+			DEACCESS(Computed_field)(&integration_integrand);
 		}
 	}
 	else
@@ -790,7 +824,7 @@ LAST MODIFIED : 3 December 1999
 
 DESCRIPTION :
 Creates an editor for setting values of grid fields in elements based on
-control curve variation over coordinates - usually xi_texture_coordinates.
+control curve variation over coordinates - usually integration.
 ==============================================================================*/
 {
 	int init_widgets;

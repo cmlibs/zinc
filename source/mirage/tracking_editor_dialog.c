@@ -39,6 +39,7 @@ Source code for the tracking editor dialog box.
 #include <Xm/ToggleB.h>
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
+#include "general/indexed_multi_range.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/photogrammetry.h"
@@ -50,7 +51,6 @@ Source code for the tracking editor dialog box.
 #include "mirage/digitiser_window.h"
 #include "mirage/movie.h"
 #include "mirage/movie_data.h"
-#include "mirage/tracking_editor_data.h"
 #include "mirage/tracking_editor_dialog.h"
 #include "mirage/tracking_editor_dialog.uidh"
 #include "three_d_drawing/ThreeDDraw.h"
@@ -668,7 +668,7 @@ It is up to the calling routine to DEALLOCATE the returned args!
 	return (return_code);
 } /* tracking_editor_get_message */
 
-static int Node_status_is_at_index(struct Node_status *node_status,
+static int Index_multi_range_is_at_index(struct Index_multi_range *node_status,
 	void *index_void)
 /*******************************************************************************
 LAST MODIFIED : 7 April 1998
@@ -681,7 +681,7 @@ called using FIRST_OBJECT_IN_LIST_THAT().
 {
 	int return_code,*index;
 
-	ENTER(Node_status_is_at_index);
+	ENTER(Index_multi_range_is_at_index);
 	if (node_status&&(index=(int *)index_void))
 	{
 		return_code=(0 == *index);
@@ -694,7 +694,7 @@ called using FIRST_OBJECT_IN_LIST_THAT().
 	LEAVE;
 
 	return (return_code);
-} /* Node_status_is_at_index */
+} /* Index_multi_range_is_at_index */
 
 struct Tracking_editor_draw_status_bar_data
 {
@@ -703,7 +703,7 @@ struct Tracking_editor_draw_status_bar_data
 	int nodes_per_line,nodes_per_label,full_left;
 }; /* Tracking_editor_draw_status_bar_data */
 
-static int tracking_editor_draw_node_status_bar(struct Node_status *node_status,
+static int tracking_editor_draw_node_status_bar(struct Index_multi_range *node_status,
 	void *draw_data_void)
 /*******************************************************************************
 LAST MODIFIED : 6 April 1998
@@ -728,13 +728,13 @@ Draws the bar chart if there is a movie.
 			bar_bottom=(double)(draw_data->index);
 			bar_top=bar_bottom+draw_data->bar_height;
 			bar_z=draw_data->bar_z;
-			if (0<(number_of_ranges=Node_status_get_number_of_ranges(node_status)))
+			if (0<(number_of_ranges=Index_multi_range_get_number_of_ranges(node_status)))
 			{
 				glBegin(GL_QUADS);
 				for (range_no=0;return_code&&(range_no<number_of_ranges);range_no++)
 				{
 					if (return_code=
-						Node_status_get_range(node_status,range_no,&start,&stop))
+						Index_multi_range_get_range(node_status,range_no,&start,&stop))
 					{
 						if ((start<=draw_data->last_frame)&&(stop>=draw_data->first_frame))
 						{
@@ -763,7 +763,7 @@ Draws the bar chart if there is a movie.
 	return (return_code);
 } /* tracking_editor_draw_node_status_bar */
 
-static int tracking_editor_draw_node_lines(struct Node_status *node_status,
+static int tracking_editor_draw_node_lines(struct Index_multi_range *node_status,
 	void *draw_data_void)
 /*******************************************************************************
 LAST MODIFIED : 6 April 1998
@@ -813,7 +813,7 @@ Draws lines between the vertical scale and the node status bars.
 } /* tracking_editor_draw_node_lines */
 
 static int tracking_editor_draw_node_scale_lines(
-	struct Node_status *node_status,
+	struct Index_multi_range *node_status,
 	void *draw_data_void)
 /*******************************************************************************
 LAST MODIFIED : 6 April 1998
@@ -862,7 +862,7 @@ Draws lines between the vertical scale and the node status bars.
 } /* tracking_editor_draw_node_scale_lines */
 
 static int tracking_editor_draw_node_numbers(
-	struct Node_status *node_status,void *draw_data_void)
+	struct Index_multi_range *node_status,void *draw_data_void)
 /*******************************************************************************
 LAST MODIFIED : 6 April 1998
 
@@ -885,7 +885,7 @@ DESCRIPTION :
 			if (0==(draw_data->index % draw_data->nodes_per_label))
 			{
 				glRasterPos2d(-bc_scale_width+bc_tick_length,draw_data->index+0.35);
-				sprintf(tmp_string,"%i",Node_status_get_node_no(node_status));
+				sprintf(tmp_string,"%i",Index_multi_range_get_index_number(node_status));
 				wrapperPrintText(tmp_string);
 			}
 		}
@@ -981,7 +981,7 @@ Draws the bar chart if there is a movie.
 				draw_data.bar_z=0.1;
 				draw_data.index=0;
 				glColor3f(0,1,0);
-				FOR_EACH_OBJECT_IN_LIST(Node_status)(
+				FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 					tracking_editor_draw_node_status_bar,(void *)&draw_data,
 					movie->placed_list);
 
@@ -992,7 +992,7 @@ Draws the bar chart if there is a movie.
 				draw_data.bar_z=0.2;
 				draw_data.index=0;
 				glColor3f(1,0,0);
-				FOR_EACH_OBJECT_IN_LIST(Node_status)(
+				FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 					tracking_editor_draw_node_status_bar,(void *)&draw_data,
 					movie->problem_list);
 
@@ -1003,7 +1003,7 @@ Draws the bar chart if there is a movie.
 				}
 				draw_data.index=0;
 				glColor3f(1,1,0);
-				FOR_EACH_OBJECT_IN_LIST(Node_status)(
+				FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 					tracking_editor_draw_node_status_bar,(void *)&draw_data,
 					movie->pending_list);
 
@@ -1027,7 +1027,7 @@ Draws the bar chart if there is a movie.
 				draw_data.bar_z=0.0;
 				draw_data.index=0;
 				glBegin(GL_LINES);
-				FOR_EACH_OBJECT_IN_LIST(Node_status)(
+				FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 					tracking_editor_draw_node_lines,(void *)&draw_data,
 					movie->placed_list);
 				glEnd();
@@ -1135,12 +1135,12 @@ Draws the bar chart if there is a movie.
 				draw_data.bar_z=0.0;
 				draw_data.index=0;
 				glColor3f(1,1,1);
-				FOR_EACH_OBJECT_IN_LIST(Node_status)(
+				FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 					tracking_editor_draw_node_scale_lines,(void *)&draw_data,
 					movie->placed_list);
 				glEnd();
 				draw_data.index=0;
-				FOR_EACH_OBJECT_IN_LIST(Node_status)(
+				FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 					tracking_editor_draw_node_numbers,(void *)&draw_data,
 					movie->placed_list);
 			}
@@ -1198,7 +1198,7 @@ date at the exnode_frame_no of the movie.
 {
 	int return_code,pending,view_no;
 	struct FE_node *node;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 	struct Mirage_movie *movie;
 	struct Mirage_view *view;
 
@@ -1207,11 +1207,11 @@ date at the exnode_frame_no of the movie.
 	{
 		return_code=1;
 #if defined (OLD_CODE_TO_KEEP)
-		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,node_no)(
 			node_no,movie->placed_list))
 		{
 			placed=
-				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
+				Index_multi_range_is_value_in_range(node_status,movie->exnode_frame_no);
 		}
 		else
 		{
@@ -1220,11 +1220,11 @@ date at the exnode_frame_no of the movie.
 			return_code=0;
 		}
 #endif /* defined (OLD_CODE_TO_KEEP) */
-		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			node_no,movie->pending_list))
 		{
 			pending=
-				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
+				Index_multi_range_is_value_in_range(node_status,movie->exnode_frame_no);
 		}
 		else
 		{
@@ -1293,12 +1293,12 @@ date at the exnode_frame_no of the movie.
 } /* tracking_editor_node_pending_change */
 
 static int tracking_editor_iterator_node_pending_change(
-	struct Node_status *node_status,void *track_ed_void)
+	struct Index_multi_range *node_status,void *track_ed_void)
 /*******************************************************************************
 LAST MODIFIED : 28 April 1998
 
 DESCRIPTION :
-Node_status iterator for calling tracking_editor_node_pending_change.
+Index_multi_range iterator for calling tracking_editor_node_pending_change.
 Must cache all pending node groups (3-D and in each view) before calling
 as an iterator.
 ==============================================================================*/
@@ -1310,7 +1310,7 @@ as an iterator.
 	if (node_status&&(track_ed=(struct Tracking_editor_dialog *)track_ed_void))
 	{
 		return_code=tracking_editor_node_pending_change(
-			track_ed,Node_status_get_node_no(node_status));
+			track_ed,Index_multi_range_get_index_number(node_status));
 	}
 	else
 	{
@@ -1348,7 +1348,7 @@ current frame_no of the movie. Takes care of cacheing groups for efficiency.
 				MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->pending_nodes);
 			}
 		}
-		FOR_EACH_OBJECT_IN_LIST(Node_status)(
+		FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 			tracking_editor_iterator_node_pending_change,
 			(void *)track_ed,movie->placed_list);
 		for (view_no=0;view_no<movie->number_of_views;view_no++)
@@ -1382,7 +1382,7 @@ date at the exnode_frame_no of the movie.
 {
 	int return_code,placed,problem,view_no;
 	struct FE_node *node;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 	struct Mirage_movie *movie;
 	struct Mirage_view *view;
 
@@ -1390,11 +1390,11 @@ date at the exnode_frame_no of the movie.
 	if (track_ed&&(movie=track_ed->mirage_movie))
 	{
 		return_code=1;
-		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			node_no,movie->placed_list))
 		{
 			placed=
-				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
+				Index_multi_range_is_value_in_range(node_status,movie->exnode_frame_no);
 		}
 		else
 		{
@@ -1402,11 +1402,11 @@ date at the exnode_frame_no of the movie.
 				"Missing placed node status for node %d",node_no);
 			return_code=0;
 		}
-		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			node_no,movie->problem_list))
 		{
 			problem=
-				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
+				Index_multi_range_is_value_in_range(node_status,movie->exnode_frame_no);
 			if (problem && (!placed))
 			{
 				display_message(ERROR_MESSAGE,"tracking_editor_node_problem_change.  "
@@ -1481,12 +1481,12 @@ date at the exnode_frame_no of the movie.
 } /* tracking_editor_node_problem_change */
 
 static int tracking_editor_iterator_node_problem_change(
-	struct Node_status *node_status,void *track_ed_void)
+	struct Index_multi_range *node_status,void *track_ed_void)
 /*******************************************************************************
 LAST MODIFIED : 28 April 1998
 
 DESCRIPTION :
-Node_status iterator for calling tracking_editor_node_problem_change.
+Index_multi_range iterator for calling tracking_editor_node_problem_change.
 Must cache all problem node groups (3-D and in each view) before calling
 as an iterator.
 ==============================================================================*/
@@ -1498,7 +1498,7 @@ as an iterator.
 	if (node_status&&(track_ed=(struct Tracking_editor_dialog *)track_ed_void))
 	{
 		return_code=tracking_editor_node_problem_change(
-			track_ed,Node_status_get_node_no(node_status));
+			track_ed,Index_multi_range_get_index_number(node_status));
 	}
 	else
 	{
@@ -1536,7 +1536,7 @@ current frame_no of the movie. Takes care of cacheing groups for efficiency.
 				MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->problem_nodes);
 			}
 		}
-		FOR_EACH_OBJECT_IN_LIST(Node_status)(
+		FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 			tracking_editor_iterator_node_problem_change,
 			(void *)track_ed,movie->placed_list);
 		for (view_no=0;view_no<movie->number_of_views;view_no++)
@@ -1583,7 +1583,7 @@ to one causes the pending ranges to be unmarked.
 {
 	int return_code,placed,problem,left_limit,right_limit,limit_found,
 		start,stop,valid_start,valid_stop;
-	struct Node_status *placed_status,*pending_status,*problem_status;
+	struct Index_multi_range *placed_status,*pending_status,*problem_status;
 	struct Mirage_movie *movie;
 
 	ENTER(tracking_editor_select_node_frame);
@@ -1591,24 +1591,24 @@ to one causes the pending ranges to be unmarked.
 	{
 		return_code=1;
 		/* get placed, pending and problem status of node_no at frame_no */
-		if (placed_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (placed_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			node_no,movie->placed_list))
 		{
-			placed=Node_status_is_value_in_range(placed_status,frame_no);
+			placed=Index_multi_range_is_value_in_range(placed_status,frame_no);
 		}
 		else
 		{
 			return_code=0;
 		}
-		if (!(pending_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (!(pending_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			node_no,movie->pending_list)))
 		{
 			return_code=0;
 		}
-		if (problem_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+		if (problem_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 			node_no,movie->problem_list))
 		{
-			problem=Node_status_is_value_in_range(problem_status,frame_no);
+			problem=Index_multi_range_is_value_in_range(problem_status,frame_no);
 		}
 		else
 		{
@@ -1638,9 +1638,9 @@ to one causes the pending ranges to be unmarked.
 						limit_found=0;
 						while (!limit_found)
 						{
-							valid_stop=Node_status_get_last_stop_value(placed_status,
+							valid_stop=Index_multi_range_get_last_stop_value(placed_status,
 								left_limit,&stop);
-							valid_start=Node_status_get_last_start_value(problem_status,
+							valid_start=Index_multi_range_get_last_start_value(problem_status,
 								left_limit+1,&start);
 							/*printf("L: Start %i(%i) : Stop %i(%i)\n",
 								start,valid_start,stop,valid_stop);*/
@@ -1650,8 +1650,8 @@ to one causes the pending ranges to be unmarked.
 								{
 									stop=start-1;
 								}
-								if (Node_status_is_value_in_range(placed_status,stop)&&
-									!Node_status_is_value_in_range(problem_status,stop))
+								if (Index_multi_range_is_value_in_range(placed_status,stop)&&
+									!Index_multi_range_is_value_in_range(problem_status,stop))
 								{
 									left_limit=stop+1;
 									limit_found=1;
@@ -1671,10 +1671,10 @@ to one causes the pending ranges to be unmarked.
 				case MAKE_BAD_MODE:
 					{
 						/* get left limit of bad sequence */
-						if (Node_status_get_last_start_value(placed_status,
+						if (Index_multi_range_get_last_start_value(placed_status,
 							left_limit+1,&start))
 						{
-							if (Node_status_get_last_stop_value(problem_status,
+							if (Index_multi_range_get_last_stop_value(problem_status,
 								left_limit,&stop)&&(stop>start))
 							{
 								left_limit=stop+1;
@@ -1688,7 +1688,7 @@ to one causes the pending ranges to be unmarked.
 				case MAKE_GOOD_MODE:
 					{
 						/* get left limit of current bad range */
-						if (Node_status_get_last_start_value(problem_status,
+						if (Index_multi_range_get_last_start_value(problem_status,
 							left_limit+1,&start))
 						{
 							left_limit=start;
@@ -1718,9 +1718,9 @@ to one causes the pending ranges to be unmarked.
 						limit_found=0;
 						while (!limit_found)
 						{
-							valid_start=Node_status_get_next_start_value(placed_status,
+							valid_start=Index_multi_range_get_next_start_value(placed_status,
 								right_limit,&start);
-							valid_stop=Node_status_get_next_stop_value(problem_status,
+							valid_stop=Index_multi_range_get_next_stop_value(problem_status,
 								right_limit-1,&stop);
 							/*printf("R: Start %i(%i) : Stop %i(%i)\n",
 								start,valid_start,stop,valid_stop);*/
@@ -1730,8 +1730,8 @@ to one causes the pending ranges to be unmarked.
 								{
 									start=stop+1;
 								}
-								if (Node_status_is_value_in_range(placed_status,start)&&
-									!Node_status_is_value_in_range(problem_status,start))
+								if (Index_multi_range_is_value_in_range(placed_status,start)&&
+									!Index_multi_range_is_value_in_range(problem_status,start))
 								{
 									right_limit=start-1;
 									limit_found=1;
@@ -1751,10 +1751,10 @@ to one causes the pending ranges to be unmarked.
 				case MAKE_BAD_MODE:
 					{
 						/* get right limit of bad sequence */
-						if (Node_status_get_next_stop_value(placed_status,
+						if (Index_multi_range_get_next_stop_value(placed_status,
 							right_limit-1,&stop))
 						{
-							if (Node_status_get_next_start_value(problem_status,
+							if (Index_multi_range_get_next_start_value(problem_status,
 								right_limit,&start)&&(start<stop))
 							{
 								right_limit=start-1;
@@ -1768,7 +1768,7 @@ to one causes the pending ranges to be unmarked.
 				case MAKE_GOOD_MODE:
 					{
 						/* get right limit of current bad range */
-						if (Node_status_get_next_stop_value(problem_status,
+						if (Index_multi_range_get_next_stop_value(problem_status,
 							right_limit-1,&stop))
 						{
 							right_limit=stop;
@@ -1794,28 +1794,28 @@ to one causes the pending ranges to be unmarked.
 					}
 					if ( select_mode==TRACK_ED_SELECT_UNMARK )
 					{
-						Node_status_remove_range(pending_status,left_limit,right_limit);
+						Index_multi_range_remove_range(pending_status,left_limit,right_limit);
 					}
 					else
 					{
 						/* left limit must be good, placed */
-						if (Node_status_is_value_in_range(placed_status,left_limit)&&
-							!Node_status_is_value_in_range(problem_status,left_limit))
+						if (Index_multi_range_is_value_in_range(placed_status,left_limit)&&
+							!Index_multi_range_is_value_in_range(problem_status,left_limit))
 						{
 							/* if the node is already pending at the left_limit, clear the
 								pending range from then on */
-							if (Node_status_is_value_in_range(pending_status,left_limit))
+							if (Index_multi_range_is_value_in_range(pending_status,left_limit))
 							{
-								if (Node_status_get_range_containing_value(pending_status,
+								if (Index_multi_range_get_range_containing_value(pending_status,
 									left_limit,&start,&stop))
 								{
 									if (stop > right_limit)
 									{
-										Node_status_remove_range(pending_status,right_limit+1,stop);
+										Index_multi_range_remove_range(pending_status,right_limit+1,stop);
 									}
 								}
 							}
-							Node_status_add_range(pending_status,left_limit,right_limit);
+							Index_multi_range_add_range(pending_status,left_limit,right_limit);
 						}
 					}
 				} break;
@@ -1832,28 +1832,28 @@ to one causes the pending ranges to be unmarked.
 					}
 					if ( select_mode==TRACK_ED_SELECT_UNMARK )
 					{
-						Node_status_remove_range(pending_status,left_limit,right_limit);
+						Index_multi_range_remove_range(pending_status,left_limit,right_limit);
 					}
 					else
 					{
 						/* right limit must be good, placed */
-						if (Node_status_is_value_in_range(placed_status,right_limit)&&
-							!Node_status_is_value_in_range(problem_status,right_limit))
+						if (Index_multi_range_is_value_in_range(placed_status,right_limit)&&
+							!Index_multi_range_is_value_in_range(problem_status,right_limit))
 						{
 							/* if the node is already pending at the right_limit, clear the
 								pending range from then back */
-							if (Node_status_is_value_in_range(pending_status,right_limit))
+							if (Index_multi_range_is_value_in_range(pending_status,right_limit))
 							{
-								if (Node_status_get_range_containing_value(pending_status,
+								if (Index_multi_range_get_range_containing_value(pending_status,
 									right_limit,&start,&stop))
 								{
 									if (start < left_limit)
 									{
-										Node_status_remove_range(pending_status,start,left_limit-1);
+										Index_multi_range_remove_range(pending_status,start,left_limit-1);
 									}
 								}
 							}
-							Node_status_add_range(pending_status,left_limit,right_limit);
+							Index_multi_range_add_range(pending_status,left_limit,right_limit);
 						}
 					}
 				} break;
@@ -1861,22 +1861,22 @@ to one causes the pending ranges to be unmarked.
 				{
 					if ( select_mode==TRACK_ED_SELECT_UNMARK )
 					{
-						Node_status_remove_range(pending_status,left_limit,right_limit);
+						Index_multi_range_remove_range(pending_status,left_limit,right_limit);
 					}
 					else
 					{
 					/* first remove any overlapping pending range */
-					if (Node_status_is_value_in_range(pending_status,frame_no))
+					if (Index_multi_range_is_value_in_range(pending_status,frame_no))
 					{
-						if (Node_status_get_range_containing_value(pending_status,
+						if (Index_multi_range_get_range_containing_value(pending_status,
 							frame_no,&start,&stop))
 						{
-							Node_status_remove_range(pending_status,start,stop);
+							Index_multi_range_remove_range(pending_status,start,stop);
 						}
 					}
 					if ((!placed)||problem)
 					{
-						Node_status_add_range(pending_status,left_limit,right_limit);
+						Index_multi_range_add_range(pending_status,left_limit,right_limit);
 					}
 					}
 				} break;
@@ -1884,24 +1884,24 @@ to one causes the pending ranges to be unmarked.
 				{
 					if ( select_mode==TRACK_ED_SELECT_UNMARK )
 					{
-						Node_status_remove_range(pending_status,left_limit,right_limit);
+						Index_multi_range_remove_range(pending_status,left_limit,right_limit);
 					}
 					else
 					{
 						/* first remove any overlapping pending range */
-						if (Node_status_is_value_in_range(pending_status,frame_no))
+						if (Index_multi_range_is_value_in_range(pending_status,frame_no))
 						{
-							if (Node_status_get_range_containing_value(pending_status,
+							if (Index_multi_range_get_range_containing_value(pending_status,
 								frame_no,&start,&stop))
 							{
-								Node_status_remove_range(pending_status,start,stop);
+								Index_multi_range_remove_range(pending_status,start,stop);
 							}
 						}
 						if (((!placed)||problem)&&
-							Node_status_is_value_in_range(placed_status,left_limit-1)&&
-							Node_status_is_value_in_range(placed_status,right_limit+1))
+							Index_multi_range_is_value_in_range(placed_status,left_limit-1)&&
+							Index_multi_range_is_value_in_range(placed_status,right_limit+1))
 						{
-							Node_status_add_range(pending_status,left_limit-1,right_limit+1);
+							Index_multi_range_add_range(pending_status,left_limit-1,right_limit+1);
 						}
 					}
 				} break;
@@ -1909,22 +1909,22 @@ to one causes the pending ranges to be unmarked.
 				{
 					if (placed&&(!problem)&&(left_limit<=right_limit))
 					{
-						Node_status_add_range(problem_status,left_limit,right_limit);
+						Index_multi_range_add_range(problem_status,left_limit,right_limit);
 					}
 #if defined (OLD_CODE)
 					/* first remove any overlapping pending range */
-					if (Node_status_is_value_in_range(pending_status,frame_no))
+					if (Index_multi_range_is_value_in_range(pending_status,frame_no))
 					{
-						if (Node_status_get_range_containing_value(pending_status,
+						if (Index_multi_range_get_range_containing_value(pending_status,
 							frame_no,&start,&stop))
 						{
-							Node_status_remove_range(pending_status,start,stop);
+							Index_multi_range_remove_range(pending_status,start,stop);
 						}
 					}
 					/* the node clicked on must be good already */
 					if (placed&&(!problem)&&(left_limit<=right_limit))
 					{
-						Node_status_add_range(pending_status,left_limit,right_limit);
+						Index_multi_range_add_range(pending_status,left_limit,right_limit);
 					}
 #endif /* defined (OLD_CODE) */
 				} break;
@@ -1932,21 +1932,21 @@ to one causes the pending ranges to be unmarked.
 				{
 					if (placed&&problem&&(left_limit<=right_limit))
 					{
-						Node_status_remove_range(problem_status,left_limit,right_limit);
+						Index_multi_range_remove_range(problem_status,left_limit,right_limit);
 					}
 #if defined (OLD_CODE)
 					/* first remove any overlapping pending range */
-					if (Node_status_is_value_in_range(pending_status,frame_no))
+					if (Index_multi_range_is_value_in_range(pending_status,frame_no))
 					{
-						if (Node_status_get_range_containing_value(pending_status,
+						if (Index_multi_range_get_range_containing_value(pending_status,
 							frame_no,&start,&stop))
 						{
-							Node_status_remove_range(pending_status,start,stop);
+							Index_multi_range_remove_range(pending_status,start,stop);
 						}
 					}
 					if (placed&&problem&&(left_limit<=right_limit))
 					{
-						Node_status_add_range(pending_status,left_limit,right_limit);
+						Index_multi_range_add_range(pending_status,left_limit,right_limit);
 					}
 #endif /* defined (OLD_CODE) */
 				} break;
@@ -1978,7 +1978,7 @@ struct Select_node_frame_data
 }; /* Select_node_frame_data */
 
 static int tracking_editor_iterator_select_node_frame(
-	struct Node_status *node_status,void *select_data_void)
+	struct Index_multi_range *node_status,void *select_data_void)
 /*******************************************************************************
 LAST MODIFIED : 7 April 1998
 
@@ -1993,7 +1993,7 @@ Iterator function for calling tracking_editor_select_node_frame.
 	if (node_status&&
 		(select_data=(struct Select_node_frame_data *)select_data_void))
 	{
-		node_no=Node_status_get_node_no(node_status);
+		node_no=Index_multi_range_get_index_number(node_status);
 		return_code=tracking_editor_select_node_frame(select_data->track_ed,
 			node_no,select_data->frame_no,select_data->use_left_range,
 			select_data->use_right_range, select_data->select_mode);
@@ -2029,7 +2029,7 @@ for all views that use the node - needed when there are more than 2.
 	struct FE_node *node;
 	struct Mirage_movie *movie;
 	struct Mirage_view *view,*add_view;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 
 	ENTER(tracking_editor_place_node_in_view);
 	if (track_ed&&(movie=track_ed->mirage_movie)&&
@@ -2047,9 +2047,9 @@ for all views that use the node - needed when there are more than 2.
 			if (view=movie->views[view_no])
 			{
 				if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-					Node_status,node_no)(node_no,view->placed_list))
+					Index_multi_range,index_number)(node_no,view->placed_list))
 				{
-					if (Node_status_is_value_in_range(node_status,this_frame))
+					if (Index_multi_range_is_value_in_range(node_status,this_frame))
 					{
 						views_placed++;
 					}
@@ -2067,9 +2067,9 @@ for all views that use the node - needed when there are more than 2.
 			{
 				/* add it to the placed list for view at this_frame */
 				if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-					Node_status,node_no)(node_no,add_view->placed_list))
+					Index_multi_range,index_number)(node_no,add_view->placed_list))
 				{
-					return_code=Node_status_add_range(node_status,this_frame,this_frame);
+					return_code=Index_multi_range_add_range(node_status,this_frame,this_frame);
 				}
 				else
 				{
@@ -2084,18 +2084,18 @@ for all views that use the node - needed when there are more than 2.
 				{
 					view=movie->views[view_no];
 					if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-						Node_status,node_no)(node_no,view->placed_list))
+						Index_multi_range,index_number)(node_no,view->placed_list))
 					{
-						return_code=Node_status_remove_range(node_status,this_frame,
+						return_code=Index_multi_range_remove_range(node_status,this_frame,
 							this_frame);
 					}
 				}
 
 				/* add it to the placed list in 3-D */
 				if (return_code&&(node_status=FIND_BY_IDENTIFIER_IN_LIST(
-					Node_status,node_no)(node_no,movie->placed_list)))
+					Index_multi_range,index_number)(node_no,movie->placed_list)))
 				{
-					return_code=Node_status_add_range(node_status,this_frame,this_frame);
+					return_code=Index_multi_range_add_range(node_status,this_frame,this_frame);
 				}
 				else
 				{
@@ -2126,7 +2126,7 @@ for all views that use the node - needed when there are more than 2.
 					view=movie->views[view_no];
 					/* if there is a node_status, the node can be placed in view */
 					if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-						Node_status,node_no)(node_no,view->placed_list))
+						Index_multi_range,index_number)(node_no,view->placed_list))
 					{
 						if (!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
 							node_no,view->placed_nodes))
@@ -2193,7 +2193,7 @@ In both the above 2 cases the affected pending range is cleared.
 	struct FE_node *node;
 	struct Mirage_movie *movie;
 	struct Mirage_view *view;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 	struct Remove_elements_with_node_data rem_data;
 
 	ENTER(tracking_editor_unplace_node);
@@ -2205,18 +2205,18 @@ In both the above 2 cases the affected pending range is cleared.
 		this_frame=movie->exnode_frame_no;
 
 		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-			Node_status,node_no)(node_no,movie->placed_list))
+			Index_multi_range,index_number)(node_no,movie->placed_list))
 		{
-			if (Node_status_is_value_in_range(node_status,this_frame))
+			if (Index_multi_range_is_value_in_range(node_status,this_frame))
 			{
-				return_code=Node_status_remove_range(node_status,this_frame,
+				return_code=Index_multi_range_remove_range(node_status,this_frame,
 					this_frame);
 
 				/* ensure not in problem range at this frame_no */
 				if (return_code&&(node_status=FIND_BY_IDENTIFIER_IN_LIST(
-					Node_status,node_no)(node_no,movie->problem_list)))
+					Index_multi_range,index_number)(node_no,movie->problem_list)))
 				{
-					return_code=Node_status_remove_range(node_status,this_frame,
+					return_code=Index_multi_range_remove_range(node_status,this_frame,
 						this_frame);
 				}
 				else
@@ -2226,10 +2226,10 @@ In both the above 2 cases the affected pending range is cleared.
 
 				/* remove pending range in certain cases */
 				if (return_code&&(node_status=FIND_BY_IDENTIFIER_IN_LIST(
-					Node_status,node_no)(node_no,movie->pending_list)))
+					Index_multi_range,index_number)(node_no,movie->pending_list)))
 				{
-					if (Node_status_is_value_in_range(node_status,this_frame)&&
-						Node_status_get_range_containing_value(node_status,this_frame,
+					if (Index_multi_range_is_value_in_range(node_status,this_frame)&&
+						Index_multi_range_get_range_containing_value(node_status,this_frame,
 						&start,&stop))
 					{
 						switch (track_ed->control_mode)
@@ -2238,21 +2238,21 @@ In both the above 2 cases the affected pending range is cleared.
 							{
 								if (this_frame==start)
 								{
-									Node_status_remove_range(node_status,start,stop);
+									Index_multi_range_remove_range(node_status,start,stop);
 								}
 							} break;
 							case BACKTRACK_MODE:
 							{
 								if (this_frame==stop)
 								{
-									Node_status_remove_range(node_status,start,stop);
+									Index_multi_range_remove_range(node_status,start,stop);
 								}
 							} break;
 							case INTERPOLATE_MODE:
 							{
 								if ((this_frame==start)||(this_frame==stop))
 								{
-									Node_status_remove_range(node_status,start,stop);
+									Index_multi_range_remove_range(node_status,start,stop);
 								}
 							} break;
 							default:
@@ -2301,9 +2301,9 @@ In both the above 2 cases the affected pending range is cleared.
 				{
 					view=movie->views[view_no];
 					if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-						Node_status,node_no)(node_no,view->placed_list))
+						Index_multi_range,index_number)(node_no,view->placed_list))
 					{
-						return_code=Node_status_remove_range(node_status,this_frame,
+						return_code=Index_multi_range_remove_range(node_status,this_frame,
 							this_frame);
 					}
 				}
@@ -2378,7 +2378,7 @@ to reflect members of the changed node group/s.
 	int view_no,i,node_no,node_placed_in_view;
 	struct Mirage_movie *movie;
 	struct Mirage_view *view;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(Tracking_editor_dialog_node_group_change);
@@ -2406,15 +2406,15 @@ to reflect members of the changed node group/s.
 									node_no=view->node_numbers[i];
 									/* find out if node is listed as placed in this view: */
 									if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-										Node_status,node_no)(node_no,movie->placed_list))
+										Index_multi_range,index_number)(node_no,movie->placed_list))
 									{
-										if (!(node_placed_in_view=Node_status_is_value_in_range(
+										if (!(node_placed_in_view=Index_multi_range_is_value_in_range(
 											node_status,movie->exnode_frame_no)))
 										{
 											if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
-												Node_status,node_no)(node_no,view->placed_list))
+												Index_multi_range,index_number)(node_no,view->placed_list))
 											{
-												node_placed_in_view=Node_status_is_value_in_range(
+												node_placed_in_view=Index_multi_range_is_value_in_range(
 													node_status,movie->exnode_frame_no);
 											}
 										}
@@ -2486,7 +2486,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 {
 	int use_left_range,use_right_range,return_code,placed,problem,pending,
 		node_no,frame_no;
-	struct Node_status *placed_status,*pending_status,*problem_status;
+	struct Index_multi_range *placed_status,*pending_status,*problem_status;
 	struct FE_node *node;
 	struct Mirage_movie *movie;
 	struct Tracking_editor_dialog *track_ed;
@@ -2510,28 +2510,28 @@ Node manager change callback. Puts changed nodes in the pending list.
 					node_no=get_FE_node_cm_node_identifier(node);
 					frame_no=movie->exnode_frame_no;
 					/* get placed, pending and problem status of node_no at frame_no */
-					if (placed_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+					if (placed_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 						node_no,movie->placed_list))
 					{
-						placed=Node_status_is_value_in_range(placed_status,frame_no);
+						placed=Index_multi_range_is_value_in_range(placed_status,frame_no);
 					}
 					else
 					{
 						return_code=0;
 					}
-					if (pending_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+					if (pending_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 						node_no,movie->pending_list))
 					{
-						pending=Node_status_is_value_in_range(pending_status,frame_no);
+						pending=Index_multi_range_is_value_in_range(pending_status,frame_no);
 					}
 					else
 					{
 						return_code=0;
 					}
-					if (problem_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+					if (problem_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
 						node_no,movie->problem_list))
 					{
-						problem=Node_status_is_value_in_range(problem_status,frame_no);
+						problem=Index_multi_range_is_value_in_range(problem_status,frame_no);
 					}
 					else
 					{
@@ -2548,7 +2548,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 							{
 								if (problem)
 								{
-									Node_status_remove_range(problem_status,frame_no,frame_no);
+									Index_multi_range_remove_range(problem_status,frame_no,frame_no);
 									tracking_editor_node_problem_change(track_ed,node_no);
 								}
 								use_right_range=1;
@@ -2557,7 +2557,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 							{
 								if (problem)
 								{
-									Node_status_remove_range(problem_status,frame_no,frame_no);
+									Index_multi_range_remove_range(problem_status,frame_no,frame_no);
 									tracking_editor_node_problem_change(track_ed,node_no);
 								}
 								use_left_range=1;
@@ -2576,7 +2576,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 							{
 								if (!problem)
 								{
-									Node_status_add_range(problem_status,frame_no,frame_no);
+									Index_multi_range_add_range(problem_status,frame_no,frame_no);
 									tracking_editor_node_problem_change(track_ed,node_no);
 								}
 							} break;
@@ -2584,7 +2584,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 							{
 								if (problem)
 								{
-									Node_status_remove_range(problem_status,frame_no,frame_no);
+									Index_multi_range_remove_range(problem_status,frame_no,frame_no);
 									tracking_editor_node_problem_change(track_ed,node_no);
 								}
 							} break;
@@ -2742,15 +2742,15 @@ If there are it processes them, updating the bar chart accordingly.
 				track_ed->process_ID=0;
 				printf("DONE command received...\n");
 				/*???RC some of this redundant if TEXT works - keep just in case */
-				Node_status_list_add(movie->placed_list,movie->pending_list);
-				Node_status_list_subtract(movie->problem_list,movie->pending_list);
+				Index_multi_range_list_add(movie->placed_list,movie->pending_list);
+				Index_multi_range_list_subtract(movie->problem_list,movie->pending_list);
 				if ((TRACK_MODE==track_ed->control_mode)||
 					(BACKTRACK_MODE==track_ed->control_mode))
 				{
 					sprintf(cbuf,"%s_req_lost",movie->name);
-					Node_status_list_read(movie->problem_list,cbuf);
+					Index_multi_range_list_read(movie->problem_list,cbuf);
 				}
-				Node_status_list_clear(movie->pending_list);
+				Index_multi_range_list_clear(movie->pending_list);
 				tracking_editor_update_bar_chart(track_ed);
 				Mirage_movie_refresh_node_groups(movie,movie->exnode_frame_no);
 				/* must read frame in case it was one changed */
@@ -2775,35 +2775,35 @@ If there are it processes them, updating the bar chart accordingly.
 						"OK  ",NULL,0);
 					if (1==sscanf(args,"Frame %d",&frame_no))
 					{
-						Node_status_list_add_at_value(movie->placed_list,
+						Index_multi_range_list_add_at_value(movie->placed_list,
 							movie->pending_list,frame_no);
 						/* also remove from placed lists in individual views */
 						for (view_no=0;view_no<movie->number_of_views;view_no++)
 						{
 							if (view=movie->views[view_no])
 							{
-								Node_status_list_subtract_at_value(view->placed_list,
+								Index_multi_range_list_subtract_at_value(view->placed_list,
 									movie->placed_list,frame_no);
 							}
 						}
-						Node_status_list_subtract_at_value(movie->problem_list,
+						Index_multi_range_list_subtract_at_value(movie->problem_list,
 							movie->pending_list,frame_no);
 						/* reduce pending ranges as you track */
 						switch (track_ed->control_mode)
 						{
 						case TRACK_MODE:
 							{
-								Node_status_list_subtract_at_value(movie->pending_list,
+								Index_multi_range_list_subtract_at_value(movie->pending_list,
 									movie->pending_list,frame_no-1);
 							} break;
 						case BACKTRACK_MODE:
 							{
-								Node_status_list_subtract_at_value(movie->pending_list,
+								Index_multi_range_list_subtract_at_value(movie->pending_list,
 									movie->pending_list,frame_no+1);
 							} break;
 						case SUBSTITUTE_MODE:
 							{
-								Node_status_list_subtract_at_value(movie->pending_list,
+								Index_multi_range_list_subtract_at_value(movie->pending_list,
 									movie->pending_list,frame_no);
 							} break;
 						}
@@ -2812,7 +2812,7 @@ If there are it processes them, updating the bar chart accordingly.
 						{
 							/* append the lost nodes on to the problem list */
 							sprintf(cbuf,"%s_req_lost",movie->name);
-							Node_status_list_read(movie->problem_list,cbuf);
+							Index_multi_range_list_read(movie->problem_list,cbuf);
 						}
 						tracking_editor_update_bar_chart(track_ed);
 						/* auto save the node status lists that have changed */
@@ -3073,7 +3073,7 @@ Reads a movie file into the tracking editor.
 				track_ed->scene_manager,track_ed->default_scene,
 				track_ed->spectrum_manager,track_ed->default_spectrum,
 				track_ed->texture_manager,track_ed->user_interface)&&
-				(0<(max_nodes=NUMBER_IN_LIST(Node_status)(tmp_movie->placed_list)))))
+				(0<(max_nodes=NUMBER_IN_LIST(Index_multi_range)(tmp_movie->placed_list)))))
 			{
 				if (tmp_movie->name&&ALLOCATE(title,char,20+strlen(tmp_movie->name)))
 				{
@@ -3120,7 +3120,7 @@ Reads a movie file into the tracking editor.
 					/* clear the pending ranges since they may be invalid under the
 						current mode of operation */
 					/*???RC better to restart in the last mode instead? */
-					Node_status_list_clear(tmp_movie->pending_list);
+					Index_multi_range_list_clear(tmp_movie->pending_list);
 					/* rebuild the placed, pending and problem node & element groups */
 					Mirage_movie_refresh_node_groups(tmp_movie,
 						tmp_movie->exnode_frame_no);
@@ -3455,14 +3455,14 @@ Callback for clearing all pending ranges.
 		(movie=track_ed->mirage_movie))
 	{
 		/* no need to clear if already empty */
-		if (FIRST_OBJECT_IN_LIST_THAT(Node_status)(Node_status_not_clear,
+		if (FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(Index_multi_range_not_clear,
 			(void *)NULL,movie->pending_list))
 		{
 			if (confirmation_warning_ok_cancel("Clear pending ranges...",
 				"Proceed to clear all pending ranges?",track_ed->dialog,
 				track_ed->user_interface))
 			{
-				Node_status_list_clear(movie->pending_list);
+				Index_multi_range_list_clear(movie->pending_list);
 				tracking_editor_update_bar_chart(track_ed);
 				REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->pending_nodes_3d);
 				for (view_no=0;view_no<movie->number_of_views;view_no++)
@@ -4046,7 +4046,7 @@ Sets tracking or other process running if in one of these modes.
 	int return_code,addressLength,error_code,run_process;
 	struct Mirage_movie *movie;
 	struct Tracking_editor_dialog *track_ed;
-	struct LIST(Node_status) *good_node_list;
+	struct LIST(Index_multi_range) *good_node_list;
 	unsigned long ip_address;
 
 	ENTER(tracking_editor_process_cb);
@@ -4058,7 +4058,7 @@ Sets tracking or other process running if in one of these modes.
 		return_code = 0;
 		/* proceed only if there are pending ranges to process and
 			the user wants to proceed. */
-		if (FIRST_OBJECT_IN_LIST_THAT(Node_status)(Node_status_not_clear,
+		if (FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(Index_multi_range_not_clear,
 			(void *)NULL,movie->pending_list))
 		{
 			switch (track_ed->control_mode )
@@ -4104,7 +4104,7 @@ Sets tracking or other process running if in one of these modes.
 					/* good and bad modes do not use request files */
 					if ((MAKE_BAD_MODE==track_ed->control_mode)||
 						(MAKE_GOOD_MODE==track_ed->control_mode)||
-						Node_status_list_write(movie->pending_list,req_file_name,
+						Index_multi_range_list_write(movie->pending_list,req_file_name,
 						"!Op\tNode\tStart\tStop\n","T\t%i\t%i\t%i\n"))
 					{
 						run_process=0;
@@ -4135,15 +4135,15 @@ Sets tracking or other process running if in one of these modes.
 							} break;
 						case SUBSTITUTE_MODE:
 							{
-								if ( good_node_list = Node_status_list_duplicate(movie->placed_list ))
+								if ( good_node_list = Index_multi_range_list_duplicate(movie->placed_list ))
 								{
-									if ( Node_status_list_subtract( good_node_list, movie->problem_list ))
+									if ( Index_multi_range_list_subtract( good_node_list, movie->problem_list ))
 									{
 										if (ALLOCATE(good_req_file_name,char,strlen(movie->name)+15))
 										{
 											sprintf(good_req_file_name,"%s_good_req",movie->name);
 
-											if (Node_status_list_write(good_node_list,good_req_file_name,
+											if (Index_multi_range_list_write(good_node_list,good_req_file_name,
 												"!Op\tNode\tStart\tStop\n","T\t%i\t%i\t%i\n"))
 											{
 												sprintf(sys_command,"substitute.process %s %s %s %s",
@@ -4157,7 +4157,7 @@ Sets tracking or other process running if in one of these modes.
 											DEALLOCATE(good_req_file_name);
 										}
 									}
-									DESTROY(LIST(Node_status))(&good_node_list);
+									DESTROY(LIST(Index_multi_range))(&good_node_list);
 								}
 							} break;
 						case INTERPOLATE_MODE:
@@ -4172,19 +4172,19 @@ Sets tracking or other process running if in one of these modes.
 						case MAKE_BAD_MODE:
 							{
 								/* add pending ranges to bad */
-								Node_status_list_add(movie->problem_list,movie->pending_list);
+								Index_multi_range_list_add(movie->problem_list,movie->pending_list);
 								tracking_editor_refresh_problem_groups(track_ed);
-								Node_status_list_clear(movie->pending_list);
+								Index_multi_range_list_clear(movie->pending_list);
 								tracking_editor_refresh_pending_groups(track_ed);
 								tracking_editor_update_bar_chart(track_ed);
 							} break;
 						case MAKE_GOOD_MODE:
 							{
 								/* subtract pending ranges from bad */
-								Node_status_list_subtract(movie->problem_list,
+								Index_multi_range_list_subtract(movie->problem_list,
 									movie->pending_list);
 								tracking_editor_refresh_problem_groups(track_ed);
-								Node_status_list_clear(movie->pending_list);
+								Index_multi_range_list_clear(movie->pending_list);
 								tracking_editor_refresh_pending_groups(track_ed);
 								tracking_editor_update_bar_chart(track_ed);
 							} break;
@@ -4303,7 +4303,7 @@ Aborts tracking.
 } /* tracking_editor_abort_cb */
 
 static int tracking_editor_change_mode_pending_status_iterator(
-	struct Node_status *pending_status,void *track_ed_void)
+	struct Index_multi_range *pending_status,void *track_ed_void)
 /*******************************************************************************
 LAST MODIFIED : 19 November 1998
 
@@ -4319,9 +4319,9 @@ Redirects the node range when the track mode changes.
 	if (pending_status && (track_ed = (struct Tracking_editor_dialog *)track_ed_void)
 		&& (movie = track_ed->mirage_movie))
 	{
-		node_no = Node_status_get_node_no(pending_status);
-		pending=Node_status_is_value_in_range(pending_status,movie->exnode_frame_no);
-		Node_status_clear(pending_status, NULL);
+		node_no = Index_multi_range_get_index_number(pending_status);
+		pending=Index_multi_range_is_value_in_range(pending_status,movie->exnode_frame_no);
+		Index_multi_range_clear(pending_status, NULL);
 		if(pending)
 		{
 			use_left_range = 0;
@@ -4391,7 +4391,7 @@ DESCRIPTION :
 			if (control_mode != track_ed->control_mode)
 			{
 				/* can't change mode if there is anything pending... */
-				if (FIRST_OBJECT_IN_LIST_THAT(Node_status)(Node_status_not_clear,
+				if (FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(Index_multi_range_not_clear,
 					(void *)NULL,movie->pending_list))
 				{
 					if ((control_mode == MAKE_BAD_MODE ||
@@ -4416,7 +4416,7 @@ DESCRIPTION :
 							track_ed->previous_control_mode = track_ed->control_mode;
 							track_ed->control_mode=control_mode;
 
-							FOR_EACH_OBJECT_IN_LIST(Node_status)(
+							FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 								tracking_editor_change_mode_pending_status_iterator,
 								(void *)track_ed, movie->pending_list);
 							tracking_editor_refresh_pending_groups(track_ed);
@@ -4429,7 +4429,7 @@ DESCRIPTION :
 								track_ed->previous_control_mode = track_ed->control_mode;
 								track_ed->control_mode=control_mode;
 
-								Node_status_list_clear(movie->pending_list);
+								Index_multi_range_list_clear(movie->pending_list);
 								tracking_editor_update_bar_chart(track_ed);
 								REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->pending_nodes_3d);
 								for (view_no=0;view_no<movie->number_of_views;view_no++)
@@ -4753,7 +4753,7 @@ DESCRIPTION :
 		mark_all_nodes;
 	static int mark_frame_no,mark_node_no,mark_x,mark_min_x,mark_max_x,
 		mark_min_y,mark_max_y;
-	struct Node_status *node_status;
+	struct Index_multi_range *node_status;
 	struct Mirage_movie *movie;
 	struct Select_node_frame_data select_data;
 	struct Tracking_editor_dialog *track_ed;
@@ -4830,8 +4830,8 @@ DESCRIPTION :
 											/* get node_no clicked on for marking */
 											index=(int)(track_ed->bc_top-(pointer_y-bc_scale_height)/
 												track_ed->bc_pixels_per_unit_y);
-											if (node_status=FIRST_OBJECT_IN_LIST_THAT(Node_status)(
-												Node_status_is_at_index,(void *)&index,
+											if (node_status=FIRST_OBJECT_IN_LIST_THAT(Index_multi_range)(
+												Index_multi_range_is_at_index,(void *)&index,
 												movie->placed_list))
 											{
 												mark_frame_no=frame_no;
@@ -4850,7 +4850,7 @@ DESCRIPTION :
 														drag_mode=TRACK_ED_DRAG_MARK;
 													}
 												}
-												mark_node_no=Node_status_get_node_no(node_status);
+												mark_node_no=Index_multi_range_get_index_number(node_status);
 												mark_x=pointer_x;
 												mark_min_x=mark_max_x=pointer_x;
 												mark_min_y=mark_max_y=pointer_y;
@@ -5088,7 +5088,7 @@ DESCRIPTION :
 										select_data.select_mode = TRACK_ED_SELECT_BADONLY;
 									} break;
 								}
-								FOR_EACH_OBJECT_IN_LIST(Node_status)(
+								FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(
 									tracking_editor_iterator_select_node_frame,
 									(void *)&select_data,movie->placed_list);
 								switch (track_ed->control_mode)

@@ -21,11 +21,11 @@ c) One coordinate field (3D) plus information stored in Mirage structures
 #if !defined (MIRAGE_MOVIE_H)
 #define MIRAGE_MOVIE_H
 #include "finite_element/finite_element.h"
+#include "general/indexed_multi_range.h"
 #include "graphics/graphics_object.h"
 #include "graphics/light.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
-#include "mirage/tracking_editor_data.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -81,7 +81,7 @@ single eye point.
 		0=black and 1=white. Later index into a look-up table for various RGB
 		colours */
 	int *com_colour_indices;
-	struct LIST(Node_status) *placed_list;
+	struct LIST(Index_multi_range) *placed_list;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct MANAGER(Scene) *scene_manager;
@@ -130,7 +130,7 @@ Stores information for moving through and digitizing the movie.
 	/* views */
 	int number_of_views;
 	struct LIST(GT_object) *glyph_list;
-	struct LIST(Node_status) *placed_list,*pending_list,*problem_list;
+	struct LIST(Index_multi_range) *placed_list,*pending_list,*problem_list;
 	struct Mirage_view **views;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
@@ -481,7 +481,7 @@ LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Refreshes the placed, pending and problem node groups so that they match the
-entries in the Node_status_lists for the exnode_frame_no of the movie.
+entries in the Index_multi_range_lists for the exnode_frame_no of the movie.
 Should be called after reading and changing frames.
 Because this can be very slow, esp. for updating the element group, the
 <compare_frame_no> is provided to allow you to compare the node status lists

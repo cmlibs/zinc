@@ -8,6 +8,7 @@ Widget for displaying and editing component values of computed fields defined
 over a element_point. One field at a time can be viewed/edited.
 Note the element_point passed to this widget should be a non-managed local copy.
 ==============================================================================*/
+#include <stdio.h>
 #include <Xm/Xm.h>
 #include <Xm/Label.h>
 #include <Xm/RowColumn.h>

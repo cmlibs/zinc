@@ -44,6 +44,7 @@ Functions for manipulating finite element structures.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/value.h"
+#include "mirage/tracking_editor_data.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -8260,42 +8261,6 @@ static int FE_element_parent_has_field(struct FE_element_parent *element_parent,
 
 	return (return_code);
 } /* FE_element_parent_has_field */
-
-static int element_parent_not_element(struct FE_element_parent *parent,
-	void *void_element)
-/*******************************************************************************
-LAST MODIFIED : 30 July 1995
-
-DESCRIPTION :
-Returns to true if the <element_parent> is not the element.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element *element;
-
-	ENTER(element_parent_not_element);
-	/* check arguments */
-	if (parent&&(element=(struct FE_element *)void_element))
-	{
-		if (parent->parent==element)
-		{
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_parent_not_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_parent_not_element */
 
 static int FE_element_face_line_to_element_type_node_sequence_list(
 	struct FE_element *element,void *element_type_node_sequence_list_void)
@@ -24112,8 +24077,8 @@ against.
 						{
 							/* try to find an existing face in the manager with the same
 								 shape and the same nodes as face */
-							if (element_type_node_sequence=
-								CREATE(FE_element_type_node_sequence)(face))
+							if (element_type_node_sequence=ACCESS(FE_element_type_node_sequence)(
+								CREATE(FE_element_type_node_sequence)(face)))
 							{
 								if (!FE_element_type_node_sequence_is_collapsed(
 									element_type_node_sequence))
@@ -24168,6 +24133,7 @@ against.
 									set_FE_element_face(element,face_number,
 										(struct FE_element *)NULL);
 								}
+								DEACCESS(FE_element_type_node_sequence)(&element_type_node_sequence);
 							}
 							else
 							{
@@ -36020,50 +35986,6 @@ Not static as used in projection/projection.c
 	LEAVE;
 	return(return_code);
 }/* FE_node_element_is_type_CM_anatomical */
-
-struct FE_element *adjacent_FE_element(struct FE_element *element,
-	int face_number)
-/*******************************************************************************
-LAST MODIFIED : 8 June 1999
-
-DESCRIPTION :
-Returns the element which shares the face given.
-==============================================================================*/
-{
-	struct FE_element *adjacent_element;
-	struct FE_element_parent *adjacent_element_parent;
-
-	ENTER(adjacent_FE_element);
-	if (element&&(element->shape)&&(element->faces))
-	{
-		if ((0<=face_number)&&(face_number<element->shape->number_of_faces)&&
-			 ((element->faces)[face_number]))
-		{
-			if (adjacent_element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				element_parent_not_element,(void *)element,
-				((element->faces)[face_number])->parent_list))
-			{
-				adjacent_element=adjacent_element_parent->parent;
-			}
-			else
-			{
-				adjacent_element=(struct FE_element *)NULL;
-			}
-		}
-		else
-		{
-			adjacent_element=(struct FE_element *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"adjacent_FE_element.  Invalid argument(s)");
-		adjacent_element=(struct FE_element *)NULL;
-	}
-	LEAVE;
-
-	return (adjacent_element);
-} /* adjacent_FE_element */
 
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape, 
 	FE_value *xi, int *face_number)
