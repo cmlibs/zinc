@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 18 July 2004
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -7392,13 +7392,12 @@ bool Function_finite_element::set_value(
 Function_handle Function_finite_element::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 18 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	Function_handle result(0);
-	FE_value *xi_coordinates;
 #if defined (BEFORE_FUNCTION_VARIABLE_ELEMENT_XI_ABSTRACT)
 	Function_variable_element_xi_handle
 #else // defined (BEFORE_FUNCTION_VARIABLE_ELEMENT_XI_ABSTRACT)
@@ -7418,7 +7417,6 @@ Function_handle Function_finite_element::get_value(
 #endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 		atomic_variable_nodal_values;
 
-	xi_coordinates=(FE_value *)NULL;
 	if ((atomic_variable_element_xi=boost::dynamic_pointer_cast<
 #if defined (BEFORE_FUNCTION_VARIABLE_ELEMENT_XI_ABSTRACT)
 		Function_variable_element_xi,
