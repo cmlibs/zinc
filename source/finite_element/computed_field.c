@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 3 December 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -1604,6 +1604,8 @@ any other fields, this function is recursively called for them.
 				}
 			} break;
 			case COMPUTED_FIELD_2D_STRAIN:
+			case COMPUTED_FIELD_CURL:
+			case COMPUTED_FIELD_DIVERGENCE:
 			case COMPUTED_FIELD_FIBRE_AXES:
 			case COMPUTED_FIELD_FIBRE_SHEET_AXES:
 			case COMPUTED_FIELD_GRADIENT:
@@ -1885,6 +1887,205 @@ Source fields are coordinates, undeformed_coordinates and fibre angle.
 	return (return_code);
 } /* Computed_field_evaluate_2D_strain */
 
+static int Computed_field_evaluate_curl(struct Computed_field *field,
+	int element_dimension)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+Function called by Computed_field_evaluate_in_element to compute the curl.
+NOTE: Assumes that values and derivatives arrays are already allocated in
+<field>, and that its source_fields are already computed (incl. derivatives)
+for the same element, with the given <element_dimension> = number of Xi coords.
+If function fails to invert the coordinate derivatives then the curl is
+returned as 0 with a warning - as may happen at certain locations of the mesh.
+Note currently requires vector_field to be RC.
+==============================================================================*/
+{
+	FE_value curl,dx_dxi[9],dxi_dx[9],x[3],*source;
+	int coordinate_components,i,return_code;
+	
+	ENTER(Computed_field_evaluate_curl);
+	if (field&&(COMPUTED_FIELD_CURL==field->type))
+	{
+		coordinate_components=field->source_fields[1]->number_of_components;
+		/* curl is only valid in 3 dimensions */
+		if ((3==element_dimension)&&(3==coordinate_components))
+		{
+			/* only support RC vector fields */
+			if (RECTANGULAR_CARTESIAN==
+				field->source_fields[0]->coordinate_system.type)
+			{
+				if (return_code=Computed_field_extract_rc(field->source_fields[1],
+					element_dimension,x,dx_dxi))
+				{
+					if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
+					{
+						source=field->source_fields[0]->derivatives;
+						/* curl[0] = dVz/dy - dVy/dz */
+						curl=0.0;
+						for (i=0;i<element_dimension;i++)
+						{
+							curl += (source[6+i]*dxi_dx[3*i+1] - source[3+i]*dxi_dx[3*i+2]);
+						}
+						field->values[0]=curl;
+						/* curl[1] = dVx/dz - dVz/dx */
+						curl=0.0;
+						for (i=0;i<element_dimension;i++)
+						{
+							curl += (source[  i]*dxi_dx[3*i+2] - source[6+i]*dxi_dx[3*i  ]);
+						}
+						field->values[1]=curl;
+						/* curl[2] = dVy/dx - dVx/dy */
+						curl=0.0;
+						for (i=0;i<element_dimension;i++)
+						{
+							curl += (source[3+i]*dxi_dx[3*i  ] - source[  i]*dxi_dx[3*i+1]);
+						}
+						field->values[2]=curl;
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"Could not invert coordinate derivatives; setting curl to 0");
+						for (i=0;i<field->number_of_components;i++)
+						{
+							field->values[i]=0.0;
+						}
+					}
+					/* cannot calculate derivatives for curl yet */
+					field->derivatives_valid=0;
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_curl.  Failed");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_curl.  Vector field must be RC");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_curl.  Elements of wrong dimension");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_curl.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_evaluate_curl */
+
+static int Computed_field_evaluate_divergence(struct Computed_field *field,
+	int element_dimension)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+Function called by Computed_field_evaluate_in_element to compute the divergence.
+NOTE: Assumes that values and derivatives arrays are already allocated in
+<field>, and that its source_fields are already computed (incl. derivatives)
+for the same element, with the given <element_dimension> = number of Xi coords.
+If function fails to invert the coordinate derivatives then the divergence is
+returned as 0 with a warning - as may happen at certain locations of the mesh.
+Note currently requires vector_field to be RC.
+==============================================================================*/
+{
+	FE_value divergence,dx_dxi[9],dxi_dx[9],x[3],*source;
+	int coordinate_components,i,j,return_code;
+	
+	ENTER(Computed_field_evaluate_divergence);
+	if (field&&(COMPUTED_FIELD_DIVERGENCE==field->type))
+	{
+		coordinate_components=field->source_fields[1]->number_of_components;
+		/* Following asks: can dx_dxi be inverted? */
+		if (((3==element_dimension)&&(3==coordinate_components))||
+			((RECTANGULAR_CARTESIAN==field->source_fields[1]->coordinate_system.type)
+				&&(coordinate_components==element_dimension))||
+			((CYLINDRICAL_POLAR==field->source_fields[1]->coordinate_system.type)&&
+				(2==element_dimension)&&(2==coordinate_components)))
+		{
+			/* only support RC vector fields */
+			if (RECTANGULAR_CARTESIAN==
+				field->source_fields[0]->coordinate_system.type)
+			{
+				if (return_code=Computed_field_extract_rc(field->source_fields[1],
+					element_dimension,x,dx_dxi))
+				{
+					/* if the element_dimension is less than 3, put ones on the main
+						 diagonal to allow inversion of dx_dxi */
+					if (3>element_dimension)
+					{
+						dx_dxi[8]=1.0;
+						if (2>element_dimension)
+						{
+							dx_dxi[4]=1.0;
+						}
+					}
+					if (invert_FE_value_matrix3(dx_dxi,dxi_dx))
+					{
+						divergence=0.0;
+						source=field->source_fields[0]->derivatives;
+						for (i=0;i<element_dimension;i++)
+						{
+							for (j=0;j<element_dimension;j++)
+							{
+								divergence += (*source) * dxi_dx[3*j+i];
+								source++;
+							}
+						}
+						field->values[0]=divergence;
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"Could not invert coordinate derivatives; "
+							"setting divergence to 0");
+						field->values[0]=0.0;
+					}
+					/* cannot calculate derivatives for divergence yet */
+					field->derivatives_valid=0;
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_divergence.  Failed");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_divergence.  Vector field must be RC");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_divergence.  Elements of wrong dimension");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_divergence.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_evaluate_divergence */
+
 static int Computed_field_evaluate_fibre_axes(struct Computed_field *field,
 	int element_dimension)
 /*******************************************************************************
@@ -2060,7 +2261,7 @@ sheet,-fibre,normal.
 static int Computed_field_evaluate_gradient(struct Computed_field *field,
 	int element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_in_element to compute the gradient.
@@ -2069,7 +2270,8 @@ NOTE: Assumes that values and derivatives arrays are already allocated in
 for the same element, with the given <element_dimension> = number of Xi coords.
 Derivatives are always calculated and set since they are always zero.
 If function fails to invert the coordinate derivatives then the gradient is
-simply returned as the 0 vector.
+returned as the 0 vector with a warning - as may happen at certain locations of
+the mesh.
 ==============================================================================*/
 {
 	FE_value *destination,dx_dxi[9],dxi_dx[9],x[3],*source;
@@ -2119,20 +2321,15 @@ simply returned as the 0 vector.
 				}
 				else
 				{
-					/* could not invert coordinate derivatives; set gradient to 0 */
+					display_message(WARNING_MESSAGE,
+						"Could not invert coordinate derivatives; setting gradient to 0");
 					for (i=0;i<field->number_of_components;i++)
 					{
 						field->values[i]=0.0;
-					}			
+					}
 				}
-				/* derivatives = div(grad()) are always zero */
-				destination=field->derivatives;
-				for (i=element_dimension*(field->number_of_components);0<i;i--)
-				{
-					*destination = 0.0;
-					destination++;
-				}
-				field->derivatives_valid=1;
+				/* cannot calculate derivatives for gradient yet */
+				field->derivatives_valid=0;
 			}
 			if (!return_code)
 			{
@@ -2388,7 +2585,7 @@ static int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
 	struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Calculates the values and derivatives (if <calculate_derivatives> set) of
@@ -2459,6 +2656,8 @@ is avoided.
 			/* 1. Get top_level_element for types that must be calculated on them */
 			switch (field->type)
 			{
+				case COMPUTED_FIELD_CURL:
+				case COMPUTED_FIELD_DIVERGENCE:
 				case COMPUTED_FIELD_FIBRE_AXES:
 				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
 				case COMPUTED_FIELD_GRADIENT:
@@ -2624,10 +2823,12 @@ is avoided.
 							}
 						}
 					} break;
+					case COMPUTED_FIELD_CURL:
+					case COMPUTED_FIELD_DIVERGENCE:
 					case COMPUTED_FIELD_GRADIENT:
 					{
-						/* always calculate derivatives of scalar and coordinate fields
-							 and evaluate on the top_level_element */
+						/* always calculate derivatives of vector/scalar and coordinate
+							 fields and evaluate on the top_level_element */
 						return_code=
 							Computed_field_evaluate_cache_in_element(field->source_fields[0],
 								top_level_element,top_level_xi,top_level_element,1)&&
@@ -2895,6 +3096,11 @@ is avoided.
 						}
 						field->derivatives_valid = 0;
 					} break;
+					case COMPUTED_FIELD_CURL:
+					{
+						return_code=Computed_field_evaluate_curl(field,
+							top_level_element_dimension);
+					} break;
 					case COMPUTED_FIELD_CURVE_LOOKUP:
 					{
 						FE_value dx_dt,*jacobian;
@@ -2939,6 +3145,11 @@ is avoided.
 							 calculation is the same as rc_coordinate */
 						return_code=Computed_field_evaluate_rc_coordinate(field,
 							element_dimension,calculate_derivatives);
+					} break;
+					case COMPUTED_FIELD_DIVERGENCE:
+					{
+						return_code=Computed_field_evaluate_divergence(field,
+							top_level_element_dimension);
 					} break;
 					case COMPUTED_FIELD_DOT_PRODUCT:
 					{
@@ -6418,7 +6629,7 @@ Returns the type of the computed <field> eg. COMPUTED_FIELD_FINITE_ELEMENT etc.
 
 char *Computed_field_type_to_string(enum Computed_field_type field_type)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Returns a pointer to a static string token for the given <field_type>.
@@ -6471,6 +6682,10 @@ The calling function must not deallocate the returned string.
 		{
 			field_type_string="cubic_texture_coordinates";
 		} break;
+		case COMPUTED_FIELD_CURL:
+		{
+			field_type_string="curl";
+		} break;
 		case COMPUTED_FIELD_CURVE_LOOKUP:
 		{
 			field_type_string="curve_lookup";
@@ -6482,6 +6697,10 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_DOT_PRODUCT:
 		{
 			field_type_string="dot_product";
+		} break;
+		case COMPUTED_FIELD_DIVERGENCE:
+		{
+			field_type_string="divergence";
 		} break;
 		case COMPUTED_FIELD_EDIT_MASK:
 		{
@@ -7529,6 +7748,108 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_cubic_texture_coordinates */
 
+int Computed_field_get_type_curl(struct Computed_field *field,
+	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_CURL, the vector and coordinate
+fields used by it are returned - otherwise an error is reported.
+Use function Computed_field_get_type to determine the field type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_curl);
+	if (field&&(COMPUTED_FIELD_CURL==field->type)&&vector_field&&
+		coordinate_field)
+	{
+		/* source_fields: 0=vector, 1=coordinate */
+		*vector_field=field->source_fields[0];
+		*coordinate_field=field->source_fields[1];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_curl.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_curl */
+
+int Computed_field_set_type_curl(struct Computed_field *field,
+	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CURL, combining a vector and
+coordinate field to return the curl scalar.
+Sets the number of components to 3.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+<vector_field> and <coordinate_field> must both have exactly 3 components.
+The vector field must also be RECTANGULAR_CARTESIAN.
+Note that an error will be reported on calculation if the xi-dimension of the
+element and the number of components in coordinate_field & vector_field differ.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_curl);
+	if (field&&vector_field&&(3==vector_field->number_of_components)&&
+		coordinate_field&&(3==coordinate_field->number_of_components))
+	{
+		/* only support RC vector fields */
+		if (RECTANGULAR_CARTESIAN==vector_field->coordinate_system.type)
+		{
+			/* 1. make dynamic allocations for any new type-specific data */
+			number_of_source_fields=2;
+			if (ALLOCATE(source_fields,struct Computed_field *,
+				number_of_source_fields))
+			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(field);
+				/* 3. establish the new type */
+				field->type=COMPUTED_FIELD_CURL;
+				field->number_of_components=3;
+				/* source_fields: 0=vector, 1=coordinate */
+				source_fields[0]=ACCESS(Computed_field)(vector_field);
+				source_fields[1]=ACCESS(Computed_field)(coordinate_field);
+				field->source_fields=source_fields;
+				field->number_of_source_fields=number_of_source_fields;
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_curl.  Not enough memory");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_curl.  Vector field must be RC");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_curl.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_curl */
+
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,
 	struct Control_curve **curve,struct Computed_field **source_field)
 /*******************************************************************************
@@ -7696,6 +8017,111 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_default_coordinate */
+
+int Computed_field_get_type_divergence(struct Computed_field *field,
+	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_DIVERGENCE, the vector and coordinate
+fields used by it are returned - otherwise an error is reported.
+Use function Computed_field_get_type to determine the field type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_divergence);
+	if (field&&(COMPUTED_FIELD_DIVERGENCE==field->type)&&vector_field&&
+		coordinate_field)
+	{
+		/* source_fields: 0=vector, 1=coordinate */
+		*vector_field=field->source_fields[0];
+		*coordinate_field=field->source_fields[1];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_divergence.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_divergence */
+
+int Computed_field_set_type_divergence(struct Computed_field *field,
+	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DIVERGENCE, combining a vector and
+coordinate field to return the divergence scalar.
+Sets the number of components to 1.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+The number of components of <vector_field> and <coordinate_field> must be the
+same and less than or equal to 3
+The vector field must also be RECTANGULAR_CARTESIAN.
+Note that an error will be reported on calculation if the xi-dimension of the
+element and the number of components in coordinate_field & vector_field differ.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_divergence);
+	if (field&&vector_field&&coordinate_field&&
+		(3>=coordinate_field->number_of_components)&&
+		(vector_field->number_of_components==
+			coordinate_field->number_of_components))
+	{
+		/* only support RC vector fields */
+		if (RECTANGULAR_CARTESIAN==vector_field->coordinate_system.type)
+		{
+			/* 1. make dynamic allocations for any new type-specific data */
+			number_of_source_fields=2;
+			if (ALLOCATE(source_fields,struct Computed_field *,
+				number_of_source_fields))
+			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(field);
+				/* 3. establish the new type */
+				field->type=COMPUTED_FIELD_DIVERGENCE;
+				field->number_of_components=1;
+				/* source_fields: 0=vector, 1=coordinate */
+				source_fields[0]=ACCESS(Computed_field)(vector_field);
+				source_fields[1]=ACCESS(Computed_field)(coordinate_field);
+				field->source_fields=source_fields;
+				field->number_of_source_fields=number_of_source_fields;
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_divergence.  Not enough memory");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_divergence.  Vector field must be RC");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_divergence.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_divergence */
 
 int Computed_field_get_type_dot_product(struct Computed_field *field,
 	struct Computed_field **source_field1, struct Computed_field **source_field2)
@@ -12148,6 +12574,100 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_cubic_texture_coordinates */
 
+static int define_Computed_field_type_curl(struct Parse_state *state,
+	void *field_void,void *computed_field_package_void)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_CURL (if it is not already)
+and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *coordinate_field,*field,*vector_field;
+	struct Computed_field_package *computed_field_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_vector_field_data;
+
+	ENTER(define_Computed_field_type_curl);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_package=
+			(struct Computed_field_package *)computed_field_package_void))
+	{
+		return_code=1;
+		coordinate_field=(struct Computed_field *)NULL;
+		vector_field=(struct Computed_field *)NULL;
+		if (COMPUTED_FIELD_CURL==Computed_field_get_type(field))
+		{
+			return_code=Computed_field_get_type_curl(field,
+				&vector_field,&coordinate_field);
+		}
+		else
+		{
+			if (!(coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+				"default_coordinate",computed_field_package->computed_field_manager)))
+			{
+				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_has_1_to_3_components,(void *)NULL,
+					computed_field_package->computed_field_manager);
+			}
+			vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_has_1_to_3_components,(void *)NULL,
+				computed_field_package->computed_field_manager);
+		}
+		if (return_code)
+		{
+			/* have ACCESS/DEACCESS because set_Computed_field does */
+			if (coordinate_field)
+			{
+				ACCESS(Computed_field)(coordinate_field);
+			}
+			if (vector_field)
+			{
+				ACCESS(Computed_field)(vector_field);
+			}
+			option_table=CREATE(Option_table)();
+
+			/* coordinate */
+			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.conditional_function=
+				Computed_field_has_1_to_3_components;
+			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
+			/* vector */
+			set_vector_field_data.computed_field_package=computed_field_package;
+			set_vector_field_data.conditional_function=
+				Computed_field_has_1_to_3_components;
+			set_vector_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"vector",&vector_field,
+				(void *)&set_vector_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state)&&
+				Computed_field_set_type_curl(field,vector_field,coordinate_field);
+			DESTROY(Option_table)(&option_table);
+			if (coordinate_field)
+			{
+				DEACCESS(Computed_field)(&coordinate_field);
+			}
+			if (vector_field)
+			{
+				DEACCESS(Computed_field)(&vector_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_curl.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_curl */
+
 static int define_Computed_field_type_curve_lookup(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -12276,6 +12796,100 @@ Converts <field> into type COMPUTED_FIELD_DEFAULT_COORDINATE.
 
 	return (return_code);
 } /* define_Computed_field_type_default_coordinate */
+
+static int define_Computed_field_type_divergence(struct Parse_state *state,
+	void *field_void,void *computed_field_package_void)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_DIVERGENCE (if it is not already)
+and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *coordinate_field,*field,*vector_field;
+	struct Computed_field_package *computed_field_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_vector_field_data;
+
+	ENTER(define_Computed_field_type_divergence);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_package=
+			(struct Computed_field_package *)computed_field_package_void))
+	{
+		return_code=1;
+		coordinate_field=(struct Computed_field *)NULL;
+		vector_field=(struct Computed_field *)NULL;
+		if (COMPUTED_FIELD_DIVERGENCE==Computed_field_get_type(field))
+		{
+			return_code=Computed_field_get_type_divergence(field,
+				&vector_field,&coordinate_field);
+		}
+		else
+		{
+			if (!(coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+				"default_coordinate",computed_field_package->computed_field_manager)))
+			{
+				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_has_1_to_3_components,(void *)NULL,
+					computed_field_package->computed_field_manager);
+			}
+			vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_has_1_to_3_components,(void *)NULL,
+				computed_field_package->computed_field_manager);
+		}
+		if (return_code)
+		{
+			/* have ACCESS/DEACCESS because set_Computed_field does */
+			if (coordinate_field)
+			{
+				ACCESS(Computed_field)(coordinate_field);
+			}
+			if (vector_field)
+			{
+				ACCESS(Computed_field)(vector_field);
+			}
+			option_table=CREATE(Option_table)();
+
+			/* coordinate */
+			set_coordinate_field_data.computed_field_package=computed_field_package;
+			set_coordinate_field_data.conditional_function=
+				Computed_field_has_1_to_3_components;
+			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
+			/* vector */
+			set_vector_field_data.computed_field_package=computed_field_package;
+			set_vector_field_data.conditional_function=
+				Computed_field_has_1_to_3_components;
+			set_vector_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"vector",&vector_field,
+				(void *)&set_vector_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state)&&
+				Computed_field_set_type_divergence(field,vector_field,coordinate_field);
+			DESTROY(Option_table)(&option_table);
+			if (coordinate_field)
+			{
+				DEACCESS(Computed_field)(&coordinate_field);
+			}
+			if (vector_field)
+			{
+				DEACCESS(Computed_field)(&vector_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_divergence.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_divergence */
 
 static int define_Computed_field_type_dot_product(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
@@ -13145,7 +13759,7 @@ and allows its contents to be modified.
 static int define_Computed_field_type_gradient(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 27 January 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_GRADIENT (if it is not already)
@@ -13153,14 +13767,9 @@ and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"scalar",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Computed_field *coordinate_field,*field,*scalar_field;
 	struct Computed_field_package *computed_field_package;
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_scalar_field_data;
 
@@ -13201,22 +13810,25 @@ and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(scalar_field);
 			}
+			option_table=CREATE(Option_table)();
+
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[0]).to_be_modified= &coordinate_field;
-			(option_table[0]).user_data= &set_coordinate_field_data;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* scalar */
 			set_scalar_field_data.computed_field_package=computed_field_package;
 			set_scalar_field_data.conditional_function=
 				Computed_field_has_1_component;
 			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[1]).to_be_modified= &scalar_field;
-			(option_table[1]).user_data= &set_scalar_field_data;
-			return_code=process_multiple_options(state,option_table)&&
+			Option_table_add_entry(option_table,"scalar",&scalar_field,
+				(void *)&set_scalar_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state)&&
 				Computed_field_set_type_gradient(field,scalar_field,coordinate_field);
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -14567,7 +15179,7 @@ and allows its contents to be modified.
 static int define_Computed_field_type(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Part of the group of define_Computed_field functions. Here, we already have the
@@ -14577,177 +15189,121 @@ and its parameter fields and values.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	int i,return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"2D_strain",NULL,NULL,define_Computed_field_type_2D_strain},
-		{"add",NULL,NULL,define_Computed_field_type_add},
-		{"clamp_maximum",NULL,NULL,define_Computed_field_type_clamp_maximum},
-		{"clamp_minimum",NULL,NULL,define_Computed_field_type_clamp_minimum},
-		{"cmiss_number",NULL,NULL,define_Computed_field_type_cmiss_number},
-		{"component",NULL,NULL,define_Computed_field_type_component},
-		{"compose",NULL,NULL,define_Computed_field_type_compose},
-		{"composite",NULL,NULL,define_Computed_field_type_composite},
-		{"constant",NULL,NULL,define_Computed_field_type_constant},
-		{"cubic_texture_coordinates",NULL,NULL,
-		  define_Computed_field_type_cubic_texture_coordinates},
-		{"curve_lookup",NULL,NULL,define_Computed_field_type_curve_lookup},
-		{"default_coordinate",NULL,NULL,
-		  define_Computed_field_type_default_coordinate},
-		{"dot_product",NULL,NULL,define_Computed_field_type_dot_product},
-		{"edit_mask",NULL,NULL,define_Computed_field_type_edit_mask},
-		{"embedded",NULL,NULL,define_Computed_field_type_embedded},
-		{"external",NULL,NULL,define_Computed_field_type_external},
-		{"fibre_axes",NULL,NULL,define_Computed_field_type_fibre_axes},
-		{"fibre_sheet_axes",NULL,NULL,define_Computed_field_type_fibre_sheet_axes},
-		{"finite_element",NULL,NULL,define_Computed_field_type_finite_element},
-		{"gradient",NULL,NULL,define_Computed_field_type_gradient},
-		{"magnitude",NULL,NULL,define_Computed_field_type_magnitude},
-		{"node_array_value_at_time",NULL,NULL,
-		 define_Computed_field_type_node_array_value_at_time},
-		{"node_value",NULL,NULL,define_Computed_field_type_node_value},
-		{"offset",NULL,NULL,define_Computed_field_type_offset},
-		{"rc_coordinate",NULL,NULL,define_Computed_field_type_rc_coordinate},
-		{"rc_vector",NULL,NULL,define_Computed_field_type_rc_vector},
-		{"sample_texture",NULL,NULL,define_Computed_field_type_sample_texture},
-		{"scale",NULL,NULL,define_Computed_field_type_scale},
-		{"sum_components",NULL,NULL,define_Computed_field_type_sum_components},
-		{"xi_coordinates",NULL,NULL,define_Computed_field_type_xi_coordinates},
-		{"xi_texture_coordinates",NULL,NULL,
-		  define_Computed_field_type_xi_texture_coordinates},
-		{NULL,NULL,NULL,NULL}
-	};
+	int return_code;
+	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type);
 	if (state)
 	{
 		if (state->current_token)
 		{
-			i=0;
+			option_table=CREATE(Option_table)();
 			/* 2D_strain */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"2D_strain",field_void,
+				computed_field_package_void,define_Computed_field_type_2D_strain);
 			/* add */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"add",field_void,
+				computed_field_package_void,define_Computed_field_type_add);
 			/* clamp_maximum */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"clamp_maximum",field_void,
+				computed_field_package_void,define_Computed_field_type_clamp_maximum);
 			/* clamp_minimum */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"clamp_minimum",field_void,
+				computed_field_package_void,define_Computed_field_type_clamp_minimum);
 			/* cmiss_number */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"cmiss_number",field_void,
+				(void *)NULL,define_Computed_field_type_cmiss_number);
 			/* component */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"component",field_void,
+				computed_field_package_void,define_Computed_field_type_component);
 			/* composite */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"composite",field_void,
+				computed_field_package_void,define_Computed_field_type_composite);
 			/* compose */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"compose",field_void,
+				computed_field_package_void,define_Computed_field_type_compose);
 			/* constant */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"constant",field_void,
+				computed_field_package_void,define_Computed_field_type_constant);
 			/* cubic_texture_coordinates */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"cubic_texture_coordinates",
+				field_void,computed_field_package_void,
+				define_Computed_field_type_cubic_texture_coordinates);
+			/* curl */
+			Option_table_add_entry(option_table,"curl",field_void,
+				computed_field_package_void,define_Computed_field_type_curl);
 			/* curve_lookup */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"curve_lookup",field_void,
+				computed_field_package_void,define_Computed_field_type_curve_lookup);
 			/* default_coordinate */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"default_coordinate",field_void,
+				computed_field_package_void,
+				define_Computed_field_type_default_coordinate);
+			/* divergence */
+			Option_table_add_entry(option_table,"divergence",field_void,
+				computed_field_package_void,define_Computed_field_type_divergence);
 			/* dot_product */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"dot_product",field_void,
+				computed_field_package_void,define_Computed_field_type_dot_product);
 			/* edit_mask */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"edit_mask",field_void,
+				computed_field_package_void,define_Computed_field_type_edit_mask);
 			/* embedded */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"embedded",field_void,
+				computed_field_package_void,define_Computed_field_type_embedded);
 			/* external */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"external",field_void,
+				computed_field_package_void,define_Computed_field_type_external);
 			/* fibre_axes */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"fibre_axes",field_void,
+				computed_field_package_void,define_Computed_field_type_fibre_axes);
 			/* fibre_sheet_axes */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"fibre_sheet_axes",field_void,
+				computed_field_package_void,
+				define_Computed_field_type_fibre_sheet_axes);
 			/* finite_element */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"finite_element",field_void,
+				computed_field_package_void,define_Computed_field_type_finite_element);
 			/* gradient */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"gradient",field_void,
+				computed_field_package_void,define_Computed_field_type_gradient);
 			/* magnitude */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"magnitude",field_void,
+				computed_field_package_void,define_Computed_field_type_magnitude);
 			/* node_array_value_at_time */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"node_array_value_at_time",field_void,
+				computed_field_package_void,
+				define_Computed_field_type_node_array_value_at_time);
 			/* node_value */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"node_value",field_void,
+				computed_field_package_void,define_Computed_field_type_node_value);
 			/* offset */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"offset",field_void,
+				computed_field_package_void,define_Computed_field_type_offset);
 			/* rc_coordinate */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"rc_coordinate",field_void,
+				computed_field_package_void,define_Computed_field_type_rc_coordinate);
 			/* rc_vector */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"rc_vector",field_void,
+				computed_field_package_void,define_Computed_field_type_rc_vector);
 			/* sample_texture */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"sample_texture",field_void,
+				computed_field_package_void,define_Computed_field_type_sample_texture);
 			/* scale */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"scale",field_void,
+				computed_field_package_void,define_Computed_field_type_scale);
 			/* sum_components */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
+			Option_table_add_entry(option_table,"sum_components",field_void,
+				computed_field_package_void,define_Computed_field_type_sum_components);
 			/* xi_coordinates */
-			(option_table[i]).to_be_modified=field_void;
-			i++;
+			Option_table_add_entry(option_table,"xi_coordinates",field_void,
+				(void *)NULL,define_Computed_field_type_xi_coordinates);
 			/* xi_texture_coordinates */
-			(option_table[i]).to_be_modified=field_void;
-			(option_table[i]).user_data=computed_field_package_void;
-			i++;
-			return_code=process_option(state,option_table);
+			Option_table_add_entry(option_table,"xi_texture_coordinates",field_void,
+				computed_field_package_void,
+				define_Computed_field_type_xi_texture_coordinates);
+			return_code=Option_table_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
@@ -14832,9 +15388,11 @@ to modify it if it was.
 						case COMPUTED_FIELD_COMPOSITE:
 						case COMPUTED_FIELD_CONSTANT:
 						case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
+						case COMPUTED_FIELD_CURL:
 						case COMPUTED_FIELD_CURVE_LOOKUP:
-						case COMPUTED_FIELD_DOT_PRODUCT:
 						case COMPUTED_FIELD_DEFAULT_COORDINATE:
+						case COMPUTED_FIELD_DIVERGENCE:
+						case COMPUTED_FIELD_DOT_PRODUCT:
 						case COMPUTED_FIELD_EXTERNAL:
 						case COMPUTED_FIELD_FIBRE_AXES:
 						case COMPUTED_FIELD_FIBRE_SHEET_AXES:
@@ -15248,6 +15806,15 @@ Writes the properties of the <field> to the command window.
 				display_message(INFORMATION_MESSAGE,
 					"    field : %s\n",field->source_fields[0]->name);
 			} break;
+			case COMPUTED_FIELD_CURL:
+			case COMPUTED_FIELD_DIVERGENCE:
+			case COMPUTED_FIELD_RC_VECTOR:
+			{
+				display_message(INFORMATION_MESSAGE,
+					"    coordinate field : %s\n",field->source_fields[1]->name);
+				display_message(INFORMATION_MESSAGE,
+					"    vector field : %s\n",field->source_fields[0]->name);
+			} break;
 			case COMPUTED_FIELD_CURVE_LOOKUP:
 			{
 				if (return_code=GET_NAME(Control_curve)(field->curve,&curve_name))
@@ -15374,13 +15941,6 @@ Writes the properties of the <field> to the command window.
 				display_message(INFORMATION_MESSAGE,
 					"    coordinate field : %s\n",field->source_fields[0]->name);
 			} break;
-			case COMPUTED_FIELD_RC_VECTOR:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"    coordinate field : %s\n",field->source_fields[1]->name);
-				display_message(INFORMATION_MESSAGE,
-					"    vector field : %s\n",field->source_fields[0]->name);
-			} break;
 			case COMPUTED_FIELD_SAMPLE_TEXTURE:
 			{
 				display_message(INFORMATION_MESSAGE,
@@ -15474,7 +16034,7 @@ Writes the properties of the <field> to the command window.
 int list_Computed_field_commands(struct Computed_field *field,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Writes the commands needed to reproduce <field> to the command window. Note that
@@ -15580,6 +16140,14 @@ are created automatically by the program.
 				{
 					display_message(INFORMATION_MESSAGE,
 						" field %s",field->source_fields[0]->name);
+				} break;
+				case COMPUTED_FIELD_CURL:
+				case COMPUTED_FIELD_DIVERGENCE:
+				case COMPUTED_FIELD_RC_VECTOR:
+				{
+					display_message(INFORMATION_MESSAGE,
+						" coordinate %s vector %s",field->source_fields[1]->name,
+						field->source_fields[0]->name);
 				} break;
 				case COMPUTED_FIELD_CURVE_LOOKUP:
 				{
@@ -15694,12 +16262,6 @@ are created automatically by the program.
 				{
 					display_message(INFORMATION_MESSAGE,
 						" coordinate %s",field->source_fields[0]->name);
-				} break;
-				case COMPUTED_FIELD_RC_VECTOR:
-				{
-					display_message(INFORMATION_MESSAGE,
-						" coordinate %s vector %s",field->source_fields[1]->name,
-						field->source_fields[0]->name);
 				} break;
 				case COMPUTED_FIELD_SAMPLE_TEXTURE:
 				{

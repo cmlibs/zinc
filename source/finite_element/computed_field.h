@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 3 December 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -47,7 +47,7 @@ Global types
 
 enum Computed_field_type
 /******************************************************************************
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -62,7 +62,9 @@ DESCRIPTION :
 	COMPUTED_FIELD_COMPOSITE,          /* made up of #components scalar fields */
 	COMPUTED_FIELD_CONSTANT,           /* constant N-component field */
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
+	COMPUTED_FIELD_CURL,               /* curl of a vector field */
 	COMPUTED_FIELD_CURVE_LOOKUP,       /* returns values from control_curve for scalar source field */
+	COMPUTED_FIELD_DIVERGENCE,         /* divergence of a vector field */
 	COMPUTED_FIELD_DOT_PRODUCT,        /* dot product two computed fields */
 	COMPUTED_FIELD_DEFAULT_COORDINATE, /* first available coordinate field */
 	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
