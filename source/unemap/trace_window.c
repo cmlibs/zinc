@@ -8541,10 +8541,7 @@ Updates the selectability of the signal controls.
 	current_region=(struct Region *)NULL;
 	rig=(struct Rig *)NULL;;
 	if (trace)
-	{
-		/* should perhaps set up current_region=rig->current_region */
-		/* but this has never been set up(!) and seems to dim the 'calculate'*/
-		/* button in the signal window for large signal files */
+	{	
 		if ((trace->rig)&&(rig= *(trace->rig))&&(trace->highlight)&&
 			(highlight= *(trace->highlight)))
 		{
@@ -8599,7 +8596,7 @@ Updates the selectability of the signal controls.
 #endif
 					}
 					/* ghost/unghost the next and previous buttons */
-					if (get_Rig_current_region(rig))
+					if (current_region=get_Rig_current_region(rig))
 					{
 						device=rig->devices;
 						device_number=0;
