@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 11 February 2002
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -7809,7 +7809,7 @@ NOTE: Calling function must not deallocate returned string.
 char *Scene_viewer_transparency_mode_string(
 	enum Scene_viewer_transparency_mode transparency_mode)
 /*******************************************************************************
-LAST MODIFIED : 23 November 1998
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 Returns a string label for the <transparency_mode>.
@@ -7835,7 +7835,7 @@ NOTE: Calling function must not deallocate returned string.
 		} break;
 		case SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY:
 		{
-			return_string="order_indedependent_transparency";
+			return_string="order_independent_transparency";
 		} break;
 		default:
 		{
