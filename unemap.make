@@ -104,6 +104,22 @@ unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug u
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
+ifeq ($(SYSNAME:IRIX%=),)
+all : unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities utilities64
+endif # SYSNAME == IRIX%=
+ifeq ($(SYSNAME),Linux)
+all : unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap-3d unemap-3d-debug utilities
+endif # SYSNAME == Linux
+ifeq ($(SYSNAME),AIX)
+all : unemap unemap-debug unemap64 unemap64-debug unemap-3d
+endif # SYSNAME == AIX
+ifeq ($(SYSNAME),win32)
+all :
+endif # SYSNAME == win32
+ifeq ($(SYSNAME),CYGWIN%=)
+all :
+endif # SYSNAME == CYGWIN%=
+
 update :
 	$(CMISS_ROOT)/bin/cmissmake cmgui;
 
