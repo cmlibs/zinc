@@ -28,7 +28,8 @@ COMMON_IMAKE_RULE= \
 	fi ;
 
 COMMON_MAKE_RULE= \
-	export CMGUI_DEV_ROOT=$(PWD) ; \
+	CMGUI_DEV_ROOT=$(PWD) ; \
+	export CMGUI_DEV_ROOT ; \
 	cd $(SOURCE_PATH);	
 
 #The tags for the executables don't actually point at them (they would have to
@@ -128,7 +129,8 @@ update :
 
 depend : $(SOURCE_PATH)/unemap_sgi.make $(SOURCE_PATH)/unemap_sginodes.make $(SOURCE_PATH)/unemap_sgioptimised.make $(SOURCE_PATH)/unemap_sgi64.make $(SOURCE_PATH)/unemap_linux.make
 	if [ "$(USER)" = "cmiss" ]; then \
-		export CMGUI_DEV_ROOT=$(PWD) ; \
+		CMGUI_DEV_ROOT=$(PWD) ; \
+		export CMGUI_DEV_ROOT ; \
 		cd $(PRODUCT_SOURCE_PATH); \
 		$(MAKE) -f unemap_sgi.make depend  ; \
 		$(MAKE) -f unemap_sginodes.make depend  ; \

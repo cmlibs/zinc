@@ -29,7 +29,8 @@ COMMON_IMAKE_RULE= \
 	fi ;
 
 COMMON_MAKE_RULE= \
-	export CMGUI_DEV_ROOT=$(PWD) ; \
+	CMGUI_DEV_ROOT=$(PWD) ; \
+	export CMGUI_DEV_ROOT ; \
 	cd $(SOURCE_PATH);	
 
 #The tags for the executables don't actually point at them (they would have to
@@ -129,7 +130,8 @@ update :
 
 depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	if [ "$(USER)" = "cmiss" ]; then \
-		export CMGUI_DEV_ROOT=$(PWD) ; \
+		CMGUI_DEV_ROOT=$(PWD) ; \
+		export CMGUI_DEV_ROOT ; \
 		cd $(PRODUCT_SOURCE_PATH); \
 		rm -f *.depend ; \
 		$(MAKE) -f cmgui_sgi.make depend ; \
