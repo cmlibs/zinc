@@ -57,7 +57,7 @@ DESCRIPTION :
 	NO_INTERPOLATION,
 	BICUBIC_INTERPOLATION,
 	BILINEAR_INTERPOLATION,
-	SIMPLEX_INTERPOLATION /* for torso gouraud */
+	DIRECT_INTERPOLATION /* for torso gouraud */
 }; /* enum Interpolation_type */
 
 #if defined (OLD_CODE)

@@ -3514,7 +3514,8 @@ static int map_show_surface(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
-	struct Colour *no_interpolation_colour)
+	struct Colour *no_interpolation_colour,
+	struct User_interface *user_interface,int direct_interpolation)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2000
 
@@ -3526,10 +3527,12 @@ applies <spectrum> and <data_field> these to the <material>.
 If  <spectrum> and <data_field> are NULL and <no_interpolation_colour> is set, 
 removes any existing <spectrum> and <data_field>  and 
 applies  <no_interpolation_colour> to the <material>.
+if <direct_interpolation> is true, sets the element discretization to 1
 Also applies <number_of_contours> contours to surface.
 ==============================================================================*/
 {
-	int return_code;
+	int maximum_discretization,required_discretization,return_code;
+	struct Element_discretization discretization;
 	struct GT_element_group *gt_element_group;
 	struct Computed_field *existing_data_field;
 	struct Graphical_material *default_selected_material,
@@ -3545,13 +3548,35 @@ Also applies <number_of_contours> contours to surface.
 	default_selected_material=(struct Graphical_material *)NULL;
 	existing_data_field=(struct Computed_field *)NULL;
 	existing_spectrum=(struct Spectrum *)NULL;	
-	if (scene&&element_group&&material&&((spectrum&&data_field&&!no_interpolation_colour)
+	if (scene&&element_group&&material&&user_interface&&
+		((spectrum&&data_field&&!no_interpolation_colour)
 		||(!spectrum&&!data_field&&no_interpolation_colour)))
 	{				
 		if ((gt_element_group=Scene_get_graphical_element_group(scene,element_group))&&			 
 			 (default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 			 ("default_selected",graphical_material_manager)))
-		{	
+		{			
+			GT_element_group_get_element_discretization(gt_element_group,
+				&discretization);			
+			if(direct_interpolation)
+			{
+				required_discretization=1;
+			}
+			else
+			{
+				read_element_discretization_defaults(&required_discretization,
+					&maximum_discretization,user_interface);				
+			}	
+			if(!((discretization.number_in_xi1==required_discretization)&&
+				(discretization.number_in_xi2==required_discretization)&&
+				(discretization.number_in_xi3==required_discretization)))
+			{
+				discretization.number_in_xi1=required_discretization;
+				discretization.number_in_xi2=required_discretization;
+				discretization.number_in_xi3=required_discretization;
+				GT_element_group_set_element_discretization(gt_element_group,&discretization,
+					user_interface);	
+			}		
 			MANAGER_BEGIN_CACHE(Graphical_material)(graphical_material_manager);			 
 			/* do we already have settings, ie already created graphical element group?*/
 			if (settings=first_settings_in_GT_element_group_that(gt_element_group,
@@ -3671,7 +3696,7 @@ Also applies <number_of_contours> contours to surface.
 			{
 				/* create graphical element group, settings, objects, etc*/
 				if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
-				{
+				{			
 					return_code=1;
 					/* use the spectrum and data field*/
 					if(data_field&&spectrum)
@@ -7302,9 +7327,9 @@ Removes 3d drawing for non-current region(s).
 			map_type=NO_MAP_FIELD;
 		}
 		/* do we have a default torso loaded ? */ 
-		if(map->interpolation_type==SIMPLEX_INTERPOLATION)
+		if(map->interpolation_type==DIRECT_INTERPOLATION)
 		{	
-			/* can only have SIMPLEX_INTERPOLATION for TORSO,THREED_PROJECTION*/	
+			/* can only have DIRECT_INTERPOLATION for TORSO,THREED_PROJECTION*/	
 			/* these conditions should be ensured in open_map_dialog()*/
 			if((map->projection_type==THREED_PROJECTION)&&(rig=*(map->rig_pointer))&&
 				(rig->current_region)&&(rig->current_region->type==TORSO))
@@ -7314,7 +7339,7 @@ Removes 3d drawing for non-current region(s).
 			else
 			{	
 				display_message(ERROR_MESSAGE,
-					"draw_map_3d. SIMPLEX_INTERPOLATION for wrong map type ");
+					"draw_map_3d. DIRECT_INTERPOLATION for wrong map type ");
 				return_code=0;
 				delauney_map=0;
 			}
@@ -7427,13 +7452,15 @@ Removes 3d drawing for non-current region(s).
 								(drawing_information),
 								(struct Spectrum *)NULL,(struct Computed_field *)NULL,
 								get_map_drawing_information_no_interpolation_colour
-								(drawing_information));
+								(drawing_information),
+								get_map_drawing_information_user_interface(drawing_information),
+								delauney_map);
 						}
-						/* BICUBIC_INTERPOLATION or SIMPLEX_INTERPOLATION */
+						/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
 						else 
 						{
 							/* Get the map "fit" field, to use for the surface */
-							if(map->interpolation_type==SIMPLEX_INTERPOLATION)
+							if(map->interpolation_type==DIRECT_INTERPOLATION)
 							{		
 								fit_field=get_unemap_package_delauney_signal_field(unemap_package);
 							}	
@@ -7450,7 +7477,9 @@ Removes 3d drawing for non-current region(s).
 								(drawing_information),
 								get_map_drawing_information_Graphical_material_manager
 								(drawing_information),
-								spectrum,data_field,(struct Colour*)NULL);
+								spectrum,data_field,(struct Colour*)NULL,
+								get_map_drawing_information_user_interface(drawing_information),
+								delauney_map);
 						}					
 						/* can't do electrodes on default_torso surface yet*/	
 						/*(possibly)  make the map_electrode_position_field, add to the rig nodes*/
@@ -7495,13 +7524,13 @@ Removes 3d drawing for non-current region(s).
 				{		
 					/* BICUBIC map range comes from the fitted surface, but NOT the*/
 					/*signals(electrodes). Remove the electrode glyphs, so only get */
-					/*range from surface(s). Similarly for SIMPLEX, as the electrodes*/
+					/*range from surface(s). Similarly for DIRECT, as the electrodes*/
 					/* include rejected signals, whcih will mess up range. */
 					/* Also remove electodes for default torso surface, as can't display these yet */
 					/* Electrodes added below. This is a little inefficient, as must then */
 					/* re-add electrodes. */
 					if((map->interpolation_type==BICUBIC_INTERPOLATION)||
-						(map->interpolation_type==SIMPLEX_INTERPOLATION)||
+						(map->interpolation_type==DIRECT_INTERPOLATION)||
 						(default_torso_loaded))
 					{
 						map_remove_all_electrodes(map);
@@ -7518,7 +7547,7 @@ Removes 3d drawing for non-current region(s).
 							time,&minimum,&maximum);
 						range_set=1;
 					}
-					/* BICUBIC_INTERPOLATION	or SIMPLEX_INTERPOLATION */
+					/* BICUBIC_INTERPOLATION	or DIRECT_INTERPOLATION */
 					else 						
 					{									
 						Scene_get_data_range_for_spectrum(scene,spectrum,&minimum,&maximum,
@@ -10802,7 +10831,9 @@ comparison with 3D maps.
 								case SHOW_ELECTRODE_NAMES:
 								case SHOW_CHANNEL_NUMBERS:
 								{
+#if defined (OLD_CODE) /* they're not now always drawn */
 									*electrode_drawn=1;
+#endif
 									if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
 									{
 										name=(*electrode)->description->name;

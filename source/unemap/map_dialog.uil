@@ -23,8 +23,8 @@ procedure
 	identify_map_dialog_log_blue_re;
 	identify_map_dialog_log_red_blu;
 	identify_map_dialog_interpolati;
-	identify_map_dialog_inter_simp;
-	set_interpolation_simplex;
+	identify_map_dialog_inter_direc;
+	set_interpolation_direct;
 	identify_map_dialog_inter_bicub;
 	set_interpolation_bicubic;
 	identify_map_dialog_inter_none;
@@ -672,18 +672,18 @@ object
 						arguments
 							{
 							XmNlabelString =
-							compound_string("Simplex");
+							compound_string("Direct");
 							XmNfontList = button_font;
 							};
 						callbacks
 							{
 							MrmNcreateCallback = procedures
 								{
-								identify_map_dialog_inter_simp(map_dialog_structure);
+								identify_map_dialog_inter_direc(map_dialog_structure);
 								};
 							XmNactivateCallback = procedures
 								{
-								set_interpolation_simplex(map_dialog_structure);
+								set_interpolation_direct(map_dialog_structure);
 								};
 							};
 						};

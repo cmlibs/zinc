@@ -462,32 +462,32 @@ Sets the sensitivity of widgets in the map dialog.
 	LEAVE;
 } /* set_interpolation_bicubic */
 
-static void identify_map_dialog_inter_simp(Widget *widget_id,
+static void identify_map_dialog_inter_direc(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 12 December 2000
 
 DESCRIPTION :
-Finds the id of the simplex interpolation option in the map dialog.
+Finds the id of the direct interpolation option in the map dialog.
 ==============================================================================*/
 {
 	struct Map_dialog *map_dialog;
 
-	ENTER(identify_map_dialog_inter_simp);
+	ENTER(identify_map_dialog_inter_direc);
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->interpolation.option.simplex= *widget_id;
+		map_dialog->interpolation.option.direct= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_map_dialog_inter_simp.  Missing map_dialog_structure");
+			"identify_map_dialog_inter_direc.  Missing map_dialog_structure");
 	}
 	LEAVE;
-} /* identify_map_dialog_inter_simp */
+} /* identify_map_dialog_inter_direc */
 
-static void set_interpolation_simplex(Widget *widget_id,
+static void set_interpolation_direct(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 12 December 2000
@@ -498,7 +498,7 @@ Sets the sensitivity of widgets in the map dialog.
 {
 	struct Map_dialog *map_dialog;
 
-	ENTER(set_interpolation_simplex);
+	ENTER(set_interpolation_direct);
 	USE_PARAMETER(widget_id);
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
@@ -515,10 +515,10 @@ Sets the sensitivity of widgets in the map dialog.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_interpolation_simplex.  Missing map_dialog_structure");
+			"set_interpolation_direct.  Missing map_dialog_structure");
 	}
 	LEAVE;
-} /* set_interpolation_simplex */
+} /* set_interpolation_direct */
 
 static void identify_map_dialog_inter_none(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
@@ -1727,9 +1727,9 @@ initializes the appropriate fields.
 		{"identify_map_dialog_inter_bicub",
 			(XtPointer)identify_map_dialog_inter_bicub},
 		{"set_interpolation_bicubic",(XtPointer)set_interpolation_bicubic},
-		{"identify_map_dialog_inter_simp",
-			(XtPointer)identify_map_dialog_inter_simp},
-		{"set_interpolation_simplex",(XtPointer)set_interpolation_simplex},
+		{"identify_map_dialog_inter_direc",
+			(XtPointer)identify_map_dialog_inter_direc},
+		{"set_interpolation_direct",(XtPointer)set_interpolation_direct},
 		{"identify_map_dialog_inter_none",
 			(XtPointer)identify_map_dialog_inter_none},
 		{"set_interpolation_none",(XtPointer)set_interpolation_none},
@@ -1850,7 +1850,7 @@ initializes the appropriate fields.
 				map_dialog->spectrum.type_option.log_red_blue=(Widget)NULL;
 				map_dialog->interpolation.option_menu=(Widget)NULL;
 				map_dialog->interpolation.option.bicubic=(Widget)NULL;
-				map_dialog->interpolation.option.simplex=(Widget)NULL;
+				map_dialog->interpolation.option.direct=(Widget)NULL;
 				map_dialog->interpolation.option.none=(Widget)NULL;
 				map_dialog->interpolation.mesh_rows=(Widget)NULL;
 				map_dialog->interpolation.mesh_rows_text=(Widget)NULL;
@@ -2125,19 +2125,19 @@ Opens the <map_dialog>.
 				NULL);
 
 			if(map->projection_type==THREED_PROJECTION)
-			/* can only have SIMPLEX_INTERPOLATION for 3D projection */	
+			/* can only have DIRECT_INTERPOLATION for 3D projection */	
 			{
 				struct Rig *rig =(struct Rig *)NULL;
 				if((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
 					(rig->current_region->type==TORSO))
-					/* can only have SIMPLEX_INTERPOLATION for TORSO */	
+					/* can only have DIRECT_INTERPOLATION for TORSO */	
 				{
-					XtSetSensitive(map_dialog->interpolation.option.simplex,True);
+					XtSetSensitive(map_dialog->interpolation.option.direct,True);
 				}
 				else
 				{
-					XtSetSensitive(map_dialog->interpolation.option.simplex,False);
-					if(map->interpolation_type==SIMPLEX_INTERPOLATION)
+					XtSetSensitive(map_dialog->interpolation.option.direct,False);
+					if(map->interpolation_type==DIRECT_INTERPOLATION)
 					{
 						map->interpolation_type=BICUBIC_INTERPOLATION;
 					}
@@ -2146,8 +2146,8 @@ Opens the <map_dialog>.
 			else
 			/* not THREED_PROJECTION */	
 			{
-				XtSetSensitive(map_dialog->interpolation.option.simplex,False);
-				if(map->interpolation_type==SIMPLEX_INTERPOLATION)
+				XtSetSensitive(map_dialog->interpolation.option.direct,False);
+				if(map->interpolation_type==DIRECT_INTERPOLATION)
 				{
 					map->interpolation_type=BICUBIC_INTERPOLATION;
 				}
@@ -2171,9 +2171,9 @@ Opens the <map_dialog>.
 					XtSetSensitive(map_dialog->interpolation.mesh_rows,True);
 					XtSetSensitive(map_dialog->interpolation.mesh_columns,True);
 				} break;
-				case SIMPLEX_INTERPOLATION:
+				case DIRECT_INTERPOLATION:
 				{
-					option_widget=map_dialog->interpolation.option.simplex;
+					option_widget=map_dialog->interpolation.option.direct;
 					XtSetSensitive(map_dialog->contours.row_column,True);
 					XtSetSensitive(map_dialog->interpolation.mesh_rows,False);
 					XtSetSensitive(map_dialog->interpolation.mesh_columns,False);

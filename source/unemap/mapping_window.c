@@ -388,9 +388,9 @@ necessary.
 			{
 				interpolation_type=BICUBIC_INTERPOLATION;
 			}
-			else if (option_widget==map_dialog->interpolation.option.simplex)
+			else if (option_widget==map_dialog->interpolation.option.direct)
 			{
-				interpolation_type=SIMPLEX_INTERPOLATION;
+				interpolation_type=DIRECT_INTERPOLATION;
 			}
 		}
 		if (map->interpolation_type!=interpolation_type)
@@ -5279,6 +5279,7 @@ window.
 			((map->electrode_drawn)[electrode_number])&&mapping&&
 			(mapping->map_drawing_area_2d)&&(mapping->map_drawing))
 		{
+			f_value=(map->electrode_value)[electrode_number];
 			switch (map->electrodes_option)
 			{	
 				case HIDE_ELECTRODES:
@@ -5298,8 +5299,7 @@ window.
 					name=value_string;
 				}break;
 				case SHOW_ELECTRODE_VALUES:
-				{
-					f_value=(map->electrode_value)[electrode_number];
+				{				
 					electrode_drawn=(map->electrode_drawn)[electrode_number];
 					if (electrode_drawn)
 					{

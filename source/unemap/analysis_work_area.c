@@ -1905,7 +1905,10 @@ named file.
 	/* check the arguments */
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
-		if (return_code=analysis_write_signal_file(analysis->rig->signal_file_name,
+		if (return_code=analysis_write_signal_file(file_name,
+#if defined (OLD_CODE)
+			analysis->rig->signal_file_name,
+#endif
 			analysis->rig,analysis->datum,analysis->potential_time,
 			analysis->start_search_interval,analysis->end_search_interval,
 			analysis->calculate_events,analysis->detection,analysis->event_number,
@@ -2058,6 +2061,7 @@ Sets up the analysis work area for analysing a set of signals.
 	node_selection=(struct FE_node_selection *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	return_code=0;
+	input_file=(FILE *)NULL;
 	/* check the arguments */
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
@@ -2091,7 +2095,7 @@ Sets up the analysis work area for analysing a set of signals.
 				(analysis->mapping_window->map->drawing_information)))
 			{
 				map_remove_torso_arm_labels(analysis->mapping_window->map->drawing_information);
-				/*SIMPLEX_INTERPOLATION will cause problems with no TORSOs*/
+				/*DIRECT_INTERPOLATION will cause problems with no TORSOs*/
 				analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
 			}
 #endif /* defined (UNEMAP_USE_3D)*/
@@ -2591,7 +2595,7 @@ Sets up the analysis work area for analysing a set of signals.
 				/* initialize the datum */
 				analysis->datum=2*(analysis->potential_time);
 			}
-			fclose(input_file);
+			fclose(input_file);		
 		}
 		else
 		{
@@ -2600,7 +2604,7 @@ Sets up the analysis work area for analysing a set of signals.
 				"analysis_read_signal_file.  Invalid file: %s",file_name);
 			if (input_file)
 			{
-				fclose(input_file);
+				fclose(input_file);			
 			}
 		}
 #if defined (UNEMAP_USE_3D)

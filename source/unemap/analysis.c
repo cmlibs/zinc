@@ -2548,6 +2548,7 @@ named file.
 	struct Signal_buffer *buffer;
 
 	ENTER(analysis_write_signal_file);
+	output_file=(FILE *)NULL;
 	/* check the arguments */
 	if (rig)
 	{
