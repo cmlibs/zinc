@@ -497,7 +497,7 @@ ifeq ($(SYSNAME),Linux)
    ifneq ($(DYNAMIC_GL_LINUX),true)
       LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
    else # $(DYNAMIC_GL_LINUX) != true
-      LIB = -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a `ls -1 /usr/lib/libstdc++*.a | tail -1`
+      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a `ls -1 /usr/lib/libstdc++*.a | tail -1`
    endif # $(DYNAMIC_GL_LINUX) != true
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
