@@ -1804,7 +1804,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 9 December 1999
+LAST MODIFIED : 13 December 1999
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -1925,10 +1925,6 @@ Sets up the analysis work area for analysing a set of signals.
 			(rig->devices)&&(*(rig->devices))&&
 			(buffer=get_Device_signal_buffer(*(rig->devices))))
 		{
-			if (analysis->highlight=rig->devices)
-			{
-				(*(analysis->highlight))->highlight=1;
-			}
 			/* read the event detection settings */
 			buffer_start=buffer->start;
 			buffer_end=buffer->end;
@@ -1949,320 +1945,378 @@ Sets up the analysis work area for analysing a set of signals.
 				sizeof(int),1,input_file))&&(1==BINARY_FILE_READ(
 				(char *)&end_search_interval,sizeof(int),1,input_file)))
 			{
+				return_code=1;
 				level=analysis->level;
 				if (EDA_LEVEL==detection)
 				{
-					if ((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
+					if (!((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
 						input_file))&&(1==BINARY_FILE_READ((char *)&level,sizeof(float),1,
-						input_file)))
+						input_file))))
 					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"analysis_read_signal_file.  Could not read level");
 					}
 				}
-				if (datum>=buffer_start)
+				/* check the event detection settings */
+				if (return_code&&((EDA_INTERVAL==detection)||(EDA_LEVEL==detection)||
+					(EDA_THRESHOLD==detection))&&((AUTOMATIC_DATUM==datum_type)||
+					(FIXED_DATUM==datum_type))&&((DEVICE_ORDER==edit_order)||
+					(BEAT_ORDER==edit_order))&&((EVENT_ORDER==signal_order)||
+					(CHANNEL_ORDER==signal_order)))
 				{
-					if (datum>buffer_end)
+					if (datum>=buffer_start)
 					{
-						datum=buffer_end;
+						if (datum>buffer_end)
+						{
+							datum=buffer_end;
+						}
+					}
+					else
+					{
+						datum=buffer_start;
+					}
+					if (potential_time>=buffer_start)
+					{
+						if (potential_time>buffer_end)
+						{
+							potential_time=buffer_end;
+						}
+					}
+					else
+					{
+						potential_time=buffer_start;
+					}
+					if (minimum_separation<0)
+					{
+						minimum_separation=0;
+					}
+					if (level<0)
+					{
+						level=0;
+					}
+					if (number_of_events<1)
+					{
+						number_of_events=1;
 					}
 				}
 				else
 				{
-					datum=buffer_start;
+					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"analysis_read_signal_file.  Invalid event detection settings");
 				}
-				if (potential_time>=buffer_start)
+				if (return_code)
 				{
-					if (potential_time>buffer_end)
-					{
-						potential_time=buffer_end;
-					}
-				}
-				else
-				{
-					potential_time=buffer_start;
-				}
-				/* update the analysis work area */
-				switch (detection)
-				{
-					case EDA_INTERVAL:
-					{
-						set_detection_interval((Widget)NULL,(XtPointer)analysis,
-							(XtPointer)NULL);
-					} break;
-					case EDA_LEVEL:
-					{
-						set_detection_level((Widget)NULL,(XtPointer)analysis,
-							(XtPointer)NULL);
-					} break;
-					case EDA_THRESHOLD:
-					{
-						set_detection_threshold((Widget)NULL,(XtPointer)analysis,
-							(XtPointer)NULL);
-					} break;
-				}
-				if (trace=analysis->trace)
-				{
-					/* set the all/current choice */
-					if (calculate_events&&!(trace->area_1.enlarge.calculate_all_events))
-					{
-						XtVaSetValues(trace->area_1.enlarge.all_current_choice,
-							XmNmenuHistory,trace->area_1.enlarge.all_current.current_button,
-							NULL);
-						trace->area_1.enlarge.calculate_all_events=0;
-					}
-					else
-					{
-						if (!calculate_events&&
-							(trace->area_1.enlarge.calculate_all_events))
-						{
-							XtVaSetValues(trace->area_1.enlarge.all_current_choice,
-								XmNmenuHistory,trace->area_1.enlarge.all_current.all_button,
-								NULL);
-							trace->area_1.enlarge.calculate_all_events=1;
-						}
-					}
-					/* set the threshold */
-					if (threshold!=analysis->threshold)
-					{
-						sprintf(value_string,"%3d%%",threshold);
-						value_xmstring=XmStringCreateSimple(value_string);
-						XtVaSetValues(trace->area_1.enlarge.threshold_label,
-							XmNlabelString,value_xmstring,
-							NULL);
-						XmStringFree(value_xmstring);
-						XtVaSetValues(trace->area_1.enlarge.threshold_scroll,
-							XmNvalue,threshold,
-							NULL);
-					}
-					/* set the minimum separation */
-					if (minimum_separation!=analysis->minimum_separation)
-					{
-						sprintf(value_string,"%3d ms",minimum_separation);
-						value_xmstring=XmStringCreateSimple(value_string);
-						XtVaSetValues(trace->area_1.enlarge.minimum_separation_label,
-							XmNlabelString,value_xmstring,
-							NULL);
-						XmStringFree(value_xmstring);
-						XtVaSetValues(trace->area_1.enlarge.minimum_separation_scroll,
-							XmNvalue,minimum_separation,
-							NULL);
-					}
-					/* set the level */
-					if (level!=analysis->level)
-					{
-						sprintf(value_string,"%g",level);
-						XtVaSetValues(trace->area_1.enlarge.level_value,
-							XmNvalue,value_string,
-							NULL);
-					}
-					/* set the datum type */
-					if (datum_type!=analysis->datum_type)
-					{
-						switch (datum_type)
-						{
-							case AUTOMATIC_DATUM:
-							{
-								XtVaSetValues(trace->area_1.enlarge.datum_choice,
-									XmNmenuHistory,trace->area_1.enlarge.datum.automatic_button,
-									NULL);
-							} break;
-							case FIXED_DATUM:
-							{
-								XtVaSetValues(trace->area_1.enlarge.datum_choice,
-									XmNmenuHistory,trace->area_1.enlarge.datum.fixed_button,
-									NULL);
-							} break;
-						}
-					}
-					/* set the edit order */
-					if (edit_order!=analysis->edit_order)
-					{
-						switch (edit_order)
-						{
-							case DEVICE_ORDER:
-							{
-								XtVaSetValues(trace->area_3.edit.order_choice,
-									XmNmenuHistory,trace->area_3.edit.order.device_button,
-									NULL);
-							} break;
-							case BEAT_ORDER:
-							{
-								XtVaSetValues(trace->area_3.edit.order_choice,
-									XmNmenuHistory,trace->area_3.edit.order.beat_button,
-									NULL);
-							} break;
-						}
-					}
-					/* set the number of events */
-					if (number_of_events!=analysis->number_of_events)
-					{
-						sprintf(value_string,"%1d",number_of_events);
-						value_xmstring=XmStringCreateSimple(value_string);
-						XtVaSetValues(trace->area_1.enlarge.number_of_events.label,
-							XmNlabelString,value_xmstring,
-							NULL);
-						XmStringFree(value_xmstring);
-						if (1==number_of_events)
-						{
-							XtUnmanageChild(
-								trace->area_1.enlarge.number_of_events.down_arrow);
-						}
-						else
-						{
-							XtManageChild(trace->area_1.enlarge.number_of_events.down_arrow);
-						}
-						if (9==number_of_events)
-						{
-							XtUnmanageChild(trace->area_1.enlarge.number_of_events.up_arrow);
-						}
-						else
-						{
-							XtManageChild(trace->area_1.enlarge.number_of_events.up_arrow);
-						}
-					}
-				}
-				analysis->threshold=threshold;
-				analysis->minimum_separation=minimum_separation;
-				analysis->level=level;
-				analysis->datum_type=datum_type;
-				analysis->edit_order=edit_order;
-				analysis->number_of_events=number_of_events;
-				if (analysis->window)
-				{
-					/* set whether or not the activation map can be drawn */
-					if (calculate_events)
-					{
-						XtSetSensitive(analysis->window->map_menu.single_activation_button,
-							True);
-						XtSetSensitive(
-							analysis->window->map_menu.multiple_activation_button,True);
-						XtSetSensitive(analysis->window->file_menu.save_times_button,True);
-					}
-					else
-					{
-						XtSetSensitive(analysis->window->map_menu.single_activation_button,
-							False);
-						XtSetSensitive(
-							analysis->window->map_menu.multiple_activation_button,False);
-						XtSetSensitive(analysis->window->file_menu.save_times_button,False);
-					}
-					/* set the signal order */
-					if (signal_order!=analysis->signal_order)
-					{
-						switch (signal_order)
-						{
-							case EVENT_ORDER:
-							{
-								XtVaSetValues(analysis->window->order_choice,
-									XmNmenuHistory,analysis->window->order.event_button,
-									NULL);
-							} break;
-							case CHANNEL_ORDER:
-							{
-								XtVaSetValues(analysis->window->order_choice,
-									XmNmenuHistory,analysis->window->order.channel_button,
-									NULL);
-							} break;
-						}
-					}
-				}
-				analysis->calculate_events=calculate_events;
-				analysis->signal_order=signal_order;
-				analysis->datum=datum;
-				analysis->event_number=event_number;
-				analysis->potential_time=potential_time;
-				analysis->start_search_interval=start_search_interval;
-				analysis->end_search_interval=end_search_interval;
-				if (trace)
-				{
+					/* update the analysis work area */
 					switch (detection)
 					{
 						case EDA_INTERVAL:
 						{
-							trace_update_edit_interval(analysis->trace);
+							set_detection_interval((Widget)NULL,(XtPointer)analysis,
+								(XtPointer)NULL);
 						} break;
 						case EDA_LEVEL:
+						{
+							set_detection_level((Widget)NULL,(XtPointer)analysis,
+								(XtPointer)NULL);
+						} break;
 						case EDA_THRESHOLD:
 						{
-							trace->area_3.edit.first_data=start_search_interval;
-							trace->area_3.edit.last_data=end_search_interval;
+							set_detection_threshold((Widget)NULL,(XtPointer)analysis,
+								(XtPointer)NULL);
 						} break;
 					}
-				}
-				/* for each signal read the status, range and events */
-				if ((device=rig->devices)&&((i=rig->number_of_devices)>0))
-				{
-					return_code=1;
-					while (return_code&&(i>0))
+					if (trace=analysis->trace)
 					{
-						/* read the status and range */
-						if ((1==BINARY_FILE_READ((char *)&((*device)->signal->status),
-							sizeof(enum Event_signal_status),1,input_file))&&
-							(1==BINARY_FILE_READ((char *)&((*device)->signal_minimum),
-							sizeof(float),1,input_file))&&(1==BINARY_FILE_READ(
-							(char *)&((*device)->signal_maximum),sizeof(float),1,input_file)))
+						/* set the all/current choice */
+						if (calculate_events&&!(trace->area_1.enlarge.calculate_all_events))
 						{
-							/*???DB.  Originally the unscaled maximum and minimum were
-								stored.  This has to be maintained for backward compatability */
-							(*device)->signal_minimum=(((*device)->channel)->gain)*
-								(((*device)->signal_minimum)-(((*device)->channel)->offset));
-							(*device)->signal_maximum=(((*device)->channel)->gain)*
-								(((*device)->signal_maximum)-(((*device)->channel)->offset));
-							/* read the events */
-							if (1==BINARY_FILE_READ((char *)&number_of_events,sizeof(int),1,
-								input_file))
+							XtVaSetValues(trace->area_1.enlarge.all_current_choice,
+								XmNmenuHistory,trace->area_1.enlarge.all_current.current_button,
+								NULL);
+							trace->area_1.enlarge.calculate_all_events=0;
+						}
+						else
+						{
+							if (!calculate_events&&
+								(trace->area_1.enlarge.calculate_all_events))
 							{
-								event_address= &((*device)->signal->first_event);
-								event=(struct Event *)NULL;
-								while (return_code&&(number_of_events>0))
+								XtVaSetValues(trace->area_1.enlarge.all_current_choice,
+									XmNmenuHistory,trace->area_1.enlarge.all_current.all_button,
+									NULL);
+								trace->area_1.enlarge.calculate_all_events=1;
+							}
+						}
+						/* set the threshold */
+						if (threshold!=analysis->threshold)
+						{
+							sprintf(value_string,"%3d%%",threshold);
+							value_xmstring=XmStringCreateSimple(value_string);
+							XtVaSetValues(trace->area_1.enlarge.threshold_label,
+								XmNlabelString,value_xmstring,
+								NULL);
+							XmStringFree(value_xmstring);
+							XtVaSetValues(trace->area_1.enlarge.threshold_scroll,
+								XmNvalue,threshold,
+								NULL);
+						}
+						/* set the minimum separation */
+						if (minimum_separation!=analysis->minimum_separation)
+						{
+							sprintf(value_string,"%3d ms",minimum_separation);
+							value_xmstring=XmStringCreateSimple(value_string);
+							XtVaSetValues(trace->area_1.enlarge.minimum_separation_label,
+								XmNlabelString,value_xmstring,
+								NULL);
+							XmStringFree(value_xmstring);
+							XtVaSetValues(trace->area_1.enlarge.minimum_separation_scroll,
+								XmNvalue,minimum_separation,
+								NULL);
+						}
+						/* set the level */
+						if (level!=analysis->level)
+						{
+							sprintf(value_string,"%g",level);
+							XtVaSetValues(trace->area_1.enlarge.level_value,
+								XmNvalue,value_string,
+								NULL);
+						}
+						/* set the datum type */
+						if (datum_type!=analysis->datum_type)
+						{
+							switch (datum_type)
+							{
+								case AUTOMATIC_DATUM:
 								{
-									if ((1==BINARY_FILE_READ((char *)&(event_time),sizeof(int),1,
-										input_file))&&(1==BINARY_FILE_READ((char *)&(event_number),
-										sizeof(int),1,input_file))&&
-										(1==BINARY_FILE_READ((char *)&(event_status),
-										sizeof(enum Event_signal_status),1,input_file)))
+									XtVaSetValues(trace->area_1.enlarge.datum_choice,
+										XmNmenuHistory,trace->area_1.enlarge.datum.automatic_button,
+										NULL);
+								} break;
+								case FIXED_DATUM:
+								{
+									XtVaSetValues(trace->area_1.enlarge.datum_choice,
+										XmNmenuHistory,trace->area_1.enlarge.datum.fixed_button,
+										NULL);
+								} break;
+							}
+						}
+						/* set the edit order */
+						if (edit_order!=analysis->edit_order)
+						{
+							switch (edit_order)
+							{
+								case DEVICE_ORDER:
+								{
+									XtVaSetValues(trace->area_3.edit.order_choice,
+										XmNmenuHistory,trace->area_3.edit.order.device_button,
+										NULL);
+								} break;
+								case BEAT_ORDER:
+								{
+									XtVaSetValues(trace->area_3.edit.order_choice,
+										XmNmenuHistory,trace->area_3.edit.order.beat_button,
+										NULL);
+								} break;
+							}
+						}
+						/* set the number of events */
+						if (number_of_events!=analysis->number_of_events)
+						{
+							sprintf(value_string,"%1d",number_of_events);
+							value_xmstring=XmStringCreateSimple(value_string);
+							XtVaSetValues(trace->area_1.enlarge.number_of_events.label,
+								XmNlabelString,value_xmstring,
+								NULL);
+							XmStringFree(value_xmstring);
+							if (1==number_of_events)
+							{
+								XtUnmanageChild(
+									trace->area_1.enlarge.number_of_events.down_arrow);
+							}
+							else
+							{
+								XtManageChild(
+									trace->area_1.enlarge.number_of_events.down_arrow);
+							}
+							if (9==number_of_events)
+							{
+								XtUnmanageChild(
+									trace->area_1.enlarge.number_of_events.up_arrow);
+							}
+							else
+							{
+								XtManageChild(
+									trace->area_1.enlarge.number_of_events.up_arrow);
+							}
+						}
+					}
+					analysis->threshold=threshold;
+					analysis->minimum_separation=minimum_separation;
+					analysis->level=level;
+					analysis->datum_type=datum_type;
+					analysis->edit_order=edit_order;
+					analysis->number_of_events=number_of_events;
+					if (analysis->window)
+					{
+						/* set whether or not the activation map can be drawn */
+						if (calculate_events)
+						{
+							XtSetSensitive(
+								analysis->window->map_menu.single_activation_button,True);
+							XtSetSensitive(
+								analysis->window->map_menu.multiple_activation_button,True);
+							XtSetSensitive(analysis->window->file_menu.save_times_button,
+								True);
+						}
+						else
+						{
+							XtSetSensitive(
+								analysis->window->map_menu.single_activation_button,False);
+							XtSetSensitive(
+								analysis->window->map_menu.multiple_activation_button,False);
+							XtSetSensitive(analysis->window->file_menu.save_times_button,
+								False);
+						}
+						/* set the signal order */
+						if (signal_order!=analysis->signal_order)
+						{
+							switch (signal_order)
+							{
+								case EVENT_ORDER:
+								{
+									XtVaSetValues(analysis->window->order_choice,
+										XmNmenuHistory,analysis->window->order.event_button,
+										NULL);
+								} break;
+								case CHANNEL_ORDER:
+								{
+									XtVaSetValues(analysis->window->order_choice,
+										XmNmenuHistory,analysis->window->order.channel_button,
+										NULL);
+								} break;
+							}
+						}
+					}
+					analysis->calculate_events=calculate_events;
+					analysis->signal_order=signal_order;
+					analysis->datum=datum;
+					analysis->event_number=event_number;
+					analysis->potential_time=potential_time;
+					analysis->start_search_interval=start_search_interval;
+					analysis->end_search_interval=end_search_interval;
+					if (trace)
+					{
+						switch (detection)
+						{
+							case EDA_INTERVAL:
+							{
+								trace_update_edit_interval(analysis->trace);
+							} break;
+							case EDA_LEVEL:
+							case EDA_THRESHOLD:
+							{
+								trace->area_3.edit.first_data=start_search_interval;
+								trace->area_3.edit.last_data=end_search_interval;
+							} break;
+						}
+					}
+					/* for each signal read the status, range and events */
+					if ((device=rig->devices)&&((i=rig->number_of_devices)>0))
+					{
+						while (return_code&&(i>0))
+						{
+							/* read the status and range */
+							if ((1==BINARY_FILE_READ((char *)&event_status,
+								sizeof(enum Event_signal_status),1,input_file))&&
+								(1==BINARY_FILE_READ((char *)&((*device)->signal_minimum),
+								sizeof(float),1,input_file))&&(1==BINARY_FILE_READ(
+								(char *)&((*device)->signal_maximum),sizeof(float),1,
+								input_file)))
+							{
+								if ((ACCEPTED==event_status)||(REJECTED==event_status)||
+									(UNDECIDED==event_status))
+								{
+									(*device)->signal->status=event_status;
+									if ((*device)->signal_minimum<=(*device)->signal_maximum)
 									{
-										if (event=create_Event(event_time,event_number,
-											event_status,event,(struct Event *)NULL))
+										/*???DB.  Originally the unscaled maximum and minimum were
+											stored.  This has to be maintained for backward
+											compatability */
+										(*device)->signal_minimum=(((*device)->channel)->gain)*
+											(((*device)->signal_minimum)-
+											(((*device)->channel)->offset));
+										(*device)->signal_maximum=(((*device)->channel)->gain)*
+											(((*device)->signal_maximum)-
+											(((*device)->channel)->offset));
+									}
+									/* read the events */
+									if (1==BINARY_FILE_READ((char *)&number_of_events,sizeof(int),
+										1,input_file))
+									{
+										event_address= &((*device)->signal->first_event);
+										event=(struct Event *)NULL;
+										while (return_code&&(number_of_events>0))
 										{
-											*event_address=event;
-											event_address= &(event->next);
-											number_of_events--;
-										}
-										else
-										{
-											return_code=0;
-											display_message(ERROR_MESSAGE,
-												"analysis_read_signal_file.  Error creating event");
+											if ((1==BINARY_FILE_READ((char *)&(event_time),
+												sizeof(int),1,input_file))&&
+												(1==BINARY_FILE_READ((char *)&(event_number),
+												sizeof(int),1,input_file))&&
+												(1==BINARY_FILE_READ((char *)&(event_status),
+												sizeof(enum Event_signal_status),1,input_file))&&
+												((ACCEPTED==event_status)||(REJECTED==event_status)||
+												(UNDECIDED==event_status)))
+											{
+												if (event=create_Event(event_time,event_number,
+													event_status,event,(struct Event *)NULL))
+												{
+													*event_address=event;
+													event_address= &(event->next);
+													number_of_events--;
+												}
+												else
+												{
+													return_code=0;
+													display_message(ERROR_MESSAGE,
+														"analysis_read_signal_file.  Error creating event");
+												}
+											}
+											else
+											{
+												return_code=0;
+												display_message(ERROR_MESSAGE,
+													"analysis_read_signal_file.  Error reading event");
+											}
 										}
 									}
 									else
 									{
 										return_code=0;
 										display_message(ERROR_MESSAGE,
-											"analysis_read_signal_file.  Error reading event");
+									"analysis_read_signal_file.  Error reading number of events");
 									}
+								}
+								else
+								{
+									return_code=0;
+									display_message(ERROR_MESSAGE,
+										"analysis_read_signal_file.  Invalid signal status");
 								}
 							}
 							else
 							{
 								return_code=0;
 								display_message(ERROR_MESSAGE,
-							"analysis_read_signal_file.  Error reading number of events");
+							"analysis_read_signal_file.  Error reading signal range/status");
 							}
+							device++;
+							i--;
 						}
-						else
-						{
-							return_code=0;
-							display_message(ERROR_MESSAGE,
-						"analysis_read_signal_file.  Error reading signal range/status");
-						}
-						device++;
-						i--;
 					}
-				}
-				else
-				{
-					return_code=0;
+					else
+					{
+						return_code=0;
+					}
 				}
 			}
 			else
@@ -2284,6 +2338,24 @@ Sets up the analysis work area for analysing a set of signals.
 				/* initialize the datum */
 				analysis->datum=2*(analysis->potential_time);
 			}
+			fclose(input_file);
+		}
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"analysis_read_signal_file.  Invalid file: %s",file_name);
+			if (input_file)
+			{
+				fclose(input_file);
+			}
+		}
+		if (return_code)
+		{
+			if (analysis->highlight=analysis->rig->devices)
+			{
+				(*(analysis->highlight))->highlight=1;
+			}
 			/* assign the signal file name */
 			if (ALLOCATE(analysis->rig->signal_file_name,char,strlen(file_name)+1))
 			{
@@ -2295,7 +2367,6 @@ Sets up the analysis work area for analysing a set of signals.
 			}
 			else
 			{
-				return_code=0;
 				display_message(ERROR_MESSAGE,
 "analysis_read_signal_file.  Could not allocate memory for signal file name");
 			}
@@ -2316,7 +2387,6 @@ Sets up the analysis work area for analysing a set of signals.
 			XtVaSetValues(analysis->window->window,
 				XmNdialogTitle,new_dialog_title,
 				NULL);
-			fclose(input_file);
 			if (analysis->mapping_window)
 			{
 				/* unghost the mapping window file button */
@@ -2361,12 +2431,14 @@ Sets up the analysis work area for analysing a set of signals.
 		}
 		else
 		{
-			return_code=0;
-			display_message(ERROR_MESSAGE,
-				"analysis_read_signal_file.  Invalid file: %s",file_name);
-			if (input_file)
+			if (analysis->rig)
 			{
-				fclose(input_file);
+				if ((*(analysis->rig->devices))&&
+					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
+				{
+					destroy_Signal_buffer(&buffer);
+				}
+				destroy_Rig(&(analysis->rig));
 			}
 			if (analysis->mapping_window)
 			{
@@ -2406,6 +2478,7 @@ Sets up the analysis work area for analysing a set of signals.
 			if (analysis->trace)
 			{
 				XtPopdown(analysis->trace->shell);
+				analysis->trace->open=0;
 			}
 		}
 		update_analysis_window_menu(analysis->window);
