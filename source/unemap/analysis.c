@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 14 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4059,7 +4059,7 @@ DESCRIPTION :
 struct Signal_drawing_information *create_Signal_drawing_information(
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 14 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4278,8 +4278,12 @@ DESCRIPTION :
 				overlay_colours_string, so it does not need to be free'd */
 			number_of_overlay_colours=0;
 			overlay_colours=(Pixel *)NULL;
-			if (temp_string_1=overlay_colours_string)
+			/*???DB.  Under Linux the overlay_colours_string is in some sort of read
+				only memory and can't be modified */
+			if (overlay_colours_string&&(temp_string_1=duplicate_string(
+				overlay_colours_string))
 			{
+				overlay_colours_string=temp_string_1;
 				while (*temp_string_1)
 				{
 					/* skip leading spaces and commas */
@@ -4291,6 +4295,7 @@ DESCRIPTION :
 						temp_string_1 += strcspn(temp_string_1," ,");
 					}
 				}
+				DEALLOCATE(overlay_colours_string);
 			}
 			if ((0<number_of_overlay_colours)&&ALLOCATE(overlay_colours,Pixel,
 				number_of_overlay_colours))

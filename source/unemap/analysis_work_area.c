@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 9 December 1999
+LAST MODIFIED : 14 December 1999
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -19,6 +19,27 @@ DESCRIPTION :
 	- for each signal, align [peak[0]-start_offset,peak[1]-start_offset),
 		[peak[1]-start_offset,peak[2]-start_offset), ... [peak[n-2]-start_offset,
 		peak[n-1]-start_offset) and average
+3 Questions
+	- QRS is coincident for body surface electrodes, but not for epicardial.  This
+		means that using the same averaging times for all electrodes is could cause
+		problems.  If we use different averaging times for each electrode, how do we
+		get the offsets?  Ignore at present - see how Greg's algorithm works
+4 How should the interface work?
+	- extend the search box so that the intervals are specified rather than
+		assumed to be constant width
+	- extend moving the search box so that up to the end of the first interval
+		can go off the left and up to the beginning of the last interval can go off
+		the right
+	- change dragging the search box ends so that internal divisions don't change
+		when the ends are moved (limited by first and last internal divisions)
+	- add an "Align with events" button.  This redraws the search box (see
+		draw_search_box in trace_window.c) so that the start of each search
+		interval is an event time (starting with the first event in the initial
+		search box)
+	- retain constant beat width version by having that when the number of
+		intervals is changed, it goes to constant width intervals
+???DB.  To do
+1 Investigate the use of draw_highlight_event_box
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>
