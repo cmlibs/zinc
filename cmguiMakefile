@@ -80,7 +80,7 @@ depend: update_sources
 		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) TARGET=depend ; \
 		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST) TARGET=depend ; ' ; \
 		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmguiMakefile $(HPC1_BUILD_LIST) TARGET=depend ;  ' ; \
-		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui_linux_gtk TARGET=depend && /home/blackett/bin/cross-make -f cmguiMakefile cmgui_win32_gtk TARGET=depend' ; \
+		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui-gtk TARGET=depend && /home/blackett/bin/cross-make -f cmguiMakefile cmgui-gtk TARGET=depend' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
