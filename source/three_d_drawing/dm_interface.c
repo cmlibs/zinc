@@ -83,9 +83,11 @@ struct Dm_buffer
 #endif /* defined (GLX_pbuffer) */
 #if defined (GLX_fbconfig)
 	GLXFBConfig config;
+	GLXFBConfig *config_list;
 #else /* defined (GLX_fbconfig) */
 #if defined (GLX_SGIX_fbconfig)
 	GLXFBConfigSGIX config;
+	GLXFBConfigSGIX *config_list;
 #endif /* defined (GLX_SGIX_fbconfig) */
 #endif /* defined (GLX_fbconfig) */
 	XVisualInfo *visual_info;
@@ -146,7 +148,6 @@ supported on displays other than SGI will do.
 #endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
 #endif /* defined (GLX_pbuffer) */
 #if defined (GLX_fbconfig)
-	GLXFBConfig *config_list;
 	int config_index, nelements;
 	static int fbvisattrsRGB_with_depth[] =
 	{
@@ -168,7 +169,6 @@ supported on displays other than SGI will do.
 	int *fbvisattrs;
 #else
 #if defined (GLX_SGIX_fbconfig)
-	GLXFBConfigSGIX *config_list;
 	int config_index, nelements;
 	static int fbvisattrsRGB_with_depth[] =
 	{
@@ -260,10 +260,12 @@ supported on displays other than SGI will do.
 #endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
 #endif /* defined (GLX_pbuffer) */
 #if defined (GLX_fbconfig)
-			buffer->config = (GLXFBConfig)NULL;;
+			buffer->config = (GLXFBConfig)NULL;
+			buffer->config_list = (GLXFBConfig *)NULL;
 #else /* defined (GLX_fbconfig) */
 #if defined (GLX_SGIX_fbconfig)
-			buffer->config = (GLXFBConfigSGIX)NULL;;
+			buffer->config = (GLXFBConfigSGIX)NULL;
+			buffer->config_list = (GLXFBConfigSGIX *)NULL;
 #endif /* defined (GLX_SGIX_fbconfig) */
 #endif /* defined (GLX_fbconfig) */
 			buffer->visual_info = (XVisualInfo *)NULL;
@@ -413,19 +415,19 @@ supported on displays other than SGI will do.
 					|| query_glx_extension("GLX_SGIX_pbuffer", display,
 					DefaultScreen(display)))
 				{
-					if (config_list = glXChooseFBConfig(display, 
+					if (buffer->config_list = glXChooseFBConfig(display, 
 						DefaultScreen(display), fbvisattrs, &nelements))
 					{
 						config_index = 0;
 						while ((config_index < nelements) &&
 							(!(buffer->pbuffer = glXCreatePbuffer(display,
-						   config_list[config_index], pbuffer_attribs))))
+						   buffer->config_list[config_index], pbuffer_attribs))))
 						{
 							config_index++;
 						}
 						if (config_index < nelements)
 						{
-							buffer->config = config_list[config_index];
+							buffer->config = buffer->config_list[config_index];
 						}
 						if (buffer->config && (buffer->visual_info = 
 							glXGetVisualFromFBConfig(display, buffer->config)))
@@ -470,19 +472,19 @@ supported on displays other than SGI will do.
 					/* This message causes many problems as people wonder if something is wrong. */
 					display_message(INFORMATION_MESSAGE,"CREATE(Dm_buffer). DM_PBuffer Unavailable, using plain Pbuffer\n");
 #endif /* defined (DEBUG) */
-					if (config_list = glXChooseFBConfigSGIX(display, 
+					if (buffer->config_list = glXChooseFBConfigSGIX(display, 
 						DefaultScreen(display), fbvisattrs, &nelements))
 					{
 						config_index = 0;
 						while ((config_index < nelements) &&
 							(!(buffer->pbuffer = glXCreateGLXPbufferSGIX(display,
-							config_list[config_index], width, height, pbuffer_attribs))))
+							buffer->config_list[config_index], width, height, pbuffer_attribs))))
 						{
 							config_index++;
 						}
 						if (config_index < nelements)
 						{
-							buffer->config = config_list[config_index];
+							buffer->config = buffer->config_list[config_index];
 						}
 					}
 					if (buffer->config && buffer->pbuffer)
@@ -983,9 +985,9 @@ x==============================================================================*
 		}
 #endif /* defined (GLX_pbuffer) */
 #if defined (GLX_SGIX_fbconfig) || (GLX_fbconfig)
-		if((*buffer)->config)
+		if((*buffer)->config_list)
 		{		
-			XFree((*buffer)->config);
+			XFree((*buffer)->config_list);
 		}
 #endif /* defined (GLX_SGIX_fbconfig) || (GLX_fbconfig) */
 #if defined (DEBUG)
