@@ -625,7 +625,7 @@ with tick marks and labels for showing the scale of a spectrum.
 {
 	char *graphics_object_name,*number_format;
 	float bar_length,bar_radius,extend_length,tick_length;
-	int number_of_components,return_code,significant_figures,tick_divisions;
+	int number_of_components,return_code,tick_divisions;
 	static char default_name[]="colour_bar";
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *label_material,*material;
