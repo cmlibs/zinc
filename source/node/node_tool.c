@@ -2090,7 +2090,9 @@ Fetches the appropriate icon for the interactive tool.
 	Pixmap pixmap;
 #endif /* defined (MOTIF) */
 	struct Cmgui_image *image;
+#if defined (MOTIF)
 	struct Node_tool *node_tool;
+#endif /* defined (MOTIF) */
 
 	ENTER(node_tool_get_icon);
 	if ((node_tool=(struct Node_tool *)node_tool_void))
