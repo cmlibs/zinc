@@ -16256,7 +16256,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		/* create/no_create */
 		Option_table_add_switch(option_table,"create","no_create",&create_enabled);
 		/* define/no_define */
-		Option_table_add_switch(option_table,"define","no_define",&create_enabled);
+		Option_table_add_switch(option_table,"define","no_define",&define_enabled);
 		/* edit/no_edit */
 		Option_table_add_switch(option_table,"edit","no_edit",&edit_enabled);
 		/* group */
