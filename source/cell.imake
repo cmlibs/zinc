@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cell.imake
 XCOMM
-XCOMM LAST MODIFIED : 21 March 2001
+XCOMM LAST MODIFIED : 14 April 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -340,11 +340,13 @@ XML_INC = -I$(XML_PATH)/include
 #else /* defined (O64) */
 /*  XML_LIB = -L$(XML_PATH)/lib.28nov00 -lCellML-n32-mips3-opt */
 XML_LIB = $(XML_PATH)/library/libXML-mips3-n32-optimised-1.0.0.a
+/*XML_LIB = $(XML_PATH)/library/libXML-mips3-n32-debug-1.0.0.a*/
 XML_INC = -I$(XML_PATH)/include
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 XML_DEFINES = -DLINUX -D_REENTRANT
 XML_LIB = $(XML_PATH)/library/libXML_linux_optimised_1.0.0.a -lstdc++-2-libc6.1-1-2.9.0
+/*XML_LIB = $(XML_PATH)/library/libXML_linux_debug_1.0.0.a -lstdc++-2-libc6.1-1-2.9.0*/
 XML_INC = -I$(XML_PATH)/include 
 #endif /* switch OperatingSystem */
 #else /* defined (CELL) */
@@ -377,12 +379,15 @@ HELP_SRCS =
 
 #if defined (IRIX) /* switch OperatingSystem */
 LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lC -lCio -lc -lpthread
+DSO_LIB = -lftn -lm
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
 LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a -lXext $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a
+DSO_LIB = -lg2c -lm
 #else /* defined (DYNAMIC_GL_LINUX) */
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lc -lXp -lSM -lICE -lpthread -lcrypt
+DSO_LIB = -lg2c -lm
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 
@@ -778,7 +783,7 @@ $(DSO_PATH)/andre.DSOSuffix :
 		mkdir -p $(DSO_PATH); \
 	fi
 	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o /tmp/andre.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/cell_model_routines/andre.f ;
-	@set -x ; $(DSO_LINK) /tmp/andre.ObjSuffix -o $(DSO_PATH)/andre.DSOSuffix ;
+	@set -x ; $(DSO_LINK) /tmp/andre.ObjSuffix $(DSO_LIB) -o $(DSO_PATH)/andre.DSOSuffix ;
 	@rm -f /tmp/andre.ObjSuffix ;
 
 hmt_dso : $(DSO_PATH)/hmt.DSOSuffix
@@ -788,7 +793,7 @@ $(DSO_PATH)/hmt.DSOSuffix : $(SOURCE_PATH)/cell/cell_model_routines/hmt.f
 		mkdir -p $(DSO_PATH); \
 	fi
 	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o /tmp/hmt.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/cell_model_routines/hmt.f ;
-	@set -x ; $(DSO_LINK) /tmp/hmt.ObjSuffix -o $(DSO_PATH)/hmt.DSOSuffix ;
+	@set -x ; $(DSO_LINK) /tmp/hmt.ObjSuffix $(DSO_LIB) -o $(DSO_PATH)/hmt.DSOSuffix ;
 	@rm -f /tmp/hmt.ObjSuffix ;
 
 euler_dso : $(DSO_PATH)/euler.DSOSuffix
@@ -798,7 +803,7 @@ $(DSO_PATH)/euler.DSOSuffix :
 		mkdir -p $(DSO_PATH); \
 	fi
 	@set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o /tmp/euler.ObjSuffix $(SOURCE_DIRECTORY_INC) $(SOURCE_PATH)/cell/integrator_routines/euler.f ;
-	@set -x ; $(DSO_LINK) /tmp/euler.ObjSuffix -o $(DSO_PATH)/euler.DSOSuffix ;
+	@set -x ; $(DSO_LINK) /tmp/euler.ObjSuffix $(DSO_LIB) -o $(DSO_PATH)/euler.DSOSuffix ;
 	@rm -f /tmp/euler.ObjSuffix ;
 
 utilities : SpacesToTabsTarget TabsToSpacesTarget Uid2uidhTarget
