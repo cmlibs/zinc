@@ -2833,9 +2833,10 @@ all be initialised to zero).
 	USE_PARAMETER(dummy_void);
 	if (state && (data=(struct Set_names_from_list_data *)data_void))
 	{
+		return_code = 1;
 		valid_token = 1;
 		counter = 0;
-		while ((current_token=state->current_token) && valid_token)
+		while (return_code && (current_token=state->current_token) && valid_token)
 		{
 			return_code=1;
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
@@ -2875,19 +2876,19 @@ all be initialised to zero).
 					}
 					display_message(INFORMATION_MESSAGE,data->tokens[i].string);
 				}
+				valid_token = 0;
 			}
-			valid_token = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_names.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"set_names_from_list.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* set_names */
+} /* set_names_from_list */
 
 int set_string(struct Parse_state *state,void *string_address_void,
 	void *string_description_void)
