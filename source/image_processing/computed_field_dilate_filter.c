@@ -1,6 +1,10 @@
-/******************************************************/
-/*The following code implement dilate filter operation*/
-/******************************************************/
+/******************************************************************
+  FILE: computed_field_dilate_filter.c
+
+  LAST MODIFIED: 27 February 2004
+
+  DESCRIPTION:Implement image dilate filtering
+==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -349,12 +353,13 @@ static int Image_cache_dilate_filter(struct Image_cache *image, int radius)
 LAST MOErFIED : 12 December 2003
 
 DESCRIPTION :
-Perform a erode filter operation on the image cache.
+Perform a dilate filter operation on the image cache.
 ==============================================================================*/
 {
 	char *storage;
 	FE_value *data_index, *result_index, *Di;
-	int filter_size, i, j, k, l, *offsets, return_code, kernel_size, storage_size;
+	int filter_size, i, j, k, m, *offsets, return_code, kernel_size, storage_size;
+	int kernel_step, image_step;
 
 	ENTER(Image_cache_dilate_filter);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -387,17 +392,17 @@ Perform a erode filter operation on the image cache.
 			{
 				offsets[j] = 0;
 			}
-
-			for (j = 0 ; j < kernel_size ; j++)
+			for(j = 0; j < kernel_size; j++)
 			{
-			        for (l=0; l < filter_size; l++)
+			        kernel_step = 1;
+				image_step = 1;
+				for(m = 0; m < image->dimension; m++)
 				{
-                                      if (l*filter_size <= j && j < (l + 1)*filter_size)
-				      {
-				             offsets[j] = ((l - radius) * (image->sizes[0]) + (j - (l*filter_size + radius))) * image->depth;
-				      }
+				        k = ((int)((FE_value)j/((FE_value)kernel_step))) % filter_size;
+					offsets[j] += (k - radius) * image_step * image->depth;
+					kernel_step *= filter_size;
+					image_step *= image->sizes[m];
 				}
-
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
@@ -492,7 +497,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
 			node, time);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 
 	}
 	else
@@ -540,7 +545,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
 			element, xi, time, top_level_element, /*calculate_derivatives*/0);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 		
 	}
 	else
@@ -654,6 +659,7 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
+	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_dilate_filter_type_specific_data *data;
 
@@ -680,8 +686,23 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " radius %d", data->radius);
+		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
+
+		sprintf(temp_string1, " radius %d", data->radius);
+		append_string(&command_string, temp_string1, &error);
+
+		sprintf(temp_string2, " sizes %d %d",
+		                    data->image->sizes[0],data->image->sizes[1]);
+		append_string(&command_string, temp_string2, &error);
+
+		sprintf(temp_string3, " minimums %f %f",
+		                    data->image->minimums[0], data->image->minimums[1]);
+		append_string(&command_string, temp_string3, &error);
+
+		sprintf(temp_string4, " maximums %f %f",
+		                    data->image->maximums[0], data->image->maximums[1]);
+		append_string(&command_string, temp_string4, &error);
 	}
 	else
 	{

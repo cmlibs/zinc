@@ -1,3 +1,10 @@
+/******************************************************************
+  FILE: image_cache.c
+
+  LAST MODIFIED: 27 February 2004
+
+  DESCRIPTION: Define Image_cache structure and implement basic operations
+==================================================================*/
 #include <math.h>
 #include <stdio.h>
 #include "computed_field/computed_field.h"
@@ -367,7 +374,7 @@ value searches just elements of that dimension.
 
 } /* Image_cache_update_from_fields */
 
-int Copy_image_to_field(struct Image_cache *image, struct Computed_field *field)
+int Image_cache_evaluate_field(struct Image_cache *image, struct Computed_field *field)
 /*******************************************************************************
     LAST MODIFIED: 23 February 2004
     DESCRIPTION: Copy the result image to computed_field
@@ -376,7 +383,7 @@ int Copy_image_to_field(struct Image_cache *image, struct Computed_field *field)
         int i, in_image, offset, return_code;
 	FE_value *texture_coordinates, *values;
 
-	ENTER(Copy_image_to_field);
+	ENTER(Image_cache_evaluate_field);
 	if(image)
 	{
 	        return_code = 1;
@@ -425,4 +432,4 @@ int Copy_image_to_field(struct Image_cache *image, struct Computed_field *field)
 	}
 	LEAVE;
 	return (return_code);
-}/* Copy_image_to_field */
+}/* Image_cache_evaluate_field */

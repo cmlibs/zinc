@@ -354,7 +354,7 @@ static int Image_cache_histogram_equalize(struct Image_cache *image, int number_
 LAST MODIFIED : 12 December 2003
 
 DESCRIPTION :
-Perform a median filter operation on the image cache.
+Perform histogram equalization operation on the image cache.
 ==============================================================================*/
 {
 	 char *storage;
@@ -499,7 +499,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
 			node, time);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 
 	}
 	else
@@ -547,7 +547,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
 			element, xi, time, top_level_element, /*calculate_derivatives*/0);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 		
 	}
 	else
@@ -661,6 +661,7 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
+	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_histogram_equalize_type_specific_data *data;
 
@@ -687,8 +688,23 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " number_of_bins %d", data->number_of_bins);
+		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
+
+		sprintf(temp_string1, " number_of_bins %d", data->number_of_bins);
+		append_string(&command_string, temp_string1, &error);
+
+		sprintf(temp_string2, " sizes %d %d",
+		                    data->image->sizes[0],data->image->sizes[1]);
+		append_string(&command_string, temp_string2, &error);
+
+		sprintf(temp_string3, " minimums %f %f",
+		                    data->image->minimums[0], data->image->minimums[1]);
+		append_string(&command_string, temp_string3, &error);
+
+		sprintf(temp_string4, " maximums %f %f",
+		                    data->image->maximums[0], data->image->maximums[1]);
+		append_string(&command_string, temp_string4, &error);
 	}
 	else
 	{

@@ -1,6 +1,10 @@
-/***************************************************************/
-/*The following code implement median filter operation *********/
-/***************************************************************/
+/******************************************************************
+  FILE: computed_field_median_filter.c
+
+  LAST MODIFIED: 27 February 2004
+
+  DESCRIPTION:Implement image median filter operation
+==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -364,7 +368,7 @@ No special criteria.
 
 static int Image_cache_median_filter(struct Image_cache *image, int radius)
 /*******************************************************************************
-LAST MODIFIED : 12 December 2003
+LAST MODIFIED : 24 March 2004
 
 DESCRIPTION :
 Perform a median filter operation on the image cache.
@@ -372,7 +376,10 @@ Perform a median filter operation on the image cache.
 {
 	char *storage;
 	FE_value *data_index, *result_index, *kernel;
-	int filter_size, i, j, k, l, *offsets, return_code, kernel_size, storage_size;
+	int filter_size, i, j, k, m;
+	int *offsets;
+	int image_step, kernel_step;
+	int return_code, kernel_size, storage_size;
 
 	ENTER(Image_cache_median_filter);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -393,54 +400,54 @@ Perform a median filter operation on the image cache.
 			storage_size *= image->sizes[i];
 		}
 		if (ALLOCATE(kernel, FE_value, kernel_size) &&
-			ALLOCATE(offsets, int, kernel_size) &&
-			ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
+			  ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
+		          ALLOCATE(offsets, int, kernel_size))
 		{
+		        return_code = 1;
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
 			{
 				*result_index = 0.0;
 				result_index++;
 			}
-			for (j = 0 ; j < kernel_size ; j++)
+			for (j = 0; j < kernel_size; j++)
 			{
-				offsets[j] = 0;
-			}
-			for (j = 0 ; j < kernel_size ; j++)
-			{
-			        for (l=0; l < filter_size; l++)
-				{
-                                      if (l*filter_size <= j && j < (l + 1)*filter_size)
-				      {
-				             offsets[j] = ((l - radius) * (image->sizes[0]) + (j - (l*filter_size + radius))) * image->depth;
-				      }
-				}
-
+			        offsets[j] = 0;
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
-			for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+			for(j = 0; j < kernel_size; j++)
 			{
-				for (k = 0 ; k < image->depth ; k++)
+			        kernel_step = 1;
+				image_step = 1;
+				for(m = 0; m < image->dimension; m++)
 				{
-                                        for(j = 0 ; j < kernel_size ; j++)
+				        k = ((int)((FE_value)j/((FE_value)kernel_step))) % filter_size;
+					offsets[j] += (k - radius) * image_step * image->depth;
+					kernel_step *= filter_size;
+					image_step *= image->sizes[m];
+				}
+			}
+			for (i = 0; i < storage_size / image->depth; i++)
+			{
+			        for(k = 0; k < image->depth; k++)
+				{
+				        for (j = 0; j < kernel_size; j++)
 					{
-					        if(result_index + offsets[j] < ((FE_value *)storage))
+					        if (result_index + offsets[j] < ((FE_value *)storage))
 						{
-						          /*wrapping around */
-						         kernel[j] = *(data_index + offsets[j] + storage_size +k);
-					        }
+						        kernel[j] = *(data_index + offsets[j] + storage_size + k);
+						}
 						else if (result_index + offsets[j] >= ((FE_value *)storage) + storage_size)
 						{
-                                                        /*wrapping back */
-							 kernel[j] = *(data_index + offsets[j]-storage_size + k);
+						        kernel[j] = *(data_index + offsets[j] - storage_size + k);
 						}
 						else
 						{
-						          /*standard */
-							  kernel[j] = *(data_index + offsets[j] + k);
+						        kernel[j] = *(data_index + offsets[j] + k);
 						}
 					}
+
 					qsort(kernel, kernel_size, sizeof(FE_value), CompareColors);
 					result_index[k] = kernel[kernel_size/2];
 				}
@@ -510,7 +517,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
 			node, time);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 
 	}
 	else
@@ -558,7 +565,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
 			element, xi, time, top_level_element, /*calculate_derivatives*/0);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 		
 	}
 	else
@@ -672,6 +679,7 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
+	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_median_filter_type_specific_data *data;
 
@@ -698,8 +706,23 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " radius %d", data->radius);
+		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
+
+		sprintf(temp_string1, " radius %d", data->radius);
+		append_string(&command_string, temp_string1, &error);
+
+		sprintf(temp_string2, " sizes %d %d",
+		                    data->image->sizes[0],data->image->sizes[1]);
+		append_string(&command_string, temp_string2, &error);
+
+		sprintf(temp_string3, " minimums %f %f",
+		                    data->image->minimums[0], data->image->minimums[1]);
+		append_string(&command_string, temp_string3, &error);
+
+		sprintf(temp_string4, " maximums %f %f",
+		                    data->image->maximums[0], data->image->maximums[1]);
+		append_string(&command_string, temp_string4, &error);
 	}
 	else
 	{

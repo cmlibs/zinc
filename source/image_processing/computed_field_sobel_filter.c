@@ -1,3 +1,10 @@
+/******************************************************************
+  FILE: computed_field_sobel_filter.c
+
+  LAST MODIFIED: 5 May 2004
+
+  DESCRIPTION:Implement image sobel filtering operation
+==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
@@ -344,30 +351,48 @@ No special criteria.
 
 static int Image_cache_sobel_filter(struct Image_cache *image, int radius)
 /*******************************************************************************
-LAST MOErFIED : 12 December 2003
+LAST MOErFIED : 5 May 2004
 
 DESCRIPTION :
-Perform a erode filter operation on the image cache.
+Perform a Sobel filter operation on the image cache.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *sb1, *sb2;
-	int i, j, k, l, m, offset, return_code, storage_size;
+	FE_value *data_index, *result_index, *energy_max, maxDistrib, th;
+	int i, j, k, l, storage_size, total, *instances, *distrib;
+	FE_value tier[8] = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+	FE_value  *kernel, *sums;
+	int filter_size;
+	int *offsets;
+	int pass;
+	int image_step, kernel_step;
+	int return_code, kernel_size;
 
 	ENTER(Image_cache_sobel_filter);
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
+		filter_size = 2 * radius + 1;
 
+		/* We only need the one kernel as it is just a reordering for the other dimensions */
+		kernel_size = 1;
+		for (i = 0 ; i < image->dimension ; i++)
+		{
+			kernel_size *= filter_size;
+		}
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
 		for (i = 0 ; i < image->dimension ; i++)
 		{
 			storage_size *= image->sizes[i];
 		}
-		if (ALLOCATE(sb1, FE_value, image->depth) &&
-		        ALLOCATE(sb2, FE_value, image->depth) &&
-			ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
+		if (ALLOCATE(kernel, FE_value, kernel_size) &&
+			ALLOCATE(offsets, int, kernel_size) &&
+			ALLOCATE(energy_max, FE_value, image->depth) &&
+			ALLOCATE(instances, int, 8) &&
+			ALLOCATE(distrib, int, 8) &&
+			ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
+			ALLOCATE(sums, FE_value, image->depth))
 		{
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
@@ -375,89 +400,168 @@ Perform a erode filter operation on the image cache.
 				*result_index = 0.0;
 				result_index++;
 			}
-
-			data_index = (FE_value *)image->data;
-			result_index = (FE_value *)storage;
-			for (i = 0; i < image->sizes[1]; i++)
+			for (j = 0 ; j < kernel_size ; j++)
 			{
-			        for ( j = 0; j < image->sizes[0]; j++)
+				offsets[j] = 0;
+			}
+			for (k = 0; k < image->depth; k++)
+			{
+			        energy_max[k] = 0.0;
+			}
+			kernel_step = 1;
+			image_step = 1;
+			for (i = 0 ; i < image->dimension ; i++)
+			{
+				for (j = 0 ; j < kernel_size ; j++)
 				{
-				        for (k = 0; k < image->depth; k++)
+					l = (j / kernel_step) % filter_size;
+					offsets[j] += (l - radius) * image_step * image->depth;
+				}
+				kernel_step *= filter_size;
+				image_step *= image->sizes[i];
+			}
+			for (pass = 0 ; pass < image->dimension ; pass++)
+			{
+				for (j = 0 ; j < kernel_size ; j++)
+				{
+					kernel[j] = 1.0;
+				}
+				kernel_step = 1;
+				for (i = 0 ; i < image->dimension ; i++)
+				{
+					if (i == pass)
 					{
-					        sb1[k] = 0.0;
-						sb2[k] = 0.0;
-						for (l = i - radius; l <= i + radius; l++)
+						for (j = 0 ; j < kernel_size ; j++)
 						{
-						        for(m = j - radius; m <= j + radius; m++)
+							l = (j / kernel_step) % filter_size;
+							if (l == radius)
 							{
-							        if ( (l < 0) || (l > (image->sizes[1] -1)) || (m < 0) || (m > (image->sizes[0] -1)) )
-								{
-								         sb1[k] += 0.0;
-									 sb2[k] += 0.0;
-								}
-								else
-								{
-								        offset = (l * image->sizes[0] + m ) * image->depth;
-								        if (l < i)
-									{
-									        if ( m == j)
-										{
-									                sb1[k] -= 2.0 * *(data_index + offset + k);
-										}
-										else
-										{
-										        sb1[k] -= *(data_index + offset + k);
-										}
-									}
-									else if (l > i)
-									{
-									        if (m == j)
-										{
-										        sb1[k] += 2.0 * *(data_index + offset + k);
-										}
-										else
-										{
-										        sb1[k] += *(data_index + offset + k);
-										}
-									}
-									else
-									{
-									        sb1[k] += 0.0;
-									}
-									if (m < j)
-									{
-									        if (l == i)
-										{
-										        sb2[k] += 2.0 * *(data_index + offset + k);
-										}
-										else
-										{
-										        sb2[k] += *(data_index + offset + k);
-										}
-									}
-									else if (m > j)
-									{
-									        if ( l == i)
-										{
-										        sb2[k] -= 2.0 * *(data_index + offset + k);
-										}
-										else
-										{
-										        sb2[k] -= *(data_index + offset + k);
-										}
-									}
-									else
-									{
-									        sb2[k] += 0.0;
-									}
-								}
+								kernel[j] *= 2.0;
 							}
 						}
-						if (sb1[k] < 0.0) sb1[k] = -sb1[k];
-						if (sb2[k] < 0.0) sb2[k] = -sb2[k];
-						result_index[k] = sb1[k] + sb2[k];
 					}
+					else
+					{
+						for (j = 0 ; j < kernel_size ; j++)
+						{
+							l = (j / kernel_step) % filter_size;
+							if ( l < radius)
+							{
+							        kernel[j] *= -1.0;
+							}
+							else if (l == radius)
+							{
+							        kernel[j] = 0.0;
+							}
+						}
+					}
+					kernel_step *= filter_size;
+				}
+				data_index = (FE_value *)image->data;
+				result_index = (FE_value *)storage;
+				for (i = 0 ; i < storage_size / image->depth ; i++)
+				{
+					for (k = 0 ; k < image->depth ; k++)
+					{
+						sums[k] = 0;
+					}
+					for (j = 0 ; j < kernel_size ; j++)
+					{
+						if (result_index + offsets[j] < ((FE_value *)storage))
+						{
+							/* Wrapping around */
+							for (k = 0 ; k < image->depth ; k++)
+							{
+								sums[k] += kernel[j] *
+									*(data_index + offsets[j] + storage_size + k);
+							}
+						}
+						else if (result_index + offsets[j] >= ((FE_value *)storage) + storage_size)
+						{
+							/* Wrapping back */
+							for (k = 0 ; k < image->depth ; k++)
+							{
+								sums[k] += kernel[j] *
+									*(data_index + offsets[j] - storage_size + k);
+							}
+						}
+						else
+						{
+							/* standard */
+							for (k = 0 ; k < image->depth ; k++)
+							{
+								sums[k] += kernel[j] *
+									*(data_index + offsets[j] + k);
+							}
+						}
+					}
+					/* Accumulate the absolute value of this pass */
+					for (k = 0 ; k < image->depth ; k++)
+					{
+					        result_index[k] += sums[k] * sums[k];
+					}
+					data_index += image->depth;
 					result_index += image->depth;
+				}
+			}
+			for (i = (storage_size / image->depth) - 1; i >= 0; i--)
+			{
+			        result_index -= image->depth;
+				for (k = 0; k < image->depth; k++)
+				{
+				        result_index[k] = sqrt(result_index[k]);
+				        energy_max[k] = my_Max(result_index[k], energy_max[k]);
+				}
+			}
+
+			/* normalize the edge image and threshold that */
+			for (k = 0; k < image->depth; k++)
+			{
+			        for (i = 0; i < 8; i++)
+			        {
+		                        instances[i] = 0;
+			        }
+			        maxDistrib = 0.0;
+			        th = 0.0;
+			        total = 0;
+				for (i = 0; i < storage_size / image->depth; i++)
+				{
+				        result_index[k] /= energy_max[k];
+					if (result_index[k] > 0.9)   instances[7]++;
+		                        else if (result_index[k] > 0.8)   instances[6]++;
+					else if (result_index[k] > 0.7)   instances[5]++;
+					else if (result_index[k] > 0.6)   instances[4]++;
+					else if (result_index[k] > 0.5)   instances[3]++;
+					else if (result_index[k] > 0.4)   instances[2]++;
+					else if (result_index[k] > 0.3)   instances[1]++;
+					else if (result_index[k] > 0.2)   instances[0]++;
+					result_index += image->depth;
+				}
+
+				for (j = 0; j < 8; j++)
+				{
+			                distrib[j] = (int) (( (FE_value) instances[j] /((FE_value)(storage_size / image->depth)) ) * 100);
+					if (distrib[j] > maxDistrib) maxDistrib = distrib[j];
+			        }
+			        j = 7;
+			        while (th == 0.0)
+			        {
+			                total += distrib[j];
+				        if   (total > 0.999 * maxDistrib)   th = tier[j];
+				        else   j--;
+			        }
+
+				for ( i = (storage_size / image->depth) - 1; i >= 0; i--)
+				{
+				        result_index -= image->depth;
+					if (result_index[k] < th )
+					{
+						result_index[k] = 0.0;
+					}
+					else
+					{
+						result_index[k] = 1.0;
+					}
 				}
 			}
 
@@ -472,9 +576,12 @@ Perform a erode filter operation on the image cache.
 			{
 				DEALLOCATE(storage);
 			}
-			DEALLOCATE(sb1);
-			DEALLOCATE(sb2);
-
+			DEALLOCATE(kernel);
+			DEALLOCATE(offsets);
+			DEALLOCATE(energy_max);
+			DEALLOCATE(instances);
+			DEALLOCATE(distrib);
+			DEALLOCATE(sums);
 		}
 		else
 		{
@@ -523,7 +630,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
 			node, time);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 
 	}
 	else
@@ -571,7 +678,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
 			element, xi, time, top_level_element, /*calculate_derivatives*/0);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 		
 	}
 	else
@@ -685,6 +792,7 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
+	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_sobel_filter_type_specific_data *data;
 
@@ -711,8 +819,23 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " radius %d", data->radius);
+		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
+
+		sprintf(temp_string1, " radius %d", data->radius);
+		append_string(&command_string, temp_string1, &error);
+
+		sprintf(temp_string2, " sizes %d %d",
+		                    data->image->sizes[0],data->image->sizes[1]);
+		append_string(&command_string, temp_string2, &error);
+
+		sprintf(temp_string3, " minimums %f %f",
+		                    data->image->minimums[0], data->image->minimums[1]);
+		append_string(&command_string, temp_string3, &error);
+
+		sprintf(temp_string4, " maximums %f %f",
+		                    data->image->maximums[0], data->image->maximums[1]);
+		append_string(&command_string, temp_string4, &error);
 	}
 	else
 	{

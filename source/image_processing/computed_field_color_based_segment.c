@@ -507,7 +507,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
 			node, time);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 
 	}
 	else
@@ -555,7 +555,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field*/
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
 			element, xi, time, top_level_element, /*calculate_derivatives*/0);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 		
 	}
 	else

@@ -5,7 +5,6 @@
   LAST MODIFIED: 18 February 2004
   
   DESCRIPTION: Implement image segmentation operation.
-               This segmentation operation is based on automatic thresholding
 ===================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -355,15 +354,21 @@ Perform a automatic thresholding operation on the image cache.
 ==============================================================================*/
 {
         char *storage;
-	FE_value *data_index, *result_index, T, *gray_img, *gray1_img, *gray2_img;
-	int i, k, return_code, storage_size, counter;
-
+	FE_value *data_index, *result_index, *gray_img;
+	int i, k, j, return_code, storage_size, counter;
+	int number_of_bins;
+	FE_value *histogram, *sigB;
+	int YVal;
+	FE_value sigT, muT, minl, maxl;
+	FE_value w0, w1, mu, mu0, mu1, min_sigB, max_sigB;
+	int T;
 
 	ENTER(Image_cache_intensity_based_segment);
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
-		T = 0.0;
+		/* T = 0.0; */
+		number_of_bins = 256;
 
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
@@ -374,8 +379,8 @@ Perform a automatic thresholding operation on the image cache.
 		counter = storage_size/image->depth; /*the size of gray scale image*/
 		if (ALLOCATE(storage, char, storage_size * sizeof(FE_value))&&
                         ALLOCATE(gray_img, FE_value, counter)&&
-			ALLOCATE(gray1_img, FE_value, counter)&&
-			ALLOCATE(gray2_img, FE_value, counter))
+			ALLOCATE(histogram, FE_value, number_of_bins) &&
+			ALLOCATE(sigB, FE_value, number_of_bins))
 		{
 
 			result_index = (FE_value *)storage;
@@ -388,6 +393,8 @@ Perform a automatic thresholding operation on the image cache.
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			/*compute the intensity image*/
+			minl = 1.0;
+			maxl = 0.0;
 			for (i = 0; return_code && i < counter ; i++)
 			{
                              gray_img[i] = 0.0;
@@ -396,83 +403,85 @@ Perform a automatic thresholding operation on the image cache.
 			             gray_img[i] += *(data_index + k);
 			     }
 			     gray_img[i] /= (FE_value)image->depth;
+			     minl = my_Min(minl, gray_img[i]);
+			     maxl = my_Max(maxl, gray_img[i]);
 
 			     data_index += image->depth;
-			     result_index += image->depth;
 			}
-
-			/*compute the intensity mean value*/
-                        for (i = 0; i < counter; i++)
+			for (i = 0 ; i < counter ; i++)
 			{
-                                T += gray_img[i]/counter;
+			        gray_img[i] = (gray_img[i] - minl)/(maxl - minl);
 			}
-#if defined (OLD_CODE)
-			T0 = T;
-			T3 = T;
-			//printf("T3:%f\n",T3);
-                        /* perform the initial thresholding by choosing the mean as threshold value*/
-			//for (i = 0; i < counter; i++)
-			//{
-                          //      if (gray_img[i] <= T)
-			   //     {
-			    //           gray1_img[i] = gray_img[i];
-			//	       gray2_img[i] = 0.0;
-			//	       T1 += gray1_img[i];
-			//	       counter1 ++;
-			  //      }
-			 //       else
-			  //      {
-                           //            gray1_img[i] = 0.0;
-			//	       gray2_img[i] = gray_img[i];
-			//	       T2 += gray2_img[i];
-			//	       counter2 ++;
-			//        }
-			//}
-			//T1 = T1/counter1;
-			//T2 = T2/counter2;
-			//T = (T1 + T2)/2;
-			/*adjust the threshold value*/
-			//while (T != T0)
-			//{
-			//         T0 = T;
-			//	 for (i = 0; i < counter; i++)
-			//         {
-                        //                 if (gray_img[i] <= T)
-			//                 {
-			//                         gray1_img[i] = gray_img[i];
-			//	                 gray2_img[i] = 0.0;
-			//	                 T1 += gray1_img[i];
-			//	                 counter1 ++;
-			 //                }
-			 //                else
-			 //                {
-                         //                        gray1_img[i] = 0.0;
-			//	                 gray2_img[i] = gray_img[i];
-			//	                 T2 += gray2_img[i];
-			//	                 counter2 ++;
-			 //                }
-			  //       }
-			   //      T1 = T1/counter1;
-			   //      T2 = T2/counter2;
-			   //      T = (T1 + T2)/2;
-			//	 if ((T-T0) <= 0.000001 && (T-T0) >= -0.000001) break;
-			//}
-#endif /* defined (OLD_CODE) */
-			T = 0.7;
-			for (i = (counter - 1); i >= 0; i--)
+			/* form histogram */
+			for (j = 0; j < number_of_bins; j++ )
 			{
-			         data_index -= image->depth;
-				 result_index -= image->depth;
-                                 if (gray_img[i] < 0.607)
-				 {
-                                          for (k = 0; k < image->depth; k++)
-					           result_index[k] = 0.0;
-				 }
-				 else
-				 {
-				          for (k = 0; k < image->depth; k++)
-						   result_index[k] = 1.0;
-				 }
+			       histogram[j] = 0.0;
+			       sigB[j] = 0.0;
+			}
+			for (i = 0 ; i < counter ; i++)
+			{
+                                YVal = (int)(floor(((FE_value)number_of_bins - 1.0)* gray_img[i] + 0.5));
+				histogram[YVal] += 1.0;
+			}
+			sigT = 0.0;
+			muT = 0.0;
+			for (j = 0; j < number_of_bins; j++ )
+			{
+			       histogram[j] /= (FE_value)counter;
+			       muT += (FE_value)j * histogram[j];
+			}
+			for (j = 0; j < number_of_bins; j++ )
+			{
+			       sigT += ((FE_value)j - muT)*((FE_value)j - muT) * histogram[j];
+			}
+			max_sigB = 0.0;
+			for (j = 0; j < number_of_bins; j++ )
+			{
+				w0 = 0.0;
+				mu = 0.0;
+				for (i = 0; i <= j; i++)
+				{
+				        w0 += histogram[i];
+					mu += (FE_value)i * histogram[i];
+				}
+				w1 = 1.0 - w0;
+				mu0 = mu/w0;
+				mu1 = (muT - mu) / w1;
+				sigB[j] = w0 * w1 * (mu1 - mu0) * (mu1 - mu0);
+				max_sigB = my_Max(max_sigB, sigB[j]);
+			}
+			/*for (j = 0; j < number_of_bins; j++ )
+			{
+			       sigB[j] /= max_sigB;
+			} */
+			min_sigB = 1.0;
+			/* for (j = 0; j < number_of_bins; j++ )
+			{
+			       min_sigB = my_Min(min_sigB, sigB[j]);
+			} */
+			for (j = 0; j < number_of_bins; j++ )
+			{
+			       if (sigB[j] == max_sigB)
+			       {
+			               T = j;
+				       break;
+			       }
+			}
+			printf("threshold: %d", T);
+			for (i = 0; i < counter; i++)
+			{
+			        YVal = (int)(floor(((FE_value)number_of_bins - 1.0)* gray_img[i] + 0.5));
+                                if (YVal <= T)
+				{
+                                        for (k = 0; k < image->depth; k++)
+					        result_index[k] = 0.0;
+				}
+				else
+				{
+				        for (k = 0; k < image->depth; k++)
+						result_index[k] = 1.0;
+				}
+				result_index += image->depth;
 			}
 
 			if (return_code)
@@ -486,9 +495,8 @@ Perform a automatic thresholding operation on the image cache.
 				DEALLOCATE(storage);
 			}
 			DEALLOCATE(gray_img);
-			DEALLOCATE(gray1_img);
-			DEALLOCATE(gray2_img);
-
+			DEALLOCATE(histogram);
+			DEALLOCATE(sigB);
 		}
 		else
 		{
@@ -538,7 +546,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
 			node, time);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 
 	}
 	else
@@ -586,7 +594,7 @@ Evaluate the fields cache at the node.
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
 			element, xi, time, top_level_element, /*calculate_derivatives*/0);
-		Copy_image_to_field(data->image,field);
+		Image_cache_evaluate_field(data->image,field);
 		
 	}
 	else
@@ -695,7 +703,9 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name;
+	char temp_string[40], temp_string1[40], temp_string2[40], temp_string3[40];
 	int error;
+	struct Computed_field_intensity_based_segment_type_specific_data *data;
 
 	ENTER(Computed_field_intensity_based_segment_get_command_string);
 	command_string = (char *)NULL;
@@ -718,6 +728,20 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
+		sprintf(temp_string, " dimension %d", data->image->dimension);
+		append_string(&command_string, temp_string, &error);
+
+		sprintf(temp_string1, " sizes %d %d",
+		                    data->image->sizes[0], data->image->sizes[1]);
+		append_string(&command_string, temp_string1, &error);
+
+		sprintf(temp_string2, " minimums %f %f",
+		                    data->image->minimums[0], data->image->minimums[1]);
+		append_string(&command_string, temp_string2, &error);
+
+		sprintf(temp_string3, " maximums %f %f",
+		                    data->image->maximums[0], data->image->maximums[1]);
+		append_string(&command_string, temp_string3, &error);
 	}
 	else
 	{
