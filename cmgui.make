@@ -193,7 +193,7 @@ cmgui-linux-gtk : force $(SOURCE_PATH)/cmgui_linux_gtk.make
 
 $(SOURCE_PATH)/cmgui_linux_gtk.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
 	$(COMMON_IMAKE_RULE) \
-	imake -DLINUX -DGTK_ONLY_INTERFACE -DDYNAMIC_GL_LINUX $${CMISS_ROOT_DEF} -s cmgui_linux_gtk.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+	imake -DLINUX -DGTK_USER_INTERFACE -DDYNAMIC_GL_LINUX $${CMISS_ROOT_DEF} -s cmgui_linux_gtk.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #AIX version
 cmgui-aix-debug : force $(SOURCE_PATH)/cmgui_aix.make
@@ -281,7 +281,7 @@ cmgui-win32-gtk : force $(SOURCE_PATH)/cmgui_win32_gtk.make
 
 $(SOURCE_PATH)/cmgui_win32_gtk.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
 	$(COMMON_IMAKE_RULE) \
-	imake -DWIN32 -DGTK_ONLY_INTERFACE $${CMISS_ROOT_DEF} -s cmgui_win32_gtk.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+	imake -DWIN32 -DGTK_USER_INTERFACE $${CMISS_ROOT_DEF} -s cmgui_win32_gtk.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 update_sources :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
